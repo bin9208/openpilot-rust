@@ -110,7 +110,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/original-models"
           python openpilot/selfdrive/modeld/compile_modeld.py --model-size 512x256 --camera-resolutions 1928x1208 1344x760 --frame-skip 4 --onnx openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/original-models/driving_tinygrad.pkl"
-          python tinygrad_repo/examples/openpilot/compile3.py openpilot/selfdrive/modeld/models/dmonitoring_model.onnx "$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl"
+          python tinygrad_repo/examples/openpilot/compile3.py "$GITHUB_WORKSPACE/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx" "$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl"
           python openpilot/selfdrive/modeld/get_model_metadata.py openpilot/selfdrive/modeld/models/dmonitoring_model.onnx
           cp openpilot/selfdrive/modeld/models/dmonitoring_model_metadata.pkl "$RUNNER_TEMP/original-models/"
           for resolution in 1928x1208 1344x760; do
