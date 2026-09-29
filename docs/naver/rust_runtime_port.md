@@ -16,3 +16,9 @@ and use the existing upload flow for comparison with the original implementation
 The [native QCOM ledger](../rust-port/qcom-runtime-validation.md) records the
 kernel/argument/packet oracle, KGSL ABI and lifetime checks, and remaining GPU
 acceptance. Backend code and host tests do not complete the full runtime gate.
+
+[VisionIPC issue #14](https://github.com/bin9208/openpilot-rust/issues/14) adds
+the Rust-owned camera client boundary over the external msgq library. The
+[boundary ledger](../rust-port/visionipc-plan.md) records native-server
+interoperability, reconnect, copied-frame lifetime and sanitizer evidence.
+Camera/model daemon integration and GPU imports remain full-runtime work.

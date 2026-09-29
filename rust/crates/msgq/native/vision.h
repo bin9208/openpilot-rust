@@ -1,0 +1,21 @@
+#pragma once
+#include <memory>
+#include "rust/cxx.h"
+#include "msgq/visionipc/visionipc_client.h"
+
+namespace openpilot_rust {
+struct VisionMetadata;
+class VisionConnection final {
+public:
+  VisionConnection(const std::string &name, VisionStreamType stream, bool conflate);
+  bool connect();
+  bool connected() const;
+  VisionMetadata receive(int32_t timeout_ms);
+  void copy_frame(rust::Slice<uint8_t> destination) const;
+private:
+  VisionIpcClient client_;
+  VisionBuf *current_ = nullptr;
+};
+std::unique_ptr<VisionConnection> open_vision(rust::Str name, int32_t stream, bool conflate);
+uint32_t vision_streams(rust::Str name);
+}

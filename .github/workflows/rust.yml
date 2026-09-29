@@ -184,6 +184,11 @@ jobs:
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
           cargo build --workspace --release --locked --target aarch64-unknown-linux-gnu
           file target/aarch64-unknown-linux-gnu/release/cpu-sample
+      - name: Cross-build the original VisionIPC ION boundary (not device execution)
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: cargo build -p openpilot-msgq --features visionipc-ion --locked --target aarch64-unknown-linux-gnu
       - name: Build and inspect the static C3X probe candidate
         working-directory: rust
         run: |
