@@ -47,6 +47,30 @@ def test_rejects_uncaptured_jit_without_emitting_bundle(tmp_path: Path) -> None:
     assert not (tmp_path / "bundle" / "graph.json").exists()
 
 
+def test_static_positional_arguments_do_not_shift_tensor_bindings(tmp_path: Path) -> None:
+    inputs = Tensor(np.arange(64, dtype=np.float32)).realize()
+    bias = Tensor(np.full(64, 5.0, dtype=np.float32)).realize()
+    jit = TinyJit(lambda enabled, x, *, bias: (x * 2 + bias if enabled else x).realize())
+    jit(True, inputs, bias=bias)
+    output = jit(True, inputs, bias=bias)
+    export_cpu(jit, Bindings({"bias": bias, "input": inputs}, {"output": output}), tmp_path / "bundle")
+    values = np.arange(64, dtype=np.float32) + 7
+    (tmp_path / "input.bin").write_bytes(values.tobytes())
+    (tmp_path / "sequence.json").write_text(json.dumps([{"inputs": {"input": "input.bin"}, "outputs": {"output": "output.bin"}}]))
+    subprocess.run([Path(os.environ["MODEL_RUN_BINARY"]), "--trusted-bundle", tmp_path / "bundle", tmp_path / "sequence.json"], check=True)
+    np.testing.assert_array_equal(np.fromfile(tmp_path / "output.bin", dtype=np.float32), values * 2 + 5)
+
+
+def test_missing_keyword_binding_is_a_contract_error(tmp_path: Path) -> None:
+    inputs = Tensor(np.arange(64, dtype=np.float32)).realize()
+    jit = TinyJit(lambda *, value: (value * 2).realize())
+    jit(value=inputs)
+    output = jit(value=inputs)
+    with pytest.raises(ExportError, match="binding names.*input contract"):
+        export_cpu(jit, Bindings({"wrong": inputs}, {"output": output}), tmp_path / "bundle")
+    assert not (tmp_path / "bundle").exists()
+
+
 def test_rejects_bindings_that_disagree_with_the_captured_input_contract(tmp_path: Path) -> None:
     inputs = Tensor(np.ones(64, dtype=np.float32)).realize()
     jit = TinyJit(lambda x: (x * 2).realize())

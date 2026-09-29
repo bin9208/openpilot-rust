@@ -11,9 +11,14 @@ name = "model-run"
 path = "src/bin/model-run.rs"
 required-features = ["native-skip-miri"]
 
+[[bin]]
+name = "qcom-model-run"
+path = "src/bin/qcom-model-run.rs"
+required-features = ["native-skip-miri"]
+
 [features]
 default = ["native-skip-miri"]
-native-skip-miri = ["dep:libloading", "dep:sha2"]
+native-skip-miri = ["dep:libloading", "dep:sha2", "dep:libc"]
 
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
@@ -24,6 +29,7 @@ serde_json = "1"
 sha2 = { version = "0.10", optional = true }
 thiserror = "2"
 libloading = { version = "0.8", optional = true }
+libc = { version = "0.2", optional = true }
 
 [dev-dependencies]
 tempfile = "3"

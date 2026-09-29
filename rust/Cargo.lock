@@ -347,6 +347,7 @@ dependencies = [
 name = "openpilot-model-runtime"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "libloading",
  "serde",
  "serde_json",

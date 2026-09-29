@@ -1,0 +1,1 @@
+__kernel void image_copy(write_only image2d_t out, read_only image2d_t inp) { int2 p=(int2)(get_global_id(0),get_global_id(1)); const sampler_t s=CLK_NORMALIZED_COORDS_FALSE|CLK_ADDRESS_CLAMP|CLK_FILTER_NEAREST; write_imagef(out,p,read_imagef(inp,s,p)); }

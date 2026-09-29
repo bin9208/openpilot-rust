@@ -1,0 +1,5 @@
+{
+  "compiler_sha256": "fb7e6390cc25700d6935b2eef3acad85a43f247206bdf84cb4d37bd48a60b093",
+  "reference": "tinygrad_repo/tinygrad/runtime/ops_qcom.py",
+  "architecture": "a630"
+}

@@ -108,6 +108,10 @@ An isolated ARM userspace under QEMU successfully compiled a small `a630` kernel
 using the repository's QCOMCompiler. This proves offline compiler availability,
 not GPU execution. The library stays outside Git.
 
-Native QCOM/AMD dispatch, VisionIPC, daemon integration, remaining M3-M6 ports,
+Native QCOM parsing, arguments, KGSL ownership and dispatch now have a separate
+[implementation ledger](qcom-runtime-validation.md); their host serialization
+evidence does not establish actual-model GPU execution.
+
+Actual QCOM GPU acceptance, AMD dispatch, VisionIPC, daemon integration, remaining M3-M6 ports,
 normal startup/logging/upload comparison, and user device acceptance remain open.
 No C3X connection, installation, reboot, or test was performed.
