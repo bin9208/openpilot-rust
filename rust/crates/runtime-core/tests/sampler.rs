@@ -40,3 +40,21 @@ fn reads_actual_linux_processes_without_publishing() {
         assert!(cpu.is_finite() && cpu >= 0.0);
     }
 }
+
+#[test]
+fn closed_output_pipe_exits_cleanly() {
+    use std::process::Stdio;
+    let mut child = Command::new(env!("CARGO_BIN_EXE_cpu-sample"))
+        .arg("20")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    drop(child.stdout.take());
+    let out = child.wait_with_output().unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+}

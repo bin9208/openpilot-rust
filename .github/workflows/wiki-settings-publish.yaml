@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   synchronize:
+    if: github.repository == 'bin9208/openpilot'
     name: validate and synchronize Wiki
     runs-on: ubuntu-24.04
     timeout-minutes: 15

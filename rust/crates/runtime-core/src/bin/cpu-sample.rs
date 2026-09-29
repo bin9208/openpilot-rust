@@ -6,6 +6,7 @@ mod linux {
         collections::HashMap,
         error::Error,
         fs,
+        io::{self, Write},
         process::Command,
         time::{Duration, Instant},
     };
@@ -64,7 +65,11 @@ mod linux {
             }
         }
         rows.sort_by(|(a, x), (b, y)| y.total_cmp(x).then(a.pid.cmp(&b.pid)));
-        println!("pid\tname\tcpu_percent_one_core\tlast_processor\tthreads");
+        let mut output = io::BufWriter::new(io::stdout().lock());
+        writeln!(
+            output,
+            "pid\tname\tcpu_percent_one_core\tlast_processor\tthreads"
+        )?;
         for (p, cpu) in rows {
             let name = p
                 .name
@@ -72,11 +77,13 @@ mod linux {
                 .replace('\t', "\\t")
                 .replace('\n', "\\n")
                 .replace('\r', "\\r");
-            println!(
+            writeln!(
+                output,
                 "{}\t{}\t{:.3}\t{}\t{}",
                 p.pid, name, cpu, p.processor, p.threads
-            );
+            )?;
         }
+        output.flush()?;
         Ok(())
     }
 }
@@ -84,6 +91,12 @@ mod linux {
 fn main() {
     #[cfg(target_os = "linux")]
     if let Err(error) = linux::run() {
+        if error
+            .downcast_ref::<std::io::Error>()
+            .is_some_and(|e| e.kind() == std::io::ErrorKind::BrokenPipe)
+        {
+            return;
+        }
         eprintln!("cpu-sample: {error}");
         std::process::exit(1);
     }
