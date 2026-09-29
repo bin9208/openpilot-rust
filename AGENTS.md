@@ -1,5 +1,15 @@
 # Independent Rust port repository (2026-09-29)
 
+- User clarified the delivery gate on 2026-09-30: complete the entire project-owned
+  runtime conversion before asking for the first device test. The dev candidate
+  must run through normal startup and the existing log upload path, allowing
+  comparison against the original runtime. Isolated probes and individual daemon
+  ports are intermediate engineering evidence, not a device-test handoff.
+- Continue the approved full-runtime design autonomously through its implementation
+  stages. Do not connect to or test the user's C3X; the user performs the first
+  device comparison after the complete runtime candidate is ready. Keep unported
+  components and native external dependencies explicit in the inventory.
+
 - This checkout belongs to bin9208/openpilot-rust. Never push to bin9208/openpilot or ajouatom/openpilot.
 - User explicitly authorized isolated Rust development here. Work from dev on issue branches; PRs target dev. Older carrot-wip synchronization instructions below are historical source context and do not authorize synchronization from this repository.
 - Track the full runtime port in issue #1, M0 in #2, and isolated CI in #3. Retain original licensing and source provenance.
