@@ -261,6 +261,20 @@
           "docs/user/en/jetlink.md"
         ]
       ]
+    },
+    {
+      "id": "rust-runtime-port",
+      "enforcement": "required",
+      "description": "Experimental Rust CLI and runtime behavior",
+      "code_paths": [
+        "rust/crates/runtime-core/src/bin/**"
+      ],
+      "doc_sets": [
+        [
+          "docs/user/ko/rust-port.md",
+          "docs/user/en/rust-port.md"
+        ]
+      ]
     }
   ]
 }

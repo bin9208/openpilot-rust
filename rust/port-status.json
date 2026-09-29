@@ -1,0 +1,468 @@
+{
+  "source_repo": "https://github.com/bin9208/openpilot",
+  "source_commit": "f3a92524d87be714f6b8b5f44ecdc8319a8c53d1",
+  "scope": "Registered source processes, including conditional/disabled entries. Manager and libraries are tracked separately; not a claim of runtime coverage.",
+  "manager_status": "not_ported",
+  "processes": [
+    {
+      "name": "_pandad",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/selfdrive/pandad",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "beep",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.controls.beep",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "bridge",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/cereal/messaging",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "calibrationd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.locationd.calibrationd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "camerad",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/system/camerad",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "card",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.car.card",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "carrot_bluetooth",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.carrot.bluetooth.daemon",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "carrot_cluster",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.carrot.cluster_autorun",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "carrot_man",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.carrot.carrot_man",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "carrot_navi",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.carrot.carrot_navi",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "carrot_server",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.carrot.carrot_server",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "carrot_vision_encoderd",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/system/loggerd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "carrot_webrtcd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.webrtc.carrot_webrtcd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "controlsd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.controls.controlsd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "cweb_push",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.carrot.cweb_push",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "deleter",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.loggerd.deleter",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "dmonitoringd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.monitoring.dmonitoringd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "dmonitoringmodeld",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.modeld.dmonitoringmodeld",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "encoderd",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/system/loggerd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "feedbackd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.ui.feedback.feedbackd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "hardwared",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.hardware.hardwared",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "jetlinkd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.modeld.jetlink.daemon",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "journald",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.journald",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "joystick",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.tools.joystick.joystick_control",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "joystickd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.tools.joystick.joystickd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "lagd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.locationd.lagd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "lateral_maneuversd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.tools.lateral_maneuvers.lateral_maneuversd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "locationd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.locationd.locationd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "loggerd",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/system/loggerd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "logmessaged",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.logmessaged",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "manage_athenad",
+      "source_kind": "DaemonProcess",
+      "source_entrypoint": "openpilot.system.athena.manage_athenad",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "maneuversd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.tools.longitudinal_maneuvers.maneuversd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "micd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.micd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "modeld",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.modeld.modeld",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "modem",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.hardware.tici.modem",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "navd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.navd.navd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "pandad",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.pandad.pandad",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "paramsd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.locationd.paramsd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "pigeond",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.ubloxd.pigeond",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "plannerd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.controls.plannerd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "proclogd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.proclogd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "qcomgpsd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.qcomgpsd.qcomgpsd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "radarcan",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.carrot.radar.radarcan",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "radard",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.carrot.radar.radard_dpath",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "selfdrived",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.selfdrived.selfdrived",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "sensord",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.sensord.sensord",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "soundd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.ui.soundd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "statsd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.statsd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "stream_encoderd",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/system/loggerd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "timed",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.timed",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "tombstoned",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.tombstoned",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "torqued",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.locationd.torqued",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "ubloxd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.ubloxd.ubloxd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "ui",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.ui.ui",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "updated",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.updated.updated",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "webcamerad",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.tools.webcam.camerad",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "webjoystick",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.tools.bodyteleop.web",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "webrtcd",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.system.webrtc.webrtcd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "xiaoge_data",
+      "source_kind": "PythonProcess",
+      "source_entrypoint": "openpilot.selfdrive.carrot.xiaoge_data",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "youtube_encoderd",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/system/loggerd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "youtube_low_encoderd",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/system/loggerd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "youtube_medium_encoderd",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/system/loggerd",
+      "status": "not_ported",
+      "production_replaced": false
+    },
+    {
+      "name": "youtube_wide_encoderd",
+      "source_kind": "NativeProcess",
+      "source_entrypoint": "openpilot/system/loggerd",
+      "status": "not_ported",
+      "production_replaced": false
+    }
+  ],
+  "library_ports": [
+    {
+      "name": "FirstOrderFilter",
+      "status": "scalar_host_validated",
+      "production_replaced": false
+    },
+    {
+      "name": "BounceFilter",
+      "status": "scalar_host_validated",
+      "production_replaced": false
+    },
+    {
+      "name": "proc_stat_parser",
+      "status": "scalar_host_validated",
+      "production_replaced": false
+    }
+  ],
+  "device_validation": "not_run",
+  "performance_validation": "not_run"
+}
