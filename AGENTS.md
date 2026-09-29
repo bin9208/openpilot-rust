@@ -1,3 +1,13 @@
+# Independent Rust port repository (2026-09-29)
+
+- This checkout belongs to bin9208/openpilot-rust. Never push to bin9208/openpilot or ajouatom/openpilot.
+- User explicitly authorized isolated Rust development here. Work from dev on issue branches; PRs target dev. Older carrot-wip synchronization instructions below are historical source context and do not authorize synchronization from this repository.
+- Track the full runtime port in issue #1, M0 in #2, and isolated CI in #3. Retain original licensing and source provenance.
+- Read docs/rust-port/design.md, m0-plan.md and validation.md. Do not describe isolated libraries or host tests as a complete Rust runtime or measured CPU savings.
+- Preserve inherited fast checks, integration gate and check mapped user docs. Add rust checks and rust aarch64 build as PR requirements.
+- Do not activate inherited sync/publish workflows, change production daemon selection, or deploy generic host/cross-build artifacts to a vehicle as part of M0.
+- Experimental CLI user behavior is documented in paired docs/user/ko/rust-port.md and docs/user/en/rust-port.md.
+
 # Fork-specific workflow (bin9208/openpilot)
 
 - The owner's 2026-09-24 fork policy overrides historical upstream branch rules below.
