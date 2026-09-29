@@ -479,6 +479,13 @@
       "status": "native_ffi_host_validated",
       "implementation": "original C++ transport; not a Rust transport rewrite",
       "production_replaced": false
+    },
+    {
+      "name": "native_cpu_model_executor",
+      "status": "host_model_and_state_equivalence_validated",
+      "implementation": "Rust allocation and dispatch; build-time tinygrad C/LLVM math kernels; no Python runtime call",
+      "production_replaced": false,
+      "gpu_backend_validated": false
     }
   ],
   "device_validation": "not_run",
