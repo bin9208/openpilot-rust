@@ -305,7 +305,11 @@ dependencies = [
  "capnp",
  "num-traits",
  "openpilot-cereal",
+ "openpilot-msgq",
+ "openpilot-params",
  "openpilot-runtime-core",
+ "rustix",
+ "tempfile",
  "thiserror",
 ]
 

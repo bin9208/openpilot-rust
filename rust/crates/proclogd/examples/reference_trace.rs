@@ -10,6 +10,10 @@ use std::{
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
+    if args.get(1).is_some_and(|arg| arg == "--queue-size") {
+        println!("{}", openpilot_proclogd::PROC_LOG_QUEUE_SIZE);
+        return Ok(());
+    }
     if args.len() != 4 {
         return Err("usage: reference_trace PROC_ROOT TICKS_PER_SECOND PAGE_SIZE".into());
     }

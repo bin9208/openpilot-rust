@@ -172,6 +172,24 @@ impl Collector {
             } else {
                 ProportionalMemory::default()
             };
+            let stable = read_record(&dir.join("stat"))
+                .ok()
+                .and_then(|bytes| {
+                    std::str::from_utf8(&bytes)
+                        .ok()
+                        .and_then(ProcessStat::parse)
+                })
+                .is_some_and(|latest| {
+                    latest.pid == pid
+                        && latest.start_ticks == stat.start_ticks
+                        && latest.name == stat.name
+                });
+            if !stable {
+                seen.remove(&identity);
+                self.metadata.remove(&identity);
+                self.smaps.remove(&identity);
+                continue;
+            }
             if let Some(metadata) = self.metadata.get(&identity) {
                 processes.push(Process {
                     stat,

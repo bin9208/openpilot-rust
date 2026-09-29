@@ -2,6 +2,32 @@ use openpilot_runtime_core::procfs::Collector;
 use std::{fs, num::NonZeroU64, os::unix::fs::symlink, path::Path};
 use tempfile::TempDir;
 
+#[test]
+fn pid_reuse_during_metadata_read_does_not_publish_mixed_identity() {
+    use std::{io::Write, process::Command, thread};
+    let root = fixture();
+    let cmdline = root.path().join("123/cmdline");
+    fs::remove_file(&cmdline).unwrap();
+    assert!(Command::new("mkfifo")
+        .arg(&cmdline)
+        .status()
+        .unwrap()
+        .success());
+    let mut reader = collector(root.path());
+    thread::scope(|scope| {
+        let snapshot = scope.spawn(move || reader.snapshot().unwrap());
+        let mut writer = fs::OpenOptions::new().write(true).open(&cmdline).unwrap();
+        fs::write(
+            root.path().join("123/stat"),
+            stat(123, "worker ) (a", 999, 2000),
+        )
+        .unwrap();
+        writer.write_all(b"replacement\0").unwrap();
+        drop(writer);
+        assert!(snapshot.join().unwrap().processes.is_empty());
+    });
+}
+
 fn stat(pid: u32, name: &str, start: u64, rss: i64) -> String {
     let mut fields = vec!["0".to_owned(); 50];
     for (index, value) in [

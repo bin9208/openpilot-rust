@@ -16,14 +16,22 @@ pub struct Publisher {
 
 impl Publisher {
     pub fn new(endpoint: &str) -> Result<Self, Error> {
+        Self::with_capacity(endpoint, 1024 * 1024)
+    }
+
+    pub fn with_capacity(endpoint: &str, capacity: usize) -> Result<Self, Error> {
         Ok(Self {
-            queue: ffi::open_queue(endpoint, true, false)?,
+            queue: ffi::open_queue(endpoint, true, false, capacity)?,
             thread: PhantomData,
         })
     }
 
     pub fn send(&mut self, bytes: &[u8]) -> Result<(), Error> {
         Ok(self.queue.pin_mut().send(bytes)?)
+    }
+
+    pub fn readers_caught_up(&mut self) -> bool {
+        self.queue.pin_mut().readers_caught_up()
     }
 }
 
@@ -34,8 +42,12 @@ pub struct Subscriber {
 
 impl Subscriber {
     pub fn new(endpoint: &str, conflate: bool) -> Result<Self, Error> {
+        Self::with_capacity(endpoint, conflate, 1024 * 1024)
+    }
+
+    pub fn with_capacity(endpoint: &str, conflate: bool, capacity: usize) -> Result<Self, Error> {
         Ok(Self {
-            queue: ffi::open_queue(endpoint, false, conflate)?,
+            queue: ffi::open_queue(endpoint, false, conflate, capacity)?,
             thread: PhantomData,
         })
     }

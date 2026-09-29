@@ -79,7 +79,7 @@ Interfaces: `Params::open(root: &Path, prefix: &str) -> Result<Params, Error>`; 
 
 ### Task 5: Standalone producer, CI and device handoff
 
-Files: proclogd/src/main.rs; rust/tools device-probe/build helpers; .github/workflows/rust.yml; rust/port-status.json; rust/README.md; docs/rust-port/m1-validation.md; paired experimental CLI guides.
+Files: proclogd/src/main.rs; rust/tools device-probe/build helpers; .github/workflows/rust.yml; rust/port-status.json; rust/README.md; docs/rust-port/m1-validation.md; docs/rust-port/c3x-probe.md.
 
 Interfaces: an explicit bounded one-shot/file mode and isolated-namespace publish mode. Default cadence 2000 ms; a probe captures real Event.procLog messages with the canonical Python consumer and writes local results. No production manager selection change in this step.
 
@@ -94,3 +94,11 @@ Interfaces: an explicit bounded one-shot/file mode and isolated-namespace publis
 ## Self-review and execution decisions
 
 Tasks 1 -> 2 -> 5 share Snapshot; 3 -> 5 shares byte transport; 4 is independently exercised by the device probe. No task publishes to the production procLog namespace. The full runtime design remains unchanged; target execution is an explicit intermediate gate before replacing production processes. Native execution and one final review preserve the user's existing preference and autonomous authorization.
+
+Tasks 1-4 have passed their host tests and source/native reference comparisons.
+Task 5's executable and static candidate have passed host and emulated checks;
+independent review, exact-SHA CI, dev merge and post-merge checks remain before
+handoff. See m1-validation.md for the actual evidence and limitations.
+Under the repository's explicit user-documentation policy, the target probe is
+documented as a developer handoff here; this task does not change vehicle settings
+or edit the public Korean/English user guides.

@@ -35,6 +35,11 @@ fn isolated_transport() {
         assert!(Publisher::new(endpoint).is_err());
     }
     let mut publisher = Publisher::new("procLog").unwrap();
+    assert!(Publisher::new("procLog").is_err());
+    assert!(Publisher::with_capacity("procLog", 2 * 1024 * 1024).is_err());
+    for capacity in [0, 1, 65 * 1024 * 1024] {
+        assert!(Publisher::with_capacity("badCapacity", capacity).is_err());
+    }
     let mut subscriber = Subscriber::new("procLog", false).unwrap();
     let start = Instant::now();
     assert_eq!(subscriber.receive(Duration::from_millis(20)).unwrap(), None);

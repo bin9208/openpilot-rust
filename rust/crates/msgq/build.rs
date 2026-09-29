@@ -13,6 +13,7 @@ fn main() {
         .include("native")
         .include(root.join("msgq_repo"))
         .std("c++17")
+        .flag("-UNDEBUG")
         .compile("openpilot-msgq-bridge");
     let peer =
         PathBuf::from(env::var_os("OUT_DIR").expect("output directory")).join("native-msgq-peer");

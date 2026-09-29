@@ -14,7 +14,7 @@ fn seconds<T: ToPrimitive>(ticks: T, hz: f64) -> Result<f32, Error> {
         .ok_or(Error::OutOfRange("clock seconds"))
 }
 
-/// Encode the complete source ProcLog contract in an Event with a BOOTTIME timestamp.
+/// Encode the complete source ProcLog contract with the caller's monotonic timestamp.
 ///
 /// # Errors
 /// Returns a range error instead of wrapping a value narrower in the wire schema.

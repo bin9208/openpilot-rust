@@ -6,10 +6,13 @@ production process replacement or vehicle test is part of this preparation.
 
 ## Collector and wire format
 
-The collector adds nine synthetic procfs tests to the twelve existing core
+The collector adds ten synthetic procfs tests to the twelve existing core
 tests. They cover clock/page units, signed counters, command-line decoding,
 vanished and malformed processes, PID reuse, cache eviction, the twenty-cycle
 smaps refresh, small-process exclusion and rollup fallback.
+An additional FIFO-synchronized race reproduces PID reuse during metadata
+collection. Rechecking PID/start ticks/name before publishing prevents mixed
+identity and evicts the affected cache entries. This test failed before the fix.
 
 The cereal crate generates bindings from the complete original log, car,
 custom and deprecated schemas. capnpc 0.27.0 emits unused generic parameters
@@ -94,3 +97,40 @@ python tools/check_params_reference.py
 ```
 
 For rootless Cap'n Proto installations, supply `--capnp-prefix /path/to/usr`.
+
+## Bounded executable and target candidate
+
+Four CLI tests cover help/invalid arguments, production namespace refusal,
+bounded canonical file output, overwrite refusal, broken pipes and the actual
+temporary-Params/msgq self-test. The executable timestamps each sample before
+collection using CLOCK_MONOTONIC, matching Python messaging.new_message's
+time.monotonic clock and call order. Publication uses the source service's
+10 MiB queue; the reference check asserts the Rust constant against services.py.
+The bridge rejects an incompatible existing queue size before ftruncate and
+uses an exclusive flock to prevent two Rust publishers on one endpoint.
+Native consumers/publishers do not participate in that Rust publisher lock;
+the mandatory fresh isolated namespace protects the production publisher.
+
+The real Python cereal.messaging consumer received all ten host messages at
+the default 2000 ms cadence. The probe checks Event validity, increasing time,
+nonempty CPU/memory/process data and the producer's PID. Its report contains
+counts and timing, never raw process identities or command lines.
+
+Rust 1.94.0 with cargo-zigbuild 0.23.4/Zig 0.16.0 builds the static aarch64-musl
+candidate. ELF inspection confirms AArch64, no interpreter and no dynamic
+dependencies. QEMU 8.2 executes its temporary Params and msgq self-test, then
+sends three synthetic procLog messages to the real x86_64 Python/msgq consumer.
+This checks cross-architecture shared-memory/wire layout, not AGNOS behavior.
+
+Trying the native device probe under QEMU exposed QEMU's synthetic 44-field
+self stat, which both source Python and Rust intentionally reject as truncated.
+A procfs symlink also resolves to that emulated view. The real device probe's
+producer-PID assertion remains intact; a separate emulator check uses complete
+synthetic procfs fixtures. No parser or device acceptance check was weakened.
+See QEMU's [open_self_stat implementation](https://gitlab.com/qemu-project/qemu/-/blob/v8.2.2/linux-user/syscall.c).
+
+CI retains the generic GNU aarch64 build and adds the static candidate with
+SOURCE_COMMIT and SHA256SUMS. The candidate's QEMU result explicitly records
+`device_validation: not_run`. Required pre-merge and separate post-merge checks
+must pass at the exact reviewed SHA. C3X execution remains with the user under
+the [probe procedure](c3x-probe.md); issues #1 and #5 remain open.

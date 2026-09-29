@@ -10,6 +10,7 @@ import ast
 import builtins
 import logging
 import os
+import runpy
 from pathlib import Path
 import subprocess
 import tempfile
@@ -49,6 +50,8 @@ def make_process(root: Path, pid: int, rss: int) -> None:
 
 
 def check(binary: Path) -> None:
+  services = runpy.run_path(str(ROOT / "openpilot/cereal/services.py"))["SERVICE_LIST"]
+  assert int(subprocess.check_output([str(binary), "--queue-size"])) == services["procLog"].queue_size
   schema = capnp.load(str(ROOT / "openpilot/cereal/log.capnp"),
                       imports=[str(ROOT / "openpilot/cereal"), str(ROOT / "opendbc_repo/opendbc/car")])
   original = reference()
