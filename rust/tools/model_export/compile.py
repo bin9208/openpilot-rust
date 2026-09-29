@@ -11,11 +11,12 @@ from pathlib import Path
 from tinygrad import TinyJit
 
 from .capture import capture_cpu
-from .schema import Bindings, Manifest
+from .schema import Bindings, Entrypoint, Manifest, entrypoint_version
 
 
-def export_cpu(jit: TinyJit, bindings: Bindings, destination: Path) -> None:
+def export_cpu(jit: TinyJit, bindings: Bindings, destination: Path, *, entrypoints: tuple[Entrypoint, ...] = ()) -> None:
     captured = capture_cpu(jit, bindings)
+    version = entrypoint_version(entrypoints, len(captured.calls))
     destination.mkdir(parents=True, exist_ok=False)
     source = destination / "kernels.c"
     source.write_text("#include <stdint.h>\n#include <string.h>\n" + "\n".join(captured.wrappers))
@@ -32,6 +33,9 @@ def export_cpu(jit: TinyJit, bindings: Bindings, destination: Path) -> None:
                     str(source), *objects, "-o", str(library), "-lm"], check=True)
     (destination / "weights.bin").write_bytes(captured.weights)
     arch = {"arm64": "aarch64", "AMD64": "x86_64"}.get(platform.machine(), platform.machine())
-    manifest = Manifest(1, captured.backend, arch, hashlib.sha256(captured.weights).hexdigest(), hashlib.sha256(library.read_bytes()).hexdigest(),
-                        captured.allocations, captured.views, captured.inputs, captured.outputs, captured.kernels, captured.calls)
-    (destination / "graph.json").write_text(json.dumps(asdict(manifest), indent=2) + "\n")
+    manifest = Manifest(version, captured.backend, arch, hashlib.sha256(captured.weights).hexdigest(), hashlib.sha256(library.read_bytes()).hexdigest(),
+                        captured.allocations, captured.views, captured.inputs, captured.outputs, captured.kernels, captured.calls, entrypoints)
+    serialized = asdict(manifest)
+    if not entrypoints:
+        del serialized["entrypoints"]
+    (destination / "graph.json").write_text(json.dumps(serialized, indent=2) + "\n")

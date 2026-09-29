@@ -1,4 +1,4 @@
-use crate::{assets::read_verified, buffer::Buffer, graph::Binding, Error, Graph};
+use crate::{assets::read_verified, buffer::Buffer, entrypoint, graph::Binding, Error, Graph};
 use libloading::Library;
 use std::{ffi::c_void, fs, io::Read, path::Path};
 
@@ -122,7 +122,17 @@ impl CpuModel {
     }
 
     pub fn run(&mut self) {
-        for call in &mut self.calls {
+        Self::execute(&mut self.calls);
+    }
+
+    pub fn run_entry(&mut self, name: &str) -> Result<(), Error> {
+        let entry = &self.graph.entrypoints[entrypoint::find(&self.graph.entrypoints, name)?];
+        Self::execute(&mut self.calls[entry.range()]);
+        Ok(())
+    }
+
+    fn execute(calls: &mut [Invocation]) {
+        for call in calls {
             for worker in 0..call.workers {
                 if let Some(index) = call.core_id {
                     call.scalars[index] = i32::from(worker);

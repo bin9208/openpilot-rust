@@ -486,6 +486,14 @@
       "implementation": "Rust allocation and dispatch; build-time tinygrad C/LLVM math kernels; no Python runtime call",
       "production_replaced": false,
       "gpu_backend_validated": false
+    },
+    {
+      "name": "native_qcom_model_executor",
+      "status": "host_argument_packet_and_ownership_validated",
+      "implementation": "Rust QCOMCL a630 artifact parser, KGSL allocation and submission; original generated GPU kernels; no Python runtime call",
+      "production_replaced": false,
+      "gpu_backend_validated": false,
+      "evidence": "docs/rust-port/qcom-runtime-validation.md"
     }
   ],
   "device_validation": "not_run",
