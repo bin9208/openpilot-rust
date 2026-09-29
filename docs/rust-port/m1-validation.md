@@ -6,13 +6,18 @@ production process replacement or vehicle test is part of this preparation.
 
 ## Collector and wire format
 
-The collector adds ten synthetic procfs tests to the twelve existing core
+The collector adds eleven synthetic procfs tests to the twelve existing core
 tests. They cover clock/page units, signed counters, command-line decoding,
 vanished and malformed processes, PID reuse, cache eviction, the twenty-cycle
 smaps refresh, small-process exclusion and rollup fallback.
 An additional FIFO-synchronized race reproduces PID reuse during metadata
 collection. Rechecking PID/start ticks/name before publishing prevents mixed
 identity and evicts the affected cache entries. This test failed before the fix.
+Independent review also reproduced loss of valid smaps counters when a mapping
+filename contains non-UTF-8 bytes. Byte-oriented parsing preserves those
+counters, matching source Python; the regression failed with PSS=0 before the
+fix and passes with PSS=51200. The Python oracle now covers both smaps_rollup
+and fallback smaps, including that filename, for 22 cycles each.
 
 The cereal crate generates bindings from the complete original log, car,
 custom and deprecated schemas. capnpc 0.27.0 emits unused generic parameters

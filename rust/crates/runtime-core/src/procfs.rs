@@ -319,17 +319,23 @@ fn read_memory(path: &Path) -> io::Result<Memory> {
 
 fn read_smaps(path: &Path) -> io::Result<ProportionalMemory> {
     let mut memory = ProportionalMemory::default();
-    for line in BufReader::new(File::open(path)?).lines() {
+    for line in BufReader::new(File::open(path)?).split(b'\n') {
         let line = line?;
-        let mut fields = line.split_whitespace();
+        let mut fields = line
+            .split(u8::is_ascii_whitespace)
+            .filter(|field| !field.is_empty());
         let target = match fields.next() {
-            Some("Pss:") => &mut memory.pss,
-            Some("Pss_Anon:") => &mut memory.anon,
-            Some("Pss_Shmem:") => &mut memory.shared,
+            Some(b"Pss:") => &mut memory.pss,
+            Some(b"Pss_Anon:") => &mut memory.anon,
+            Some(b"Pss_Shmem:") => &mut memory.shared,
             _ => continue,
         };
         *target = target
-            .checked_add(kilobytes(fields.next())?)
+            .checked_add(kilobytes(
+                fields
+                    .next()
+                    .and_then(|value| std::str::from_utf8(value).ok()),
+            )?)
             .ok_or_else(invalid_record)?;
     }
     Ok(memory)

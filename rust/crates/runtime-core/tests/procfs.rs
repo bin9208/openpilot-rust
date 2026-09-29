@@ -214,6 +214,19 @@ fn per_mapping_smaps_fallback_sums_only_supported_counters() {
 }
 
 #[test]
+fn non_utf8_mapping_names_do_not_discard_valid_smaps_counters() {
+    let root = fixture();
+    fs::remove_file(root.path().join("123/smaps_rollup")).unwrap();
+    fs::write(root.path().join("123/smaps"), b"1000-2000 r--p 00000000 00:00 0 /synthetic/\xff\nPss: 50 kB\nPss_Anon: 30 kB\nPss_Shmem: 10 kB\n").unwrap();
+
+    let snapshot = collector(root.path()).snapshot().unwrap();
+
+    assert_eq!(snapshot.processes[0].proportional.pss, 51200);
+    assert_eq!(snapshot.processes[0].proportional.anon, 30720);
+    assert_eq!(snapshot.processes[0].proportional.shared, 10240);
+}
+
+#[test]
 fn missing_system_files_leave_explicit_warnings_and_do_not_hide_processes() {
     let root = fixture();
     fs::remove_file(root.path().join("stat")).unwrap();
