@@ -11,6 +11,28 @@ class ExportError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
+class Entrypoint:
+    name: str
+    start: int
+    end: int
+
+
+def entrypoint_version(entries: tuple[Entrypoint, ...], calls: int) -> int:
+    if not entries:
+        return 1
+    names: set[str] = set()
+    end = 0
+    for entry in entries:
+        if not entry.name or entry.name in names or entry.start != end or not entry.start <= entry.end <= calls:
+            raise ExportError("entrypoints must partition every emitted call")
+        names.add(entry.name)
+        end = entry.end
+    if end != calls or len(entries) > 65536:
+        raise ExportError("entrypoints must cover every emitted call")
+    return 2
+
+
+@dataclass(frozen=True, slots=True)
 class Bindings:
     inputs: Mapping[str, Tensor]
     outputs: Mapping[str, Tensor]
@@ -78,3 +100,4 @@ class Manifest:
     outputs: tuple[Binding, ...]
     kernels: tuple[Kernel, ...]
     calls: tuple[Call, ...]
+    entrypoints: tuple[Entrypoint, ...]

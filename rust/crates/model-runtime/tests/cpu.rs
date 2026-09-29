@@ -176,3 +176,49 @@ fn cli_replays_multiple_frames_in_one_native_process() {
         33.0_f32.to_le_bytes()
     );
 }
+
+#[test]
+fn cli_named_stages_share_state_and_skip_unselected_calls() {
+    let (dir, mut graph) = bundle();
+    graph["version"] = json!(2);
+    graph["entrypoints"] = json!([
+        {"name":"update", "start":0, "end":1},
+        {"name":"sum", "start":1, "end":2},
+        {"name":"empty", "start":2, "end":2}
+    ]);
+    save_graph(dir.path(), &graph);
+    let sequence = json!([
+        {"entrypoint":"update", "inputs":{}, "outputs":{"sum":"before.bin"}},
+        {"entrypoint":"empty", "inputs":{}, "outputs":{}},
+        {"entrypoint":"sum", "inputs":{}, "outputs":{"sum":"after.bin"}},
+        {"entrypoint":"sum", "inputs":{}, "outputs":{"sum":"again.bin"}}
+    ]);
+    fs::write(
+        dir.path().join("sequence.json"),
+        serde_json::to_vec(&sequence).unwrap(),
+    )
+    .unwrap();
+    let result = Command::new(env!("CARGO_BIN_EXE_model-run"))
+        .arg("--trusted-bundle")
+        .arg(dir.path())
+        .arg(dir.path().join("sequence.json"))
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(
+        fs::read(dir.path().join("before.bin")).unwrap(),
+        0.0_f32.to_le_bytes()
+    );
+    assert_eq!(
+        fs::read(dir.path().join("after.bin")).unwrap(),
+        6.0_f32.to_le_bytes()
+    );
+    assert_eq!(
+        fs::read(dir.path().join("again.bin")).unwrap(),
+        6.0_f32.to_le_bytes()
+    );
+}

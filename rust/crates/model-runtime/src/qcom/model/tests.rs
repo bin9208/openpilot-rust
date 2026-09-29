@@ -15,10 +15,11 @@ impl Memory for HostMemory {
     }
 }
 
-struct HostDriver(Rc<Cell<u32>>);
+struct HostDriver(Rc<Cell<u32>>, Rc<Cell<usize>>);
 impl Driver for HostDriver {
     type Memory = HostMemory;
     fn allocate(&mut self, size: usize) -> io::Result<HostMemory> {
+        self.1.set(self.1.get() + 1);
         Ok(HostMemory(vec![0xa5; size]))
     }
     fn submit(&mut self, _address: u64, _size: usize) -> io::Result<u32> {
@@ -48,7 +49,11 @@ fn model_preserves_aliases_copies_and_state_between_runs() {
         weights: (1..=16).collect(),
     };
     let submissions = Rc::new(Cell::new(0));
-    let mut model = Model::new(bundle, HostDriver(submissions.clone())).unwrap();
+    let mut model = Model::new(
+        bundle,
+        HostDriver(submissions.clone(), Rc::new(Cell::new(0))),
+    )
+    .unwrap();
     assert_eq!(model.read_output("copy").unwrap(), &[0; 8]);
     model.run().unwrap();
     assert_eq!(
@@ -77,7 +82,9 @@ fn model_preserves_aliases_copies_and_state_between_runs() {
 fn cpu_copy_splits_gpu_batches_and_repeated_runs_reuse_the_program() {
     let binary = include_bytes!("../../../tests/fixtures/qcom/buffer_add.bin");
     let graph = QcomGraph::parse(&serde_json::to_vec(&serde_json::json!({
-        "version":1,"backend":"qcom-cl","arch":"a630","weights_sha256":"00".repeat(32),
+        "version":2,"backend":"qcom-cl","arch":"a630","weights_sha256":"00".repeat(32),
+        "entrypoints":[{"name":"prepare","start":0,"end":1},{"name":"policy","start":1,"end":3},
+            {"name":"empty","start":3,"end":3}],
         "allocations":[{"bytes":64,"weight_offset":null}],
         "views":[{"allocation":0,"offset":0,"bytes":32},{"allocation":0,"offset":32,"bytes":32}],
         "inputs":[{"name":"input","view":0}],"outputs":[{"name":"copy","view":1}],
@@ -89,13 +96,14 @@ fn cpu_copy_splits_gpu_batches_and_repeated_runs_reuse_the_program() {
     })).unwrap()).unwrap();
     let program = ProgramImage::parse("buffer_add", binary).unwrap();
     let submissions = Rc::new(Cell::new(0));
+    let allocations = Rc::new(Cell::new(0));
     let mut model = Model::new(
         QcomBundle {
             graph,
             programs: vec![program],
             weights: vec![],
         },
-        HostDriver(submissions.clone()),
+        HostDriver(submissions.clone(), allocations.clone()),
     )
     .unwrap();
     assert_eq!(model.steps.len(), 3);
@@ -105,4 +113,16 @@ fn cpu_copy_splits_gpu_batches_and_repeated_runs_reuse_the_program() {
         assert_eq!(model.read_output("copy").unwrap(), &[value; 32]);
     }
     assert_eq!(submissions.get(), 4);
+    model.write_input("input", &[93; 32]).unwrap();
+    let allocation_count = allocations.get();
+    model.run_entry("prepare").unwrap();
+    assert_eq!(submissions.get(), 5);
+    assert_eq!(model.read_output("copy").unwrap(), &[73; 32]);
+    model.run_entry("empty").unwrap();
+    assert!(model.run_entry("missing").is_err());
+    assert_eq!(submissions.get(), 5);
+    model.run_entry("policy").unwrap();
+    assert_eq!(submissions.get(), 6);
+    assert_eq!(model.read_output("copy").unwrap(), &[93; 32]);
+    assert_eq!(allocations.get(), allocation_count);
 }

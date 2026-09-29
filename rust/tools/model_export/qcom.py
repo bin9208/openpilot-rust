@@ -16,7 +16,7 @@ from tinygrad.uop.ops import Ops
 
 from .buffers import BufferTable
 from .binding_order import ordered_inputs
-from .schema import Allocation, Binding, Bindings, ExportError, View
+from .schema import Allocation, Binding, Bindings, Entrypoint, ExportError, View, entrypoint_version
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +70,7 @@ class Manifest:
     outputs: tuple[Binding, ...]
     kernels: tuple[Kernel, ...]
     calls: tuple[KernelCall | CopyCall, ...]
+    entrypoints: tuple[Entrypoint, ...]
 
 
 def qcom_buffer(buffer: Buffer | MultiBuffer) -> Buffer:
@@ -78,7 +79,7 @@ def qcom_buffer(buffer: Buffer | MultiBuffer) -> Buffer:
     return buffer
 
 
-def export_qcom(jit: TinyJit, bindings: Bindings, destination: Path) -> None:
+def export_qcom(jit: TinyJit, bindings: Bindings, destination: Path, *, entrypoints: tuple[Entrypoint, ...] = ()) -> None:
     captured = jit.captured
     if captured is None:
         raise ExportError("JIT must be captured before export")
@@ -164,9 +165,12 @@ def export_qcom(jit: TinyJit, bindings: Bindings, destination: Path) -> None:
             table.write(buffers[index])
         calls.append(KernelCall(kernel_ids[kernel], tuple(table.view(buffers[index]) for index in info.globals), (), info.global_size, local))
     allocations, weights = table.weights()
-    manifest = Manifest(1, "qcom-cl", "a630", hashlib.sha256(weights).hexdigest(), allocations, tuple(table.views),
-                        tuple(input_bindings), tuple(output_bindings), tuple(kernels), tuple(calls))
+    version = entrypoint_version(entrypoints, len(calls))
+    manifest = Manifest(version, "qcom-cl", "a630", hashlib.sha256(weights).hexdigest(), allocations, tuple(table.views),
+                        tuple(input_bindings), tuple(output_bindings), tuple(kernels), tuple(calls), entrypoints)
     serialized = asdict(manifest)
+    if not entrypoints:
+        del serialized["entrypoints"]
     for call in serialized["calls"]:
         if "global_" in call:
             call["global"] = call.pop("global_")

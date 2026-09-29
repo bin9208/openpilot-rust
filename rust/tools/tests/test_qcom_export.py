@@ -16,6 +16,7 @@ from tinygrad.uop.ops import Ops, ProgramInfo, UOp
 
 from model_export import Bindings, ExportError
 from model_export.qcom import export_qcom
+from model_export.schema import Entrypoint
 
 
 def captured_qcom(monkeypatch):
@@ -38,12 +39,15 @@ def captured_qcom(monkeypatch):
     return jit, state
 
 
-def test_qcom_capture_preserves_kernel_bytes_and_aliased_storage(monkeypatch, tmp_path):
+@pytest.mark.parametrize("entries", [(), (Entrypoint("prepare", 0, 0), Entrypoint("model", 0, 1))])
+def test_qcom_capture_preserves_kernel_bytes_and_aliased_storage(monkeypatch, tmp_path, entries):
     jit, state = captured_qcom(monkeypatch)
     destination = tmp_path / "bundle"
-    export_qcom(jit, Bindings({"state": state}, {"output": state}), destination)
+    export_qcom(jit, Bindings({"state": state}, {"output": state}), destination, entrypoints=entries)
     graph = json.loads((destination / "graph.json").read_text())
     assert graph["backend"] == "qcom-cl"
+    assert graph["version"] == (2 if entries else 1)
+    assert ("entrypoints" in graph) == bool(entries)
     assert len(graph["allocations"]) == 1
     assert graph["inputs"][0]["view"] == graph["outputs"][0]["view"]
     assert graph["calls"][0]["views"] == [0, 0]

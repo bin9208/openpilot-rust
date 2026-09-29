@@ -3,7 +3,10 @@ mod assets;
 #[cfg(any(feature = "native-skip-miri", test))]
 mod buffer;
 #[cfg(feature = "native-skip-miri")]
+pub mod catalog;
+#[cfg(feature = "native-skip-miri")]
 mod cpu;
+mod entrypoint;
 mod error;
 mod graph;
 pub mod qcom;

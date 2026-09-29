@@ -48,6 +48,8 @@ jobs:
       - run: ./tools/op.sh setup
       - name: Build openpilot
         run: scons
+      - name: Convert the original build artifacts to native model pipelines
+        run: scons native_models
       - name: Check passive camera SOF diagnostics
         run: openpilot/system/camerad/test/test_camera_event_timing
       - name: Check coherent OS04C10 exposure updates
