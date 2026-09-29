@@ -69,3 +69,28 @@ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libasan.so.8 \
 ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
 /tmp/rust-msgq-asan/debug/deps/transport-<hash> --nocapture
 ```
+
+## Params raw storage
+
+The Rust registry is generated from the original params.h/params_keys.h and
+the canonical LongitudinalPersonality enum. Unknown syntax, flags, types,
+defaults and duplicate keys fail generation. Raw reads distinguish a missing
+file (`None`) from a present empty file (`Some([])`); Python callers that treat
+both as missing must preserve that policy in their eventual adapter.
+
+Synthetic storage tests pass for binary/empty/missing values, key/prefix
+validation, existing native symlinks, clear masks and unknown-file cleanup,
+and concurrent atomic writers. The original C++ Params and util translation
+units are compiled as the reference. Only their logging sink is replaced by
+stderr; storage, locking, metadata and filesystem behavior are original code.
+Full catalogs match. Both implementations read the other's 256 KiB binary
+value, observe empty writes, remove each other's values, honor clear flags,
+and block on the same flock before publishing. The native constructor also
+creates the namespace consumed by Rust.
+
+```sh
+cargo build -p openpilot-params --example store --locked
+python tools/check_params_reference.py
+```
+
+For rootless Cap'n Proto installations, supply `--capnp-prefix /path/to/usr`.
