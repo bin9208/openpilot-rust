@@ -1,0 +1,103 @@
+{
+  "structs": {
+    "devinfo": {
+      "size": 40,
+      "fields": {
+        "device_id": 0,
+        "chip_id": 4,
+        "mmu_enabled": 8,
+        "gmem_gpubaseaddr": 16,
+        "gpu_id": 24,
+        "gmem_sizebytes": 32
+      }
+    },
+    "device_getproperty": {
+      "size": 24,
+      "fields": {
+        "type": 0,
+        "value": 8,
+        "sizebytes": 16
+      }
+    },
+    "device_waittimestamp_ctxtid": {
+      "size": 12,
+      "fields": {
+        "context_id": 0,
+        "timestamp": 4,
+        "timeout": 8
+      }
+    },
+    "drawctxt_create": {
+      "size": 8,
+      "fields": {
+        "flags": 0,
+        "drawctxt_id": 4
+      }
+    },
+    "drawctxt_destroy": {
+      "size": 4,
+      "fields": {
+        "drawctxt_id": 0
+      }
+    },
+    "gpuobj_alloc": {
+      "size": 48,
+      "fields": {
+        "size": 0,
+        "flags": 8,
+        "va_len": 16,
+        "mmapsize": 24,
+        "id": 32,
+        "metadata_len": 36,
+        "metadata": 40
+      }
+    },
+    "gpuobj_free": {
+      "size": 32,
+      "fields": {
+        "flags": 0,
+        "priv": 8,
+        "id": 16,
+        "type": 20,
+        "len": 24
+      }
+    },
+    "command_object": {
+      "size": 32,
+      "fields": {
+        "offset": 0,
+        "gpuaddr": 8,
+        "size": 16,
+        "flags": 24,
+        "id": 28
+      }
+    },
+    "gpu_command": {
+      "size": 64,
+      "fields": {
+        "flags": 0,
+        "cmdlist": 8,
+        "cmdsize": 16,
+        "numcmds": 20,
+        "objlist": 24,
+        "objsize": 32,
+        "numobjs": 36,
+        "synclist": 40,
+        "syncsize": 48,
+        "numsyncs": 52,
+        "context_id": 56,
+        "timestamp": 60
+      }
+    }
+  },
+  "ioctls": {
+    "DEVICE_GETPROPERTY": 3222800642,
+    "DEVICE_WAITTIMESTAMP_CTXTID": 1074530567,
+    "DRAWCTXT_CREATE": 3221752083,
+    "DRAWCTXT_DESTROY": 1074006292,
+    "GPUOBJ_ALLOC": 3224373573,
+    "GPUOBJ_FREE": 1075841350,
+    "GPU_COMMAND": 3225422154,
+    "SETPROPERTY": 1075317042
+  }
+}

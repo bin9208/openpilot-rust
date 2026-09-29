@@ -10,6 +10,11 @@ pub enum Error {
     Limit(&'static str),
     #[error("model I/O: {0}")]
     Io(#[from] std::io::Error),
+    #[error("GPU execution failed: {execution}; cleanup also failed: {cleanup}")]
+    GpuCleanup {
+        execution: std::io::Error,
+        cleanup: std::io::Error,
+    },
     #[error("model asset checksum mismatch: {0}")]
     Checksum(&'static str),
     #[error("model buffer allocation failed")]

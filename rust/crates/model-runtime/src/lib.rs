@@ -6,6 +6,7 @@ mod buffer;
 mod cpu;
 mod error;
 mod graph;
+pub mod qcom;
 
 #[cfg(feature = "native-skip-miri")]
 pub use cpu::CpuModel;

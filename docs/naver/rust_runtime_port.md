@@ -12,3 +12,7 @@ Native model execution is tracked in
 CPU library/model comparisons are intermediate implementation evidence. The user
 requested the first device handoff only after the whole runtime can start, log
 and use the existing upload flow for comparison with the original implementation.
+
+The [native QCOM ledger](../rust-port/qcom-runtime-validation.md) records the
+kernel/argument/packet oracle, KGSL ABI and lifetime checks, and remaining GPU
+acceptance. Backend code and host tests do not complete the full runtime gate.

@@ -40,6 +40,8 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
+      - name: Compare QCOM fixtures with the original argument and packet encoder
+        run: python tools/qcom_fixtures.py --verify crates/model-runtime/tests/fixtures/qcom
       - name: Compare captured graphs and original camera warps with Rust
         run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests -q
       - name: Fetch the pinned model from this independent repository
@@ -89,11 +91,11 @@ jobs:
       - name: Check Rust allocation and aliasing on ARM with Miri
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-backtrace=full
-        run: cargo +nightly-2026-09-29 miri test -p openpilot-model-runtime --locked --no-default-features --target aarch64-unknown-linux-gnu
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-model-runtime --lib --test graph --locked --no-default-features --target aarch64-unknown-linux-gnu
       - name: Check Rust allocation and aliasing with Tree Borrows
         env:
           MIRIFLAGS: -Zmiri-tree-borrows -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-backtrace=full
-        run: cargo +nightly-2026-09-29 miri test -p openpilot-model-runtime --locked --no-default-features --target aarch64-unknown-linux-gnu
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-model-runtime --lib --test graph --locked --no-default-features --target aarch64-unknown-linux-gnu
       - name: Check the real Rust and C kernel boundary with ASan
         env:
           MODEL_TEST_ASAN: '1'
