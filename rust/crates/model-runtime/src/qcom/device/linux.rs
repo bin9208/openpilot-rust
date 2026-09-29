@@ -108,7 +108,7 @@ impl Linux {
             ));
         }
         // SAFETY: Payload is private and implemented only for integer-only repr(C) ABI structs; nested pointers live through this call.
-        let result = unsafe { libc::ioctl(self.file()?.as_raw_fd(), request, payload as *mut T) };
+        let result = unsafe { libc::ioctl(self.file()?.as_raw_fd(), request as _, payload as *mut T) };
         if result < 0 {
             Err(io::Error::last_os_error())
         } else {

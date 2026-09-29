@@ -95,3 +95,10 @@ The preceding CPU increment is merged at
 [Rust checks](https://github.com/bin9208/openpilot-rust/actions/runs/36630367354)
 and [integration gate](https://github.com/bin9208/openpilot-rust/actions/runs/36630367871)
 both passed. QCOM head/merge CI is tracked separately in its PR; #1 and #6 stay open.
+
+The initial QCOM ARM run found a musl-only compile error in the ioctl call:
+libc declares the request as `int` on musl and `unsigned long` on GNU. The call
+now converts the checked 32-bit request pattern to the platform's argument type;
+the serialized KGSL request numbers remain unchanged. The failed
+[ARM job](https://github.com/bin9208/openpilot-rust/actions/runs/36636081912/job/109637350024)
+is retained as regression evidence; the corrected head must pass both targets.
