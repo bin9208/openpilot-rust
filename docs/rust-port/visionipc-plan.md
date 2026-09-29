@@ -15,7 +15,7 @@ integration task and must retain the mapping until GPU completion.
 ## Implementation and checks
 
 - [x] Extend the existing msgq crate with a typed stream enum, frame metadata,
-  nonblocking discovery/connect, bounded receive timeout and frame copy API.
+  single-attempt discovery/connect, bounded receive timeout and frame copy API.
   Keep native code behind `native-skip-miri`; keep clients confined to one thread.
 - [x] Add tests first using an original native VisionIpcServer child process.
   Verify missing server, all stream identifiers, padded NV12 bytes/metadata,
@@ -31,6 +31,8 @@ integration task and must retain the mapping until GPU completion.
 The native library assumes a trusted local VisionIPC server and may abort on
 malformed protocol messages. This boundary preserves that existing trust model;
 it is not a parser for adversarial servers. No Python process runs in this API.
+Single-attempt connection disables retries, but the original Unix socket
+handshake still blocks while waiting for a responsive trusted server.
 Production process selection and device state are unchanged by this increment.
 
 ## Host evidence (2026-09-30)
