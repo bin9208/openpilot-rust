@@ -288,7 +288,9 @@
       "name": "proclogd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.proclogd",
-      "status": "not_ported",
+      "status": "isolated_host_validated_pending_device",
+      "native_dependencies": ["original msgq through CXX"],
+      "runtime_scope": "bounded diagnostic producer; not selected by manager",
       "production_replaced": false
     },
     {
@@ -460,6 +462,22 @@
     {
       "name": "proc_stat_parser",
       "status": "scalar_host_validated",
+      "production_replaced": false
+    },
+    {
+      "name": "procfs_collector_and_cereal_encoder",
+      "status": "host_reference_validated",
+      "production_replaced": false
+    },
+    {
+      "name": "Params_raw_storage",
+      "status": "native_host_interoperability_validated",
+      "production_replaced": false
+    },
+    {
+      "name": "msgq_ownership_boundary",
+      "status": "native_ffi_host_validated",
+      "implementation": "original C++ transport; not a Rust transport rewrite",
       "production_replaced": false
     }
   ],

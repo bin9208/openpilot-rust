@@ -26,11 +26,21 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
-      - run: python -m pip install numpy==2.4.6
+      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++
+      - run: python -m pip install numpy==2.4.6 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
       - run: python tools/check_reference.py
+      - run: cargo build --workspace --examples --locked
+      - run: python tools/check_proclog_reference.py
+      - run: python tools/check_params_reference.py
+      - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
+      - name: Run the actual Python consumer against the bounded Rust producer
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/device_probe.py \
+            --binary target/debug/openpilot-proclogd --frames 3 --interval-ms 100 --report "$RUNNER_TEMP/host-probe.json"
+      - run: python tools/check_msgq_sanitizers.py --target-dir "$RUNNER_TEMP/rust-msgq-asan"
       - run: cargo build --workspace --release --locked
       - run: target/release/cpu-sample 1000 > cpu-sample.tsv
       - uses: actions/upload-artifact@v6
@@ -38,7 +48,8 @@ jobs:
           name: rust-linux-x86_64
           path: |
             rust/target/release/cpu-sample
-            rust/cpu-sample.tsv
+            rust/target/release/openpilot-proclogd
+            ${{ runner.temp }}/host-probe.json
   arm64:
     name: rust aarch64 build
     if: github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
@@ -48,7 +59,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static
       - name: Build generic Linux aarch64 artifact (not AGNOS validation)
         working-directory: rust
         env:
@@ -58,6 +72,26 @@ jobs:
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
           cargo build --workspace --release --locked --target aarch64-unknown-linux-gnu
           file target/aarch64-unknown-linux-gnu/release/cpu-sample
+      - name: Build and inspect the static C3X probe candidate
+        working-directory: rust
+        run: |
+          python -m pip install cargo-zigbuild==0.23.4 ziglang==0.16.0 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0
+          rustup target add --toolchain 1.94.0 aarch64-unknown-linux-musl
+          cargo zigbuild --workspace --release --locked --target aarch64-unknown-linux-musl
+          python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_aarch64.py \
+            --binary target/aarch64-unknown-linux-musl/release/openpilot-proclogd \
+            --runner /usr/bin/qemu-aarch64-static --report "$RUNNER_TEMP/aarch64-probe.json"
+          mkdir -p target/c3x-probe
+          cp target/aarch64-unknown-linux-musl/release/openpilot-proclogd target/c3x-probe/
+          git rev-parse HEAD > target/c3x-probe/SOURCE_COMMIT
+          cp "$RUNNER_TEMP/aarch64-probe.json" target/c3x-probe/
+          cd target/c3x-probe
+          sha256sum openpilot-proclogd SOURCE_COMMIT aarch64-probe.json > SHA256SUMS
+      - uses: actions/upload-artifact@v6
+        with:
+          name: rust-c3x-static-probe-pending-device-test
+          path: rust/target/c3x-probe/
       - uses: actions/upload-artifact@v6
         with:
           name: rust-linux-aarch64-not-device-validated
