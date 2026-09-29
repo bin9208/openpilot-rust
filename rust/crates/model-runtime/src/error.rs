@@ -21,6 +21,8 @@ pub enum Error {
     Allocation,
     #[error("unknown model binding: {0}")]
     Binding(String),
+    #[error("unknown model entrypoint: {0}")]
+    Entrypoint(String),
     #[error("model binding requires {expected} bytes, received {actual}")]
     Size { expected: usize, actual: usize },
     #[cfg(feature = "native-skip-miri")]

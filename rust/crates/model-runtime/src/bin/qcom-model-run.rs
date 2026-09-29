@@ -5,6 +5,7 @@ use std::{collections::BTreeMap, env, error::Error, fs, path::PathBuf, process::
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Frame {
+    entrypoint: Option<String>,
     inputs: BTreeMap<String, PathBuf>,
     outputs: BTreeMap<String, PathBuf>,
 }
@@ -52,7 +53,10 @@ fn run() -> Result<(), Box<dyn Error>> {
             for (name, path) in frame.inputs {
                 model.write_input(&name, &fs::read(parent.join(path))?)?;
             }
-            model.run()?;
+            match frame.entrypoint {
+                Some(name) => model.run_entry(&name)?,
+                None => model.run()?,
+            }
             for (name, path) in frame.outputs {
                 fs::write(parent.join(path), model.read_output(&name)?)?;
             }

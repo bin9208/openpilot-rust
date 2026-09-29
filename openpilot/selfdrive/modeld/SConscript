@@ -2,7 +2,7 @@ import glob
 import json
 import os
 import sys, subprocess
-from SCons.Script import Action, Value
+from SCons.Script import Action, Value, COMMAND_LINE_TARGETS
 from openpilot.common.file_chunker import chunk_file, get_chunk_targets, get_existing_chunks
 from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
 from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE, DM_INPUT_SIZE
@@ -92,6 +92,7 @@ model_w, model_h = MEDMODEL_INPUT_SIZE
 frame_skip = ModelConstants.MODEL_RUN_FREQ // ModelConstants.MODEL_CONTEXT_FREQ
 
 model_builds = []
+native_sources = []
 regular_prefix = 'big_' if os.getenv('BIG_INTO_SMALL') else ''
 regular_onnx = File(f"models/{regular_prefix}driving_supercombo.onnx").abspath
 model_builds.append((False, modeld_pkl_path(False), get_existing_chunks(regular_onnx), regular_onnx, tg_flags))
@@ -125,12 +126,15 @@ for usbgpu, pkl_path, driving_onnx_deps, driving_onnx, cmd_flags in model_builds
   if usbgpu:
     lenv.SideEffect(usbgpu_lock, node)
     lenv.NoCache(node)
+  else:
+    native_sources.extend(node)
+    native_driving_path = target_pkl_path
 
 # get model metadata
 fn = File(f"models/dmonitoring_model").abspath
 script_files = [File(Dir("#openpilot/selfdrive/modeld").File("get_model_metadata.py").abspath)]
 cmd = f'{tg_flags} {mac_brew_string} python3 {Dir("#openpilot/selfdrive/modeld").abspath}/get_model_metadata.py {fn}.onnx'
-lenv.Command(fn + "_metadata.pkl", [fn + ".onnx"] + tinygrad_files + script_files + [tg_devices_node], cmd)
+native_sources.extend(lenv.Command(fn + "_metadata.pkl", [fn + ".onnx"] + tinygrad_files + script_files + [tg_devices_node], cmd))
 
 dm_w, dm_h = DM_INPUT_SIZE
 compile_dm_warp_script = [File(f"{modeld_dir}/compile_dm_warp.py")]
@@ -139,7 +143,7 @@ for cam_w, cam_h in CAMERA_CONFIGS:
   cmd = (f'{tg_flags} {mac_brew_string} python3 {modeld_dir}/compile_dm_warp.py '
          f'--camera-resolution {cam_w}x{cam_h} --warp-to {dm_w}x{dm_h} '
          f'--output {dm_pkl_path}')
-  lenv.Command(dm_pkl_path, tinygrad_files + compile_dm_warp_script + compile_modeld_script + [tg_devices_node], cmd)
+  native_sources.extend(lenv.Command(dm_pkl_path, tinygrad_files + compile_dm_warp_script + compile_modeld_script + [tg_devices_node], cmd))
 
 def tg_compile(flags, model_name):
   pythonpath_string = 'PYTHONPATH="${PYTHONPATH}:' + env.Dir("#tinygrad_repo").abspath + '"'
@@ -156,4 +160,18 @@ def tg_compile(flags, model_name):
      Action(do_chunk, "  [CHUNK] $TARGET")],
   )
 
-tg_compile(tg_flags, 'dmonitoring_model')
+native_sources.extend(tg_compile(tg_flags, 'dmonitoring_model'))
+
+if 'native_models' in COMMAND_LINE_TARGETS:
+  native_tool = File('#rust/tools/build_model_pipelines.py').abspath
+  native_output = Dir('#rust/target/native-models').abspath
+  native_backend = {'CPU': 'cpu', 'QCOM': 'qcom'}.get(tg_backend)
+  if native_backend is None:
+    raise RuntimeError(f'native_models does not yet support {tg_backend}')
+  native_tools = Glob('#rust/tools/model_export/*.py') + [File(native_tool)]
+  native_cmd = (f'{tg_flags} {mac_brew_string} python3 {native_tool} '
+                f'--trusted-model-directory {modeld_dir}/models --trusted-driving {native_driving_path} '
+                f'--backend {native_backend} --output {native_output}')
+  native_node = lenv.Command(f'{native_output}/current.json', native_sources + native_tools, native_cmd)
+  lenv.NoCache(native_node)
+  lenv.Alias('native_models', native_node)

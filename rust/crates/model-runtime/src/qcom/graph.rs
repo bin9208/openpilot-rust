@@ -1,4 +1,5 @@
 use crate::{
+    entrypoint::{self, Entrypoint},
     graph::{Allocation, Binding, View},
     Error,
 };
@@ -13,11 +14,13 @@ pub struct QcomGraph {
     pub(super) arch: String,
     pub(super) weights_sha256: String,
     pub(super) allocations: Vec<Allocation>,
-    pub(super) views: Vec<View>,
-    pub(super) inputs: Vec<Binding>,
-    pub(super) outputs: Vec<Binding>,
+    pub(crate) views: Vec<View>,
+    pub(crate) inputs: Vec<Binding>,
+    pub(crate) outputs: Vec<Binding>,
     pub(super) kernels: Vec<Kernel>,
     pub(super) calls: Vec<Call>,
+    #[serde(default)]
+    pub(crate) entrypoints: Vec<Entrypoint>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -85,11 +88,8 @@ impl QcomGraph {
     }
 
     fn validate(&self) -> Result<(), Error> {
-        if self.version != 1
-            || self.backend != "qcom-cl"
-            || self.arch != "a630"
-            || !digest(&self.weights_sha256)
-        {
+        entrypoint::validate(self.version, &self.entrypoints, self.calls.len())?;
+        if self.backend != "qcom-cl" || self.arch != "a630" || !digest(&self.weights_sha256) {
             return Err(Error::Contract(
                 "QCOM version/backend/architecture/checksum",
             ));

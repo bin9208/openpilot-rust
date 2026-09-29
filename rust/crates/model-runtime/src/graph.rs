@@ -1,4 +1,7 @@
-use crate::Error;
+use crate::{
+    entrypoint::{self, Entrypoint},
+    Error,
+};
 use serde::Deserialize;
 use std::collections::HashSet;
 
@@ -20,6 +23,8 @@ pub struct Graph {
     pub(crate) outputs: Vec<Binding>,
     pub(crate) kernels: Vec<Kernel>,
     pub(crate) calls: Vec<Call>,
+    #[serde(default)]
+    pub(crate) entrypoints: Vec<Entrypoint>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -91,8 +96,8 @@ impl Graph {
     }
 
     fn validate(&self) -> Result<u64, Error> {
-        if self.version != 1
-            || !matches!(self.backend.as_str(), "cpu-clang" | "cpu-llvm")
+        entrypoint::validate(self.version, &self.entrypoints, self.calls.len())?;
+        if !matches!(self.backend.as_str(), "cpu-clang" | "cpu-llvm")
             || self.arch != std::env::consts::ARCH
         {
             return Err(Error::Contract("version/backend/architecture"));

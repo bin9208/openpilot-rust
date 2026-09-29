@@ -91,3 +91,29 @@ fn validates_cumulative_memory_not_only_each_allocation() {
     ]);
     assert!(!parse(&value));
 }
+
+#[test]
+fn named_entries_require_a_complete_ordered_partition() {
+    let mut value = manifest();
+    value["version"] = json!(2);
+    value["entrypoints"] = json!([
+        {"name":"prepare", "start":0, "end":0},
+        {"name":"policy", "start":0, "end":1}
+    ]);
+    assert!(parse(&value));
+    for entries in [
+        json!([]),
+        json!([{"name":"policy", "start":1, "end":1}]),
+        json!([{"name":"policy", "start":0, "end":2}]),
+        json!([{"name":"policy", "start":0, "end":0}]),
+        json!([{"name":"", "start":0, "end":1}]),
+        json!([{"name":"a", "start":0, "end":1}, {"name":"a", "start":1, "end":1}]),
+        json!([{"name":"a", "start":0, "end":1}, {"name":"b", "start":0, "end":1}]),
+    ] {
+        let mut bad = value.clone();
+        bad["entrypoints"] = entries;
+        assert!(!parse(&bad), "accepted {bad}");
+    }
+    value["version"] = json!(1);
+    assert!(!parse(&value));
+}

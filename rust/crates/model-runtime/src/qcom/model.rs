@@ -4,6 +4,7 @@ use super::{
     Dispatch, ProgramImage, QcomBundle,
 };
 use crate::{
+    entrypoint,
     graph::{Binding, View},
     Error,
 };
@@ -22,6 +23,7 @@ struct Model<D: Driver> {
     device: Device<D>,
     allocations: Vec<usize>,
     steps: Vec<Step>,
+    entries: Vec<Vec<Step>>,
 }
 
 pub struct QcomModel(Model<Linux>);
@@ -44,6 +46,9 @@ impl QcomModel {
     }
     pub fn run(&mut self) -> Result<(), Error> {
         self.0.run()
+    }
+    pub fn run_entry(&mut self, name: &str) -> Result<(), Error> {
+        self.0.run_entry(name)
     }
 }
 
@@ -80,18 +85,15 @@ impl<D: Driver> Model<D> {
             device.write(buffer, 0, program.image())?;
             program_addresses.push(device.address(buffer, 0, program.image().len())?);
         }
-        let mut steps = Vec::new();
-        let mut commands = Vec::new();
+        let mut calls = Vec::with_capacity(bundle.graph.calls.len());
+        let mut command_words = 0_usize;
         for call in &bundle.graph.calls {
             match call {
                 Call::Copy {
                     source,
                     destination,
                 } => {
-                    if !commands.is_empty() {
-                        steps.push(Step::Gpu(std::mem::take(&mut commands)));
-                    }
-                    steps.push(Step::Copy {
+                    calls.push(Step::Copy {
                         source: *source,
                         destination: *destination,
                     });
@@ -119,7 +121,7 @@ impl<D: Driver> Model<D> {
                     let buffer = device.allocate(bytes.len())?;
                     device.write(buffer, 0, &bytes)?;
                     let args = device.address(buffer, 0, bytes.len())?;
-                    commands.extend(ProgramImage::memory_barrier(dummy));
+                    let mut commands = ProgramImage::memory_barrier(dummy);
                     commands.extend(program.dispatch(&Dispatch {
                         program: program_addresses[*kernel],
                         stack,
@@ -129,15 +131,23 @@ impl<D: Driver> Model<D> {
                         global: *global,
                         local: *local,
                     })?);
-                    if commands.len() > 16 * 1024 * 1024 {
+                    command_words = command_words
+                        .checked_add(commands.len())
+                        .ok_or(Error::Limit("QCOM frame command words"))?;
+                    if command_words > 16 * 1024 * 1024 {
                         return Err(Error::Limit("QCOM frame command words"));
                     }
+                    calls.push(Step::Gpu(commands));
                 }
             }
         }
-        if !commands.is_empty() {
-            steps.push(Step::Gpu(commands));
-        }
+        let steps = batch(&calls);
+        let entries = bundle
+            .graph
+            .entrypoints
+            .iter()
+            .map(|entry| batch(&calls[entry.range()]))
+            .collect();
         if let Some(words) = steps
             .iter()
             .filter_map(|step| match step {
@@ -153,6 +163,7 @@ impl<D: Driver> Model<D> {
             device,
             allocations,
             steps,
+            entries,
         })
     }
 
@@ -183,7 +194,17 @@ impl<D: Driver> Model<D> {
     }
 
     fn run(&mut self) -> Result<(), Error> {
-        for step in &self.steps {
+        self.execute(None)
+    }
+
+    fn run_entry(&mut self, name: &str) -> Result<(), Error> {
+        let index = entrypoint::find(&self.bundle.graph.entrypoints, name)?;
+        self.execute(Some(index))
+    }
+
+    fn execute(&mut self, entry: Option<usize>) -> Result<(), Error> {
+        let steps = entry.map_or(&self.steps, |index| &self.entries[index]);
+        for step in steps {
             match step {
                 Step::Gpu(commands) => self.device.execute(commands)?,
                 Step::Copy {
@@ -204,4 +225,30 @@ impl<D: Driver> Model<D> {
         }
         Ok(())
     }
+}
+
+fn batch(calls: &[Step]) -> Vec<Step> {
+    let mut steps = Vec::new();
+    let mut commands = Vec::new();
+    for call in calls {
+        match call {
+            Step::Gpu(words) => commands.extend(words),
+            Step::Copy {
+                source,
+                destination,
+            } => {
+                if !commands.is_empty() {
+                    steps.push(Step::Gpu(std::mem::take(&mut commands)));
+                }
+                steps.push(Step::Copy {
+                    source: *source,
+                    destination: *destination,
+                });
+            }
+        }
+    }
+    if !commands.is_empty() {
+        steps.push(Step::Gpu(commands));
+    }
+    steps
 }

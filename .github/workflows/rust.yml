@@ -13,7 +13,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: model-memory
+    needs: [model-memory, model-pipelines]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -73,6 +73,59 @@ jobs:
             ${{ runner.temp }}/dm-native/report.json
             ${{ runner.temp }}/driving-native/report.json
             ${{ runner.temp }}/policy-native/report.json
+  model-pipelines:
+    name: rust original model pipelines
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '1'
+      JIT_BATCH_SIZE: '0'
+      OPENPILOT_HACKS: '1'
+      LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 git-lfs
+      - run: python -m pip install numpy==2.4.6 zstandard==0.25.0
+      - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
+      - run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
+      - name: Compile the original grouped driving and driver artifacts
+        run: |
+          mkdir -p "$RUNNER_TEMP/original-models"
+          python openpilot/selfdrive/modeld/compile_modeld.py --model-size 512x256 --camera-resolutions 1928x1208 1344x760 --frame-skip 4 --onnx openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/original-models/driving_tinygrad.pkl"
+          python tinygrad_repo/examples/openpilot/compile3.py openpilot/selfdrive/modeld/models/dmonitoring_model.onnx "$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl"
+          python openpilot/selfdrive/modeld/get_model_metadata.py openpilot/selfdrive/modeld/models/dmonitoring_model.onnx
+          cp openpilot/selfdrive/modeld/models/dmonitoring_model_metadata.pkl "$RUNNER_TEMP/original-models/"
+          for resolution in 1928x1208 1344x760; do
+            python openpilot/selfdrive/modeld/compile_dm_warp.py --camera-resolution "$resolution" --warp-to 1440x960 --output "$RUNNER_TEMP/original-models/dm_warp_${resolution}_tinygrad.pkl"
+          done
+      - name: Build and validate immutable native pipeline catalog
+        run: |
+          python rust/tools/build_model_pipelines.py --trusted-model-directory "$RUNNER_TEMP/original-models" --backend cpu --output "$RUNNER_TEMP/native-catalog"
+          rust/target/debug/model-run --check-catalog "$RUNNER_TEMP/native-catalog"
+      - name: Compare both camera resolutions including prepare-only and recurrent turnover
+        run: |
+          for resolution in '1928 1208' '1344 760'; do
+            set -- $resolution
+            python rust/tools/check_pipeline_reference.py --trusted-driving "$RUNNER_TEMP/original-models/driving_tinygrad.pkl" --resolution "$1" "$2" --output "$RUNNER_TEMP/road-pipeline-$1" --binary rust/target/debug/model-run --frames 128
+            python rust/tools/check_pipeline_reference.py --trusted-driver "$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl" --trusted-warp "$RUNNER_TEMP/original-models/dm_warp_${1}x${2}_tinygrad.pkl" --trusted-metadata "$RUNNER_TEMP/original-models/dmonitoring_model_metadata.pkl" --resolution "$1" "$2" --output "$RUNNER_TEMP/dm-pipeline-$1" --binary rust/target/debug/model-run --frames 3
+          done
+      - uses: actions/upload-artifact@v6
+        with:
+          name: rust-original-pipeline-comparison
+          path: |
+            ${{ runner.temp }}/road-pipeline-*/report.json
+            ${{ runner.temp }}/dm-pipeline-*/report.json
+            ${{ runner.temp }}/native-catalog/current.json
   model-memory:
     name: rust model memory
     runs-on: ubuntu-24.04
