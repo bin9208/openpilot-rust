@@ -114,8 +114,19 @@ fn interpolate(plan: &[[f32; 15]; 33], column: usize, time: f64) -> f64 {
         if time <= next_time {
             let previous_value = f64::from(pair[0][column]);
             let next_value = f64::from(pair[1][column]);
+            if time == next_time {
+                return next_value;
+            }
             let slope = (next_value - previous_value) / (next_time - previous_time);
-            return previous_value + slope * (time - previous_time);
+            let mut value = previous_value + slope * (time - previous_time);
+            // np.interp retries from the other endpoint for non-finite samples.
+            if value.is_nan() {
+                value = next_value + slope * (time - next_time);
+                if value.is_nan() && previous_value == next_value {
+                    value = previous_value;
+                }
+            }
+            return value;
         }
         previous_time = next_time;
     }

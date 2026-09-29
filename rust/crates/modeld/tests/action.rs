@@ -282,3 +282,75 @@ fn rounds_direct_curvature_when_speed_squared_is_not_exactly_float32() {
     // Then: actual NumPy 2 scalar division rounds the denominator and quotient.
     close(action.desired_curvature, 0.006682481616735458);
 }
+
+#[test]
+fn uses_exact_action_sample_despite_nonfinite_predecessor() {
+    for predecessor in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        let mut plan = constant_plan(0.0);
+        plan[4][3] = predecessor;
+        plan[4][11] = predecessor;
+        let action = from_plan(
+            PlanActionInput {
+                plan: &plan,
+                direct_action: None,
+            },
+            Action::default(),
+            ActionInputs {
+                lat_action_t: 0.244140625,
+                long_action_t: 0.244140625,
+                ..inputs()
+            },
+        );
+        close(action.desired_curvature, 0.1923);
+        close(action.desired_acceleration, 0.0);
+        assert!(action.should_stop);
+    }
+}
+
+#[test]
+fn preserves_infinite_action_endpoints_between_samples() {
+    for value in [f32::INFINITY, f32::NEG_INFINITY] {
+        for same_endpoint in [false, true] {
+            let mut plan = constant_plan(0.0);
+            plan[4][3] = value;
+            plan[4][11] = value;
+            if same_endpoint {
+                plan[5][3] = value;
+                plan[5][11] = value;
+            }
+            let action = from_plan(
+                PlanActionInput {
+                    plan: &plan,
+                    direct_action: None,
+                },
+                Action::default(),
+                ActionInputs {
+                    lat_action_t: 0.2,
+                    long_action_t: 0.2,
+                    ..inputs()
+                },
+            );
+            assert_eq!(action.desired_curvature, f64::from(value));
+            assert_eq!(action.desired_acceleration, f64::from(value));
+            assert_eq!(action.should_stop, value.is_sign_negative());
+        }
+    }
+}
+
+#[test]
+fn preserves_negative_infinity_in_one_second_stop_preview() {
+    let mut plan = constant_plan(0.0);
+    plan[11][3] = f32::NEG_INFINITY;
+    let action = from_plan(
+        PlanActionInput {
+            plan: &plan,
+            direct_action: None,
+        },
+        Action::default(),
+        ActionInputs {
+            long_action_t: 0.2,
+            ..inputs()
+        },
+    );
+    assert!(action.should_stop);
+}

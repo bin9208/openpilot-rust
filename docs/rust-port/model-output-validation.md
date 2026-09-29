@@ -63,10 +63,15 @@ comparison; host results do not establish ARM execution equivalence.
 ## Repeatable evidence
 
 Before implementation, missing parser/publication/driver APIs failed their new
-tests. The implemented crate passes 19 Rust tests. An independent action oracle
+tests. The implemented crate passes 22 Rust tests. An independent action oracle
 ran the actual source function bodies over 2,500 cases, including direct action,
 stop thresholds, speed boundaries, delays and smoothing; the largest float64
 difference was 3.56e-15. It exposed and locked the float32 direct-division case.
+Independent review also reproduced a non-finite interpolation mismatch. Three
+new Rust regressions failed before the repair and passed afterwards: exact
+samples bypass a non-finite predecessor, interpolation retries from its other
+endpoint, and equal infinite endpoints retain their value. The same helper
+governs curvature, acceleration and the one-second stopping preview.
 
 `check_model_outputs.py` executes the Rust examples and decodes their actual
 cereal bytes with the complete original Python schema. It compares all present
@@ -82,7 +87,9 @@ enablement, frame age, lane-change metadata and dropped-frame pose validity.
 The captured corpus uses actual native pipeline outputs, already compared with
 the original compiled model execution. Required CI repeats it for both camera
 resolutions and 128 driving/3 driver frames per resolution.
-Local release-mode validation compared 927,938 fields across the synthetic
+The corpus also includes 15 independent action interpolation edge frames so a
+non-finite action cannot mask subsequent cases through the previous-action state.
+Local release-mode validation compared 956,558 fields across the synthetic
 corpus plus six captured driving and three captured driver frames. All compared
 fields passed their predeclared bounds, and the exponential probe passed exact
 bit comparison for all 250,008 values (with equivalent NaNs).

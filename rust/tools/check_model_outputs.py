@@ -15,7 +15,7 @@ import numpy as np
 from openpilot.cereal import log
 from openpilot.selfdrive.modeld import fill_model_msg
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
-from model_output_fixtures import OutputFixture, captured, synthetic
+from model_output_fixtures import OutputFixture, captured, interpolation_edges, synthetic
 from model_output_reference import compare, new_message, original_functions
 
 
@@ -62,8 +62,10 @@ def check(fixture: OutputFixture, destination: Path, binary: Path) -> int:
             outputs = Parser().parse_outputs(outputs)
             outputs["raw_pred"] = values.copy()
             speed = [0.0, 0.3, 0.3001, 1.0, 17.3][index % 5]
-            action_inputs = {"lat_action_t": 0.2, "long_action_t": 0.3, "v_ego": speed, "lat_smooth_seconds": 0.15, "v_ego_stopping": 0.05}
-            action = action_module.get_action_from_model(outputs, previous, 0.2, 0.3, speed, 0.15, 0.05)
+            action_inputs = fixture.action_inputs or {"lat_action_t": 0.2, "long_action_t": 0.3, "v_ego": speed,
+                                                     "lat_smooth_seconds": 0.15, "v_ego_stopping": 0.05}
+            action = action_module.get_action_from_model(outputs, previous, action_inputs["lat_action_t"], action_inputs["long_action_t"],
+                                                        action_inputs["v_ego"], action_inputs["lat_smooth_seconds"], action_inputs["v_ego_stopping"])
             previous = action
             frame = {"log_mono_time": now, "frame_id": index, "frame_id_extra": index + 1,
                          "camera_state_frame_id": max(0, index - 2) if index % 2 else index + 3,
@@ -110,6 +112,8 @@ def main() -> None:
     check_exp(args.output.resolve() / "exp", args.binary.resolve().with_name("exp_probe"))
     count = 0
     for name, fixture in (("driving", synthetic("driving")), ("mixture", synthetic("driving", True)), ("driver", synthetic("driver"))):
+        count += check(fixture, args.output.resolve() / name, args.binary.resolve())
+    for name, fixture in interpolation_edges():
         count += check(fixture, args.output.resolve() / name, args.binary.resolve())
     for kind, pipeline, outputs in (("driving", args.driving_pipeline, args.driving_outputs), ("driver", args.driver_pipeline, args.driver_outputs)):
         if (pipeline is None) != (outputs is None):

@@ -14,6 +14,7 @@ class OutputFixture:
     slices: dict[str, tuple[int, int]]
     frames: tuple[NDArray[np.float32], ...]
     kind: Literal["driving", "driver"]
+    action_inputs: dict[str, float] | None = None
 
 
 def layout(kind: Literal["driving", "driver"], mixture: bool = False) -> dict[str, tuple[int, int]]:
@@ -78,6 +79,31 @@ def synthetic(kind: Literal["driving", "driver"], mixture: bool = False) -> Outp
                     values[start:end] = (-100, 100, np.nan)[frame]
         frames.append(values)
     return OutputFixture(slices, tuple(frames), kind)
+
+
+def interpolation_edges() -> Iterator[tuple[str, OutputFixture]]:
+    slices = layout("driving")
+    cases = [("positive_left", 0.2, np.inf, 0.25), ("negative_left", 0.2, -np.inf, 0.25),
+             ("equal_positive", 0.2, np.inf, np.inf), ("equal_negative", 0.2, -np.inf, -np.inf),
+             ("exact_nan", 0.244140625, np.nan, 0.0), ("exact_positive", 0.244140625, np.inf, 0.0),
+             ("exact_negative", 0.244140625, -np.inf, 0.0)]
+    for column in (3, 11):
+        for name, time, left, right in cases:
+            values = np.zeros(max(end for _, end in slices.values()), dtype=np.float32)
+            start, _ = slices["plan"]
+            plan = values[start:start + 495].reshape(33, 15)
+            plan[:, 11] = 0.25
+            plan[4, column] = left
+            plan[5, column] = right
+            inputs = {"lat_action_t": time, "long_action_t": time, "v_ego": 10.0,
+                      "lat_smooth_seconds": 0.15, "v_ego_stopping": 0.05}
+            yield f"interpolation-{column}-{name}", OutputFixture(slices, (values,), "driving", inputs)
+    values = np.zeros(max(end for _, end in slices.values()), dtype=np.float32)
+    start, _ = slices["plan"]
+    values[start + 11 * 15 + 3] = -np.inf
+    inputs = {"lat_action_t": 0.2, "long_action_t": 0.2, "v_ego": 10.0,
+              "lat_smooth_seconds": 0.15, "v_ego_stopping": 0.05}
+    yield "interpolation-stop-preview", OutputFixture(slices, (values,), "driving", inputs)
 
 
 def captured(pipeline: Path, output: Path, kind: Literal["driving", "driver"]) -> Iterator[OutputFixture]:
