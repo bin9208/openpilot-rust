@@ -10,6 +10,7 @@ from tinygrad.runtime.support.compiler_cpu import ClangCompiler, CPULLVMCompiler
 from tinygrad.uop.ops import Ops
 
 from .buffers import BufferTable, host_buffer
+from .binding_order import ordered_inputs
 from .native import compile_kernel
 from .schema import Binding, Bindings, Call, CapturedModel, ExportError, Kernel
 
@@ -23,9 +24,7 @@ def capture_cpu(jit: TinyJit, bindings: Bindings) -> CapturedModel:
         raise ExportError("export requires DEV=CPU:CLANG or CPU:LLVM")
     if len(captured.expected_names) != len(captured.expected_input_info) or len(bindings.inputs) != len(captured.expected_names):
         raise ExportError("export requires explicit flat input bindings for every captured input")
-    names = list(bindings.inputs)
-    ordered = [bindings.inputs[name] if isinstance(name, str) else bindings.inputs[names[name]] for name in captured.expected_names]
-    input_uops, variables, _, input_info = _prepare_jit_inputs(tuple(ordered), {})
+    input_uops, variables, _, input_info = _prepare_jit_inputs(ordered_inputs(captured.expected_names, bindings.inputs), {})
     if variables or input_info != captured.expected_input_info:
         raise ExportError("bindings disagree with the captured input contract")
     inputs = tuple(input_uops)

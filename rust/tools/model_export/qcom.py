@@ -15,6 +15,7 @@ from tinygrad.renderer.cstyle import QCOMCLRenderer
 from tinygrad.uop.ops import Ops
 
 from .buffers import BufferTable
+from .binding_order import ordered_inputs
 from .schema import Allocation, Binding, Bindings, ExportError, View
 
 
@@ -83,9 +84,7 @@ def export_qcom(jit: TinyJit, bindings: Bindings, destination: Path) -> None:
         raise ExportError("JIT must be captured before export")
     if len(captured.expected_names) != len(captured.expected_input_info) or len(bindings.inputs) != len(captured.expected_names):
         raise ExportError("QCOM export requires flat bindings for every captured input")
-    names = list(bindings.inputs)
-    ordered = [bindings.inputs[name] if isinstance(name, str) else bindings.inputs[names[name]] for name in captured.expected_names]
-    input_uops, variables, _, input_info = _prepare_jit_inputs(tuple(ordered), {})
+    input_uops, variables, _, input_info = _prepare_jit_inputs(ordered_inputs(captured.expected_names, bindings.inputs), {})
     if variables or input_info != captured.expected_input_info:
         raise ExportError("bindings disagree with the captured input contract")
     inputs = tuple(input_uops)

@@ -29,6 +29,10 @@ behavior on the target kernel.
 
 The exporter accepts captured flat QCOM JIT input/output bindings and host copies.
 It preserves the compiled binary, argument types, alias offsets and call order.
+CPU and QCOM exports bind positional tensors by their order among tensor inputs,
+so fixed arguments such as `jit(True, tensor)` do not shift input slots. Mixed
+positional/keyword inputs and missing keyword errors have regression coverage
+under [issue #11](https://github.com/bin9208/openpilot-rust/issues/11).
 Unsupported operations and dynamic symbolic scalars fail explicitly. Fractional
 workgroup counts use the original truncated global extent and rounded-up group
 count. IR3, other GPUs, nested eGPU bindings and external VisionIPC mapping are

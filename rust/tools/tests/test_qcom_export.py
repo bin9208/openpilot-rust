@@ -59,3 +59,12 @@ def test_qcom_export_rejects_mismatched_inputs(monkeypatch, tmp_path):
     with pytest.raises(ExportError, match="input contract"):
         export_qcom(jit, Bindings({"state": wrong}, {"output": state}), tmp_path / "bundle")
     assert not (tmp_path / "bundle").exists()
+
+
+def test_qcom_capture_supports_non_tensor_positional_arguments(monkeypatch, tmp_path):
+    jit, state = captured_qcom(monkeypatch)
+    _, _, names, info = _prepare_jit_inputs((True, state), {})
+    jit.captured = CapturedJit(state, jit.captured.linear, names, info)
+    export_qcom(jit, Bindings({"state": state}, {"output": state}), tmp_path / "bundle")
+    graph = json.loads((tmp_path / "bundle/graph.json").read_text())
+    assert graph["calls"][0]["views"] == [0, 0]
