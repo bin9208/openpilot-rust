@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/runtime-core", "crates/cereal", "crates/proclogd", "crates/msgq", "crates/params", "crates/model-runtime"]
+members = ["crates/runtime-core", "crates/cereal", "crates/proclogd", "crates/msgq", "crates/params", "crates/model-runtime", "crates/modeld"]
 resolver = "2"
 
 [workspace.package]

@@ -357,6 +357,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-modeld"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-msgq"
 version = "0.1.0"
 dependencies = [

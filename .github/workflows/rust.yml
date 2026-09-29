@@ -102,9 +102,10 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 git-lfs
-      - run: python -m pip install numpy==2.4.6 zstandard==0.25.0
+      - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 git-lfs capnproto libcapnp-dev
+      - run: python -m pip install numpy==2.4.6 zstandard==0.25.0 pycapnp==2.1.0
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
+      - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-modeld --examples --locked
       - run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Compile the original grouped driving and driver artifacts
         run: |
@@ -127,6 +128,15 @@ jobs:
             python rust/tools/check_pipeline_reference.py --trusted-driving "$RUNNER_TEMP/original-models/driving_tinygrad.pkl" --resolution "$1" "$2" --output "$RUNNER_TEMP/road-pipeline-$1" --binary rust/target/debug/model-run --frames 128
             python rust/tools/check_pipeline_reference.py --trusted-driver "$RUNNER_TEMP/original-models/dmonitoring_model_tinygrad.pkl" --trusted-warp "$RUNNER_TEMP/original-models/dm_warp_${1}x${2}_tinygrad.pkl" --trusted-metadata "$RUNNER_TEMP/original-models/dmonitoring_model_metadata.pkl" --resolution "$1" "$2" --output "$RUNNER_TEMP/dm-pipeline-$1" --binary rust/target/debug/model-run --frames 3
           done
+      - name: Compare model publications with the original Python implementations
+        run: |
+          generation=$(python -c 'import json, os; print(json.load(open(os.environ["RUNNER_TEMP"] + "/native-catalog/current.json"))["generation"])')
+          for resolution in '1928 1208' '1344 760'; do
+            set -- $resolution
+            python rust/tools/check_model_outputs.py --binary rust/target/debug/examples/output_probe --output "$RUNNER_TEMP/model-outputs-$1" \
+              --driving-pipeline "$RUNNER_TEMP/native-catalog/$generation/driving-${1}x${2}/pipeline.json" --driving-outputs "$RUNNER_TEMP/road-pipeline-$1" \
+              --driver-pipeline "$RUNNER_TEMP/native-catalog/$generation/driver-${1}x${2}/pipeline.json" --driver-outputs "$RUNNER_TEMP/dm-pipeline-$1"
+          done
       - uses: actions/upload-artifact@v6
         with:
           name: rust-original-pipeline-comparison
@@ -134,6 +144,7 @@ jobs:
             ${{ runner.temp }}/road-pipeline-*/report.json
             ${{ runner.temp }}/dm-pipeline-*/report.json
             ${{ runner.temp }}/native-catalog/current.json
+            ${{ runner.temp }}/model-outputs-*/**/report.json
   model-memory:
     name: rust model memory
     runs-on: ubuntu-24.04
