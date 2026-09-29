@@ -9,6 +9,7 @@ publish = false
 [features]
 default = ["native-skip-miri"]
 native-skip-miri = []
+visionipc-ion = ["native-skip-miri"]
 
 [dependencies]
 cxx = "1.0"
