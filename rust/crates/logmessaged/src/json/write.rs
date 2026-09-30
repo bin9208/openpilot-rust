@@ -41,7 +41,10 @@ enum Part<'a> {
 }
 impl Document {
     pub fn write(&self, output: &mut String) -> std::fmt::Result {
-        let mut stack = vec![Part::Node(self.root)];
+        self.write_node(self.root, output)
+    }
+    pub(super) fn write_node(&self, root: usize, output: &mut String) -> std::fmt::Result {
+        let mut stack = vec![Part::Node(root)];
         while let Some(part) = stack.pop() {
             let node = match part {
                 Part::Token(token) => {

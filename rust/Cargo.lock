@@ -1577,6 +1577,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-runtime-version"
+version = "0.1.0"
+dependencies = [
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-runtime-core",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "unicode-general-category",
+]
+
+[[package]]
 name = "openpilot-torqued"
 version = "0.1.0"
 dependencies = [
@@ -2396,6 +2409,12 @@ name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+
+[[package]]
+name = "unicode-general-category"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2281c8c1d221438e373249e065ca4989c4c36952c211ff21a0ee91c44a3869e7"
 
 [[package]]
 name = "unicode-ident"

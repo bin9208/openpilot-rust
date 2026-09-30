@@ -4,6 +4,7 @@ mod format;
 mod json;
 mod rotation;
 pub use format::format_record;
+pub use json::{Error as JsonError, JsonValue, JsonView};
 pub use rotation::{LogFiles, RotationSettings};
 
 #[derive(Debug, thiserror::Error)]
