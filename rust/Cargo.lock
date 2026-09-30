@@ -359,6 +359,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-messaging"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "openpilot-msgq",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-model-runtime"
 version = "0.1.0"
 dependencies = [

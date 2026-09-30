@@ -47,6 +47,49 @@ pub struct Subscriber {
     thread: PhantomData<Rc<()>>,
 }
 
+pub struct Subscription<'a> {
+    pub endpoint: &'a str,
+    pub capacity: usize,
+    pub polled: bool,
+}
+
+pub use ffi::QueuedMessage;
+
+pub struct MultiSubscriber {
+    queues: cxx::UniquePtr<ffi::QueueBatch>,
+    thread: PhantomData<Rc<()>>,
+}
+
+impl MultiSubscriber {
+    pub fn new(specifications: &[Subscription<'_>]) -> Result<Self, Error> {
+        Self::open(specifications, true)
+    }
+
+    pub fn for_runtime(specifications: &[Subscription<'_>]) -> Result<Self, Error> {
+        Self::open(specifications, false)
+    }
+
+    fn open(specifications: &[Subscription<'_>], isolated: bool) -> Result<Self, Error> {
+        let specifications: Vec<_> = specifications
+            .iter()
+            .map(|specification| ffi::QueueSpec {
+                endpoint: specification.endpoint.to_owned(),
+                capacity: specification.capacity,
+                polled: specification.polled,
+            })
+            .collect();
+        Ok(Self {
+            queues: ffi::open_batch(&specifications, isolated)?,
+            thread: PhantomData,
+        })
+    }
+
+    pub fn receive(&mut self, timeout: Duration) -> Result<Vec<QueuedMessage>, Error> {
+        let milliseconds = i32::try_from(timeout.as_millis()).map_err(|_| Error::TimeoutRange)?;
+        Ok(self.queues.pin_mut().receive(milliseconds)?)
+    }
+}
+
 impl Subscriber {
     pub fn for_runtime(endpoint: &str, conflate: bool, capacity: usize) -> Result<Self, Error> {
         Ok(Self {

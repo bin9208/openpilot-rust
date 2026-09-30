@@ -1,10 +1,26 @@
 #[cxx::bridge(namespace = "openpilot_rust")]
 pub(crate) mod ffi {
+    struct QueueSpec {
+        endpoint: String,
+        capacity: usize,
+        polled: bool,
+    }
+    #[derive(Debug)]
+    struct QueuedMessage {
+        index: usize,
+        bytes: Vec<u8>,
+    }
     // SAFETY: C++ owns value-initialized queues through UniquePtr, copies received
     // bytes into Rust-owned Vec, and never retains the borrowed send slice.
     unsafe extern "C++" {
         include!("bridge.h");
         type Queue;
+        type QueueBatch;
+        fn open_batch(
+            specifications: &[QueueSpec],
+            isolated: bool,
+        ) -> Result<UniquePtr<QueueBatch>>;
+        fn receive(self: Pin<&mut QueueBatch>, timeout_ms: i32) -> Result<Vec<QueuedMessage>>;
         fn open_queue(
             endpoint: &str,
             publisher: bool,
