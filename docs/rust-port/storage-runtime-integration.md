@@ -82,8 +82,14 @@ and [Jetlink socket isolation #72](../naver/jetlink_socket_fixture_72.md).
 - [Integration and release build](https://github.com/bin9208/openpilot-rust/actions/runs/36698821624): success.
 - [PR fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/36698821068), [push fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/36698814014), and [mapped documentation](https://github.com/bin9208/openpilot-rust/actions/runs/36698821077): success.
 
-Separate merge-commit validation is pending. The next supporting-runtime
-integration is tracked in [#71](support-runtime-integration.md).
+Separate validation of merge commit `ea34b7fed7fea3395fbafd024345da35bc4a94b4`
+also passes: [Rust](https://github.com/bin9208/openpilot-rust/actions/runs/36702179198),
+[integration/release build](https://github.com/bin9208/openpilot-rust/actions/runs/36702179642),
+[fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/36702179133)
+and [mapped documentation](https://github.com/bin9208/openpilot-rust/actions/runs/36702179144).
+The bounded component/integration issues and their fixture/build corrections are
+closed with [the exact-head evidence record](https://github.com/bin9208/openpilot-rust/issues/56#issuecomment-5909804943).
+The next supporting-runtime integration is tracked in [#71](support-runtime-integration.md).
 
 Full-runtime #1/#6 remain open. The remaining daemon ports, production startup,
 model diagnostic callsites (#53), driving startup-order parity (#55), active web

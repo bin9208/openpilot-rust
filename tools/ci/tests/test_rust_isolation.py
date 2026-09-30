@@ -2,12 +2,29 @@
 from pathlib import Path
 import subprocess
 import tempfile
+import tomllib
 import unittest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_interrupted_send_boundary_is_a_required_support_check(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        steps = data['jobs']['support-runtime']['steps']
+        matches = [step for step in steps if step.get('name') == 'Compare interrupted diagnostic sends and actual upload completion']
+        self.assertEqual(len(matches), 1)
+        step = matches[0]
+        self.assertNotIn('if', step)
+        self.assertNotIn('continue-on-error', step)
+        for required in ('zmq_send_boundary.c', '--wrap=zmq_msg_send', 'check_interrupted_send.py', 'check_uploader_interrupted.py'):
+            self.assertIn(required, step['run'])
+
+    def test_root_directory_builds_select_the_pinned_rust_toolchain(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        channel = tomllib.loads((ROOT / 'rust/rust-toolchain.toml').read_text())['toolchain']['channel']
+        self.assertEqual(data.get('env', {}).get('RUSTUP_TOOLCHAIN'), channel)
+
     def test_support_binding_path_is_configured_on_the_runner(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         for name, job in data['jobs'].items():
@@ -37,11 +54,12 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'web-upload-timeouts'})
+        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'web-upload-timeouts'})
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
                                             'SUPPORT': '${{ needs.support-runtime.result }}',
+                                            'TELEMETRY': '${{ needs.telemetry-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]

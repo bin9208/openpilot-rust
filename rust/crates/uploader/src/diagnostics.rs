@@ -105,6 +105,13 @@ pub(crate) fn python_text(value: &LogValue) -> Result<String, fmt::Error> {
             output
         }
         LogValue::Text(value) => value.clone(),
+        LogValue::PythonText(value) => value
+            .codepoints()
+            .iter()
+            .copied()
+            .map(char::from_u32)
+            .collect::<Option<String>>()
+            .ok_or(fmt::Error)?,
         LogValue::Array(values) => format!(
             "[{}]",
             values
@@ -128,41 +135,65 @@ pub(crate) fn python_text(value: &LogValue) -> Result<String, fmt::Error> {
     })
 }
 fn python_repr(value: &LogValue) -> Result<String, fmt::Error> {
-    if let LogValue::Text(value) = value {
-        let quote = if value.contains('\'') && !value.contains('"') {
-            '"'
-        } else {
-            '\''
-        };
-        let mut output = String::new();
-        output.push(quote);
-        for character in value.chars() {
-            match character {
-                '\\' => output.push_str("\\\\"),
-                '\n' => output.push_str("\\n"),
-                '\r' => output.push_str("\\r"),
-                '\t' => output.push_str("\\t"),
-                ch if ch == quote => {
-                    output.push('\\');
-                    output.push(ch);
-                }
-                ch if ch.is_control() || ch.escape_debug().to_string().starts_with("\\u{") => {
-                    use std::fmt::Write;
-                    let point = u32::from(ch);
-                    if point <= 0xff {
-                        write!(output, "\\x{point:02x}")?;
-                    } else if point <= 0xffff {
-                        write!(output, "\\u{point:04x}")?;
-                    } else {
-                        write!(output, "\\U{point:08x}")?;
-                    }
-                }
-                ch => output.push(ch),
-            }
-        }
-        output.push(quote);
-        Ok(output)
+    let points = match value {
+        LogValue::Text(value) => value.chars().map(u32::from).collect::<Vec<_>>(),
+        LogValue::PythonText(value) => value.codepoints().to_vec(),
+        _ => return python_text(value),
+    };
+    let quote = if points.contains(&u32::from('\'')) && !points.contains(&u32::from('"')) {
+        '"'
     } else {
-        python_text(value)
+        '\''
+    };
+    let mut output = String::new();
+    output.push(quote);
+    for point in points {
+        let Some(character) = char::from_u32(point) else {
+            use std::fmt::Write;
+            write!(output, "\\u{point:04x}")?;
+            continue;
+        };
+        match character {
+            '\\' => output.push_str("\\\\"),
+            '\n' => output.push_str("\\n"),
+            '\r' => output.push_str("\\r"),
+            '\t' => output.push_str("\\t"),
+            ch if ch == quote => {
+                output.push('\\');
+                output.push(ch);
+            }
+            ch if ch.is_control() || ch.escape_debug().to_string().starts_with("\\u{") => {
+                use std::fmt::Write;
+                let point = u32::from(ch);
+                if point <= 0xff {
+                    write!(output, "\\x{point:02x}")?;
+                } else if point <= 0xffff {
+                    write!(output, "\\u{point:04x}")?;
+                } else {
+                    write!(output, "\\U{point:08x}")?;
+                }
+            }
+            ch => output.push(ch),
+        }
+    }
+    output.push(quote);
+    Ok(output)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{python_text, LogValue};
+    use openpilot_logging::PythonText;
+
+    #[test]
+    fn python_text_preserves_scalar_unicode_and_nested_surrogate_repr() {
+        let valid = LogValue::PythonText(PythonText::new(vec![0xd55c, 0x1f600]).unwrap());
+        assert_eq!(python_text(&valid).unwrap(), "\u{d55c}\u{1f600}");
+        let surrogate = LogValue::PythonText(PythonText::new(vec![0xd800, 0x27, 0xa]).unwrap());
+        assert!(python_text(&surrogate).is_err());
+        assert_eq!(
+            python_text(&LogValue::Array(vec![surrogate])).unwrap(),
+            "[\"\\ud800'\\n\"]"
+        );
     }
 }

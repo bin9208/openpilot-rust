@@ -38,7 +38,7 @@ impl Fields {
             if index != 0 {
                 output.push_str(", ");
             }
-            quoted(key, output)?;
+            quoted(key.chars().map(u32::from), output)?;
             output.push_str(": ");
             value.write(output)?;
         }
@@ -99,6 +99,34 @@ pub(crate) fn round3(value: f64) -> Result<f64, std::num::ParseFloatError> {
     format!("{value:.3}").parse()
 }
 
+/// Python strings may contain lone surrogates, including Unix surrogateescape filenames.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PythonText(Vec<u32>);
+impl PythonText {
+    pub fn new(points: Vec<u32>) -> Result<Self, crate::Error> {
+        if points.iter().any(|point| *point > 0x10ffff) {
+            return Err(crate::Error::Contract(
+                "Python text codepoint exceeds Unicode range",
+            ));
+        }
+        Ok(Self(points))
+    }
+    pub fn codepoints(&self) -> &[u32] {
+        &self.0
+    }
+    pub fn console(&self) -> String {
+        let mut text = String::new();
+        for point in &self.0 {
+            if let Some(character) = char::from_u32(*point) {
+                text.push(character);
+            } else {
+                let _ = write!(text, "\\u{point:04x}");
+            }
+        }
+        text
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Null,
@@ -106,6 +134,7 @@ pub enum Value {
     Integer(i128),
     Float(f64),
     Text(String),
+    PythonText(PythonText),
     Array(Vec<Value>),
     Object(Fields),
 }
@@ -148,7 +177,8 @@ impl Value {
             Self::Float(value) => {
                 openpilot_runtime_core::python_float::write_float(*value, output)?
             }
-            Self::Text(value) => quoted(value, output)?,
+            Self::Text(value) => quoted(value.chars().map(u32::from), output)?,
+            Self::PythonText(value) => quoted(value.0.iter().copied(), output)?,
             Self::Object(value) => value.write(output)?,
             Self::Array(values) => {
                 output.push('[');
@@ -165,9 +195,9 @@ impl Value {
     }
 }
 
-fn quoted(value: &str, output: &mut String) -> fmt::Result {
+fn quoted(points: impl IntoIterator<Item = u32>, output: &mut String) -> fmt::Result {
     output.push('"');
-    for point in value.chars().map(u32::from) {
+    for point in points {
         match point {
             8 => output.push_str("\\b"),
             9 => output.push_str("\\t"),

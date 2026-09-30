@@ -1,0 +1,28 @@
+[package]
+name = "openpilot-tombstoned"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-crash-reporting = { path = "../crash-reporting" }
+openpilot-runtime-version = { path = "../runtime-version" }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-logging = { path = "../logging" }
+chrono = "0.4"
+home = "0.5.12"
+rustix = { version = "1", features = ["event", "pipe", "fs", "process"] }
+thiserror = "2"
+signal-hook = "0.3"
+unicode-general-category = "=0.6.0"
+
+[dev-dependencies]
+openpilot-params = { path = "../params" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"

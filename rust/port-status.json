@@ -15,7 +15,9 @@
       "name": "beep",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.beep",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX", "OS clocks/scheduling", "/bin/sh, sudo/tee and GPIO42 sysfs"],
+      "runtime_scope": "normal main/test=False alert loop, startup commands, pulse workers and per-pulse integer volume reads; safe hardware fixtures only; not selected by manager; AGNOS/device and full-runtime integration pending",
       "production_replaced": false
     },
     {
@@ -358,7 +360,10 @@
       "name": "statsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.statsd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_and_emulator_validated",
+      "implementation": "rust/crates/statsd; native StatLog producer and statsd-rs continuous deviceState/aggregation/atomic-file loop",
+      "native_dependencies": ["libzmq", "original C++ msgq through existing messaging", "Linux clock/filesystem/signal APIs", "Git for source metadata without build.json"],
+      "evidence": "docs/rust-port/statsd-validation.md",
       "production_replaced": false
     },
     {
@@ -382,7 +387,10 @@
       "name": "tombstoned",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.tombstoned",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["Bash/cat/echo and OS apport-retrace (may itself use Python)", "native Sentry SDK/HTTP/TLS", "Git", "libzmq and temporary original C++ msgq"],
+      "runtime_scope": "crash scan/report/copy/remove loop and native logging; manager/startup, target apport, full-runtime upload and device acceptance pending",
+      "evidence": "docs/rust-port/tombstoned-validation.md",
       "production_replaced": false
     },
     {
@@ -474,6 +482,28 @@
     }
   ],
   "library_ports": [
+    {
+      "name": "project_sentry_policy",
+      "source_entrypoint": "openpilot.system.sentry; registration reporting gate",
+      "status": "native_host_transport_validated",
+      "implementation": "rust/crates/crash-reporting; project gates, native SDK envelopes, report/flush and explicit Rust error capture; Python automatic thread hooks are not ported",
+      "native_dependencies": ["sentry 0.49.3 ureq/rustls", "Git", "libzmq and temporary original C++ msgq"],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/tombstoned-validation.md"
+    },
+    {
+      "name": "runtime_build_metadata_and_cached_git",
+      "source_entrypoint": "openpilot.system.version; openpilot.common.git",
+      "status": "native_host_api_validated",
+      "implementation": "rust/crates/runtime-version; build.json/source precedence, source-compatible dynamic metadata properties, process caches, read-only Git subprocesses and native missing-metadata logging",
+      "native_dependencies": [
+        "Git executable",
+        "native logging/libzmq",
+        "existing logmessaged JSON parser and temporary original C++ msgq dependency"
+      ],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/version-validation.md"
+    },
     {
       "name": "carrot_dashcam_upload_jobs",
       "source_entrypoint": "openpilot.selfdrive.carrot.server.features.dashcam.upload_jobs",

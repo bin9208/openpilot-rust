@@ -7,13 +7,15 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  RUSTUP_TOOLCHAIN: '1.94.0'
 concurrency:
   group: rust-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   fast:
     name: rust checks
-    needs: [model-memory, model-pipelines, logger-runtime, support-runtime, web-upload-timeouts]
+    needs: [model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -38,12 +40,14 @@ jobs:
           PIPELINES: ${{ needs.model-pipelines.result }}
           LOGGER: ${{ needs.logger-runtime.result }}
           SUPPORT: ${{ needs.support-runtime.result }}
+          TELEMETRY: ${{ needs.telemetry-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$MEMORY" = success
           test "$PIPELINES" = success
           test "$LOGGER" = success
           test "$SUPPORT" = success
+          test "$TELEMETRY" = success
           test "$UPLOAD_TIMEOUTS" = success
       - uses: actions/setup-python@v6
         with:
@@ -274,6 +278,21 @@ jobs:
           python rust/tools/check_timed_date_daemon.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-date-daemon"
           python rust/tools/check_timed_lifecycle.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-lifecycle"
           python rust/tools/check_timed_shutdown.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-shutdown"
+      - name: Compare interrupted diagnostic sends and actual upload completion
+        run: |
+          fault_root="$RUNNER_TEMP/support-runtime/interrupted-send"
+          mkdir -p "$fault_root/bin"
+          gcc -Wall -Wextra -Werror -O2 -fPIC -DZMQ_LINK_WRAP -c rust/tools/zmq_send_boundary.c -o "$fault_root/send-wrap.o"
+          gcc -Wall -Wextra -Werror -O2 -fPIC -shared rust/tools/zmq_send_boundary.c -ldl -o "$fault_root/send-preload.so"
+          cargo rustc --manifest-path rust/Cargo.toml -p openpilot-logging --example logging_probe --locked -- -C link-arg=-Wl,--wrap=zmq_msg_send -C "link-arg=$fault_root/send-wrap.o"
+          cp rust/target/debug/examples/logging_probe "$fault_root/bin/"
+          cargo rustc --manifest-path rust/Cargo.toml -p openpilot-statsd --example stats_producer --locked -- -C link-arg=-Wl,--wrap=zmq_msg_send -C "link-arg=$fault_root/send-wrap.o"
+          cp rust/target/debug/examples/stats_producer "$fault_root/bin/"
+          cargo rustc --manifest-path rust/Cargo.toml -p openpilot-uploader --bin openpilot-uploader --locked -- -C link-arg=-Wl,--wrap=zmq_msg_send -C "link-arg=$fault_root/send-wrap.o"
+          cp rust/target/debug/openpilot-uploader "$fault_root/bin/"
+          python_zmq="$(python -c 'import pathlib, zmq; matches = list((pathlib.Path(zmq.__file__).parent.parent / "pyzmq.libs").glob("libzmq-*.so.*")); assert len(matches) == 1, matches; print(matches[0])')"
+          python rust/tools/check_interrupted_send.py --logging "$fault_root/bin/logging_probe" --stats "$fault_root/bin/stats_producer" --preload "$fault_root/send-preload.so" --python-zmq "$python_zmq" --output "$fault_root/producers"
+          python rust/tools/check_uploader_interrupted.py --binary "$fault_root/bin/openpilot-uploader" --output "$fault_root/uploader"
       - name: Retain raw support runtime and Params build evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -283,6 +302,78 @@ jobs:
             ${{ runner.temp }}/support-runtime/
             ${{ runner.temp }}/support-params-binding/commands.json
             ${{ runner.temp }}/support-params-binding/provenance.json
+  telemetry-runtime:
+    name: rust telemetry runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 sentry-sdk==2.55.0 zstandard==0.25.0
+      - name: Configure original telemetry IPC imports
+        run: printf 'PYTHONPATH=%s/telemetry-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Build telemetry daemons and source-comparison probes
+        run: |
+          rustc --version
+          cargo --version
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --bins --examples --locked
+      - name: Build original telemetry message and Params bindings
+        run: |
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/telemetry-msgq-python"
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/telemetry-params-binding"
+      - name: Compare cached Git metadata and actual collector delivery
+        run: |
+          VERSION_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/version-reference" python rust/tools/check_version_reference.py rust/target/debug/examples/version_trace
+          python rust/tools/check_version_collector.py rust/target/debug/examples/version_trace rust/target/debug/openpilot-logmessaged "$RUNNER_TEMP/telemetry-runtime/version-collector"
+      - name: Compare alert policy, Params failures and clock conversion
+        run: |
+          python rust/tools/check_beepd_reference.py --binary rust/target/debug/examples/beep_trace --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-reference"
+          python rust/tools/check_beepd_integer.py --binary rust/target/debug/examples/beep_trace --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-integer"
+          python rust/tools/check_beepd_clock.py --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-clock"
+          python rust/tools/check_beepd_sleep.py --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-sleep"
+      - name: Compare continuous alert IPC and owned worker shutdown
+        run: python rust/tools/check_beepd_daemon.py --binary rust/target/debug/openpilot-beepd --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-daemon"
+      - name: Compare statistics numeric, clock and producer contracts
+        run: |
+          python rust/tools/check_stats_numbers.py --binary rust/target/debug/examples/stats_trace --output "$RUNNER_TEMP/telemetry-runtime/stats-numbers.json"
+          python rust/tools/check_stats_clock.py rust/target/debug/examples/stats_clock "$RUNNER_TEMP/telemetry-runtime/stats-clock.json"
+          python rust/tools/check_stats_producer.py rust/target/debug/examples "$RUNNER_TEMP/telemetry-runtime/stats-producer"
+      - name: Compare continuous statistics, real Params and collector failure paths
+        run: |
+          python rust/tools/check_stats_daemon.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-daemon"
+          python rust/tools/check_stats_failures.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-failures"
+          python rust/tools/check_stats_log_fault.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-log-fault"
+      - name: Exercise statistics production startup and shutdown under sustained traffic
+        run: |
+          python rust/tools/check_stats_runtime.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-runtime"
+          python rust/tools/check_stats_flood.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-flood"
+      - name: Compare crash-file policy, literal filenames and actual SDK transport
+        run: |
+          python rust/tools/check_tombstoned_reference.py rust/target/debug/examples/tombstone_trace "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/tombstone-reference"
+          python rust/tools/check_tombstoned_safety.py rust/target/debug/examples/tombstone_trace "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/tombstone-safety"
+          python rust/tools/check_crash_sdk_transport.py rust/target/debug/examples/tombstone_trace "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/crash-sdk"
+      - name: Exercise crash collection and held-command shutdown
+        run: |
+          python rust/tools/check_tombstoned_runtime.py rust/target/debug/openpilot-tombstoned rust/target/debug/openpilot-logmessaged "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/tombstone-runtime"
+          python rust/tools/check_tombstoned_shutdown.py rust/target/debug/openpilot-tombstoned "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/tombstone-shutdown"
+      - name: Retain raw telemetry runtime and Params build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-telemetry-runtime-evidence
+          path: |
+            ${{ runner.temp }}/telemetry-runtime/
+            ${{ runner.temp }}/telemetry-params-binding/commands.json
+            ${{ runner.temp }}/telemetry-params-binding/provenance.json
   logger-runtime:
     name: rust original route logger
     runs-on: ubuntu-24.04

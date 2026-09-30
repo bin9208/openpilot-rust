@@ -7,6 +7,7 @@ pub(crate) fn truth(value: &Value) -> bool {
         Value::Integer(value) => *value != 0,
         Value::Float(value) => *value != 0.,
         Value::Text(value) => !value.is_empty(),
+        Value::PythonText(value) => !value.codepoints().is_empty(),
         Value::Array(value) => !value.is_empty(),
         Value::Object(value) => !value.is_empty(),
     }
@@ -22,6 +23,13 @@ pub(crate) fn text(value: &Value) -> Result<String, Error> {
             output
         }
         Value::Text(value) => value.clone(),
+        Value::PythonText(value) => value
+            .codepoints()
+            .iter()
+            .copied()
+            .map(char::from_u32)
+            .collect::<Option<String>>()
+            .ok_or_else(|| Error::Source("cannot encode lone Unicode surrogate as UTF-8".into()))?,
         Value::Array(values) => format!(
             "[{}]",
             values
@@ -45,43 +53,49 @@ pub(crate) fn text(value: &Value) -> Result<String, Error> {
     })
 }
 fn repr(value: &Value) -> Result<String, Error> {
-    if let Value::Text(value) = value {
-        let quote = if value.contains('\'') && !value.contains('"') {
-            '"'
-        } else {
-            '\''
-        };
-        let mut output = String::new();
-        output.push(quote);
-        for character in value.chars() {
-            match character {
-                '\\' => output.push_str("\\\\"),
-                '\n' => output.push_str("\\n"),
-                '\r' => output.push_str("\\r"),
-                '\t' => output.push_str("\\t"),
-                ch if ch == quote => {
-                    output.push('\\');
-                    output.push(ch);
-                }
-                ch if ch.is_control() || ch.escape_debug().to_string().starts_with("\\u{") => {
-                    use std::fmt::Write;
-                    let point = u32::from(ch);
-                    if point <= 0xff {
-                        write!(output, "\\x{point:02x}")?;
-                    } else if point <= 0xffff {
-                        write!(output, "\\u{point:04x}")?;
-                    } else {
-                        write!(output, "\\U{point:08x}")?;
-                    }
-                }
-                ch => output.push(ch),
-            }
-        }
-        output.push(quote);
-        Ok(output)
+    let points = match value {
+        Value::Text(value) => value.chars().map(u32::from).collect::<Vec<_>>(),
+        Value::PythonText(value) => value.codepoints().to_vec(),
+        _ => return text(value),
+    };
+    let quote = if points.contains(&u32::from('\'')) && !points.contains(&u32::from('"')) {
+        '"'
     } else {
-        text(value)
+        '\''
+    };
+    let mut output = String::new();
+    output.push(quote);
+    for point in points {
+        let Some(character) = char::from_u32(point) else {
+            use std::fmt::Write;
+            write!(output, "\\u{point:04x}")?;
+            continue;
+        };
+        match character {
+            '\\' => output.push_str("\\\\"),
+            '\n' => output.push_str("\\n"),
+            '\r' => output.push_str("\\r"),
+            '\t' => output.push_str("\\t"),
+            ch if ch == quote => {
+                output.push('\\');
+                output.push(ch);
+            }
+            ch if ch.is_control() || ch.escape_debug().to_string().starts_with("\\u{") => {
+                use std::fmt::Write;
+                let point = u32::from(ch);
+                if point <= 0xff {
+                    write!(output, "\\x{point:02x}")?;
+                } else if point <= 0xffff {
+                    write!(output, "\\u{point:04x}")?;
+                } else {
+                    write!(output, "\\U{point:08x}")?;
+                }
+            }
+            ch => output.push(ch),
+        }
     }
+    output.push(quote);
+    Ok(output)
 }
 pub(crate) fn or_empty(value: Option<&Value>) -> Result<String, Error> {
     match value.filter(|value| truth(value)) {
@@ -99,7 +113,7 @@ pub(crate) fn body_mapping(value: Value) -> Result<Fields, Error> {
     match value {
         Value::Object(fields) => Ok(fields),
         Value::Array(_) => Err(Error::BodyShape("list")),
-        Value::Text(_) => Err(Error::BodyShape("str")),
+        Value::Text(_) | Value::PythonText(_) => Err(Error::BodyShape("str")),
         Value::Integer(_) => Err(Error::BodyShape("int")),
         Value::Float(_) => Err(Error::BodyShape("float")),
         Value::Bool(_) => Err(Error::BodyShape("bool")),
@@ -115,6 +129,13 @@ pub(crate) fn remote_size(value: Option<&Value>) -> Result<i128, Error> {
             .parse()
             .map_err(|_| Error::Source("remote size exceeds integer range".into())),
         Some(Value::Text(value)) => parse_integer(value),
+        Some(value @ Value::PythonText(_)) => match text(value) {
+            Ok(value) => parse_integer(&value),
+            Err(_) => Err(Error::Source(format!(
+                "invalid literal for int() with base 10: {}",
+                repr(value)?
+            ))),
+        },
         Some(Value::Array(_)) => Err(Error::Source(
             "int() argument must be a string, a bytes-like object or a real number, not 'list'"
                 .into(),
@@ -181,3 +202,41 @@ const DECIMAL_ZEROES: &[u32] = &[
     0x16b50, 0x1d7ce, 0x1d7d8, 0x1d7e2, 0x1d7ec, 0x1d7f6, 0x1e140, 0x1e2f0, 0x1e4f0, 0x1e950,
     0x1fbf0,
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::{body_mapping, remote_size, text, truth, Error, Value};
+    use openpilot_logging::PythonText;
+
+    fn points(value: &[u32]) -> Value {
+        Value::PythonText(PythonText::new(value.to_vec()).unwrap())
+    }
+
+    #[test]
+    fn scalar_python_text_preserves_unicode_and_rejects_surrogate_encoding() {
+        assert_eq!(
+            text(&points(&[0xd55c, 0x1f600])).unwrap(),
+            "\u{d55c}\u{1f600}"
+        );
+        assert_eq!(remote_size(Some(&points(&[0xff11, 0xff12]))).unwrap(), 12);
+        assert!(!truth(&points(&[])));
+        assert!(body_mapping(points(&[])).unwrap().is_empty());
+        assert!(matches!(
+            body_mapping(points(&[0xd800])),
+            Err(Error::BodyShape("str"))
+        ));
+        assert!(text(&points(&[0xd800])).is_err());
+        assert_eq!(
+            remote_size(Some(&points(&[0xd800])))
+                .unwrap_err()
+                .to_string(),
+            "invalid literal for int() with base 10: '\\ud800'"
+        );
+    }
+
+    #[test]
+    fn nested_python_text_uses_repr_escapes_before_utf8_encoding() {
+        let values = Value::Array(vec![points(&[0xd800, 0x27, 0xa]), points(&[0x5c])]);
+        assert_eq!(text(&values).unwrap(), "[\"\\ud800'\\n\", '\\\\']");
+    }
+}
