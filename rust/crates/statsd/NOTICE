@@ -1,0 +1,8 @@
+The float-specialized sorting implementation in src/sort/ and compensated sum
+in src/number.rs are derived from CPython v3.12.14 Objects/listobject.c and
+Python/bltinmodule.c, respectively. Copyright Python Software Foundation.
+CPython's license and historical notices are retained in CPYTHON-LICENSE.
+
+The daemon and producer behavior are ported from this repository's original
+openpilot/system/statsd.py and openpilot/common/utils.py. Their existing MIT
+license and source provenance remain applicable; see repository LICENSE.
