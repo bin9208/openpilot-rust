@@ -217,7 +217,10 @@
       "name": "logmessaged",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.logmessaged",
-      "status": "not_ported",
+      "status": "continuous_native_host_validated_pending_integration",
+      "native_dependencies": ["libzmq 4.3.4 through zmq/zmq-sys", "original msgq through Rust PubMaster/CXX"],
+      "runtime_scope": "continuous ZMQ log collector, rotating swaglog files, and logMessage/errorLogMessage publications; manager selection unchanged",
+      "evidence": "docs/rust-port/logmessaged-validation.md",
       "production_replaced": false
     },
     {

@@ -1,0 +1,28 @@
+[package]
+name = "openpilot-logmessaged"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+capnp = "=0.27.2"
+getrandom = "0.4"
+home = "0.5.12"
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging" }
+rustix = { version = "1", features = ["time"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+signal-hook = "0.3"
+thiserror = "2"
+uuid = "=1.26.1"
+zmq = "=0.10.0"
+zmij = "=1.0.23"
+
+[dev-dependencies]
+tempfile = "3"
