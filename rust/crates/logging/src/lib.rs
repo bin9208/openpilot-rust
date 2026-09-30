@@ -27,4 +27,6 @@ pub mod context;
 pub mod record;
 pub mod site;
 
+pub mod native;
 pub mod producer;
+pub mod rate;
