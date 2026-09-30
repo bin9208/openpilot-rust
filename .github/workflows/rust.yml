@@ -61,6 +61,11 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
+      - name: Compare log-space retention with the original loop and actual low-space filesystem
+        run: |
+          cargo build -p openpilot-deleter --bins --examples --locked
+          python tools/check_deleter_reference.py --binary target/debug/examples/deleter_trace --output "$RUNNER_TEMP/deleter-reference"
+          python tools/check_deleter_daemon.py --binary target/debug/openpilot-deleter --output "$RUNNER_TEMP/deleter-native" --privileged-mount
       - name: Compare message state and service catalog with original source
         run: |
           python tools/check_services.py
@@ -113,6 +118,10 @@ jobs:
           name: rust-linux-x86_64
           path: |
             rust/target/release/cpu-sample
+            rust/target/release/openpilot-deleter
+            ${{ runner.temp }}/deleter-reference/report.json
+            ${{ runner.temp }}/deleter-native/*.json
+            ${{ runner.temp }}/deleter-native/*.log
             rust/target/release/openpilot-proclogd
             rust/target/release/openpilot-proclogd-runtime
             rust/target/release/openpilot-dmonitoringd

@@ -115,7 +115,9 @@
       "name": "deleter",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.loggerd.deleter",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/deleter",
+      "validation": "docs/rust-port/deleter-validation.md",
       "production_replaced": false
     },
     {
