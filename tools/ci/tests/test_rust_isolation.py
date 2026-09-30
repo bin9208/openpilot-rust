@@ -1,12 +1,27 @@
 """Prevent inherited publishers from acting in the independent Rust repository."""
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_support_binding_path_is_configured_on_the_runner(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        for name, job in data['jobs'].items():
+            for value in job.get('env', {}).values():
+                with self.subTest(job=name):
+                    self.assertNotRegex(value, r'\$\{\{\s*runner[.\[]')
+        support = data['jobs']['support-runtime']
+        setup = next(step for step in support['steps'] if step.get('name') == 'Configure original support IPC imports')
+        with tempfile.TemporaryDirectory(prefix='support env ') as temporary:
+            output = Path(temporary) / 'environment'
+            environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
+            subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
+            self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/support-msgq-python:/fixture/repository:/fixture/tools\n')
+
     def test_inherited_side_effects_are_source_repository_only(self):
         for file, job in [('sync.yml', 'sync'), ('naver-upstream-sync.yml', 'sync'), ('wiki-settings-publish.yaml', 'synchronize'), ('carrot-route-vault-publish.yaml', 'publish')]:
             with self.subTest(file=file):

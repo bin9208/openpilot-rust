@@ -89,6 +89,15 @@ now uses a temporary directory for mutable Params/command paths while retaining
 captures in the requested output. The native path guard, HTTP implementation,
 five-second deadlines and comparison assertions remain unchanged.
 
+The first cloud push at `f2779c72` is rejected before jobs start because the
+support job refers to `runner.temp` in its job-level environment
+([run](https://github.com/bin9208/openpilot-rust/actions/runs/36705009897),
+[#81](https://github.com/bin9208/openpilot-rust/issues/81)). GitHub permits that
+context only after runner assignment, not at this environment scope. A runner
+step now writes the binding path through `GITHUB_ENV`. The regression both
+rejects the unavailable job context and executes the actual environment setup
+with a temporary path containing spaces. No runtime source changes are needed.
+
 Exact-SHA Actions and post-merge results are still pending. PR success,
 post-merge success, device execution and user acceptance remain separate states.
 

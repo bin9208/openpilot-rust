@@ -210,7 +210,7 @@ jobs:
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
-      PYTHONPATH: ${{ runner.temp }}/support-msgq-python:${{ github.workspace }}:${{ github.workspace }}/rust/tools
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
         with:
@@ -221,6 +221,8 @@ jobs:
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pyserial==3.5
+      - name: Configure original support IPC imports
+        run: printf 'PYTHONPATH=%s/support-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Build support daemons and their source-comparison probes
         run: cargo build --manifest-path rust/Cargo.toml -p openpilot-uploader -p openpilot-web-upload -p openpilot-dashcam-upload -p openpilot-params-typed -p openpilot-journald -p openpilot-timed -p openpilot-logmessaged --bins --examples --locked
       - name: Build original message and Params bindings
