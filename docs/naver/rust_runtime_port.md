@@ -103,3 +103,12 @@ are untouched; production selection and whole-runtime acceptance remain pending.
 combines the verified services under one exact-SHA gate. The
 [integration record](../rust-port/runtime-daemon-integration.md) links each
 component and the [native IPC test correction #47](../rust-port/msgq-handshake-validation.md).
+
+[Structured logging issue #45](https://github.com/bin9208/openpilot-rust/issues/45)
+adds native per-thread producers, scoped/global context, source-compatible
+records and bounded runtime timing/communication summaries. Its
+[validation record](../rust-port/logging-client-validation.md) covers exact source
+bytes and numeric types, original/Rust collectors, actual OS identity, fork
+reconnection and backpressure. Integration into each daemon's original callsites
+is a subsequent full-runtime requirement; this library does not establish that
+all Rust process diagnostics reach a route or upload.
