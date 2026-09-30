@@ -31,8 +31,9 @@ def snapshot(path):
     return {}
 
 
-def trace(executable, root, operations, changes, flags, held):
+def trace(executable, root, operations, changes, flags, held, launcher):
   fixture = Fixture(root, changes)
+  fixture.config["launcher"] = str(launcher)
   lock = None
   try:
     for flag in flags:
@@ -124,7 +125,7 @@ def differential(args, evidence):
       for label, command in [('source', [sys.executable, str(Path(__file__).with_name('modem_source.py'))]), ('native', [str(args.trace)])]:
         folder = root / label
         folder.mkdir()
-        outputs.append(trace(command, folder, operations, changes, flags, held))
+        outputs.append(trace(command, folder, operations, changes, flags, held, args.binary.parent / "openpilot-process-child"))
       (evidence / (name + '.json')).write_text(json.dumps({'source': outputs[0], 'native': outputs[1]}, indent=2))
       assert outputs[0] == outputs[1], name + ' source/native mismatch; inspect artifact'
       reports.append({'scenario': name, 'pass': True, 'artifact': name + '.json'})
@@ -135,6 +136,7 @@ def lifecycle(args, evidence):
   with tempfile.TemporaryDirectory(prefix='modem-lifecycle-') as directory:
     root = Path(directory)
     fixture = Fixture(root)
+    fixture.config["launcher"] = str(args.binary.parent / "openpilot-process-child")
     config = root / 'config.json'
     config.write_text(json.dumps(fixture.config))
     state = root / 'state'

@@ -6,6 +6,8 @@ Implementation: `rust/crates/modem`, binary `openpilot-modem`.
 
 The daemon retains the five source states, one-second state cadence, 60-second ICCID cadence, five-second AT read timeout, initialization commands and echo check, identity/SIM/registration observations, APN/roaming policy, three-failure PPP retry limit, data-port DTR reset, radio observations, IPv4 route/DNS setup, byte counters, atomic mode-0644 JSON publication and shutdown cleanup. The shared advisory lock uses the same Linux flock semantics and default `/dev/shm/modem.lock` path as LPA. Native owned children are reaped after termination while retaining their exit status for reconnect handling.
 
+Failed startup propagates before stop, matching source main order. External commands use the native process launcher with descriptor closure and exec-error handshakes; PPP/sudo streams are discarded and ip stdout remains a temporary file under the two-second deadline. The focused process-boundary gate captures inherited-descriptor absence, ENOEXEC without shell fallback, and failed-startup command absence against the source.
+
 The runtime uses serialport 4.10.1 (default features disabled), native filesystem/process APIs and rustix flock/monotonic time. Existing workspace dependency versions remain unchanged. `sudo`, `pppd`, `/usr/sbin/chat`, `ip`, `resolvectl`, `killall` and conditional `systemctl` remain explicit external native dependencies. There is no Python runtime fallback. Default paths and commands address actual device resources; the fixture gate always supplies its own configuration and executable paths.
 
 ## Focused host gate
@@ -13,8 +15,9 @@ The runtime uses serialport 4.10.1 (default features disabled), native filesyste
 Run from the repository root with Python 3.12 and pyserial 3.5 installed only for the unchanged-source oracle:
 
 ```sh
-RUSTUP_TOOLCHAIN=1.94.0 cargo build --manifest-path rust/Cargo.toml -p openpilot-modem --bins --examples --locked -j2
+RUSTUP_TOOLCHAIN=1.94.0 cargo build --manifest-path rust/Cargo.toml -p openpilot-modem -p openpilot-process-supervision --bins --examples --locked -j2
 RUSTUP_TOOLCHAIN=1.94.0 cargo clippy --manifest-path rust/Cargo.toml -p openpilot-modem --all-targets --locked -j2 -- -D warnings
+python rust/tools/check_modem_process_boundary.py --target rust/target --evidence /tmp/modem-evidence
 python rust/tools/check_modem.py --binary rust/target/debug/openpilot-modem --trace rust/target/debug/examples/modem_trace --evidence /tmp/modem-evidence
 ```
 
