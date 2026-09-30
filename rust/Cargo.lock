@@ -2042,6 +2042,7 @@ dependencies = [
  "encoding_rs",
  "flate2",
  "jsonwebtoken",
+ "openpilot-hardware-info",
  "openpilot-http-transport",
  "openpilot-logging",
  "openpilot-logmessaged",
