@@ -20,4 +20,5 @@ private:
   std::unique_ptr<PublisherLock> lock_;
 };
 std::unique_ptr<Queue> open_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity);
+std::unique_ptr<Queue> open_runtime_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity);
 }
