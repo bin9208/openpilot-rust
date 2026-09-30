@@ -2,12 +2,18 @@
 from pathlib import Path
 import subprocess
 import tempfile
+import tomllib
 import unittest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_root_directory_builds_select_the_pinned_rust_toolchain(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        channel = tomllib.loads((ROOT / 'rust/rust-toolchain.toml').read_text())['toolchain']['channel']
+        self.assertEqual(data.get('env', {}).get('RUSTUP_TOOLCHAIN'), channel)
+
     def test_support_binding_path_is_configured_on_the_runner(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         for name, job in data['jobs'].items():

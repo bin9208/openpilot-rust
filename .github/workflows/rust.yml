@@ -7,6 +7,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  RUSTUP_TOOLCHAIN: '1.94.0'
 concurrency:
   group: rust-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
@@ -305,7 +307,10 @@ jobs:
       - name: Configure original telemetry IPC imports
         run: printf 'PYTHONPATH=%s/telemetry-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Build telemetry daemons and source-comparison probes
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --bins --examples --locked
+        run: |
+          rustc --version
+          cargo --version
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --bins --examples --locked
       - name: Build original telemetry message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/telemetry-msgq-python"

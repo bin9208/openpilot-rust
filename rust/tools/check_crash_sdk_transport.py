@@ -156,13 +156,13 @@ def main():
         logs.append(record)
       capture = receiver.events.get(timeout=10)
       native_error = capture["event"]
+      (output / "native-error.json").write_text(json.dumps({"request": request, "response": response, "event": native_error, "logs": logs}, indent=2) + "\n")
+      (output / "envelope-native-error.txt").write_text(capture["raw"])
       error = native_error["exception"]["values"][-1]
-      assert error["type"].startswith("std::io::") and "os error 2" in error["value"]
+      assert error["type"].startswith("std::io::") and "os error 2" in error["value"], error
       assert "rust_backtrace" in native_error["extra"] and "tombstone" in native_error["extra"]
       assert [record["msg"] for record in logs] == ["crash"]
       assert (p.root / "native/params/fixture/CarrotException").read_text() == "exception"
-      (output / "native-error.json").write_text(json.dumps({"request": request, "response": response, "event": native_error, "logs": logs}, indent=2) + "\n")
-      (output / "envelope-native-error.txt").write_text(capture["raw"])
 
     (output / "comparisons.json").write_text(json.dumps(comparisons, indent=2) + "\n")
     manifest = {"result": "PASS", "events": len(comparisons), "native_io_exception_events": 1, "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(), "transport": "native sentry-rust0.49.3 HTTP to loopback; Python sentry-sdk2.55.0 in-memory capture", "preserved": ["tag JSON types", "original user/release/environment", "extra values", "max_value_length byte/codepoint fallback", "_meta len/rem annotations"], "excluded_sdk_internals": ["SDK identity/platform", "thread integration", "native exception representation", "retry/rate-limit/grouping internals"], "command": command}

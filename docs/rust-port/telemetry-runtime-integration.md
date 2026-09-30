@@ -94,5 +94,19 @@ runtime inventory. Exact-head Actions and post-merge results remain pending.
 Generic ARM artifacts, local IPC/filesystem tests and simulated crash/GPIO
 fixtures do not establish hardware, startup, device or CPU acceptance.
 
+The first PR #89 telemetry job fails at the real native I/O exception check in
+both [PR](https://github.com/bin9208/openpilot-rust/actions/runs/36714298416/job/109883310008)
+and [push](https://github.com/bin9208/openpilot-rust/actions/runs/36714292962/job/109883290799)
+runs. Preserved stderr shows `core::io::error::Error`; the local pinned compiler
+reports `std::io::error::Error` for the same real ENOENT. Repository-root Cargo
+commands installed 1.94.0 without selecting the toolchain file inside `rust/`.
+[#91](https://github.com/bin9208/openpilot-rust/issues/91) explicitly sets
+`RUSTUP_TOOLCHAIN=1.94.0` for the workflow and records compiler versions in the
+telemetry build. Explicit pinned-nightly commands retain their precedence.
+The missing-selection regression fails before the change and all eight CI-policy
+tests pass afterward. Real local compiler probes reproduce the namespace
+difference; the native SDK14+I/O check passes without relaxing its assertion.
+The full exception capture is now written before assertions for future failures.
+
 Docs-Not-Needed: internal runtime integration and engineering evidence; no selected
 production behavior or user setting changes.
