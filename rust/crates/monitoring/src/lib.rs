@@ -11,6 +11,10 @@ use serde::Serialize;
 use stat::RunningStatFilter;
 
 pub const DT_DMON: f64 = 0.05;
+
+#[derive(Debug, thiserror::Error)]
+#[error("driver monitoring input array is too short: {0}")]
+pub struct InputError(pub &'static str);
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum AlertLevel {
     None,
@@ -130,7 +134,7 @@ impl DriverMonitoring {
             last_wheeltouch_awareness: 1.,
         }
     }
-    pub fn run_step(&mut self, input: &Input) {
+    pub fn run_step(&mut self, input: &Input) -> Result<(), InputError> {
         let demo_input;
         let input = if input.demo {
             demo_input = Input {
@@ -147,8 +151,9 @@ impl DriverMonitoring {
         let bp = scalar::max(scalar::min(input.brake_disengage_prob / k1, 0.5), 0.);
         self.pose.cfactor_pitch = (0.3237 + bp * ((0.3133 - 0.3237) / 0.5)) / 0.3133;
         self.pose.cfactor_yaw = (0.5042 + bp * ((0.4020 - 0.5042) / 0.5)) / 0.4020;
-        self.update_states(input);
+        self.update_states(input)?;
         self.update_events(input);
+        Ok(())
     }
     fn reset_awareness(&mut self) {
         self.awareness = 1.;

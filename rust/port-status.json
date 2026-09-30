@@ -120,7 +120,9 @@
       "name": "dmonitoringd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.monitoring.dmonitoringd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX"],
+      "runtime_scope": "continuous policy, cereal and Params loop; production selection and full-runtime/device acceptance pending",
       "production_replaced": false
     },
     {

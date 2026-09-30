@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 /// arrays represent the original policy's empty-array early return.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DriverData {
-    pub face_orientation: Option<[f64; 3]>,
-    pub face_position: Option<[f64; 2]>,
-    pub face_orientation_std: Option<[f64; 3]>,
-    pub face_position_std: Option<[f64; 2]>,
+    pub face_orientation: Option<Vec<f64>>,
+    pub face_position: Option<Vec<f64>>,
+    pub face_orientation_std: Option<Vec<f64>>,
+    pub face_position_std: Option<Vec<f64>>,
     pub face_prob: f64,
     pub left_eye_prob: f64,
     pub right_eye_prob: f64,
@@ -20,10 +20,10 @@ pub struct DriverData {
 impl Default for DriverData {
     fn default() -> Self {
         Self {
-            face_orientation: Some([0.; 3]),
-            face_position: Some([0.; 2]),
-            face_orientation_std: Some([0.; 3]),
-            face_position_std: Some([0.; 2]),
+            face_orientation: Some(vec![0.; 3]),
+            face_position: Some(vec![0.; 2]),
+            face_orientation_std: Some(vec![0.; 3]),
+            face_position_std: Some(vec![0.; 2]),
             face_prob: 1.,
             left_eye_prob: 1.,
             right_eye_prob: 1.,
@@ -53,7 +53,7 @@ pub struct Input {
     pub gas_pressed: bool,
     pub brake_disengage_prob: f64,
     pub steering_angle_deg: f64,
-    pub calibration: [f64; 3],
+    pub calibration: Vec<f64>,
     pub demo: bool,
 }
 impl Default for Input {
@@ -67,7 +67,7 @@ impl Default for Input {
             gas_pressed: false,
             brake_disengage_prob: 1.,
             steering_angle_deg: 0.,
-            calibration: [0.; 3],
+            calibration: vec![0.; 3],
             demo: false,
         }
     }
