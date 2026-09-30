@@ -368,6 +368,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-driving-modeld"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "libc",
+ "openpilot-cereal",
+ "openpilot-desire",
+ "openpilot-model-runtime",
+ "openpilot-modeld",
+ "openpilot-msgq",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-model-runtime"
 version = "0.1.0"
 dependencies = [
