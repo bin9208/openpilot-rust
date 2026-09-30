@@ -1729,6 +1729,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-hardware-info"
+version = "0.1.0"
+dependencies = [
+ "home",
+ "num-bigint",
+ "num-traits",
+ "openpilot-logmessaged",
+ "openpilot-params",
+ "openpilot-runtime-core",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-http-transport"
 version = "0.1.0"
 dependencies = [

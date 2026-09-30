@@ -483,6 +483,16 @@
   ],
   "library_ports": [
     {
+      "name": "hardware_information_and_runtime_paths",
+      "source_entrypoint": "openpilot.system.hardware base/hw/pc/tici read-only APIs and tici.iwlist",
+      "status": "native_information_host_validated_actions_pending",
+      "implementation": "rust/crates/hardware-info; native filesystem/socket/command/Params adapters, raw modem JSON, identity/network/power observations, model/thermal caches and runtime Paths",
+      "native_dependencies": ["Linux filesystem, clocks and Unix datagrams", "/bin/sh, sudo/cat and iwlist", "existing Params and Python-compatible native JSON parser; current transitive cereal/msgq dependencies"],
+      "unported_scope": ["board writes and IRQ/power management", "reboot/shutdown/uninstall", "GPIO and internal Panda reset/recovery", "display/IR setters and amplifier", "SIM LPA", "modem daemon", "hardwared loop"],
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-hardware-info-98.md"
+    },
+    {
       "name": "managed_child_entry_boundary",
       "source_entrypoint": "openpilot.system.manager.process:launcher",
       "status": "native_host_entry_boundary_validated",
