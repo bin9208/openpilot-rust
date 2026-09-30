@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -16,7 +17,7 @@ from timed_reference import Source
 
 def worker(binary, output, mode, implementation):
   captures = []
-  with environment(output / 'fixture') as (config, params):
+  with tempfile.TemporaryDirectory(prefix='timed-http-') as temporary, environment(Path(temporary)) as (config, params):
     class Handler(BaseHTTPRequestHandler):
       def log_message(self, *args):
         pass

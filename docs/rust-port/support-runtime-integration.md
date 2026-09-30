@@ -81,6 +81,14 @@ merge and correctly failed its embedded `source_commit` assertion. Final
 integration execution requires rebuilding from the revision under test; this
 attempt is retained as a provenance failure rather than a runtime mismatch.
 
+The rebuilt final journal comparison passes, as do all 54 clock policy and 360
+date cases. The combined HTTP check then exposes [#78](https://github.com/bin9208/openpilot-rust/issues/78):
+its mutable fixture directory follows the caller-selected evidence output,
+which can be outside the native fixture's permitted temporary roots. The checker
+now uses a temporary directory for mutable Params/command paths while retaining
+captures in the requested output. The native path guard, HTTP implementation,
+five-second deadlines and comparison assertions remain unchanged.
+
 Exact-SHA Actions and post-merge results are still pending. PR success,
 post-merge success, device execution and user acceptance remain separate states.
 
