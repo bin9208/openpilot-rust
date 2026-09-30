@@ -214,3 +214,9 @@ combines upload orchestration, typed Params, model startup/diagnostics and the
 journal bridge. The [integration record](../rust-port/support-runtime-integration.md)
 tracks frozen inputs, combined checks and remaining runtime work. Normal startup,
 active server integration and the complete device-test candidate remain pending.
+
+[Runtime metadata and telemetry integration #83](https://github.com/bin9208/openpilot-rust/issues/83)
+tracks the next metadata/Git, statistics, crash-processing and GPIO alert ports.
+The [integration record](../rust-port/telemetry-runtime-integration.md) separates
+reviewed component inputs from pending combined checks and inherited source
+defects. It does not change the complete-runtime first-device-test gate.
