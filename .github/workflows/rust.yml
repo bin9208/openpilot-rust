@@ -61,6 +61,19 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
+      - name: Compare Jetlink policy, model adapter, descriptors and bidirectional RPC
+        run: |
+          python tools/check_jetlink_reference.py target/debug/examples/jetlink_probe "$RUNNER_TEMP/jetlink-reference"
+          python tools/check_jetlink_rpc.py target/debug/examples/rpc_probe "$RUNNER_TEMP/jetlink-rpc"
+          python tools/check_jetlink_raw.py target/debug/examples/jetlink_raw_probe "$RUNNER_TEMP/jetlink-raw"
+      - name: Retain Jetlink source oracle and RPC evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: jetlink-host-oracle-evidence
+          path: |
+            ${{ runner.temp }}/jetlink-reference/
+            ${{ runner.temp }}/jetlink-rpc/
+            ${{ runner.temp }}/jetlink-raw/
       - name: Compare message state and service catalog with original source
         run: |
           python tools/check_services.py
@@ -257,6 +270,10 @@ jobs:
         env:
           RUSTFLAGS: -Zsanitizer=address -Clink-arg=-Wl,--export-dynamic
         run: cargo +nightly-2026-09-29 test -p openpilot-calibrationd --test parameters --locked -Zbuild-std --target x86_64-unknown-linux-gnu
+      - name: Check Jetlink native signal, socket and FunctionFS fixture boundaries with ASan
+        env:
+          RUSTFLAGS: -Zsanitizer=address -Clink-arg=-Wl,--export-dynamic
+        run: cargo +nightly-2026-09-29 test -p openpilot-jetlink --lib --test socket --test runtime --test ffs --locked -Zbuild-std --target x86_64-unknown-linux-gnu
       - name: Check the real Rust and C kernel boundary with ASan
         env:
           MODEL_TEST_ASAN: '1'
@@ -315,3 +332,4 @@ jobs:
           path: |
             rust/target/aarch64-unknown-linux-gnu/release/cpu-sample
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-calibrationd
+            rust/target/aarch64-unknown-linux-gnu/release/jetlinkd-rs

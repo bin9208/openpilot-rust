@@ -29,11 +29,11 @@ impl Backend {
         Ok(())
     }
 
-    fn read(&self, bytes: &mut [u8]) -> Result<(), Error> {
+    fn read(&self, name: &str, bytes: &mut [u8]) -> Result<(), Error> {
         match self {
-            Self::Cpu(model) => model.read_output("model", bytes)?,
+            Self::Cpu(model) => model.read_output(name, bytes)?,
             Self::Qcom(model) => {
-                let source = model.read_output("model")?;
+                let source = model.read_output(name)?;
                 if source.len() != bytes.len() {
                     return Err(Error::Contract("model output size changed"));
                 }
@@ -142,7 +142,7 @@ impl<'a> DrivingRuntime<'a> {
             return Ok(None);
         }
         self.backend.execute("policy")?;
-        self.backend.read(&mut self.output_bytes)?;
+        self.backend.read("model", &mut self.output_bytes)?;
         for (value, bytes) in self
             .output_values
             .iter_mut()
@@ -157,6 +157,44 @@ impl<'a> DrivingRuntime<'a> {
             &self.bundle.descriptor.metadata.output_slices,
         )?;
         Ok(Some(DrivingPrediction::parse(&outputs)?))
+    }
+
+    pub fn warp_for_jetlink(
+        &mut self,
+        main: &[u8],
+        extra: &[u8],
+        transforms: [[f32; 9]; 2],
+    ) -> Result<Vec<u8>, Error> {
+        if self.bundle.backend != "qcom-cl"
+            || !transforms.as_flattened().iter().all(|v| v.is_finite())
+        {
+            return Err(Error::Contract(
+                "Jetlink requires the verified QCOM warp geometry",
+            ));
+        }
+        let warped = self
+            .bundle
+            .descriptor
+            .outputs
+            .iter()
+            .find(|output| output.name == "warped")
+            .ok_or(Error::Contract("missing compiled warp output"))?;
+        if warped.bytes()? != openpilot_jetlink::contract::WARPED_BYTES {
+            return Err(Error::Contract("Jetlink warped shape"));
+        }
+        self.backend.write("frame", main)?;
+        self.backend.write("big_frame", extra)?;
+        for (name, matrix) in ["tfm", "big_tfm"].into_iter().zip(transforms) {
+            let mut bytes = [0; 36];
+            for (target, value) in bytes.chunks_exact_mut(4).zip(matrix) {
+                target.copy_from_slice(&value.to_ne_bytes());
+            }
+            self.backend.write(name, &bytes)?;
+        }
+        self.backend.execute("prepare")?;
+        let mut bytes = vec![0; openpilot_jetlink::contract::WARPED_BYTES];
+        self.backend.read("warped", &mut bytes)?;
+        Ok(bytes)
     }
 
     pub fn raw_predictions(&self) -> &[u8] {
