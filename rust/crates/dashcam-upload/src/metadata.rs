@@ -48,9 +48,12 @@ pub fn git_text(repo: &Path, args: &[&str], default: &str) -> String {
         loop {
             if let Some(status) = child.try_wait()? {
                 let output = child.wait_with_output()?;
-                return Ok(status
-                    .success()
-                    .then(|| String::from_utf8_lossy(&output.stdout).trim().to_owned())
+                if !status.success() || std::str::from_utf8(&output.stderr).is_err() {
+                    return Ok(None);
+                }
+                return Ok(String::from_utf8(output.stdout)
+                    .ok()
+                    .map(|value| strip(&value).to_owned())
                     .filter(|s| !s.is_empty()));
             }
             if start.elapsed() >= Duration::from_secs(4) {
@@ -88,18 +91,24 @@ pub fn device_serial(
         serial.into()
     }
 }
+pub fn serial_from_cmdline(line: &str) -> Option<&str> {
+    line.split(' ')
+        .filter_map(|field| {
+            let mut parts = field.split('=');
+            match (parts.next(), parts.next(), parts.next()) {
+                (Some("androidboot.serialno"), Some(value), None) => Some(value),
+                _ => None,
+            }
+        })
+        .next_back()
+}
 pub fn hardware_serial() -> String {
     if !Path::new("/TICI").is_file() {
         return String::new();
     }
     fs::read_to_string("/proc/cmdline")
         .ok()
-        .and_then(|line| {
-            line.split_whitespace().find_map(|pair| {
-                pair.strip_prefix("androidboot.serialno=")
-                    .map(str::to_owned)
-            })
-        })
+        .and_then(|line| serial_from_cmdline(&line).map(str::to_owned))
         .unwrap_or_default()
 }
 pub fn upload_metadata(

@@ -70,8 +70,10 @@ rewritten and Rust commits are not misidentified as upstream commits.
 - `check_dashcam_catalog.py`: source pathname/file selection, URL quoting and
   report functions; 1,929 names, ten filesystem cases, fourteen URLs and 36
   report payloads. The report repository mapping above is explicit.
-- `check_dashcam_metadata.py`: 3,173 actual-source comparisons for concurrency,
-  obfuscated-string decoding, saved/environment URL selection and real Git.
+- `check_dashcam_metadata.py`: 3,184 actual-source comparisons for concurrency,
+  obfuscated-string decoding, saved/environment URL selection, boot command-line
+  serial parsing and real Git. Invalid UTF-8 Git output falls back as in the
+  source; duplicate serial fields retain the last valid source dictionary entry.
 - `check_dashcam_params.py`: 93 metadata/getter cases with the actual compiled
   Cython/C++ Params binding, real files and original/native ZMQ log records.
   These include strict UTF-8 warnings, serial/environment precedence and the
@@ -90,7 +92,7 @@ rewritten and Rust commits are not misidentified as upstream commits.
 - `check_dashcam_lifecycle.py`: five native process/connection ownership cases.
 
 The generic GNU ARM64 build passes. Under QEMU, the ARM state/catalog/metadata
-and actual typed-Params examples pass the same 2,099/1,929/3,173/93 comparisons.
+and actual typed-Params examples pass the same state/catalog/metadata/Params comparisons.
 The ARM upload worker also passes all ten HTTP scenarios and five ownership
 scenarios when owned by the host build of the identical manager driver. The
 `dashcam_worker_host` example supplies an explicit worker executable to the

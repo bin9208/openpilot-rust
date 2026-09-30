@@ -16,6 +16,9 @@ enum Request {
     Concurrency {
         value: Option<String>,
     },
+    Serial {
+        cmdline: String,
+    },
     Git {
         repo: PathBuf,
         args: Vec<String>,
@@ -35,6 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|request| match request {
             Request::Decode { value, key } => json!(metadata::decode_obfuscated(&value, &key)),
             Request::Concurrency { value } => json!(worker::concurrency(value.as_deref())),
+            Request::Serial { cmdline } => json!(metadata::serial_from_cmdline(&cmdline)),
             Request::Git {
                 repo,
                 args,

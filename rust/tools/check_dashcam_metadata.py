@@ -5,6 +5,7 @@ import base64
 from collections.abc import Callable
 from contextlib import contextmanager
 import copy
+import io
 import json
 import logging
 import os
@@ -84,6 +85,25 @@ def main():
   with tempfile.TemporaryDirectory(prefix='dashcam-metadata-') as temp:
     settings_path = Path(temp) / 'settings.json'
     original = source(root, settings_path)
+    hardware_path = root / 'openpilot/system/hardware/base.py'
+    hardware_class = next(node for node in ast.parse(hardware_path.read_text()).body if isinstance(node, ast.ClassDef) and node.name == 'HardwareBase')
+    cmdline_method = next(node for node in hardware_class.body if isinstance(node, ast.FunctionDef) and node.name == 'get_cmdline')
+    for cmdline in [
+      '',
+      'androidboot.serialno=first',
+      'a=1 androidboot.serialno=first androidboot.serialno=second',
+      'androidboot.serialno=bad=tail',
+      'a=1\tandroidboot.serialno=hidden',
+      'androidboot.serialno=first\tandroidboot.serialno=second',
+      'androidboot.serialno=',
+      ' androidboot.serialno= last',
+      'androidboot.serialno=value\n',
+      'androidboot.serialno=a==b androidboot.serialno=correct',
+    ]:
+      hardware_scope = {'open': lambda path, data=cmdline: io.StringIO(data)}
+      exec(compile(ast.Module(body=[cmdline_method], type_ignores=[]), str(hardware_path), 'exec'), hardware_scope)
+      expected.append(hardware_scope['get_cmdline']().get('androidboot.serialno'))
+      requests.append({'op': 'serial', 'cmdline': cmdline})
     values = [None, '', ' ', '0', '-8', '6', '7', '+4', '1_0', '٠٠٣', '４', '²', '_3', '3_', '3__0', '\x1c3\x1f', '\u00853\u0085', '9' * 200, '9' * 4400]
     values += [''.join(rng.choices('+-_0123456789 ٠٢٤\t', k=rng.randrange(1, 24))) for _ in range(600)]
     for value in values:
@@ -138,6 +158,15 @@ def main():
           }
         )
         expected.append(result)
+    binary_repo = Path(temp) / 'binary-git'
+    subprocess.run(['git', 'init', '--quiet', str(binary_repo)], check=True)
+    digest = (
+      subprocess.run(['git', 'hash-object', '-w', '--stdin'], cwd=binary_repo, input=b'\xffinvalid\n', capture_output=True, check=True).stdout.decode().strip()
+    )
+    git_args = ['cat-file', 'blob', digest]
+    with environment({'CARROT_REPO_DIR': str(binary_repo)}):
+      expected.append(original['git_text'](git_args, 'unknown'))
+    requests.append({'op': 'git', 'repo': str(binary_repo), 'args': git_args, 'default': 'unknown'})
     for repo in [root, Path(temp), Path(temp) / 'missing']:
       for git_args in [
         ['branch', '--show-current'],
