@@ -1277,6 +1277,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-params-typed"
+version = "0.1.0"
+dependencies = [
+ "openpilot-logging",
+ "openpilot-params",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "zmq",
+]
+
+[[package]]
 name = "openpilot-proclogd"
 version = "0.1.0"
 dependencies = [
@@ -1312,6 +1325,7 @@ dependencies = [
  "openpilot-logging",
  "openpilot-messaging",
  "openpilot-params",
+ "openpilot-params-typed",
  "openpilot-runtime-core",
  "p256",
  "rand 0.9.5",

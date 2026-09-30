@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 openpilot-deleter = { path = "../deleter" }
 openpilot-params = { path = "../params" }
+openpilot-params-typed = { path = "../params-typed" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-messaging = { path = "../messaging" }
 openpilot-logging = { path = "../logging" }

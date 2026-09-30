@@ -56,12 +56,6 @@ pub fn persist_root() -> Result<PathBuf, Error> {
         .join(name)
         .join("persist"))
 }
-fn string_param(params: &Params, key: &str) -> Result<Option<String>, Error> {
-    Ok(params
-        .get(key)?
-        .filter(|bytes| !bytes.is_empty())
-        .and_then(|bytes| String::from_utf8(bytes).ok()))
-}
 fn sleep(stop: &AtomicBool, seconds: f64) {
     let end = Instant::now() + Duration::from_secs_f64(seconds);
     while !stop.load(Ordering::Relaxed) {
@@ -99,7 +93,8 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
         .map_err(|error| std::io::Error::other(error.to_string()))?;
     clear_locks(&root, &mut events)?;
     let params = Params::for_runtime()?;
-    let Some(dongle_id) = string_param(&params, "DongleId")? else {
+    let Some(dongle_id) = openpilot_params_typed::get_string(&params, "DongleId", &mut events.0)?
+    else {
         events.info(log_site!(), "uploader missing dongle_id".into());
         return Err(Error::Configuration(
             "uploader can't start without dongle id",
@@ -140,7 +135,11 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
                 5.0
             }
         } else {
-            let requested = string_param(&params, "AthenadRecentlyViewedRoutes")?;
+            let requested = openpilot_params_typed::get_string(
+                &params,
+                "AthenadRecentlyViewedRoutes",
+                &mut uploader.events.0,
+            )?;
             let outcome = uploader.step(
                 network_type,
                 device.get_network_metered(),

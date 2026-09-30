@@ -21,6 +21,8 @@ pub enum Error {
     #[error(transparent)]
     Params(#[from] openpilot_params::Error),
     #[error(transparent)]
+    TypedParams(#[from] openpilot_params_typed::Error),
+    #[error(transparent)]
     Messaging(#[from] openpilot_messaging::runtime::Error),
     #[error(transparent)]
     State(#[from] openpilot_messaging::state::Error),
