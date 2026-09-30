@@ -22,6 +22,11 @@ policy test rejects failure, cancellation, skipping or absence of any dependency
 Local validation reuses the focused component evidence and checks merge metadata
 and CI policy; repeatable complete builds run in Actions.
 
+The first integration Actions platform job passed. Its separate startup catalog
+gate caught missing candidate-availability entries for hardwared and modem; the
+catalog now records both native packages while leaving production selection
+unchanged. The existing inventory comparison remains required.
+
 See [manager](../naver/rust-manager-106.md),
 [hardwared](hardwared-validation.md) and [modem](modem-validation.md) for exact
 source scope, host evidence and native external dependencies. These are continuous
