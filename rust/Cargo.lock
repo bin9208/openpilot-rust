@@ -1861,6 +1861,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-hardwared"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "openpilot-hardware-control",
+ "openpilot-hardware-info",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-runtime-core",
+ "openpilot-runtime-version",
+ "openpilot-statsd",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-http-transport"
 version = "0.1.0"
 dependencies = [

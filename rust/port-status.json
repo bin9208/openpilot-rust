@@ -159,7 +159,11 @@
       "name": "hardwared",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.hardware.hardwared",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_validated_actions_pending",
+      "implementation": "rust/crates/hardwared; native continuous hardware/network/touch workers, fan and power monitoring, Params/startup/thermal policy and deviceState publication",
+      "native_dependencies": ["Linux/AGNOS procfs/sysfs/input/I2C", "hardware-info and hardware-control original native commands", "process-supervision captured child helper", "native cereal/msgq and libzmq"],
+      "runtime_scope": "focused original-source comparison and actual host msgq/process lifecycle; physical board/AGNOS, manager selection, complete startup/upload candidate and device acceptance remain pending",
+      "evidence": "docs/rust-port/hardwared-validation.md",
       "production_replaced": false
     },
     {
@@ -493,7 +497,7 @@
       "status": "native_host_policy_and_adapter_validated",
       "implementation": "rust/crates/hardware-control; display/IR, lazy amplifier selection, power-save/initialization ordering, GPIO/IRQ, Panda reset/recovery, readiness and reboot/shutdown/uninstall policy",
       "native_dependencies": ["Linux/AGNOS filesystem, clock and sync APIs", "original sudo/shell/pgrep/chrt/taskset commands", "Rust amplifier I2C adapter and Params", "process-supervision child helper and its existing cereal/msgq/libzmq dependencies"],
-      "runtime_scope": "host fixtures only; hardware-info #98, modem/LPA, other GPIO/gpiochip APIs, hardwared loop and manager adoption remain separate; generic ARM/device validation pending",
+      "runtime_scope": "host fixtures only; hardware-info #98 and hardwared #111 consume the controls; modem/LPA, other GPIO/gpiochip APIs and manager adoption remain separate; generic ARM/device validation pending",
       "production_replaced": false,
       "evidence": "docs/rust-port/hardware-control-validation.md"
     },
@@ -521,7 +525,7 @@
       "status": "native_information_host_validated_actions_pending",
       "implementation": "rust/crates/hardware-info; native filesystem/socket/command/Params adapters, raw modem JSON, identity/network/power observations, model/thermal caches and runtime Paths",
       "native_dependencies": ["Linux filesystem, clocks and Unix datagrams", "/bin/sh, sudo/cat and iwlist", "existing Params and Python-compatible native JSON parser; current transitive cereal/msgq dependencies"],
-      "unported_scope": ["SIM LPA", "modem daemon", "hardwared loop"],
+      "unported_scope": ["SIM LPA", "other GPIO/gpiochip APIs", "manager adoption and physical device acceptance"],
       "production_replaced": false,
       "evidence": "docs/naver/rust-hardware-info-98.md"
     },
