@@ -81,6 +81,18 @@ The next combined run caught the same fixed-delay assumption in starting a
 process whose previous instance was stopping. That comparison now uses the same
 held-child barrier for restart and cleanup; all19 lifecycle cases pass.
 
+The combined Python dependencies exposed receiver issue
+[#100](https://github.com/bin9208/openpilot-rust/issues/100): installing Brotli for
+registration makes pinned Sentry2.55.0 select Brotli envelope compression. The
+local comparison receiver previously decoded only gzip, so it failed to parse
+the actual source envelope. The receiver now handles identity/gzip/Brotli and
+rejects unknown encodings, retaining encoded bytes and headers with each event.
+Three real HTTP encoding cases and all44 managed-entry source/native comparisons
+pass with Brotli installed; a captured source error envelope declares `br`.
+Production SDK defaults and field comparisons are unchanged. The existing
+receiver script's17 prior lint diagnostics remain identical; the new checker
+passes lint with no suppressions.
+
 ## Local build capacity
 
 The user's low-space warning is tracked in
