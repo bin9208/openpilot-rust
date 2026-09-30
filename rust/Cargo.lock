@@ -2270,6 +2270,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-startup-ui"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "cxx-build",
+ "num-traits",
+ "openpilot-hardware-control",
+ "openpilot-hardware-info",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "openpilot-registration",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-statsd"
 version = "0.1.0"
 dependencies = [

@@ -85,6 +85,7 @@ pub(crate) struct ChildHandle {
 }
 
 enum StreamMode {
+    PipedStdin,
     Captured,
     Stdout,
     Inherited,
@@ -106,6 +107,10 @@ impl CapturedCommand {
 
     pub fn spawn_redirected(&self, stdout: Stdio, stderr: Stdio) -> Result<CapturedChild, Error> {
         self.spawn_with_stdio(StreamMode::Redirected(stdout, stderr), &[])
+    }
+
+    pub fn spawn_piped_stdin(&self) -> Result<CapturedChild, Error> {
+        self.spawn_with_stdio(StreamMode::PipedStdin, &[])
     }
 
     pub fn spawn_inherited(&self) -> Result<CapturedChild, Error> {
@@ -147,6 +152,7 @@ impl CapturedCommand {
         command.arg(descriptor.path());
         command.envs(environment.iter().map(|(key, value)| (key, value)));
         let command = match mode {
+            StreamMode::PipedStdin => command.stdin(Stdio::piped()),
             StreamMode::Captured => command.stdout(Stdio::piped()).stderr(Stdio::piped()),
             StreamMode::Stdout => command.stdout(Stdio::piped()),
             StreamMode::Inherited => &mut command,
