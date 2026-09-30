@@ -30,7 +30,7 @@ pub struct Sources<'a> {
 pub struct Output<'a> {
     pub prediction: &'a DrivingPrediction,
     pub timing: ModelTiming,
-    pub pose_timestamp: u64,
+    pub simulation: bool,
     pub dropped: u32,
     pub raw_predictions: Option<&'a [u8]>,
 }
@@ -104,7 +104,11 @@ impl Publication {
                 log_mono_time: output.timing.log_mono_time,
                 frame_id: output.timing.frame_id,
                 dropped_frames: output.dropped,
-                timestamp_eof: output.pose_timestamp,
+                timestamp_eof: if output.simulation {
+                    crate::clock::timestamp()?
+                } else {
+                    output.timing.timestamp_eof
+                },
                 live_calibration_seen: output.timing.valid,
             },
         )?;

@@ -1,4 +1,6 @@
+pub mod bus;
 pub mod camera;
+pub mod clock;
 pub mod parameters;
 pub mod publication;
 pub mod runtime;
@@ -7,6 +9,10 @@ pub mod wire;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error(transparent)]
+    Messaging(#[from] openpilot_messaging::runtime::Error),
+    #[error(transparent)]
+    MessageState(#[from] openpilot_messaging::state::Error),
     #[error("driving model contract: {0}")]
     Contract(&'static str),
     #[error(transparent)]

@@ -27,6 +27,10 @@ impl CameraSource for Source {
         if self.stop.load(Ordering::Relaxed) {
             return Ok(None);
         }
+        if !self.client.is_connected() {
+            std::thread::sleep(Duration::from_millis(100));
+            return Ok(None);
+        }
         let Some(frame) = self.client.receive(Duration::from_millis(100))? else {
             return Ok(None);
         };

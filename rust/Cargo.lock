@@ -375,6 +375,7 @@ dependencies = [
  "libc",
  "openpilot-cereal",
  "openpilot-desire",
+ "openpilot-messaging",
  "openpilot-model-runtime",
  "openpilot-modeld",
  "openpilot-msgq",

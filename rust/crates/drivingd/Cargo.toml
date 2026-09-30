@@ -19,6 +19,7 @@ openpilot-model-runtime = { path = "../model-runtime" }
 openpilot-msgq = { path = "../msgq" }
 openpilot-params = { path = "../params" }
 openpilot-desire = { path = "../desire" }
+openpilot-messaging = { path = "../messaging" }
 capnp = "=0.27.2"
 thiserror = "2"
 libc = "0.2"

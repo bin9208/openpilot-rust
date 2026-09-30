@@ -239,7 +239,9 @@
       "name": "modeld",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.modeld.modeld",
-      "status": "not_ported",
+      "status": "internal_model_runtime_host_validated",
+      "native_dependencies": ["original msgq/VisionIPC through CXX", "trusted original CPU/QCOM model kernels"],
+      "runtime_scope": "continuous internal driving model loop; USB/eGPU fallback, Jetlink, zero-copy, manager selection and whole-runtime/device acceptance pending",
       "production_replaced": false
     },
     {

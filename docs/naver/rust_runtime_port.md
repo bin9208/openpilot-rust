@@ -52,3 +52,9 @@ ports camera pairing, drop state, calibration and packed policy inputs. The
 [comparison record](../rust-port/model-input-validation.md) includes original
 source sequences and exact native camera/model/recurrent output comparisons.
 Complete driving daemon orchestration remains tracked under #1/#6.
+
+[Internal driving daemon issue #31](https://github.com/bin9208/openpilot-rust/issues/31)
+connects camera pairing, calibration, native inference, action/desire state and
+the three original driving publications in a continuous Rust process. Its
+[validation record](../rust-port/driving-daemon-validation.md) covers original
+model/loop comparisons over real IPC and remaining external-inference integration.
