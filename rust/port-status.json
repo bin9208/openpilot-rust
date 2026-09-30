@@ -267,7 +267,11 @@
       "name": "modem",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.hardware.tici.modem",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/modem; openpilot-modem continuous AT/PPP state daemon",
+      "native_dependencies": ["Linux serial/termios and flock", "sudo", "pppd", "/usr/sbin/chat", "ip", "resolvectl", "killall", "systemctl"],
+      "runtime_scope": "owned PTY/source oracle and harmless process fixtures; LPA provisioning, production selection, ARM/AGNOS and device acceptance remain separate",
+      "evidence": "docs/rust-port/modem-validation.md",
       "production_replaced": false
     },
     {

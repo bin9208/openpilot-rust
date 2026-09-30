@@ -1,0 +1,19 @@
+[package]
+name = "openpilot-modem"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+serialport = { version = "=4.10.1", default-features = false }
+rustix = { version = "1", features = ["fs", "time"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+signal-hook = "0.3"
+tempfile = "3"
+thiserror = "2"
