@@ -5,6 +5,8 @@ pub mod boot_lock;
 pub mod initialization;
 pub mod lifecycle;
 pub mod main_loop;
+pub mod native_boot;
+pub mod native_exit;
 pub mod parameters;
 pub mod processes;
 pub mod runtime;
@@ -40,6 +42,10 @@ pub enum Error {
     Reporting(#[from] openpilot_crash_reporting::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Bootlog(#[from] openpilot_bootlog::snapshot::Error),
+    #[error(transparent)]
+    Hardware(#[from] openpilot_hardware_control::Error),
     #[error("manager contract: {0}")]
     Contract(&'static str),
     #[error("native daemon unavailable: {0}")]

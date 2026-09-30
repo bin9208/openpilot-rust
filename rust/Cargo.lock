@@ -1630,6 +1630,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-bootlog"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "nix",
+ "openpilot-cereal",
+ "openpilot-loggerd",
+ "openpilot-logging",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "rustix",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "zstd",
+]
+
+[[package]]
 name = "openpilot-calibrationd"
 version = "0.1.0"
 dependencies = [
@@ -1781,6 +1799,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-hardware-control"
+version = "0.1.0"
+dependencies = [
+ "nix",
+ "openpilot-amplifier",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-hardware-info"
 version = "0.1.0"
 dependencies = [
@@ -1913,9 +1946,12 @@ version = "0.1.0"
 dependencies = [
  "capnp",
  "chrono",
+ "openpilot-bootlog",
  "openpilot-cereal",
  "openpilot-checkout-status",
  "openpilot-crash-reporting",
+ "openpilot-hardware-control",
+ "openpilot-hardware-info",
  "openpilot-logging",
  "openpilot-logmessaged",
  "openpilot-managed-entry",
@@ -2068,6 +2104,7 @@ dependencies = [
  "encoding_rs",
  "flate2",
  "jsonwebtoken",
+ "openpilot-hardware-info",
  "openpilot-http-transport",
  "openpilot-logging",
  "openpilot-logmessaged",

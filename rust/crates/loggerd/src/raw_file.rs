@@ -51,6 +51,29 @@ impl RawFile {
 
     #[expect(
         unsafe_code,
+        reason = "source ZstdFileWriter ignores fflush but checks fclose"
+    )]
+    pub fn finish_checked(self) -> io::Result<()> {
+        let this = std::mem::ManuallyDrop::new(self);
+        loop {
+            // SAFETY: this exclusively owns the live FILE; fflush does not consume it.
+            if unsafe { libc::fflush(this.0.as_ptr()) } == 0
+                || io::Error::last_os_error().kind() != io::ErrorKind::Interrupted
+            {
+                break;
+            }
+        }
+        // SAFETY: ManuallyDrop suppresses Drop; fclose consumes the unique FILE once,
+        // even on error. No pointer access occurs after this call and close is not retried.
+        if unsafe { libc::fclose(this.0.as_ptr()) } == 0 {
+            Ok(())
+        } else {
+            Err(io::Error::last_os_error())
+        }
+    }
+
+    #[expect(
+        unsafe_code,
         reason = "source raw VideoWriter ignores flush/close errors"
     )]
     pub fn finish(self) {
@@ -71,5 +94,26 @@ impl Drop for RawFile {
         // SAFETY: this owner is neither copied nor shared; fclose consumes its
         // FILE allocation once, including when closing reports an I/O failure.
         unsafe { libc::fclose(self.0.as_ptr()) };
+    }
+}
+
+impl io::Write for RawFile {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        RawFile::write(self, bytes)?;
+        Ok(bytes.len())
+    }
+
+    #[expect(unsafe_code, reason = "flush uniquely owned stdio stream for Write")]
+    fn flush(&mut self) -> io::Result<()> {
+        loop {
+            // SAFETY: exclusive borrow guarantees a live, uniquely owned FILE.
+            if unsafe { libc::fflush(self.0.as_ptr()) } == 0 {
+                return Ok(());
+            }
+            let error = io::Error::last_os_error();
+            if error.kind() != io::ErrorKind::Interrupted {
+                return Err(error);
+            }
+        }
     }
 }

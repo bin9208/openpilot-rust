@@ -3,7 +3,7 @@
   "source_commit": "f3a92524d87be714f6b8b5f44ecdc8319a8c53d1",
   "scope": "Registered source processes, including conditional/disabled entries. Manager and libraries are tracked separately; not a claim of runtime coverage.",
   "manager_status": "native_orchestration_host_candidate",
-  "manager_scope": "Native initialization, Params transitions, continuous messaging/process loop, cleanup and exit policy; seven focused unchanged-source scenarios plus isolated IPC/owned children. Native bootlog/board adapters and complete daemon selection remain integration work; no production selection or device acceptance. See docs/naver/rust-manager-106.md.",
+  "manager_scope": "Native initialization, Params transitions, continuous messaging/process loop, cleanup and exit policy; seven focused unchanged-source scenarios plus isolated IPC/owned children. Native bootlog, board action, registration and Reporter adapters are composed; complete daemon selection, startup UI/stdout and launcher packaging remain integration work; no production selection or device acceptance. See docs/naver/rust-manager-106.md.",
   "processes": [
     {
       "name": "_pandad",
@@ -484,6 +484,16 @@
   ],
   "library_ports": [
     {
+      "name": "hardware_control_policy",
+      "source_entrypoint": "openpilot.system.hardware.base; openpilot.system.hardware.pc.hardware; openpilot.system.hardware.tici.hardware; required common.gpio/utils helpers",
+      "status": "native_host_policy_and_adapter_validated",
+      "implementation": "rust/crates/hardware-control; display/IR, lazy amplifier selection, power-save/initialization ordering, GPIO/IRQ, Panda reset/recovery, readiness and reboot/shutdown/uninstall policy",
+      "native_dependencies": ["Linux/AGNOS filesystem, clock and sync APIs", "original sudo/shell/pgrep/chrt/taskset commands", "Rust amplifier I2C adapter and Params", "process-supervision child helper and its existing cereal/msgq/libzmq dependencies"],
+      "runtime_scope": "host fixtures only; hardware-info #98, modem/LPA, other GPIO/gpiochip APIs, hardwared loop and manager adoption remain separate; generic ARM/device validation pending",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/hardware-control-validation.md"
+    },
+    {
       "name": "native_manager_catalog_policy",
       "source_entrypoint": "openpilot.system.manager.process_config",
       "status": "native_host_and_generic_aarch64_policy_validated",
@@ -658,6 +668,14 @@
       "evidence": "docs/rust-port/monitoring-validation.md"
     }
   ],
+  "startup_bootlog": {
+    "source_entrypoints": ["openpilot/system/loggerd/bootlog.cc", "openpilot/system/manager/helpers.py::save_bootlog"],
+    "status": "native_component_host_validated_pending_integration",
+    "runtime_scope": "boot initData/Boot compressed artifact, BootCount/CurrentBootlog linkage and Params snapshot/background lifecycle; manager selection unchanged",
+    "native_dependencies": ["libc buffered I/O", "zstd", "filesystem/xattrs and OS clocks", "/bin/sh and journalctl", "existing loggerd FFmpeg/msgq/libzmq dependency closure"],
+    "evidence": "docs/rust-port/bootlog-validation.md",
+    "production_replaced": false
+  },
   "device_validation": "not_run",
   "performance_validation": "not_run"
 }

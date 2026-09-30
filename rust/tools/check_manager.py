@@ -26,7 +26,7 @@ def main():
       output = args.output / f'{scenario}-{kind}'
       command = ([sys.executable, 'rust/tools/manager_reference.py', str(args.binding)] if kind == 'source' else [str(args.binary)]) + [str(output), scenario]
       with (args.output / f'{scenario}-{kind}.log').open('w') as log:
-        subprocess.run(command, env=environment, check=True, stdout=log, stderr=subprocess.STDOUT)
+        subprocess.run(command, env=environment, check=True, timeout=60, stdout=log, stderr=subprocess.STDOUT)
     source = json.loads((args.output / f'{scenario}-source/result.json').read_text())
     native = json.loads((args.output / f'{scenario}-native/result.json').read_text())
     if source != native:

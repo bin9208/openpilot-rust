@@ -10,6 +10,8 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-bootlog = { path = "../bootlog" }
+openpilot-hardware-control = { path = "../hardware-control" }
 openpilot-params = { path = "../params" }
 openpilot-manager-catalog = { path = "../manager-catalog" }
 openpilot-process-supervision = { path = "../process-supervision" }
@@ -31,4 +33,5 @@ rustix = { version = "1", features = ["time"] }
 signal-hook = "0.3"
 
 [dev-dependencies]
+openpilot-hardware-info = { path = "../hardware-info" }
 serde = { version = "1", features = ["derive"] }

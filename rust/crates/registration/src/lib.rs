@@ -15,6 +15,9 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 mod api;
+mod hardware;
+mod identity;
+pub use hardware::NativeHardware;
 pub mod utf7;
 pub use api::{api_get, Response};
 
@@ -50,6 +53,8 @@ pub enum Error {
     Hardware(String),
     #[error("spinner: {0}")]
     Spinner(String),
+    #[error("registration text contains unencodable Unicode")]
+    UnicodeText,
     #[error("DongleId requires a UTF-8 STRING value")]
     IdentityType,
 }
@@ -86,7 +91,8 @@ pub const UNREGISTERED_DONGLE_ID: &str = "UnregisteredDevice";
 
 pub trait Hardware {
     fn serial(&mut self) -> Result<String, Error>;
-    fn imei(&mut self, slot: usize) -> Result<Option<String>, Error>;
+    /// JSON null means unavailable; every other value ends IMEI polling.
+    fn imei(&mut self, slot: usize) -> Result<JsonValue, Error>;
 }
 pub trait Spinner {
     fn start(&mut self) -> Result<(), Error>;
@@ -184,9 +190,9 @@ impl Registration<'_> {
             }
             let serial = hardware.serial()?;
             let started = clock.monotonic();
-            let mut imei1 = None;
-            let mut imei2 = None;
-            while imei1.is_none() && imei2.is_none() {
+            let mut imei1 = JsonValue::parse("null")?;
+            let mut imei2 = JsonValue::parse("null")?;
+            while matches!(imei1.view(), JsonView::Null) && matches!(imei2.view(), JsonView::Null) {
                 match hardware
                     .imei(0)
                     .and_then(|first| hardware.imei(1).map(|second| (first, second)))
@@ -218,18 +224,20 @@ impl Registration<'_> {
                             log_site!(),
                             Record::text(Level::Info, "getting pilotauth".into()),
                         )?;
-                        let response = api_get(
-                            self.api_host,
-                            self.source_root,
-                            "v2/pilotauth/",
-                            &[
-                                ("imei", imei1.as_deref()),
-                                ("imei2", imei2.as_deref()),
-                                ("serial", Some(&serial)),
-                                ("public_key", Some(&pair.public)),
-                                ("register_token", Some(&token)),
-                            ],
-                        )?;
+                        let first = identity::query_values(&imei1)?;
+                        let second = identity::query_values(&imei2)?;
+                        let mut query: Vec<(&str, Option<&str>)> = first
+                            .iter()
+                            .map(|value| ("imei", Some(value.as_str())))
+                            .chain(second.iter().map(|value| ("imei2", Some(value.as_str()))))
+                            .collect();
+                        query.extend([
+                            ("serial", Some(serial.as_str())),
+                            ("public_key", Some(pair.public.as_str())),
+                            ("register_token", Some(token.as_str())),
+                        ]);
+                        let response =
+                            api_get(self.api_host, self.source_root, "v2/pilotauth/", &query)?;
                         if matches!(response.status, 402 | 403) {
                             self.logger.emit(
                                 log_site!(),
@@ -286,14 +294,14 @@ impl Registration<'_> {
 fn update_spinner(
     spinner: &mut Option<&mut dyn Spinner>,
     serial: &str,
-    first: &Option<String>,
-    second: &Option<String>,
+    first: &JsonValue,
+    second: &JsonValue,
 ) -> Result<(), Error> {
     if let Some(spinner) = spinner.as_deref_mut() {
         spinner.update(&format!(
             "registering device - serial: {serial}, IMEI: ({}, {})",
-            first.as_deref().unwrap_or("None"),
-            second.as_deref().unwrap_or("None")
+            identity::text(first)?,
+            identity::text(second)?
         ))?;
     }
     Ok(())

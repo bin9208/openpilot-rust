@@ -5,6 +5,9 @@ https://github.com/bin9208/openpilot-rust/issues/1. Source implementation remain
 unchanged at `openpilot/system/manager/manager.py`, `camera_config.py`, and
 `helpers.py`; existing repository licensing and provenance apply.
 
+Core commit: `3496fd8a`. Native prerequisites integrated from `2f0fdde7`
+(#97/#98/#101/#105/#107/#110/#112).
+
 ## Implemented candidate
 
 `openpilot-manager` provides `Main::run`, ordered manager initialization and a
@@ -56,6 +59,14 @@ are isolated. All temporary Params and subprocesses belong to the fixture.
   msgq packets, published live owned PID, child reap on offroad/cleanup, watchdog,
   known versus unknown panda ignition, shutdown boundary, real SIGTERM and explicit
   unavailable-daemon error. Writes `summary.json`; does not call real hardware.
+- `$B/examples/manager_adapters OUTPUT $B/openpilot-process-child`: actual
+  NativeStartup/NativeBoot initialization using native build metadata, checkout
+  tracking, registration with an absent synthetic key (no HTTP), typed hardware
+  identity adapter, logging/Reporter and 138 Hyundai doc names; snapshot child sees
+  Version before initialization changes it and the owned boot lock is released.
+  NativeExit dispatches all three HardwareControl actions into a recording Platform
+  and captures and flushes a synthetic exception through the native Reporter. Writes
+  `summary.json`; no host board operations or Sentry delivery.
 - `cargo test --manifest-path rust/Cargo.toml -p openpilot-manager -j 2`:
   wrong-file boot-lock rejection retains lock; correct file unlocks/closes.
 - `PYTHONPATH=. $PYTHON rust/tools/generate_manager_cars.py
@@ -76,9 +87,15 @@ The candidate is an embeddable manager, not an installable complete runtime. The
 full daemon catalog remains explicit: caller-supplied native process bindings are
 required and a selected missing implementation returns an error. UI text-window
 startup failure display, nonblocking stdout wrapper and native launcher ownership
-remain startup integration work. Bootlog snapshot and board exit actions compose
-through their separately owned native implementations; their adapters are tracked
-with #97/#105. The hardware-info registration bridge is tracked in #107.
+remain startup integration work. NativeBoot directly calls #97's snapshot worker;
+NativeExit directly calls #105's HardwareControl and the native Reporter. The
+NativeStartup composition fixture uses #107's hardware-info registration bridge.
+The installation must bind the loggerd `bootlog` path to the native candidate and
+provide the platform/SDK/launcher objects; those choices are not made automatically.
+Because bootlog shares loggerd infrastructure, building this manager also requires
+the existing FFmpeg/libclang native development dependencies. The local adapter
+build initially lacked FFmpeg pkg-config paths; it passed after reusing the existing
+logger native sysroot (no package installation).
 
 Cloud workspace/ARM validation and exact-SHA Actions evidence belong to the parent
 integration. No AGNOS artifact installation, vehicle connection, device reboot,
