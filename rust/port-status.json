@@ -382,7 +382,10 @@
       "name": "torqued",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.torqued",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX", "NumPy2.5.3 OpenBLAS0.3.34.106.0 ILP64 dgesdd artifact with Fortran runtime; ARM additionally needs OS libz/libgcc_s", "libc scheduling"],
+      "runtime_scope": "source estimator, seeded sampling parity, liveTorqueParameters IPC and asynchronous cache; native GNU artifact required; normal manager/startup integration and device acceptance pending",
+      "evidence": "docs/rust-port/torqued-validation.md",
       "production_replaced": false
     },
     {
