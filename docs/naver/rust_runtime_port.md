@@ -92,3 +92,11 @@ and rotation, and original `logMessage`/`errorLogMessage` publications. Its
 byte comparisons, native transport/error-path checks and the CPython recursion
 resource difference. External libzmq/msgq remain explicit; manager selection,
 route logger integration and the complete startup/upload candidate remain open.
+
+[Jetlink runtime issue #44](https://github.com/bin9208/openpilot-rust/issues/44)
+adds native owner/provisioning policy, FunctionFS protocol, RPC worker and driving
+source-selection integration. The [validation record](../rust-port/jetlink.md)
+separates original state/parser comparisons, actual Unix-socket interoperability,
+FIFO transport tests and driving regressions from still-unrun device acceptance.
+Parent reruns confirm the source decisions and both RPC directions. Existing
+validation/loss latches remain required; no real gadget or vehicle is used.
