@@ -52,3 +52,11 @@ ports camera pairing, drop state, calibration and packed policy inputs. The
 [comparison record](../rust-port/model-input-validation.md) includes original
 source sequences and exact native camera/model/recurrent output comparisons.
 Complete driving daemon orchestration remains tracked under #1/#6.
+
+[Calibration daemon issue #35](https://github.com/bin9208/openpilot-rust/issues/35)
+ports the calibration block estimator, source rotation math, `liveCalibration`
+publication and asynchronous `CalibrationParams` persistence. Its
+[validation record](../rust-port/calibration-validation.md) covers long original-class
+histories, original main-loop validity/cadence, native Python IPC, cached values,
+Float32 Params parsing and signal handling. Manager selection and the complete
+startup/logging/upload/device gate remain pending.
