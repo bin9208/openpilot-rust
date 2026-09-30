@@ -1,0 +1,16 @@
+{
+  "crate": "charset-norm",
+  "version": "3.5.1",
+  "archive_url": "https://static.crates.io/crates/charset-norm/charset-norm-3.5.1.crate",
+  "archive_sha256": "bffd389b7f5eb8907ca98f54dd832502f54313b837e5f1a30f28ebb1a180cd7b",
+  "upstream_repository": "https://github.com/RustedBytes/charset-norm",
+  "upstream_commit": "ea979ee8a7d907ba7ce17ef50755d8bfe7c46141",
+  "upstream_path": "crates/charset-norm",
+  "license": "MIT; original LICENSE retained",
+  "modifications": [
+    {
+      "file": "Cargo.toml",
+      "change": "rust-version 1.98 -> 1.94; metadata only, no code or data changes"
+    }
+  ]
+}
