@@ -463,6 +463,16 @@
   ],
   "library_ports": [
     {
+      "name": "legacy_log_uploader_orchestration",
+      "source_entrypoint": "openpilot.system.loggerd.uploader",
+      "source_process_registration": "commented_out",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/uploader; optional native upload loop, source ordering/xattrs, JWT, HTTP, zstd and structured events",
+      "native_dependencies": ["original msgq through CXX", "libzmq", "zstd", "Rust HTTP/TLS/crypto libraries"],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/uploader-validation.md"
+    },
+    {
       "name": "structured_logging_and_runtime_diagnostics",
       "status": "native_host_interoperability_validated",
       "implementation": "Rust ordered records, per-thread native ZMQ producers, scoped context, bounded timing aggregates and actual receiver-state snapshots; daemon callsite integration remains separate",

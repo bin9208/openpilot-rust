@@ -112,3 +112,11 @@ bytes and numeric types, original/Rust collectors, actual OS identity, fork
 reconnection and backpressure. Integration into each daemon's original callsites
 is a subsequent full-runtime requirement; this library does not establish that
 all Rust process diagnostics reach a route or upload.
+
+[Legacy uploader issue #50](https://github.com/bin9208/openpilot-rust/issues/50)
+ports the source upload loop, JWT/HTTP/zstd path and native logging integration.
+Its [validation record](../rust-port/uploader-validation.md) covers original-source
+comparisons, local signed transfers, real msgq/Params and host ARM emulation.
+The original uploader registration remains commented out. The active Carrot
+upload path and complete normal-startup candidate remain open; the inherited
+marking failure is separately tracked in [#51](https://github.com/bin9208/openpilot-rust/issues/51).
