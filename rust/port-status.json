@@ -15,7 +15,9 @@
       "name": "beep",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.beep",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX", "OS clocks/scheduling", "/bin/sh, sudo/tee and GPIO42 sysfs"],
+      "runtime_scope": "normal main/test=False alert loop, startup commands, pulse workers and per-pulse integer volume reads; safe hardware fixtures only; not selected by manager; AGNOS/device and full-runtime integration pending",
       "production_replaced": false
     },
     {
