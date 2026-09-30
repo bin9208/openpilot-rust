@@ -5,6 +5,13 @@ pub trait Parameters {
     fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error>;
     fn put(&self, key: &str, value: &[u8]) -> Result<(), Error>;
     fn clear(&self, flags: u32) -> Result<(), Error>;
+    fn cast_failed(&self, info: &KeyInfo, value: &[u8]) -> Result<(), Error> {
+        crate::diagnostics::cast_failed(
+            &mut openpilot_logging::producer::Factory::for_runtime()?.logger(),
+            info,
+            value,
+        )
+    }
     fn boolean(&self, key: &str) -> Result<bool, Error> {
         Ok(self.get(key)?.as_deref() == Some(b"1"))
     }
@@ -34,30 +41,60 @@ impl Parameters for Params {
     }
 }
 
-/// A failed typed Params conversion is None in the source, hence defaulted too.
-fn missing(value: Option<Vec<u8>>, info: &KeyInfo) -> bool {
+enum DefaultState<'a> {
+    Missing,
+    Invalid(&'a [u8]),
+    Existing,
+}
+
+/// Keep failed conversions distinct from absent values so diagnostics precede the write.
+fn default_state<'a>(value: Option<&'a [u8]>, info: &KeyInfo) -> DefaultState<'a> {
     let Some(value) = value.filter(|value| !value.is_empty()) else {
-        return true;
+        return DefaultState::Missing;
     };
-    match info.kind {
+    let invalid = match info.kind {
         1 | 6 => false,
-        0 => std::str::from_utf8(&value).is_err(),
-        2 => !integer_bytes(&value),
-        3 => !float_bytes(&value),
-        5 => std::str::from_utf8(&value).map_or(true, |text| {
-            openpilot_logmessaged::JsonValue::parse(text).map_or(true, |value| {
-                matches!(value.view(), openpilot_logmessaged::JsonView::Null)
-            })
-        }),
-        // No TIME key currently has a default; preserve existing nonempty values.
+        0 => std::str::from_utf8(value).is_err(),
+        2 => !integer_bytes(value),
+        3 => !float_bytes(value),
+        5 => match std::str::from_utf8(value)
+            .ok()
+            .and_then(|text| openpilot_logmessaged::JsonValue::parse(text).ok())
+        {
+            Some(value) => {
+                if matches!(value.view(), openpilot_logmessaged::JsonView::Null) {
+                    return DefaultState::Missing;
+                }
+                false
+            }
+            None => true,
+        },
         _ => false,
+    };
+    if invalid {
+        DefaultState::Invalid(value)
+    } else {
+        DefaultState::Existing
     }
 }
 
 pub fn set_defaults(params: &impl Parameters, overwrite: bool) -> Result<(), Error> {
     for info in KEYS {
         if let Some(value) = info.default {
-            if overwrite || missing(params.get(info.name)?, info) {
+            let raw = if overwrite {
+                None
+            } else {
+                params.get(info.name)?
+            };
+            let replace = match default_state(raw.as_deref(), info) {
+                DefaultState::Missing => true,
+                DefaultState::Invalid(bytes) => {
+                    params.cast_failed(info, bytes)?;
+                    true
+                }
+                DefaultState::Existing => false,
+            };
+            if replace {
                 params.put(info.name, value.as_bytes())?;
                 if overwrite {
                     println!("SetToDefault[{}]={value}", info.name);

@@ -2,6 +2,7 @@
 //! hardware actions and complete daemon selection; no Python fallback is provided.
 #![forbid(unsafe_code)]
 pub mod boot_lock;
+pub mod diagnostics;
 pub mod initialization;
 pub mod lifecycle;
 pub mod main_loop;

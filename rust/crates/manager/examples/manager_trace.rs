@@ -1,3 +1,6 @@
+#[path = "trace/parameters.rs"]
+mod parameters_fixture;
+use parameters_fixture::TracedParams;
 #[path = "trace/startup.rs"]
 mod startup;
 use openpilot_manager::{
@@ -10,34 +13,6 @@ use openpilot_process_supervision::ProcessState;
 use serde_json::{json, Value};
 use std::{cell::RefCell, path::PathBuf, rc::Rc};
 type Trace = Rc<RefCell<Vec<Value>>>;
-struct TracedParams {
-    inner: openpilot_params::Params,
-    trace: Trace,
-}
-impl Parameters for TracedParams {
-    fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error> {
-        Parameters::get(&self.inner, key)
-    }
-    fn put(&self, key: &str, value: &[u8]) -> Result<(), Error> {
-        if [
-            "IsOnroad",
-            "IsOffroad",
-            "RecordAudio",
-            "LastManagerExitReason",
-        ]
-        .contains(&key)
-        {
-            self.trace
-                .borrow_mut()
-                .push(json!(["put", key, String::from_utf8_lossy(value)]));
-        }
-        Parameters::put(&self.inner, key, value)
-    }
-    fn clear(&self, flags: u32) -> Result<(), Error> {
-        self.trace.borrow_mut().push(json!(["clear", flags]));
-        Parameters::clear(&self.inner, flags)
-    }
-}
 struct Fixture {
     trace: Trace,
     scenario: String,
@@ -50,6 +25,21 @@ impl Fixture {
     }
 }
 impl Runtime for Fixture {
+    fn start(&mut self) -> Result<(), Error> {
+        if self.params.capture_logging {
+            openpilot_manager::diagnostics::start(&mut self.params.logger.borrow_mut())?;
+            self.record(json!(["lifecycle", "start"]));
+        }
+        Ok(())
+    }
+    fn cleanup_finished(&mut self) -> Result<(), Error> {
+        if self.params.capture_logging {
+            openpilot_manager::diagnostics::cleanup_finished(&mut self.params.logger.borrow_mut())?;
+            self.record(json!(["lifecycle", "cleanup_finished"]));
+        }
+        Ok(())
+    }
+
     fn poll(&mut self) -> Result<Input, Error> {
         self.record(json!(["poll", 1000]));
         if self.scenario == "poll_failure" {
@@ -125,6 +115,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let params = Rc::new(TracedParams {
         inner: openpilot_params::Params::open(&directory.join("params"), "d")?,
         trace: trace.clone(),
+        logger: RefCell::new(if args[2] == "logging" {
+            openpilot_logging::producer::Factory::for_runtime()?.logger()
+        } else {
+            openpilot_logging::producer::Factory::new("inproc://manager-trace-isolated".into())?
+                .logger()
+        }),
+        capture_logging: args[2] == "logging",
     });
     for (key, value) in [
         ("RecordFrontLock", b"1".as_slice()),
@@ -135,6 +132,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("GitCommit", b"old"),
     ] {
         params.inner.put(key, value)?;
+    }
+    if args[2] == "logging" {
+        params.inner.put("UptimeOnroad", b"1__2.5")?;
     }
     if args[2] == "default_edges" {
         for (key, value) in [

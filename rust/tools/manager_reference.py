@@ -3,6 +3,7 @@ import contextlib
 import datetime
 import importlib.util
 import json
+import logging
 import os
 from pathlib import Path
 import sys
@@ -20,11 +21,14 @@ def main():
   trace = []
   def record(*values):
     trace.append(list(values))
-  original, _ = load(binding, 'inproc://manager-oracle', output / 'logs')
+  original, swaglog = load(binding, os.environ.get('MANAGER_LOG_CAPTURE', 'inproc://manager-oracle'), output / 'logs')
   params = original.Params(str(output / 'params'))
   for key, value in {'RecordFrontLock': b'1', 'UseWideCamera': b'0', 'HardwareC3xLite': b'1',
                      'RecordAudio': b'1', 'CarParams': b'stale', 'GitCommit': b'old'}.items():
     Path(os.fsdecode(params.get_param_path(key))).write_bytes(value)
+
+  if scenario == 'logging':
+    Path(os.fsdecode(params.get_param_path('UptimeOnroad'))).write_bytes(b'1__2.5')
 
   if scenario == 'default_edges':
     for key, value in {'CarrotYouTubeLive': '_1', 'CarrotYouTubeQuality': '9' * 53,
@@ -113,6 +117,20 @@ def main():
   manager.cloudlog = SimpleNamespace(bind_global=lambda **_: record('logging'), bind=lambda **_: None,
     info=lambda *_: None, debug=lambda *_: None, warning=lambda text: record('warning', text)
     if text.startswith('Shutting') else None, exception=lambda text: record('exception', text))
+  if scenario == 'logging':
+    class CastTrace(logging.Handler):
+      def emit(self, event):
+        if event.getMessage().startswith('Failed to cast param '):
+          record('cast_failed', 'UptimeOnroad')
+    swaglog.cloudlog.addHandler(CastTrace())
+    def lifecycle_info(message):
+      if message == 'manager start':
+        record('lifecycle', 'start')
+      elif message == 'everything is dead':
+        record('lifecycle', 'cleanup_finished')
+      swaglog.cloudlog.info(message)
+    manager.cloudlog.bind = swaglog.cloudlog.bind
+    manager.cloudlog.info = lifecycle_info
   @contextlib.contextmanager
   def watchdog(*_, **__):
     record('watchdog')

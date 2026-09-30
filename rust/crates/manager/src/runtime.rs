@@ -68,6 +68,13 @@ impl<B: ExitBoundary> NativeRuntime<B> {
     }
 }
 impl<B: ExitBoundary> Runtime for NativeRuntime<B> {
+    fn start(&mut self) -> Result<(), Error> {
+        crate::diagnostics::start(&mut self.logger)
+    }
+    fn cleanup_finished(&mut self) -> Result<(), Error> {
+        crate::diagnostics::cleanup_finished(&mut self.logger)
+    }
+
     fn poll(&mut self) -> Result<Input, Error> {
         if self.signals.requested() {
             return Err(Error::Interrupted);

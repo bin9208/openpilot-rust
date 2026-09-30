@@ -19,6 +19,8 @@ pub enum ExitAction {
 }
 
 pub trait Runtime {
+    fn start(&mut self) -> Result<(), Error>;
+    fn cleanup_finished(&mut self) -> Result<(), Error>;
     fn poll(&mut self) -> Result<Input, Error>;
     fn initial_not_car(&self) -> Result<bool, Error>;
     fn ensure_running(
@@ -86,6 +88,7 @@ pub fn manager_thread(
     runtime: &mut impl Runtime,
     env: &Environment,
 ) -> Result<(), Error> {
+    runtime.start()?;
     let ignore = ignore_list(params, env)?;
     write_onroad(params, false)?;
     runtime.ensure_running(false, runtime.initial_not_car()?, &ignore)?;
@@ -154,6 +157,7 @@ pub fn run(
     // Source cleanup is two complete ordered passes, including disabled entries.
     runtime.stop(false)?;
     runtime.stop(true)?;
+    runtime.cleanup_finished()?;
     result?;
     let action = if params.boolean("DoUninstall")? {
         Some(ExitAction::Uninstall)

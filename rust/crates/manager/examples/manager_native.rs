@@ -46,6 +46,11 @@ fn packet(topic: &str, started: bool) -> Vec<u8> {
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args_os().collect();
+    // The production manager logs its environment; this fixture must never retain host secrets.
+    for (key, _) in std::env::vars_os() {
+        std::env::remove_var(key);
+    }
+    std::env::set_var("MANAGER_FIXTURE", "synthetic");
     let output = PathBuf::from(&args[1]);
     let launcher = PathBuf::from(&args[2]);
     std::fs::create_dir_all(&output)?;
