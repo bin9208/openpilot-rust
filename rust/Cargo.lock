@@ -1850,6 +1850,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-manager-catalog"
+version = "0.1.0"
+dependencies = [
+ "openpilot-beepd",
+ "openpilot-params",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-messaging"
 version = "0.1.0"
 dependencies = [
