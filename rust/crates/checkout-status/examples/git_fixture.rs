@@ -24,6 +24,7 @@ struct Behavior {
     stderr: Vec<u8>,
     exit_code: u8,
     padding: usize,
+    delay_ms: u64,
     mode: Mode,
 }
 
@@ -35,6 +36,12 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
         "pid": std::process::id(),
         "cwd": std::env::current_dir()?,
         "argv": std::env::args_os().map(|arg| arg.to_string_lossy().into_owned()).collect::<Vec<_>>(),
+        "inherited_fd_target": std::env::var("CHECKOUT_HELD_FD").ok()
+            .and_then(|fd| fs::read_link(format!("/proc/self/fd/{fd}")).ok()),
+        "stdin_target": fs::read_link("/proc/self/fd/0")?,
+        "manager_daemon": std::env::var("MANAGER_DAEMON").ok(),
+        "params_copy_path": std::env::var("PARAMS_COPY_PATH").ok(),
+        "process_group": rustix::process::getpgrp().as_raw_pid(),
     });
     let mut journal = OpenOptions::new()
         .append(true)
@@ -43,6 +50,7 @@ fn run() -> Result<u8, Box<dyn std::error::Error>> {
     journal.write_all(format!("{record}\n").as_bytes())?;
     match behavior.mode {
         Mode::Output | Mode::Signal => {
+            std::thread::sleep(Duration::from_millis(behavior.delay_ms));
             let padding = vec![b' '; behavior.padding];
             std::io::stdout().write_all(&padding)?;
             std::io::stdout().write_all(&behavior.stdout)?;

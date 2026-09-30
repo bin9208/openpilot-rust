@@ -1,3 +1,4 @@
+use openpilot_process_supervision::CapturedCommand;
 use rustix::{
     event::{poll, PollFd, PollFlags, Timespec},
     fs::{fcntl_getfl, fcntl_setfl, OFlags},
@@ -5,9 +6,9 @@ use rustix::{
 use std::{
     fs::File,
     io::{self, Read},
-    os::{fd::OwnedFd, unix::process::CommandExt},
-    path::{Path, PathBuf},
-    process::{Child, Command, Output, Stdio},
+    os::fd::OwnedFd,
+    path::Path,
+    process::{Child, Output},
     time::{Duration, Instant},
 };
 
@@ -92,45 +93,30 @@ fn capture(child: &mut Child) -> io::Result<Output> {
     }
 }
 
-fn spawn(repo: &Path) -> io::Result<Child> {
-    let path = std::env::var_os("PATH").unwrap_or_else(|| "/bin:/usr/bin".into());
-    let mut failure = None;
-    for directory in std::env::split_paths(&path) {
-        let candidate = if directory.as_os_str().is_empty() {
-            PathBuf::from("./git")
-        } else {
-            directory.join("git")
-        };
-        match Command::new(candidate)
-            .arg0("git")
-            .args([
-                "--no-optional-locks",
-                "rev-parse",
-                "--verify",
-                "HEAD^{commit}",
-            ])
-            .current_dir(repo)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-        {
-            Ok(child) => return Ok(child),
-            Err(error) => failure = Some(error),
-        }
+fn run(repo: &Path, launcher: &Path) -> io::Result<Output> {
+    let mut child = CapturedCommand {
+        launcher: launcher.into(),
+        cwd: repo.into(),
+        argv: [
+            "git",
+            "--no-optional-locks",
+            "rev-parse",
+            "--verify",
+            "HEAD^{commit}",
+        ]
+        .into_iter()
+        .map(Into::into)
+        .collect(),
     }
-    Err(failure
-        .unwrap_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Git executable not found")))
-}
-
-fn run(repo: &Path) -> io::Result<Output> {
-    let mut child = spawn(repo)?;
-    let result = capture(&mut child);
+    .spawn()
+    .map_err(io::Error::other)?;
+    let result = capture(&mut child.process);
     let termination = if result.is_err() {
-        child.kill()
+        child.process.kill()
     } else {
         Ok(())
     };
-    child.wait()?;
+    child.process.wait()?;
     match termination {
         Ok(()) => {}
         Err(error) if error.kind() == io::ErrorKind::InvalidInput => {}
@@ -139,8 +125,8 @@ fn run(repo: &Path) -> io::Result<Output> {
     result
 }
 
-pub(crate) fn git_commit(repo: &Path) -> io::Result<String> {
-    let output = run(repo)?;
+pub(crate) fn git_commit(repo: &Path, launcher: &Path) -> io::Result<String> {
+    let output = run(repo, launcher)?;
     if !output.status.success() {
         return Err(io::Error::other("Git identity command failed"));
     }

@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-process-supervision = { path = "../process-supervision" }
 rustix = { version = "1", features = ["event", "fs"] }
 
 [dev-dependencies]

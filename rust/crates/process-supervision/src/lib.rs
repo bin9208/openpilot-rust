@@ -11,7 +11,7 @@ mod process;
 mod state;
 
 pub use ensure::ensure_running;
-pub use launch::{run_child, NativeCommand};
+pub use launch::{run_child, CapturedChild, CapturedCommand, NativeCommand};
 pub use logging::ProcessLog;
 pub use persistent::{ParamsSource, PersistentCommand, PersistentDaemonProcess};
 pub use process::{Execution, ManagedProcess, ProcessPolicy, StopOptions};

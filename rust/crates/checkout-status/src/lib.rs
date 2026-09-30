@@ -10,14 +10,14 @@ use std::{
 
 pub const UPDATE_CHECK_INTERVAL: f64 = 5.0;
 
-pub fn read_checkout_commit(repo: &Path) -> Option<String> {
+pub fn read_checkout_commit(repo: &Path, launcher: &Path) -> Option<String> {
     let git_exists = match repo.join(".git").try_exists() {
         Ok(exists) => exists,
         Err(error) if matches!(error.raw_os_error(), Some(9 | 40)) => false,
         Err(_) => return None,
     };
     let commit = if git_exists {
-        match capture::git_commit(repo) {
+        match capture::git_commit(repo, launcher) {
             Ok(commit) => commit,
             Err(_) => return None,
         }
@@ -41,6 +41,7 @@ pub fn read_checkout_commit(repo: &Path) -> Option<String> {
 
 pub struct UpdateStatus {
     repo: PathBuf,
+    launcher: PathBuf,
     running_commit: Option<String>,
     reboot_required: bool,
     candidate_commit: Option<String>,
@@ -48,11 +49,13 @@ pub struct UpdateStatus {
 }
 
 impl UpdateStatus {
-    pub fn new(repo: impl Into<PathBuf>) -> Self {
+    pub fn new(repo: impl Into<PathBuf>, launcher: impl Into<PathBuf>) -> Self {
         let repo = repo.into();
-        let running_commit = read_checkout_commit(&repo);
+        let launcher = launcher.into();
+        let running_commit = read_checkout_commit(&repo, &launcher);
         Self {
             repo,
+            launcher,
             running_commit,
             reboot_required: false,
             candidate_commit: None,
@@ -73,7 +76,7 @@ impl UpdateStatus {
             return self.reboot_required;
         }
         self.next_check = now + UPDATE_CHECK_INTERVAL;
-        let installed_commit = read_checkout_commit(&self.repo);
+        let installed_commit = read_checkout_commit(&self.repo, &self.launcher);
         let changed = self.running_commit.is_some()
             && installed_commit.is_some()
             && installed_commit != self.running_commit;

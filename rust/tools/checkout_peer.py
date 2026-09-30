@@ -24,6 +24,7 @@ class Response(TypedDict):
 class Binaries:
   trace: Path
   fixture: Path
+  launcher: Path
 
 
 def enable_subreaper() -> None:
@@ -48,6 +49,9 @@ class Peer:
     self.bin = self.root / 'bin'
     self.bin.mkdir()
     self.bin.joinpath('git').symlink_to(binaries.fixture.resolve())
+    self.held = self.root.joinpath('held-descriptor').open('wb')
+    self.launches = self.root / 'launch-descriptors'
+    self.launches.mkdir()
     self.events = []
     self.process = None
     self.env = {k: v for k, v in os.environ.items() if not k.startswith('GIT_')}
@@ -56,6 +60,9 @@ class Peer:
                     GIT_COMMITTER_NAME='checkout fixture', GIT_COMMITTER_EMAIL='fixture@example.invalid',
                     GIT_AUTHOR_DATE='2000-01-01T00:00:00+00:00', GIT_COMMITTER_DATE='2000-01-01T00:00:00+00:00')
     self.env['CHECKOUT_GIT_FIXTURE'] = str(self.control)
+    self.env['CHECKOUT_HELD_FD'] = str(self.held.fileno())
+    self.env['MANAGER_DAEMON'] = 'checkout-parent'
+    self.env['TMPDIR'] = str(self.launches)
     self.fallback_bin = self.root / 'fallback-bin'
     self.fallback_bin.mkdir()
     self.env['PATH'] = os.pathsep.join([str(self.bin), str(self.fallback_bin)]) if fixture_mode else '/usr/bin:/bin'
@@ -65,13 +72,14 @@ class Peer:
         command = [sys.executable, str(Path(__file__).with_name('checkout_source.py'))]
       case 'rust':
         command = [str(binaries.trace.resolve())]
-    self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.stderr, text=True, env=self.env)
-    captured_env = {k: v for k, v in self.env.items() if k.startswith('GIT_') or k in ['PATH', 'CHECKOUT_GIT_FIXTURE']}
+    self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.stderr, text=True,
+                                    env=self.env, pass_fds=(self.held.fileno(),))
+    captured_env = {k: v for k, v in self.env.items() if k.startswith(('GIT_', 'CHECKOUT_')) or k in ['PATH', 'MANAGER_DAEMON', 'TMPDIR']}
     (self.output / 'command.json').write_text(json.dumps({'command': command, 'repo': str(self.repo), 'pid': self.process.pid,
                                                         'environment': captured_env}, indent=2) + '\n')
     self.selector = selectors.DefaultSelector()
     self.selector.register(self.process.stdout, selectors.EVENT_READ)
-    self.process.stdin.write(json.dumps({'repo': str(self.repo)}) + '\n')
+    self.process.stdin.write(json.dumps({'repo': str(self.repo), 'launcher': str(binaries.launcher.resolve())}) + '\n')
     self.process.stdin.flush()
     assert self.read() == {'ready': True}
 
@@ -100,8 +108,10 @@ class Peer:
     self.process.stdin.flush()
     response = self.read()
     children = [pid for task in Path(f'/proc/{self.process.pid}/task').glob('*/children') for pid in task.read_text().split()]
-    self.record({'request': request, 'response': response, 'children_after': children})
+    descriptors = [str(path) for path in self.launches.iterdir()]
+    self.record({'request': request, 'response': response, 'children_after': children, 'launch_descriptors_after': descriptors})
     assert not children, children
+    assert not descriptors, descriptors
     return response
 
   def fixture(self, **behavior) -> None:
@@ -110,6 +120,10 @@ class Peer:
 
   def calls(self):
     path = self.control / 'calls.jsonl'
+    return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+
+  def helper_calls(self):
+    path = self.control / 'helper-calls.jsonl'
     return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
 
   def git(self, *args: str) -> str:
@@ -133,6 +147,9 @@ class Peer:
         self.selector.close()
       calls = self.calls()
       (self.output / 'git-calls.json').write_text(json.dumps(calls, indent=2) + '\n')
+      helper_calls = self.helper_calls()
+      (self.output / 'helper-calls.json').write_text(json.dumps(helper_calls, indent=2) + '\n')
+      calls += helper_calls
       for call in calls:
         pid = call['pid']
         path = Path(f'/proc/{pid}')
@@ -140,9 +157,9 @@ class Peer:
           try:
             waited, _ = os.waitpid(pid, os.WNOHANG)
           except ChildProcessError:
-            waited = 0
+            assert not path.exists(), (pid, 'PID identity changed')
+            continue
           if waited == 0:
-            assert path.joinpath('cwd').readlink() == self.repo, (pid, 'PID identity changed')
             os.kill(pid, signal.SIGKILL)
             os.waitpid(pid, 0)
       cleanup = [{'pid': call['pid'], 'exists_after': Path(f"/proc/{call['pid']}").exists()} for call in calls]
@@ -150,6 +167,7 @@ class Peer:
       (self.output / 'cleanup.json').write_text(json.dumps({'fixtures': cleanup, 'remaining_children': remaining}, indent=2) + '\n')
       assert all(not row['exists_after'] for row in cleanup) and not remaining, (cleanup, remaining)
       self.stderr.close()
+      self.held.close()
       self.temporary.cleanup()
 
   def __enter__(self):

@@ -10,6 +10,7 @@ use std::{
 #[derive(Deserialize)]
 struct Config {
     repo: PathBuf,
+    launcher: PathBuf,
 }
 
 #[derive(Deserialize)]
@@ -23,7 +24,8 @@ enum Request {
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let stdin = std::io::stdin();
     let mut lines = stdin.lock().lines();
-    let Config { repo } = serde_json::from_str(&lines.next().ok_or("missing configuration")??)?;
+    let Config { repo, launcher } =
+        serde_json::from_str(&lines.next().ok_or("missing configuration")??)?;
     let mut status = None;
     println!("{{\"ready\":true}}");
     std::io::stdout().flush()?;
@@ -33,8 +35,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut commit = None;
         let mut returned = None;
         match request {
-            Request::Read => commit = read_checkout_commit(&repo),
-            Request::Capture => status = Some(UpdateStatus::new(&repo)),
+            Request::Read => commit = read_checkout_commit(&repo, &launcher),
+            Request::Capture => status = Some(UpdateStatus::new(&repo, &launcher)),
             Request::Update { now_bits } => {
                 returned = Some(
                     status

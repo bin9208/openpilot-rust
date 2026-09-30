@@ -29,16 +29,21 @@ fn close_extra_fds(error_pipe: i32) -> Result<(), Error> {
     Ok(())
 }
 
-fn execute(arguments: &[OsString], error_pipe: i32) -> Result<(), Error> {
-    {
-        let output = OpenOptions::new().write(true).open("/dev/null")?;
-        rustix::stdio::dup2_stdout(&output).map_err(std::io::Error::from)?;
-    }
+pub(crate) fn prepare(error_pipe: i32) -> Result<(), Error> {
     close_extra_fds(error_pipe)?;
     // exec resets caught handlers to default, matching Popen's restore_signals.
     for signal in [signal_hook::consts::SIGPIPE, signal_hook::consts::SIGXFSZ] {
         signal_hook::flag::register(signal, Arc::new(AtomicBool::new(false)))?;
     }
+    Ok(())
+}
+
+fn execute(arguments: &[OsString], error_pipe: i32) -> Result<(), Error> {
+    {
+        let output = OpenOptions::new().write(true).open("/dev/null")?;
+        rustix::stdio::dup2_stdout(&output).map_err(std::io::Error::from)?;
+    }
+    prepare(error_pipe)?;
     crate::exec::execute(arguments, &crate::exec::environment(None)?)
 }
 

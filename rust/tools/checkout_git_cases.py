@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from checkout_peer import Peer
 
 A = 'A' * 40
@@ -65,6 +68,11 @@ def git_fixture(peer: Peer):
   assert len(calls) == len(cases)
   assert all(call['argv'] == ['git', '--no-optional-locks', 'rev-parse', '--verify', 'HEAD^{commit}'] for call in calls), calls
   assert all(call['cwd'] == str(peer.repo) for call in calls), calls
+  assert all(call['inherited_fd_target'] is None for call in calls), calls
+  assert all(call['manager_daemon'] == 'checkout-parent' for call in calls), calls
+  stdin_target = str(Path(f'/proc/{peer.process.pid}/fd/0').readlink())
+  assert all(call['stdin_target'] == stdin_target for call in calls), calls
+  assert all(call['process_group'] == os.getpgid(peer.process.pid) for call in calls), calls
   command = peer.bin / 'git'
   command.unlink()
   response = peer.op('read')

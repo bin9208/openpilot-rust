@@ -1619,6 +1619,7 @@ name = "openpilot-checkout-status"
 version = "0.1.0"
 dependencies = [
  "openpilot-logmessaged",
+ "openpilot-process-supervision",
  "rustix",
  "serde",
  "serde_json",
