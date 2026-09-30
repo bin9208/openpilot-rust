@@ -73,11 +73,12 @@ impl Event {
     }
 }
 pub trait EventSink {
-    fn emit(&mut self, event: Event);
+    fn emit(&mut self, event: Event) -> Result<(), openpilot_logging::Error>;
 }
 impl EventSink for Vec<Event> {
-    fn emit(&mut self, event: Event) {
+    fn emit(&mut self, event: Event) -> Result<(), openpilot_logging::Error> {
         self.push(event);
+        Ok(())
     }
 }
 pub(crate) fn error_details(site: Site, error: &impl fmt::Debug) -> [String; 2] {

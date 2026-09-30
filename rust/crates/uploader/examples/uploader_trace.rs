@@ -91,11 +91,12 @@ struct TraceEvents {
     logger: Option<RuntimeEvents>,
 }
 impl EventSink for TraceEvents {
-    fn emit(&mut self, event: Event) {
+    fn emit(&mut self, event: Event) -> Result<(), openpilot_logging::Error> {
         if let Some(logger) = &mut self.logger {
-            logger.emit(event.clone());
+            logger.emit(event.clone())?;
         }
         self.records.push(event);
+        Ok(())
     }
 }
 struct Attr {
@@ -177,12 +178,12 @@ fn run(request: Request) -> Result<Value, Box<dyn std::error::Error>> {
         },
     );
     let files = uploader
-        .list_upload_files(request.metered, request.requested.as_deref())
+        .list_upload_files(request.metered, request.requested.as_deref())?
         .iter()
         .map(candidate)
         .collect::<Vec<_>>();
     let next = uploader
-        .next_file(request.metered, request.requested.as_deref())
+        .next_file(request.metered, request.requested.as_deref())?
         .map(|file| candidate(&file));
     let mut results = Vec::new();
     if let Some(path) = request.upload {
