@@ -27,8 +27,10 @@ std::unique_ptr<Queue> open_queue(rust::Str endpoint, bool publisher, bool confl
 std::unique_ptr<Queue> open_runtime_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity);
 class QueueBatch final {
 public:
-  QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolated);
+  QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolated, bool conflate);
   rust::Vec<QueuedMessage> receive(int32_t timeout_ms);
+  rust::Vec<size_t> poll_ready(int32_t timeout_ms);
+  rust::Vec<uint8_t> receive_one(size_t index);
 private:
   std::vector<std::unique_ptr<Queue>> queues_;
   std::vector<msgq_pollitem_t> polls_;
@@ -36,4 +38,5 @@ private:
   std::vector<size_t> unpolled_indices_;
 };
 std::unique_ptr<QueueBatch> open_batch(rust::Slice<const QueueSpec> specifications, bool isolated);
+std::unique_ptr<QueueBatch> open_queued_batch(rust::Slice<const QueueSpec> specifications);
 }

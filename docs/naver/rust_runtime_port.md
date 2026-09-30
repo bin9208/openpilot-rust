@@ -93,6 +93,16 @@ byte comparisons, native transport/error-path checks and the CPython recursion
 resource difference. External libzmq/msgq remain explicit; manager selection,
 route logger integration and the complete startup/upload candidate remain open.
 
+[Route logger issue #41](https://github.com/bin9208/openpilot-rust/issues/41)
+ports continuous rlog/qlog storage, encoder coordination, video/audio muxing,
+route preservation and shutdown. The [validation record](../rust-port/loggerd-validation.md)
+uses original native encoder messages and compares complete full-schema logs
+and decoded media. Its native diagnostic producer now matches original callsites,
+including rate suppression, throughput accounting and errors. Original/Rust
+collector integration verifies warning/error records in diagnostic files and
+rlog. Full uploaded logging still depends on the remaining daemon callsites,
+startup and active upload integration.
+
 [Log-space deleter issue #42](https://github.com/bin9208/openpilot-rust/issues/42)
 ports retention ordering, preserved segment caching and continuous low-space
 cleanup. Its [validation record](../rust-port/deleter-validation.md) covers actual
@@ -103,3 +113,12 @@ are untouched; production selection and whole-runtime acceptance remain pending.
 combines the verified services under one exact-SHA gate. The
 [integration record](../rust-port/runtime-daemon-integration.md) links each
 component and the [native IPC test correction #47](../rust-port/msgq-handshake-validation.md).
+
+[Structured logging issue #45](https://github.com/bin9208/openpilot-rust/issues/45)
+adds native per-thread producers, scoped/global context, source-compatible
+records and bounded runtime timing/communication summaries. Its
+[validation record](../rust-port/logging-client-validation.md) covers exact source
+bytes and numeric types, original/Rust collectors, actual OS identity, fork
+reconnection and backpressure. Integration into each daemon's original callsites
+is a subsequent full-runtime requirement; this library does not establish that
+all Rust process diagnostics reach a route or upload.
