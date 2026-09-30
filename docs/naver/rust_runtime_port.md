@@ -28,3 +28,9 @@ ports model interpretation, action calculation and the four original cereal
 publications. The [validation record](../rust-port/model-output-validation.md)
 documents original-function comparisons, history/discrete-decision boundaries,
 architecture-specific exponential rounding and remaining daemon integration.
+
+[Driver daemon issue #19](https://github.com/bin9208/openpilot-rust/issues/19)
+connects driver VisionIPC, native inference, calibration and `driverStateV2` in
+a continuous Rust process. Its [validation record](../rust-port/driver-daemon-validation.md)
+documents both camera resolutions, original-model/message comparisons and
+remaining QCOM input, manager and full-runtime acceptance work.
