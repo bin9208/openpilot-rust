@@ -5,11 +5,13 @@
 
 namespace openpilot_rust {
 struct VisionMetadata;
+struct ConnectionLayout;
 class VisionConnection final {
 public:
   VisionConnection(const std::string &name, VisionStreamType stream, bool conflate);
   bool connect();
   bool connected() const;
+  ConnectionLayout layout() const;
   VisionMetadata receive(int32_t timeout_ms);
   void copy_frame(rust::Slice<uint8_t> destination) const;
 private:

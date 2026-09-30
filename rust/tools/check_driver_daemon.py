@@ -85,7 +85,11 @@ def check(args, width: int, height: int, raw: bool) -> dict:
     if raw:
         environment["SEND_RAW_PRED"] = "0"
     processes = []
+    capture = None
     try:
+        if args.collector is not None:
+            from model_logging_capture import Collector
+            capture = Collector(args.collector, destination / 'logging', environment)
         daemon = subprocess.Popen([args.binary, "--trusted-catalog", args.catalog], env=environment,
                                   stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, bufsize=0)
         processes.append(daemon)
@@ -99,7 +103,7 @@ def check(args, width: int, height: int, raw: bool) -> dict:
         peer_lines = Lines(peer.stdout, destination / "peer.log")
         ready = peer_lines.until(("READY",))
         header_bytes = int(ready.split()[1])
-        daemon_lines.until(("driver stream connected",))
+        daemon_lines.until(("connected with buffer size",))
 
         def command(value: str) -> str:
             peer.stdin.write((value + "\n").encode())
@@ -178,6 +182,10 @@ def check(args, width: int, height: int, raw: bool) -> dict:
         Lines(waiting.stderr, destination / "waiting.log").until(("connecting to driver stream",))
         waiting.send_signal(signal.SIGINT)
         assert waiting.wait(timeout=5) == 0
+        logging_report = capture.finish('dmonitoringmodeld', [process.pid for process in processes]) if capture is not None else None
+        if capture is not None:
+            from model_logging_reference import driver as check_driver_logs
+            logging_report['source_calls'] = check_driver_logs(capture.records['logMessage'], (daemon.pid, size))
         report = {"camera": [width, height], "frames": len(calibrations), "raw_predictions": raw, "compared_fields": fields,
                   "queue_sizes": queue_sizes, "queue_size_oracle": "original cereal.services.SERVICE_LIST",
                   "raw_comparison": "exact bytes", "parsed_float_tolerance": 1e-6, "device_validation": False,
@@ -185,10 +193,13 @@ def check(args, width: int, height: int, raw: bool) -> dict:
                                 "zero calibration", "no-frame timeout", "SIGINT during connect"]
                                + (["invalid-flag calibration update", "retained calibration", "broadcast calibration",
                                                              "malformed calibration exit"] if raw else ["SIGTERM during receive"])}
+        report['logging'] = logging_report
         (destination / "report.json").write_text(json.dumps(report, indent=2) + "\n")
         print(json.dumps(report), flush=True)
         return report
     finally:
+        if capture is not None:
+            capture.close()
         for process in reversed(processes):
             stop(process)
         for process, name in zip(processes, ("daemon-tail", "peer-tail", "waiting-tail"), strict=False):
@@ -207,7 +218,10 @@ def main() -> None:
     parser.add_argument("--catalog", type=Path, required=True)
     parser.add_argument("--models", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument('--collector', type=Path)
     args = parser.parse_args()
+    if args.collector is not None:
+        args.collector = args.collector.resolve()
     for key in ("binary", "catalog", "models", "output"):
         setattr(args, key, getattr(args, key).resolve())
     args.output.mkdir(parents=True, exist_ok=False)

@@ -3,17 +3,23 @@ use openpilot_cereal::car_capnp::car_params;
 use openpilot_desire::command::CommandReader;
 use openpilot_driving_modeld::{
     bus::{self, Inputs},
+    diagnostics::{thread_cpu, FrameTiming},
     jetlink, parameters,
     publication::{Output, Publication, Sources},
-    runtime::DrivingRuntime,
     state::State,
     Error,
+};
+use openpilot_logging::{
+    log_site,
+    producer::Logger,
+    record::{Level, Record},
+    runtime::RuntimeDiagnostics,
 };
 use openpilot_messaging::{
     runtime::{PubMaster, SubMaster},
     state::Options as SubscriberOptions,
 };
-use openpilot_model_runtime::catalog::{Catalog, Kind};
+use openpilot_model_runtime::catalog::Catalog;
 use openpilot_modeld::{
     calibration::DrivingCalibration, camera::receive_pair, inputs::DropTracker,
     model_wire::ModelTiming,
@@ -26,33 +32,21 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
-    thread,
     time::{Duration, Instant},
 };
 
-pub fn run(options: Options) -> Result<(), Error> {
-    process::configure()?;
-    let stop = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
-    signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stop))?;
+pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Result<(), Error> {
     let params = parameters::open()?;
     let catalog = Catalog::load(&options.catalog)?;
     let Some((mut main, mut extra, main_wide)) =
-        process::cameras(&stop, parameters::use_wide(&params)?)?
+        process::cameras(stop, parameters::use_wide(&params)?, logger)?
     else {
         return Ok(());
     };
     let mut subscribers = SubMaster::for_runtime(bus::TOPICS, SubscriberOptions::default())?;
     let mut publishers = PubMaster::for_runtime(bus::OUTPUTS)?;
-    eprintln!("modeld: waiting for CarParams");
-    let car_params = loop {
-        if stop.load(Ordering::Relaxed) {
-            return Ok(());
-        }
-        if let Some(bytes) = params.get("CarParams")?.filter(|bytes| !bytes.is_empty()) {
-            break bytes;
-        }
-        thread::sleep(Duration::from_millis(100));
+    let Some(car_params) = process::car_params(&params, stop)? else {
+        return Ok(());
     };
     let car_params = capnp::serialize::read_message(
         Cursor::new(car_params),
@@ -63,6 +57,19 @@ pub fn run(options: Options) -> Result<(), Error> {
             .get_root::<car_params::Reader>()?
             .get_longitudinal_actuator_delay(),
     );
+    logger.emit(
+        log_site!(),
+        Record::text(
+            Level::Info,
+            format!(
+                "modeld got CarParams: {}",
+                car_params
+                    .get_root::<car_params::Reader>()?
+                    .get_brand()?
+                    .to_str()?
+            ),
+        ),
+    )?;
     let mut state = State::new(
         longitudinal_delay,
         parameters::float(&params, "VEgoStopping")? * 0.01,
@@ -90,34 +97,28 @@ pub fn run(options: Options) -> Result<(), Error> {
     )?;
     let mut external_stored = None;
     let mut frame_count = 0;
-    eprintln!("modeld: ready");
+    let mut diagnostics = RuntimeDiagnostics::new("modeld", 1.0);
     while !stop.load(Ordering::Relaxed) {
+        let loop_start = process::monotonic();
+        let cpu_start = thread_cpu();
         if state.begin_iteration() {
             state.refresh(parameters::settings(&params)?);
         }
         let Some(pair) = receive_pair(&mut main, extra.as_mut())? else {
+            logger.emit(
+                log_site!(),
+                Record::text(
+                    Level::Debug,
+                    "camera pair unavailable or out of sync".into(),
+                ),
+            )?;
             continue;
         };
+        let camera_ready = process::monotonic();
         let frame = pair.main();
         let extra_frame = pair.extra();
         if runtime.is_none() {
-            let camera = [
-                u32::try_from(frame.buffer.layout.width)
-                    .map_err(|_| Error::Contract("camera width overflow"))?,
-                u32::try_from(frame.buffer.layout.height)
-                    .map_err(|_| Error::Contract("camera height overflow"))?,
-            ];
-            let bundle = catalog.select(Kind::Driving, camera)?;
-            let priority = if bundle.backend == "qcom-cl" {
-                env::var("QCOM_PRIORITY")
-                    .map_or(Ok(8), |value| value.parse::<u8>())
-                    .map_err(|_| Error::Contract("invalid QCOM_PRIORITY"))?
-            } else {
-                8
-            };
-            // SAFETY: --trusted-catalog requires immutable trusted executable model artifacts.
-            runtime = Some(unsafe { DrivingRuntime::load(bundle, priority) }?);
-            eprintln!("modeld: models loaded");
+            runtime = Some(process::model(&catalog, &frame.buffer.layout, logger)?);
         }
         let runtime = runtime
             .as_mut()
@@ -134,6 +135,18 @@ pub fn run(options: Options) -> Result<(), Error> {
             extra.is_some(),
         )?;
         let dropped = drops.observe(frame.metadata.frame_id);
+        if dropped.prepare_only {
+            logger.emit(
+                log_site!(),
+                Record::text(
+                    Level::Error,
+                    format!(
+                        "camera dropped {} frames; advancing model history",
+                        dropped.dropped
+                    ),
+                ),
+            )?;
+        }
         let (lateral, longitudinal) = state.action_times();
         runtime.inputs.update(
             i32::from(publication.desire.desire),
@@ -142,6 +155,9 @@ pub fn run(options: Options) -> Result<(), Error> {
             longitudinal,
         );
         let start = Instant::now();
+        let camera_age_at_run_ms =
+            (process::monotonic() - frame.metadata.timestamp_eof as f64 * 1e-9) * 1000.0;
+        let inference_cpu_start = thread_cpu();
         let controls_fresh = subscribers.state.all_valid(&["carState", "carControl"])?
             && subscribers.state.all_alive(&["carState", "carControl"])?;
         let controls = openpilot_jetlink::transition::ControlState {
@@ -199,6 +215,9 @@ pub fn run(options: Options) -> Result<(), Error> {
         let prediction = external.finish(prediction);
         jetlink::persist(&params, &mut external_stored, &external.status)?;
         let model_execution_time = start.elapsed().as_secs_f64();
+        let inference_finished = process::monotonic();
+        let inference_cpu_ms = (thread_cpu() - inference_cpu_start) * 1000.0;
+        let published = prediction.is_some();
         if let Some(prediction) = prediction {
             let config = if (publication.desire.frame + 1).is_multiple_of(100) {
                 Some(parameters::desire_config(&params)?)
@@ -245,6 +264,22 @@ pub fn run(options: Options) -> Result<(), Error> {
             publishers.send("drivingModelData", &messages.driving)?;
             publishers.send("cameraOdometry", &messages.pose)?;
         }
+        FrameTiming {
+            frame_id: frame.metadata.frame_id,
+            loop_start,
+            cpu_start,
+            camera_ready,
+            camera_age_at_run_ms,
+            inference_seconds: model_execution_time,
+            inference_cpu_ms,
+            inference_finished,
+            postprocess_end: process::monotonic(),
+            loop_end: process::monotonic(),
+            cpu_end: thread_cpu(),
+            dropped: dropped.dropped,
+            published,
+        }
+        .record(&mut diagnostics, logger);
         frame_count += 1;
         if options.frames == Some(frame_count) {
             break;

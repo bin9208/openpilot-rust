@@ -118,3 +118,14 @@ host/ARM source comparisons and real IPC/Params shutdown behavior. Parent reruns
 confirm the original estimator and native lifecycle. All existing model pipeline
 artifacts still require regeneration and exact-head CI under the corrected
 dependency. Generic builds do not establish vehicle or CPU acceptance.
+
+[Model diagnostics issue #53](https://github.com/bin9208/openpilot-rust/issues/53)
+connects original model-daemon log callsites and driving runtimeTiming to the
+Rust producer/collector path. The [validation record](../rust-port/model-diagnostics.md)
+separates exact source-expression checks, real model/VisionIPC publications,
+transport fault handling and source-locked NumPy 2.5.3 artifacts. Driver monitoring
+does not gain timing events absent from its source. The existing model-loading
+order differs from Python and remains an acceptance gap under
+[#55](https://github.com/bin9208/openpilot-rust/issues/55); first-loop initialization
+time is retained, and still-unported eGPU callsites stay explicit. Driver-monitoring
+startup order is separately tracked in [#60](https://github.com/bin9208/openpilot-rust/issues/60).
