@@ -52,3 +52,11 @@ ports camera pairing, drop state, calibration and packed policy inputs. The
 [comparison record](../rust-port/model-input-validation.md) includes original
 source sequences and exact native camera/model/recurrent output comparisons.
 Complete driving daemon orchestration remains tracked under #1/#6.
+
+[Diagnostic log collector issue #34](https://github.com/bin9208/openpilot-rust/issues/34)
+adds the continuous Rust ZeroMQ collector, source-compatible Swaglog formatting
+and rotation, and original `logMessage`/`errorLogMessage` publications. Its
+[validation record](../rust-port/logmessaged-validation.md) separates source
+byte comparisons, native transport/error-path checks and the CPython recursion
+resource difference. External libzmq/msgq remain explicit; manager selection,
+route logger integration and the complete startup/upload candidate remain open.
