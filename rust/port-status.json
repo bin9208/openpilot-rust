@@ -657,6 +657,14 @@
       "evidence": "docs/rust-port/monitoring-validation.md"
     }
   ],
+  "startup_bootlog": {
+    "source_entrypoints": ["openpilot/system/loggerd/bootlog.cc", "openpilot/system/manager/helpers.py::save_bootlog"],
+    "status": "native_component_host_validated_pending_integration",
+    "runtime_scope": "boot initData/Boot compressed artifact, BootCount/CurrentBootlog linkage and Params snapshot/background lifecycle; manager selection unchanged",
+    "native_dependencies": ["libc buffered I/O", "zstd", "filesystem/xattrs and OS clocks", "/bin/sh and journalctl", "existing loggerd FFmpeg/msgq/libzmq dependency closure"],
+    "evidence": "docs/rust-port/bootlog-validation.md",
+    "production_replaced": false
+  },
   "device_validation": "not_run",
   "performance_validation": "not_run"
 }
