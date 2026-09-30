@@ -5,12 +5,20 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import tomllib
 from pathlib import Path
 import zipfile
 
 
 def stage(wheel: Path, output: Path) -> None:
-  assert wheel.name.startswith("numpy-2.4.6-"), "only the pinned NumPy2.4.6 artifact is supported"
+  lock = tomllib.loads((Path(__file__).resolve().parents[2] / "uv.lock").read_text())
+  package = next(package for package in lock["package"] if package["name"] == "numpy")
+  if package["version"] != "2.5.3":
+    raise ValueError("torqued numerical ABI must be reviewed when the source NumPy lock changes")
+  entry = next((entry for entry in package["wheels"] if entry["url"].rsplit("/", 1)[1] == wheel.name), None)
+  digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
+  if entry is None or entry["hash"] != "sha256:" + digest:
+    raise ValueError("numerical wheel must match an exact NumPy2.5.3 archive in uv.lock")
   output.mkdir(parents=True, exist_ok=False)
   files = []
   with zipfile.ZipFile(wheel) as archive:
@@ -25,12 +33,12 @@ def stage(wheel: Path, output: Path) -> None:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(archive.read(name))
   (library,) = [entry["name"] for entry in files if entry["name"].startswith("libscipy_openblas64_")]
-  manifest = {"format": 1, "numpy": "2.4.6", "abi": "scipy_dgesdd_64_", "library": library, "files": files}
+  manifest = {"format": 1, "numpy": "2.5.3", "abi": "scipy_dgesdd_64_", "library": library, "files": files}
   (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
   provenance = {
     "wheel": wheel.name,
     "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
-    "source": "https://github.com/numpy/numpy/tree/v2.4.6",
+    "source": "https://github.com/numpy/numpy/tree/v2.5.3",
     "runtime": "native shared libraries only; no Python imports",
   }
   (output / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")

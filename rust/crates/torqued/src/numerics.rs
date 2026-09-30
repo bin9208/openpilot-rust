@@ -54,12 +54,12 @@ impl Numerics {
             })?,
         )?;
         if manifest.format != 1
-            || manifest.numpy != "2.4.6"
+            || manifest.numpy != "2.5.3"
             || manifest.abi != "scipy_dgesdd_64_"
             || !manifest.files.iter().any(|f| f.name == manifest.library)
         {
             return Err(Error::Contract(
-                "unsupported numerical manifest; NumPy2.4.6 ILP64 artifact required",
+                "unsupported numerical manifest; NumPy2.5.3 ILP64 artifact required",
             ));
         }
         for file in &manifest.files {
@@ -87,7 +87,7 @@ impl Numerics {
             )?;
             CStr::from_ptr(function()).to_string_lossy().into_owned()
         };
-        if !config.contains("OpenBLAS 0.3.31") || !config.contains("USE64BITINT") {
+        if !config.contains("OpenBLAS 0.3.34.106.0") || !config.contains("USE64BITINT") {
             return Err(Error::Contract(
                 "numerical artifact OpenBLAS version/ABI mismatch",
             ));

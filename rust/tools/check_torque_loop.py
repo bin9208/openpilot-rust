@@ -61,6 +61,7 @@ def fixtures(new_message):
 
 def check(binary: Path, numerics: Path, output: Path) -> None:
   output.mkdir(parents=True, exist_ok=False)
+  assert np.__version__ == "2.5.3", "source loop oracle must use the repository-locked NumPy2.5.3"
   scope, environment = messaging_source()
   counts = Counter()
   with subprocess.Popen([binary, numerics], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True) as process, (output / "trace.jsonl").open("w") as trace:
@@ -117,7 +118,7 @@ def check(binary: Path, numerics: Path, output: Path) -> None:
     assert process.wait(timeout=5) == 0
   assert counts["steps"] == 2250 and counts["persistence_steps"] == 12
   assert counts["valid_publications"] and counts["invalid_publications"]
-  (output / "report.json").write_text(json.dumps({"result": "pass", **counts}, indent=2) + "\n")
+  (output / "report.json").write_text(json.dumps({"result": "pass", "numpy": np.__version__, **counts}, indent=2) + "\n")
   print(json.dumps(counts, indent=2))
 
 

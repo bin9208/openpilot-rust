@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Differential validation against original torqued.py (NumPy2.4.6, seeded RNG)."""
+"""Differential validation against original torqued.py (NumPy2.5.3, seeded RNG)."""
 
 from __future__ import annotations
 import argparse
@@ -17,6 +17,7 @@ from openpilot.cereal import car, log
 def check(binary: Path, numerics: Path, output: Path) -> None:
   output.mkdir(parents=True, exist_ok=False)
   assert binary.is_file(), "torqued estimator executable missing"
+  assert np.__version__ == "2.5.3", "source oracle must use the repository-locked NumPy2.5.3"
   scenarios = Counter()
   fields = errors = 0
   with subprocess.Popen([binary, numerics], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True) as process, (output / "trace.jsonl").open("w") as trace:
@@ -86,6 +87,7 @@ def check(binary: Path, numerics: Path, output: Path) -> None:
     assert process.wait(timeout=5) == 0
   report = {
     "result": "pass",
+    "numpy": np.__version__,
     "scenarios": scenarios,
     "steps": sum(scenarios.values()),
     "packet_fields": fields,

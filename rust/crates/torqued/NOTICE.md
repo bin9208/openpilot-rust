@@ -10,6 +10,10 @@ https://github.com/numpy/numpy/tree/v2.4.6/numpy/random
 https://github.com/numpy/numpy/blob/v2.4.6/numpy/_core/src/multiarray/compiled_base.c
 https://github.com/numpy/numpy/blob/v2.4.6/numpy/_core/src/umath/loops_utils.h.src
 
+The copied algorithm provenance above remains NumPy v2.4.6; current compatibility
+checks and native staging use the source-locked NumPy v2.5.3 with unchanged
+sampling and numerical tolerances.
+
 Native OpenBLAS/Fortran libraries are external build artifacts, never vendored
 or imported from Python by the Rust daemon. `stage_torque_numerics.py` retains
 the wheel's full license directory and archive/library SHA256 provenance.

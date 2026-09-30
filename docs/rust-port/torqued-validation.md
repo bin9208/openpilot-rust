@@ -5,9 +5,28 @@ part of [#1](https://github.com/bin9208/openpilot-rust/issues/1). The source bas
 `6836b9cf89b42d407d0196d86bb9f6daad719636`. This increment does not select a new
 production process, connect to a vehicle, or meet the complete runtime/device
 comparison gate. The original `torqued.py`, `locationd/helpers.py`, cereal
-schemas, NumPy 2.4.6 and original messaging classes are the validation oracles.
+schemas, repository-locked NumPy 2.5.3 and original messaging classes are the current validation oracles.
 Original files and licensing remain; additional NumPy notices are retained in
 `rust/crates/torqued/NOTICE.md`.
+
+## Source-lock correction
+
+The initial `4e9bd7eccaa5c97c58c62f5f5480bcd15ba6a73f` increment used
+NumPy 2.4.6/OpenBLAS 0.3.31 even though `pyproject.toml` requires NumPy>=2.5.3 and
+`uv.lock` pins 2.5.3. That initial dependency was not suitable as the source-locked
+runtime candidate. Current staging requires the exact archive filename and
+SHA256 from `uv.lock`, and the Rust loader requires NumPy 2.5.3 and its
+OpenBLAS 0.3.34.106.0 ILP64 ABI. Earlier 2.4.6 evidence is retained and explicitly
+historical below; it does not establish 2.5.3 compatibility.
+
+All NumPy installs in the Rust workflow and eleven standalone oracle/build script pins now
+use 2.5.3. This is a shared validation prerequisite: existing captured model and
+tinygrad pipeline artifacts must be rebuilt/revalidated by the exact-head CI
+jobs under 2.5.3. Earlier 2.4.6 model/pipeline results do not cover this dependency
+change. The pipeline descriptors currently record model/source hashes but not the
+NumPy version, so a previously generated artifact alone cannot prove this
+prerequisite. Local torque validation uses new isolated host/ARM environments; shared
+MODEL/LOG environments are unchanged.
 
 ## Runtime behavior
 
@@ -44,8 +63,8 @@ publications and still performs the same-frame cache write before exiting.
 ## Native numerical dependency
 
 The Rust estimator calls the original `dgesdd` SVD method with reduced matrices
-through a bounded FFI wrapper. Its supported artifact is NumPy2.4.6's native
-OpenBLAS0.3.31 ILP64 library (`scipy_dgesdd_64_`). No Python or NumPy import
+through a bounded FFI wrapper. Its supported artifact is NumPy 2.5.3's native
+OpenBLAS 0.3.34.106.0 ILP64 library (`scipy_dgesdd_64_`). No Python or NumPy import
 occurs in the daemon. `--numerics DIRECTORY`, `TORQUED_NUMERICS`, or the executable
 sibling `torqued-numerics` selects the required artifact. Missing libraries,
 unsupported manifest/version/ABI or mismatched file hashes are explicit errors.
@@ -55,19 +74,19 @@ consistency, not authenticity of an arbitrary user-supplied library.
 Build-time staging is reproducible:
 
 ```sh
-python -m pip download --only-binary=:all: --no-deps numpy==2.4.6 --dest /tmp/torque-wheels
-python rust/tools/stage_torque_numerics.py --wheel /tmp/torque-wheels/numpy-2.4.6-*.whl --output /tmp/torque-numerics
+python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest /tmp/torque-wheels
+python rust/tools/stage_torque_numerics.py --wheel /tmp/torque-wheels/numpy-2.5.3-*.whl --output /tmp/torque-numerics
 # For GNU aarch64, download the appropriate wheel before staging:
-python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.4.6 --dest /tmp/torque-arm-wheels
+python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.5.3 --dest /tmp/torque-arm-wheels
 ```
 
 Staging retains archive/library SHA256 hashes, manifest, source provenance and
 all wheel license notices. Verified Linux CPython312 wheel archives:
 
-| Architecture | NumPy2.4.6 wheel SHA256 |
+| Architecture | Source-locked NumPy 2.5.3 wheel SHA256 |
 | --- | --- |
-| x86_64 manylinux2.27/2.28 | `90f9849678c75fe7afa2d348ac842c168b0a4d3d61919687216dfc547976d853` |
-| aarch64 manylinux2.27/2.28 | `5f9fb9157b4ce2971008323afe46053787b526ef624fea915b261468a8421a0f` |
+| x86_64 manylinux2.27/2.28 | `b7e18c623bb5c95acb3b3328861272816ba199fb531921c5d6d0b675f1fde9e3` |
+| aarch64 manylinux2.27/2.28 | `76c2c1e6bfa5c84adc6434dfbf013aa92096a7985221762c8f11fedfd20fff58` |
 
 The staged GNU shared libraries require compatible OS libc/libm and loader.
 The ARM Fortran runtime additionally needs `libgcc_s.so.1` and `libz.so.1`; the
@@ -95,7 +114,28 @@ poses, calibration transforms, override/engagement/speed and lateral-acceleratio
 gates. The original main-loop AST is separately executed against original
 SubMaster updates, including stale/invalid/silent inputs and dual fits.
 
-Captured in the task worktree `.omo/evidence/torqued/`:
+Current 2.5.3 source/native results are captured separately in
+`.omo/evidence/torqued-numpy253/` with unchanged tolerances:
+
+| Scenario | Binary observable | Artifact |
+| --- | --- | --- |
+| Locked archive staging | both GNU wheels exactly match `uv.lock`; wrong version/hash and old runtime manifest rejected | `locked-wheels.json`, `version-rejection.json`, `numerics-*/manifest.json` |
+| Host original estimator | 3,613 steps; 298,537 packet fields; five matching source errors | `reference-host-final/report.json` |
+| Host original loop | 2,250 iterations; 450 publications; 12 cache fits | `loop-host-final/report.json` |
+| ARM original source + native ARM SVD under QEMU | same 3,613 steps and 298,537 fields; no tolerance change | `reference-arm-final/report.json` |
+| Native wrapper under ASan | same 3,613 steps and 298,537 fields; external OpenBLAS internals uninstrumented | `reference-asan/report.json` |
+| Real native IPC/Params lifecycle | source packets, strict idle signal exits, separately bounded loop stop and durable drain | `native/report.json` |
+
+Both new wheel builds report OpenBLAS 0.3.34.106.0 USE64BITINT; the producer never
+imports Python. Exact commands, hashes, loader checks and remaining CI gates are
+recorded in the new evidence `INDEX.json`.
+
+### Historical initial 2.4.6 evidence
+
+The following evidence remains in `.omo/evidence/torqued/` and records the
+initial 2.4.6 implementation only. Its numerical/native runs are superseded by
+the 2.5.3 checks above; use the initial commit to reproduce the historical tools.
+These results do not establish current model/pipeline or device acceptance:
 
 | Scenario | Invocation | Binary observable | Artifact |
 | --- | --- | --- | --- |
@@ -107,7 +147,7 @@ Captured in the task worktree `.omo/evidence/torqued/`:
 | Native FFI wrapper under ASan | Original estimator checker against nightly ASan `torque_trace` | 3,613 steps / 298,537 fields pass; no sanitizer failure; external OpenBLAS internals uninstrumented | `reference-asan/report.json`, `reference-asan.log` |
 | Workspace regressions | `cargo test --workspace --locked` | exit0 | `workspace-tests.log` |
 
-An extra ARM-vs-x86 source comparison exceeded the Float64 intercept tolerance
+In the historical2.4.6 run, an extra ARM-vs-x86 source comparison exceeded the Float64 intercept tolerance
 for a deliberately ill-conditioned `1e8` slope. Comparing ARM Rust against the
 actual ARM NumPy original source passes with the unchanged contract. This
 records platform backend variation; it does not claim cross-architecture bit

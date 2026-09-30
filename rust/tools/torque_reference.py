@@ -33,6 +33,7 @@ class Parameters:
 
 
 def original(params: Parameters) -> ModuleType:
+  assert np.__version__ == "2.5.3", "source oracle must use repository-locked NumPy2.5.3"
   path = ROOT / "openpilot/selfdrive/locationd/torqued.py"
   tree = ast.parse(path.read_text(), filename=str(path))
   tree.body = [
