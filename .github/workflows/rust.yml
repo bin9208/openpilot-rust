@@ -15,8 +15,34 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, web-upload-timeouts]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, web-upload-timeouts]
     if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require runtime validation
+        env:
+          WORKSPACE: ${{ needs.workspace.result }}
+          MEMORY: ${{ needs.model-memory.result }}
+          PIPELINES: ${{ needs.model-pipelines.result }}
+          LOGGER: ${{ needs.logger-runtime.result }}
+          SUPPORT: ${{ needs.support-runtime.result }}
+          TELEMETRY: ${{ needs.telemetry-runtime.result }}
+          STARTUP: ${{ needs.startup-runtime.result }}
+          HARDWARE: ${{ needs.hardware-runtime.result }}
+          UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
+        run: |
+          test "$WORKSPACE" = success
+          test "$MEMORY" = success
+          test "$PIPELINES" = success
+          test "$LOGGER" = success
+          test "$SUPPORT" = success
+          test "$TELEMETRY" = success
+          test "$STARTUP" = success
+          test "$HARDWARE" = success
+          test "$UPLOAD_TIMEOUTS" = success
+  workspace:
+    name: rust workspace checks
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -34,25 +60,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Require runtime validation
-        env:
-          MEMORY: ${{ needs.model-memory.result }}
-          PIPELINES: ${{ needs.model-pipelines.result }}
-          LOGGER: ${{ needs.logger-runtime.result }}
-          SUPPORT: ${{ needs.support-runtime.result }}
-          TELEMETRY: ${{ needs.telemetry-runtime.result }}
-          STARTUP: ${{ needs.startup-runtime.result }}
-          HARDWARE: ${{ needs.hardware-runtime.result }}
-          UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
-        run: |
-          test "$MEMORY" = success
-          test "$PIPELINES" = success
-          test "$LOGGER" = success
-          test "$SUPPORT" = success
-          test "$TELEMETRY" = success
-          test "$STARTUP" = success
-          test "$HARDWARE" = success
-          test "$UPLOAD_TIMEOUTS" = success
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
