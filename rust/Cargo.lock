@@ -1882,6 +1882,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-feedbackd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "rustix",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-hardware-control"
 version = "0.1.0"
 dependencies = [

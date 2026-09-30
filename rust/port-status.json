@@ -156,7 +156,11 @@
       "name": "feedbackd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.ui.feedback.feedbackd",
-      "status": "not_ported",
+      "status": "continuous_native_host_validated",
+      "implementation": "rust/crates/feedbackd",
+      "native_dependencies": ["original msgq through CXX", "Linux clocks and signals"],
+      "runtime_scope": "Active bookmark loop matches unchanged source over actual IPC; source-disabled LKAS audio recording remains disabled; Actions/ARM and complete startup/upload pending",
+      "evidence": "docs/rust-port/feedbackd-validation.md",
       "production_replaced": false
     },
     {

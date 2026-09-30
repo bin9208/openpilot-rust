@@ -92,6 +92,7 @@ fn availability(name: &str) -> RustAvailability {
         "deleter" => ("openpilot-deleter", "openpilot-deleter"),
         "dmonitoringd" => ("openpilot-dmonitoringd", "openpilot-dmonitoringd"),
         "dmonitoringmodeld" => ("openpilot-dmonitoringmodeld", "openpilot-dmonitoringmodeld"),
+        "feedbackd" => ("openpilot-feedbackd", "openpilot-feedbackd"),
         "hardwared" => ("openpilot-hardwared", "openpilot-hardwared"),
         "jetlinkd" => ("openpilot-jetlink", "jetlinkd-rs"),
         "journald" => ("openpilot-journald", "journald-rs"),
