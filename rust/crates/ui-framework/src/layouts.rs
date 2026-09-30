@@ -1,6 +1,6 @@
 use crate::{
     draw::Draw,
-    widget::{DialogResult, Frame, Widget, WidgetState},
+    widget::{Frame, RenderResult, Widget, WidgetState},
     Error,
 };
 
@@ -32,11 +32,7 @@ impl Widget for HBox {
     fn state_mut(&mut self) -> &mut WidgetState {
         &mut self.state
     }
-    fn paint(
-        &mut self,
-        frame: &Frame<'_>,
-        draw: &mut dyn Draw,
-    ) -> Result<Option<DialogResult>, Error> {
+    fn paint(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         let rect = self.state.rect;
         let mut offset = 0.0;
         for (index, child) in self
@@ -60,6 +56,6 @@ impl Widget for HBox {
             child.state_mut().parent_rect = Some(rect);
             child.render(frame, draw)?;
         }
-        Ok(None)
+        Ok(RenderResult::None)
     }
 }

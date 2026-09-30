@@ -22,6 +22,7 @@ Image::~Image() { UnloadImage(value); }
 int32_t Image::width() const { return value.width; }
 int32_t Image::height() const { return value.height; }
 void Image::premultiply() { ImageAlphaPremultiply(&value); }
+void Image::flip_horizontal() { ImageFlipHorizontal(&value); }
 void Image::resize(int32_t width, int32_t height) {
   if (width > 0 && height > 0)
     ImageResize(&value, width, height);
@@ -60,6 +61,15 @@ uint32_t Surface::texture(Image &image, int32_t logical_width,
   textures.push_back(value);
   return textures.size() - 1;
 }
+uint32_t Surface::pixel_texture(int32_t width, int32_t height, rust::Slice<const uint8_t> rgba) {
+  if (width <= 0 || height <= 0 || uint64_t(width)*uint64_t(height)*4 != rgba.size())
+    throw std::runtime_error("invalid RGBA texture dimensions");
+  ::Image image{const_cast<uint8_t *>(rgba.data()), width, height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
+  auto value=LoadTextureFromImage(image);
+  if (!value.id) throw std::runtime_error("RGBA texture upload failed");
+  textures.push_back(value);
+  return textures.size()-1;
+}
 uint32_t Surface::font(rust::Str path, int32_t size,
                        rust::Slice<const int32_t> points, bool atlas,
                        bool mipmaps) {
@@ -91,6 +101,14 @@ void Surface::draw_texture(uint32_t texture, Rect rect, Point origin,
   DrawTexturePro(value, {0, 0, float(value.width), float(value.height)},
                  rectangle(rect), {origin.x, origin.y}, rotation, WHITE);
 }
+void Surface::tinted_texture(uint32_t texture, Rect source, Rect destination, Point origin, float rotation, uint32_t tint) {
+  DrawTexturePro(textures.at(texture), rectangle(source), rectangle(destination), {origin.x,origin.y}, rotation, color(tint));
+}
+void Surface::circle(Point center, float radius, uint32_t tint) { DrawCircleV({center.x,center.y},radius,color(tint)); }
+void Surface::gradient(Rect rect, uint32_t top_left, uint32_t bottom_left, uint32_t top_right, uint32_t bottom_right) {
+  DrawRectangleGradientEx(rectangle(rect), color(top_left), color(bottom_left), color(top_right), color(bottom_right));
+}
+void Surface::line(Point start, Point end, float thick, uint32_t tint) { DrawLineEx({start.x,start.y},{end.x,end.y},thick,color(tint)); }
 void Surface::rounded(Rect rect, float roundness, uint32_t tint, bool border) {
   if (border)
     DrawRectangleRoundedLinesEx(rectangle(rect), roundness, 10, 2, color(tint));

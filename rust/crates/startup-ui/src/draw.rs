@@ -17,7 +17,40 @@ pub struct TextDraw<'a> {
     pub spacing: f32,
     pub color: u32,
 }
+pub struct ImageDraw {
+    pub id: u32,
+    pub source: Rect,
+    pub destination: Rect,
+    pub origin: Point,
+    pub rotation: f32,
+    pub tint: u32,
+}
 pub trait Draw: Measure {
+    fn font_scale(&self) -> f64 {
+        1.0
+    }
+    fn circle(&mut self, _center: Point, _radius: f32, _color: u32) -> Result<(), Error> {
+        Err(Error::Contract("circle drawing unavailable"))
+    }
+    fn gradient(&mut self, _rect: Rect, _colors: [u32; 4]) -> Result<(), Error> {
+        Err(Error::Contract("gradient drawing unavailable"))
+    }
+    fn line(&mut self, _start: Point, _end: Point, _thick: f32, _color: u32) -> Result<(), Error> {
+        Err(Error::Contract("line drawing unavailable"))
+    }
+    fn image(&mut self, _image: ImageDraw) -> Result<(), Error> {
+        Err(Error::Contract("image drawing unavailable"))
+    }
+    fn emoji(
+        &mut self,
+        _text: &str,
+        _position: Point,
+        _size: f32,
+        _tint: u32,
+    ) -> Result<(), Error> {
+        Err(Error::Contract("emoji drawing unavailable"))
+    }
+
     fn text(&mut self, text: TextDraw<'_>) -> Result<(), Error>;
     fn rounded(&mut self, rect: Rect, roundness: f32, color: u32) -> Result<(), Error>;
     fn border(&mut self, rect: Rect, roundness: f32, color: u32) -> Result<(), Error>;

@@ -2,7 +2,7 @@ use openpilot_ui_framework::{
     draw::{Draw, TextDraw},
     geometry::{MouseEvent, Point, Rect},
     text::{Font, Measure},
-    widget::{DialogResult, Frame, Widget, WidgetState},
+    widget::{Frame, RenderResult, Widget, WidgetState},
     Error,
 };
 use serde::Deserialize;
@@ -30,10 +30,10 @@ impl Widget for Probe {
     fn state_mut(&mut self) -> &mut WidgetState {
         &mut self.state
     }
-    fn paint(&mut self, _: &Frame<'_>, _: &mut dyn Draw) -> Result<Option<DialogResult>, Error> {
+    fn paint(&mut self, _: &Frame<'_>, _: &mut dyn Draw) -> Result<RenderResult, Error> {
         self.calls
             .push(format!("paint:{}", self.state.is_pressed()));
-        Ok(None)
+        Ok(RenderResult::None)
     }
     fn mouse_press(&mut self, _: Point, _: &Frame<'_>) {
         self.calls.push("press".into());
@@ -99,6 +99,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let frame = Frame {
             now: input.now,
             dt: 0.05,
+            target_fps: 20.0,
             awake: input.awake,
             events: &input.events,
             last_event: input.events.last().copied().unwrap_or_default(),

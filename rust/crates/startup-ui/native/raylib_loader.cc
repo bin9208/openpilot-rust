@@ -69,7 +69,7 @@ void *library() {
                               "GetMouseWheelMove",
                               "PollInputEvents",
                               "GetMonitorWidth",
-                              "GetMonitorHeight"};
+                              "GetMonitorHeight", "ImageFlipHorizontal", "DrawCircleV", "DrawRectangleGradientEx", "DrawLineEx"};
     for (const char *name : required) {
       if (!dlsym(loaded, name)) {
         dlclose(loaded);
@@ -161,4 +161,8 @@ FORWARD(float, GetMouseWheelMove, (), ())
 FORWARD(void, PollInputEvents, (), ())
 FORWARD(int, GetMonitorWidth, (int monitor), (monitor))
 FORWARD(int, GetMonitorHeight, (int monitor), (monitor))
+FORWARD(void, DrawCircleV, (Vector2 center, float radius, Color color), (center,radius,color))
+FORWARD(void, DrawRectangleGradientEx, (Rectangle rect, Color top_left, Color bottom_left, Color top_right, Color bottom_right), (rect,top_left,bottom_left,top_right,bottom_right))
+FORWARD(void, DrawLineEx, (Vector2 start, Vector2 end, float thick, Color color), (start,end,thick,color))
+FORWARD(void, ImageFlipHorizontal, (Image *image), (image))
 #undef FORWARD

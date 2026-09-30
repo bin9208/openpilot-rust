@@ -12,6 +12,25 @@ use std::{
     path::{Path, PathBuf},
     rc::Rc,
 };
+#[derive(Clone, Copy, Debug)]
+pub struct TextureOptions {
+    pub width: Option<i32>,
+    pub height: Option<i32>,
+    pub premultiply: bool,
+    pub keep_aspect: bool,
+    pub flip_x: bool,
+}
+impl Default for TextureOptions {
+    fn default() -> Self {
+        Self {
+            width: None,
+            height: None,
+            premultiply: false,
+            keep_aspect: true,
+            flip_x: false,
+        }
+    }
+}
 pub struct Renderer {
     pub(crate) surface: cxx::UniquePtr<ffi::Surface>,
     pub config: Config,
@@ -20,6 +39,7 @@ pub struct Renderer {
     pretendard: u32,
     display: Option<u32>,
     fallback: bool,
+    fonts: HashMap<String, u32>,
     comma: Option<u32>,
     track: Option<u32>,
     _thread: PhantomData<Rc<()>>,
@@ -116,6 +136,10 @@ impl Renderer {
             pretendard,
             display,
             fallback: matches!(language, "th" | "zh-CHT" | "zh-CHS" | "ko" | "ja"),
+            fonts: fonts
+                .into_iter()
+                .map(|(name, id)| (name.to_owned(), id))
+                .collect(),
             comma: None,
             track: None,
             _thread: PhantomData,
@@ -184,9 +208,158 @@ impl Renderer {
                     self.medium
                 }
             }
-            Font::Pretendard => self.pretendard,
+            Font::Pretendard => {
+                if self.fallback {
+                    self.display.unwrap_or(self.pretendard)
+                } else {
+                    self.pretendard
+                }
+            }
             Font::Display => self.display.unwrap_or(self.normal),
+            Font::Bold | Font::SemiBold | Font::Unifont | Font::Regular => {
+                let name = match font {
+                    Font::Bold => "Inter-Bold",
+                    Font::SemiBold => "Inter-SemiBold",
+                    Font::Unifont => "unifont",
+                    _ => "Inter-Regular",
+                };
+                let id = self.fonts.get(name).copied().unwrap_or(self.normal);
+                if self.fallback {
+                    self.display.unwrap_or(id)
+                } else {
+                    id
+                }
+            }
         }
+    }
+    pub fn load_asset(
+        &mut self,
+        path: &Path,
+        options: TextureOptions,
+    ) -> Result<(u32, i32, i32), Error> {
+        let mut image = ffi::image(
+            path.to_str()
+                .ok_or(Error::Contract("asset path is not UTF-8"))?,
+        )?;
+        if options.premultiply {
+            image.pin_mut().premultiply();
+        }
+        if let (Some(logical_width), Some(logical_height)) = (options.width, options.height) {
+            if logical_width <= 0 || logical_height <= 0 {
+                return Err(Error::Contract("asset size must be positive"));
+            }
+            let (width, height) = if self.config.scale != 1.0 {
+                (
+                    crate::number::integer(
+                        crate::number::float(logical_width) * self.config.scale,
+                    )?
+                    .min(image.width()),
+                    crate::number::integer(
+                        crate::number::float(logical_height) * self.config.scale,
+                    )?
+                    .min(image.height()),
+                )
+            } else {
+                (logical_width, logical_height)
+            };
+            if options.keep_aspect {
+                let ratio = (f64::from(width) / f64::from(image.width()))
+                    .min(f64::from(height) / f64::from(image.height()));
+                use num_traits::ToPrimitive;
+                let actual_width = (f64::from(image.width()) * ratio)
+                    .to_i32()
+                    .ok_or(Error::Contract("asset width out of range"))?;
+                let actual_height = (f64::from(image.height()) * ratio)
+                    .to_i32()
+                    .ok_or(Error::Contract("asset height out of range"))?;
+                image.pin_mut().resize(actual_width, actual_height);
+            } else {
+                image.pin_mut().resize(width, height);
+            }
+        } else if !options.keep_aspect {
+            return Err(Error::Contract("resize requires both dimensions"));
+        }
+        if options.flip_x {
+            image.pin_mut().flip_horizontal();
+        }
+        let (width, height) = if self.config.scale != 1.0 {
+            match (options.width, options.height) {
+                (Some(width), Some(height)) => (width, height),
+                _ => (image.width(), image.height()),
+            }
+        } else {
+            (image.width(), image.height())
+        };
+        let id = self
+            .surface
+            .pin_mut()
+            .texture(image.pin_mut(), width, height)?;
+        Ok((id, width, height))
+    }
+    pub fn pixel_texture(&mut self, width: i32, height: i32, rgba: &[u8]) -> Result<u32, Error> {
+        Ok(self.surface.pin_mut().pixel_texture(width, height, rgba)?)
+    }
+    pub fn tinted_texture(
+        &mut self,
+        id: u32,
+        source: Rect,
+        destination: Rect,
+        origin: Point,
+        rotation: f32,
+        tint: u32,
+    ) -> Result<(), Error> {
+        Ok(self.surface.pin_mut().tinted_texture(
+            id,
+            convert(source),
+            convert(destination),
+            ffi::Point {
+                x: origin.x,
+                y: origin.y,
+            },
+            rotation,
+            tint,
+        )?)
+    }
+    pub fn circle(&mut self, center: Point, radius: f32, color: u32) {
+        self.surface.pin_mut().circle(
+            ffi::Point {
+                x: center.x,
+                y: center.y,
+            },
+            radius,
+            color,
+        );
+    }
+    pub fn gradient(&mut self, rect: Rect, colors: [u32; 4]) {
+        self.surface
+            .pin_mut()
+            .gradient(convert(rect), colors[0], colors[1], colors[2], colors[3]);
+    }
+    pub fn line(&mut self, start: Point, end: Point, thick: f32, color: u32) {
+        self.surface.pin_mut().line(
+            ffi::Point {
+                x: start.x,
+                y: start.y,
+            },
+            ffi::Point { x: end.x, y: end.y },
+            thick,
+            color,
+        );
+    }
+    pub fn measure_raw(
+        &self,
+        font: Font,
+        text: &str,
+        size: f32,
+        spacing: f32,
+    ) -> Result<Point, Error> {
+        let value = self
+            .surface
+            .measure(self.font_id(font), text, size, spacing)?;
+        Ok(Point {
+            x: value.x,
+            y: value.y,
+        })
     }
     pub fn begin(&mut self) {
         self.surface.pin_mut().begin(self.config.scale);

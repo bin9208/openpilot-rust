@@ -38,9 +38,19 @@ impl DialogResult {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum RenderResult {
+    #[default]
+    None,
+    Bool(bool),
+    Dialog(DialogResult),
+    Value(i32),
+}
+
 pub struct Frame<'a> {
     pub now: f64,
     pub dt: f64,
+    pub target_fps: f64,
     pub awake: bool,
     pub events: &'a [MouseEvent],
     pub last_event: MouseEvent,
@@ -111,11 +121,7 @@ impl WidgetState {
 pub trait Widget {
     fn state(&self) -> &WidgetState;
     fn state_mut(&mut self) -> &mut WidgetState;
-    fn paint(
-        &mut self,
-        frame: &Frame<'_>,
-        draw: &mut dyn Draw,
-    ) -> Result<Option<DialogResult>, Error>;
+    fn paint(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error>;
     fn update(&mut self, _frame: &Frame<'_>) {}
     fn layout(&mut self, _frame: &Frame<'_>, _draw: &mut dyn Draw) -> Result<(), Error> {
         Ok(())
@@ -154,15 +160,11 @@ pub trait Widget {
             ..self.state().rect
         });
     }
-    fn render(
-        &mut self,
-        frame: &Frame<'_>,
-        draw: &mut dyn Draw,
-    ) -> Result<Option<DialogResult>, Error> {
+    fn render(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         self.update(frame);
         self.state_mut().expire(frame.now);
         if !self.state().visible.get() {
-            return Ok(None);
+            return Ok(RenderResult::None);
         }
         self.layout(frame, draw)?;
         let result = self.paint(frame, draw)?;
