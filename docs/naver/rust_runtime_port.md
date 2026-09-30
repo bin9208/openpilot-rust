@@ -22,3 +22,9 @@ the Rust-owned camera client boundary over the external msgq library. The
 [boundary ledger](../rust-port/visionipc-plan.md) records native-server
 interoperability, reconnect, copied-frame lifetime and sanitizer evidence.
 Camera/model daemon integration and GPU imports remain full-runtime work.
+
+[Model output issue #16](https://github.com/bin9208/openpilot-rust/issues/16)
+ports model interpretation, action calculation and the four original cereal
+publications. The [validation record](../rust-port/model-output-validation.md)
+documents original-function comparisons, history/discrete-decision boundaries,
+architecture-specific exponential rounding and remaining daemon integration.
