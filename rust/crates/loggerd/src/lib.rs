@@ -1,4 +1,5 @@
 pub mod clock;
+pub mod diagnostics;
 mod error;
 mod files;
 mod raw_file;

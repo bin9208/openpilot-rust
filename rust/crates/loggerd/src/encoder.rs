@@ -1,9 +1,11 @@
 use crate::{
+    diagnostics,
     media::{Packet, VideoSpec, VideoWriter},
     writer::Logger,
     Error,
 };
 use openpilot_cereal::log_capnp::{encode_data, event};
+use openpilot_logging::{log_site, record::Level};
 use openpilot_params::Params;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -15,6 +17,15 @@ pub enum Stream {
 }
 
 impl Stream {
+    fn service(self) -> &'static str {
+        match self {
+            Self::Road => "roadEncodeData",
+            Self::Wide => "wideRoadEncodeData",
+            Self::Driver => "driverEncodeData",
+            Self::Qroad => "qRoadEncodeData",
+        }
+    }
+
     pub fn from_service(name: &str) -> Option<Self> {
         match name {
             "roadEncodeData" => Some(Self::Road),
@@ -56,6 +67,13 @@ pub struct Encoder {
     pub audio_initialized: bool,
     pub include_audio: bool,
     record: bool,
+    dropped_frames: u64,
+}
+
+#[derive(Default)]
+pub struct Outcome {
+    pub ready_part: Option<i64>,
+    pub bytes: usize,
 }
 
 impl Encoder {
@@ -89,10 +107,16 @@ impl Encoder {
             audio_initialized: false,
             include_audio: stream == Stream::Qroad && params.get_bool("RecordAudio")?,
             record,
+            dropped_frames: 0,
         })
     }
 
-    pub fn handle(&mut self, logger: &mut Logger, bytes: Vec<u8>) -> Result<bool, Error> {
+    pub fn handle(
+        &mut self,
+        logger: &mut Logger,
+        bytes: Vec<u8>,
+        ready: usize,
+    ) -> Result<Outcome, Error> {
         let message = capnp::serialize::read_message_from_flat_slice(
             &mut bytes.as_slice(),
             Default::default(),
@@ -100,18 +124,25 @@ impl Encoder {
         let event = message.get_root::<event::Reader>()?;
         let data = self.stream.data(event)?;
         let index = data.get_idx()?;
-        let offset = *self
-            .offset
-            .get_or_insert(i64::from(index.get_segment_num()));
+        let offset = match self.offset {
+            Some(offset) => offset,
+            None => {
+                let offset = i64::from(index.get_segment_num());
+                self.offset = Some(offset);
+                diagnostics::emit(
+                    log_site!(),
+                    Level::Debug,
+                    format!("{}: has encoderd offset {offset}", self.stream.service()),
+                );
+                offset
+            }
+        };
         let part = i64::from(index.get_segment_num()) - offset;
         match part.cmp(&i64::from(logger.part)) {
             std::cmp::Ordering::Equal => {
                 if self.current_segment != logger.part {
                     if self.record {
-                        if let Some(writer) = self.writer.take() {
-                            writer.close()?;
-                        }
-                        self.writer = Some(VideoWriter::open(
+                        let next = VideoWriter::open(
                             &logger.path()?.join(self.stream.filename()),
                             VideoSpec {
                                 width: data.get_width(),
@@ -119,52 +150,84 @@ impl Encoder {
                                 fps: 20,
                                 codec: index.get_type()?,
                             },
-                        )?);
+                        )?;
+                        if let Some(writer) = self.writer.replace(next) {
+                            writer.close()?;
+                        }
                         self.recording = false;
                         self.audio_initialized = false;
                     }
                     self.current_segment = logger.part;
                     self.marked_ready = false;
                 }
+                let mut written = 0;
                 if self.audio_initialized || !self.include_audio {
                     for queued in std::mem::take(&mut self.queue) {
-                        self.write(logger, &queued)?;
+                        written += self.write(logger, &queued)?;
                     }
-                    self.write(logger, &bytes)?;
+                    written += self.write(logger, &bytes)?;
                 } else {
-                    self.enqueue(bytes);
+                    self.enqueue(bytes, true);
                 }
-                Ok(false)
+                Ok(Outcome {
+                    ready_part: None,
+                    bytes: written,
+                })
             }
             std::cmp::Ordering::Greater => {
                 let newly_ready = !self.marked_ready;
                 self.marked_ready = true;
-                self.enqueue(bytes);
-                Ok(newly_ready)
+                if newly_ready {
+                    diagnostics::emit(
+                        log_site!(),
+                        Level::Debug,
+                        format!(
+                            "rotate {} -> {part} ready {}/4 for {}",
+                            logger.part,
+                            ready + 1,
+                            self.stream.service()
+                        ),
+                    );
+                }
+                self.enqueue(bytes, false);
+                Ok(Outcome {
+                    ready_part: newly_ready.then_some(part),
+                    bytes: 0,
+                })
             }
             std::cmp::Ordering::Less => {
+                diagnostics::emit(log_site!(), Level::Error, format!(
+                    "{}: encoderd packet has a older segment!!! idx.getSegmentNum():{} s->logger.segment():{} re.encoderd_segment_offset:{offset}",
+                    self.stream.service(), index.get_segment_num(), logger.part));
                 self.offset = Some(-i64::from(logger.part));
-                eprintln!(
-                    "loggerd: old encoder segment; reset {:?} offset",
-                    self.stream
-                );
-                Ok(false)
+                Ok(Outcome::default())
             }
         }
     }
 
-    fn enqueue(&mut self, bytes: Vec<u8>) {
+    fn enqueue(&mut self, bytes: Vec<u8>, waiting_audio: bool) {
         if self.queue.len() > 200 {
-            eprintln!(
-                "loggerd: encoder queue full for {:?}; dropping packet",
-                self.stream
-            );
+            if waiting_audio {
+                diagnostics::limited(&diagnostics::AUDIO_QUEUE, log_site!(), || {
+                    format!(
+                        "{}: dropping frame waiting for audio initialization, queue is too large",
+                        self.stream.service()
+                    )
+                });
+            } else {
+                diagnostics::limited(&diagnostics::SEGMENT_QUEUE, log_site!(), || {
+                    format!(
+                        "{}: dropping frame, queue is too large",
+                        self.stream.service()
+                    )
+                });
+            }
         } else {
             self.queue.push(bytes);
         }
     }
 
-    fn write(&mut self, logger: &mut Logger, bytes: &[u8]) -> Result<(), Error> {
+    fn write(&mut self, logger: &mut Logger, bytes: &[u8]) -> Result<usize, Error> {
         let message =
             capnp::serialize::read_message_from_flat_slice(&mut &*bytes, Default::default())?;
         let event = message.get_root::<event::Reader>()?;
@@ -174,7 +237,20 @@ impl Encoder {
         let timestamp_us = i64::try_from(index.get_timestamp_eof() / 1000)?;
         if !self.recording {
             if !keyframe {
-                return Ok(());
+                self.dropped_frames = self.dropped_frames.wrapping_add(1);
+                return Ok(0);
+            }
+            if self.dropped_frames > 0 {
+                diagnostics::emit(
+                    log_site!(),
+                    Level::Warning,
+                    format!(
+                        "{}: dropped {} non iframe packets before init",
+                        self.stream.service(),
+                        self.dropped_frames
+                    ),
+                );
+                self.dropped_frames = 0;
             }
             if let Some(writer) = &mut self.writer {
                 writer.write(Packet {
@@ -204,7 +280,9 @@ impl Encoder {
             Stream::Driver => output.set_driver_encode_idx(index)?,
             Stream::Qroad => output.set_q_road_encode_idx(index)?,
         }
-        logger.write(&capnp::serialize::write_message_to_words(&message), true)
+        let bytes = capnp::serialize::write_message_to_words(&message);
+        logger.write(&bytes, true)?;
+        Ok(bytes.len())
     }
 
     pub fn close(&mut self) -> Result<(), Error> {

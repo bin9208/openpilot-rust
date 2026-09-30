@@ -1,5 +1,7 @@
+use crate::diagnostics;
 use crate::Error;
 use openpilot_cereal::log_capnp::{event, sentinel::SentinelType};
+use openpilot_logging::{log_site, record::Level};
 use openpilot_params::Params;
 use std::{
     fs::{self, File},
@@ -129,13 +131,26 @@ impl Logger {
         if self.preserved == Some(self.part) {
             return Ok(());
         }
+        diagnostics::emit(
+            log_site!(),
+            Level::Warning,
+            format!("preserving {}", self.path()?.display()),
+        );
         if let Err(error) = rustix::fs::setxattr(
             self.path()?,
             "user.preserve",
             b"1",
             rustix::fs::XattrFlags::empty(),
         ) {
-            eprintln!("loggerd: preserve xattr failed: {error}");
+            diagnostics::emit(
+                log_site!(),
+                Level::Error,
+                format!(
+                    "setxattr user.preserve failed for {}: {}",
+                    self.path()?.display(),
+                    crate::diagnostics::errno_text(error.raw_os_error())
+                ),
+            );
         }
         let mut routes = params
             .get("AthenadRecentlyViewedRoutes")?

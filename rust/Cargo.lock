@@ -727,6 +727,7 @@ dependencies = [
  "getrandom",
  "libc",
  "openpilot-cereal",
+ "openpilot-logging",
  "openpilot-messaging",
  "openpilot-msgq",
  "openpilot-params",

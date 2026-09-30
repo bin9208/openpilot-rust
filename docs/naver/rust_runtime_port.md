@@ -97,8 +97,11 @@ route logger integration and the complete startup/upload candidate remain open.
 ports continuous rlog/qlog storage, encoder coordination, video/audio muxing,
 route preservation and shutdown. The [validation record](../rust-port/loggerd-validation.md)
 uses original native encoder messages and compares complete full-schema logs
-and decoded media. Original diagnostic callsites still need the shared producer
-integration; storage validation alone does not complete normal uploaded logging.
+and decoded media. Its native diagnostic producer now matches original callsites,
+including rate suppression, throughput accounting and errors. Original/Rust
+collector integration verifies warning/error records in diagnostic files and
+rlog. Full uploaded logging still depends on the remaining daemon callsites,
+startup and active upload integration.
 
 [Log-space deleter issue #42](https://github.com/bin9208/openpilot-rust/issues/42)
 ports retention ordering, preserved segment caching and continuous low-space

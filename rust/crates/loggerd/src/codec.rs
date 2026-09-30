@@ -3,6 +3,24 @@ use ffmpeg_next::{codec::Context, ffi};
 
 #[expect(
     unsafe_code,
+    reason = "Observe the AVIO close result which ffmpeg-next's destructor discards"
+)]
+pub fn close_output(
+    output: &mut ffmpeg_next::format::context::Output,
+) -> Result<(), ffmpeg_next::Error> {
+    // SAFETY: Output exclusively owns the live AVFormatContext and its AVIOContext.
+    // avio_closep releases pb and sets it to null; the wrapper's later avio_close(null)
+    // is a no-op, and its destructor still owns and frees the format context.
+    let result = unsafe { ffi::avio_closep(&mut (*output.as_mut_ptr()).pb) };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(ffmpeg_next::Error::from(result))
+    }
+}
+
+#[expect(
+    unsafe_code,
     reason = "H264 muxing needs codec identity but does not invoke a video encoder"
 )]
 pub fn video_context(

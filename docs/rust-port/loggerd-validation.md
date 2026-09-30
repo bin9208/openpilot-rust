@@ -31,6 +31,15 @@ and either more than 500 ms without a camera packet or a segment longer than
 when opening/finishing files is slow. LOGGERD_TEST retains the source behavior
 that disables these fallbacks. No runtime timing threshold is loosened.
 
+Native cloudlog diagnostics use the original namespaced ZeroMQ endpoint,
+severity byte, JSON context and console policy. Startup service order, encoder
+offsets and readiness, dropped keyframes, preserve requests, fallback reasons,
+200-message drain notices, throughput and shutdown messages retain source text
+and levels. Audio/segment queue errors have independent source callsite rate
+limits (two messages per strict 100 ms interval). Throughput counts serialized
+index messages, including drained queued messages. Actual Rust callsites and
+build provenance identify the implementation without fabricating C++ metadata.
+
 Full HEVC payloads use a uniquely owned libc stdio wrapper to retain the original
 buffering, EINTR and write/flush/close behavior. FFVHUFF uses Matroska and H.264 uses
 MPEG-TS; codec extradata, packet timestamps and frame durations retain source
@@ -68,7 +77,7 @@ schema and decoded-media comparisons pass:
 - Audio startup, overflow and encoder restart cases, disabled recording,
   unsubscribed streams, malformed packets and all three signals pass.
 - Real fallback observations from process launch: original/Rust no-camera
-  rotation 60.144/60.205 seconds; active-but-stuck encoder 72.156/72.181 seconds.
+  rotation 60.055/60.113 seconds; active-but-stuck encoder 72.108/72.176 seconds.
   The harness enforces [60,62] and [72,74] seconds without shortening the source
   waits. These observations include the slow-I/O clock correction.
 - A source review found the Rust rotation timer sampled before file I/O. An
@@ -83,16 +92,40 @@ schema and decoded-media comparisons pass:
 - A real `/dev/full` raw-video case first exposed a fatal direct-write Rust
   difference. The stdio correction matches original exit, index packets and
   video-lock removal while strace confirms actual ENOSPC in both processes.
+- Actual native C++ cloudlog and Rust diagnostic packets compare exactly in
+  level, message and order across 17 scenarios, 1,424 records per implementation.
+  Only temporary paths/route IDs and independently verified Rust provenance are
+  normalized; source file/line/function fields identify their actual callsites.
+- A `/dev/full` MPEG-TS run verifies actual packet warnings, trailer ENOSPC and
+  AVIO close ENOSPC. Rotation first failed because Rust closed the old writer
+  before opening its replacement; matching the source's `unique_ptr::reset(new
+  VideoWriter(...))` order makes the complete error sequence match. The checked
+  AVIO close wrapper nulls the owned pointer before the upstream destructor runs.
+- A 10,000-message run with queued, dropped and converted encoder inputs reports
+  exactly 722,720 recorded bytes in both implementations. Printed rates agree
+  with that byte count within their two-decimal rounding; these fixture rates
+  are not CPU or device performance measurements. The actual rate suppression
+  case compares 85 ordered records, including the suppressed-count warning.
+- Original loggerd plus original logmessaged, and Rust loggerd plus Rust
+  logmessaged, each publish 80 records in the integration fixture. All three
+  targeted warning/error records reach diagnostic disk files and rlog;
+  the error also reaches errorLogMessage, and a debug barrier is published and
+  recorded in rlog without appearing in diagnostic disk files.
 - Worker native AddressSanitizer and generic aarch64-musl build/emulated media
   checks passed. Parent final-head checks and required cloud gates are separate;
   these do not establish device execution or performance.
+- Parent AddressSanitizer runs also cover the diagnostic changes through real
+  video/audio/HEVC output and through the failing MPEG-TS writer replacement
+  (424 recorded indices and 232 matching diagnostic records per process).
+  Leak detection remains enabled, including the explicit AVIO close boundary.
 
 Independent generated values are checked and normalized narrowly: route IDs,
 timestamps within observed intervals, ambient `df -h` output and the explicit
 Rust provenance additions. Ordinary message payloads, encoder index fields,
-Params redaction and media content are not masked. The original native log
-fixture currently replaces only external cloudlog transport with captured
-stderr. It does not prove source diagnostic producer compatibility.
+Params redaction and media content are not masked. The original native fixture
+now compiles unchanged `common/swaglog.cc` with the exact locked json11 archive
+and actual ZeroMQ transport. The earlier stderr-only fixture established storage
+behavior, and is not used as diagnostic compatibility evidence.
 
 Reproduce from the repository root using native FFmpeg development libraries,
 capnproto, libyuv and the existing oracle Python environment:
@@ -111,7 +144,7 @@ PYTHONPATH=/tmp/logger-msgq:.:rust/tools python rust/tools/check_loggerd_native.
 Private captured evidence remains in `.omo/evidence/issue41/` and the parent
 analysis scratch directory. The required Rust gate now depends on a dedicated
 native route-logger job; GNU/musl ARM builds use the checksum-pinned FFmpeg
-recipe. The full project runtime, manager startup, diagnostic callsites, upload
+recipe. The full project runtime, manager startup, other daemon diagnostic callsites, upload
 and first device comparison remain open. No vehicle was accessed and no CPU or
 thermal saving is claimed.
 

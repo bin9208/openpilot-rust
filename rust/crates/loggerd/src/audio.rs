@@ -1,5 +1,7 @@
+use crate::diagnostics;
 use crate::Error;
 use ffmpeg_next::{self as av, format::context::Output};
+use openpilot_logging::{log_site, record::Level};
 
 pub struct Audio {
     encoder: av::codec::encoder::audio::Encoder,
@@ -64,7 +66,11 @@ impl Audio {
                 .pts
                 .checked_add(i64::try_from(discard)?)
                 .ok_or(Error::Invalid("audio timestamp overflow"))?;
-            eprintln!("loggerd: audio buffer overflow; dropped {discard} samples");
+            diagnostics::emit(
+                log_site!(),
+                Level::Error,
+                format!("Audio buffer overflow, dropping {discard} oldest samples"),
+            );
         }
         self.buffer.extend(
             bytes.chunks_exact(2).map(|sample| {
@@ -93,7 +99,14 @@ impl Audio {
         frame.plane_mut::<f32>(0)[..count].copy_from_slice(&self.buffer[..count]);
         self.buffer.drain(..count);
         if let Err(error) = self.encoder.send_frame(&frame) {
-            eprintln!("loggerd: audio encode failed: {error}");
+            diagnostics::emit(
+                log_site!(),
+                Level::Warning,
+                format!(
+                    "AUDIO: Failed to send audio frame to encoder: {}",
+                    i32::from(error)
+                ),
+            );
         } else {
             self.receive(output);
         }
@@ -111,7 +124,11 @@ impl Audio {
                 packet.rescale_ts(self.encoder.time_base(), stream.time_base());
                 packet.set_stream(self.stream);
                 if let Err(error) = packet.write_interleaved(output) {
-                    eprintln!("loggerd: audio packet write failed: {error}");
+                    diagnostics::emit(
+                        log_site!(),
+                        Level::Warning,
+                        format!("AUDIO: Write frame failed - error: {}", i32::from(error)),
+                    );
                 }
             }
         }
@@ -124,7 +141,14 @@ impl Audio {
             self.encode_frame(output, frame_size)?;
         }
         if let Err(error) = self.encoder.send_eof() {
-            eprintln!("loggerd: audio flush failed: {error}");
+            diagnostics::emit(
+                log_site!(),
+                Level::Warning,
+                format!(
+                    "AUDIO: Failed to send audio frame to encoder: {}",
+                    i32::from(error)
+                ),
+            );
         } else {
             self.receive(output);
         }

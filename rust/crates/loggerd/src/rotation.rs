@@ -7,13 +7,21 @@ pub struct Rotation {
 }
 
 impl Rotation {
-    pub fn due(&self, now_ns: u64) -> bool {
+    pub fn timeout_reason(&self, now_ns: u64) -> Option<&'static str> {
         let duration = now_ns.saturating_sub(self.last_rotation_ns);
-        self.ready == 4
-            || (!self.test_mode
-                && duration > 60_000_000_000
-                && (now_ns.saturating_sub(self.last_camera_ns) > 500_000_000
-                    || duration > 72_000_000_000))
+        if !self.test_mode && duration > 60_000_000_000 {
+            if now_ns.saturating_sub(self.last_camera_ns) > 500_000_000 {
+                return Some("no camera packets seen. auto rotating");
+            }
+            if duration > 72_000_000_000 {
+                return Some("segment too long. auto rotating");
+            }
+        }
+        None
+    }
+
+    pub fn due(&self, now_ns: u64) -> bool {
+        self.ready == 4 || self.timeout_reason(now_ns).is_some()
     }
 }
 

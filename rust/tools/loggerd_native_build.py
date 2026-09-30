@@ -1,4 +1,4 @@
-"""Build unmodified original loggerd with host-only diagnostic output."""
+"""Build original loggerd, including its actual native cloudlog transport."""
 from __future__ import annotations
 
 import argparse
@@ -7,12 +7,15 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+from native_logging_build import stage_json11
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def build(output: Path, capnp_prefix: Path | None, native_prefix: Path | None) -> Path:
   output.mkdir(parents=True, exist_ok=True)
+  json11, dependency = stage_json11(ROOT, output)
+  zmq_include = next((ROOT / 'rust/target/debug/build').glob('zmq-sys-*/out/source/include'))
   schema = output / 'schema'
   generated = output / 'cereal/gen/cpp'
   schema.mkdir(exist_ok=True)
@@ -30,10 +33,10 @@ def build(output: Path, capnp_prefix: Path | None, native_prefix: Path | None) -
     'openpilot/system/loggerd/zstd_writer.cc', 'openpilot/system/loggerd/video_writer.cc',
     'openpilot/common/params.cc', 'openpilot/common/util.cc',
     'msgq_repo/msgq/ipc.cc', 'msgq_repo/msgq/event.cc', 'msgq_repo/msgq/impl_msgq.cc',
-    'msgq_repo/msgq/impl_fake.cc', 'msgq_repo/msgq/msgq.cc', 'rust/tools/loggerd_native_log.cc',
+    'msgq_repo/msgq/impl_fake.cc', 'msgq_repo/msgq/msgq.cc', 'openpilot/common/swaglog.cc',
   ]
   command = ['g++', '-std=c++17', '-O1', '-pthread', f'-I{ROOT}', f'-I{ROOT / "openpilot"}',
-             f'-I{ROOT / "msgq_repo"}', f'-I{output}', f'-I{generated}']
+             f'-I{ROOT / "msgq_repo"}', f'-I{output}', f'-I{generated}', f'-I{json11 / "include"}', f'-I{zmq_include}']
   if capnp_prefix:
     command += [f'-I{capnp_prefix / "include"}', f'-L{capnp_prefix / "lib/x86_64-linux-gnu"}',
                 f'-Wl,--disable-new-dtags,-rpath,{capnp_prefix / "lib/x86_64-linux-gnu"}']
@@ -43,7 +46,7 @@ def build(output: Path, capnp_prefix: Path | None, native_prefix: Path | None) -
   binary = output / 'original-loggerd'
   command += [str(ROOT / name) for name in sources]
   command += [str(path) for path in generated.glob('*.c++')]
-  command += ['-lavformat', '-lavcodec', '-lavutil', '-lzstd', '-lcapnp', '-lkj', '-o', str(binary)]
+  command += [str(json11 / 'lib/libjson11.a'), '-l:libzmq.so.5', '-lavformat', '-lavcodec', '-lavutil', '-lzstd', '-lcapnp', '-lkj', '-o', str(binary)]
   (output / 'build-command.json').write_text(json.dumps(command, indent=2) + '\n')
   with (output / 'build.log').open('wb') as capture:
     subprocess.run(command, stdout=capture, stderr=subprocess.STDOUT, check=True)
@@ -51,14 +54,18 @@ def build(output: Path, capnp_prefix: Path | None, native_prefix: Path | None) -
     'openpilot/system/loggerd/encoder/encoder.cc', 'openpilot/system/loggerd/encoder/ffmpeg_encoder.cc',
     'openpilot/cereal/messaging/socketmaster.cc', 'rust/tools/loggerd_native_producer.cc',
   ]
-  producer_command = [part for part in command[:-2] if part != str(ROOT / 'openpilot/system/loggerd/loggerd.cc') and not part.startswith('-l')]
+  producer_command = [part for part in command[:-2]
+                      if part != str(ROOT / 'openpilot/system/loggerd/loggerd.cc')
+                      and not part.startswith('-l') and part != str(json11 / 'lib/libjson11.a')]
   producer_command += [str(ROOT / name) for name in producer_sources]
-  producer_command += ['-lyuv', '-lavformat', '-lavcodec', '-lavutil', '-lzstd', '-lcapnp', '-lkj', '-o', str(output / 'original-encoder-producer')]
+  producer_command += [str(json11 / 'lib/libjson11.a'), '-l:libzmq.so.5', '-lyuv', '-lavformat', '-lavcodec', '-lavutil',
+                       '-lzstd', '-lcapnp', '-lkj', '-o', str(output / 'original-encoder-producer')]
   with (output / 'producer-build.log').open('wb') as capture:
     subprocess.run(producer_command, stdout=capture, stderr=subprocess.STDOUT, check=True)
   (output / 'producer-build-command.json').write_text(json.dumps(producer_command, indent=2) + '\n')
   sources += producer_sources
   (output / 'source-hashes.json').write_text(json.dumps({name: sha256((ROOT / name).read_bytes()).hexdigest() for name in sources}, indent=2) + '\n')
+  (output / 'dependency.json').write_text(json.dumps(dependency, indent=2) + '\n')
   return binary
 
 

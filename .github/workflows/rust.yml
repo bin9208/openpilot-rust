@@ -179,13 +179,16 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libyuv-dev ffmpeg strace
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libyuv-dev libzmq5 ffmpeg strace
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
-      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0
       - run: cargo test -p openpilot-loggerd --locked
       - run: cargo test -p openpilot-msgq --test queued --locked
-      - run: cargo build -p openpilot-loggerd --locked
+      - run: cargo build -p openpilot-loggerd -p openpilot-logmessaged --locked
+      - run: cargo build -p openpilot-logging --example native_logging_probe --locked
+      - name: Compare shared native logging context, transport and rate-limit boundaries
+        run: python tools/check_native_logging.py --binary target/debug/examples/native_logging_probe --output "$RUNNER_TEMP/native-logging"
       - name: Build original native logger and encoder producers
         run: |
           python tools/build_msgq_python.py --output "$RUNNER_TEMP/logger-msgq"
@@ -195,12 +198,22 @@ jobs:
           PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_native.py \
             --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" \
             --producer "$RUNNER_TEMP/logger-original/original-encoder-producer" --output "$RUNNER_TEMP/logger-native" --edges --hevc --fallbacks
+      - name: Check diagnostic accounting, suppression and complete collector path
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_diagnostics.py \
+            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" \
+            --fixtures "$RUNNER_TEMP/logger-native/fixtures" --output "$RUNNER_TEMP/logger-counters"
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_log_pipeline.py \
+            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" \
+            --collector target/debug/openpilot-logmessaged --fixture "$RUNNER_TEMP/logger-native/fixtures/road/0000.capnp" \
+            --output "$RUNNER_TEMP/logger-pipeline"
       - name: Compare log-file flush and close syscalls with the original writer
         run: |
           PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_flush.py \
             --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" --output "$RUNNER_TEMP/logger-flush"
           PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_io.py \
-            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" --output "$RUNNER_TEMP/logger-io"
+            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" \
+            --fixtures "$RUNNER_TEMP/logger-native/fixtures" --output "$RUNNER_TEMP/logger-io"
       - name: Check pure Rust rotation boundaries with Miri
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
@@ -219,6 +232,10 @@ jobs:
             --binary "$RUNNER_TEMP/logger-asan-target/x86_64-unknown-linux-gnu/debug/openpilot-loggerd" \
             --original "$RUNNER_TEMP/logger-original/original-loggerd" --producer "$RUNNER_TEMP/logger-original/original-encoder-producer" \
             --fixtures "$RUNNER_TEMP/logger-native/fixtures" --output "$RUNNER_TEMP/logger-asan" --edges --hevc
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_io.py \
+            --binary "$RUNNER_TEMP/logger-asan-target/x86_64-unknown-linux-gnu/debug/openpilot-loggerd" \
+            --original "$RUNNER_TEMP/logger-original/original-loggerd" --fixtures "$RUNNER_TEMP/logger-native/fixtures" \
+            --remux-only --output "$RUNNER_TEMP/logger-asan-io"
       - uses: actions/upload-artifact@v6
         if: always()
         with:
@@ -226,8 +243,12 @@ jobs:
           path: |
             ${{ runner.temp }}/logger-native/
             ${{ runner.temp }}/logger-asan/
+            ${{ runner.temp }}/logger-asan-io/
             ${{ runner.temp }}/logger-flush/
             ${{ runner.temp }}/logger-io/
+            ${{ runner.temp }}/logger-counters/
+            ${{ runner.temp }}/logger-pipeline/
+            ${{ runner.temp }}/native-logging/
             ${{ runner.temp }}/logger-original/*.json
             ${{ runner.temp }}/logger-original/*.log
   model-pipelines:

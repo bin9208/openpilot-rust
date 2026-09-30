@@ -21,9 +21,13 @@ def ordinary(peer: Peer) -> None:
 
 def burst(peer: Peer) -> None:
   records = [event('can', sequence) for sequence in range(1000)]
+  peer.process.send_signal(signal.SIGSTOP)
+  _, status = os.waitpid(peer.process.pid, os.WUNTRACED)
+  assert os.WIFSTOPPED(status)
   for record in records:
     peer.publisher.send('can', record)
     peer.inputs.append(('can', record))
+  peer.process.send_signal(signal.SIGCONT)
   assert peer.publisher.wait_for_readers_to_update('can', timeout=10, dt=.001)
   peer.barrier()
 

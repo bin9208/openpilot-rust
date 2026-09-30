@@ -12,7 +12,7 @@ import zipfile
 from pathlib import Path
 
 
-def build(root: Path, output: Path) -> Path:
+def stage_json11(root: Path, output: Path) -> tuple[Path, dict]:
   output.mkdir(parents=True, exist_ok=True)
   lock = tomllib.loads((root / 'uv.lock').read_text())
   package = next(p for p in lock['package'] if p['name'] == 'comma-deps-json11')
@@ -24,6 +24,11 @@ def build(root: Path, output: Path) -> Path:
   with zipfile.ZipFile(archive) as wheel_file:
     wheel_file.extractall(output / 'json11')
   install = next((output / 'json11').glob('*.data/purelib/json11/install'))
+  return install, {'json11_version': package['version'], 'json11_sha256': digest}
+
+
+def build(root: Path, output: Path) -> Path:
+  install, dependency = stage_json11(root, output)
   overlay = output / 'overlay'
   (overlay / 'common').mkdir(parents=True, exist_ok=True)
   (overlay / 'system/hardware').mkdir(parents=True, exist_ok=True)
@@ -45,7 +50,7 @@ def build(root: Path, output: Path) -> Path:
              '-Wl,--wrap=zmq_send', '-Wl,--wrap=zmq_setsockopt', '-o', str(binary)]
   result = subprocess.run(command, check=True, capture_output=True, text=True)
   (output / 'build.log').write_text(result.stdout + result.stderr)
-  provenance = {'command': command, 'json11_version': package['version'], 'json11_sha256': digest,
+  provenance = {'command': command, **dependency,
                 'sources': {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
                             for p in [root / 'openpilot/common/swaglog.cc', root / 'openpilot/common/swaglog.h',
                                       root / 'openpilot/common/timing.h', root / 'rust/tools/native_logging_reference.cc']},

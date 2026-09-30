@@ -1,6 +1,8 @@
+use crate::diagnostics;
 use crate::{audio::Audio, codec, raw_file::RawFile, Error};
 use ffmpeg_next::{self as av, codec::Id, format::context::Output, Rescale};
 use openpilot_cereal::log_capnp::encode_index::Type;
+use openpilot_logging::{log_site, record::Level};
 use std::{
     fs::{self, OpenOptions},
     os::unix::fs::OpenOptionsExt,
@@ -51,6 +53,15 @@ impl VideoWriter {
             .truncate(false)
             .mode(0o664)
             .open(&lock)?;
+        diagnostics::emit(
+            log_site!(),
+            Level::Debug,
+            format!(
+                "encoder_open {} remuxing:{}",
+                path.display(),
+                u8::from(spec.codec != Type::FullHEVC)
+            ),
+        );
         let destination = match spec.codec {
             Type::FullHEVC => Destination::Raw(RawFile::create(path)?),
             Type::BigBoxLossless
@@ -103,9 +114,13 @@ impl VideoWriter {
         match &mut self.destination {
             Destination::Raw(file) => {
                 if let Err(error) = file.write(packet.data) {
-                    eprintln!(
-                        "failed to write file.errno={}",
-                        error.raw_os_error().unwrap_or(0)
+                    diagnostics::emit(
+                        log_site!(),
+                        Level::Error,
+                        format!(
+                            "failed to write file.errno={}",
+                            error.raw_os_error().unwrap_or(0)
+                        ),
                     );
                 }
             }
@@ -138,8 +153,16 @@ impl VideoWriter {
                     if packet.keyframe {
                         encoded.set_flags(av::packet::Flags::KEY);
                     }
-                    if let Err(error) = encoded.write_interleaved(&mut muxer.output) {
-                        eprintln!("loggerd: video packet write failed: {error}");
+                    if encoded.write_interleaved(&mut muxer.output).is_err() {
+                        diagnostics::emit(
+                            log_site!(),
+                            Level::Warning,
+                            format!(
+                                "ts encoder write issue len: {} ts: {}",
+                                packet.data.len(),
+                                packet.timestamp_us
+                            ),
+                        );
                     }
                 }
             }
@@ -185,7 +208,18 @@ impl VideoWriter {
                     audio.finish(&mut muxer.output)?;
                 }
                 if let Err(error) = muxer.output.write_trailer() {
-                    eprintln!("loggerd: video trailer failed: {error}");
+                    diagnostics::emit(
+                        log_site!(),
+                        Level::Error,
+                        format!("av_write_trailer failed {}", i32::from(error)),
+                    );
+                }
+                if let Err(error) = codec::close_output(&mut muxer.output) {
+                    diagnostics::emit(
+                        log_site!(),
+                        Level::Error,
+                        format!("avio_closep failed {}", i32::from(error)),
+                    );
                 }
             }
         }

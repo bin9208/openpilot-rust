@@ -14,6 +14,7 @@ import time
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log
 import zstandard
+import zmq
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +44,12 @@ class Peer:
       (self.params / key).write_text(value)
     os.environ['OPENPILOT_PREFIX'] = self.prefix
     self.publisher = messaging.PubMaster(sorted(set(settings.services) | {'logMessage'}))
+    self.diagnostic_context = zmq.Context()
+    self.diagnostic_socket = self.diagnostic_context.socket(zmq.PULL)
+    self.diagnostic_socket.setsockopt(zmq.RCVHWM, 10000)
+    self.diagnostic_path = Path('/tmp/logmessage' + self.prefix)
+    self.diagnostic_socket.bind('ipc://' + str(self.diagnostic_path))
+    self.diagnostics: list[dict] = []
     environment = dict(os.environ, PARAMS_ROOT=str(root / 'params'), LOG_ROOT=str(root / 'logs'))
     if settings.test:
       environment.update(LOGGERD_TEST='1', LOGGERD_SEGMENT_LENGTH='60')
@@ -123,6 +130,19 @@ class Peer:
     if self.process.poll() is None:
       self.process.kill()
       self.process.wait()
+    if not self.diagnostic_socket.closed:
+      packets = []
+      while self.diagnostic_socket.poll(20):
+        packet = self.diagnostic_socket.recv()
+        record = json.loads(packet[1:])
+        assert packet[0] == record['levelnum']
+        self.diagnostics.append(record)
+        packets.append(packet.hex())
+      (self.root / 'diagnostics.json').write_text(json.dumps(self.diagnostics, indent=2) + '\n')
+      (self.root / 'diagnostic-packets.json').write_text(json.dumps(packets, indent=2) + '\n')
+      self.diagnostic_socket.close(linger=0)
+      self.diagnostic_context.term()
+      self.diagnostic_path.unlink(missing_ok=True)
     self.publisher = None
     try:
       shutil.rmtree(self.shm)

@@ -11,6 +11,7 @@ from loggerd_edges import fallbacks, run_edges
 from loggerd_scenarios import run
 from loggerd_validation import compare
 import loggerd_hevc
+import loggerd_diagnostics
 
 
 def main() -> None:
@@ -55,6 +56,7 @@ def main() -> None:
     results['fallbacks'] = fallbacks(arguments.original.resolve(), arguments.binary.resolve(), output / 'fallbacks', fixtures['road'][0])
     print('fallbacks passed', flush=True)
   (output / 'results.json').write_text(json.dumps(results, indent=2) + '\n')
+  loggerd_diagnostics.compare_tree(output)
 
 
 if __name__ == '__main__':

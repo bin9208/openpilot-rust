@@ -18,6 +18,16 @@ pub struct Environment {
 }
 
 impl Environment {
+    pub fn device_name(&self) -> Result<&'static str, Error> {
+        match self.device {
+            DeviceType::Pc => Ok("pc"),
+            DeviceType::Tici => Ok("tici"),
+            DeviceType::Tizi => Ok("tizi"),
+            DeviceType::Mici => Ok("mici"),
+            _ => Err(Error::Invalid("unknown hardware model")),
+        }
+    }
+
     pub fn read() -> Result<Self, Error> {
         let device = if Path::new("/TICI").is_file() {
             match String::from_utf8_lossy(&read_optional("/sys/firmware/devicetree/base/model"))

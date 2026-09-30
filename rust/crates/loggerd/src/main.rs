@@ -14,11 +14,13 @@ fn run() -> Result<(), Error> {
 }
 
 fn main() -> ExitCode {
-    match run() {
+    let status = match run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("loggerd: fatal: {error}");
             ExitCode::FAILURE
         }
-    }
+    };
+    openpilot_loggerd::diagnostics::close();
+    status
 }

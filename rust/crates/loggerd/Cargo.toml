@@ -15,6 +15,7 @@ ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec
 getrandom = "0.4"
 libc = "0.2"
 openpilot-cereal = { path = "../cereal" }
+openpilot-logging = { path = "../logging" }
 openpilot-messaging = { path = "../messaging" }
 openpilot-msgq = { path = "../msgq" }
 openpilot-params = { path = "../params" }

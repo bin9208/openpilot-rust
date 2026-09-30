@@ -1,5 +1,5 @@
 use crate::{
-    clock,
+    clock, diagnostics,
     encoder::{Encoder, Stream},
     metadata::Environment,
     rotation::Rotation,
@@ -7,6 +7,7 @@ use crate::{
     Error,
 };
 use openpilot_cereal::log_capnp::event;
+use openpilot_logging::{log_site, record::Level};
 use openpilot_messaging::services::{Service, SERVICES};
 use openpilot_msgq::{MultiSubscriber, Subscription};
 use openpilot_params::Params;
@@ -25,6 +26,7 @@ struct ServiceState {
 }
 
 pub fn run(environment: Environment) -> Result<(), Error> {
+    diagnostics::initialize(environment.device_name()?);
     let signal = Arc::new(AtomicUsize::new(0));
     for value in [
         signal_hook::consts::SIGINT,
@@ -59,6 +61,13 @@ pub fn run(environment: Environment) -> Result<(), Error> {
         }
     }
     states.sort_unstable_by_key(|state| state.service.name);
+    for state in &states {
+        diagnostics::emit(
+            log_site!(),
+            Level::Debug,
+            format!("logging {}", state.service.name),
+        );
+    }
     let specifications: Vec<_> = states
         .iter()
         .map(|state| Subscription {
@@ -76,6 +85,9 @@ pub fn run(environment: Environment) -> Result<(), Error> {
     };
     rotate(&mut logger, &mut rotation)?;
     params.put("CurrentRoute", logger.route.as_bytes())?;
+    let mut message_count = 0_u64;
+    let mut byte_count = 0_u64;
+    let started = clock::now()?;
     while signal.load(Ordering::Relaxed) == 0 {
         for index in subscribers.poll_ready(Duration::from_millis(1000))? {
             if signal.load(Ordering::Relaxed) != 0 {
@@ -89,7 +101,7 @@ pub fn run(environment: Environment) -> Result<(), Error> {
             if matches!(name, "userBookmark" | "audioFeedback") {
                 logger.preserve(&params)?;
             }
-            for _ in 0..200 {
+            for count in 0..200 {
                 if signal.load(Ordering::Relaxed) != 0 {
                     break;
                 }
@@ -127,7 +139,9 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                 match &mut state.encoder {
                     Some(encoder) => {
                         rotation.last_camera_ns = clock::now()?;
-                        if encoder.handle(&mut logger, bytes)? {
+                        let outcome = encoder.handle(&mut logger, bytes, rotation.ready)?;
+                        byte_count = byte_count.wrapping_add(u64::try_from(outcome.bytes)?);
+                        if outcome.ready_part.is_some() {
                             rotation.ready += 1;
                         }
                     }
@@ -137,17 +151,45 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                         });
                         state.counter = state.counter.wrapping_add(1);
                         logger.write(&bytes, qlog)?;
+                        byte_count = byte_count.wrapping_add(u64::try_from(bytes.len())?);
                     }
                 }
-                if rotation.due(clock::now()?) {
+                let now = clock::now()?;
+                if let Some(reason) = rotation.timeout_reason(now) {
+                    diagnostics::emit(log_site!(), Level::Error, reason.into());
+                }
+                if rotation.due(now) {
                     rotate(&mut logger, &mut rotation)?;
+                }
+                message_count = message_count.wrapping_add(1);
+                if message_count.is_multiple_of(10000) {
+                    let seconds = (clock::now()? - started) as f64 / 1e9;
+                    diagnostics::emit(
+                        log_site!(),
+                        Level::Debug,
+                        format!(
+                            "{message_count} messages, {:.2} msg/sec, {:.2} KB/sec",
+                            message_count as f64 / seconds,
+                            byte_count as f64 * 0.001 / seconds
+                        ),
+                    );
+                }
+                if count == 199 {
+                    diagnostics::emit(
+                        log_site!(),
+                        Level::Debug,
+                        format!("large volume of '{name}' messages"),
+                    );
                 }
             }
         }
     }
     let signal = i32::try_from(signal.load(Ordering::Relaxed))?;
+    diagnostics::emit(log_site!(), Level::Warning, "closing logger".into());
     if signal == rustix::process::Signal::POWER.as_raw() {
+        diagnostics::emit(log_site!(), Level::Error, "power failure".into());
         rustix::fs::sync();
+        diagnostics::emit(log_site!(), Level::Error, "sync done".into());
     }
     logger.close(signal, clock::now()?)?;
     for state in &mut states {
@@ -170,7 +212,19 @@ fn rotate_with_clock(
     logger.next(now()?)?;
     rotation.ready = 0;
     rotation.last_rotation_ns = now()?;
-    eprintln!("loggerd: logging to {}", logger.path()?.display());
+    diagnostics::emit(
+        log_site!(),
+        Level::Warning,
+        format!(
+            "{} {}",
+            if logger.part == 0 {
+                "logging to"
+            } else {
+                "rotated to"
+            },
+            logger.path()?.display()
+        ),
+    );
     Ok(())
 }
 

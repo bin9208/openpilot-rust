@@ -214,7 +214,7 @@
       "source_entrypoint": "openpilot/system/loggerd",
       "status": "route_storage_runtime_host_validated",
       "native_dependencies": ["original msgq through CXX", "FFmpeg", "zstd"],
-      "runtime_scope": "continuous route storage and media writer; structured diagnostic callsite integration, manager selection and full startup/upload acceptance pending",
+      "runtime_scope": "continuous route storage, media writer and native diagnostic callsites with actual collector/rlog integration; manager selection and full startup/upload acceptance pending",
       "production_replaced": false
     },
     {
