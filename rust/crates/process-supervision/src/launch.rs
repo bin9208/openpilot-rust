@@ -84,25 +84,35 @@ pub(crate) struct ChildHandle {
     _descriptor: tempfile::NamedTempFile,
 }
 
+enum StreamMode {
+    Captured,
+    Stdout,
+    Inherited,
+}
+
 impl CapturedCommand {
     pub fn spawn(&self) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(true, &[])
+        self.spawn_with_stdio(StreamMode::Captured, &[])
+    }
+
+    pub fn spawn_stdout(&self) -> Result<CapturedChild, Error> {
+        self.spawn_with_stdio(StreamMode::Stdout, &[])
     }
 
     pub fn spawn_inherited(&self) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(false, &[])
+        self.spawn_with_stdio(StreamMode::Inherited, &[])
     }
 
     pub fn spawn_inherited_with_env(
         &self,
         environment: &[(OsString, OsString)],
     ) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(false, environment)
+        self.spawn_with_stdio(StreamMode::Inherited, environment)
     }
 
     fn spawn_with_stdio(
         &self,
-        capture: bool,
+        mode: StreamMode,
         environment: &[(OsString, OsString)],
     ) -> Result<CapturedChild, Error> {
         crate::exec::validate_arguments(&self.argv)?;
@@ -127,9 +137,11 @@ impl CapturedCommand {
         let mut command = Command::new(&self.launcher);
         command.arg(descriptor.path());
         command.envs(environment.iter().map(|(key, value)| (key, value)));
-        if capture {
-            command.stdout(Stdio::piped()).stderr(Stdio::piped());
-        }
+        let command = match mode {
+            StreamMode::Captured => command.stdout(Stdio::piped()).stderr(Stdio::piped()),
+            StreamMode::Stdout => command.stdout(Stdio::piped()),
+            StreamMode::Inherited => &mut command,
+        };
         let mut child = command.spawn()?;
         if let Err(error) = wait_for_exec(&listener, &mut child) {
             let termination = child.kill();
