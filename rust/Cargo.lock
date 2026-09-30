@@ -1613,6 +1613,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-statsd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "home",
+ "indexmap",
+ "libc",
+ "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-runtime-core",
+ "openpilot-runtime-version",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+ "uuid",
+ "zmq",
+]
+
+[[package]]
 name = "openpilot-timed"
 version = "0.1.0"
 dependencies = [

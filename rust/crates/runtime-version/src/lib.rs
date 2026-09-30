@@ -167,3 +167,11 @@ pub fn get_build_metadata(path: &Path) -> Result<BuildMetadata, Error> {
     )?;
     Err(Error::InvalidMetadata)
 }
+
+/// Render an arbitrary metadata value using Python str semantics, retaining code points.
+///
+/// # Errors
+/// Returns formatting errors from recursive values.
+pub fn python_str(value: &JsonValue) -> Result<Vec<u32>, Error> {
+    python::join(&[value], "")
+}
