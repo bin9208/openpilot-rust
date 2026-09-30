@@ -483,6 +483,16 @@
   ],
   "library_ports": [
     {
+      "name": "hardware_control_policy",
+      "source_entrypoint": "openpilot.system.hardware.base; openpilot.system.hardware.pc.hardware; openpilot.system.hardware.tici.hardware; required common.gpio/utils helpers",
+      "status": "native_host_policy_and_adapter_validated",
+      "implementation": "rust/crates/hardware-control; display/IR, lazy amplifier selection, power-save/initialization ordering, GPIO/IRQ, Panda reset/recovery, readiness and reboot/shutdown/uninstall policy",
+      "native_dependencies": ["Linux/AGNOS filesystem, clock and sync APIs", "original sudo/shell/pgrep/chrt/taskset commands", "Rust amplifier I2C adapter and Params", "process-supervision child helper and its existing cereal/msgq/libzmq dependencies"],
+      "runtime_scope": "host fixtures only; hardware-info #98, modem/LPA, other GPIO/gpiochip APIs, hardwared loop and manager adoption remain separate; generic ARM/device validation pending",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/hardware-control-validation.md"
+    },
+    {
       "name": "native_manager_catalog_policy",
       "source_entrypoint": "openpilot.system.manager.process_config",
       "status": "native_host_and_generic_aarch64_policy_validated",
