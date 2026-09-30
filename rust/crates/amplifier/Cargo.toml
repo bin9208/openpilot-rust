@@ -1,0 +1,20 @@
+[package]
+name = "openpilot-amplifier"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+i2c-linux-sys = "=0.2.1"
+nix = { version = "=0.31.3", default-features = false }
+thiserror = "2"
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
