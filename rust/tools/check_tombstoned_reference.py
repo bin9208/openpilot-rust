@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.12,<3.13"
-# dependencies = ["pyzmq==27.1.0", "sentry-sdk==2.55.0"]
+# dependencies = ["pyzmq==27.2.0", "sentry-sdk==2.55.0"]
 # ///
 # How to run: uv run --no-project --python 3.12 rust/tools/check_tombstoned_reference.py PROBE PARAMS_BINDING OUTPUT [RUNNER ARGS...]
 """Original-source comparisons using real temporary crash files, Params and shell processes."""

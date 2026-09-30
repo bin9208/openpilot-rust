@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.12,<3.13"
-# dependencies = ["pyzmq==27.1.0", "sentry-sdk==2.55.0"]
+# dependencies = ["pyzmq==27.2.0", "sentry-sdk==2.55.0"]
 # ///
 # How to run: uv run --no-project --python 3.12 rust/tools/check_crash_sdk_transport.py PROBE PARAMS_BINDING OUTPUT [RUNNER ARGS...]
 """Compare project-owned Sentry fields at real native HTTP and pinned Python SDK capture boundaries."""
