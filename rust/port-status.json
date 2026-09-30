@@ -172,7 +172,9 @@
       "name": "journald",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.journald",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "native_dependencies": ["OS journalctl executable and Linux journal service", "original C++ msgq shared-memory transport", "libzmq structured logging transport"],
+      "runtime_scope": "Rust-owned child/stdout/JSON/androidLog/diagnostics and terminate/wait lifecycle; actual source, host ASan and generic ARM/QEMU synthetic journal evidence; manager selection and real AGNOS/device acceptance pending; inherited direct-SIGTERM orphan tracked in #66",
       "production_replaced": false
     },
     {

@@ -1398,6 +1398,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-journald"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "indexmap",
+ "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-runtime-core",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-loggerd"
 version = "0.1.0"
 dependencies = [

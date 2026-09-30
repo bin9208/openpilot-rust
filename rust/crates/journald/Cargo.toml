@@ -1,0 +1,27 @@
+[package]
+name = "openpilot-journald"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+capnp = "=0.27.2"
+indexmap = "=2.14.2"
+openpilot-cereal = { path = "../cereal" }
+openpilot-logging = { path = "../logging" }
+openpilot-messaging = { path = "../messaging" }
+openpilot-runtime-core = { path = "../runtime-core" }
+rustix = { version = "1", features = ["event", "fs", "process", "time"] }
+serde = "1"
+serde_json = { version = "1", features = ["raw_value", "float_roundtrip"] }
+signal-hook = "0.3"
+thiserror = "2"
+
+[[bin]]
+name = "journald-rs"
+path = "src/main.rs"

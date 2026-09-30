@@ -200,3 +200,11 @@ and [#60](https://github.com/bin9208/openpilot-rust/issues/60) are corrected in 
 connection dimensions before the first frame; driving also loads before CarParams.
 Native reproduction and first-frame/recurrent comparisons remain host evidence;
 parent CI and complete runtime/device gates stay separate.
+
+[Journald issue #65](https://github.com/bin9208/openpilot-rust/issues/65) adds the
+native OS-journal bridge with typed ordered JSON, real androidLog/diagnostic
+transports and owned child cleanup. Its
+[validation record](../rust-port/journald-validation.md) compares the actual
+original main with native host/ASan and generic ARM/QEMU executions. The inherited
+direct-SIGTERM orphan is tracked separately in #66; manager selection and device
+acceptance remain pending.
