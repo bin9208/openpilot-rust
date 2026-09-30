@@ -63,7 +63,34 @@ Inherited source issues [#77](https://github.com/bin9208/openpilot-rust/issues/7
 record their deliberate safety/diagnostic differences rather than describe
 those source defects as fixed upstream.
 
-Combined checks, exact-head Actions and post-merge results remain pending.
+## Combined validation
+
+Runtime source `4e9c0e1ccbe509219cb4ddd88b8b928a4c8b0ce3` passes whole-workspace
+formatting, warnings-denied Clippy, all binary/example builds and 286 Rust tests
+with zero failures or ignored tests across 169 result groups. All seven CI-policy
+tests and the mapped user-document validator pass.
+
+The local driver executes the actual telemetry workflow commands with 21 frozen
+executables, newly built original msgq/Params bindings, Python 3.12.14, pycapnp
+2.1.0, NumPy 2.5.3, pyzmq 27.2.0 and sentry-sdk 2.55.0. All 20 comparison checkers
+pass: metadata (2), alert (5), statistics (8) and crash reporting/collection (5).
+Its ledger retains 623 source hashes and 769 artifact hashes. Four additional
+original-source upload checks pass after #87: active web helpers, uploader
+decisions/HTTP, actual collector logging, and logging transport failure paths.
+
+The first local binding build fails because this host's Cap'n Proto headers are
+installed outside system include paths. The unchanged build command succeeds
+with that existing include directory supplied through `CPLUS_INCLUDE_PATH`;
+CI installs its required development package explicitly. The failed attempt is
+retained and all runtime checks use the successful new binding.
+
+All filesystem, HTTP, crash, signal, IPC and GPIO-command fixtures are isolated.
+The native Sentry SDK remains an external dependency, and its platform identity,
+thread hooks and retry/grouping internals are not claimed identical to Python.
+The component ARM corpus keeps the one known missing-interpreter emulation
+difference visible. Full normal-startup, managed child exception adoption,
+registration/hardware/UI and remaining project-owned daemons stay in the
+runtime inventory. Exact-head Actions and post-merge results remain pending.
 Generic ARM artifacts, local IPC/filesystem tests and simulated crash/GPIO
 fixtures do not establish hardware, startup, device or CPU acceptance.
 

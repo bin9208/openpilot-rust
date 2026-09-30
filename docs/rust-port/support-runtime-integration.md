@@ -98,8 +98,18 @@ step now writes the binding path through `GITHUB_ENV`. The regression both
 rejects the unavailable job context and executes the actual environment setup
 with a temporary path containing spaces. No runtime source changes are needed.
 
-Exact-SHA Actions and post-merge results are still pending. PR success,
-post-merge success, device execution and user acceptance remain separate states.
+PR #80 passed all exact-head gates at `d0789c9e`: [Rust](https://github.com/bin9208/openpilot-rust/actions/runs/36705418109),
+[Integration](https://github.com/bin9208/openpilot-rust/actions/runs/36705418517),
+[Fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/36705417940),
+and [user docs](https://github.com/bin9208/openpilot-rust/actions/runs/36705621225).
+It merged at `96decc71d6fc7505f62b508f381bb0c65cc26e9d`. Separate post-merge
+[Rust](https://github.com/bin9208/openpilot-rust/actions/runs/36709976537),
+[Integration](https://github.com/bin9208/openpilot-rust/actions/runs/36709977504),
+[Fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/36709976546),
+and [user docs](https://github.com/bin9208/openpilot-rust/actions/runs/36709976809)
+all pass. This completes bounded support integration #71. Model startup issues
+#55/#60 retain their remaining full normal-startup integration gate. Device
+execution and user acceptance remain separate and unperformed.
 
 ## Remaining runtime work
 
