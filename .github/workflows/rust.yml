@@ -70,6 +70,10 @@ jobs:
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1
+      - name: Stage pinned native startup UI headers
+        run: |
+          python tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host"
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
@@ -491,13 +495,17 @@ jobs:
       - name: Configure original startup service IPC imports
         run: printf 'PYTHONPATH=%s/services-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - run: python -m pip install pycryptodome==3.23.0
+      - name: Stage pinned native startup renderer
+        run: |
+          sudo apt-get install -y libgl-dev libx11-dev xvfb xauth
+          python rust/tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host" --shared
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\nSTARTUP_UI_RAYLIB_LIBRARY=%s/startup-raylib-host/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build native startup service boundaries
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-process-supervision --bins --examples --locked
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-startup-ui -p openpilot-process-supervision --bins --examples --locked
       - name: Build original IPC binding and messaging bridge
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/services-msgq-python"
-          BRIDGE_ZMQ_OUT=$(dirname "$(dirname "$(rg --files -uuu rust/target/debug/build | rg '/out/lib/libzmq.a$' | head -n1)")")
-          python rust/tools/build_bridge_reference.py --output "$RUNNER_TEMP/services-bridge-source" --zmq-root "$BRIDGE_ZMQ_OUT"
+          python rust/tools/build_bridge_reference.py --output "$RUNNER_TEMP/services-bridge-source"
       - name: Compare LPA serial, TLS, profile and notification lifecycle
         run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
       - name: Compare source and native bridge packets and connection lifecycle
@@ -869,6 +877,13 @@ jobs:
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make
+      - name: Stage native GNU aarch64 startup renderer and portable loader headers
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- update
+          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
+          python rust/tools/stage_startup_ui_raylib.py --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-arm" --shared --cxx aarch64-linux-gnu-g++
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-arm\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build pinned external FFmpeg for generic aarch64 GNU linking
         run: python rust/tools/build_loggerd_ffmpeg.py --root "$RUNNER_TEMP/logger-ffmpeg-gnu" --cc aarch64-linux-gnu-gcc --ar aarch64-linux-gnu-ar --ranlib aarch64-linux-gnu-ranlib
       - name: Build generic Linux aarch64 artifact (not AGNOS validation)
@@ -930,6 +945,9 @@ jobs:
             rust/target/aarch64-unknown-linux-musl/release/openpilot-loggerd
             ${{ runner.temp }}/logger-ffmpeg-gnu/invocation.json
             ${{ runner.temp }}/logger-ffmpeg-gnu/build.log
+            ${{ runner.temp }}/startup-raylib-arm/SOURCE_SHA256
+            ${{ runner.temp }}/startup-raylib-arm/plugin-build.json
+            ${{ runner.temp }}/startup-raylib-arm/lib/libopenpilot-raylib.so
             ${{ runner.temp }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/COPYING.LGPLv2.1
             ${{ runner.temp }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/LICENSE.md
             ${{ runner.temp }}/logger-ffmpeg-musl/invocation.json

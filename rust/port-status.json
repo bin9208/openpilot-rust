@@ -27,7 +27,7 @@
       "source_entrypoint": "openpilot/cereal/messaging",
       "status": "continuous_runtime_host_validated",
       "implementation": "rust/crates/bridge; continuous bidirectional msgq/ZMQ bridge with source service ports and connection-driven subscriptions",
-      "native_dependencies": ["libzmq 4.3.5 through existing zmq crate", "temporary original msgq through CXX", "Linux signals"],
+      "native_dependencies": ["libzmq 4.3.4 through existing zmq crate", "temporary original msgq through CXX", "Linux signals"],
       "evidence": "docs/rust-port/bridge-validation.md",
       "runtime_scope": "original C++ versus native loopback TCP/IPC bursts, substring whitelist, disconnect/reconnect and shutdown; manager selection, full-runtime startup/upload and AGNOS/device acceptance pending",
       "production_replaced": false
@@ -495,6 +495,16 @@
     }
   ],
   "library_ports": [
+    {
+      "name": "startup_ui_widgets",
+      "source_entrypoint": "openpilot.common.spinner/text_window/network_info; openpilot.system.ui.spinner/text and shared drawing/input dependencies",
+      "status": "native_render_and_child_lifecycle_host_validated",
+      "implementation": "rust/crates/startup-ui; native Spinner/TextWindow state, rendering/input, IP display and owning child wrappers",
+      "native_dependencies": ["uv.lock-pinned comma-deps-raylib 6.0.0.1.post103 native plugin", "host GL/X11 or board EGL/GLES/DRM/GBM", "Linux input events and process helper", "existing msgq/libzmq in shared support"],
+      "runtime_scope": "six source/native scenes, actual window/input/child lifecycle and CXX ASan; main UI and shared debug/record/burn-in utilities, manager adoption, ARM plugin/AGNOS execution and full startup/upload remain pending",
+      "production_replaced": false,
+      "evidence": "docs/naver/rust_startup_ui_117.md"
+    },
     {
       "name": "tici_esim_lpa",
       "source_entrypoint": "openpilot.system.hardware.tici.lpa; openpilot.system.hardware.base.Profile/LPABase",

@@ -21,6 +21,13 @@ def build(output: Path, zmq_root: Path) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--zmq-root", required=True, type=Path)
+    parser.add_argument("--zmq-root", type=Path)
+    parser.add_argument("--target", type=Path, default=ROOT / "rust/target")
     args = parser.parse_args()
-    build(args.output.resolve(), args.zmq_root.resolve())
+    root = args.zmq_root
+    if root is None:
+        root = next((path for path in sorted((args.target / "debug/build").glob("zmq-sys-*/out"))
+                     if (path / "lib/libzmq.a").is_file() and (path / "source/include/zmq.h").is_file()), None)
+    if root is None:
+        parser.error("build openpilot-bridge first or provide --zmq-root containing lib/libzmq.a and source/include/zmq.h")
+    build(args.output.resolve(), root.resolve())
