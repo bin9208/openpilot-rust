@@ -81,17 +81,16 @@ fn isolated_transport() {
         .spawn()
         .unwrap();
     let mut ready = String::new();
-    BufReader::new(peer.stdout.take().unwrap())
-        .read_line(&mut ready)
-        .unwrap();
+    let mut peer_output = BufReader::new(peer.stdout.take().unwrap());
+    peer_output.read_line(&mut ready).unwrap();
     assert_eq!(ready.trim(), "READY");
     let mut incoming = Subscriber::new("nativeToRust", false).unwrap();
     let payload: Vec<u8> = (0..=255).cycle().take(200_000).collect();
     outgoing.send(&payload).unwrap();
-    assert_eq!(
-        incoming.receive(Duration::from_secs(2)).unwrap(),
-        Some(payload)
-    );
+    let mut sent = String::new();
+    peer_output.read_line(&mut sent).unwrap();
+    assert_eq!(sent.trim(), "SENT");
+    assert_eq!(incoming.receive(Duration::ZERO).unwrap(), Some(payload));
     assert!(peer.wait().unwrap().success());
     let specifications = [
         Subscription {
@@ -187,18 +186,21 @@ fn explicit_runtime_transport_uses_original_namespace() {
     let mut outgoing = Publisher::for_runtime("rustToNative", 1024 * 1024).unwrap();
     assert!(Publisher::for_runtime("rustToNative", 1024 * 1024).is_err());
     let mut peer = Command::new(env!("NATIVE_MSGQ_PEER"))
+        .arg("--delayed-reply")
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
     let mut ready = String::new();
-    BufReader::new(peer.stdout.take().unwrap())
-        .read_line(&mut ready)
-        .unwrap();
+    let mut peer_output = BufReader::new(peer.stdout.take().unwrap());
+    peer_output.read_line(&mut ready).unwrap();
     assert_eq!(ready.trim(), "READY");
     let mut incoming = Subscriber::for_runtime("nativeToRust", false, 1024 * 1024).unwrap();
     outgoing.send(b"runtime\0payload").unwrap();
+    let mut sent = String::new();
+    peer_output.read_line(&mut sent).unwrap();
+    assert_eq!(sent.trim(), "SENT");
     assert_eq!(
-        incoming.receive(Duration::from_secs(2)).unwrap(),
+        incoming.receive(Duration::ZERO).unwrap(),
         Some(b"runtime\0payload".to_vec())
     );
     assert!(peer.wait().unwrap().success());
