@@ -3,6 +3,8 @@ pub mod runtime;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error(transparent)]
+    Logging(#[from] openpilot_logging::Error),
     #[error("driver daemon I/O: {0}")]
     Io(#[from] std::io::Error),
     #[error("driver daemon IPC: {0}")]

@@ -1,6 +1,7 @@
 //! Log-space retention policy from system/loggerd/deleter.py.
 mod names;
 pub mod platform;
+pub use names::sort_key as directory_sort_key;
 
 use std::{
     collections::{HashMap, HashSet},

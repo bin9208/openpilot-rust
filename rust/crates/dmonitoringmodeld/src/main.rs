@@ -1,4 +1,9 @@
 use openpilot_dmonitoringmodeld::{driver::Calibration, runtime::DriverRuntime, Error};
+use openpilot_logging::{
+    log_site,
+    producer::{Factory, Logger},
+    record::{Level, Record},
+};
 use openpilot_messaging::services;
 use openpilot_model_runtime::catalog::{Catalog, Kind};
 use openpilot_modeld::driver_wire::DriverTiming;
@@ -81,23 +86,86 @@ fn timestamp() -> Result<u64, Error> {
 
 fn run(options: Options) -> Result<(), Error> {
     configure_realtime()?;
+    let mut logger = Factory::for_runtime()?.logger();
     let stop = Arc::new(AtomicBool::new(false));
+    let interrupted = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&interrupted))?;
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stop))?;
+    let result = run_loop(options, &mut logger, &stop);
+    if interrupted.load(Ordering::Relaxed) {
+        logger.emit(
+            log_site!(),
+            Record::text(Level::Warning, "got SIGINT".into()),
+        )?;
+    }
+    logger.close();
+    result
+}
+
+fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Result<(), Error> {
     let catalog = Catalog::load(&options.catalog)?;
     let raw = env::var_os("SEND_RAW_PRED").is_some_and(|value| !value.is_empty());
+    logger.emit(
+        log_site!(),
+        Record::text(Level::Warning, "connecting to driver stream".into()),
+    )?;
     let mut client = VisionClient::new("camerad", VisionStream::Driver, true)?;
-    eprintln!("dmonitoringmodeld: connecting to driver stream");
     while !stop.load(Ordering::Relaxed) && !client.connect()? {
         thread::sleep(Duration::from_millis(100));
     }
     if stop.load(Ordering::Relaxed) {
         return Ok(());
     }
-    eprintln!("dmonitoringmodeld: driver stream connected");
-    let mut runtime = None;
-    let mut subscriber = None;
-    let mut publisher = None;
+    logger.emit(
+        log_site!(),
+        Record::text(
+            Level::Warning,
+            format!(
+                "connected with buffer size: {}",
+                client
+                    .layout()
+                    .map_or_else(|| "None".into(), |layout| layout.len.to_string())
+            ),
+        ),
+    )?;
+    let layout = client
+        .layout()
+        .ok_or(Error::Contract("connected camera has no layout"))?;
+    let camera = [
+        u32::try_from(layout.width).map_err(|_| Error::Contract("camera width overflow"))?,
+        u32::try_from(layout.height).map_err(|_| Error::Contract("camera height overflow"))?,
+    ];
+    let bundle = catalog.select(Kind::Driver, camera)?;
+    let priority = if bundle.backend == "qcom-cl" {
+        env::var("QCOM_PRIORITY")
+            .map_or(Ok(8), |value| value.parse::<u8>())
+            .map_err(|_| Error::Contract("invalid QCOM_PRIORITY"))?
+    } else {
+        8
+    };
+    // SAFETY: --trusted-catalog explicitly requires immutable executable artifacts.
+    let mut runtime = unsafe { DriverRuntime::load(bundle, priority) }?;
+    logger.emit(
+        log_site!(),
+        Record::text(
+            Level::Warning,
+            "models loaded, dmonitoringmodeld starting".into(),
+        ),
+    )?;
+    let mut subscriber = Subscriber::for_runtime(
+        "liveCalibration",
+        true,
+        services::lookup("liveCalibration")
+            .ok_or(Error::Contract("liveCalibration service missing"))?
+            .queue_size,
+    )?;
+    let mut publisher = Publisher::for_runtime(
+        "driverStateV2",
+        services::lookup("driverStateV2")
+            .ok_or(Error::Contract("driverStateV2 service missing"))?
+            .queue_size,
+    )?;
     let mut calibration = Calibration::default();
     let mut frames = 0;
     while !stop.load(Ordering::Relaxed) {
@@ -109,47 +177,6 @@ fn run(options: Options) -> Result<(), Error> {
             continue;
         };
         let metadata = *frame.metadata();
-        if runtime.is_none() {
-            let camera = [
-                u32::try_from(metadata.width)
-                    .map_err(|_| Error::Contract("camera width overflow"))?,
-                u32::try_from(metadata.height)
-                    .map_err(|_| Error::Contract("camera height overflow"))?,
-            ];
-            let bundle = catalog.select(Kind::Driver, camera)?;
-            let priority = if bundle.backend == "qcom-cl" {
-                env::var("QCOM_PRIORITY")
-                    .map_or(Ok(8), |value| value.parse::<u8>())
-                    .map_err(|_| Error::Contract("invalid QCOM_PRIORITY"))?
-            } else {
-                8
-            };
-            // SAFETY: --trusted-catalog explicitly requires immutable executable artifacts.
-            runtime = Some(unsafe { DriverRuntime::load(bundle, priority) }?);
-            subscriber = Some(Subscriber::for_runtime(
-                "liveCalibration",
-                true,
-                services::lookup("liveCalibration")
-                    .ok_or(Error::Contract("liveCalibration service missing"))?
-                    .queue_size,
-            )?);
-            publisher = Some(Publisher::for_runtime(
-                "driverStateV2",
-                services::lookup("driverStateV2")
-                    .ok_or(Error::Contract("driverStateV2 service missing"))?
-                    .queue_size,
-            )?);
-            eprintln!("dmonitoringmodeld: models loaded");
-        }
-        let runtime = runtime
-            .as_mut()
-            .ok_or(Error::Contract("driver model not initialized"))?;
-        let subscriber = subscriber
-            .as_mut()
-            .ok_or(Error::Contract("calibration subscriber not initialized"))?;
-        let publisher = publisher
-            .as_mut()
-            .ok_or(Error::Contract("driver publisher not initialized"))?;
         if let Some(message) = subscriber.receive(Duration::ZERO)? {
             calibration.update(&message)?;
         }

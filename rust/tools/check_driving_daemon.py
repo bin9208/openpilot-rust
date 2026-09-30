@@ -49,16 +49,22 @@ def check(args, resolution: tuple[int, int], mode: str):
     shm.mkdir()
     parameters = destination / "params" / prefix
     parameters.mkdir(parents=True)
-    environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(parameters.parent))
+    environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(parameters.parent), LOGPRINT='info')
     environment.pop("SEND_RAW_PRED", None)
     environment.pop("SIMULATION", None)
     if raw:
         environment["SEND_RAW_PRED"] = "0"
     processes = []
+    capture = None
     try:
+        if args.collector is not None:
+            from model_logging_capture import Collector
+            capture = Collector(args.collector, destination / 'logging', environment)
         waiting = subprocess.Popen([args.binary, "--trusted-catalog", args.catalog], env=environment, stderr=subprocess.PIPE, bufsize=0)
         processes.append(waiting)
-        Lines(waiting.stderr, destination / "camera-wait.log").until(("waiting for camera streams",))
+        Lines(waiting.stderr, destination / "camera-wait.log").until(("modeld init",))
+        time.sleep(.15)
+        assert waiting.poll() is None, 'missing cameras must keep the daemon waiting'
         waiting.send_signal(signal.SIGINT)
         assert waiting.wait(timeout=5) == 0
         peer = subprocess.Popen([args.peer, *map(str, (*resolution, stride, stride * y_height, size)), mode], env=environment,
@@ -77,9 +83,11 @@ def check(args, resolution: tuple[int, int], mode: str):
         waiting = subprocess.Popen([args.binary, "--trusted-catalog", args.catalog], env=environment, stderr=subprocess.PIPE, bufsize=0)
         processes.append(waiting)
         waiting_lines = Lines(waiting.stderr, destination / "params-wait.log")
-        waiting_lines.until(("cameras connected",))
+        waiting_lines.until(("connected extra cam" if mode == "dual" else "connected main cam",))
+        waiting_lines.until(("models loaded",))
         assert command(f"send 2 {zero} {zero}") == "OK"
-        waiting_lines.until(("waiting for CarParams",))
+        time.sleep(.15)
+        assert waiting.poll() is None, 'missing CarParams must keep the daemon waiting'
         waiting.send_signal(signal.SIGTERM)
         assert waiting.wait(timeout=5) == 0
         cp = car.CarParams.new_message(longitudinalActuatorDelay=0.)
@@ -90,7 +98,7 @@ def check(args, resolution: tuple[int, int], mode: str):
         if mode == "road":
             waiting = subprocess.Popen([args.binary, "--trusted-catalog", args.catalog], env=environment, stderr=subprocess.PIPE, bufsize=0)
             processes.append(waiting)
-            Lines(waiting.stderr, destination / "frame-wait.log").until(("modeld: ready",))
+            Lines(waiting.stderr, destination / "frame-wait.log").until(("modeld got CarParams",))
             waiting.send_signal(signal.SIGTERM)
             assert waiting.wait(timeout=5) == 0
         count = 12 if raw else 4
@@ -98,10 +106,10 @@ def check(args, resolution: tuple[int, int], mode: str):
                                   stderr=subprocess.PIPE, bufsize=0)
         processes.append(daemon)
         daemon_lines = Lines(daemon.stderr, destination / "daemon.log")
-        daemon_lines.until(("cameras connected",))
-        daemon_lines.until(("modeld: ready",))
-        assert command(f"send 2 {zero} {zero}") == "OK"
+        daemon_lines.until(("connected extra cam" if mode == "dual" else "connected main cam",))
         daemon_lines.until(("models loaded",))
+        daemon_lines.until(("modeld got CarParams",))
+        assert command(f"send 2 {zero} {zero}") == "OK"
         oracle.prepare(2, (np.zeros(size, dtype=np.uint8), np.zeros(size, dtype=np.uint8)))
         for topic in OUTPUTS:
             assert command(f"receive {topic} 200 {destination / 'unexpected.bin'}") == "TIMEOUT"
@@ -161,15 +169,25 @@ def check(args, resolution: tuple[int, int], mode: str):
                 assert command(f"receive {topic} 100 {destination / 'unexpected.bin'}") == "TIMEOUT"
         assert daemon.wait(timeout=5) == 0
         assert command("stop") == "OK" and peer.wait(timeout=5) == 0
+        logging_report = capture.finish('modeld', [process.pid for process in processes]) if capture is not None else None
+        if capture is not None:
+            from model_logging_reference import DrivingScenario, driving
+            logging_report['source_calls'] = driving(capture.records['logMessage'],
+                DrivingScenario(daemon.pid, resolution, size, mode, (2, *(step['frame_id'] for step in trace))))
         report = {"resolution": resolution, "streams": mode, "frames": count, "messages": messages, "compared_fields": fields,
                   "raw_predictions": raw, "raw_comparison": "exact bytes", "float_tolerance": 1e-6, "polynomial_tolerance": 2e-5,
                   "discrete_fields": "exact", "llvm_path": os.environ.get("LLVM_PATH"), "device_validation": False, "trace": trace,
                   "queue_capacities": {name: int(SERVICE_LIST[name].queue_size) for name in (*TOPICS, *OUTPUTS)},
+                  "startup": {"model_loaded_before_car_params": True, "model_loaded_before_first_frame": True,
+                              "first_frame_id": 2, "first_frame_prepare_only": True},
                   "signal_checks": ["SIGINT camera discovery", "SIGTERM CarParams wait"] + (["SIGTERM first-frame wait"] if mode == "road" else [])}
+        report['logging'] = logging_report
         (destination / "report.json").write_text(json.dumps(report, indent=2) + "\n")
         print(json.dumps(report), flush=True)
         return report
     finally:
+        if capture is not None:
+            capture.close()
         for index, process in reversed(list(enumerate(processes))):
             stop(process)
             stream = process.stderr if process.stderr is not None else process.stdout
@@ -185,13 +203,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Exercise the Rust driving daemon through original native camera/message transports")
     for name in ("binary", "catalog", "models", "output"):
         parser.add_argument(f"--{name}", type=Path, required=True)
+    parser.add_argument('--collector', type=Path)
     args = parser.parse_args()
+    if args.collector is not None:
+        args.collector = args.collector.resolve()
     for name in ("binary", "catalog", "models", "output"):
         setattr(args, name, getattr(args, name).resolve())
     args.output.mkdir(parents=True, exist_ok=False)
     args.peer = args.output / "driving-daemon-peer"
     build_peer(Path(__file__).resolve().parents[2], args.peer)
-    scenarios = (((1344, 760), "dual"), ((1928, 1208), "dual"), ((1344, 760), "road"), ((1344, 760), "wide"))
+    scenarios = tuple((resolution, mode) for resolution in ((1344, 760), (1928, 1208)) for mode in ("dual", "road", "wide"))
     reports = [check(args, resolution, mode) for resolution, mode in scenarios]
     (args.output / "report.json").write_text(json.dumps({"runs": reports, "device_validation": False}, indent=2) + "\n")
 
