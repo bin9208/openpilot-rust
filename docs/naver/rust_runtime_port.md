@@ -75,3 +75,11 @@ Manager selection and whole-runtime device acceptance remain pending.
 connects the validated policy to original driver-frame polling, validity/demo
 gates and post-publication Params updates. Its [validation record](../rust-port/dmonitoring-daemon-validation.md)
 includes full source-loop/native-message comparisons and handedness persistence.
+
+[Calibration daemon issue #35](https://github.com/bin9208/openpilot-rust/issues/35)
+ports the calibration block estimator, source rotation math, `liveCalibration`
+publication and asynchronous `CalibrationParams` persistence. Its
+[validation record](../rust-port/calibration-validation.md) covers long original-class
+histories, original main-loop validity/cadence, native Python IPC, cached values,
+Float32 Params parsing and signal handling. Manager selection and the complete
+startup/logging/upload/device gate remain pending.

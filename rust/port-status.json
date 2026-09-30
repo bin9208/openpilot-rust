@@ -29,7 +29,9 @@
       "name": "calibrationd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.calibrationd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX", "libc scheduling and source-compatible strtof"],
+      "runtime_scope": "calibration estimator, liveCalibration IPC and asynchronous Params persistence; not selected by manager; TICI scheduling, whole-runtime integration and device acceptance pending",
       "production_replaced": false
     },
     {

@@ -65,6 +65,12 @@ jobs:
         run: |
           python tools/check_services.py
           python tools/check_message_state.py --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
+      - name: Compare calibration estimator, loop and Params floats with original source
+        run: |
+          cargo build -p openpilot-calibrationd --bins --examples --locked
+          python tools/check_calibration_reference.py --binary target/debug/examples/calibration_trace --output "$RUNNER_TEMP/calibration-estimator"
+          python tools/check_calibration_loop.py --binary target/debug/examples/calibration_loop --output "$RUNNER_TEMP/calibration-loop"
+          python tools/check_calibration_float.py --binary target/debug/examples/calibration_float --output "$RUNNER_TEMP/calibration-float"
       - name: Compare model desire state and Bluetooth command consumption with original source
         run: |
           python tools/check_desire_reference.py --binary target/debug/examples/desire_probe --output "$RUNNER_TEMP/model-desire"
@@ -85,6 +91,10 @@ jobs:
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_proclog_daemon.py \
             --binary target/debug/openpilot-proclogd-runtime --cadence-binary target/debug/examples/cadence_trace \
             --output "$RUNNER_TEMP/proclog-runtime"
+      - name: Exercise calibration daemon with original Python IPC and durable Params
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_calibration_daemon.py \
+            --binary target/debug/openpilot-calibrationd --output "$RUNNER_TEMP/calibration-native"
       - name: Run the actual Python consumer against the bounded Rust producer
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/device_probe.py \
@@ -105,6 +115,10 @@ jobs:
             ${{ runner.temp }}/proclog-runtime/**/*.json
             ${{ runner.temp }}/proclog-runtime/**/*.log
             ${{ runner.temp }}/proclog-runtime/**/*.capnp
+            rust/target/release/openpilot-calibrationd
+            ${{ runner.temp }}/calibration-*/report.json
+            ${{ runner.temp }}/calibration-native/**/*.capnp
+            ${{ runner.temp }}/calibration-native/**/*.log
             ${{ runner.temp }}/host-probe.json
             ${{ runner.temp }}/dm-native/report.json
             ${{ runner.temp }}/driving-native/report.json
@@ -211,7 +225,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev
+      - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev g++-aarch64-linux-gnu
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
       - name: Check Rust allocation and aliasing on ARM with Miri
         env:
@@ -226,6 +240,14 @@ jobs:
           CARGO_TARGET_DIR: ${{ runner.temp }}/driver-alignment
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check
         run: cargo +nightly-2026-09-29 miri test -p openpilot-dmonitoringmodeld --test driver --locked
+      - name: Check calibration history and wire handling on ARM with Miri
+        env:
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-calibrationd --no-default-features --lib --test estimator --test wire --locked --target aarch64-unknown-linux-gnu
+      - name: Check calibration float parsing and asynchronous persistence with ASan
+        env:
+          RUSTFLAGS: -Zsanitizer=address -Clink-arg=-Wl,--export-dynamic
+        run: cargo +nightly-2026-09-29 test -p openpilot-calibrationd --test parameters --locked -Zbuild-std --target x86_64-unknown-linux-gnu
       - name: Check the real Rust and C kernel boundary with ASan
         env:
           MODEL_TEST_ASAN: '1'
@@ -281,4 +303,6 @@ jobs:
       - uses: actions/upload-artifact@v6
         with:
           name: rust-linux-aarch64-not-device-validated
-          path: rust/target/aarch64-unknown-linux-gnu/release/cpu-sample
+          path: |
+            rust/target/aarch64-unknown-linux-gnu/release/cpu-sample
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-calibrationd
