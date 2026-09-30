@@ -98,6 +98,16 @@ fn native_functionfs_client_preserves_original_wire_and_model_contract() {
     // Given ordinary FIFOs as the hardware seam, with the real FunctionFS transport/client.
     let fixture = Fixture::new();
     let (mut from_client, mut to_client) = fixture.peer();
+    let warped = vec![13; contract::WARPED_BYTES];
+    let expected_warped = warped.clone();
+    // Prepare the synthetic model output before the client's inference deadline starts.
+    let mut output = Vec::new();
+    for value in [41u32, 0, 12, 13, 14] {
+        output.extend(value.to_le_bytes());
+    }
+    for _ in 0..contract::OUTPUT_FLOATS {
+        output.extend(0.375f32.to_le_bytes());
+    }
     let peer = thread::spawn(move || {
         let (header, _) = receive(&mut from_client);
         assert_eq!(header.kind, 1);
@@ -136,21 +146,11 @@ fn native_functionfs_client_preserves_original_wire_and_model_contract() {
         assert_eq!(wire::word(&payload, 0), 41);
         assert_eq!(wire::word(&payload, 4), 1);
         assert_eq!(payload.len(), 8 + contract::WARPED_BYTES + 48);
-        assert_eq!(
-            &payload[8..8 + contract::WARPED_BYTES],
-            vec![13; contract::WARPED_BYTES]
-        );
+        assert_eq!(&payload[8..8 + contract::WARPED_BYTES], expected_warped);
         assert_eq!(
             rpc::decode_floats(&payload[8 + contract::WARPED_BYTES..]).unwrap(),
             [0.125; 12]
         );
-        let mut output = Vec::new();
-        for value in [41u32, 0, 12, 13, 14] {
-            output.extend(value.to_le_bytes());
-        }
-        for _ in 0..contract::OUTPUT_FLOATS {
-            output.extend(0.375f32.to_le_bytes());
-        }
         to_client
             .write_all(&wire::frame(9, header.sequence, &output, false).unwrap())
             .unwrap();
@@ -161,7 +161,7 @@ fn native_functionfs_client_preserves_original_wire_and_model_contract() {
     let output = client
         .infer(
             41,
-            &vec![13; contract::WARPED_BYTES],
+            &warped,
             &[0.125; 12],
             Deadline::after(Duration::from_millis(50)).unwrap(),
             true,
