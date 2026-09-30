@@ -737,6 +737,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-logging"
+version = "0.1.0"
+dependencies = [
+ "indexmap",
+ "libc",
+ "openpilot-messaging",
+ "openpilot-runtime-core",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "zmq",
+]
+
+[[package]]
 name = "openpilot-logmessaged"
 version = "0.1.0"
 dependencies = [
@@ -745,6 +761,7 @@ dependencies = [
  "home",
  "openpilot-cereal",
  "openpilot-messaging",
+ "openpilot-runtime-core",
  "rustix",
  "serde",
  "serde_json",
@@ -752,7 +769,6 @@ dependencies = [
  "tempfile",
  "thiserror",
  "uuid",
- "zmij",
  "zmq",
 ]
 
@@ -846,6 +862,7 @@ name = "openpilot-runtime-core"
 version = "0.1.0"
 dependencies = [
  "tempfile",
+ "zmij",
 ]
 
 [[package]]
