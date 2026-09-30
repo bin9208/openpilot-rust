@@ -1,0 +1,42 @@
+[package]
+name = "openpilot-calibrationd"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = ["openpilot-messaging/native", "dep:libc", "dep:signal-hook"]
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[dependencies]
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging", default-features = false }
+openpilot-params = { path = "../params" }
+capnp = "=0.27.2"
+thiserror = "2"
+rustix = { version = "1", features = ["thread", "time"] }
+libc = { version = "0.2", optional = true }
+signal-hook = { version = "0.3", optional = true }
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+tempfile = "3"
+
+[[bin]]
+name = "openpilot-calibrationd"
+path = "src/main.rs"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "calibration_float"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "calibration_loop"
+required-features = ["native-skip-miri"]

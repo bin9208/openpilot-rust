@@ -16,7 +16,7 @@ jobs:
     needs: [model-memory, model-pipelines]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'
@@ -44,7 +44,7 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs
-      - run: python -m pip install numpy==2.4.6 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2
+      - run: python -m pip install numpy==2.4.6 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
@@ -61,24 +61,51 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
+      - name: Compare log-space retention with the original loop and actual low-space filesystem
+        run: |
+          cargo build -p openpilot-deleter --bins --examples --locked
+          python tools/check_deleter_reference.py --binary target/debug/examples/deleter_trace --output "$RUNNER_TEMP/deleter-reference"
+          python tools/check_deleter_daemon.py --binary target/debug/openpilot-deleter --output "$RUNNER_TEMP/deleter-native" --privileged-mount
       - name: Compare message state and service catalog with original source
         run: |
           python tools/check_services.py
           python tools/check_message_state.py --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
+      - name: Compare calibration estimator, loop and Params floats with original source
+        run: |
+          cargo build -p openpilot-calibrationd --bins --examples --locked
+          python tools/check_calibration_reference.py --binary target/debug/examples/calibration_trace --output "$RUNNER_TEMP/calibration-estimator"
+          python tools/check_calibration_loop.py --binary target/debug/examples/calibration_loop --output "$RUNNER_TEMP/calibration-loop"
+          python tools/check_calibration_float.py --binary target/debug/examples/calibration_float --output "$RUNNER_TEMP/calibration-float"
       - name: Compare model desire state and Bluetooth command consumption with original source
         run: |
           python tools/check_desire_reference.py --binary target/debug/examples/desire_probe --output "$RUNNER_TEMP/model-desire"
           python tools/check_command_reference.py --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-commands"
+      - name: Compare driver monitoring policy and complete cereal packets with original source
+        run: python tools/check_monitoring_reference.py --binary target/debug/monitoring-probe --output "$RUNNER_TEMP/monitoring-policy"
+      - name: Compare diagnostic log formatting and rotation with original source
+        run: python tools/check_logmessaged_reference.py --binary target/debug/examples/file_probe --output "$RUNNER_TEMP/logmessaged-reference"
       - name: Compare driving-model input state with the original loop
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
       - run: python tools/check_params_reference.py
       - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
+      - name: Compare continuous driver monitoring with the original loop and IPC
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_dmonitoring_daemon.py \
+            --binary target/debug/openpilot-dmonitoringd --output "$RUNNER_TEMP/dmonitoring-daemon"
       - name: Validate continuous procLog cadence and native IPC shutdown
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_proclog_daemon.py \
             --binary target/debug/openpilot-proclogd-runtime --cadence-binary target/debug/examples/cadence_trace \
             --output "$RUNNER_TEMP/proclog-runtime"
+      - name: Exercise calibration daemon with original Python IPC and durable Params
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_calibration_daemon.py \
+            --binary target/debug/openpilot-calibrationd --output "$RUNNER_TEMP/calibration-native"
+      - name: Compare continuous Rust logmessaged with original native ZMQ and cereal peers
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" python tools/check_logmessaged_native.py \
+            --binary target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/logmessaged-native"
       - name: Run the actual Python consumer against the bounded Rust producer
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/device_probe.py \
@@ -91,11 +118,22 @@ jobs:
           name: rust-linux-x86_64
           path: |
             rust/target/release/cpu-sample
+            rust/target/release/openpilot-deleter
+            ${{ runner.temp }}/deleter-reference/report.json
+            ${{ runner.temp }}/deleter-native/*.json
+            ${{ runner.temp }}/deleter-native/*.log
             rust/target/release/openpilot-proclogd
             rust/target/release/openpilot-proclogd-runtime
+            rust/target/release/openpilot-dmonitoringd
+            ${{ runner.temp }}/dmonitoring-daemon/**/report.json
+            ${{ runner.temp }}/dmonitoring-daemon/**/*.log
             ${{ runner.temp }}/proclog-runtime/**/*.json
             ${{ runner.temp }}/proclog-runtime/**/*.log
             ${{ runner.temp }}/proclog-runtime/**/*.capnp
+            rust/target/release/openpilot-calibrationd
+            ${{ runner.temp }}/calibration-*/report.json
+            ${{ runner.temp }}/calibration-native/**/*.capnp
+            ${{ runner.temp }}/calibration-native/**/*.log
             ${{ runner.temp }}/host-probe.json
             ${{ runner.temp }}/dm-native/report.json
             ${{ runner.temp }}/driving-native/report.json
@@ -104,6 +142,10 @@ jobs:
             ${{ runner.temp }}/model-desire/report.json
             ${{ runner.temp }}/model-commands/report.json
             ${{ runner.temp }}/model-inputs/report.json
+            ${{ runner.temp }}/monitoring-policy/report.json
+            ${{ runner.temp }}/logmessaged-reference/report.json
+            ${{ runner.temp }}/logmessaged-native/**/report.json
+            ${{ runner.temp }}/logmessaged-native/**/*.log
   model-pipelines:
     name: rust original model pipelines
     runs-on: ubuntu-24.04
@@ -130,6 +172,7 @@ jobs:
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-modeld --examples --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked
+      - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --locked
       - run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Compile the original grouped driving and driver artifacts
         run: |
@@ -170,6 +213,10 @@ jobs:
         run: |
           python rust/tools/check_driver_daemon.py --binary rust/target/debug/openpilot-dmonitoringmodeld \
             --catalog "$RUNNER_TEMP/native-catalog" --models "$RUNNER_TEMP/original-models" --output "$RUNNER_TEMP/driver-daemon"
+      - name: Exercise the Rust driving daemon against the original model loop
+        run: |
+          python rust/tools/check_driving_daemon.py --binary rust/target/debug/openpilot-driving-modeld \
+            --catalog "$RUNNER_TEMP/native-catalog" --models "$RUNNER_TEMP/original-models" --output "$RUNNER_TEMP/driving-daemon"
       - uses: actions/upload-artifact@v6
         with:
           name: rust-original-pipeline-comparison
@@ -181,6 +228,8 @@ jobs:
             ${{ runner.temp }}/model-input-pipelines/**/report.json
             ${{ runner.temp }}/driver-daemon/**/report.json
             ${{ runner.temp }}/driver-daemon/**/*.log
+            ${{ runner.temp }}/driving-daemon/**/report.json
+            ${{ runner.temp }}/driving-daemon/**/*.log
   model-memory:
     name: rust model memory
     runs-on: ubuntu-24.04
@@ -194,7 +243,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev
+      - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev g++-aarch64-linux-gnu
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
       - name: Check Rust allocation and aliasing on ARM with Miri
         env:
@@ -209,6 +258,14 @@ jobs:
           CARGO_TARGET_DIR: ${{ runner.temp }}/driver-alignment
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check
         run: cargo +nightly-2026-09-29 miri test -p openpilot-dmonitoringmodeld --test driver --locked
+      - name: Check calibration history and wire handling on ARM with Miri
+        env:
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-calibrationd --no-default-features --lib --test estimator --test wire --locked --target aarch64-unknown-linux-gnu
+      - name: Check calibration float parsing and asynchronous persistence with ASan
+        env:
+          RUSTFLAGS: -Zsanitizer=address -Clink-arg=-Wl,--export-dynamic
+        run: cargo +nightly-2026-09-29 test -p openpilot-calibrationd --test parameters --locked -Zbuild-std --target x86_64-unknown-linux-gnu
       - name: Check the real Rust and C kernel boundary with ASan
         env:
           MODEL_TEST_ASAN: '1'
@@ -264,4 +321,6 @@ jobs:
       - uses: actions/upload-artifact@v6
         with:
           name: rust-linux-aarch64-not-device-validated
-          path: rust/target/aarch64-unknown-linux-gnu/release/cpu-sample
+          path: |
+            rust/target/aarch64-unknown-linux-gnu/release/cpu-sample
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-calibrationd

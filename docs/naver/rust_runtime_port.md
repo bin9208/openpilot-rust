@@ -53,8 +53,53 @@ ports camera pairing, drop state, calibration and packed policy inputs. The
 source sequences and exact native camera/model/recurrent output comparisons.
 Complete driving daemon orchestration remains tracked under #1/#6.
 
+
+[Monitoring policy issue #29](https://github.com/bin9208/openpilot-rust/issues/29)
+ports awareness, distraction, calibration, fallback, lockout and complete
+`driverMonitoringState` messages. Its [validation record](../rust-port/monitoring-validation.md)
+compares 209,144 original-policy frames and packets. Continuous IPC and
+whole-runtime integration remain open.
+
+[Internal driving daemon issue #31](https://github.com/bin9208/openpilot-rust/issues/31)
+connects camera pairing, calibration, native inference, action/desire state and
+the three original driving publications in a continuous Rust process. Its
+[validation record](../rust-port/driving-daemon-validation.md) covers original
+model/loop comparisons over real IPC and remaining external-inference integration.
+
 [Continuous procLog issue #30](https://github.com/bin9208/openpilot-rust/issues/30)
 connects the validated collector and canonical encoder to the original 0.5 Hz
 runtime publication loop. Its [validation record](../rust-port/proclog-runtime-validation.md)
 includes source deadline comparisons, real IPC, overrun recovery and shutdown.
 Manager selection and whole-runtime device acceptance remain pending.
+
+[Monitoring daemon issue #38](https://github.com/bin9208/openpilot-rust/issues/38)
+connects the validated policy to original driver-frame polling, validity/demo
+gates and post-publication Params updates. Its [validation record](../rust-port/dmonitoring-daemon-validation.md)
+includes full source-loop/native-message comparisons and handedness persistence.
+
+[Calibration daemon issue #35](https://github.com/bin9208/openpilot-rust/issues/35)
+ports the calibration block estimator, source rotation math, `liveCalibration`
+publication and asynchronous `CalibrationParams` persistence. Its
+[validation record](../rust-port/calibration-validation.md) covers long original-class
+histories, original main-loop validity/cadence, native Python IPC, cached values,
+Float32 Params parsing and signal handling. Manager selection and the complete
+startup/logging/upload/device gate remain pending.
+
+[Diagnostic log collector issue #34](https://github.com/bin9208/openpilot-rust/issues/34)
+adds the continuous Rust ZeroMQ collector, source-compatible Swaglog formatting
+and rotation, and original `logMessage`/`errorLogMessage` publications. Its
+[validation record](../rust-port/logmessaged-validation.md) separates source
+byte comparisons, native transport/error-path checks and the CPython recursion
+resource difference. External libzmq/msgq remain explicit; manager selection,
+route logger integration and the complete startup/upload candidate remain open.
+
+[Log-space deleter issue #42](https://github.com/bin9208/openpilot-rust/issues/42)
+ports retention ordering, preserved segment caching and continuous low-space
+cleanup. Its [validation record](../rust-port/deleter-validation.md) covers actual
+source-loop filesystem comparisons and a private low-space mount. Existing logs
+are untouched; production selection and whole-runtime acceptance remain pending.
+
+[Daemon integration issue #39](https://github.com/bin9208/openpilot-rust/issues/39)
+combines the verified services under one exact-SHA gate. The
+[integration record](../rust-port/runtime-daemon-integration.md) links each
+component and the [native IPC test correction #47](../rust-port/msgq-handshake-validation.md).

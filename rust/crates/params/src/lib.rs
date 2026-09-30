@@ -38,7 +38,31 @@ pub struct Params {
 
 impl Params {
     pub fn open(root: &Path, prefix: &str) -> Result<Self, Error> {
-        if prefix.is_empty()
+        Self::open_namespace(root, prefix, false)
+    }
+
+    pub fn for_runtime() -> Result<Self, Error> {
+        let prefix = match std::env::var("OPENPILOT_PREFIX") {
+            Ok(value) => Some(value),
+            Err(std::env::VarError::NotPresent) => None,
+            Err(std::env::VarError::NotUnicode(_)) => return Err(Error::InvalidPrefix),
+        };
+        let root = match std::env::var_os("PARAMS_ROOT") {
+            Some(path) => PathBuf::from(path),
+            None if Path::new("/TICI").is_file() => PathBuf::from("/data/params"),
+            None => {
+                let mut path = std::env::var_os("HOME").unwrap_or_default();
+                path.push("/.comma");
+                path.push(prefix.as_deref().unwrap_or(""));
+                path.push("/params");
+                PathBuf::from(path)
+            }
+        };
+        Self::open_namespace(&root, prefix.as_deref().unwrap_or("d"), true)
+    }
+
+    fn open_namespace(root: &Path, prefix: &str, allow_empty: bool) -> Result<Self, Error> {
+        if (!allow_empty && prefix.is_empty())
             || prefix.len() > 100
             || !prefix
                 .bytes()
@@ -99,6 +123,14 @@ impl Params {
             Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
             Err(error) => Err(error.into()),
         }
+    }
+
+    pub fn get_bool(&self, key: &str) -> Result<bool, Error> {
+        Ok(self.get(key)?.as_deref() == Some(b"1"))
+    }
+
+    pub fn put_bool(&self, key: &str, value: bool) -> Result<(), Error> {
+        self.put(key, if value { b"1" } else { b"0" })
     }
 
     pub fn put(&self, key: &str, value: &[u8]) -> Result<(), Error> {

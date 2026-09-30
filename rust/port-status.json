@@ -29,7 +29,9 @@
       "name": "calibrationd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.calibrationd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX", "libc scheduling and source-compatible strtof"],
+      "runtime_scope": "calibration estimator, liveCalibration IPC and asynchronous Params persistence; not selected by manager; TICI scheduling, whole-runtime integration and device acceptance pending",
       "production_replaced": false
     },
     {
@@ -113,14 +115,18 @@
       "name": "deleter",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.loggerd.deleter",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/deleter",
+      "validation": "docs/rust-port/deleter-validation.md",
       "production_replaced": false
     },
     {
       "name": "dmonitoringd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.monitoring.dmonitoringd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX"],
+      "runtime_scope": "continuous policy, cereal and Params loop; production selection and full-runtime/device acceptance pending",
       "production_replaced": false
     },
     {
@@ -213,7 +219,10 @@
       "name": "logmessaged",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.logmessaged",
-      "status": "not_ported",
+      "status": "continuous_native_host_validated_pending_integration",
+      "native_dependencies": ["libzmq 4.3.4 through zmq/zmq-sys", "original msgq through Rust PubMaster/CXX"],
+      "runtime_scope": "continuous ZMQ log collector, rotating swaglog files, and logMessage/errorLogMessage publications; manager selection unchanged",
+      "evidence": "docs/rust-port/logmessaged-validation.md",
       "production_replaced": false
     },
     {
@@ -241,7 +250,9 @@
       "name": "modeld",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.modeld.modeld",
-      "status": "not_ported",
+      "status": "internal_model_runtime_host_validated",
+      "native_dependencies": ["original msgq/VisionIPC through CXX", "trusted original CPU/QCOM model kernels"],
+      "runtime_scope": "continuous internal driving model loop; USB/eGPU fallback, Jetlink, zero-copy, manager selection and whole-runtime/device acceptance pending",
       "production_replaced": false
     },
     {
@@ -496,6 +507,13 @@
       "production_replaced": false,
       "gpu_backend_validated": false,
       "evidence": "docs/rust-port/qcom-runtime-validation.md"
+    },
+    {
+      "name": "driver_monitoring_policy_and_state_packet",
+      "status": "host_original_sequence_and_cereal_parity_validated",
+      "implementation": "Rust monitoring policy and scalar statistics; dmonitoringd IPC loop and Params persistence remain unported",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/monitoring-validation.md"
     }
   ],
   "device_validation": "not_run",

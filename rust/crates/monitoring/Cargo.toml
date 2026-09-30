@@ -1,0 +1,20 @@
+[package]
+name = "openpilot-monitoring"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+capnp = "0.27.2"
+openpilot-cereal = { path = "../cereal" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"
