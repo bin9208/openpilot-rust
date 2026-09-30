@@ -14,10 +14,14 @@ def main():
   assert sys.argv[1:] == ['-f', '-o', 'json'], sys.argv
   trace = Path(os.environ['JOURNAL_FIXTURE_TRACE'])
 
-  def record(event):
-    with trace.open('a') as stream:
-      stream.write(json.dumps({'event': event, 'pid': os.getpid(), 'ppid': os.getppid(),
-                               'monotonic_ns': time.monotonic_ns(), 'argv': sys.argv[1:]}) + '\n')
+  def record(event: str) -> None:
+    previous = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+    try:
+      with trace.open('a') as stream:
+        stream.write(json.dumps({'event': event, 'pid': os.getpid(), 'ppid': os.getppid(),
+                                 'monotonic_ns': time.monotonic_ns(), 'argv': sys.argv[1:]}) + '\n')
+    finally:
+      signal.pthread_sigmask(signal.SIG_SETMASK, previous)
 
   def terminate(signum, _frame):
     record(f'signal-{signum}')
