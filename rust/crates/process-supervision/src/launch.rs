@@ -2,11 +2,13 @@ use crate::Error;
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsString,
+    fs::Permissions,
     io::{Read, Write},
     os::{
         fd::AsRawFd,
         unix::{
             ffi::OsStringExt,
+            fs::PermissionsExt,
             net::{UnixListener, UnixStream},
             process::CommandExt,
         },
@@ -15,6 +17,7 @@ use std::{
     process::{Child, Command, Stdio},
     time::Duration,
 };
+use tempfile::Builder;
 
 #[derive(Clone, Debug)]
 pub struct NativeCommand {
@@ -113,7 +116,10 @@ impl CapturedCommand {
         environment: &[(OsString, OsString)],
     ) -> Result<CapturedChild, Error> {
         crate::exec::validate_arguments(&self.argv)?;
-        let directory = tempfile::tempdir()?;
+        let directory = Builder::new()
+            .prefix("op-exec-")
+            .permissions(Permissions::from_mode(0o700))
+            .tempdir_in("/tmp")?;
         let socket_path = directory.path().join("exec.sock");
         let listener = UnixListener::bind(&socket_path)?;
         listener.set_nonblocking(true)?;
