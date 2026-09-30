@@ -1,12 +1,14 @@
 """Run unchanged registration/API definitions with explicit synthetic hardware seams."""
 
 import ast
+import builtins
 from datetime import datetime, timedelta, UTC
 import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
+from unittest.mock import patch  # noqa: TID251 - redirect only fixture filesystem reads.
 
 import jwt
 import requests
@@ -37,9 +39,22 @@ def main():
     swaglog.ipchandler.connect()
     swaglog.ipchandler.sock.close()
   imeis = iter(config.get('imeis', ['synthetic-imei', None]))
+  native_hardware = None
+  original_open = builtins.open
+  if 'hardware_root' in config:
+    from openpilot.system.hardware.tici.hardware import Tici
+    native_hardware = Tici()
+
+  def hardware_open(path, *args, **kwargs):
+    if path in ('/proc/cmdline', '/dev/shm/modem'):
+      path = Path(config['hardware_root']) / path.lstrip('/')
+    return original_open(path, *args, **kwargs)
 
   def serial():
     trace.append(['serial'])
+    if native_hardware is not None:
+      with patch('builtins.open', hardware_open):
+        return native_hardware.get_serial()
     value = config.get('serial', 'synthetic-serial')
     if not isinstance(value, str):
       raise RuntimeError('serial fixture failure')
@@ -47,6 +62,9 @@ def main():
 
   def imei(slot):
     trace.append(['imei', slot])
+    if native_hardware is not None:
+      with patch('builtins.open', hardware_open):
+        return native_hardware.get_imei(slot)
     value = next(imeis, {})
     if value is None or isinstance(value, str):
       return value
