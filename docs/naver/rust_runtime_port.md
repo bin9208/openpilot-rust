@@ -131,3 +131,11 @@ host/ARM source comparisons and real IPC/Params shutdown behavior. Parent reruns
 confirm the original estimator and native lifecycle. All existing model pipeline
 artifacts still require regeneration and exact-head CI under the corrected
 dependency. Generic builds do not establish vehicle or CPU acceptance.
+
+[Jetlink runtime issue #44](https://github.com/bin9208/openpilot-rust/issues/44)
+adds native owner/provisioning policy, FunctionFS protocol, RPC worker and driving
+source-selection integration. The [validation record](../rust-port/jetlink.md)
+separates original state/parser comparisons, actual Unix-socket interoperability,
+FIFO transport tests and driving regressions from still-unrun device acceptance.
+Parent reruns confirm the source decisions and both RPC directions. Existing
+validation/loss latches remain required; no real gadget or vehicle is used.

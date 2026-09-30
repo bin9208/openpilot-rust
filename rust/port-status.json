@@ -163,7 +163,9 @@
       "name": "jetlinkd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.modeld.jetlink.daemon",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "native_dependencies": ["Linux FunctionFS/configfs/USB controller", "libc scheduler and signal mask", "native Rust configfs provisioning via sudo and OS mount/id tools", "Android platform application and ONNX Runtime 1.22.0"],
+      "runtime_scope": "native USB wire v2, local owner/RPC and warm-native model selection; isolated FIFO/socket/source oracle evidence only; real gadget, QCOM adapter execution, Android/device acceptance and manager selection pending",
       "production_replaced": false
     },
     {
@@ -254,7 +256,7 @@
       "source_entrypoint": "openpilot.selfdrive.modeld.modeld",
       "status": "internal_model_runtime_host_validated",
       "native_dependencies": ["original msgq/VisionIPC through CXX", "trusted original CPU/QCOM model kernels"],
-      "runtime_scope": "continuous internal driving model loop; USB/eGPU fallback, Jetlink, zero-copy, manager selection and whole-runtime/device acceptance pending",
+      "runtime_scope": "continuous internal driving model loop with native Jetlink worker/adapter and loss publication; USB/eGPU fallback, zero-copy, manager selection and whole-runtime/device acceptance pending",
       "production_replaced": false
     },
     {

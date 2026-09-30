@@ -3,7 +3,7 @@ use openpilot_cereal::car_capnp::car_params;
 use openpilot_desire::command::CommandReader;
 use openpilot_driving_modeld::{
     bus::{self, Inputs},
-    parameters,
+    jetlink, parameters,
     publication::{Output, Publication, Sources},
     runtime::DrivingRuntime,
     state::State,
@@ -84,6 +84,11 @@ pub fn run(options: Options) -> Result<(), Error> {
         .parse::<i64>()
         .map_err(|_| Error::Contract("invalid SIMULATION"))?
         != 0;
+    let mut external = openpilot_jetlink::runtime::Runtime::new(
+        Path::new("/dev/shm/carrot-jetlink.sock"),
+        params.get_bool("JetlinkActive")? || params.get_bool("JetlinkLossLatched")?,
+    )?;
+    let mut external_stored = None;
     let mut frame_count = 0;
     eprintln!("modeld: ready");
     while !stop.load(Ordering::Relaxed) {
@@ -137,12 +142,62 @@ pub fn run(options: Options) -> Result<(), Error> {
             longitudinal,
         );
         let start = Instant::now();
+        let controls_fresh = subscribers.state.all_valid(&["carState", "carControl"])?
+            && subscribers.state.all_alive(&["carState", "carControl"])?;
+        let controls = openpilot_jetlink::transition::ControlState {
+            standstill: controls_fresh && sources.car.get_standstill(),
+            cruise_enabled: sources.car.get_cruise_state()?.get_enabled(),
+            lateral_active: sources.control.get_lat_active(),
+            enabled: sources.control.get_enabled(),
+        };
+        let mode = openpilot_jetlink::transition::Mode::from_setting(parameters::integer(
+            &params,
+            "JetlinkMode",
+        )?);
+        let validation = params.get("JetlinkValidation")?;
+        let mut desire = [0.0; 8];
+        let desire_index = usize::from(u16::from(publication.desire.desire));
+        if let Some(value) = desire.get_mut(desire_index) {
+            *value = 1.0;
+        }
+        let traffic = if sources.monitoring.get_is_r_h_d() {
+            [0.0, 1.0]
+        } else {
+            [1.0, 0.0]
+        };
+        external.begin(
+            openpilot_jetlink::runtime::FrameInput {
+                mode,
+                controls,
+                frame: frame.metadata.frame_id,
+                prepare_only: dropped.prepare_only,
+                camera_ready: calibration.seen()
+                    && controls_fresh
+                    && !params.get_bool("UsbGpuActive")?,
+                validation: validation.as_deref(),
+                desire,
+                traffic,
+                action: [lateral as f32, longitudinal as f32],
+            },
+            || {
+                runtime
+                    .warp_for_jetlink(
+                        &frame.buffer.bytes,
+                        &extra_frame.buffer.bytes,
+                        [calibration.main(), calibration.extra()],
+                    )
+                    .map_err(|error| openpilot_jetlink::Error::Native(error.to_string()))
+            },
+        );
+        jetlink::persist(&params, &mut external_stored, &external.status)?;
         let prediction = runtime.infer(
             &frame.buffer.bytes,
             &extra_frame.buffer.bytes,
             [calibration.main(), calibration.extra()],
             dropped.prepare_only,
         )?;
+        let prediction = external.finish(prediction);
+        jetlink::persist(&params, &mut external_stored, &external.status)?;
         let model_execution_time = start.elapsed().as_secs_f64();
         if let Some(prediction) = prediction {
             let config = if (publication.desire.frame + 1).is_multiple_of(100) {
@@ -151,7 +206,7 @@ pub fn run(options: Options) -> Result<(), Error> {
                 None
             };
             let now = process::timestamp()?;
-            let messages = publication.build(
+            let mut messages = publication.build(
                 &mut state,
                 Output {
                     prediction: &prediction,
@@ -167,7 +222,11 @@ pub fn run(options: Options) -> Result<(), Error> {
                     },
                     simulation,
                     dropped: dropped.dropped,
-                    raw_predictions: raw.then(|| runtime.raw_predictions()),
+                    raw_predictions: jetlink::raw_predictions(
+                        raw,
+                        external.status.decision.source,
+                        runtime.raw_predictions(),
+                    )?,
                 },
                 Sources {
                     car: sources.car,
@@ -179,6 +238,9 @@ pub fn run(options: Options) -> Result<(), Error> {
                 || config.clone().unwrap_or_default(),
                 |allowed| commands.read(allowed, process::monotonic()),
             )?;
+            let fresh = external.valid_at_publish();
+            jetlink::persist(&params, &mut external_stored, &external.status)?;
+            jetlink::publication(&mut messages, &external.status, fresh)?;
             publishers.send("modelV2", &messages.model)?;
             publishers.send("drivingModelData", &messages.driving)?;
             publishers.send("cameraOdometry", &messages.pose)?;
