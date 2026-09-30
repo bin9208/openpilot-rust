@@ -22,3 +22,9 @@ It launches a real inherited child with a greater-than-108-byte TMPDIR, observes
 the unchanged value in the child, checks 0700 control-directory permissions and
 observes cleanup after the owner drops. Exact-SHA Actions/integration results
 remain in the issue/PR record; no device operations are involved.
+
+The first integrated Actions run exposed an older helper fixture that expected
+a regular-file TMPDIR to prevent exec. The fixture now runs the original Python
+subprocess with that same TMPDIR and requires the native child to match its
+successful exit. Both native-helper and inherited-stdio comparison groups pass;
+this updates the fixture for the independent control directory above.
