@@ -104,22 +104,31 @@ pub fn api_get(
         } else {
             return Ok(Response {
                 status,
-                text: response_text(&bytes, &content_type),
+                text: response_text(&bytes, &content_type)?,
             });
         }
     }
     Err(Error::Contract("redirect limit"))
 }
 
-fn response_text(bytes: &[u8], content_type: &str) -> String {
+fn response_text(bytes: &[u8], content_type: &str) -> Result<String, Error> {
     let charset = content_type.split(';').skip(1).find_map(|item| {
         let (name, value) = item.trim().split_once('=')?;
         name.eq_ignore_ascii_case("charset")
             .then(|| value.trim_matches(['\'', '"', ' ']))
     });
-    let charset = charset.or_else(|| content_type.contains("text").then_some("ISO-8859-1"));
+    let charset = charset
+        .or_else(|| content_type.contains("text").then_some("ISO-8859-1"))
+        .or_else(|| content_type.contains("application/json").then_some("UTF-8"));
+    if charset.is_none() {
+        let candidates = charset_norm::from_bytes(bytes);
+        return match candidates.best() {
+            Some(best) => Ok(best.decoded()?.to_owned()),
+            None => Ok(String::from_utf8_lossy(bytes).into_owned()),
+        };
+    }
     let normalized = charset.map(|name| name.to_ascii_lowercase().replace('_', "-"));
-    match normalized.as_deref() {
+    Ok(match normalized.as_deref() {
         Some("utf-8-sig" | "utf8-sig") => {
             String::from_utf8_lossy(bytes.strip_prefix(b"\xef\xbb\xbf").unwrap_or(bytes))
                 .into_owned()
@@ -149,5 +158,5 @@ fn response_text(bytes: &[u8], content_type: &str) -> String {
             .0
             .into_owned(),
         None => String::from_utf8_lossy(bytes).into_owned(),
-    }
+    })
 }

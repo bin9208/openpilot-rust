@@ -23,6 +23,7 @@ thiserror = "2"
 ureq = { version = "=3.4.2", features = ["json", "gzip", "brotli", "rustls", "cookies"] }
 url = "2"
 encoding_rs = "0.8"
+charset-norm = { version = "=3.5.1", path = "../../vendor/charset-norm" }
 flate2 = "1"
 cookie_store = { version = "=0.22.1", default-features = false, features = ["preserve_order"] }
 

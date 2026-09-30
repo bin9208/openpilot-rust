@@ -25,7 +25,10 @@ spinner text appears only after strictly more than sixty seconds.
 
 The registration token is really signed as RS256 or ES256, including traditional
 SEC1 and PKCS8 EC keys. Its only claims are `register: true` and UTC expiry one
-hour later. The existing uploader signer now exposes a PEM constructor and a
+hour later. SystemTime conversion floors negative fractional timestamps and
+preserves Python's years 1..9999, including overflow when adding the hour.
+Thirteen controlled SystemTime cases compare against Python without changing
+the host clock; signed request fixtures also cover pre-epoch and calendar edges. The existing uploader signer now exposes a PEM constructor and a
 claims method; its original identity-token and key-loading paths are retained.
 
 The API call puts the IMEIs, serial, public key and signed token in the POST query,
@@ -38,7 +41,12 @@ session. The localized correction for [#88](https://github.com/bin9208/openpilot
 prevents ureq 3.4.2 from sending Set-Cookie attributes in request Cookie headers.
 It does not alter the existing uploader transport. Responses support the
 inherited advertised gzip, deflate and brotli encodings, with text decoding at
-the response boundary before JSON parsing.
+the response boundary before JSON parsing. `application/json` defaults to UTF-8
+and text media types to Latin-1, matching Requests. Only an otherwise undeclared
+encoding uses the pinned native detector described in
+[charset-norm-provenance.md](charset-norm-provenance.md). The older native detector
+was rejected after it silently changed identifiers in source-accepted fixtures;
+no fixture-specific heuristic or toolchain upgrade is used.
 
 402 and 403 choose `UnregisteredDevice`. Other statuses still parse JSON rather
 than calling raise-for-status. Parsing retains Python null, booleans, arbitrary
@@ -52,7 +60,7 @@ preserves that distinction. Authentication exceptions log and sleep 1, 2, ...,
 ## Evidence and reproduction
 
 The issue worktree's `.omo/evidence/registration/evidence.json` is the evidence
-ledger. The source matrix contains 87 scenarios on x86-64 and generic aarch64
+ledger. The source matrix contains 103 scenarios on x86-64 and generic aarch64
 under QEMU. Three additional real-time scenarios enforce the fifteen-second
 header/body deadline and allow a progressing sixteen-second response. The
 unchanged uploader oracle passes 212 filesystem scenarios, 10,000 backoff
@@ -85,6 +93,8 @@ cargo build --manifest-path rust/Cargo.toml -p openpilot-registration -p openpil
 python rust/tools/check_registration.py REGISTRATION_TRACE ORIGINAL_PARAMS_SO OUTPUT
 python rust/tools/check_registration.py REGISTRATION_TRACE ORIGINAL_PARAMS_SO TIMEOUT_OUTPUT --timeouts
 python rust/tools/check_uploader.py --binary UPLOADER_TRACE --output UPLOADER_REPORT
+python rust/tools/check_registration_clock.py REGISTRATION_CLOCK CLOCK_REPORT
+python rust/tools/check_registration_vendor.py CHARSET_NORM_ARCHIVE VENDOR_REPORT
 
 cargo zigbuild --manifest-path rust/Cargo.toml -p openpilot-registration --example registration_trace --target aarch64-unknown-linux-gnu.2.28 --locked
 python rust/tools/check_registration.py ARM_REGISTRATION_TRACE ORIGINAL_PARAMS_SO ARM_OUTPUT \

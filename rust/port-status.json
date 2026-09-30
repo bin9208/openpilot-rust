@@ -484,7 +484,7 @@
       "source_entrypoint": "openpilot.system.athena.registration; registration subset of openpilot.common.api",
       "status": "native_startup_policy_host_and_emulator_validated",
       "implementation": "rust/crates/registration; typed Params/persist fallback, RSA/EC signed registration, actual HTTP, retries and hardware/spinner interfaces",
-      "native_dependencies": ["libzmq structured logging", "Linux filesystem and clock APIs", "Rust HTTP/TLS/crypto/encoding/cookie libraries", "existing C++ msgq in support crates"],
+      "native_dependencies": ["libzmq structured logging", "Linux filesystem and clock APIs", "Rust HTTP/TLS/crypto/encoding/cookie libraries", "vendored native charset-norm 3.5.1 with manifest-only Rust 1.94 compatibility patch", "existing C++ msgq in support crates"],
       "runtime_scope": "hardware serial/modem discovery and visual spinner remain unported interfaces; manager/full startup, normal log-upload comparison and device acceptance pending; no project Python runtime call",
       "production_replaced": false,
       "evidence": "docs/rust-port/registration-validation.md"

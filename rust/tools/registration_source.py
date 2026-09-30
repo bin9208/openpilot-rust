@@ -74,8 +74,9 @@ def main():
   class DateTime:
     @staticmethod
     def now(tz):
-      trace.append(['now', 1_700_000_000])
-      return datetime.fromtimestamp(1_700_000_000, tz)
+      seconds = config.get('utc', 1_700_000_000)
+      trace.append(['now', seconds])
+      return datetime.fromtimestamp(seconds, tz)
 
   class Spinner:
     def __init__(self):

@@ -132,7 +132,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         trace: Rc::clone(&trace),
         mono: 0.0,
         step: config["step"].as_f64().unwrap_or(0.0),
-        utc: 1_700_000_000,
+        utc: config["utc"].as_i64().unwrap_or(1_700_000_000),
         sleeps: 0,
         max_sleeps: config["max_sleeps"].as_u64().unwrap_or(40),
     };

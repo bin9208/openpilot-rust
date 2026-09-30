@@ -69,7 +69,9 @@ class Server:
         if response.get('header_delay'):
           time.sleep(response['header_delay'])
         self.send_response(status)
-        self.send_header('Content-Type', response.get('content_type', 'application/json'))
+        content_type = response.get('content_type', 'application/json')
+        if content_type is not None:
+          self.send_header('Content-Type', content_type)
         self.send_header('Content-Length', str(len(payload)))
         self.send_header('Connection', 'close')
         if response.get('gzip'):
@@ -265,7 +267,7 @@ def run_side(side, args, case, path, pairs, server):
           key.chmod(0o600)
 
 
-def normalized_request(row, pairs):
+def normalized_request(row, pairs, expiration):
   method, target, protocol = row['line'].split()
   parsed = urlsplit(target)
   query = parse_qs(parsed.query, keep_blank_values=True)
@@ -274,7 +276,8 @@ def normalized_request(row, pairs):
     algorithm = jwt.get_unverified_header(token)['alg']
     pair = pairs['rsa' if algorithm == 'RS256' else 'ec']
     claims = jwt.decode(token, pair['public'], algorithms=[algorithm], options={'verify_exp': False})
-    assert claims == {'register': True, 'exp': 1_700_003_600}, claims
+    assert claims == {'register': True, 'exp': expiration}, claims
+    assert claims['register'] is True and type(claims['exp']) is int, claims
     query['register_token'] = [claims]
     query['algorithm'] = algorithm
     assert query['public_key'] == [pair['public'].decode()], query
@@ -295,6 +298,12 @@ def normalized_request(row, pairs):
 
 def cases():
   rows = [
+    ('clock_pre_epoch', {'config': {'utc': -1}}),
+    ('clock_year_one', {'config': {'utc': -62_135_596_800}}),
+    ('clock_last_valid_expiry', {'config': {'utc': 253_402_297_199}}),
+    ('clock_expiry_overflow', {'config': {'utc': 253_402_297_200, 'max_sleeps': 2}}),
+    ('clock_year_zero', {'config': {'utc': -62_135_596_801, 'max_sleeps': 2}}),
+    ('clock_year_ten_thousand', {'config': {'utc': 253_402_300_800, 'max_sleeps': 2}}),
     ('public_open_precedes_private_decode', {'private': b'\xff', 'public_unreadable': True}),
     ('closed_log_missing_key', {'keys': [], 'config': {'closed_log': True}}),
     ('closed_log_invalid_param', {'param': b'\xff', 'config': {'closed_log': True}}),
@@ -337,6 +346,16 @@ def cases():
     ('raw_deflate_json', {'responses': [{'deflate': 'raw'}]}),
     ('brotli_json', {'responses': [{'brotli': True}]}),
     ('gzip_json', {'responses': [{'gzip': True}]}),
+    ('no_content_type_ascii', {'responses': [{'content_type': None}]}),
+    ('no_content_type_korean', {'responses': [{'body': '{"dongle_id":"한글"}', 'content_type': None}]}),
+    ('no_content_type_utf8_bom', {'responses': [{'body': '{"dongle_id":"café"}', 'encoding': 'utf-8-sig', 'content_type': None}]}),
+    ('no_content_type_utf16_bom', {'responses': [{'body': '{"dongle_id":"한글"}', 'encoding': 'utf-16', 'content_type': None}]}),
+    ('no_content_type_cp1251', {'responses': [{'body': '{"dongle_id":"идентификатор"}', 'encoding': 'cp1251', 'content_type': None}]}),
+    ('no_content_type_cp949', {'responses': [{'body': '{"dongle_id":"한글"}', 'encoding': 'cp949', 'content_type': None}]}),
+    ('no_content_type_latin1', {'responses': [{'body': '{"dongle_id":"café"}', 'encoding': 'latin1', 'content_type': None}]}),
+    ('no_content_type_utf8', {'responses': [{'body': '{"dongle_id":"café"}', 'content_type': None}]}),
+    ('json_default_utf8', {'responses': [{'body': '{"dongle_id":"café"}', 'encoding': 'latin1'}]}),
+    ('html_default_latin1', {'responses': [{'body': '{"dongle_id":"café"}', 'encoding': 'latin1', 'content_type': 'text/html'}]}),
     ('latin1_json', {'responses': [{'body': '{"dongle_id":"café"}', 'encoding': 'latin1', 'content_type': 'text/plain'}]}),
     ('utf16_json', {'responses': [{'body': '{"dongle_id":"한글"}', 'encoding': 'utf-16', 'content_type': 'application/json; charset=utf-16'}]}),
     ('utf8_bom_sig_json', {'responses': [{'body': '{"dongle_id":"한글"}', 'encoding': 'utf-8-sig', 'content_type': 'application/json; charset=utf-8-sig'}]}),
@@ -427,13 +446,15 @@ def main():
         if 'value_json' in side[0]['outcome']:
           value = json.loads(side[0]['outcome'].pop('value_json'))
           side[0]['outcome']['value'] = value
+        if 'value' in side[0]['outcome']:
+          side[0]['outcome']['value_type'] = type(side[0]['outcome']['value']).__name__
       for side_name in ['source', 'native']:
         invocation = json.loads((path / side_name / 'invocation.json').read_text())
         assert invocation['elapsed_seconds'] >= case.get('minimum_seconds', 0)
       assert source[0] == native[0], (name, source[0], native[0])
       assert normalized_records(source[1]) == normalized_records(native[1]), (name, normalized_records(source[1]), normalized_records(native[1]))
-      source_requests = [normalized_request(row, pairs) for row in source[2]]
-      native_requests = [normalized_request(row, pairs) for row in native[2]]
+      source_requests = [normalized_request(row, pairs, case.get('config', {}).get('utc', 1_700_000_000) + 3600) for row in source[2]]
+      native_requests = [normalized_request(row, pairs, case.get('config', {}).get('utc', 1_700_000_000) + 3600) for row in native[2]]
       assert source_requests == native_requests, (name, source_requests, native_requests)
       result = {'case': name, 'result': 'PASS', 'requests': len(source_requests), 'records': len(source[1]), 'outcome': source[0]['outcome']}
       results.append(result)

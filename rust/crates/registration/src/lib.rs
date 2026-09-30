@@ -40,7 +40,9 @@ pub enum Error {
     #[error(transparent)]
     Json(#[from] openpilot_logmessaged::JsonError),
     #[error(transparent)]
-    Clock(#[from] std::time::SystemTimeError),
+    DetectedEncoding(#[from] charset_norm::codecs::DecodeError),
+    #[error("UTC datetime or registration expiration outside Python years 1..9999")]
+    ClockRange,
     #[error("{0}")]
     Contract(&'static str),
     #[error("hardware: {0}")]
@@ -106,13 +108,35 @@ impl Clock for SystemClock {
         self.0.elapsed().as_secs_f64()
     }
     fn unix_seconds(&mut self) -> Result<i64, Error> {
-        i64::try_from(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs())
-            .map_err(|_| Error::Contract("UTC seconds overflow"))
+        system_time_unix_seconds(SystemTime::now())
     }
     fn sleep(&mut self, duration: Duration) -> Result<(), Error> {
         std::thread::sleep(duration);
         Ok(())
     }
+}
+
+/// Convert a real system timestamp with the same floor-to-seconds and calendar range as UTC datetime.
+pub fn system_time_unix_seconds(time: SystemTime) -> Result<i64, Error> {
+    let seconds = match time.duration_since(UNIX_EPOCH) {
+        Ok(duration) => i128::from(duration.as_secs()),
+        Err(error) => {
+            let duration = error.duration();
+            -i128::from(duration.as_secs()) - i128::from(duration.subsec_nanos() != 0)
+        }
+    };
+    if !(-62_135_596_800..=253_402_300_799).contains(&seconds) {
+        return Err(Error::ClockRange);
+    }
+    i64::try_from(seconds).map_err(|_| Error::ClockRange)
+}
+
+/// A valid current date may still overflow when the source adds one hour before encoding the JWT.
+pub fn registration_expiration(seconds: i64) -> Result<i64, Error> {
+    if !(-62_135_596_800..=253_402_297_199).contains(&seconds) {
+        return Err(Error::ClockRange);
+    }
+    Ok(seconds + 3600)
 }
 
 pub struct Registration<'a> {
@@ -186,10 +210,7 @@ impl Registration<'_> {
             loop {
                 let result =
                     (|| {
-                        let expiration = clock
-                            .unix_seconds()?
-                            .checked_add(3600)
-                            .ok_or(Error::Contract("token expiration overflow"))?;
+                        let expiration = registration_expiration(clock.unix_seconds()?)?;
                         let token = key
                             .token_claims(&serde_json::json!({"register":true,"exp":expiration}))?;
                         self.logger.emit(
