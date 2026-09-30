@@ -11,10 +11,12 @@ static-ffmpeg = ["openpilot-loggerd/static-ffmpeg"]
 
 [dependencies]
 capnp = "=0.27.2"
+nix = { version = "=0.31.3", default-features = false }
 openpilot-cereal = { path = "../cereal" }
 openpilot-loggerd = { path = "../loggerd" }
 openpilot-logging = { path = "../logging" }
 openpilot-params = { path = "../params" }
+openpilot-process-supervision = { path = "../process-supervision" }
 rustix = { version = "1", features = ["fs", "try_close"] }
 tempfile = "3"
 thiserror = "2"

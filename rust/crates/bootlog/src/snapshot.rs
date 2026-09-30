@@ -1,14 +1,14 @@
 //! Params copy and detached startup worker from manager/helpers.py::save_bootlog.
+use openpilot_process_supervision::CapturedCommand;
 use std::{
     ffi::OsStr,
-    fs::{self, Metadata},
+    fs::{self, File, Metadata},
     io,
     os::unix::{
         ffi::OsStrExt,
-        fs::{FileTypeExt, MetadataExt},
+        fs::{FileTypeExt, MetadataExt, PermissionsExt},
     },
     path::{Path, PathBuf},
-    process::Command,
     thread::{self, JoinHandle},
 };
 
@@ -16,6 +16,8 @@ use std::{
 pub enum Error {
     #[error(transparent)]
     Io(#[from] io::Error),
+    #[error(transparent)]
+    Process(#[from] openpilot_process_supervision::Error),
     #[error("Params copy failed; snapshot retained at {}: {failures:?}", .snapshot.display())]
     Copy {
         snapshot: PathBuf,
@@ -32,6 +34,7 @@ impl Snapshot {
         // Keep the directory on copy/thread/spawn errors, matching mkdtemp without finally.
         let path = tempfile::Builder::new()
             .prefix("bootlog-")
+            .permissions(fs::Permissions::from_mode(0o700))
             .tempdir_in(temp_root)?
             .keep();
         let name = params_directory
@@ -52,25 +55,35 @@ impl Snapshot {
         &self.path
     }
 
-    pub fn run(self, loggerd_directory: &Path) -> Result<(), Error> {
+    pub fn run(self, loggerd_directory: &Path, launcher: &Path) -> Result<(), Error> {
         let binary = loggerd_directory.join("bootlog");
         if binary.exists() {
             // An unsuccessful child exit still returns normally and triggers cleanup.
-            Command::new(binary)
-                .current_dir(loggerd_directory)
-                .env("PARAMS_COPY_PATH", &self.path)
-                .status()?;
+            let mut child = CapturedCommand {
+                launcher: launcher.to_owned(),
+                cwd: loggerd_directory.to_owned(),
+                argv: vec![binary.into_os_string()],
+            }
+            .spawn_inherited_with_env(&[(
+                "PARAMS_COPY_PATH".into(),
+                self.path.clone().into_os_string(),
+            )])?;
+            child.process.wait()?;
         }
         fs::remove_dir_all(self.path)?;
         Ok(())
     }
 
-    pub fn launch(self, loggerd_directory: PathBuf) -> io::Result<JoinHandle<Result<(), Error>>> {
+    pub fn launch(
+        self,
+        loggerd_directory: PathBuf,
+        launcher: PathBuf,
+    ) -> io::Result<JoinHandle<Result<(), Error>>> {
         // Dropping the handle detaches the worker; Rust does not join it at process exit.
         thread::Builder::new()
             .name("bootlog".into())
             .spawn(move || {
-                let result = self.run(&loggerd_directory);
+                let result = self.run(&loggerd_directory, &launcher);
                 if let Err(error) = &result {
                     eprintln!("bootlog snapshot worker: {error}");
                 }
@@ -82,9 +95,10 @@ impl Snapshot {
 pub fn save_bootlog(
     params_directory: &Path,
     loggerd_directory: &Path,
+    launcher: &Path,
 ) -> Result<JoinHandle<Result<(), Error>>, Error> {
     let snapshot = Snapshot::capture(params_directory, &std::env::temp_dir())?;
-    Ok(snapshot.launch(loggerd_directory.to_owned())?)
+    Ok(snapshot.launch(loggerd_directory.to_owned(), launcher.to_owned())?)
 }
 
 fn copy_tree(source: &Path, destination: &Path, failures: &mut Vec<(PathBuf, String)>) {
@@ -104,19 +118,14 @@ fn copy_tree(source: &Path, destination: &Path, failures: &mut Vec<(PathBuf, Str
             if metadata.is_dir() {
                 copy_tree(&source, &target, failures);
             } else {
-                let result = if metadata.is_file() {
-                    fs::copy(&source, &target)
-                        .and_then(|_| copy_stat(&source, &target, &fs::metadata(&source)?))
-                } else if metadata.file_type().is_fifo() {
+                let result = if metadata.file_type().is_fifo() {
                     Err(io::Error::new(
                         io::ErrorKind::InvalidInput,
                         "named pipe in Params copy",
                     ))
                 } else {
-                    Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        "unsupported special Params file",
-                    ))
+                    copy_file(&source, &target)
+                        .and_then(|_| copy_stat(&source, &target, &fs::metadata(&source)?))
                 };
                 if let Err(error) = result {
                     failures.push((source, error.to_string()));
@@ -128,6 +137,18 @@ fn copy_tree(source: &Path, destination: &Path, failures: &mut Vec<(PathBuf, Str
     if let Err(error) = operation() {
         failures.push((source.to_owned(), error.to_string()));
     }
+}
+
+fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
+    let mut input = File::open(source)?;
+    let result = (|| {
+        let mut output = File::create(destination)?;
+        let copied = io::copy(&mut input, &mut output);
+        nix::unistd::close(output)?;
+        copied.map(|_| ())
+    })();
+    nix::unistd::close(input)?;
+    result
 }
 
 fn copy_stat(source: &Path, destination: &Path, metadata: &Metadata) -> io::Result<()> {

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from native_logging_build import stage_json11
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -15,13 +16,19 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('output', type=Path)
   parser.add_argument('--identifier', action='store_true')
-  parser.add_argument('--capnp-prefix', type=Path, required=True)
-  parser.add_argument('--json11-prefix', type=Path, required=True)
-  parser.add_argument('--native-prefix', type=Path, required=True)
-  parser.add_argument('--zmq-include', type=Path, required=True)
+  parser.add_argument('--capnp-prefix', type=Path, default=Path('/usr'))
+  parser.add_argument('--json11-prefix', type=Path)
+  parser.add_argument('--native-prefix', type=Path, default=Path('/usr'))
+  parser.add_argument('--zmq-include', type=Path)
   args = parser.parse_args()
   output = args.output.resolve()
   output.mkdir(parents=True, exist_ok=True)
+  if args.json11_prefix is None:
+    args.json11_prefix, dependency = stage_json11(ROOT, output)
+    (output / 'dependency.json').write_text(json.dumps(dependency, indent=2) + '\n')
+  if args.zmq_include is None:
+    target = Path(os.environ.get('CARGO_TARGET_DIR', ROOT / 'rust/target'))
+    args.zmq_include = next((target / 'debug/build').glob('zmq-sys-*/out/source/include'))
   schema = output / 'schema'
   generated = output / 'cereal/gen/cpp'
   schema.mkdir()

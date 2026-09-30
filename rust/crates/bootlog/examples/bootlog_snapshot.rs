@@ -6,10 +6,14 @@ use std::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
-    if args.len() != 3 {
-        return Err("expected PARAMS_DIRECTORY LOGGERD_DIRECTORY MODE".into());
+    if args.len() != 4 {
+        return Err("expected PARAMS_DIRECTORY LOGGERD_DIRECTORY MODE LAUNCHER".into());
     }
-    let result = save_bootlog(&PathBuf::from(&args[0]), &PathBuf::from(&args[1]));
+    let result = save_bootlog(
+        &PathBuf::from(&args[0]),
+        &PathBuf::from(&args[1]),
+        &PathBuf::from(&args[3]),
+    );
     match result {
         Ok(worker) => {
             println!("{{\"phase\":\"returned\"}}");

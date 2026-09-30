@@ -8,6 +8,7 @@ from pathlib import Path
 import select
 import subprocess
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -15,6 +16,9 @@ CHILD = '''
 import json, os, pathlib, sys
 snapshot=pathlib.Path(os.environ['PARAMS_COPY_PATH'])
 print(json.dumps({'phase':'child_ready','cwd':os.getcwd(),'snapshot':str(snapshot), 'marker':os.environ.get('BOOTLOG_TEST_MARKER'),
+                  'extra_fd_inherited':any(os.path.realpath('/proc/self/fd/'+fd)==os.environ['BOOTLOG_FD_MARKER'] for fd in os.listdir('/proc/self/fd')),
+                  'special_copy':(snapshot/'d/null-link').is_file() if os.environ.get('BOOTLOG_SPECIAL_COPY') else None,
+                  'snapshot_mode':snapshot.stat().st_mode&0o777,
                   'before':(snapshot/'d/DongleId').read_bytes().hex(), 'link_is_symlink':(snapshot/'d/link').is_symlink(),
                   'linked':(snapshot/'d/link').read_bytes().hex(), 'xattr':os.getxattr(snapshot/'d/DongleId','user.fixture').hex(),
                   'mode':(snapshot/'d/DongleId').stat().st_mode&0o777, 'mtime':(snapshot/'d/DongleId').stat().st_mtime_ns}),flush=True)
@@ -52,6 +56,8 @@ def run(args, side, name, config):
     (params / 'broken').symlink_to('missing')
   if config.get('fifo'):
     os.mkfifo(params / 'fifo')
+  if config.get('special_file'):
+    (params / 'null-link').symlink_to('/dev/null')
   if config.get('unreadable_directory'):
     params.chmod(0)
   basedir = output / 'basedir'
@@ -72,15 +78,19 @@ def run(args, side, name, config):
   )
   if config.get('cleanup_failure'):
     environment['BOOTLOG_CLEANUP_FAILURE'] = '1'
+  if config.get('special_file'):
+    environment['BOOTLOG_SPECIAL_COPY'] = '1'
   mode = 'detached' if config.get('detached') else 'joined'
   command = (
     [sys.executable, str(ROOT / 'rust/tools/bootlog_snapshot_source.py'), str(args.binding), str(basedir), mode]
     if side == 'source'
-    else [*args.runner, str(args.binary), str(params), str(loggerd), mode]
+    else [*args.runner, str(args.binary), str(params), str(loggerd), mode, str(args.launcher)]
   )
   rows = []
-  with (output / 'stderr.log').open('w') as stderr:
-    process = subprocess.Popen(command, env=environment, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr, bufsize=0)
+  with (output / 'stderr.log').open('w') as stderr, tempfile.NamedTemporaryFile(prefix='bootlog-fd-') as marker:
+    environment['BOOTLOG_FD_MARKER'] = marker.name
+    process = subprocess.Popen(command, env=environment, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr, bufsize=0,
+                               pass_fds=(marker.fileno(),))
     try:
       if config.get('broken') or config.get('fifo') or config.get('unreadable_directory'):
         rows.append(line(process))
@@ -122,6 +132,10 @@ def run(args, side, name, config):
     snapshot.chmod(0o700)
   for row in rows:
     if row['phase'] == 'child_ready':
+      assert row['extra_fd_inherited'] is False
+      assert row['snapshot_mode'] == 0o700
+      if config.get('special_file'):
+        assert row['special_copy'] is True
       assert Path(row.pop('cwd')) == loggerd
       assert Path(row.pop('snapshot')).parent == temp
   result = {
@@ -152,9 +166,11 @@ def main():
   parser.add_argument('binary', type=Path)
   parser.add_argument('binding', type=Path)
   parser.add_argument('output', type=Path)
+  parser.add_argument('--launcher', type=Path, required=True)
   parser.add_argument('--runner', action='append', default=[])
   args = parser.parse_args()
   args.binary, args.binding, args.output = args.binary.resolve(), args.binding.resolve(), args.output.resolve()
+  args.launcher = args.launcher.resolve()
   cases = [
     ('ordinary', {}),
     ('nonzero_child', {'exit': 7}),
@@ -162,6 +178,7 @@ def main():
     ('nonexec_binary', {'nonexec': True}),
     ('broken_link', {'broken': True}),
     ('fifo', {'fifo': True}),
+    ('character_device_link', {'special_file': True}),
     ('cleanup_failure', {'cleanup_failure': True}),
     ('unreadable_directory', {'unreadable_directory': True}),
     ('detached_parent_exit', {'detached': True}),

@@ -44,6 +44,13 @@ source helper's absence of a finally block. Dropping the handle does not hold
 process exit open. Cleanup failures remain observable. Detached worker errors are written to stderr,
 while an explicitly joined handle also returns the typed error.
 
+Parent integration additionally covers readable character-device links, inherited
+descriptor closure and long temporary paths. The snapshot root is created with
+explicit `0700` permissions, matching Python `mkdtemp` (#112). Child execution uses
+the native process helper with a child-only PARAMS_COPY_PATH override. Ten actual
+source/native snapshot scenarios and four focused Rust tests pass after these
+corrections; the earlier failing comparisons remain in local evidence.
+
 ## Reproduction and evidence
 
 Private evidence is indexed in `.omo/evidence/bootlog/evidence.json`, with exact
@@ -67,14 +74,15 @@ separate regressions for shared changes.
 cargo test --manifest-path rust/Cargo.toml -p openpilot-bootlog -p openpilot-loggerd --all-targets --locked
 cargo clippy --manifest-path rust/Cargo.toml -p openpilot-bootlog -p openpilot-loggerd --all-targets --locked -- -D warnings
 python rust/tools/check_bootlog.py BOOTLOG ORIGINAL_BOOTLOG OUTPUT --fault-library OUTPUT_FAULT_SO
-python rust/tools/check_bootlog_snapshot.py SNAPSHOT_PROBE ORIGINAL_PARAMS_BINDING OUTPUT
+python rust/tools/check_bootlog_snapshot.py SNAPSHOT_PROBE ORIGINAL_PARAMS_BINDING OUTPUT --launcher PROCESS_CHILD
 python rust/tools/check_logger_identifier.py IDENTIFIER_PROBE ORIGINAL_IDENTIFIER OUTPUT
 ```
 
 The native executable defaults to `/sys/fs/pstore` and `/tmp/launch_log`; explicit
 `--pstore PATH` and `--launch-log PATH` arguments permit controlled fixture inputs.
 They do not change manager selection. The snapshot library accepts the existing
-Params namespace and loggerd directory; a later manager integration supplies them.
+Params namespace, loggerd directory and native process-helper path; manager
+integration supplies those dependencies explicitly.
 
 ## Remaining gates
 

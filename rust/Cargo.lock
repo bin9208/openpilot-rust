@@ -1634,10 +1634,12 @@ name = "openpilot-bootlog"
 version = "0.1.0"
 dependencies = [
  "capnp",
+ "nix",
  "openpilot-cereal",
  "openpilot-loggerd",
  "openpilot-logging",
  "openpilot-params",
+ "openpilot-process-supervision",
  "rustix",
  "serde_json",
  "tempfile",
