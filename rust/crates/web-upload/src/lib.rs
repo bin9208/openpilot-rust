@@ -13,7 +13,9 @@ mod response;
 mod targets;
 mod transport;
 
-pub use api::{create_session, create_session_with_purpose, health, send_complete};
+pub use api::{
+    create_session, create_session_with_purpose, health, post_json_total, send_complete,
+};
 pub use folder::{FolderUpload, Observer, Progress, CHUNK_SIZE};
 pub use multipart::TmuxUpload;
 pub use openpilot_logging::{Fields, Value};

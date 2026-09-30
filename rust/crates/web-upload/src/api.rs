@@ -23,6 +23,9 @@ fn json_request(
         Body::Bytes(Cursor::new(payload.to_json()?.into_bytes())),
     )
 }
+pub fn post_json_total(url: &str, payload: &Fields) -> Result<Response, Error> {
+    json_request(&Client::total(), url, "", payload)
+}
 pub fn create_session(base: &str, metadata: &Fields, mode: SessionMode) -> Result<String, Error> {
     create_session_with_purpose(
         base,

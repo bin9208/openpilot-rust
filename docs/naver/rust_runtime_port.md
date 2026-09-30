@@ -129,6 +129,13 @@ functions, local HTTP payloads, partial/canceled requests, unscaled timeouts and
 generic ARM emulation. Dashcam jobs/catalog/server/watchdog integration remains
 open; this library does not switch the active startup path.
 
+[Dashcam upload jobs #61](https://github.com/bin9208/openpilot-rust/issues/61)
+add native job execution, required catalog/metadata/report helpers and owned
+worker lifetimes. The [validation record](../rust-port/dashcam-jobs-validation.md)
+describes original-source state/HTTP/Params comparisons, real cancellation and
+process cleanup, and the intentional commit-link repository mapping. The Carrot
+HTTP server, manager selection and complete startup delivery remain pending.
+
 ### Legacy uploader timeout follow-up (#50)
 
 A loopback response delayed 10.05 seconds reproduced a native/source discrepancy:
