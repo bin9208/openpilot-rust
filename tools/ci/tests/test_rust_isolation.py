@@ -16,7 +16,7 @@ class RustIsolationTests(unittest.TestCase):
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_process_supervision.py', 'check_managed_entry.py', 'check_sdk_receiver.py',
                          'check_registration.py', 'check_registration_clock.py', 'check_registration_utf7.py',
-                         'check_registration_vendor.py', 'check_manager_catalog.py', '--timeouts',
+                         'check_registration_vendor.py', 'check_manager_catalog.py', 'check_checkout_status.py', '--timeouts',
                          '--launcher rust/target/debug/openpilot-process-child',
                          '--fixture rust/target/debug/examples/process_fixture',
                          'build_msgq_python.py', 'build_params_python.py'):

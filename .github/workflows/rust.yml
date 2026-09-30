@@ -399,7 +399,7 @@ jobs:
         run: |
           rustc --version
           cargo --version
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-uploader -p openpilot-logmessaged --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged --bins --examples --locked
       - name: Build original startup message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/startup-msgq-python"
@@ -434,6 +434,12 @@ jobs:
         run: |
           python rust/tools/check_manager_catalog.py rust/target/debug/examples/catalog_probe \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/catalog"
+      - name: Compare checkout metadata, real Git and child exec boundaries
+        run: |
+          python rust/tools/check_checkout_status.py --binary rust/target/debug/examples/checkout_trace \
+            --fixture rust/target/debug/examples/git_fixture --launcher rust/target/debug/openpilot-process-child \
+            --captured-binary rust/target/debug/examples/captured_trace --handshake-fixture rust/target/debug/examples/handshake_fixture \
+            --output "$RUNNER_TEMP/startup-runtime/checkout-status"
       - name: Retain startup source comparison and binding evidence
         if: always()
         uses: actions/upload-artifact@v6

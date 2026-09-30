@@ -11,7 +11,7 @@ remain unported until separately implemented and observed.
 | Process supervision #84 | `097419b937c20ce216b190faf01c7f294a1ae4b7` | Parent production review, 3,555 hash checks and independent 43-scenario source/native replay pass |
 | Registration #85/#88 | `bfa086fe1e830649c377483dd0009cdfe8e96a31` | Parent review,3,705 hash checks and independent119-case source/native replay pass |
 | Managed child entry #86 | `592dd6839695c664dc8fae82aa2205189cb823f6` | Parent code review and independent44 source/native child comparisons pass through both original/native collectors |
-| Checkout update status #92 | Pending | Source policy scoped; implementation not complete |
+| Checkout update status #92 | `d68957b6d90cb18710367f77e90cda90f3b490b3` | Host/ARM checkout suites pass; shared exec helper and child-only environment overrides covered by source comparisons |
 | Manager catalog #96 | `b283dbeca022a5c85a9e3554201743a0f7c98fa3` | Parent review and full independent63-entry/10,573-predicate source matrix pass |
 
 The managed-entry input preserves stage order, concrete Rust error information,

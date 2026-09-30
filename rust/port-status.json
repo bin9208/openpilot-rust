@@ -492,6 +492,15 @@
       "evidence": "docs/naver/rust-manager-catalog-96.md"
     },
     {
+      "name": "manager_checkout_identity_policy",
+      "source_entrypoint": "openpilot.system.manager.update_status",
+      "status": "native_host_and_generic_aarch64_policy_validated",
+      "implementation": "rust/crates/checkout-status; actual Git/build metadata reads, captured startup identity, strict polling and repeated-change confirmation; explicit captured-exec helper dependency",
+      "native_dependencies": ["Git", "Linux process/procfs/filesystem/Unix-socket APIs", "existing process-supervision helper and native Python-compatible JSON decoder", "existing logging/Params/cereal/libzmq/CXX dependencies"],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/checkout-status-validation.md"
+    },
+    {
       "name": "managed_child_entry_boundary",
       "source_entrypoint": "openpilot.system.manager.process:launcher",
       "status": "native_host_entry_boundary_validated",
