@@ -133,6 +133,7 @@ jobs:
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-modeld --examples --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked
+      - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --locked
       - run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Compile the original grouped driving and driver artifacts
         run: |
@@ -173,6 +174,10 @@ jobs:
         run: |
           python rust/tools/check_driver_daemon.py --binary rust/target/debug/openpilot-dmonitoringmodeld \
             --catalog "$RUNNER_TEMP/native-catalog" --models "$RUNNER_TEMP/original-models" --output "$RUNNER_TEMP/driver-daemon"
+      - name: Exercise the Rust driving daemon against the original model loop
+        run: |
+          python rust/tools/check_driving_daemon.py --binary rust/target/debug/openpilot-driving-modeld \
+            --catalog "$RUNNER_TEMP/native-catalog" --models "$RUNNER_TEMP/original-models" --output "$RUNNER_TEMP/driving-daemon"
       - uses: actions/upload-artifact@v6
         with:
           name: rust-original-pipeline-comparison
@@ -184,6 +189,8 @@ jobs:
             ${{ runner.temp }}/model-input-pipelines/**/report.json
             ${{ runner.temp }}/driver-daemon/**/report.json
             ${{ runner.temp }}/driver-daemon/**/*.log
+            ${{ runner.temp }}/driving-daemon/**/report.json
+            ${{ runner.temp }}/driving-daemon/**/*.log
   model-memory:
     name: rust model memory
     runs-on: ubuntu-24.04
