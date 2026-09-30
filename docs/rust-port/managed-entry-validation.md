@@ -86,9 +86,9 @@ loopback-only Sentry receivers. No host Params, vehicle, public Sentry project o
 production publisher is used.
 
 ```sh
-cargo test --manifest-path rust/Cargo.toml -p openpilot-managed-entry --all-targets --locked
-cargo clippy --manifest-path rust/Cargo.toml -p openpilot-managed-entry --all-targets --locked -- -D warnings
-cargo build --manifest-path rust/Cargo.toml -p openpilot-managed-entry -p openpilot-logmessaged --examples --bins --locked
+RUSTUP_TOOLCHAIN=1.94.0 cargo test --manifest-path rust/Cargo.toml -p openpilot-managed-entry --all-targets --locked
+RUSTUP_TOOLCHAIN=1.94.0 cargo clippy --manifest-path rust/Cargo.toml -p openpilot-managed-entry --all-targets --locked -- -D warnings
+RUSTUP_TOOLCHAIN=1.94.0 cargo build --manifest-path rust/Cargo.toml -p openpilot-managed-entry -p openpilot-logmessaged --examples --bins --locked
 PYTHONPATH="$MSGQ_PYTHON:.:rust/tools" uv run --no-project --python 3.12 rust/tools/check_managed_entry.py "$CHILD" "$COLLECTOR" "$PARAMS_BINDING" "$OUTPUT"
 ```
 
