@@ -2,7 +2,7 @@
 # requires-python = ">=3.12,<3.13"
 # dependencies = [
 #   "numpy==2.5.3", "pycapnp==2.1.0", "pyzmq==27.2.0", "requests==2.34.2", "PyJWT==2.14.0",
-#   "cryptography==50.0.1", "urllib3==2.7.0", "charset-normalizer==3.5.1", "brotli==1.2.0",
+#   "cryptography==50.0.1", "urllib3==2.7.0", "charset-normalizer==3.5.1", "brotli==1.2.0", "pyserial==3.5",
 # ]
 # ///
 """Compare real Params, signed loopback requests, source policy, and collector diagnostics."""
@@ -134,6 +134,12 @@ def keys():
 
 
 def setup(path, case, key_pairs):
+  if 'hardware' in case:
+    hardware_root = path / 'hardware'
+    for name, content in case['hardware'].items():
+      destination = hardware_root / name
+      destination.parent.mkdir(parents=True, exist_ok=True)
+      destination.write_bytes(content)
   comma = path / 'persist/comma'
   comma.mkdir(parents=True)
   params = path / 'params/d'
@@ -213,6 +219,8 @@ def run_side(side, args, case, path, pairs, server):
     binding=str(args.binding),
     log_root=str(collector.root),
   )
+  if 'hardware' in case:
+    config['hardware_root'] = str(path / 'hardware')
   with server.lock:
     server.rows.clear()
     server.responses = [dict(response) for response in case.get('responses', [{}])]
@@ -448,6 +456,33 @@ def cases():
   return rows
 
 
+def hardware_cases():
+  rows = []
+  values = {
+    'string': '"fixture +/한"',
+    'null': 'null',
+    'empty': '""',
+    'false': 'false',
+    'integer': '123456789012345678901234567890',
+    'float': '-0.0',
+    'array': '[null, false, "", ["한", null], {"quote\\\"":true}, NaN]',
+    'object': '{"a +/한":7,"second":null}',
+    'empty_array': '[]',
+    'surrogate_query': '"\\ud800"',
+  }
+  for name, value in values.items():
+    rows.append(('hardware_' + name, {
+      'hardware': {'proc/cmdline': b'androidboot.serialno=fixture', 'dev/shm/modem': ('{"imei":' + value + '}').encode()},
+      'config': {'spinner': name != 'surrogate_query', 'step': 61, 'max_sleeps': 1},
+    }))
+  rows.append(('hardware_modem_error', {
+    'hardware': {'proc/cmdline': b'androidboot.serialno=fixture', 'dev/shm/modem': b'[]'},
+    'config': {'spinner': True, 'step': 61, 'max_sleeps': 1},
+  }))
+  rows.append(('hardware_serial_error', {'hardware': {'proc/cmdline': b'other=value'}, 'config': {'spinner': True}}))
+  return rows
+
+
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('binary', type=Path)
@@ -456,6 +491,7 @@ def main():
   parser.add_argument('--runner', action='append', default=[])
   parser.add_argument('--case')
   parser.add_argument('--timeouts', action='store_true')
+  parser.add_argument('--hardware', action='store_true')
   args = parser.parse_args()
   args.binary = args.binary.resolve()
   args.binding = args.binding.resolve()
@@ -465,7 +501,7 @@ def main():
   server = Server()
   results = []
   try:
-    selected_cases = cases()
+    selected_cases = hardware_cases() if args.hardware else cases() + hardware_cases()
     if args.timeouts:
       selected_cases = [
         ('header_timeout_15s', {'responses': [{'header_delay': 16}, {}], 'minimum_seconds': 15}),

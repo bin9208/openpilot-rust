@@ -162,6 +162,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 
 [[package]]
+name = "byteorder"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
 name = "bytes"
 version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1115,6 +1121,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "i2c-linux-sys"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55cd060ed0016621d3da4ed3a23b0158084de90d1f3a8e59f3d391aacd3bbcf8"
+dependencies = [
+ "bitflags 1.3.2",
+ "byteorder",
+ "libc",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.65"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1585,6 +1602,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
+name = "openpilot-amplifier"
+version = "0.1.0"
+dependencies = [
+ "i2c-linux-sys",
+ "nix",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-beepd"
 version = "0.1.0"
 dependencies = [
@@ -1598,6 +1627,24 @@ dependencies = [
  "signal-hook",
  "tempfile",
  "thiserror",
+]
+
+[[package]]
+name = "openpilot-bootlog"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "nix",
+ "openpilot-cereal",
+ "openpilot-loggerd",
+ "openpilot-logging",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "rustix",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "zstd",
 ]
 
 [[package]]
@@ -1747,6 +1794,38 @@ dependencies = [
  "serde",
  "serde_json",
  "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-hardware-control"
+version = "0.1.0"
+dependencies = [
+ "nix",
+ "openpilot-amplifier",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-hardware-info"
+version = "0.1.0"
+dependencies = [
+ "home",
+ "num-bigint",
+ "num-traits",
+ "openpilot-logmessaged",
+ "openpilot-params",
+ "openpilot-runtime-core",
+ "rustix",
+ "serde",
+ "serde_json",
  "tempfile",
  "thiserror",
 ]
@@ -1996,6 +2075,7 @@ dependencies = [
  "encoding_rs",
  "flate2",
  "jsonwebtoken",
+ "openpilot-hardware-info",
  "openpilot-http-transport",
  "openpilot-logging",
  "openpilot-logmessaged",

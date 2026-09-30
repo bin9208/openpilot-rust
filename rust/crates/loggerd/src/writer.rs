@@ -164,7 +164,15 @@ impl Logger {
 }
 
 pub fn route_name(params: &Params) -> Result<String, Error> {
-    let count = params.get("RouteCount")?.unwrap_or_default();
+    identifier(params, "RouteCount")
+}
+
+pub fn identifier(params: &Params, key: &str) -> Result<String, Error> {
+    let count = match params.get(key) {
+        Ok(value) => value.unwrap_or_default(),
+        Err(openpilot_params::Error::Io(_)) => Vec::new(),
+        Err(error) => return Err(error.into()),
+    };
     let value = String::from_utf8_lossy(&count);
     let value = value.trim_start_matches(|character: char| character.is_ascii_whitespace());
     let negative = value.starts_with('-');
@@ -178,7 +186,8 @@ pub fn route_name(params: &Params) -> Result<String, Error> {
     }
     .to_le_bytes();
     let counter = u32::from_le_bytes([counter[0], counter[1], counter[2], counter[3]]);
-    params.put("RouteCount", counter.wrapping_add(1).to_string().as_bytes())?;
+    // logger_get_identifier ignores Params::put's I/O return code.
+    let _ = params.put(key, counter.wrapping_add(1).to_string().as_bytes());
     let mut random = [0_u8; 5];
     getrandom::fill(&mut random)?;
     let suffix: String = random.iter().map(|byte| format!("{byte:02x}")).collect();

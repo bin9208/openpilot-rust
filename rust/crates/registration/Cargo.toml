@@ -10,6 +10,7 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-hardware-info = { path = "../hardware-info" }
 openpilot-uploader = { path = "../uploader" }
 openpilot-http-transport = { path = "../http-transport" }
 openpilot-params = { path = "../params" }

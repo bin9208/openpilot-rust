@@ -6,7 +6,7 @@ impl Hardware for Unused {
     fn serial(&mut self) -> Result<String, Error> {
         panic!("hardware must not run")
     }
-    fn imei(&mut self, _: usize) -> Result<Option<String>, Error> {
+    fn imei(&mut self, _: usize) -> Result<openpilot_logmessaged::JsonValue, Error> {
         panic!("hardware must not run")
     }
 }

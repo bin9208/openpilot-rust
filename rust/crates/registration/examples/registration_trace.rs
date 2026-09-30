@@ -1,11 +1,13 @@
 //! Synthetic dependency adapter for unchanged-source comparisons; never selects device hardware.
+use openpilot_hardware_info::{HardwarePaths, Tici};
 use openpilot_logging::{
     log_site,
     producer::Factory,
     record::{Level, Record},
 };
+use openpilot_logmessaged::JsonValue;
 use openpilot_params::Params;
-use openpilot_registration::{Clock, Error, Hardware, Registration, Spinner};
+use openpilot_registration::{Clock, Error, Hardware, NativeHardware, Registration, Spinner};
 use serde_json::{json, Value};
 use std::{
     cell::RefCell,
@@ -20,20 +22,27 @@ struct FixtureHardware {
     trace: Trace,
     serial: Value,
     imeis: VecDeque<Value>,
+    native: Option<Tici>,
 }
 impl Hardware for FixtureHardware {
     fn serial(&mut self) -> Result<String, Error> {
         self.trace.borrow_mut().push(json!(["serial"]));
+        if let Some(hardware) = &self.native {
+            return NativeHardware::new(hardware).serial();
+        }
         self.serial
             .as_str()
             .map(str::to_owned)
             .ok_or_else(|| Error::Hardware("serial fixture failure".into()))
     }
-    fn imei(&mut self, slot: usize) -> Result<Option<String>, Error> {
+    fn imei(&mut self, slot: usize) -> Result<JsonValue, Error> {
         self.trace.borrow_mut().push(json!(["imei", slot]));
+        if let Some(hardware) = &self.native {
+            return NativeHardware::new(hardware).imei(slot);
+        }
         match self.imeis.pop_front() {
-            Some(Value::Null) => Ok(None),
-            Some(Value::String(value)) => Ok(Some(value)),
+            Some(Value::Null) => Ok(JsonValue::parse("null")?),
+            Some(Value::String(value)) => Ok(JsonValue::text(&value)),
             _ => Err(Error::Hardware("IMEI fixture failure".into())),
         }
     }
@@ -100,7 +109,7 @@ impl Spinner for FixtureSpinner {
 }
 fn category(error: &Error) -> &'static str {
     match error {
-        Error::IdentityType => "identity_type",
+        Error::IdentityType | Error::UnicodeText => "identity_type",
         Error::Logging(_) | Error::TypedParams(openpilot_params_typed::Error::Logging(_)) => {
             "logging"
         }
@@ -117,6 +126,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config: Value = serde_json::from_str(&lines.next().ok_or("missing config")??)?;
     let trace: Trace = Rc::new(RefCell::new(Vec::new()));
     let mut hardware = FixtureHardware {
+        native: config["hardware_root"]
+            .as_str()
+            .map(|root| Tici::with_paths(HardwarePaths::under(Path::new(root)))),
         trace: Rc::clone(&trace),
         serial: config
             .get("serial")

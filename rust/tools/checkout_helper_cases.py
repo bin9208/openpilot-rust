@@ -57,8 +57,10 @@ def helper_cases(binaries: Binaries, helpers: Helpers, output: Path):
     peer.launches.write_text('not a directory')
     try:
       peer.record({'fixture_fs': 'TMPDIR replaced with owned regular file'})
-      response = probe('descriptor-storage-error', request)
-      assert response['kind'] == 'spawn_error'
+      source = subprocess.run(request['argv'], cwd=request['cwd'], env=peer.env, capture_output=True, timeout=4)
+      assert source.returncode == 0
+      response = probe('invalid-tmpdir-does-not-control-exec-storage', request)
+      assert response['kind'] == 'child_exit' and response['code'] == source.returncode
     finally:
       peer.launches.unlink()
       peer.launches.mkdir()

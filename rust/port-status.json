@@ -483,6 +483,16 @@
   ],
   "library_ports": [
     {
+      "name": "hardware_control_policy",
+      "source_entrypoint": "openpilot.system.hardware.base; openpilot.system.hardware.pc.hardware; openpilot.system.hardware.tici.hardware; required common.gpio/utils helpers",
+      "status": "native_host_policy_and_adapter_validated",
+      "implementation": "rust/crates/hardware-control; display/IR, lazy amplifier selection, power-save/initialization ordering, GPIO/IRQ, Panda reset/recovery, readiness and reboot/shutdown/uninstall policy",
+      "native_dependencies": ["Linux/AGNOS filesystem, clock and sync APIs", "original sudo/shell/pgrep/chrt/taskset commands", "Rust amplifier I2C adapter and Params", "process-supervision child helper and its existing cereal/msgq/libzmq dependencies"],
+      "runtime_scope": "host fixtures only; hardware-info #98, modem/LPA, other GPIO/gpiochip APIs, hardwared loop and manager adoption remain separate; generic ARM/device validation pending",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/hardware-control-validation.md"
+    },
+    {
       "name": "native_manager_catalog_policy",
       "source_entrypoint": "openpilot.system.manager.process_config",
       "status": "native_host_and_generic_aarch64_policy_validated",
@@ -499,6 +509,16 @@
       "native_dependencies": ["Git", "Linux process/procfs/filesystem/Unix-socket APIs", "existing process-supervision helper and native Python-compatible JSON decoder", "existing logging/Params/cereal/libzmq/CXX dependencies"],
       "production_replaced": false,
       "evidence": "docs/rust-port/checkout-status-validation.md"
+    },
+    {
+      "name": "hardware_information_and_runtime_paths",
+      "source_entrypoint": "openpilot.system.hardware base/hw/pc/tici read-only APIs and tici.iwlist",
+      "status": "native_information_host_validated_actions_pending",
+      "implementation": "rust/crates/hardware-info; native filesystem/socket/command/Params adapters, raw modem JSON, identity/network/power observations, model/thermal caches and runtime Paths",
+      "native_dependencies": ["Linux filesystem, clocks and Unix datagrams", "/bin/sh, sudo/cat and iwlist", "existing Params and Python-compatible native JSON parser; current transitive cereal/msgq dependencies"],
+      "unported_scope": ["SIM LPA", "modem daemon", "hardwared loop"],
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-hardware-info-98.md"
     },
     {
       "name": "managed_child_entry_boundary",
@@ -534,7 +554,7 @@
       "status": "native_startup_policy_host_and_emulator_validated",
       "implementation": "rust/crates/registration; typed Params/persist fallback, RSA/EC signed registration, actual HTTP, retries and hardware/spinner interfaces",
       "native_dependencies": ["libzmq structured logging", "Linux filesystem and clock APIs", "Rust HTTP/TLS/crypto/encoding/cookie libraries", "vendored native charset-norm 3.5.1 with manifest-only Rust 1.94 compatibility patch", "existing C++ msgq in support crates"],
-      "runtime_scope": "hardware serial/modem discovery and visual spinner remain unported interfaces; manager/full startup, normal log-upload comparison and device acceptance pending; no project Python runtime call",
+      "runtime_scope": "native hardware information adapter preserves serial and raw modem identity values; visual spinner, manager/full startup, normal log-upload comparison and device acceptance pending; no project Python runtime call",
       "production_replaced": false,
       "evidence": "docs/rust-port/registration-validation.md"
     },
@@ -647,6 +667,14 @@
       "evidence": "docs/rust-port/monitoring-validation.md"
     }
   ],
+  "startup_bootlog": {
+    "source_entrypoints": ["openpilot/system/loggerd/bootlog.cc", "openpilot/system/manager/helpers.py::save_bootlog"],
+    "status": "native_component_host_validated_pending_integration",
+    "runtime_scope": "boot initData/Boot compressed artifact, BootCount/CurrentBootlog linkage and Params snapshot/background lifecycle; manager selection unchanged",
+    "native_dependencies": ["libc buffered I/O", "zstd", "filesystem/xattrs and OS clocks", "/bin/sh and journalctl", "existing loggerd FFmpeg/msgq/libzmq dependency closure"],
+    "evidence": "docs/rust-port/bootlog-validation.md",
+    "production_replaced": false
+  },
   "device_validation": "not_run",
   "performance_validation": "not_run"
 }

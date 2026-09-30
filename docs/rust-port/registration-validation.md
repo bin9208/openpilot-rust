@@ -108,9 +108,10 @@ python rust/tools/check_registration.py ARM_REGISTRATION_TRACE ORIGINAL_PARAMS_S
 
 ## Remaining integration gates
 
-This is an internal startup library with a callable real-clock adapter. Actual
-board/serial/modem discovery and the visual spinner are deliberately unported
-interfaces. Native dependencies include libzmq, filesystem/clock APIs and Rust
+This is an internal startup library with a callable real-clock adapter.
+[Issue #107](../naver/rust-registration-hardware-107.md) connects native read-only
+serial/modem discovery while retaining arbitrary modem JSON. Visual spinner
+rendering remains an external interface. Native dependencies include libzmq, filesystem/clock APIs and Rust
 HTTP/TLS, cryptography, text and cookie libraries; the existing C++ msgq boundary
 remains in the linked support crates. Full `Api` convenience methods unrelated
 to registration are outside this increment.
