@@ -167,3 +167,8 @@ pub fn get_build_metadata(path: &Path) -> Result<BuildMetadata, Error> {
     )?;
     Err(Error::InvalidMetadata)
 }
+
+/// Render Python str() without replacement-decoding lone surrogates.
+pub fn python_str(value: &JsonValue) -> Result<Vec<u32>, Error> {
+    python::join(&[value], "")
+}

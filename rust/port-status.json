@@ -379,7 +379,10 @@
       "name": "tombstoned",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.tombstoned",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["Bash/cat/echo and OS apport-retrace (may itself use Python)", "native Sentry SDK/HTTP/TLS", "Git", "libzmq and temporary original C++ msgq"],
+      "runtime_scope": "crash scan/report/copy/remove loop and native logging; manager/startup, target apport, full-runtime upload and device acceptance pending",
+      "evidence": "docs/rust-port/tombstoned-validation.md",
       "production_replaced": false
     },
     {
@@ -471,6 +474,15 @@
     }
   ],
   "library_ports": [
+    {
+      "name": "project_sentry_policy",
+      "source_entrypoint": "openpilot.system.sentry; registration reporting gate",
+      "status": "native_host_transport_validated",
+      "implementation": "rust/crates/crash-reporting; project gates, native SDK envelopes, report/flush and explicit Rust error capture; Python automatic thread hooks are not ported",
+      "native_dependencies": ["sentry 0.49.3 ureq/rustls", "Git", "libzmq and temporary original C++ msgq"],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/tombstoned-validation.md"
+    },
     {
       "name": "runtime_build_metadata_and_cached_git",
       "source_entrypoint": "openpilot.system.version; openpilot.common.git",

@@ -1,5 +1,5 @@
 //! Ordered SwagFormatter records; callers supply resolved Rust text or structured payloads.
-use crate::{Error, Fields, Value};
+use crate::{Error, Fields, PythonText, Value};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
@@ -114,6 +114,15 @@ impl Record {
             message: Value::Text(text.clone()),
             exception: None,
             console: text,
+        }
+    }
+    pub fn python_text(level: Level, text: PythonText) -> Self {
+        let console = text.console();
+        Self {
+            level,
+            message: Value::PythonText(text),
+            exception: None,
+            console,
         }
     }
     pub fn event(name: &str, arguments: Vec<Value>, fields: Fields) -> Result<Self, Error> {

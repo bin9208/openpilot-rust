@@ -5,7 +5,7 @@ pub mod runtime;
 mod value;
 mod value_decode;
 
-pub use value::{Fields, Number, Value};
+pub use value::{Fields, Number, PythonText, Value};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
