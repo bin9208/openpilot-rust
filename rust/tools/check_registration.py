@@ -54,7 +54,11 @@ class Server:
           parent.rows.append({'line': self.requestline, 'headers': list(self.headers.items()), 'body_hex': body.hex()})
           response = parent.responses.pop(0) if parent.responses else {'status': 403}
         status = response.get('status', 200)
-        payload = response.get('body', '{"dongle_id":"registered-synthetic"}').encode(response.get('encoding', 'utf-8'))
+        payload = (
+          bytes.fromhex(response['body_hex'])
+          if 'body_hex' in response
+          else response.get('body', '{"dongle_id":"registered-synthetic"}').encode(response.get('encoding', 'utf-8'))
+        )
         if response.get('gzip'):
           payload = gzip.compress(payload)
         elif response.get('deflate'):
@@ -346,6 +350,41 @@ def cases():
     ('raw_deflate_json', {'responses': [{'deflate': 'raw'}]}),
     ('brotli_json', {'responses': [{'brotli': True}]}),
     ('gzip_json', {'responses': [{'gzip': True}]}),
+    ('utf7_valid_shift', {'responses': [{'body': '{"dongle_id":"한글😀"}', 'encoding': 'utf-7', 'content_type': 'application/json; charset=utf-7'}]}),
+    ('utf7_malformed_shift', {'responses': [{'body': '{"dongle_id":"+A-"}', 'content_type': 'application/json; charset=utf-7'}]}),
+    ('utf7_direct_nonascii', {'responses': [{'body_hex': b'{"dongle_id":"\xff"}'.hex(), 'content_type': 'application/json; charset=utf-7'}]}),
+    (
+      'utf7_unpaired_surrogate',
+      {'config': {'spinner': True}, 'responses': [{'body': '{"dongle_id":"+2AA-"}', 'content_type': 'application/json; charset=utf-7'}]},
+    ),
+    ('utf7_surrogate_invalid_escape', {'responses': [{'body_hex': b'{"dongle_id":"\\+2AA-"}'.hex(), 'content_type': 'application/json; charset=utf-7'}, {}]}),
+    (
+      'utf7_surrogate_after_backslash',
+      {'config': {'spinner': True}, 'responses': [{'body_hex': b'{"dongle_id":"\\\\+2AA-"}'.hex(), 'content_type': 'application/json; charset=utf-7'}]},
+    ),
+    ('malformed_cp932', {'responses': [{'body_hex': b'{"dongle_id":"\x82\xa0\x81 "}'.hex(), 'content_type': 'application/json; charset=cp932'}]}),
+    ('malformed_shift_jis', {'responses': [{'body_hex': b'{"dongle_id":"\x82\xa0\x81 "}'.hex(), 'content_type': 'application/json; charset=shift_jis'}]}),
+    ('explicit_iso8859_1', {'responses': [{'body': '{"dongle_id":"\u0080"}', 'encoding': 'latin1', 'content_type': 'application/json; charset=iso8859-1'}]}),
+    ('explicit_latin_1', {'responses': [{'body': '{"dongle_id":"\u0080"}', 'encoding': 'latin1', 'content_type': 'application/json; charset=latin_1'}]}),
+    ('explicit_cp819', {'responses': [{'body': '{"dongle_id":"\u0080"}', 'encoding': 'latin1', 'content_type': 'application/json; charset=cp819'}]}),
+    ('explicit_utf32_le', {'responses': [{'body': '{"dongle_id":"한글😀"}', 'encoding': 'utf-32-le', 'content_type': 'application/json; charset=utf-32-le'}]}),
+    ('explicit_utf32_be', {'responses': [{'body': '{"dongle_id":"한글😀"}', 'encoding': 'utf-32-be', 'content_type': 'application/json; charset=UTF-32-BE'}]}),
+    ('explicit_utf32_bom', {'responses': [{'body': '{"dongle_id":"한글😀"}', 'encoding': 'utf-32', 'content_type': 'application/json; charset=utf-32'}]}),
+    (
+      'explicit_utf32_replace',
+      {
+        'responses': [
+          {
+            'body_hex': ('{"dongle_id":"'.encode('utf-32-le') + bytes.fromhex('00d8000000001100') + '"}'.encode('utf-32-le')).hex(),
+            'content_type': 'application/json; charset=utf-32-le',
+          }
+        ]
+      },
+    ),
+    (
+      'explicit_unknown_utf8_fallback',
+      {'responses': [{'body': '{"dongle_id":"\u0080"}', 'encoding': 'latin1', 'content_type': 'application/json; charset=unknown-encoding'}]},
+    ),
     ('no_content_type_ascii', {'responses': [{'content_type': None}]}),
     ('no_content_type_korean', {'responses': [{'body': '{"dongle_id":"한글"}', 'content_type': None}]}),
     ('no_content_type_utf8_bom', {'responses': [{'body': '{"dongle_id":"café"}', 'encoding': 'utf-8-sig', 'content_type': None}]}),

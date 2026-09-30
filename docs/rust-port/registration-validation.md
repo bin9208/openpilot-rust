@@ -46,7 +46,12 @@ and text media types to Latin-1, matching Requests. Only an otherwise undeclared
 encoding uses the pinned native detector described in
 [charset-norm-provenance.md](charset-norm-provenance.md). The older native detector
 was rejected after it silently changed identifiers in source-accepted fixtures;
-no fixture-specific heuristic or toolchain upgrade is used.
+no fixture-specific heuristic or toolchain upgrade is used. Explicit encodings
+retain Python codec aliases, UTF-32 replacement behavior and UTF-7 code points.
+A project-owned UTF-7 replacement adapter, adapted from the pinned MIT source
+with its license retained, is compared with Python on 107 codec inputs. Lone
+surrogates remain code points through JSON parsing to preserve the later Params
+encoding error boundary; the vendored detector remains byte-for-byte audited.
 
 402 and 403 choose `UnregisteredDevice`. Other statuses still parse JSON rather
 than calling raise-for-status. Parsing retains Python null, booleans, arbitrary
@@ -60,7 +65,7 @@ preserves that distinction. Authentication exceptions log and sleep 1, 2, ...,
 ## Evidence and reproduction
 
 The issue worktree's `.omo/evidence/registration/evidence.json` is the evidence
-ledger. The source matrix contains 103 scenarios on x86-64 and generic aarch64
+ledger. The source matrix contains 119 scenarios on x86-64 and generic aarch64
 under QEMU. Three additional real-time scenarios enforce the fifteen-second
 header/body deadline and allow a progressing sixteen-second response. The
 unchanged uploader oracle passes 212 filesystem scenarios, 10,000 backoff

@@ -15,6 +15,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 mod api;
+pub mod utf7;
 pub use api::{api_get, Response};
 
 #[derive(Debug, thiserror::Error)]

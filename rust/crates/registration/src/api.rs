@@ -127,36 +127,104 @@ fn response_text(bytes: &[u8], content_type: &str) -> Result<String, Error> {
             None => Ok(String::from_utf8_lossy(bytes).into_owned()),
         };
     }
-    let normalized = charset.map(|name| name.to_ascii_lowercase().replace('_', "-"));
-    Ok(match normalized.as_deref() {
-        Some("utf-8-sig" | "utf8-sig") => {
-            String::from_utf8_lossy(bytes.strip_prefix(b"\xef\xbb\xbf").unwrap_or(bytes))
-                .into_owned()
+    decode_replace(bytes, charset.unwrap_or("UTF-8"))
+}
+
+fn decode_replace(bytes: &[u8], charset: &str) -> Result<String, Error> {
+    use charset_norm::codecs::{self, DecodeError, Errors};
+    match codecs::decode(bytes, charset, Errors::Strict) {
+        Ok(text) => return Ok(text),
+        Err(DecodeError::Unknown) => return Ok(String::from_utf8_lossy(bytes).into_owned()),
+        Err(DecodeError::Invalid) => {}
+    }
+    if let Some(decode) = codecs::single_byte_decoder(charset) {
+        return Ok(bytes
+            .iter()
+            .map(|&byte| decode(byte).unwrap_or(char::REPLACEMENT_CHARACTER))
+            .collect());
+    }
+    let canonical = charset_norm::encoding::iana_name(charset, false)
+        .map_err(|_| Error::Contract("response encoding name is invalid"))?;
+    match canonical.as_str() {
+        "utf_7" => crate::utf7::json_text(&crate::utf7::decode_replace(bytes)),
+        "utf_8" => Ok(String::from_utf8_lossy(bytes).into_owned()),
+        "utf_8_sig" => Ok(String::from_utf8_lossy(
+            bytes.strip_prefix(b"\xef\xbb\xbf").unwrap_or(bytes),
+        )
+        .into_owned()),
+        "utf_16" | "utf_16_le" | "utf_16_be" => Ok(unicode_replace(bytes, &canonical, 2)),
+        "utf_32" | "utf_32_le" | "utf_32_be" => Ok(unicode_replace(bytes, &canonical, 4)),
+        _ => {
+            let encoding = encoding_rs::Encoding::for_label(canonical.as_bytes())
+                .or_else(|| {
+                    charset_norm::encoding::aliases(&canonical)
+                        .into_iter()
+                        .find_map(|name| encoding_rs::Encoding::for_label(name.as_bytes()))
+                })
+                .ok_or(Error::Contract(
+                    "native replacement decoder unavailable for declared response encoding",
+                ))?;
+            Ok(encoding.decode_without_bom_handling(bytes).0.into_owned())
         }
-        Some("utf-16" | "utf16") => {
-            let (encoding, bytes) = if let Some(bytes) = bytes.strip_prefix(b"\xfe\xff") {
-                (encoding_rs::UTF_16BE, bytes)
-            } else {
-                (
-                    encoding_rs::UTF_16LE,
-                    bytes.strip_prefix(b"\xff\xfe").unwrap_or(bytes),
-                )
-            };
-            encoding.decode_without_bom_handling(bytes).0.into_owned()
+    }
+}
+
+fn unicode_replace(mut bytes: &[u8], encoding: &str, width: usize) -> String {
+    let mut little = !encoding.ends_with("_be");
+    if !encoding.ends_with("_le") && !encoding.ends_with("_be") {
+        let (little_bom, big_bom): (&[u8], &[u8]) = if width == 2 {
+            (b"\xff\xfe", b"\xfe\xff")
+        } else {
+            (b"\xff\xfe\x00\x00", b"\x00\x00\xfe\xff")
+        };
+        if let Some(rest) = bytes.strip_prefix(little_bom) {
+            bytes = rest;
+            little = true;
+        } else if let Some(rest) = bytes.strip_prefix(big_bom) {
+            bytes = rest;
+            little = false;
+        } else {
+            little = cfg!(target_endian = "little");
         }
-        Some(name)
-            if matches!(
-                name.to_ascii_lowercase().as_str(),
-                "iso-8859-1" | "latin-1" | "latin1"
-            ) =>
+    }
+    if width == 2 {
+        let mut chunks = bytes.chunks_exact(2);
+        let units: Vec<_> = chunks
+            .by_ref()
+            .map(|pair| {
+                if little {
+                    u16::from_le_bytes([pair[0], pair[1]])
+                } else {
+                    u16::from_be_bytes([pair[0], pair[1]])
+                }
+            })
+            .collect();
+        let mut text = String::from_utf16_lossy(&units);
+        // A high surrogate followed by a partial unit is one truncated sequence in CPython.
+        if !chunks.remainder().is_empty()
+            && !units
+                .last()
+                .is_some_and(|unit| (0xd800..0xdc00).contains(unit))
         {
-            bytes.iter().map(|&byte| char::from(byte)).collect()
+            text.push(char::REPLACEMENT_CHARACTER);
         }
-        Some(name) => encoding_rs::Encoding::for_label(name.as_bytes())
-            .unwrap_or(encoding_rs::UTF_8)
-            .decode_without_bom_handling(bytes)
-            .0
-            .into_owned(),
-        None => String::from_utf8_lossy(bytes).into_owned(),
-    })
+        text
+    } else {
+        let mut chunks = bytes.chunks_exact(4);
+        let mut text: String = chunks
+            .by_ref()
+            .map(|quad| {
+                let value = if little {
+                    u32::from_le_bytes([quad[0], quad[1], quad[2], quad[3]])
+                } else {
+                    u32::from_be_bytes([quad[0], quad[1], quad[2], quad[3]])
+                };
+                char::from_u32(value).unwrap_or(char::REPLACEMENT_CHARACTER)
+            })
+            .collect();
+        if !chunks.remainder().is_empty() {
+            text.push(char::REPLACEMENT_CHARACTER);
+        }
+        text
+    }
 }
