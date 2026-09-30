@@ -24,6 +24,13 @@ native IPC test. [Issue #47](msgq-handshake-validation.md) records its controlle
 reproduction and send-acknowledgement correction. Production transport is
 unchanged; the final revision repeats all gates.
 
+On `afe30750`, push Rust run 36670554318 passed. PR run 36670557576 passed
+ARM, memory and model pipelines, plus every fast-job test and the release
+build, but hit the 15-minute job limit during its final CPU-sample command.
+The fast job now has a 20-minute orchestration budget. Test assertions,
+source comparison tolerances and runtime deadlines are unchanged; the new
+head must pass all required checks before merge.
+
 The common runtime Params constructor also replaces duplicated driving and
 calibration constructors so an explicitly empty `OPENPILOT_PREFIX` follows the
 original root namespace. Unset and named prefixes retain their source paths.

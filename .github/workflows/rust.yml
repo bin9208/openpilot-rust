@@ -16,7 +16,7 @@ jobs:
     needs: [model-memory, model-pipelines]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'
