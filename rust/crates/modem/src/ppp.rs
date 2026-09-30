@@ -1,25 +1,33 @@
 use crate::{config::Config, Error};
+use openpilot_process_supervision::{CapturedChild, CapturedCommand};
+use std::ffi::OsString;
 use std::{
     io::{Read, Seek},
     net::Ipv4Addr,
-    process::{Child, Command, Stdio},
+    process::Stdio,
     time::{Duration, Instant},
 };
 
 #[derive(Default)]
 pub struct Session {
-    process: Option<Child>,
+    process: Option<CapturedChild>,
     pub fails: u32,
     peer: String,
 }
 impl Session {
     pub fn start(&mut self, config: &Config) -> Result<(), Error> {
-        self.process = Some(Command::new(&config.sudo).arg("pppd").arg(&config.ppp_port).args([
+        let mut argv: Vec<OsString> = vec![
+            config.sudo.clone().into(),
+            "pppd".into(),
+            config.ppp_port.clone().into(),
+        ];
+        argv.extend([
             "460800", "noauth", "nodetach", "noipdefault", "usepeerdns", "nodefaultroute", "connect",
             "/usr/sbin/chat -v ABORT 'NO CARRIER' ABORT 'NO DIALTONE' ABORT 'BUSY' ABORT 'NO ANSWER' ABORT 'ERROR' TIMEOUT 5 '' AT OK ATD*99***1# CONNECT ''",
             "lcp-echo-interval", "30", "lcp-echo-failure", "4", "mtu", "1500", "mru", "1500", "novj", "novjccomp",
             "ipcp-accept-local", "ipcp-accept-remote", "nomagic", "user", "\"\"", "password", "\"\"",
-        ]).stdout(Stdio::null()).stderr(Stdio::null()).spawn()?);
+        ].into_iter().map(OsString::from));
+        self.process = Some(command(config, argv)?.spawn_discarded()?);
         self.peer.clear();
         Ok(())
     }
@@ -27,17 +35,17 @@ impl Session {
         run(config, &["killall", "-9", "pppd"])?;
         // Reap the owned pppd/sudo child; never leave a zombie after reconnect.
         if let Some(child) = self.process.as_mut() {
-            if child.try_wait()?.is_none() {
-                child.kill()?;
+            if child.process.try_wait()?.is_none() {
+                child.process.kill()?;
             }
-            child.wait()?;
+            child.process.wait()?;
         }
         self.peer.clear();
         Ok(())
     }
     pub fn has_exited(&mut self) -> Result<bool, Error> {
         match self.process.as_mut() {
-            Some(child) => Ok(child.try_wait()?.is_some()),
+            Some(child) => Ok(child.process.try_wait()?.is_some()),
             None => Ok(false),
         }
     }
@@ -81,12 +89,20 @@ impl Session {
         Ok(true)
     }
 }
+fn command(config: &Config, argv: Vec<OsString>) -> Result<CapturedCommand, Error> {
+    Ok(CapturedCommand {
+        launcher: config.launcher.clone(),
+        cwd: std::env::current_dir()?,
+        argv,
+    })
+}
 pub fn run(config: &Config, args: &[&str]) -> Result<bool, Error> {
-    Ok(Command::new(&config.sudo)
-        .args(args)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()?
+    let mut argv = vec![config.sudo.clone().into_os_string()];
+    argv.extend(args.iter().map(OsString::from));
+    Ok(command(config, argv)?
+        .spawn_discarded()?
+        .process
+        .wait()?
         .success())
 }
 pub fn cleanup(config: &Config) -> Result<(), Error> {
@@ -98,16 +114,19 @@ pub fn cleanup(config: &Config) -> Result<(), Error> {
 }
 pub fn interface(config: &Config) -> Result<(String, String), Error> {
     let mut output = tempfile::tempfile()?;
-    let mut child = Command::new(&config.ip)
-        .args(["-4", "addr", "show", "ppp0"])
-        .stdout(output.try_clone()?)
-        .stderr(Stdio::null())
-        .spawn()?;
+    let mut argv = vec![config.ip.clone().into_os_string()];
+    argv.extend(
+        ["-4", "addr", "show", "ppp0"]
+            .into_iter()
+            .map(OsString::from),
+    );
+    let mut child =
+        command(config, argv)?.spawn_redirected(output.try_clone()?.into(), Stdio::null())?;
     let deadline = Instant::now() + Duration::from_secs(2);
-    while child.try_wait()?.is_none() {
+    while child.process.try_wait()?.is_none() {
         if Instant::now() >= deadline {
-            child.kill()?;
-            child.wait()?;
+            child.process.kill()?;
+            child.process.wait()?;
             return Err(
                 std::io::Error::new(std::io::ErrorKind::TimedOut, "ip addr timeout").into(),
             );

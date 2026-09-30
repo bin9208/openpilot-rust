@@ -26,9 +26,8 @@ fn run() -> Result<(), Error> {
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stop))?;
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
     let mut modem = Modem::new(config);
-    let result = modem.run(&stop);
-    let cleanup = modem.stop();
-    result.and(cleanup)
+    modem.run(&stop)?;
+    modem.stop()
 }
 fn main() -> ExitCode {
     match run() {

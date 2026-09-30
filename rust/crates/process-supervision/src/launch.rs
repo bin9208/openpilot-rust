@@ -88,6 +88,7 @@ enum StreamMode {
     Captured,
     Stdout,
     Inherited,
+    Redirected(Stdio, Stdio),
 }
 
 impl CapturedCommand {
@@ -97,6 +98,14 @@ impl CapturedCommand {
 
     pub fn spawn_stdout(&self) -> Result<CapturedChild, Error> {
         self.spawn_with_stdio(StreamMode::Stdout, &[])
+    }
+
+    pub fn spawn_discarded(&self) -> Result<CapturedChild, Error> {
+        self.spawn_with_stdio(StreamMode::Redirected(Stdio::null(), Stdio::null()), &[])
+    }
+
+    pub fn spawn_redirected(&self, stdout: Stdio, stderr: Stdio) -> Result<CapturedChild, Error> {
+        self.spawn_with_stdio(StreamMode::Redirected(stdout, stderr), &[])
     }
 
     pub fn spawn_inherited(&self) -> Result<CapturedChild, Error> {
@@ -141,6 +150,7 @@ impl CapturedCommand {
             StreamMode::Captured => command.stdout(Stdio::piped()).stderr(Stdio::piped()),
             StreamMode::Stdout => command.stdout(Stdio::piped()),
             StreamMode::Inherited => &mut command,
+            StreamMode::Redirected(stdout, stderr) => command.stdout(stdout).stderr(stderr),
         };
         let mut child = command.spawn()?;
         if let Err(error) = wait_for_exec(&listener, &mut child) {

@@ -2052,6 +2052,7 @@ dependencies = [
 name = "openpilot-modem"
 version = "0.1.0"
 dependencies = [
+ "openpilot-process-supervision",
  "rustix",
  "serde",
  "serde_json",
