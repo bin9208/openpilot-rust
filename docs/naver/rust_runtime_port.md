@@ -29,6 +29,12 @@ publications. The [validation record](../rust-port/model-output-validation.md)
 documents original-function comparisons, history/discrete-decision boundaries,
 architecture-specific exponential rounding and remaining daemon integration.
 
+[Desire state issue #24](https://github.com/bin9208/openpilot-rust/issues/24)
+ports lane/turn intent, side obstacles and Bluetooth command consumption. Its
+[validation record](../rust-port/desire-validation.md) compares complete state
+sequences and actual command journals while retaining the original gates.
+This library still requires connection to the driving daemon.
+
 [Driver daemon issue #19](https://github.com/bin9208/openpilot-rust/issues/19)
 connects driver VisionIPC, native inference, calibration and `driverStateV2` in
 a continuous Rust process. Its [validation record](../rust-port/driver-daemon-validation.md)
@@ -40,3 +46,9 @@ preserves shared subscription freshness, validity and frequency contracts. Its
 [validation record](../rust-port/messaging-validation.md) covers source state
 comparisons, original service capacities, native collective polling and ownership.
 The source catalog/schema inconsistency is separately tracked in #27.
+
+[Driving input issue #20](https://github.com/bin9208/openpilot-rust/issues/20)
+ports camera pairing, drop state, calibration and packed policy inputs. The
+[comparison record](../rust-port/model-input-validation.md) includes original
+source sequences and exact native camera/model/recurrent output comparisons.
+Complete driving daemon orchestration remains tracked under #1/#6.
