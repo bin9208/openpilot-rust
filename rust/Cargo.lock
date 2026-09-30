@@ -2085,7 +2085,7 @@ dependencies = [
  "signal-hook",
  "tempfile",
  "thiserror",
- "unicode-general-category",
+ "unicode-general-category 0.6.0",
 ]
 
 [[package]]

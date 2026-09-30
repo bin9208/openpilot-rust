@@ -54,8 +54,11 @@ architecture. Parent repeats the119-case matrix with a fresh pinned environment
 and independent original bindings. The detector's28-file published archive is
 verified in CI, allowing only its documented manifest compiler-version change.
 The shared uploader signing regression remains required. Merge preserves every
-existing dependency version; the metadata dependency is only qualified as
+existing dependency version; metadata and tombstoned dependency references are qualified as
 `unicode-general-category 0.6.0` because the detector introduces version1.1.0.
+The first locked combined build caught the remaining unqualified tombstoned
+reference. Cargo's host-target resolution corrects only that reference, with
+no package/version changes; the failed build output is retained.
 
 The catalog input compares all63 registered entries,64 import configurations,
 25 actual environment snapshots,10,573 predicate/access/Params-mutation cases
