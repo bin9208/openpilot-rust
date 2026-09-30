@@ -472,6 +472,23 @@
   ],
   "library_ports": [
     {
+      "name": "carrot_dashcam_upload_jobs",
+      "source_entrypoint": "openpilot.selfdrive.carrot.server.features.dashcam.upload_jobs",
+      "status": "native_host_worker_lifecycle_validated",
+      "implementation": "rust/crates/dashcam-upload; catalog, metadata, report, concurrent transfer jobs and owned worker processes; HTTP server and normal startup integration remain unported",
+      "native_dependencies": ["libzmq structured logging", "Linux process and filesystem APIs", "Rust HTTP/TLS libraries"],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/dashcam-jobs-validation.md"
+    },
+    {
+      "name": "Params_typed_STRING",
+      "source_entrypoint": "openpilot.common.params_pyx",
+      "status": "native_host_original_cython_validated",
+      "implementation": "rust/crates/params-typed; strict UTF-8 STRING getter and original cast-warning/error boundaries; other typed getter conversions remain separate",
+      "production_replaced": false,
+      "evidence": "docs/naver/rust_params_string_20260930.md"
+    },
+    {
       "name": "carrot_web_upload_transport",
       "source_entrypoint": "openpilot.selfdrive.carrot.web_upload",
       "status": "native_host_transport_validated",
@@ -545,7 +562,7 @@
     {
       "name": "driver_monitoring_policy_and_state_packet",
       "status": "host_original_sequence_and_cereal_parity_validated",
-      "implementation": "Rust monitoring policy and scalar statistics; dmonitoringd IPC loop and Params persistence remain unported",
+      "implementation": "Rust monitoring policy and scalar statistics, with continuous dmonitoringd IPC and Params integration validated separately; manager selection and complete startup remain pending",
       "production_replaced": false,
       "evidence": "docs/rust-port/monitoring-validation.md"
     }

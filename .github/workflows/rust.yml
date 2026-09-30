@@ -13,10 +13,10 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [model-memory, model-pipelines, logger-runtime, web-upload-timeouts]
+    needs: [model-memory, model-pipelines, logger-runtime, support-runtime, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'
@@ -32,16 +32,18 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Require model and upload transport validation
+      - name: Require runtime validation
         env:
           MEMORY: ${{ needs.model-memory.result }}
           PIPELINES: ${{ needs.model-pipelines.result }}
           LOGGER: ${{ needs.logger-runtime.result }}
+          SUPPORT: ${{ needs.support-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$MEMORY" = success
           test "$PIPELINES" = success
           test "$LOGGER" = success
+          test "$SUPPORT" = success
           test "$UPLOAD_TIMEOUTS" = success
       - uses: actions/setup-python@v6
         with:
@@ -65,13 +67,6 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
-      - name: Compare uploader policy, signed local HTTP and compressed payloads with original source
-        run: |
-          cargo build -p openpilot-uploader --bins --examples --locked
-          python tools/check_uploader.py --binary target/debug/examples/uploader_trace --output "$RUNNER_TEMP/uploader-reference/report.json"
-          python tools/check_uploader_timeouts.py --binary target/debug/examples/uploader_trace --output "$RUNNER_TEMP/uploader-reference/timeouts"
-      - name: Compare active Carrot upload helpers and actual loopback request bytes
-        run: python tools/check_web_upload.py --binary target/debug/examples/web_upload_trace --output "$RUNNER_TEMP/web-upload-reference"
       - name: Compare log-space retention with the original loop and actual low-space filesystem
         run: |
           cargo build -p openpilot-deleter --bins --examples --locked
@@ -126,11 +121,6 @@ jobs:
       - run: python tools/check_proclog_reference.py
       - run: python tools/check_params_reference.py
       - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
-      - name: Exercise uploader with original deviceState IPC, synthetic Params and loopback uploads
-        run: |
-          cd "$GITHUB_WORKSPACE"
-          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" python rust/tools/check_uploader_daemon.py \
-            --binary rust/target/debug/openpilot-uploader --output "$RUNNER_TEMP/uploader-native"
       - name: Exercise structured log producers with original and Rust collectors
         run: |
           cargo build -p openpilot-logging --examples --locked
@@ -173,13 +163,6 @@ jobs:
             rust/target/release/cpu-sample
             rust/target/release/openpilot-deleter
             rust/target/release/openpilot-uploader
-            ${{ runner.temp }}/web-upload-reference/**
-            ${{ runner.temp }}/uploader-reference/report.json
-            ${{ runner.temp }}/uploader-native/**/*.json
-            ${{ runner.temp }}/uploader-native/**/*.log
-            ${{ runner.temp }}/uploader-native/**/*.packet
-            ${{ runner.temp }}/uploader-native/**/*.capnp
-            ${{ runner.temp }}/uploader-native/**/*.bin
             ${{ runner.temp }}/deleter-reference/report.json
             ${{ runner.temp }}/deleter-native/*.json
             ${{ runner.temp }}/deleter-native/*.log
@@ -218,6 +201,71 @@ jobs:
             ${{ runner.temp }}/communication-snapshot/report.json
             ${{ runner.temp }}/logging-producer/**/report.json
             ${{ runner.temp }}/logging-producer/**/*.log
+  support-runtime:
+    name: rust support runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      PYTHONPATH: ${{ runner.temp }}/support-msgq-python:${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pyserial==3.5
+      - name: Build support daemons and their source-comparison probes
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-uploader -p openpilot-web-upload -p openpilot-dashcam-upload -p openpilot-params-typed -p openpilot-journald -p openpilot-logmessaged --bins --examples --locked
+      - name: Build original message and Params bindings
+        run: |
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/support-msgq-python"
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/support-params-binding"
+      - name: Compare uploader policy, signed local HTTP and compressed payloads with original source
+        run: |
+          python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-reference/report.json"
+          python rust/tools/check_uploader_timeouts.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-timeouts"
+      - name: Compare active Carrot upload helpers and actual loopback request bytes
+        run: python rust/tools/check_web_upload.py --binary rust/target/debug/examples/web_upload_trace --output "$RUNNER_TEMP/support-runtime/web-upload-reference"
+      - name: Exercise uploader with original deviceState IPC, synthetic Params and loopback uploads
+        run: python rust/tools/check_uploader_daemon.py --binary rust/target/debug/openpilot-uploader --output "$RUNNER_TEMP/support-runtime/uploader-native"
+      - name: Compare real Params getters and uploader behavior through both collectors
+        run: |
+          python rust/tools/check_params_string.py --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so \
+            --native rust/target/debug/examples/params_string_probe --output "$RUNNER_TEMP/support-runtime/params-string"
+          python rust/tools/check_params_string_uploader.py --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so \
+            --binary rust/target/debug/openpilot-uploader --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/params-uploader"
+      - name: Compare uploader logs and transport failures through both collectors
+        run: |
+          python rust/tools/check_uploader_logging.py --binary rust/target/debug/openpilot-uploader \
+            --trace rust/target/debug/examples/uploader_trace --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-logging"
+          python rust/tools/check_uploader_log_fault.py --native rust/target/debug/examples/uploader_log_fault \
+            --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-log-fault"
+      - name: Compare dashcam jobs, catalog, metadata and real Params
+        run: |
+          python rust/tools/check_dashcam_jobs.py --binary rust/target/debug/examples/dashcam_job_trace --output "$RUNNER_TEMP/support-runtime/dashcam-jobs"
+          python rust/tools/check_dashcam_catalog.py --binary rust/target/debug/examples/dashcam_catalog_trace --output "$RUNNER_TEMP/support-runtime/dashcam-catalog"
+          python rust/tools/check_dashcam_metadata.py --binary rust/target/debug/examples/dashcam_metadata_trace --output "$RUNNER_TEMP/support-runtime/dashcam-metadata"
+          python rust/tools/check_dashcam_params.py --binary rust/target/debug/examples/dashcam_params_trace \
+            --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so --output "$RUNNER_TEMP/support-runtime/dashcam-params"
+      - name: Compare dashcam uploads and child connection ownership
+        run: |
+          python rust/tools/check_dashcam_runtime.py --binary rust/target/debug/openpilot-dashcam-upload --output "$RUNNER_TEMP/support-runtime/dashcam-runtime"
+          python rust/tools/check_dashcam_lifecycle.py --binary rust/target/debug/openpilot-dashcam-upload --output "$RUNNER_TEMP/support-runtime/dashcam-lifecycle"
+      - name: Compare journald actual IPC, fatal inputs and child lifecycle
+        run: python rust/tools/check_journald.py --binary rust/target/debug/journald-rs --output "$RUNNER_TEMP/support-runtime/journald"
+      - name: Retain raw support runtime and Params build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-support-runtime-evidence
+          path: |
+            ${{ runner.temp }}/support-runtime/
+            ${{ runner.temp }}/support-params-binding/commands.json
+            ${{ runner.temp }}/support-params-binding/provenance.json
   logger-runtime:
     name: rust original route logger
     runs-on: ubuntu-24.04
@@ -334,7 +382,7 @@ jobs:
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bins --locked
-      - run: python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/model-msgq-python"
+      - run: python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/model-msgq-python"
       - run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Compile the original grouped driving and driver artifacts
         run: |
@@ -371,6 +419,11 @@ jobs:
           python rust/tools/check_input_pipeline.py --inputs-binary rust/target/debug/examples/input_probe \
             --model-binary rust/target/debug/model-run --trusted-driving "$RUNNER_TEMP/original-models/driving_tinygrad.pkl" \
             --output "$RUNNER_TEMP/model-input-pipelines"
+      - name: Compare model initialization before first frame and CarParams
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/model-msgq-python:$PYTHONPATH" python rust/tools/check_model_startup.py \
+            --driving rust/target/debug/openpilot-driving-modeld --driver rust/target/debug/openpilot-dmonitoringmodeld \
+            --catalog "$RUNNER_TEMP/native-catalog" --models "$RUNNER_TEMP/original-models" --output "$RUNNER_TEMP/model-startup"
       - name: Exercise the Rust driver daemon with original camera and message IPC
         run: |
           PYTHONPATH="$RUNNER_TEMP/model-msgq-python:$PYTHONPATH" python rust/tools/check_driver_daemon.py \
@@ -387,6 +440,7 @@ jobs:
             --catalog "$RUNNER_TEMP/native-catalog" --models "$RUNNER_TEMP/original-models" \
             --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/model-logging-faults"
       - uses: actions/upload-artifact@v6
+        if: always()
         with:
           name: rust-original-pipeline-comparison
           path: |
@@ -395,22 +449,10 @@ jobs:
             ${{ runner.temp }}/native-catalog/current.json
             ${{ runner.temp }}/model-outputs-*/**/report.json
             ${{ runner.temp }}/model-input-pipelines/**/report.json
-            ${{ runner.temp }}/driver-daemon/**/report.json
-            ${{ runner.temp }}/driver-daemon/**/*.log
-            ${{ runner.temp }}/driver-daemon/**/logging/*.bin
-            ${{ runner.temp }}/driver-daemon/**/logging/*.json
-            ${{ runner.temp }}/driver-daemon/**/logging/disk/
-            ${{ runner.temp }}/driving-daemon/**/report.json
-            ${{ runner.temp }}/driving-daemon/**/*.log
-            ${{ runner.temp }}/driving-daemon/**/logging/*.bin
-            ${{ runner.temp }}/driving-daemon/**/logging/*.json
-            ${{ runner.temp }}/driving-daemon/**/logging/disk/
-            ${{ runner.temp }}/model-logging-faults/**/report.json
-            ${{ runner.temp }}/model-logging-faults/**/audit/*.packet
-            ${{ runner.temp }}/model-logging-faults/**/logging/*.bin
-            ${{ runner.temp }}/model-logging-faults/**/logging/*.json
-            ${{ runner.temp }}/model-logging-faults/*.json
-            ${{ runner.temp }}/model-logging-faults/*.stderr
+            ${{ runner.temp }}/model-startup/
+            ${{ runner.temp }}/driver-daemon/
+            ${{ runner.temp }}/driving-daemon/
+            ${{ runner.temp }}/model-logging-faults/
   model-memory:
     name: rust model memory
     runs-on: ubuntu-24.04

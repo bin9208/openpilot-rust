@@ -208,3 +208,9 @@ transports and owned child cleanup. Its
 original main with native host/ASan and generic ARM/QEMU executions. The inherited
 direct-SIGTERM orphan is tracked separately in #66; manager selection and device
 acceptance remain pending.
+
+[Supporting runtime integration #71](https://github.com/bin9208/openpilot-rust/issues/71)
+combines upload orchestration, typed Params, model startup/diagnostics and the
+journal bridge. The [integration record](../rust-port/support-runtime-integration.md)
+tracks frozen inputs, combined checks and remaining runtime work. Normal startup,
+active server integration and the complete device-test candidate remain pending.
