@@ -454,6 +454,12 @@ jobs:
         run: |
           python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration-timeouts" --timeouts
+      - name: Exercise registration collector publisher startup race
+        run: |
+          cc -shared -fPIC -Wall -Wextra -Werror rust/tools/registration_collector_delay.c -ldl -o "$RUNNER_TEMP/registration-collector-delay.so"
+          LD_PRELOAD="$RUNNER_TEMP/registration-collector-delay.so" python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
+            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration-ready" --case clock_year_ten_thousand
+          python -c 'from pathlib import Path; import sys; files=list(Path(sys.argv[1]).glob("clock_year_ten_thousand/*/collector-*/stderr.log")); assert len(files)==2; assert all("pausing before error publisher initialization" in path.read_text() for path in files)' "$RUNNER_TEMP/startup-runtime/registration-ready"
       - name: Compare uploader signing after shared registration key support
         run: python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/startup-runtime/uploader-signing.json"
       - name: Compare complete manager catalog and ordered Params predicates

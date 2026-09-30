@@ -209,6 +209,7 @@ def run_side(side, args, case, path, pairs, server):
   collector_name = 'collector-' + side + '-' + hashlib.sha256(str(path).encode()).hexdigest()[:8]
   collector = Peer(path / 'unused', path / collector_name, original=True)
   collector.start()
+  collector.send([bytes([10]), b'{"msg":"registration-collector-ready"}'], 'ready')
   config = dict(
     case.get('config', {}),
     persist=str(persist),
