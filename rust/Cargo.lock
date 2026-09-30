@@ -1908,6 +1908,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-manager"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "chrono",
+ "openpilot-cereal",
+ "openpilot-checkout-status",
+ "openpilot-crash-reporting",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-managed-entry",
+ "openpilot-manager-catalog",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "openpilot-registration",
+ "openpilot-runtime-version",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-manager-catalog"
 version = "0.1.0"
 dependencies = [
