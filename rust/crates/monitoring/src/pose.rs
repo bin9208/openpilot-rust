@@ -110,11 +110,8 @@ impl DriverMonitoring {
             self.hi_stds = 0;
         }
     }
-    #[expect(
-        clippy::approx_constant,
-        reason = "0.3927 is the exact source policy threshold, not PI/8"
-    )]
     fn get_distracted_types(&mut self) {
+        const STEERING_YAW_CAP: f64 = 3927.0 / 10000.0;
         let (mut pitch_error, mut yaw_error) = if self.pose.calibrated {
             (
                 self.pose.pitch
@@ -131,7 +128,7 @@ impl DriverMonitoring {
         };
         yaw_error = if yaw_error * self.pose.steer_yaw_offset > 0. {
             max(
-                yaw_error.abs() - min(self.pose.steer_yaw_offset.abs(), 0.3927),
+                yaw_error.abs() - min(self.pose.steer_yaw_offset.abs(), STEERING_YAW_CAP),
                 0.,
             )
         } else {

@@ -46,3 +46,9 @@ ports camera pairing, drop state, calibration and packed policy inputs. The
 [comparison record](../rust-port/model-input-validation.md) includes original
 source sequences and exact native camera/model/recurrent output comparisons.
 Complete driving daemon orchestration remains tracked under #1/#6.
+
+[Monitoring policy issue #29](https://github.com/bin9208/openpilot-rust/issues/29)
+ports awareness, distraction, calibration, fallback, lockout and complete
+`driverMonitoringState` messages. Its [validation record](../rust-port/monitoring-validation.md)
+compares 209,144 original-policy frames and packets. Continuous IPC and
+whole-runtime integration remain open.

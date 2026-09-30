@@ -1,10 +1,6 @@
 use crate::scalar::{max, min};
 use crate::{AlertLevel, DriverMonitoring, Input, Policy};
 impl DriverMonitoring {
-    #[expect(
-        clippy::nonminimal_bool,
-        reason = "keep the source always-on disengagement branches recognizable"
-    )]
     pub(crate) fn update_events(&mut self, input: &Input) {
         self.alert_level = AlertLevel::None;
         self.driver_interacting = input.steering_pressed || input.gas_pressed;
@@ -25,8 +21,7 @@ impl DriverMonitoring {
         if (self.driver_interacting
             && self.awareness > 0.
             && self.active_policy == Policy::Wheeltouch)
-            || (!always_on_valid && !input.enabled)
-            || (always_on_valid && !input.enabled && self.awareness <= 0.)
+            || (!input.enabled && (!always_on_valid || self.awareness <= 0.))
         {
             self.reset_awareness();
             return;
