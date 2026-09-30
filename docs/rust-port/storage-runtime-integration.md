@@ -53,6 +53,22 @@ wire records, 516 rate inputs and backpressure/thread/console/signal checks).
 An initial local rerun correctly rejected an older binary's commit identity;
 rebuilding the probe from the current revision resolved that provenance error.
 
+At `7bf70206`, the PR's required Rust gate passed, while its push counterpart
+timed out in the original DEBUG-capacity crash fixture after five seconds
+([#67](https://github.com/bin9208/openpilot-rust/issues/67)). The failure log
+did not identify whether import, send or crash collection took that time.
+On the local Linux host, the unchanged oversized packet asserted identically
+in all ten diagnostic runs. With only `RLIMIT_CORE=0`, five aborts took
+1.157–1.164 seconds; with process-local `PR_SET_DUMPABLE=0`, five took
+0.073–0.076 seconds. The local host uses an external core-dump handler; this
+measurement establishes that disabling the resource limit alone does not
+remove that handler's latency, not the exact cause of the remote timeout.
+The fixture now disables dumpability only in its intentional-crash child,
+records import/send milestones and retains timeout stdout/stderr. The same
+five-second watchdog, original SIGABRT, oversized packet, queue capacity and
+Rust error assertions remain. The complete affected native fixture passes
+locally; exact updated-head CI is required before integration.
+
 Full-runtime #1/#6 remain open. The remaining daemon ports, production startup,
 model diagnostic callsites (#53), driving startup-order parity (#55), active web
 upload orchestration, and device/drive acceptance are separate requirements.

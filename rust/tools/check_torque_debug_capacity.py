@@ -24,14 +24,18 @@ def check(binary: Path, numerics: Path, output: Path) -> None:
     assert client.process.wait(timeout=3) == 1
     rust_error = (client.destination / "daemon.log").read_text()
     assert "fitting one third of the queue" in rust_error
-    child = (
-      'import resource; resource.setrlimit(resource.RLIMIT_CORE,(0,0)); '
-      + 'from openpilot.cereal import messaging; from pathlib import Path; import sys; '
-      + 'messaging.pub_sock("liveTorqueParameters").send(Path(sys.argv[1]).read_bytes())'
-    )
-    original = subprocess.run([sys.executable, "-c", child, str(payload)], env=dict(os.environ), cwd="/tmp", capture_output=True, timeout=5)
-    assert original.returncode == -signal.SIGABRT, (original.returncode, original.stderr)
+    child = Path(__file__).with_name('torque_capacity_child.py').resolve()
+    try:
+      original = subprocess.run([sys.executable, str(child), str(payload)], env=dict(os.environ), cwd="/tmp", capture_output=True, timeout=5)
+    except subprocess.TimeoutExpired as error:
+      (output / "source-stderr.log").write_bytes(error.stderr or b'')
+      (output / "source-stages.jsonl").write_bytes(error.stdout or b'')
+      raise
     (output / "source-stderr.log").write_bytes(original.stderr)
+    (output / "source-stages.jsonl").write_bytes(original.stdout)
+    assert original.returncode == -signal.SIGABRT, (original.returncode, original.stderr)
+    stages = [json.loads(line) for line in original.stdout.splitlines()]
+    assert [item['stage'] for item in stages] == ['before_import', 'after_import', 'before_send'], stages
   report = {
     "result": "pass",
     "inherited_defect": True,
@@ -42,6 +46,8 @@ def check(binary: Path, numerics: Path, output: Path) -> None:
     "rust_returncode": 1,
     "rust_error": rust_error,
     "source_guard": "msgq_repo/msgq/msgq.cc:246 assert(3 * total_msg_size <= q->size)",
+    "source_stages": stages,
+    "source_core_dump": "disabled with PR_SET_DUMPABLE=0; SIGABRT and original size guard unchanged",
     "scope": "preserved failure, not a fix",
   }
   (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
