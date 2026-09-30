@@ -163,6 +163,9 @@ jobs:
             rust/target/release/cpu-sample
             rust/target/release/openpilot-deleter
             rust/target/release/openpilot-uploader
+            rust/target/release/openpilot-dashcam-upload
+            rust/target/release/journald-rs
+            rust/target/release/openpilot-timed
             ${{ runner.temp }}/deleter-reference/report.json
             ${{ runner.temp }}/deleter-native/*.json
             ${{ runner.temp }}/deleter-native/*.log
@@ -219,7 +222,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pyserial==3.5
       - name: Build support daemons and their source-comparison probes
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-uploader -p openpilot-web-upload -p openpilot-dashcam-upload -p openpilot-params-typed -p openpilot-journald -p openpilot-logmessaged --bins --examples --locked
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-uploader -p openpilot-web-upload -p openpilot-dashcam-upload -p openpilot-params-typed -p openpilot-journald -p openpilot-timed -p openpilot-logmessaged --bins --examples --locked
       - name: Build original message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/support-msgq-python"
@@ -257,6 +260,16 @@ jobs:
           python rust/tools/check_dashcam_lifecycle.py --binary rust/target/debug/openpilot-dashcam-upload --output "$RUNNER_TEMP/support-runtime/dashcam-lifecycle"
       - name: Compare journald actual IPC, fatal inputs and child lifecycle
         run: python rust/tools/check_journald.py --binary rust/target/debug/journald-rs --output "$RUNNER_TEMP/support-runtime/journald"
+      - name: Compare timed policy, HTTP and logging with original source
+        run: |
+          python rust/tools/check_timed_reference.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-reference"
+          python rust/tools/check_timed_http.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-http"
+          python rust/tools/check_timed_logging.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-logging"
+      - name: Compare timed actual IPC and production process shutdown
+        run: |
+          python rust/tools/check_timed_daemon.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-daemon"
+          python rust/tools/check_timed_lifecycle.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-lifecycle"
+          python rust/tools/check_timed_shutdown.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-shutdown"
       - name: Retain raw support runtime and Params build evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -563,6 +576,14 @@ jobs:
           name: rust-linux-aarch64-not-device-validated
           path: |
             rust/target/aarch64-unknown-linux-gnu/release/cpu-sample
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-uploader
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-dashcam-upload
+            rust/target/aarch64-unknown-linux-gnu/release/journald-rs
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-timed
+            rust/target/aarch64-unknown-linux-musl/release/openpilot-uploader
+            rust/target/aarch64-unknown-linux-musl/release/openpilot-dashcam-upload
+            rust/target/aarch64-unknown-linux-musl/release/journald-rs
+            rust/target/aarch64-unknown-linux-musl/release/openpilot-timed
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-calibrationd
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-loggerd
             rust/target/aarch64-unknown-linux-musl/release/openpilot-loggerd

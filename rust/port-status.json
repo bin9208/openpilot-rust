@@ -372,7 +372,10 @@
       "name": "timed",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.timed",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX", "libzmq structured logging", "OS sudo/date/rm/ln commands and zoneinfo", "Rust HTTP/TLS and local-time libraries"],
+      "runtime_scope": "native GPS clock publication, source-priority timezone policy and interruptible process shutdown; original-source host comparisons and generic ARM emulation; ARM missing-command error propagation differs under QEMU; manager and real AGNOS/device acceptance pending",
+      "evidence": "docs/rust-port/timed-validation.md",
       "production_replaced": false
     },
     {

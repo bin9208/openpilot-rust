@@ -15,6 +15,7 @@ the production manager or establish device performance.
 | Uploader logging error boundaries (#68) | `4efeb5a4db0e753aac6fbf7d562bf3396bba2464` | [Fault comparison](../naver/rust_uploader_logging_errors_20260930.md) |
 | Model diagnostics and startup (#53/#55/#60) | `1cdb61820c2356b6e43b73b7c7880ad2c3df9dad` | [Diagnostics](model-diagnostics.md), [startup](model-startup.md) |
 | Native journal child and JSON bridge (#65) | `26942c5d8206693a4447e9f481575f215b7c894b` | [Journal source comparison](journald-validation.md) |
+| Clock/timezone daemon and shared socket timeout transport (#70) | `d929a9c4e17516dee3422c9cdba98bee9d3dba19` | [Clock, HTTP and shutdown comparison](timed-validation.md) |
 
 Component host/ASan/ARM records retain their own source and executable hashes.
 Those results do not substitute for the combined revision's checks. Dependency
@@ -45,7 +46,21 @@ environment uses the same dependencies declared by CI. Failed attempts remain in
 the local evidence alongside the completed comparisons.
 
 Those captures precede the test-only Jetlink socket correction merged from
-`6218d397`. Exact-SHA Actions and post-merge results are still pending. PR success,
+`6218d397`. At the resulting `af181858`, fresh original VisionIPC/model runs also
+pass all eight initialization scenarios, continuous driving and driver monitoring,
+and logging-failure recovery while inference continues. Their retained initial
+fault-check attempt lacked Cargo in the local PATH; adding the existing toolchain
+path allowed the unchanged check to complete.
+
+The clock/timezone review reproduced two native mismatches before accepting
+`d929a9c4`: JSON duplicate/nonfinite handling, and roughly 9–10-second shutdown
+delays during GPS sleep or progressing HTTP. The corrected native daemon preserves
+normal timeouts and handles stop promptly. Parent execution independently confirms
+all six real shutdown scenarios and verifies 1,635 frozen evidence hashes. A
+QEMU-specific missing-command spawn discrepancy remains explicitly recorded;
+the ARM policy audit passes 53 of 54 cases and is not described as full parity.
+
+Exact-SHA Actions and post-merge results are still pending. PR success,
 post-merge success, device execution and user acceptance remain separate states.
 
 ## Remaining runtime work
