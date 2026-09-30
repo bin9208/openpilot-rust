@@ -88,7 +88,7 @@ Six Rust regression tests lock message presence, exact ordered JSON, integer
 conversions, syntax-versus-fatal classification, the integer resource limit and
 stack-independent handling of source-valid deep records.
 Initial comparison failures and their repairs remain captured: source harness
-import/default-pointer assumptions, byte-string literal-control rejection and
+import/default-pointer/readiness assumptions, byte-string literal-control rejection and
 integer control-whitespace rejection, and removal of a provisional nesting cutoff. The final ledger distinguishes those
 failed attempts from completed checks.
 

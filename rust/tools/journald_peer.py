@@ -49,7 +49,8 @@ class Peer:
       self.wait(lambda: all((self.shm / topic).exists() for topic in ('logMessage', 'errorLogMessage')))
       command = ([sys.executable, str(ROOT / 'openpilot/system/journald.py')] if binary is None else [str(binary)])
       self.process = self.spawn('journal', command, stdin=subprocess.PIPE)
-      self.wait(lambda: (self.shm / 'androidLog').exists() and self.trace.exists())
+      self.wait(lambda: (self.shm / 'androidLog').exists() and self.trace.exists()
+                and self.trace.read_bytes().endswith(b'\n'))
       started = json.loads(self.trace.read_text().splitlines()[0])
       assert started['event'] == 'started' and started['ppid'] == self.process.pid, started
       self.child_pid = started['pid']
