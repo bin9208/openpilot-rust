@@ -2,7 +2,7 @@ pub mod clock;
 pub mod diagnostics;
 mod error;
 mod files;
-mod raw_file;
+pub mod raw_file;
 pub mod rotation;
 pub use error::Error;
 mod audio;
