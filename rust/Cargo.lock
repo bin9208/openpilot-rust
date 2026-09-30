@@ -1603,6 +1603,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-checkout-status"
+version = "0.1.0"
+dependencies = [
+ "openpilot-logmessaged",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
 name = "openpilot-crash-reporting"
 version = "0.1.0"
 dependencies = [
