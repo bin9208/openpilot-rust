@@ -483,6 +483,16 @@
   ],
   "library_ports": [
     {
+      "name": "managed_child_entry_boundary",
+      "source_entrypoint": "openpilot.system.manager.process:launcher",
+      "status": "native_host_entry_boundary_validated",
+      "implementation": "rust/crates/managed-entry; in-process preparation/context callbacks, daemon logging/Sentry binding, cooperative interrupt and returned-error policy",
+      "native_dependencies": ["existing crash-reporting/logging/Params", "Linux naming and signal APIs", "temporary original C++ msgq in the real child validation context"],
+      "entrypoint_adoption": false,
+      "production_replaced": false,
+      "evidence": "docs/rust-port/managed-entry-validation.md"
+    },
+    {
       "name": "project_sentry_policy",
       "source_entrypoint": "openpilot.system.sentry; registration reporting gate",
       "status": "native_host_transport_validated",
