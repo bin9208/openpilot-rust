@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12,<3.13"
-# dependencies = ["pycapnp==2.2.4", "pyzmq==27.2.0"]
+# dependencies = ["pycapnp==2.1.0", "pyzmq==27.2.0"]
 # ///
 # Run: python rust/tools/check_stats_producer.py EXAMPLES_DIR OUTPUT
 """Real ZMQ peer verifies original/native fork reconnect and inherited-handle destruction."""

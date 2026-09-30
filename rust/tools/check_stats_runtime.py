@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12,<3.13"
-# dependencies = ["numpy==2.5.3", "pycapnp==2.2.4", "pyzmq==27.2.0"]
+# dependencies = ["numpy==2.5.3", "pycapnp==2.1.0", "pyzmq==27.2.0"]
 # ///
 # Run: PYTHONPATH=<original-msgq>:.:rust/tools python rust/tools/check_stats_runtime.py BIN_DIR OUTPUT
 """Run the production entrypoint with its real clocks, paths, and signal lifecycle."""

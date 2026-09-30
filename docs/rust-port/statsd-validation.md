@@ -59,7 +59,9 @@ The daemon preserves these source contracts:
 
 SIGINT/SIGTERM request orderly native loop termination and resource destruction.
 Direct original Python SIGINT is KeyboardInterrupt, and direct SIGTERM uses the
-OS default; native orderly termination exits zero. No final metrics flush is
+OS default; native orderly termination exits zero. Stop is checked at metric
+boundaries as well as the outer loop so sustained PUSH traffic cannot postpone
+shutdown until EAGAIN. No final metrics flush is
 introduced. Neither process status nor emulator execution establishes manager
 integration or vehicle acceptance.
 
@@ -94,6 +96,7 @@ The focused checkers are:
 | `check_stats_failures.py` | Original/native fatal UTF-8, surrogate write, missing directory, permission denial, existing destination and dangling-symlink publication; physical missing/invalid UTF-8 Params and real warning logs. |
 | `check_stats_producer.py` | Original/native fork reconnect and inherited-handle destruction; default HWM accepts 1000 of 20,000 queued gauge sends while the remaining 19,000 are dropped without blocking. Ten captured gauge/sample packets from real cereal Int8/UInt16/Float32 getters and integer/float samples match without coercing the source inputs. |
 | `check_stats_log_fault.py` | A one-shot ZMQ EINVAL at the logging boundary in the actual original and native continuous loops produces the same actual collector malformed-metric record. A separate regression verifies that a second log failure propagates. |
+| `check_stats_flood.py` | The production daemon must stop on SIGINT/SIGTERM while two native PUSH processes continue flooding metrics. The pre-fix SIGINT run timed out at two seconds; the regression checks termination without a shutdown flush. |
 | `check_stats_runtime.py` | Production `statsd-rs` with real clocks and default socket/PC paths; actual deviceState, file publication and bounded SIGTERM exit. |
 
 The original main is compiled unchanged with imports supplied by an adapter.
@@ -120,6 +123,10 @@ native debug binary directory, original Params binding `.so`, and a new evidence
 directory. The number and clock checkers take their matching built examples.
 The producer checker takes the examples directory; the runtime checker takes
 the binary directory. All commands and exact arguments are in the local ledger.
+
+The final source/runtime oracles also run in an isolated environment matching CI:
+Python 3.12, pycapnp 2.1.0, NumPy 2.5.3, pyzmq 27.2.0 and zstandard 0.25.0.
+Earlier local pycapnp 2.2.4 runs remain explicitly labeled historical evidence.
 
 The first timestamp oracle exposed a one-nanosecond error for 1 second plus
 999,999,999 nanoseconds. It is retained as RED evidence, corrected by integer

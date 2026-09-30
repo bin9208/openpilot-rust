@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12,<3.13"
-# dependencies = ["numpy==2.5.3", "pycapnp==2.2.4", "pyzmq==27.2.0", "zstandard==0.25.0"]
+# dependencies = ["numpy==2.5.3", "pycapnp==2.1.0", "pyzmq==27.2.0", "zstandard==0.25.0"]
 # ///
 # Run: PYTHONPATH=<original-msgq>:.:rust/tools python rust/tools/check_stats_failures.py BIN_DIR PARAMS_BINDING OUTPUT
 """Exercise failure boundaries using the real source/native daemon and filesystem."""

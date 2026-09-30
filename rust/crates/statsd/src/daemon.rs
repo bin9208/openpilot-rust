@@ -95,6 +95,9 @@ pub fn run_with_events(
         let previous = started(&subscriber)?;
         subscriber.update(Duration::from_millis(100))?;
         loop {
+            if stop.load(Ordering::Relaxed) {
+                return Ok(());
+            }
             let packet = match socket.recv_bytes(zmq::DONTWAIT) {
                 Ok(packet) => packet,
                 Err(zmq::Error::EAGAIN) => break,

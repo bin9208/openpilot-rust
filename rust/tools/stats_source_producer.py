@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12,<3.13"
-# dependencies = ["pycapnp==2.2.4", "pyzmq==27.2.0"]
+# dependencies = ["pycapnp==2.1.0", "pyzmq==27.2.0"]
 # ///
 # Run via check_stats_producer.py.
 """Original StatLog with an isolated socket path; fork/drop and backpressure peer."""
