@@ -81,13 +81,20 @@ def exec_failure(peer, kind):
 
 
 def nonblocking_once(peer):
-  peer.launch([peer.native(mode='delay')])
+  peer.launch([peer.native(mode='ignore')])
   peer.op('start', name='child')
   peer.ready()
   first = peer.op('stop', name='child', block=False)
   assert first['result'] is None and first['elapsed'] < 0.1
   assert first['snapshots'][0]['shutting_down'] and not first['snapshots'][0]['state']['shouldBeRunning']
-  second = peer.op('stop', name='child', block=False)
+  wait_until(lambda: peer.signals() == [signal.SIGINT])
+  request = peer.begin('stop', name='child', block=False, acknowledge=True)
+  assert peer.read() == {'acknowledged': True}
+  assert not peer.selector.select(0.15), 'second stop returned before the held child exited'
+  temporary = peer.root / 'child' / 'exit.tmp'
+  temporary.write_text('0')
+  temporary.replace(temporary.with_name('exit'))
+  second = peer.finish(request)
   assert second['result'] == 0 and 0.1 <= second['elapsed'] < 1.5, second
   assert peer.signals() == [signal.SIGINT]
   return {'first': None, 'second': 0, 'single_signal': peer.signals()}

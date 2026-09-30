@@ -97,10 +97,13 @@ class Peer:
       timeout = 0
     (self.output / 'logs.json').write_text(json.dumps(self.records, indent=2) + '\n')
 
-  def op(self, op, **values):
+  def begin(self, op, **values):
     request = {'op': op, **values}
     self.process.stdin.write(json.dumps(request) + '\n')
     self.process.stdin.flush()
+    return request
+
+  def finish(self, request):
     response = self.read()
     for snapshot in response['snapshots']:
       wire = bytes(snapshot['wire'])
@@ -110,6 +113,9 @@ class Peer:
     (self.output / 'transcript.json').write_text(json.dumps(self.transcript, indent=2) + '\n')
     self.drain()
     return response
+
+  def op(self, op, **values):
+    return self.finish(self.begin(op, **values))
 
   def state(self, name='child'):
     response = self.op('state', name=name)

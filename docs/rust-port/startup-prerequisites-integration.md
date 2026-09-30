@@ -47,6 +47,15 @@ Raw comparison and binding evidence is retained even after failure. Registration
 and checkout-status inputs will be added after their component review; the job
 name does not claim that the normal manager or full startup has been ported.
 
+The first combined supervision run exposed a test synchronization defect: the
+child's fixed 200 ms delay could expire between the two stop requests, making a
+correct immediate second return fail the test's minimum-duration assertion.
+The preserved failure shows exit code 0 and the expected cleared process state.
+The comparison now holds the real child until an explicit atomic release,
+acknowledges receipt of the second request and verifies it cannot return while
+the child remains held. All 43 source/native scenarios pass with that barrier.
+Only the test RPC/example changed; production stop behavior is unchanged.
+
 ## Local build capacity
 
 The user's low-space warning is tracked in

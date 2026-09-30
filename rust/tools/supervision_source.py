@@ -123,6 +123,8 @@ def main():
     for line in sys.stdin:
       request = json.loads(line)
       start = time.monotonic()
+      if request.get('acknowledge'):
+        print(json.dumps({'acknowledged': True}), flush=True)
       try:
         result = action(scope, processes, request)
         error = None

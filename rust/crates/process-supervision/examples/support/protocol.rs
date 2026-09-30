@@ -50,6 +50,14 @@ pub struct Race {
 }
 
 #[derive(Deserialize)]
+pub struct Request {
+    #[serde(default)]
+    pub acknowledge: bool,
+    #[serde(flatten)]
+    pub action: Action,
+}
+
+#[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Action {
     Start {

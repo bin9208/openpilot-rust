@@ -19,9 +19,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     std::io::stdout().flush()?;
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
         for line in input {
-            let action: protocol::Action = serde_json::from_str(&line?)?;
+            let request: protocol::Request = serde_json::from_str(&line?)?;
+            let action = request.action;
             let exit = matches!(action, protocol::Action::Exit);
             let start = Instant::now();
+            if request.acknowledge {
+                println!("{{\"acknowledged\":true}}");
+                std::io::stdout().flush()?;
+            }
             let result = driver::action(&mut processes, action);
             let elapsed = start.elapsed().as_secs_f64();
             let (value, error) = match result {
