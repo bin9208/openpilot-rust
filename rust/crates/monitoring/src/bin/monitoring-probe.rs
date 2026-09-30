@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             dm =
                 DriverMonitoring::new(request.rhd_saved, request.always_on, request.too_distracted);
         }
-        dm.run_step(&request.input);
+        dm.run_step(&request.input)?;
         serde_json::to_writer(&mut state, &dm)?;
         state.write_all(b"\n")?;
         packets.write_all(&dm.state_packet(request.valid, u64::try_from(index)?)?)?;

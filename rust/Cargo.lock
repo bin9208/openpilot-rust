@@ -353,6 +353,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-dmonitoringd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "libc",
+ "openpilot-cereal",
+ "openpilot-messaging",
+ "openpilot-monitoring",
+ "openpilot-params",
+ "rustix",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-dmonitoringmodeld"
 version = "0.1.0"
 dependencies = [
@@ -436,6 +452,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "thiserror",
 ]
 
 [[package]]

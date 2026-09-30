@@ -76,6 +76,10 @@ jobs:
       - run: python tools/check_proclog_reference.py
       - run: python tools/check_params_reference.py
       - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
+      - name: Compare continuous driver monitoring with the original loop and IPC
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_dmonitoring_daemon.py \
+            --binary target/debug/openpilot-dmonitoringd --output "$RUNNER_TEMP/dmonitoring-daemon"
       - name: Validate continuous procLog cadence and native IPC shutdown
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_proclog_daemon.py \
@@ -95,6 +99,9 @@ jobs:
             rust/target/release/cpu-sample
             rust/target/release/openpilot-proclogd
             rust/target/release/openpilot-proclogd-runtime
+            rust/target/release/openpilot-dmonitoringd
+            ${{ runner.temp }}/dmonitoring-daemon/**/report.json
+            ${{ runner.temp }}/dmonitoring-daemon/**/*.log
             ${{ runner.temp }}/proclog-runtime/**/*.json
             ${{ runner.temp }}/proclog-runtime/**/*.log
             ${{ runner.temp }}/proclog-runtime/**/*.capnp

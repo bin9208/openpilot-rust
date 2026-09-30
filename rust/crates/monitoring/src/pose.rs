@@ -1,5 +1,5 @@
 use crate::scalar::{clamp, max, min};
-use crate::{DriverMonitoring, Input, Policy, DT_DMON};
+use crate::{DriverMonitoring, Input, InputError, Policy, DT_DMON};
 
 /// Original leveled driver camera geometry (tici/ar0231, 1928 x 1208).
 pub fn face_orientation(
@@ -12,7 +12,7 @@ pub fn face_orientation(
     (pitch, yaw)
 }
 impl DriverMonitoring {
-    pub(crate) fn update_states(&mut self, input: &Input) {
+    pub(crate) fn update_states(&mut self, input: &Input) -> Result<(), InputError> {
         let driver = &input.driver;
         if input.car_speed > 11. && (driver.left.face_prob > 0.7 || driver.right.face_prob > 0.7) {
             self.wheelpos_offsetter.push(driver.wheel_on_right_prob);
@@ -32,17 +32,40 @@ impl DriverMonitoring {
         } else {
             &driver.left
         };
-        let (Some(orientation), Some(position), Some(orientation_std), Some(_)) = (
-            data.face_orientation,
-            data.face_position,
-            data.face_orientation_std,
-            data.face_position_std,
+        let (Some(orientation), Some(position), Some(orientation_std), Some(position_std)) = (
+            data.face_orientation.as_deref(),
+            data.face_position.as_deref(),
+            data.face_orientation_std.as_deref(),
+            data.face_position_std.as_deref(),
         ) else {
-            return;
+            return Ok(());
         };
+        if [orientation, position, orientation_std, position_std]
+            .iter()
+            .any(|values| values.is_empty())
+        {
+            return Ok(());
+        }
+        for (name, values, minimum) in [
+            ("faceOrientation", orientation, 2),
+            ("facePosition", position, 2),
+            ("faceOrientationStd", orientation_std, 2),
+            ("rpyCalib", input.calibration.as_slice(), 3),
+        ] {
+            if values.len() < minimum {
+                return Err(InputError(name));
+            }
+        }
         self.face_detected = data.face_prob > 0.7;
-        (self.pose.pitch, self.pose.yaw) =
-            face_orientation(orientation, position, input.calibration);
+        (self.pose.pitch, self.pose.yaw) = face_orientation(
+            [orientation[0], orientation[1], 0.],
+            [position[0], position[1]],
+            [
+                input.calibration[0],
+                input.calibration[1],
+                input.calibration[2],
+            ],
+        );
         let steer = max(input.steering_angle_deg.abs() - 30., 0.);
         // np.sign(0) is zero; Rust signum(0) is one.
         let sign = if input.steering_angle_deg == 0. {
@@ -109,6 +132,7 @@ impl DriverMonitoring {
         } else if self.face_detected && self.pose.low_std {
             self.hi_stds = 0;
         }
+        Ok(())
     }
     fn get_distracted_types(&mut self) {
         const STEERING_YAW_CAP: f64 = 3927.0 / 10000.0;

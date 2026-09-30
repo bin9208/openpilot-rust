@@ -70,3 +70,8 @@ connects the validated collector and canonical encoder to the original 0.5 Hz
 runtime publication loop. Its [validation record](../rust-port/proclog-runtime-validation.md)
 includes source deadline comparisons, real IPC, overrun recovery and shutdown.
 Manager selection and whole-runtime device acceptance remain pending.
+
+[Monitoring daemon issue #38](https://github.com/bin9208/openpilot-rust/issues/38)
+connects the validated policy to original driver-frame polling, validity/demo
+gates and post-publication Params updates. Its [validation record](../rust-port/dmonitoring-daemon-validation.md)
+includes full source-loop/native-message comparisons and handedness persistence.
