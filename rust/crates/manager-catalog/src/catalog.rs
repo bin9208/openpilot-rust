@@ -87,6 +87,7 @@ impl Descriptor {
 fn availability(name: &str) -> RustAvailability {
     let (package, binary) = match name {
         "beep" => ("openpilot-beepd", "openpilot-beepd"),
+        "bridge" => ("openpilot-bridge", "bridge"),
         "calibrationd" => ("openpilot-calibrationd", "openpilot-calibrationd"),
         "deleter" => ("openpilot-deleter", "openpilot-deleter"),
         "dmonitoringd" => ("openpilot-dmonitoringd", "openpilot-dmonitoringd"),

@@ -65,4 +65,26 @@ fn queued_poll_retains_every_packet_until_explicit_receive() {
     }
     assert_eq!(queues.receive_one(0).unwrap(), None);
     assert!(publisher.readers_caught_up());
+
+    drop(queues);
+    let mut queues = MultiSubscriber::lazy_for_runtime(&specifications).unwrap();
+    assert!(queues.receive_one(0).is_err());
+    queues.set_active(0, true).unwrap();
+    publisher.send(b"retained-while-other-opens").unwrap();
+    queues.set_active(1, true).unwrap();
+    queues.set_active(1, false).unwrap();
+    assert_eq!(
+        queues.receive_one(0).unwrap(),
+        Some(b"retained-while-other-opens".to_vec())
+    );
+    queues.set_active(0, false).unwrap();
+    assert!(queues.receive_one(0).is_err());
+    assert!(queues.set_active(2, true).is_err());
+    queues.set_active(0, true).unwrap();
+    publisher.send(b"reconnected").unwrap();
+    assert_eq!(queues.poll_ready(Duration::ZERO).unwrap(), [0]);
+    assert_eq!(
+        queues.receive_one(0).unwrap(),
+        Some(b"reconnected".to_vec())
+    );
 }

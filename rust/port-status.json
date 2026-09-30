@@ -25,7 +25,11 @@
       "name": "bridge",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/cereal/messaging",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/bridge; continuous bidirectional msgq/ZMQ bridge with source service ports and connection-driven subscriptions",
+      "native_dependencies": ["libzmq 4.3.5 through existing zmq crate", "temporary original msgq through CXX", "Linux signals"],
+      "evidence": "docs/rust-port/bridge-validation.md",
+      "runtime_scope": "original C++ versus native loopback TCP/IPC bursts, substring whitelist, disconnect/reconnect and shutdown; manager selection, full-runtime startup/upload and AGNOS/device acceptance pending",
       "production_replaced": false
     },
     {

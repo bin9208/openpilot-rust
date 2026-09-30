@@ -61,6 +61,26 @@ pub struct MultiSubscriber {
 }
 
 impl MultiSubscriber {
+    /// Open each non-conflated queue only while its bridge has connected peers.
+    pub fn lazy_for_runtime(specifications: &[Subscription<'_>]) -> Result<Self, Error> {
+        let specifications: Vec<_> = specifications
+            .iter()
+            .map(|specification| ffi::QueueSpec {
+                endpoint: specification.endpoint.to_owned(),
+                capacity: specification.capacity,
+                polled: specification.polled,
+            })
+            .collect();
+        Ok(Self {
+            queues: ffi::open_lazy_batch(&specifications)?,
+            thread: PhantomData,
+        })
+    }
+
+    pub fn set_active(&mut self, index: usize, active: bool) -> Result<(), Error> {
+        Ok(self.queues.pin_mut().set_active(index, active)?)
+    }
+
     pub fn new(specifications: &[Subscription<'_>]) -> Result<Self, Error> {
         Self::open(specifications, true)
     }

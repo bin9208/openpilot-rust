@@ -121,11 +121,16 @@ std::unique_ptr<Queue> open_runtime_queue(rust::Str endpoint, bool publisher, bo
   return open_checked_queue(endpoint, publisher, conflate, capacity, false);
 }
 
-QueueBatch::QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolated, bool conflate) {
+QueueBatch::QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolated, bool conflate, bool lazy) : lazy_(lazy) {
   if (specifications.empty() || specifications.size() > 256) throw std::invalid_argument("invalid subscription count");
   std::set<std::string> names;
   for (const auto &specification : specifications) {
     if (!names.insert(std::string(specification.endpoint)).second) throw std::invalid_argument("duplicate subscription");
+    endpoints_.push_back({std::string(specification.endpoint), specification.capacity, specification.polled});
+    if (lazy) {
+      queues_.push_back(nullptr);
+      continue;
+    }
     queues_.push_back(open_checked_queue(specification.endpoint, false, conflate, specification.capacity, isolated));
     const size_t index = queues_.size() - 1;
     if (specification.polled) {
@@ -135,7 +140,26 @@ QueueBatch::QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolate
       unpolled_indices_.push_back(index);
     }
   }
-  if (polls_.empty()) throw std::invalid_argument("at least one polled subscription is required");
+  if (!lazy && polls_.empty()) throw std::invalid_argument("at least one polled subscription is required");
+}
+
+void QueueBatch::set_active(size_t index, bool active) {
+  if (!lazy_) throw std::invalid_argument("subscription activation requires a lazy batch");
+  auto &queue = queues_.at(index);
+  if (active == bool(queue)) return;
+  const auto &endpoint = endpoints_.at(index);
+  if (active) queue = open_checked_queue(endpoint.name, false, false, endpoint.capacity, false);
+  else queue.reset();
+  polls_.clear();
+  poll_indices_.clear();
+  unpolled_indices_.clear();
+  for (size_t i = 0; i < queues_.size(); ++i) {
+    if (!queues_[i]) continue;
+    if (endpoints_[i].polled) {
+      polls_.push_back(msgq_pollitem_t{&queues_[i]->queue_, 0});
+      poll_indices_.push_back(i);
+    } else unpolled_indices_.push_back(i);
+  }
 }
 
 rust::Vec<QueuedMessage> QueueBatch::receive(int32_t timeout_ms) {
@@ -169,10 +193,14 @@ rust::Vec<size_t> QueueBatch::poll_ready(int32_t timeout_ms) {
 }
 
 rust::Vec<uint8_t> QueueBatch::receive_one(size_t index) {
+  if (!queues_.at(index)) throw std::invalid_argument("inactive subscription");
   return queues_.at(index)->receive(0);
 }
 
 std::unique_ptr<QueueBatch> open_queued_batch(rust::Slice<const QueueSpec> specifications) {
   return std::make_unique<QueueBatch>(specifications, false, false);
+}
+std::unique_ptr<QueueBatch> open_lazy_batch(rust::Slice<const QueueSpec> specifications) {
+  return std::make_unique<QueueBatch>(specifications, false, false, true);
 }
 }
