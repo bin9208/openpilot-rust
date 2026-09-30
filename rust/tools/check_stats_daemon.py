@@ -65,13 +65,29 @@ def trial(binary_dir, binding, output, original):
       packet = messaging.new_message('deviceState')
       packet.deviceState.started = started
       publisher.send(packet.to_bytes())
+    def barrier(label, now):
+      marker = 'barrier-' + label
+      metrics([marker])
+      deadline = time.monotonic() + 10
+      while time.monotonic() < deadline:
+        tick(now)
+        while (packet := collector.subscribers['logMessage'].receive(non_blocking=True)) is not None:
+          with log.Event.from_bytes(packet) as event:
+            record = json.loads(event.logMessage)
+            observed = event.logMonoTime
+          if record['msg'] == {'event':'malformed metric','metric':marker}:
+            (output/(marker+'.bin')).write_bytes(packet)
+            with (output/'barriers.jsonl').open('a') as trace:
+              trace.write(json.dumps({'marker':marker,'clock':now,'log_mono_time':observed})+'\n')
+            return
+      raise AssertionError(('metric-consumption barrier timed out', marker))
     metrics(['b:1|g','a:3|g','b:4|g','s:1e16|sa','s:1|sa','s:-1e16|sa','bad','x:bad|unknown','x:1|unknown','colon:1:ignored|g|ignored','unicode:１２_３.４|g'])
     metrics(['zero:-0|g','special:+Infinity|sa','special:-INFINITY|sa','special:nan|sa',
              'bad:1__2|g','bad:_1|g','bad:1_|g','space:\u00a01.5\u2003|g','bad:1\x1c|g'])
     import unicodedata
     metrics([f'digit{point}:{chr(point)}|g' for point in range(0x110000) if unicodedata.category(chr(point))=='Nd'])
     device(False)
-    tick(100)  # initial clock; first update drains metrics
+    barrier("initial", 100)  # real collector ACK proves all preceding PUSH metrics were consumed
     tick(160)  # equality must not flush
     assert list(stats.iterdir())==[]
     tick(160.001)  # flush renders and asks for next last_flush time
@@ -81,6 +97,7 @@ def trial(binary_dir, binding, output, original):
     assert len(first)==1 and first[0].name.endswith('_0')
     assert first[0].stat().st_mode & 0o777 == 0o600
     metrics(['after:9|g'])
+    barrier('after', 161)
     device(True)
     for _ in range(6):
       tick(161)  # zero clock advance: only the deviceState transition can flush
@@ -99,7 +116,7 @@ def trial(binary_dir, binding, output, original):
     with log.Event.from_bytes(packet) as event:
       assert json.loads(event.errorLogMessage)['msg']=='stats dir full'
     metrics(['discarded:8|g'])
-    tick(225)
+    barrier('discarded', 225)
     tick(286)
     tick(287)
     packet = collector.subscribers['errorLogMessage'].receive()

@@ -132,8 +132,10 @@ The first timestamp oracle exposed a one-nanosecond error for 1 second plus
 999,999,999 nanoseconds. It is retained as RED evidence, corrected by integer
 microsecond division, and locked by a focused regression test. Earlier harness
 failures include the Unix IPC path-length limit, the original collector's expected
-SIGINT status, and replacing a fixed peer-step assumption with a bounded wait for
-the actual state-change publication. These are recorded separately from code
+SIGINT status, and a cross-transport fixture race: a PUSH send acknowledgement did not prove
+metric consumption before a deviceState transition. The checker now waits for
+actual collector records from same-socket malformed-metric barriers before
+advancing state/time, then bounds the publication wait. These are recorded separately from code
 parity failures.
 
 ## Validation boundaries
