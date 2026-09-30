@@ -463,6 +463,13 @@
   ],
   "library_ports": [
     {
+      "name": "structured_logging_and_runtime_diagnostics",
+      "status": "native_host_interoperability_validated",
+      "implementation": "Rust ordered records, per-thread native ZMQ producers, scoped context, bounded timing aggregates and actual receiver-state snapshots; daemon callsite integration remains separate",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/logging-client-validation.md"
+    },
+    {
       "name": "FirstOrderFilter",
       "status": "scalar_host_validated",
       "production_replaced": false

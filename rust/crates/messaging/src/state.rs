@@ -72,6 +72,18 @@ pub struct Topic {
 }
 
 impl Topic {
+    pub fn ignores_alive(&self) -> bool {
+        self.ignore_alive
+    }
+
+    pub fn ignores_valid(&self) -> bool {
+        self.ignore_valid
+    }
+
+    pub fn ignores_frequency(&self) -> bool {
+        self.ignore_frequency || self.ignore_alive
+    }
+
     pub fn event(&self) -> Result<event::Reader<'_>, Error> {
         Ok(self.message.get_root()?)
     }
