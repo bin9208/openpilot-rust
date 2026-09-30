@@ -111,3 +111,78 @@ fn production_namespace_is_refused() {
         assert!(status.success());
     }
 }
+
+#[test]
+fn explicit_runtime_transport_uses_original_namespace() {
+    if env::var_os("RUST_MSGQ_RUNTIME_CHILD").is_none() {
+        let namespace = tempfile::Builder::new()
+            .prefix("msgq_rust-runtime-test-")
+            .tempdir_in("/dev/shm")
+            .unwrap();
+        let name = namespace.path().file_name().unwrap().to_str().unwrap();
+        let status = Command::new(env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "explicit_runtime_transport_uses_original_namespace",
+            ])
+            .env("RUST_MSGQ_RUNTIME_CHILD", "1")
+            .env("OPENPILOT_PREFIX", name.strip_prefix("msgq_").unwrap())
+            .env_remove("CEREAL_FAKE")
+            .status()
+            .unwrap();
+        assert!(status.success());
+        return;
+    }
+    assert!(Publisher::new("rustToNative").is_err());
+    assert!(Subscriber::new("nativeToRust", false).is_err());
+    assert!(Publisher::for_runtime("../invalid", 1024 * 1024).is_err());
+    let mut outgoing = Publisher::for_runtime("rustToNative", 1024 * 1024).unwrap();
+    assert!(Publisher::for_runtime("rustToNative", 1024 * 1024).is_err());
+    let mut peer = Command::new(env!("NATIVE_MSGQ_PEER"))
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut ready = String::new();
+    BufReader::new(peer.stdout.take().unwrap())
+        .read_line(&mut ready)
+        .unwrap();
+    assert_eq!(ready.trim(), "READY");
+    let mut incoming = Subscriber::for_runtime("nativeToRust", false, 1024 * 1024).unwrap();
+    outgoing.send(b"runtime\0payload").unwrap();
+    assert_eq!(
+        incoming.receive(Duration::from_secs(2)).unwrap(),
+        Some(b"runtime\0payload".to_vec())
+    );
+    assert!(peer.wait().unwrap().success());
+}
+
+#[test]
+fn runtime_without_prefix_matches_native_flat_path() {
+    if env::var_os("RUST_MSGQ_FLAT_CHILD").is_none() {
+        let status = Command::new(env::current_exe().unwrap())
+            .args(["--exact", "runtime_without_prefix_matches_native_flat_path"])
+            .env("RUST_MSGQ_FLAT_CHILD", "1")
+            .env_remove("OPENPILOT_PREFIX")
+            .env_remove("CEREAL_FAKE")
+            .status()
+            .unwrap();
+        assert!(status.success());
+        return;
+    }
+    let endpoint = format!("rustRuntimeTest{}", std::process::id());
+    let path = format!("/dev/shm/msgq_{endpoint}");
+    assert!(!std::path::Path::new(&path).exists());
+    {
+        let mut publisher = Publisher::for_runtime(&endpoint, 4096).unwrap();
+        let mut subscriber = Subscriber::for_runtime(&endpoint, false, 4096).unwrap();
+        publisher.send(b"flat native namespace").unwrap();
+        assert_eq!(
+            subscriber.receive(Duration::from_secs(1)).unwrap(),
+            Some(b"flat native namespace".to_vec())
+        );
+        assert!(std::path::Path::new(&path).is_file());
+        assert!(Publisher::new(&endpoint).is_err());
+    }
+    std::fs::remove_file(&path).unwrap();
+    std::fs::remove_file(format!("{path}.rust-publisher-lock")).unwrap();
+}

@@ -86,19 +86,20 @@ rust::Vec<uint8_t> Queue::receive(int32_t timeout_ms) {
   return bytes;
 }
 
-std::unique_ptr<Queue> open_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity) {
+static std::unique_ptr<Queue> open_checked_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity, bool isolated) {
   const char *raw_prefix = std::getenv("OPENPILOT_PREFIX");
   const std::string prefix = raw_prefix ? raw_prefix : "";
-  if (!component(prefix) || prefix.rfind("rust-probe-", 0) != 0 || prefix.size() <= 11) {
+  if (isolated && (!component(prefix) || prefix.rfind("rust-probe-", 0) != 0 || prefix.size() <= 11)) {
     throw std::invalid_argument("OPENPILOT_PREFIX must be an isolated rust-probe-NAME namespace");
   }
+  if (!prefix.empty() && !component(prefix)) throw std::invalid_argument("invalid runtime namespace");
   const std::string name(endpoint);
   if (!component(name)) throw std::invalid_argument("invalid endpoint");
   if (std::getenv("CEREAL_FAKE")) throw std::invalid_argument("CEREAL_FAKE is unsupported");
   if (capacity < 4096 || capacity > 64 * 1024 * 1024 || capacity % 8 != 0) {
     throw std::invalid_argument("queue capacity must be 4096..67108864 bytes and aligned to 8 bytes");
   }
-  const std::string path = "/dev/shm/msgq_" + prefix + "/" + name;
+  const std::string path = "/dev/shm/msgq_" + (raw_prefix ? prefix + "/" : "") + name;
   struct stat info{};
   if (::stat(path.c_str(), &info) == 0) {
     if (!S_ISREG(info.st_mode) || info.st_size != static_cast<off_t>(capacity + sizeof(msgq_header_t))) {
@@ -108,5 +109,13 @@ std::unique_ptr<Queue> open_queue(rust::Str endpoint, bool publisher, bool confl
     throw std::system_error(errno, std::generic_category(), "inspect msgq");
   }
   return std::make_unique<Queue>(name, publisher, conflate, capacity, path + ".rust-publisher-lock");
+}
+
+std::unique_ptr<Queue> open_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity) {
+  return open_checked_queue(endpoint, publisher, conflate, capacity, true);
+}
+
+std::unique_ptr<Queue> open_runtime_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity) {
+  return open_checked_queue(endpoint, publisher, conflate, capacity, false);
 }
 }

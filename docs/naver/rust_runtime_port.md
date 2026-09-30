@@ -34,3 +34,9 @@ ports lane/turn intent, side obstacles and Bluetooth command consumption. Its
 [validation record](../rust-port/desire-validation.md) compares complete state
 sequences and actual command journals while retaining the original gates.
 This library still requires connection to the driving daemon.
+
+[Driver daemon issue #19](https://github.com/bin9208/openpilot-rust/issues/19)
+connects driver VisionIPC, native inference, calibration and `driverStateV2` in
+a continuous Rust process. Its [validation record](../rust-port/driver-daemon-validation.md)
+documents both camera resolutions, original-model/message comparisons and
+remaining QCOM input, manager and full-runtime acceptance work.
