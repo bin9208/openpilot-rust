@@ -108,5 +108,31 @@ tests pass afterward. Real local compiler probes reproduce the namespace
 difference; the native SDK14+I/O check passes without relaxing its assertion.
 The full exception capture is now written before assertions for future failures.
 
+The pinned `4c78b015` run passes both telemetry jobs, ARM and the original model,
+logger, integration and fast gates. Its
+[PR support job](https://github.com/bin9208/openpilot-rust/actions/runs/36715443317/job/109887822175)
+fails after uploader GET/PUT with `Interrupted system call` before the upload
+marker is written. The same-head push support job passes; rerunning that failure
+would not establish a repair. [#93](https://github.com/bin9208/openpilot-rust/issues/93)
+reproduces the defect by injecting EINTR at the actual libzmq send boundary.
+Original Python logging and stats producers retry; the native producers exited.
+
+Fix `bd6c175e223c5efb2d30bf5c0bf22bb46521022f` retries only EINTR while retaining
+EAGAIN drops and fatal-error propagation. It changes neither uploader production
+code nor the distinct native/C++ logging producer. All 22 component checks pass,
+including original-source producer, real collector, uploader and unscaled
+timeout regressions. Parent independently repeats all 20 source/native fault
+cases and an actual upload with three interrupted success sends: two GET/PUT
+pairs, both file markers, one accepted success record per file and normal exit.
+Parent verifies 34 source/binary/binding hashes and 1,073 nonempty artifacts;
+the ledger retains 42 passing criteria and two expected pre-fix failures.
+
+The support CI job now requires these fault checks using test-only linked
+wrappers. Parent executes that exact workflow step locally on the integrated
+sources; all assertions pass. Its new gate regression first fails without the
+step, then all nine CI-policy tests pass. The kernel signal source of the original
+cloud interruption remains unproved; injected-error parity establishes the
+producer repair. Current-head and separate post-merge Actions remain required.
+
 Docs-Not-Needed: internal runtime integration and engineering evidence; no selected
 production behavior or user setting changes.

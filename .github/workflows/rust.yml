@@ -278,6 +278,21 @@ jobs:
           python rust/tools/check_timed_date_daemon.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-date-daemon"
           python rust/tools/check_timed_lifecycle.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-lifecycle"
           python rust/tools/check_timed_shutdown.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-shutdown"
+      - name: Compare interrupted diagnostic sends and actual upload completion
+        run: |
+          fault_root="$RUNNER_TEMP/support-runtime/interrupted-send"
+          mkdir -p "$fault_root/bin"
+          gcc -Wall -Wextra -Werror -O2 -fPIC -DZMQ_LINK_WRAP -c rust/tools/zmq_send_boundary.c -o "$fault_root/send-wrap.o"
+          gcc -Wall -Wextra -Werror -O2 -fPIC -shared rust/tools/zmq_send_boundary.c -ldl -o "$fault_root/send-preload.so"
+          cargo rustc --manifest-path rust/Cargo.toml -p openpilot-logging --example logging_probe --locked -- -C link-arg=-Wl,--wrap=zmq_msg_send -C "link-arg=$fault_root/send-wrap.o"
+          cp rust/target/debug/examples/logging_probe "$fault_root/bin/"
+          cargo rustc --manifest-path rust/Cargo.toml -p openpilot-statsd --example stats_producer --locked -- -C link-arg=-Wl,--wrap=zmq_msg_send -C "link-arg=$fault_root/send-wrap.o"
+          cp rust/target/debug/examples/stats_producer "$fault_root/bin/"
+          cargo rustc --manifest-path rust/Cargo.toml -p openpilot-uploader --bin openpilot-uploader --locked -- -C link-arg=-Wl,--wrap=zmq_msg_send -C "link-arg=$fault_root/send-wrap.o"
+          cp rust/target/debug/openpilot-uploader "$fault_root/bin/"
+          python_zmq="$(python -c 'import pathlib, zmq; matches = list((pathlib.Path(zmq.__file__).parent.parent / "pyzmq.libs").glob("libzmq-*.so.*")); assert len(matches) == 1, matches; print(matches[0])')"
+          python rust/tools/check_interrupted_send.py --logging "$fault_root/bin/logging_probe" --stats "$fault_root/bin/stats_producer" --preload "$fault_root/send-preload.so" --python-zmq "$python_zmq" --output "$fault_root/producers"
+          python rust/tools/check_uploader_interrupted.py --binary "$fault_root/bin/openpilot-uploader" --output "$fault_root/uploader"
       - name: Retain raw support runtime and Params build evidence
         if: always()
         uses: actions/upload-artifact@v6
