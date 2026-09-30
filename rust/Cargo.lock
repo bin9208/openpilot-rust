@@ -1978,6 +1978,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-lpa"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "cookie_store",
+ "flate2",
+ "openpilot-http-transport",
+ "openpilot-process-supervision",
+ "openpilot-timed",
+ "rustix",
+ "serde",
+ "serde_json",
+ "serialport",
+ "sha2",
+ "thiserror",
+ "ureq",
+ "url",
+]
+
+[[package]]
 name = "openpilot-managed-entry"
 version = "0.1.0"
 dependencies = [

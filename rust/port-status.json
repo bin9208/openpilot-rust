@@ -492,6 +492,16 @@
   ],
   "library_ports": [
     {
+      "name": "tici_esim_lpa",
+      "source_entrypoint": "openpilot.system.hardware.tici.lpa; openpilot.system.hardware.base.Profile/LPABase",
+      "status": "native_protocol_and_adapter_host_validated",
+      "implementation": "rust/crates/lpa; native AT/APDU, profile management, ES9+ TLS authentication/download/cancellation and notifications; openpilot-lpa JSON operation entrypoint",
+      "native_dependencies": ["Linux serial/termios and flock", "original GSMA CI certificate bundle", "/usr/comma/lte/lte.sh start", "process-supervision child helper and existing cereal/msgq/libzmq dependencies", "shared timed clock validation"],
+      "runtime_scope": "actual-source differential on owned PTYs and synthetic loopback TLS; modem/SIM/carrier provisioning, production adoption, ARM/AGNOS and device acceptance remain unvalidated",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/lpa-validation.md"
+    },
+    {
       "name": "hardware_control_policy",
       "source_entrypoint": "openpilot.system.hardware.base; openpilot.system.hardware.pc.hardware; openpilot.system.hardware.tici.hardware; required common.gpio/utils helpers",
       "status": "native_host_policy_and_adapter_validated",
