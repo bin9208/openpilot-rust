@@ -12,6 +12,13 @@ source's outer-GPS-validity-independent, updated/fix/two-second freshness checks
 Clock correction retains the ten-second difference threshold, integer UTC epoch
 command, inclusive GPS date bounds, strict wall-clock bounds and ten-second sleep.
 Local date interpretation includes systemd mtime plus one day and DST behavior.
+Conversion preserves Python's local year 1..9999 domain before the narrower GPS
+acceptance window is applied. The naive `datetime.fromtimestamp` implementation
+also constructs a local date 24 hours earlier to detect folds; failure in that
+probe propagates too. Thus local 0001-01-01 fails on the tested Linux Python,
+while 0001-01-02 succeeds. Bounds are checked after timezone conversion: UTC
+year 10000 can remain representable as local year 9999 with a western offset.
+No UTC-year-only rejection is used.
 
 Timezone priority remains app > wifi > gps > unknown. Unset/unknown sources retry
 after strictly more than 30 seconds; GPS sources after more than 300 seconds.
@@ -37,6 +44,8 @@ original native msgq bindings, actual cereal packets and ZMQ PUSH/PULL logging.
 cargo build --manifest-path rust/Cargo.toml -p openpilot-timed -p openpilot-uploader --bins --examples --locked
 # Set PYTHONPATH to original msgq binding, repository root and rust/tools.
 python rust/tools/check_timed_reference.py --binary rust/target/debug/examples/timed_fixture --output /tmp/timed-policy
+python rust/tools/check_timed_dates.py --binary rust/target/debug/examples/timed_fixture --output /tmp/timed-date-domain
+python rust/tools/check_timed_date_daemon.py --binary rust/target/debug/openpilot-timed --output /tmp/timed-date-live
 python rust/tools/check_timed_http.py --binary rust/target/debug/examples/timed_fixture --output /tmp/timed-http
 python rust/tools/check_timed_logging.py --binary rust/target/debug/examples/timed_fixture --output /tmp/timed-logging
 python rust/tools/check_timed_daemon.py --binary rust/target/debug/examples/timed_fixture --output /tmp/timed-daemon
@@ -45,6 +54,12 @@ python rust/tools/check_timed_shutdown.py --binary rust/target/debug/openpilot-t
 ```
 
 Evidence is indexed in `.omo/evidence/timed/evidence.json` in the issue-70 worktree.
+The date-domain follow-up is indexed separately in
+`.omo/evidence/timed-date-domain/evidence.json`. Its 360 source/native policy
+cases cover year 0/negative dates, year 1/fold-probe limits, year 9999/10000 and
+UTC/east/west/historical timezone offsets. Sixteen actual source/native process
+executions verify fatal conversion errors versus continued publication for
+representable dates outside the accepted GPS window, without clock commands.
 Policy scenarios cover thresholds, priorities, errors and local-time boundaries;
 HTTP scenarios include real five-second stalls/late replies and a progressing
 response exceeding five seconds. Closed-log scenarios preserve command/Params
