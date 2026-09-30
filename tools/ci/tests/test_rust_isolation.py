@@ -37,11 +37,12 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'web-upload-timeouts'})
+        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'web-upload-timeouts'})
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
                                             'SUPPORT': '${{ needs.support-runtime.result }}',
+                                            'TELEMETRY': '${{ needs.telemetry-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]

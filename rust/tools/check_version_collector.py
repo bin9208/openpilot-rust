@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.12,<3.13"
-# dependencies = ["pyzmq==27.1.0", "pycapnp==2.2.2"]
+# dependencies = ["pyzmq==27.2.0", "pycapnp==2.1.0"]
 # ///
 # How to run: PYTHONPATH=<built-msgq>:.:rust/tools python rust/tools/check_version_collector.py PROBE COLLECTOR OUTPUT
 """Drive the missing-metadata error through the native collector and original cereal reader."""

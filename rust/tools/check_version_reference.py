@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.12,<3.13"
-# dependencies = ["pyzmq==27.1.0"]
+# dependencies = ["pyzmq==27.2.0"]
 # ///
 # How to run: uv run --no-project --python 3.12 rust/tools/check_version_reference.py BINARY [RUNNER ARGS...]
 """Compare the unchanged version/Git helpers with a persistent native probe and real Git fixtures."""
