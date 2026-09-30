@@ -475,6 +475,19 @@
   ],
   "library_ports": [
     {
+      "name": "runtime_build_metadata_and_cached_git",
+      "source_entrypoint": "openpilot.system.version; openpilot.common.git",
+      "status": "native_host_api_validated",
+      "implementation": "rust/crates/runtime-version; build.json/source precedence, source-compatible dynamic metadata properties, process caches, read-only Git subprocesses and native missing-metadata logging",
+      "native_dependencies": [
+        "Git executable",
+        "native logging/libzmq",
+        "existing logmessaged JSON parser and temporary original C++ msgq dependency"
+      ],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/version-validation.md"
+    },
+    {
       "name": "carrot_dashcam_upload_jobs",
       "source_entrypoint": "openpilot.selfdrive.carrot.server.features.dashcam.upload_jobs",
       "status": "native_host_worker_lifecycle_validated",
