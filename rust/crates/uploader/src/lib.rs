@@ -77,6 +77,8 @@ pub struct UploadResponse {
 #[derive(Debug, thiserror::Error)]
 pub enum TransferError {
     #[error(transparent)]
+    Logging(#[from] openpilot_logging::Error),
+    #[error(transparent)]
     Io(#[from] io::Error),
     #[error(transparent)]
     Http(#[from] ureq::Error),
@@ -133,7 +135,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
         metered: bool,
         requested_routes: Option<&str>,
     ) -> Result<Outcome, Error> {
-        let Some(mut file) = self.next_file(metered, requested_routes) else {
+        let Some(mut file) = self.next_file(metered, requested_routes)? else {
             return Ok(Outcome::Idle);
         };
         let bytes = file.key.as_os_str().as_encoded_bytes();
@@ -160,7 +162,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                     log_site!(),
                     "upload: getsize failed",
                     &(&file.path, error),
-                ));
+                ))?;
                 return Ok(Outcome::Failure);
             }
         };
@@ -169,7 +171,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
             site: log_site!(),
             name: "upload_start",
             fields: fields.clone(),
-        });
+        })?;
         let too_large = match file.name.as_encoded_bytes() {
             b"qlog" => size > 25_000_000,
             b"qcam" => size > 5_000_000,
@@ -183,7 +185,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                     site: log_site!(),
                     name: "uploader_too_large",
                     fields: json!({"key":file.key.to_string_lossy(),"fn":file.path.to_string_lossy(),"sz":size}),
-                });
+                })?;
             }
             true
         } else {
@@ -212,7 +214,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                         site: log_site!(),
                         name,
                         fields,
-                    });
+                    })?;
                     true
                 }
                 other => {
@@ -229,7 +231,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                         site: log_site!(),
                         name: "upload_failed",
                         fields,
-                    });
+                    })?;
                     false
                 }
             }
@@ -243,7 +245,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                     site: log_site!(),
                     name: "uploader_setxattr_failed",
                     fields: json!({"exc":last_exception,"key":file.key.to_string_lossy(),"fn":file.path.to_string_lossy(),"sz":size}),
-                });
+                })?;
             }
         }
         Ok(if success {

@@ -335,7 +335,7 @@ impl HttpTransfer {
                 python_text(url)?,
                 python_text(headers)?
             ),
-        ));
+        ))?;
         if self.fake_upload {
             return Ok(UploadResponse {
                 status: 200,

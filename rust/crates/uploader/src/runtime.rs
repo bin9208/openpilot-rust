@@ -29,20 +29,15 @@ impl RuntimeEvents {
     pub fn new(logger: Logger) -> Self {
         Self(logger)
     }
-    fn info(&mut self, site: Site, text: String) {
-        self.emit(Event::text(site, Level::Info, text));
+    fn info(&mut self, site: Site, text: String) -> Result<(), openpilot_logging::Error> {
+        self.emit(Event::text(site, Level::Info, text))
     }
 }
 impl EventSink for RuntimeEvents {
-    fn emit(&mut self, event: Event) {
-        match event.into_record() {
-            Ok((site, record)) => {
-                if let Err(error) = self.0.emit(site, record) {
-                    eprintln!("uploader logging failed: {error}");
-                }
-            }
-            Err(error) => eprintln!("uploader logging failed: {error}"),
-        }
+    fn emit(&mut self, event: Event) -> Result<(), openpilot_logging::Error> {
+        let (site, record) = event.into_record()?;
+        self.0.emit(site, record)?;
+        Ok(())
     }
 }
 pub fn persist_root() -> Result<PathBuf, Error> {
@@ -87,7 +82,7 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
             log_site!(),
             "failed to set core affinity",
             &error,
-        ));
+        ))?;
     }
     let root = openpilot_deleter::platform::log_root()
         .map_err(|error| std::io::Error::other(error.to_string()))?;
@@ -95,7 +90,7 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
     let params = Params::for_runtime()?;
     let Some(dongle_id) = openpilot_params_typed::get_string(&params, "DongleId", &mut events.0)?
     else {
-        events.info(log_site!(), "uploader missing dongle_id".into());
+        events.info(log_site!(), "uploader missing dongle_id".into())?;
         return Err(Error::Configuration(
             "uploader can't start without dongle id",
         ));
@@ -148,7 +143,7 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
             if outcome == crate::Outcome::Failure {
                 uploader
                     .events
-                    .info(log_site!(), format!("upload backoff {}", backoff.current()));
+                    .info(log_site!(), format!("upload backoff {}", backoff.current()))?;
             }
             backoff.next(outcome, offroad, rand::rng().random())
         };

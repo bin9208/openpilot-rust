@@ -1,4 +1,4 @@
-use crate::{Event, EventSink, Transfer, Uploader};
+use crate::{Error, Event, EventSink, Transfer, Uploader};
 use openpilot_logging::log_site;
 use serde::Serialize;
 use serde_json::json;
@@ -61,7 +61,7 @@ fn immediate(path: &Path) -> bool {
     let bytes = path.as_os_str().as_encoded_bytes();
     bytes.windows(6).any(|s| s == b"crash/") || bytes.windows(5).any(|s| s == b"boot/")
 }
-pub fn clear_locks(root: &Path, sink: &mut impl EventSink) -> io::Result<()> {
+pub fn clear_locks(root: &Path, sink: &mut impl EventSink) -> Result<(), Error> {
     for entry in fs::read_dir(root)? {
         let entry = entry?;
         let result = (|| -> io::Result<()> {
@@ -78,7 +78,7 @@ pub fn clear_locks(root: &Path, sink: &mut impl EventSink) -> io::Result<()> {
                 log_site!(),
                 "clear_locks failed",
                 &(entry.path(), error),
-            ));
+            ))?;
         }
     }
     Ok(())
@@ -88,9 +88,9 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
         &mut self,
         metered: bool,
         requested_routes: Option<&str>,
-    ) -> Vec<Candidate> {
+    ) -> Result<Vec<Candidate>, Error> {
         if !self.root.is_dir() {
-            return Vec::new();
+            return Ok(Vec::new());
         }
         let directories = (|| -> io::Result<Vec<OsString>> {
             let mut dirs = Vec::new();
@@ -110,8 +110,8 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                     log_site!(),
                     "listdir_by_creation failed",
                     &(&self.root, error),
-                ));
-                return Vec::new();
+                ))?;
+                return Ok(Vec::new());
             }
         };
         let requested: Vec<_> = requested_routes
@@ -149,7 +149,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                             site: log_site!(),
                             name: "uploader_getxattr_failed",
                             fields: json!({"key":key.to_string_lossy(),"fn":file.to_string_lossy()}),
-                        });
+                        })?;
                         continue;
                     }
                     Ok(_) => {}
@@ -171,18 +171,18 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                 });
             }
         }
-        output
+        Ok(output)
     }
     pub fn next_file(
         &mut self,
         metered: bool,
         requested_routes: Option<&str>,
-    ) -> Option<Candidate> {
-        let files = self.list_upload_files(metered, requested_routes);
-        files
+    ) -> Result<Option<Candidate>, Error> {
+        let files = self.list_upload_files(metered, requested_routes)?;
+        Ok(files
             .iter()
             .find(|file| immediate(&file.path))
             .or_else(|| files.iter().find(|file| priority(&file.name) != 1000))
-            .cloned()
+            .cloned())
     }
 }
