@@ -2,7 +2,9 @@ use crate::Error;
 use std::path::Path;
 pub fn configure() -> Result<(), Error> {
     if Path::new("/TICI").is_file() {
-        let settings = libc::sched_param { sched_priority: 5 };
+        // SAFETY: sched_param has only integer/time fields; zero initializes GNU and musl layouts.
+        let mut settings: libc::sched_param = unsafe { std::mem::zeroed() };
+        settings.sched_priority = 5;
         // SAFETY: settings is initialized; pid0 configures the current process.
         if unsafe { libc::sched_setscheduler(0, libc::SCHED_FIFO, &settings) } != 0 {
             return Err(std::io::Error::last_os_error().into());

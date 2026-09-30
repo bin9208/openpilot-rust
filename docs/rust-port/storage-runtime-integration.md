@@ -29,6 +29,21 @@ validation documents. Exact combined PR and post-merge Actions links are added
 to #56 before any bounded issue is closed. This document does not predeclare
 pending cloud checks as successful.
 
+The first combined PR run, `384e8098`, stopped the new logger job before its
+first Rust test: rustup's automatic component installation reported a conflict
+for `bin/cargo-fmt`. The job now requests rustfmt/clippy with its initial pinned
+toolchain installation, matching the established host job and
+`rust/rust-toolchain.toml`. The failed run remains evidence; final-head checks
+must validate this change.
+
+The same run exposed [#59](https://github.com/bin9208/openpilot-rust/issues/59):
+the torque scheduler's single-field `sched_param` literal compiled on GNU but
+failed on musl's larger structure. A local aarch64 musl check reproduced E0063.
+Initializing the complete structure before assigning priority 5 follows the
+existing calibration/Jetlink boundary and preserves FIFO policy and affinity.
+The corrected torque executable builds for aarch64 musl; exact-head cloud gates
+still need to validate the complete workspace.
+
 Full-runtime #1/#6 remain open. The remaining daemon ports, production startup,
 model diagnostic callsites (#53), driving startup-order parity (#55), active web
 upload orchestration, and device/drive acceptance are separate requirements.
