@@ -28,3 +28,9 @@ ports model interpretation, action calculation and the four original cereal
 publications. The [validation record](../rust-port/model-output-validation.md)
 documents original-function comparisons, history/discrete-decision boundaries,
 architecture-specific exponential rounding and remaining daemon integration.
+
+[Desire state issue #24](https://github.com/bin9208/openpilot-rust/issues/24)
+ports lane/turn intent, side obstacles and Bluetooth command consumption. Its
+[validation record](../rust-port/desire-validation.md) compares complete state
+sequences and actual command journals while retaining the original gates.
+This library still requires connection to the driving daemon.
