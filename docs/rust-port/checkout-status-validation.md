@@ -113,6 +113,14 @@ An actual held descriptor proves closure while stdin, environment and process
 group remain inherited. Every operation records empty child and launch-file
 lists after completion.
 
+Fixture setup commands disable automatic Git maintenance with the per-command
+`-c maintenance.auto=false` option. Git 2.55 detaches maintenance after the
+synthetic commits, leaving children adopted by the test subreaper even when
+checkout reads complete correctly. The original and Rust identity commands
+retain their exact arguments, and child/descriptor cleanup assertions remain
+strict. This fixture isolation is tracked in
+[#109](https://github.com/bin9208/openpilot-rust/issues/109).
+
 Eleven additional native helper cases cover successful EOF, failed cwd/exec,
 missing or early-exiting helpers, corrupt descriptors, connected exit/SIGKILL,
 invalid handshake data and temporary-storage failure. A 700 ms helper delay

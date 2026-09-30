@@ -127,7 +127,7 @@ class Peer:
     return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
 
   def git(self, *args: str) -> str:
-    command = ['/usr/bin/git', *args]
+    command = ['/usr/bin/git', '-c', 'maintenance.auto=false', *args]
     result = subprocess.run(command, cwd=self.repo, env=self.env, capture_output=True, text=True, timeout=5, check=True)
     self.record({'git_command': command, 'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode})
     return result.stdout.strip()
