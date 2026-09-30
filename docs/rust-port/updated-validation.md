@@ -18,6 +18,7 @@ cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision --b
 PYTHONPATH=. python rust/tools/check_updated.py --binary "$CARGO_TARGET_DIR/debug/examples/updated_trace" --launcher "$CARGO_TARGET_DIR/debug/openpilot-process-child" --binding "$PARAMS_BINDING" --output "$EVIDENCE/source"
 PYTHONPATH=. python rust/tools/check_updated_process.py --binary "$CARGO_TARGET_DIR/debug/examples/updated_command" --launcher "$CARGO_TARGET_DIR/debug/openpilot-process-child" --output "$EVIDENCE/process"
 PYTHONPATH=. python rust/tools/check_updated_daemon.py --binary "$CARGO_TARGET_DIR/debug/openpilot-updated" --launcher "$CARGO_TARGET_DIR/debug/openpilot-process-child" --output "$EVIDENCE/daemon"
+PYTHONPATH=. python rust/tools/check_updated_agnos.py --target "$CARGO_TARGET_DIR" --output "$EVIDENCE/agnos"
 ```
 
 The source comparison executes the unchanged updater `main`/Updater/function
@@ -46,6 +47,10 @@ The unit tests cover note rendering/fallback, filesystem copying/flags, remote
 ref filtering, command environment, request retention and typed stored dates.
 
 The receipt and captures live under `.omo/evidence/updated-118-*` in the main
-checkout. Cloud workspace/aarch64 checks and linking #119 remain parent gates.
-No CPU savings, AGNOS execution, device acceptance or complete-runtime readiness
+checkout. The linked background adapter adds source/native comparisons through
+actual harmless `abctl` children and owned regular-file partitions: compressed
+images, background casync, and corrupt-image failure, including ordered slot
+commands and exact file digests. Source imports require the same Python packages
+as the AGNOS gate. Cloud workspace/aarch64 checks remain parent gates.
+No CPU savings, physical AGNOS installation, device acceptance or complete-runtime readiness
 is inferred from these host results.

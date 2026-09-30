@@ -2,7 +2,7 @@ use openpilot_hardware_info::{HardwareInfo, HardwarePaths, Pc, Tici};
 use openpilot_logging::producer::Factory;
 use openpilot_timed::clock::SystemClock;
 use openpilot_updated::{
-    agnos::NotLinked,
+    agnos::Native,
     paths::Paths,
     process::NativeCommands,
     runtime,
@@ -16,6 +16,7 @@ fn run() -> Result<(), Error> {
     let mut system_root = PathBuf::from("/");
     let mut launcher = std::env::current_exe()?.with_file_name("openpilot-process-child");
     let mut cycles = None;
+    let mut agnos_config = None;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -45,8 +46,16 @@ fn run() -> Result<(), Error> {
                         .ok_or(Error::Contract("cycles must be positive"))?,
                 )
             }
+            "--agnos-config" => {
+                let path = args
+                    .next()
+                    .ok_or(Error::Contract("--agnos-config needs path"))?;
+                agnos_config = Some(serde_json::from_slice::<openpilot_agnos::cli::Config>(
+                    &std::fs::read(path)?,
+                )?);
+            }
             "--help" => {
-                println!("openpilot-updated [--basedir PATH] [--system-root PATH] [--launcher PATH] [--cycles N]\nContinuous native staged updater. Uses UPDATER_LOCK_FILE and UPDATER_STAGING_ROOT. Alternate system roots restrict validation paths and sync operations; they do not sandbox commands. AGNOS adapter awaits #119; no Python fallback.");
+                println!("openpilot-updated [--basedir PATH] [--system-root PATH] [--launcher PATH] [--cycles N] [--agnos-config PATH]\nContinuous native staged updater. Uses UPDATER_LOCK_FILE and UPDATER_STAGING_ROOT. Alternate system roots restrict validation paths and sync operations; they do not sandbox commands. AGNOS config overrides support owned fixtures; defaults address device partitions.");
                 return Ok(());
             }
             _ => return Err(Error::Contract("unknown argument")),
@@ -56,6 +65,13 @@ fn run() -> Result<(), Error> {
     let params = Params::open(&paths.system_root)?;
     let factory = Factory::for_runtime()?;
     let mut logger = factory.logger();
+    let mut agnos = Native::new(
+        agnos_config.unwrap_or_else(|| openpilot_agnos::cli::Config {
+            launcher: launcher.clone(),
+            ..Default::default()
+        }),
+        factory.logger(),
+    );
     let wake = Arc::new(Wake::default());
     let _signals = Signals::install(Arc::clone(&wake), factory)?;
     let mut commands = NativeCommands {
@@ -67,7 +83,6 @@ fn run() -> Result<(), Error> {
     } else {
         Box::new(Pc)
     };
-    let mut agnos = NotLinked;
     let mut updater = Updater::new(
         params,
         Context {

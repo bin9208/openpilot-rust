@@ -47,9 +47,7 @@ pub enum Error {
     #[error("updater interrupted")]
     Interrupted,
     #[error("AGNOS update failed: {0}")]
-    Agnos(String),
-    #[error("native AGNOS adapter not linked")]
-    AgnosUnavailable,
+    Agnos(#[from] openpilot_agnos::Error),
     #[error("{0}")]
     Contract(&'static str),
     #[error("copytree failed: {0:?}")]

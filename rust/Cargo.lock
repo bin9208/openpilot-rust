@@ -2387,6 +2387,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "indexmap",
+ "openpilot-agnos",
  "openpilot-hardware-info",
  "openpilot-logging",
  "openpilot-logmessaged",

@@ -116,7 +116,7 @@ impl CapturedCommand {
     }
 
     pub fn spawn_piped_stdin(&self) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(StreamMode::PipedStdin, &[])
+        self.spawn_with_stdio(StreamMode::PipedStdin, &[], false)
     }
 
     pub fn spawn_inherited(&self) -> Result<CapturedChild, Error> {
