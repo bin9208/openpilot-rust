@@ -2,12 +2,13 @@
 
 [#120](https://github.com/bin9208/openpilot-rust/issues/120) continues the complete
 runtime conversion after platform integration #116. This branch currently combines
-native LPA #115 and messaging bridge #121; startup UI #117, updated #118 and
-AGNOS #119 are being integrated into the same increment.
+native LPA #115, messaging bridge #121 and AGNOS image/casync/CLI #119;
+startup UI #117 and updated #118 are being integrated into the same increment.
 
 The required `rust startup services` Actions job builds native binaries and the
 process helper, compiles the unchanged original C++ bridge, then compares owned
-serial/TLS LPA exchanges and real bidirectional TCP/msgq traffic. The aggregate
+serial/TLS LPA exchanges, real bidirectional TCP/msgq traffic and verified AGNOS
+image/casync/CLI behavior using owned files and harmless slot commands. The aggregate
 `rust checks` requires this job alongside every existing runtime/workspace gate.
 Ten CI policy tests reject missing, failed, cancelled or skipped dependencies.
 The existing sanitizer job also covers dynamic queued-subscription lifetimes.

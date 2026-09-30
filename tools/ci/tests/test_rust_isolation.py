@@ -14,7 +14,7 @@ class RustIsolationTests(unittest.TestCase):
         job = data['jobs']['startup-services']
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
-        for required in ('check_lpa.py', 'check_bridge.py', 'build_bridge_reference.py', 'build_msgq_python.py'):
+        for required in ('check_lpa.py', 'check_bridge.py', 'check_agnos.py', 'build_bridge_reference.py', 'build_msgq_python.py'):
             self.assertIn(required, commands)
         for step in job['steps']:
             if 'python rust/tools/check_' in step.get('run', ''):
