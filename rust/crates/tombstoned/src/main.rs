@@ -37,13 +37,19 @@ fn run(options: Options) -> Result<(), Error> {
         reporter,
         options.apport,
         options.log_root,
-        Retrace::default(),
+        Retrace {
+            stop: Some(Arc::clone(&stop)),
+            ..Retrace::default()
+        },
         WallClock,
     )?;
     eprintln!("tombstoned: ready reporting={}", daemon.should_report());
     let mut remaining = options.cycles.map(std::num::NonZeroU64::get);
     while !stop.load(Ordering::Relaxed) {
-        daemon.cycle()?;
+        match daemon.cycle() {
+            Err(Error::Cancelled) => break,
+            result => result?,
+        }
         if let Some(cycles) = &mut remaining {
             *cycles -= 1;
             if *cycles == 0 {

@@ -232,6 +232,7 @@ fn io_error(error: &io::Error) -> String {
 }
 fn failure(error: Error) -> Value {
     let kind = match error {
+        Error::Cancelled => "InterruptedError".into(),
         Error::Io(error) => io_error(&error),
         Error::Reporting(error) => report_error(error),
         Error::Metadata(error) => report_error(ReportError::Metadata(error)),
@@ -307,7 +308,7 @@ fn run(
             shell,
         } => {
             return Ok(
-                json!({"value":Retrace{shell,timeout:Duration::from_millis(timeout_ms)}.stacktrace(&path)?}),
+                json!({"value":Retrace{shell,timeout:Duration::from_millis(timeout_ms),..Retrace::default()}.stacktrace(&path)?}),
             )
         }
         Request::Start {

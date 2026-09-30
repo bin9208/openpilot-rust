@@ -39,8 +39,11 @@ Native implementation code does not import or execute these project Python modul
   UTF-8 surrogateescape codepoints survive SDK extras and structured log packets;
   console output uses backslash escaping for lone surrogates. The logging addition
   is a validated `PythonText` value, with existing `String` producers unchanged.
-- The real daemon scans at five-second intervals and supports SIGINT/SIGTERM between
-  work. `--cycles` bounds host fixtures. Explicit base/apport/log paths isolate QA;
+- The real daemon scans at five-second intervals. SIGINT/SIGTERM cancel an active
+  retrace within bounded 50 ms polling/read checks, kill its dedicated process group,
+  reap the owned child and exit without reporting/copying the interrupted crash.
+  Timeout cleanup also terminates that command group; the normal timeout remains
+  30 seconds. `--cycles` bounds host fixtures. Explicit base/apport/log paths isolate QA;
   hardware simulation requires a loopback-only DSN and retains reporting gates.
 
 ## External boundaries and deliberate difference
@@ -95,6 +98,16 @@ Runtime validation uses original cereal/msgq readers with pycapnp **2.1.0**, che
 six logMessage/three errorLogMessage packets and six persisted records, a raw-byte
 filename report/copy/removal, no later duplicates, PC-disabled removal and four
 startup failures before cleanup. Earlier pycapnp 2.2 runs are historical only.
+
+`check_tombstoned_shutdown.py DAEMON PARAMS_BINDING OUTPUT` runs unchanged source
+main and the actual native daemon with a held apport command and descendant. The
+frozen pre-fix binary exceeded the manager's five-second stop budget for SIGINT
+and SIGTERM; original SIGINT exited promptly but left a held descendant. The native
+regression requires exit zero within five seconds, no active owned descendants,
+no HTTP event/copy, and retention of the unprocessed crash. It uses the same
+`PYTHONPATH`/pinned dependency setup as runtime validation. The before binary and
+red/green process snapshots are retained in the evidence ledger. SDK flush was not
+reached in the failing scenario; its existing policy is unchanged.
 
 Logging regression uses `check_logging_producer.py` against original and native
 collectors; collector regressions use `check_logmessaged_reference.py` and

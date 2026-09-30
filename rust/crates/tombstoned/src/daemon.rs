@@ -215,6 +215,9 @@ impl<S: Sdk, I: Inputs, C: Clock> Daemon<S, I, C> {
     pub fn cycle(&mut self) -> Result<(), Error> {
         let now = get_tombstones(&self.apport)?;
         for entry in now.difference(&self.initial) {
+            if self.retrace.cancelled() {
+                return Err(Error::Cancelled);
+            }
             if !self.should_report {
                 if let Err(_ignored_by_source) = fs::remove_file(&entry.path) {}
                 continue;
@@ -246,6 +249,9 @@ impl<S: Sdk, I: Inputs, C: Clock> Daemon<S, I, C> {
                 Ok(())
             })();
             if let Err(error) = result {
+                if matches!(error, Error::Cancelled) {
+                    return Err(error);
+                }
                 self.reporter.logger.emit(
                     log_site!(),
                     path_record(Level::Error, "Error reporting tombstone ", &entry.path, "")?

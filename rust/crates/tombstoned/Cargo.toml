@@ -16,7 +16,7 @@ openpilot-logmessaged = { path = "../logmessaged" }
 openpilot-logging = { path = "../logging" }
 chrono = "0.4"
 home = "0.5.12"
-rustix = { version = "1", features = ["event", "pipe", "fs"] }
+rustix = { version = "1", features = ["event", "pipe", "fs", "process"] }
 thiserror = "2"
 signal-hook = "0.3"
 unicode-general-category = "=0.6.0"

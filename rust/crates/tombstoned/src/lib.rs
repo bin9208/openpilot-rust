@@ -14,6 +14,8 @@ pub const SCAN_INTERVAL: std::time::Duration = std::time::Duration::from_secs(5)
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("crash retrace cancelled by shutdown")]
+    Cancelled,
     #[error(transparent)]
     Reporting(#[from] openpilot_crash_reporting::Error),
     #[error(transparent)]
