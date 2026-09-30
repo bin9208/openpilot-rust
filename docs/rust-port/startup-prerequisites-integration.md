@@ -31,4 +31,19 @@ components stay explicit. No production selection, vehicle connection, device
 acceptance or CPU measurement is part of this increment. The user's first device
 comparison follows the complete runtime, normal startup and existing upload path.
 
+## Local build capacity
+
+The user's low-space warning is tracked in
+[#95](https://github.com/bin9208/openpilot-rust/issues/95). With all active workers
+held, two verified cleanup passes reclaimed 24.57 GiB from 33 already merged
+worktrees and restored 35.53 GiB of available storage. Sources and Git status,
+active build caches, daemon/example executables, dynamic libraries, bindings,
+logs and reproduction evidence were preserved. Private local inventories retain
+the removed paths and verification results; raw local evidence stays outside Git.
+
+Before local build, install or large-copy work, reserve 25 GiB plus expected
+growth. If below that floor, recover at least 35 GiB before resuming. Use bounded
+package builds and coordinate reuse of inactive caches after freezing required
+evidence. This engineering resource rule changes no runtime behavior or CI gate.
+
 Docs-Not-Needed: internal runtime prerequisites and engineering evidence only.

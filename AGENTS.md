@@ -10,6 +10,15 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
+- The user required prevention of disk exhaustion on 2026-09-30. Check available
+  space before each local build, dependency install or large artifact copy. Keep
+  at least 25 GiB free plus the operation's estimated growth; when below that
+  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
+  bounded package builds with incremental compilation disabled and reuse a
+  coordinated inactive target cache after preserving required evidence. Remove
+  only unused, reproducible outputs from completed work; preserve sources,
+  uncommitted edits, logs, reproduction evidence and binaries still in use.
+
 - This checkout belongs to bin9208/openpilot-rust. Never push to bin9208/openpilot or ajouatom/openpilot.
 - User explicitly authorized isolated Rust development here. Work from dev on issue branches; PRs target dev. Older carrot-wip synchronization instructions below are historical source context and do not authorize synchronization from this repository.
 - Track the full runtime port in issue #1, M0 in #2, and isolated CI in #3. Retain original licensing and source provenance.
