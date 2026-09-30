@@ -21,6 +21,8 @@ from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.selfdrive.modeld import fill_model_msg
 from openpilot.selfdrive.modeld.compile_modeld import get_policy_npy_shapes
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
+from openpilot.selfdrive.modeld.jetlink.runtime import Runtime as JetlinkRuntime
+from openpilot.selfdrive.modeld.jetlink.transition import ControlState
 
 TOPICS = ("deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay", "carrotMan", "radarState")
 
@@ -33,7 +35,7 @@ def source_blocks():
     start = next(i for i, node in enumerate(loop.body) if ast.unparse(node).startswith("desire = DH.desire"))
     end = next(i for i, node in enumerate(loop.body) if isinstance(node, ast.AnnAssign) and ast.unparse(node.target) == "inputs")
     result = next(node for node in loop.body if isinstance(node, ast.If) and ast.unparse(node.test) == "model_output is not None")
-    final = next(i for i, node in enumerate(result.body) if ast.unparse(node).startswith("fill_pose_msg("))
+    final = next(i for i, node in enumerate(result.body) if ast.unparse(node).startswith("pm.send(")) - 1
     dynamic = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "get_lat_smooth_seconds_dynamic")
     blocks = ([dynamic], loop.body[start:end + 1], result.body[:final + 1])
     return tuple(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec") for nodes in blocks)
@@ -43,6 +45,7 @@ class Oracle:
     """Mutable original-source loop and actual compiled-model state for one camera session."""
     def __init__(self, models: Path, resolution: tuple[int, int], mode: str):
         self.original = driving(models / "driving_tinygrad.pkl", resolution)
+        self.jetlink = JetlinkRuntime(SimpleNamespace(get_bool=lambda _: False, get=lambda _: None, put_bool=lambda *_: None), resolution, None)
         self.dynamic, self.before, self.after = source_blocks()
         _, _, self.pulse, _ = source_nodes()
         shapes, sizes = get_policy_npy_shapes(self.original.metadata.input_shapes)
@@ -60,7 +63,7 @@ class Oracle:
                           live_calib_seen=False, DEVICE_CAMERAS=DEVICE_CAMERAS, get_warp_matrix=get_warp_matrix,
                           main_wide_camera=mode == "wide", use_extra_client=mode == "dual", buf_main=None, buf_extra=None,
                           cloudlog=SimpleNamespace(error=lambda message: None), messaging=SimpleNamespace(new_message=new_message),
-                          time=time, mt1=0., SIMULATION=False, fill_model_msg=fill_model_msg.fill_model_msg,
+                          time=time, mt1=0., SIMULATION=False, jetlink=self.jetlink, fill_model_msg=fill_model_msg.fill_model_msg,
                           fill_driving_model_data=fill_model_msg.fill_driving_model_data, fill_pose_msg=fill_model_msg.fill_pose_msg)
         exec(self.dynamic, self.scope)
         self.sm = SubMaster({name: getattr(new_message(name), name) for name in TOPICS})
@@ -71,6 +74,7 @@ class Oracle:
         metadata = SimpleNamespace(frame_id=frame_id, timestamp_eof=frame_id * 50000000 + 1000)
         self.scope.update(sm=self.sm, meta_main=metadata, meta_extra=metadata)
         exec(self.before, self.scope)
+        self.jetlink.begin(0, ControlState(False, False, False, False), {}, {}, {}, frame_id, self.scope["prepare_only"])
         exec(self.pulse, dict(self.scope, self=self.model))
         for name, values in zip(("frame", "big_frame"), images, strict=True):
             write_tensor(self.original.bindings.inputs[name], values)

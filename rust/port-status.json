@@ -163,7 +163,9 @@
       "name": "jetlinkd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.modeld.jetlink.daemon",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "native_dependencies": ["Linux FunctionFS/configfs/USB controller", "libc scheduler and signal mask", "native Rust configfs provisioning via sudo and OS mount/id tools", "Android platform application and ONNX Runtime 1.22.0"],
+      "runtime_scope": "native USB wire v2, local owner/RPC and warm-native model selection; isolated FIFO/socket/source oracle evidence only; real gadget, QCOM adapter execution, Android/device acceptance and manager selection pending",
       "production_replaced": false
     },
     {
@@ -212,7 +214,9 @@
       "name": "loggerd",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
-      "status": "not_ported",
+      "status": "route_storage_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX", "FFmpeg", "zstd"],
+      "runtime_scope": "continuous route storage, media writer and native diagnostic callsites with actual collector/rlog integration; manager selection and full startup/upload acceptance pending",
       "production_replaced": false
     },
     {
@@ -252,7 +256,7 @@
       "source_entrypoint": "openpilot.selfdrive.modeld.modeld",
       "status": "internal_model_runtime_host_validated",
       "native_dependencies": ["original msgq/VisionIPC through CXX", "trusted original CPU/QCOM model kernels"],
-      "runtime_scope": "continuous internal driving model loop; USB/eGPU fallback, Jetlink, zero-copy, manager selection and whole-runtime/device acceptance pending",
+      "runtime_scope": "continuous internal driving model loop with native Jetlink worker/adapter and loss publication; USB/eGPU fallback, zero-copy, manager selection and whole-runtime/device acceptance pending",
       "production_replaced": false
     },
     {
@@ -380,7 +384,10 @@
       "name": "torqued",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.torqued",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX", "NumPy2.5.3 OpenBLAS0.3.34.106.0 ILP64 dgesdd artifact with Fortran runtime; ARM additionally needs OS libz/libgcc_s", "libc scheduling"],
+      "runtime_scope": "source estimator, seeded sampling parity, liveTorqueParameters IPC and asynchronous cache; native GNU artifact required; normal manager/startup integration and device acceptance pending",
+      "evidence": "docs/rust-port/torqued-validation.md",
       "production_replaced": false
     },
     {
@@ -462,6 +469,13 @@
     }
   ],
   "library_ports": [
+    {
+      "name": "structured_logging_and_runtime_diagnostics",
+      "status": "native_host_interoperability_validated",
+      "implementation": "Rust ordered records, per-thread native ZMQ producers, scoped context, bounded timing aggregates and actual receiver-state snapshots; daemon callsite integration remains separate",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/logging-client-validation.md"
+    },
     {
       "name": "FirstOrderFilter",
       "status": "scalar_host_validated",

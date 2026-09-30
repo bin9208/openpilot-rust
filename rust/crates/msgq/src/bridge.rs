@@ -20,7 +20,10 @@ pub(crate) mod ffi {
             specifications: &[QueueSpec],
             isolated: bool,
         ) -> Result<UniquePtr<QueueBatch>>;
+        fn open_queued_batch(specifications: &[QueueSpec]) -> Result<UniquePtr<QueueBatch>>;
         fn receive(self: Pin<&mut QueueBatch>, timeout_ms: i32) -> Result<Vec<QueuedMessage>>;
+        fn poll_ready(self: Pin<&mut QueueBatch>, timeout_ms: i32) -> Result<Vec<usize>>;
+        fn receive_one(self: Pin<&mut QueueBatch>, index: usize) -> Result<Vec<u8>>;
         fn open_queue(
             endpoint: &str,
             publisher: bool,

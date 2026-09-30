@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["numpy>=2.0", "zstandard==0.25.0"]
+# dependencies = ["numpy==2.5.3", "zstandard==0.25.0"]
 # ///
 # Run with PYTHONPATH=.:tinygrad_repo DEV=CPU:LLVM JIT_BATCH_SIZE=0 uv run rust/tools/check_pipeline_reference.py --help
 from __future__ import annotations

@@ -121,12 +121,12 @@ std::unique_ptr<Queue> open_runtime_queue(rust::Str endpoint, bool publisher, bo
   return open_checked_queue(endpoint, publisher, conflate, capacity, false);
 }
 
-QueueBatch::QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolated) {
+QueueBatch::QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolated, bool conflate) {
   if (specifications.empty() || specifications.size() > 256) throw std::invalid_argument("invalid subscription count");
   std::set<std::string> names;
   for (const auto &specification : specifications) {
     if (!names.insert(std::string(specification.endpoint)).second) throw std::invalid_argument("duplicate subscription");
-    queues_.push_back(open_checked_queue(specification.endpoint, false, true, specification.capacity, isolated));
+    queues_.push_back(open_checked_queue(specification.endpoint, false, conflate, specification.capacity, isolated));
     const size_t index = queues_.size() - 1;
     if (specification.polled) {
       polls_.push_back(msgq_pollitem_t{&queues_.back()->queue_, 0});
@@ -154,6 +154,25 @@ rust::Vec<QueuedMessage> QueueBatch::receive(int32_t timeout_ms) {
 }
 
 std::unique_ptr<QueueBatch> open_batch(rust::Slice<const QueueSpec> specifications, bool isolated) {
-  return std::make_unique<QueueBatch>(specifications, isolated);
+  return std::make_unique<QueueBatch>(specifications, isolated, true);
+}
+
+rust::Vec<size_t> QueueBatch::poll_ready(int32_t timeout_ms) {
+  if (timeout_ms < 0) throw std::invalid_argument("invalid poll timeout");
+  msgq_poll(polls_.data(), polls_.size(), timeout_ms);
+  rust::Vec<size_t> result;
+  for (size_t index = 0; index < polls_.size(); ++index) {
+    if (polls_[index].revents) result.push_back(poll_indices_[index]);
+  }
+  for (const size_t index : unpolled_indices_) result.push_back(index);
+  return result;
+}
+
+rust::Vec<uint8_t> QueueBatch::receive_one(size_t index) {
+  return queues_.at(index)->receive(0);
+}
+
+std::unique_ptr<QueueBatch> open_queued_batch(rust::Slice<const QueueSpec> specifications) {
+  return std::make_unique<QueueBatch>(specifications, false, false);
 }
 }

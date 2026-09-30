@@ -13,7 +13,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [model-memory, model-pipelines]
+    needs: [model-memory, model-pipelines, logger-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -36,15 +36,17 @@ jobs:
         env:
           MEMORY: ${{ needs.model-memory.result }}
           PIPELINES: ${{ needs.model-pipelines.result }}
+          LOGGER: ${{ needs.logger-runtime.result }}
         run: |
           test "$MEMORY" = success
           test "$PIPELINES" = success
+          test "$LOGGER" = success
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
-      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs
-      - run: python -m pip install numpy==2.4.6 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0
+      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
@@ -66,10 +68,30 @@ jobs:
           cargo build -p openpilot-deleter --bins --examples --locked
           python tools/check_deleter_reference.py --binary target/debug/examples/deleter_trace --output "$RUNNER_TEMP/deleter-reference"
           python tools/check_deleter_daemon.py --binary target/debug/openpilot-deleter --output "$RUNNER_TEMP/deleter-native" --privileged-mount
+      - name: Compare Jetlink policy, model adapter, descriptors and bidirectional RPC
+        run: |
+          python tools/check_jetlink_reference.py target/debug/examples/jetlink_probe "$RUNNER_TEMP/jetlink-reference"
+          python tools/check_jetlink_rpc.py target/debug/examples/rpc_probe "$RUNNER_TEMP/jetlink-rpc"
+          python tools/check_jetlink_raw.py target/debug/examples/jetlink_raw_probe "$RUNNER_TEMP/jetlink-raw"
+      - name: Retain Jetlink source oracle and RPC evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: jetlink-host-oracle-evidence
+          path: |
+            ${{ runner.temp }}/jetlink-reference/
+            ${{ runner.temp }}/jetlink-rpc/
+            ${{ runner.temp }}/jetlink-raw/
       - name: Compare message state and service catalog with original source
         run: |
           python tools/check_services.py
           python tools/check_message_state.py --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
+      - name: Stage pinned native torque numerical dependency and compare original estimator
+        run: |
+          python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
+          python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-numerics"
+          cargo build -p openpilot-torqued --bins --examples --locked
+          OPENBLAS_NUM_THREADS=1 python tools/check_torque_reference.py --binary target/debug/examples/torque_trace --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-estimator"
+          OPENBLAS_NUM_THREADS=1 python tools/check_torque_loop.py --binary target/debug/examples/torque_loop --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-loop"
       - name: Compare calibration estimator, loop and Params floats with original source
         run: |
           cargo build -p openpilot-calibrationd --bins --examples --locked
@@ -84,11 +106,22 @@ jobs:
         run: python tools/check_monitoring_reference.py --binary target/debug/monitoring-probe --output "$RUNNER_TEMP/monitoring-policy"
       - name: Compare diagnostic log formatting and rotation with original source
         run: python tools/check_logmessaged_reference.py --binary target/debug/examples/file_probe --output "$RUNNER_TEMP/logmessaged-reference"
+      - name: Compare bounded diagnostics and receiver state with original source
+        run: |
+          python tools/check_runtime_diagnostics.py --binary target/debug/examples/diagnostics_trace --output "$RUNNER_TEMP/runtime-diagnostics"
+          python tools/check_communication_snapshot.py --binary target/debug/examples/communication_trace --output "$RUNNER_TEMP/communication-snapshot"
       - name: Compare driving-model input state with the original loop
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
       - run: python tools/check_params_reference.py
       - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
+      - name: Exercise structured log producers with original and Rust collectors
+        run: |
+          cargo build -p openpilot-logging --examples --locked
+          cargo build -p openpilot-logmessaged --bins --locked
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" python tools/check_logging_producer.py \
+            --binary target/debug/examples/logging_probe --fork-binary target/debug/examples/logging_fork \
+            --collector target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/logging-producer"
       - name: Compare continuous driver monitoring with the original loop and IPC
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_dmonitoring_daemon.py \
@@ -98,6 +131,10 @@ jobs:
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_proclog_daemon.py \
             --binary target/debug/openpilot-proclogd-runtime --cadence-binary target/debug/examples/cadence_trace \
             --output "$RUNNER_TEMP/proclog-runtime"
+      - name: Exercise torque native IPC, cache persistence and inherited DEBUG capacity failure
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" OPENBLAS_NUM_THREADS=1 python tools/check_torque_daemon.py --binary target/debug/openpilot-torqued --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-native"
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" OPENBLAS_NUM_THREADS=1 python tools/check_torque_debug_capacity.py --binary target/debug/openpilot-torqued --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-debug-capacity"
       - name: Exercise calibration daemon with original Python IPC and durable Params
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_calibration_daemon.py \
@@ -130,6 +167,12 @@ jobs:
             ${{ runner.temp }}/proclog-runtime/**/*.json
             ${{ runner.temp }}/proclog-runtime/**/*.log
             ${{ runner.temp }}/proclog-runtime/**/*.capnp
+            rust/target/release/openpilot-torqued
+            ${{ runner.temp }}/torque-*/report.json
+            ${{ runner.temp }}/torque-native/**/*.capnp
+            ${{ runner.temp }}/torque-native/**/*.log
+            ${{ runner.temp }}/torque-debug-capacity/**/*.log
+            ${{ runner.temp }}/torque-numerics/
             rust/target/release/openpilot-calibrationd
             ${{ runner.temp }}/calibration-*/report.json
             ${{ runner.temp }}/calibration-native/**/*.capnp
@@ -146,6 +189,98 @@ jobs:
             ${{ runner.temp }}/logmessaged-reference/report.json
             ${{ runner.temp }}/logmessaged-native/**/report.json
             ${{ runner.temp }}/logmessaged-native/**/*.log
+            ${{ runner.temp }}/runtime-diagnostics/report.json
+            ${{ runner.temp }}/communication-snapshot/report.json
+            ${{ runner.temp }}/logging-producer/**/report.json
+            ${{ runner.temp }}/logging-producer/**/*.log
+  logger-runtime:
+    name: rust original route logger
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libyuv-dev libzmq5 ffmpeg strace
+      - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0
+      - run: cargo test -p openpilot-loggerd --locked
+      - run: cargo test -p openpilot-msgq --test queued --locked
+      - run: cargo build -p openpilot-loggerd -p openpilot-logmessaged --locked
+      - run: cargo build -p openpilot-logging --example native_logging_probe --locked
+      - name: Compare shared native logging context, transport and rate-limit boundaries
+        run: python tools/check_native_logging.py --binary target/debug/examples/native_logging_probe --output "$RUNNER_TEMP/native-logging"
+      - name: Build original native logger and encoder producers
+        run: |
+          python tools/build_msgq_python.py --output "$RUNNER_TEMP/logger-msgq"
+          python tools/loggerd_native_build.py --output "$RUNNER_TEMP/logger-original"
+      - name: Compare complete native route logs, media, fallback and signal paths
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_native.py \
+            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" \
+            --producer "$RUNNER_TEMP/logger-original/original-encoder-producer" --output "$RUNNER_TEMP/logger-native" --edges --hevc --fallbacks
+      - name: Check diagnostic accounting, suppression and complete collector path
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_diagnostics.py \
+            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" \
+            --fixtures "$RUNNER_TEMP/logger-native/fixtures" --output "$RUNNER_TEMP/logger-counters"
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_log_pipeline.py \
+            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" \
+            --collector target/debug/openpilot-logmessaged --fixture "$RUNNER_TEMP/logger-native/fixtures/road/0000.capnp" \
+            --output "$RUNNER_TEMP/logger-pipeline"
+      - name: Compare log-file flush and close syscalls with the original writer
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_flush.py \
+            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" --output "$RUNNER_TEMP/logger-flush"
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_io.py \
+            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" \
+            --fixtures "$RUNNER_TEMP/logger-native/fixtures" --output "$RUNNER_TEMP/logger-io"
+      - name: Check pure Rust rotation boundaries with Miri
+        env:
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-loggerd --lib rotation::tests --locked
+      - name: Build Rust and msgq boundary with AddressSanitizer
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/logger-asan-target
+          RUSTFLAGS: -Zsanitizer=address
+          CXXFLAGS: -fsanitize=address -fno-omit-frame-pointer
+        run: cargo +nightly-2026-09-29 build -p openpilot-loggerd --locked -Zbuild-std --target x86_64-unknown-linux-gnu
+      - name: Exercise native logger and media ownership with AddressSanitizer
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:abort_on_error=1
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_native.py \
+            --binary "$RUNNER_TEMP/logger-asan-target/x86_64-unknown-linux-gnu/debug/openpilot-loggerd" \
+            --original "$RUNNER_TEMP/logger-original/original-loggerd" --producer "$RUNNER_TEMP/logger-original/original-encoder-producer" \
+            --fixtures "$RUNNER_TEMP/logger-native/fixtures" --output "$RUNNER_TEMP/logger-asan" --edges --hevc
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_io.py \
+            --binary "$RUNNER_TEMP/logger-asan-target/x86_64-unknown-linux-gnu/debug/openpilot-loggerd" \
+            --original "$RUNNER_TEMP/logger-original/original-loggerd" --fixtures "$RUNNER_TEMP/logger-native/fixtures" \
+            --remux-only --output "$RUNNER_TEMP/logger-asan-io"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-route-logger-evidence
+          path: |
+            ${{ runner.temp }}/logger-native/
+            ${{ runner.temp }}/logger-asan/
+            ${{ runner.temp }}/logger-asan-io/
+            ${{ runner.temp }}/logger-flush/
+            ${{ runner.temp }}/logger-io/
+            ${{ runner.temp }}/logger-counters/
+            ${{ runner.temp }}/logger-pipeline/
+            ${{ runner.temp }}/native-logging/
+            ${{ runner.temp }}/logger-original/*.json
+            ${{ runner.temp }}/logger-original/*.log
   model-pipelines:
     name: rust original model pipelines
     runs-on: ubuntu-24.04
@@ -168,7 +303,7 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 git-lfs capnproto libcapnp-dev
-      - run: python -m pip install numpy==2.4.6 zstandard==0.25.0 pycapnp==2.1.0
+      - run: python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-modeld --examples --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked
@@ -258,6 +393,10 @@ jobs:
           CARGO_TARGET_DIR: ${{ runner.temp }}/driver-alignment
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check
         run: cargo +nightly-2026-09-29 miri test -p openpilot-dmonitoringmodeld --test driver --locked
+      - name: Check torque buckets, history, reset and sampling with ARM Miri
+        env:
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-torqued --no-default-features --lib --test estimator --locked --target aarch64-unknown-linux-gnu
       - name: Check calibration history and wire handling on ARM with Miri
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
@@ -266,6 +405,10 @@ jobs:
         env:
           RUSTFLAGS: -Zsanitizer=address -Clink-arg=-Wl,--export-dynamic
         run: cargo +nightly-2026-09-29 test -p openpilot-calibrationd --test parameters --locked -Zbuild-std --target x86_64-unknown-linux-gnu
+      - name: Check Jetlink native signal, socket and FunctionFS fixture boundaries with ASan
+        env:
+          RUSTFLAGS: -Zsanitizer=address -Clink-arg=-Wl,--export-dynamic
+        run: cargo +nightly-2026-09-29 test -p openpilot-jetlink --lib --test socket --test runtime --test ffs --locked -Zbuild-std --target x86_64-unknown-linux-gnu
       - name: Check the real Rust and C kernel boundary with ASan
         env:
           MODEL_TEST_ASAN: '1'
@@ -275,7 +418,7 @@ jobs:
     name: rust aarch64 build
     if: github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
         with:
@@ -283,16 +426,24 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static
+      - run: sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make
+      - name: Build pinned external FFmpeg for generic aarch64 GNU linking
+        run: python rust/tools/build_loggerd_ffmpeg.py --root "$RUNNER_TEMP/logger-ffmpeg-gnu" --cc aarch64-linux-gnu-gcc --ar aarch64-linux-gnu-ar --ranlib aarch64-linux-gnu-ranlib
       - name: Build generic Linux aarch64 artifact (not AGNOS validation)
         working-directory: rust
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          FFMPEG_DIR: ${{ runner.temp }}/logger-ffmpeg-gnu/install
         run: |
           rustup toolchain install 1.94.0 --profile minimal
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
-          cargo build --workspace --release --locked --target aarch64-unknown-linux-gnu
+          cargo build --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-gnu
           file target/aarch64-unknown-linux-gnu/release/cpu-sample
+      - name: Stage native GNU aarch64 torque dependency (not AGNOS validation)
+        working-directory: rust
+        run: |
+          python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.5.3 --dest "$RUNNER_TEMP/torque-arm-wheels"
+          python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-arm-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-arm-numerics"
       - name: Cross-build the original VisionIPC ION boundary (not device execution)
         working-directory: rust
         env:
@@ -303,7 +454,8 @@ jobs:
         run: |
           python -m pip install cargo-zigbuild==0.23.4 ziglang==0.16.0 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-musl
-          cargo zigbuild --workspace --release --locked --target aarch64-unknown-linux-musl
+          python tools/build_loggerd_ffmpeg.py --root "$RUNNER_TEMP/logger-ffmpeg-musl" --cc 'python-zig cc -target aarch64-linux-musl' --ar 'python-zig ar' --ranlib 'python-zig ranlib'
+          FFMPEG_DIR="$RUNNER_TEMP/logger-ffmpeg-musl/install" cargo zigbuild --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-musl
           python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_aarch64.py \
             --binary target/aarch64-unknown-linux-musl/release/openpilot-proclogd \
@@ -324,3 +476,14 @@ jobs:
           path: |
             rust/target/aarch64-unknown-linux-gnu/release/cpu-sample
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-calibrationd
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-loggerd
+            rust/target/aarch64-unknown-linux-musl/release/openpilot-loggerd
+            ${{ runner.temp }}/logger-ffmpeg-gnu/invocation.json
+            ${{ runner.temp }}/logger-ffmpeg-gnu/build.log
+            ${{ runner.temp }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/COPYING.LGPLv2.1
+            ${{ runner.temp }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/LICENSE.md
+            ${{ runner.temp }}/logger-ffmpeg-musl/invocation.json
+            ${{ runner.temp }}/logger-ffmpeg-musl/build.log
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-torqued
+            ${{ runner.temp }}/torque-arm-numerics/
+            rust/target/aarch64-unknown-linux-gnu/release/jetlinkd-rs

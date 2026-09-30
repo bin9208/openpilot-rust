@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["numpy==2.4.6", "pycapnp==2.1.0"]
+# dependencies = ["numpy==2.5.3", "pycapnp==2.1.0"]
 # ///
 """Run: PYTHONPATH=.:rust/tools python rust/tools/check_monitoring_reference.py --help.
 

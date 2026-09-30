@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12,<3.13"
-# dependencies = ["numpy==2.4.6"]
+# dependencies = ["numpy==2.5.3"]
 # ///
 """Run original formatter and rotating handler against the Rust file probe."""
 from __future__ import annotations
