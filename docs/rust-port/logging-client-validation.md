@@ -23,8 +23,9 @@ SHA and clean/dirty/unknown source state; it never fabricates Python filenames
 or treats a host build as a device deployment.
 
 Transport connects lazily, preserves the 10 ms linger and default queue limit,
-and uses nonblocking sends. Queue-full drops remain distinct from other typed
-transport errors. The source console handler runs before IPC. A console I/O
+and uses nonblocking sends. EINTR retries the same formatted packet without
+repeating console output, matching PyZMQ. Queue-full drops remain distinct from
+other typed transport errors; see [the interrupted-send regression](../naver/rust-interrupted-logging-93.md). The source console handler runs before IPC. A console I/O
 failure is suppressed and still allows an IPC attempt, matching StreamHandler;
 the real `/dev/full` source/native regression verifies both delivery and return.
 PID changes after fork abandon only copied
