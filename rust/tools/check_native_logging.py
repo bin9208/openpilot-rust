@@ -158,11 +158,11 @@ def main() -> None:
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
   args = parser.parse_args()
+  native = args.binary.resolve()
+  output = args.output.resolve()
   root = Path(__file__).resolve().parents[2]
   os.chdir(root)
-  output = args.output.resolve()
   source = build(root, output / 'reference')
-  native = args.binary.resolve()
   report = compare(source, native, output)
   from native_logging_transport import check
   report['transport'] = check(source, native, output / 'transport')

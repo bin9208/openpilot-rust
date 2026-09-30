@@ -44,6 +44,15 @@ existing calibration/Jetlink boundary and preserves FIFO policy and affinity.
 The corrected torque executable builds for aarch64 musl; exact-head cloud gates
 still need to validate the complete workspace.
 
+The next run at `59e836c8` passed model memory checks and exposed
+[#62](https://github.com/bin9208/openpilot-rust/issues/62): the native logging
+oracle changed directory before resolving caller-relative executable paths.
+Resolving both input and output paths first fixes the invocation from `rust/`.
+The actual C++/Rust comparison then passed with relative CLI arguments (168
+wire records, 516 rate inputs and backpressure/thread/console/signal checks).
+An initial local rerun correctly rejected an older binary's commit identity;
+rebuilding the probe from the current revision resolved that provenance error.
+
 Full-runtime #1/#6 remain open. The remaining daemon ports, production startup,
 model diagnostic callsites (#53), driving startup-order parity (#55), active web
 upload orchestration, and device/drive acceptance are separate requirements.
