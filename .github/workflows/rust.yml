@@ -263,11 +263,13 @@ jobs:
       - name: Compare timed policy, HTTP and logging with original source
         run: |
           python rust/tools/check_timed_reference.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-reference"
+          python rust/tools/check_timed_dates.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-dates"
           python rust/tools/check_timed_http.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-http"
           python rust/tools/check_timed_logging.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-logging"
       - name: Compare timed actual IPC and production process shutdown
         run: |
           python rust/tools/check_timed_daemon.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-daemon"
+          python rust/tools/check_timed_date_daemon.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-date-daemon"
           python rust/tools/check_timed_lifecycle.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-lifecycle"
           python rust/tools/check_timed_shutdown.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-shutdown"
       - name: Retain raw support runtime and Params build evidence

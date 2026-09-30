@@ -15,7 +15,7 @@ the production manager or establish device performance.
 | Uploader logging error boundaries (#68) | `4efeb5a4db0e753aac6fbf7d562bf3396bba2464` | [Fault comparison](../naver/rust_uploader_logging_errors_20260930.md) |
 | Model diagnostics and startup (#53/#55/#60) | `1cdb61820c2356b6e43b73b7c7880ad2c3df9dad` | [Diagnostics](model-diagnostics.md), [startup](model-startup.md) |
 | Native journal child and JSON bridge (#65) | `26942c5d8206693a4447e9f481575f215b7c894b` | [Journal source comparison](journald-validation.md) |
-| Clock/timezone daemon and shared socket timeout transport (#70) | `d929a9c4e17516dee3422c9cdba98bee9d3dba19` | [Clock, HTTP and shutdown comparison](timed-validation.md) |
+| Clock/timezone daemon and shared socket timeout transport (#70), including local datetime range correction | `3e42cd820d82f71a136f788c184c3bd2e1fe94b8` | [Clock, HTTP, date and shutdown comparison](timed-validation.md) |
 
 Component host/ASan/ARM records retain their own source and executable hashes.
 Those results do not substitute for the combined revision's checks. Dependency
@@ -59,6 +59,27 @@ normal timeouts and handles stop promptly. Parent execution independently confir
 all six real shutdown scenarios and verifies 1,635 frozen evidence hashes. A
 QEMU-specific missing-command spawn discrepancy remains explicitly recorded;
 the ARM policy audit passes 53 of 54 cases and is not described as full parity.
+
+The combined workspace at `3bb36bd8` passes formatting, warnings-denied Clippy,
+259 Rust tests (none ignored), and binary/example builds. The support command
+run passes its first eight stages, covering the upload, Params, diagnostics and
+dashcam scenarios, before exposing a reentrant buffered append in the synthetic
+journal child trace. [Fixture correction #74](../naver/rust_journal_trace_74.md)
+reproduces that ordering failure deterministically and fixes only the fixture;
+the actual original/native journal comparisons and all 19 configured tool tests
+then pass. Production journal behavior and assertions are unchanged.
+
+The final clock review also finds that Chrono accepts local years outside the
+Python datetime domain. The correction checks both the localized result and
+the localized 24-hour fold probe, preserving timezone crossings that remain
+representable. Expanded source comparisons cover 360 date cases and 16 actual
+daemon executions. Both checks are required in the supporting runtime CI job.
+The old failing cases and corrected observations remain in the clock evidence.
+
+One later local journal attempt used an earlier executable after the integration
+merge and correctly failed its embedded `source_commit` assertion. Final
+integration execution requires rebuilding from the revision under test; this
+attempt is retained as a provenance failure rather than a runtime mismatch.
 
 Exact-SHA Actions and post-merge results are still pending. PR success,
 post-merge success, device execution and user acceptance remain separate states.

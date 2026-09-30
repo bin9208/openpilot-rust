@@ -4,8 +4,8 @@ Issue [#74](https://github.com/bin9208/openpilot-rust/issues/74) was found durin
 the final [support integration #71](https://github.com/bin9208/openpilot-rust/issues/71)
 comparison at `3bb36bd88af30c3f80361a3ceb9305ac631e366a`.
 
-The original journald completed with exit0 and reaped its child. All155 normal
-androidLog packets and13 error records matched. The synthetic journalctl trace
+The original journald completed with exit 0 and reaped its child. All 155 normal
+androidLog packets and 13 error records matched. The synthetic journalctl trace
 ended `started, signal-15, stdout-closed`, although the recorded close timestamp
 preceded the signal timestamp. This failed the existing last-event assertion.
 
@@ -25,14 +25,14 @@ fixture payloads and all journal comparison assertions remain unchanged.
 Validation in the isolated issue worktree:
 
 - Focused regression: fails before the correction, passes afterward.
-- Full configured Rust Python-tool test suite:19 passed, none skipped.
-- Original/native journal comparison:155 packets and13 errors each, all19 fatal
+- Full configured Rust Python-tool test suite: 19 passed, none skipped.
+- Original/native journal comparison: 155 packets and 13 errors each, all 19 fatal
   input cases and the existing lifecycle scenarios pass.
 - Focused Ruff and diff checks pass.
 
 The initial local suite attempt lacked MODEL_RUN_BINARY and the CPU/LLVM settings
-already configured in CI; its15 setup-dependent failures remain recorded.
-The configured run passes all19 tests. An earlier invocation used a Python
+already configured in CI; its 15 setup-dependent failures remain recorded.
+The configured run passes all 19 tests. An earlier invocation used a Python
 environment without pytest; that setup error is retained separately.
 
 Evidence is retained under `.analysis/scratch/2026-09-30-rust-journal-trace/`:
