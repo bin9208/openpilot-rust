@@ -10,8 +10,8 @@ impl Calibration {
     }
 
     pub fn update(&mut self, bytes: &[u8]) -> Result<(), Error> {
-        let message = capnp::serialize::read_message_from_flat_slice(
-            &mut &*bytes,
+        let message = capnp::serialize::read_message(
+            std::io::Cursor::new(bytes),
             capnp::message::ReaderOptions::new(),
         )?;
         let event = message.get_root::<event::Reader>()?;

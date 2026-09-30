@@ -45,6 +45,18 @@ fn rejects_malformed_calibration_without_partial_update() {
 }
 
 #[test]
+fn accepts_valid_calibration_from_unaligned_transport_bytes() {
+    let bytes = message(&[0.1, -0.2, 0.3], false);
+    for offset in 0..8 {
+        let mut storage = vec![0_u8; bytes.len() + offset];
+        storage[offset..].copy_from_slice(&bytes);
+        let mut calibration = Calibration::default();
+        calibration.update(&storage[offset..]).unwrap();
+        assert_eq!(calibration.values(), [0.1, -0.2, 0.3]);
+    }
+}
+
+#[test]
 fn maps_both_camera_centers_into_the_original_driver_crop() {
     for (camera, center) in [
         ([1344, 760], [672.0, 380.0]),

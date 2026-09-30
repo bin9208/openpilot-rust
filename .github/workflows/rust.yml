@@ -165,7 +165,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - run: sudo apt-get update && sudo apt-get install -y clang
+      - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
       - name: Check Rust allocation and aliasing on ARM with Miri
         env:
@@ -175,6 +175,11 @@ jobs:
         env:
           MIRIFLAGS: -Zmiri-tree-borrows -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-backtrace=full
         run: cargo +nightly-2026-09-29 miri test -p openpilot-model-runtime --lib --test graph --locked --no-default-features --target aarch64-unknown-linux-gnu
+      - name: Check driver calibration byte alignment with Miri
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/driver-alignment
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-dmonitoringmodeld --test driver --locked
       - name: Check the real Rust and C kernel boundary with ASan
         env:
           MODEL_TEST_ASAN: '1'

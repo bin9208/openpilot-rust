@@ -63,7 +63,11 @@ The calibration tests and runtime-namespace tests were observed failing before
 their implementation. Focused Rust tests, workspace Clippy and the native daemon
 comparison pass. The workflow repeats the actual daemon comparison alongside
 the original model pipelines and cross-builds the daemon with the ION feature.
-Exact commit review and Actions results are recorded on #19 and its PR.
+The independent review also reproduced valid calibration bytes failing when
+the input slice was not 8-byte aligned. The decoder now uses owned aligned
+Cap'n Proto segments; offsets 0 through 7 pass, including symbolic-alignment
+Miri. The workflow preserves this regression check. Exact commit review and
+Actions results are recorded on #19 and its PR.
 
 ## Remaining acceptance
 
