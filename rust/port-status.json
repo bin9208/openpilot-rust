@@ -2,7 +2,8 @@
   "source_repo": "https://github.com/bin9208/openpilot",
   "source_commit": "f3a92524d87be714f6b8b5f44ecdc8319a8c53d1",
   "scope": "Registered source processes, including conditional/disabled entries. Manager and libraries are tracked separately; not a claim of runtime coverage.",
-  "manager_status": "not_ported",
+  "manager_status": "native_orchestration_host_candidate",
+  "manager_scope": "Native initialization, Params transitions, continuous messaging/process loop, cleanup and exit policy; seven focused unchanged-source scenarios plus isolated IPC/owned children. Native bootlog, board action, registration and Reporter adapters are composed; complete daemon selection, startup UI/stdout and launcher packaging remain integration work; no production selection or device acceptance. See docs/naver/rust-manager-106.md.",
   "processes": [
     {
       "name": "_pandad",

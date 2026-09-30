@@ -1664,7 +1664,7 @@ name = "openpilot-bootlog"
 version = "0.1.0"
 dependencies = [
  "capnp",
- "nix",
+ "nix 0.31.3",
  "openpilot-cereal",
  "openpilot-loggerd",
  "openpilot-logging",
@@ -1967,6 +1967,35 @@ dependencies = [
  "serde",
  "serde_json",
  "signal-hook",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-manager"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "chrono",
+ "openpilot-bootlog",
+ "openpilot-cereal",
+ "openpilot-checkout-status",
+ "openpilot-crash-reporting",
+ "openpilot-hardware-control",
+ "openpilot-hardware-info",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-managed-entry",
+ "openpilot-manager-catalog",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "openpilot-registration",
+ "openpilot-runtime-version",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
  "thiserror",
 ]
 
