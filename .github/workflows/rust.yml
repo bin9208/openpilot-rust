@@ -44,7 +44,7 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs
-      - run: python -m pip install numpy==2.4.6 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
@@ -78,6 +78,13 @@ jobs:
         run: |
           python tools/check_services.py
           python tools/check_message_state.py --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
+      - name: Stage pinned native torque numerical dependency and compare original estimator
+        run: |
+          python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
+          python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-numerics"
+          cargo build -p openpilot-torqued --bins --examples --locked
+          OPENBLAS_NUM_THREADS=1 python tools/check_torque_reference.py --binary target/debug/examples/torque_trace --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-estimator"
+          OPENBLAS_NUM_THREADS=1 python tools/check_torque_loop.py --binary target/debug/examples/torque_loop --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-loop"
       - name: Compare calibration estimator, loop and Params floats with original source
         run: |
           cargo build -p openpilot-calibrationd --bins --examples --locked
@@ -117,6 +124,10 @@ jobs:
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_proclog_daemon.py \
             --binary target/debug/openpilot-proclogd-runtime --cadence-binary target/debug/examples/cadence_trace \
             --output "$RUNNER_TEMP/proclog-runtime"
+      - name: Exercise torque native IPC, cache persistence and inherited DEBUG capacity failure
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" OPENBLAS_NUM_THREADS=1 python tools/check_torque_daemon.py --binary target/debug/openpilot-torqued --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-native"
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" OPENBLAS_NUM_THREADS=1 python tools/check_torque_debug_capacity.py --binary target/debug/openpilot-torqued --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-debug-capacity"
       - name: Exercise calibration daemon with original Python IPC and durable Params
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_calibration_daemon.py \
@@ -145,6 +156,12 @@ jobs:
             ${{ runner.temp }}/proclog-runtime/**/*.json
             ${{ runner.temp }}/proclog-runtime/**/*.log
             ${{ runner.temp }}/proclog-runtime/**/*.capnp
+            rust/target/release/openpilot-torqued
+            ${{ runner.temp }}/torque-*/report.json
+            ${{ runner.temp }}/torque-native/**/*.capnp
+            ${{ runner.temp }}/torque-native/**/*.log
+            ${{ runner.temp }}/torque-debug-capacity/**/*.log
+            ${{ runner.temp }}/torque-numerics/
             rust/target/release/openpilot-calibrationd
             ${{ runner.temp }}/calibration-*/report.json
             ${{ runner.temp }}/calibration-native/**/*.capnp
@@ -187,7 +204,7 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 git-lfs capnproto libcapnp-dev
-      - run: python -m pip install numpy==2.4.6 zstandard==0.25.0 pycapnp==2.1.0
+      - run: python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-modeld --examples --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked
@@ -277,6 +294,10 @@ jobs:
           CARGO_TARGET_DIR: ${{ runner.temp }}/driver-alignment
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check
         run: cargo +nightly-2026-09-29 miri test -p openpilot-dmonitoringmodeld --test driver --locked
+      - name: Check torque buckets, history, reset and sampling with ARM Miri
+        env:
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-torqued --no-default-features --lib --test estimator --locked --target aarch64-unknown-linux-gnu
       - name: Check calibration history and wire handling on ARM with Miri
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
@@ -316,6 +337,11 @@ jobs:
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
           cargo build --workspace --release --locked --target aarch64-unknown-linux-gnu
           file target/aarch64-unknown-linux-gnu/release/cpu-sample
+      - name: Stage native GNU aarch64 torque dependency (not AGNOS validation)
+        working-directory: rust
+        run: |
+          python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.5.3 --dest "$RUNNER_TEMP/torque-arm-wheels"
+          python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-arm-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-arm-numerics"
       - name: Cross-build the original VisionIPC ION boundary (not device execution)
         working-directory: rust
         env:
@@ -348,3 +374,5 @@ jobs:
             rust/target/aarch64-unknown-linux-gnu/release/cpu-sample
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-calibrationd
             rust/target/aarch64-unknown-linux-gnu/release/jetlinkd-rs
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-torqued
+            ${{ runner.temp }}/torque-arm-numerics/

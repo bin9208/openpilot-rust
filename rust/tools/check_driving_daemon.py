@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["numpy==2.4.6", "pycapnp==2.1.0", "zstandard==0.25.0"]
+# dependencies = ["numpy==2.5.3", "pycapnp==2.1.0", "zstandard==0.25.0"]
 # ///
 # Run with the trusted original-model environment, matching its LLVM compiler:
 # PYTHONPATH=.:tinygrad_repo:rust/tools uv run rust/tools/check_driving_daemon.py --help

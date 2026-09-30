@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["numpy>=2.0", "zstandard==0.25.0"]
+# dependencies = ["numpy==2.5.3", "zstandard==0.25.0"]
 # ///
 # Run with the original-model environment: PYTHONPATH=.:tinygrad_repo:rust/tools
 # DEV=CPU:LLVM JIT=1 JIT_BATCH_SIZE=0 uv run rust/tools/check_input_pipeline.py --help

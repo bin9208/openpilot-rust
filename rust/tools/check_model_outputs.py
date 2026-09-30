@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["numpy==2.4.6", "pycapnp==2.1.0"]
+# dependencies = ["numpy==2.5.3", "pycapnp==2.1.0"]
 # ///
 # Run with PYTHONPATH=. uv run rust/tools/check_model_outputs.py --help
 from __future__ import annotations

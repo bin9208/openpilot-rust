@@ -109,3 +109,12 @@ bytes and numeric types, original/Rust collectors, actual OS identity, fork
 reconnection and backpressure. Integration into each daemon's original callsites
 is a subsequent full-runtime requirement; this library does not establish that
 all Rust process diagnostics reach a route or upload.
+
+[Torque estimator issue #40](https://github.com/bin9208/openpilot-rust/issues/40)
+adds the continuous native torque estimator, original histories/RNG/SVD policy
+and asynchronous cache persistence. Its [validation record](../rust-port/torqued-validation.md)
+records the correction to source-locked NumPy 2.5.3/OpenBLAS, same-architecture
+host/ARM source comparisons and real IPC/Params shutdown behavior. Parent reruns
+confirm the original estimator and native lifecycle. All existing model pipeline
+artifacts still require regeneration and exact-head CI under the corrected
+dependency. Generic builds do not establish vehicle or CPU acceptance.

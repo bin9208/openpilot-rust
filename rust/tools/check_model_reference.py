@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["numpy>=2.0"]
+# dependencies = ["numpy==2.5.3"]
 # ///
 # Run with PYTHONPATH=.:tinygrad_repo DEV=CPU:LLVM CPU_COUNT=4 JIT=2 uv run rust/tools/check_model_reference.py --help
 from __future__ import annotations
