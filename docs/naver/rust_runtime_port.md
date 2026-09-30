@@ -52,3 +52,9 @@ ports camera pairing, drop state, calibration and packed policy inputs. The
 [comparison record](../rust-port/model-input-validation.md) includes original
 source sequences and exact native camera/model/recurrent output comparisons.
 Complete driving daemon orchestration remains tracked under #1/#6.
+
+[Continuous procLog issue #30](https://github.com/bin9208/openpilot-rust/issues/30)
+connects the validated collector and canonical encoder to the original 0.5 Hz
+runtime publication loop. Its [validation record](../rust-port/proclog-runtime-validation.md)
+includes source deadline comparisons, real IPC, overrun recovery and shutdown.
+Manager selection and whole-runtime device acceptance remain pending.

@@ -288,9 +288,9 @@
       "name": "proclogd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.proclogd",
-      "status": "isolated_host_validated_pending_device",
+      "status": "continuous_runtime_host_validated",
       "native_dependencies": ["original msgq through CXX"],
-      "runtime_scope": "bounded diagnostic producer; not selected by manager",
+      "runtime_scope": "continuous procLog daemon and bounded diagnostic producer; not selected by manager; whole-runtime integration and device acceptance pending",
       "production_replaced": false
     },
     {
