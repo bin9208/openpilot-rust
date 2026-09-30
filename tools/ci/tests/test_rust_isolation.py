@@ -9,6 +9,18 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_startup_services_require_source_and_live_native_protocols(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['startup-services']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_lpa.py', 'check_bridge.py', 'build_bridge_reference.py', 'build_msgq_python.py'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python rust/tools/check_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+
     def test_platform_runtime_requires_original_source_and_live_native_processes(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['platform-runtime']
@@ -115,7 +127,7 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'platform-runtime', 'web-upload-timeouts'})
+        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'web-upload-timeouts'})
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
@@ -124,6 +136,7 @@ class RustIsolationTests(unittest.TestCase):
                                             'STARTUP': '${{ needs.startup-runtime.result }}',
                                             'HARDWARE': '${{ needs.hardware-runtime.result }}',
                                             'PLATFORM': '${{ needs.platform-runtime.result }}',
+                                            'STARTUP_SERVICES': '${{ needs.startup-services.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
