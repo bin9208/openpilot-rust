@@ -1,0 +1,24 @@
+[package]
+name = "openpilot-beepd"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-params = { path = "../params" }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging" }
+capnp = "=0.27.2"
+rustix = { version = "1", features = ["time"] }
+thiserror = "2"
+signal-hook = "0.3"
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
