@@ -129,9 +129,43 @@ fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Re
             ),
         ),
     )?;
-    let mut runtime = None;
-    let mut subscriber = None;
-    let mut publisher = None;
+    let layout = client
+        .layout()
+        .ok_or(Error::Contract("connected camera has no layout"))?;
+    let camera = [
+        u32::try_from(layout.width).map_err(|_| Error::Contract("camera width overflow"))?,
+        u32::try_from(layout.height).map_err(|_| Error::Contract("camera height overflow"))?,
+    ];
+    let bundle = catalog.select(Kind::Driver, camera)?;
+    let priority = if bundle.backend == "qcom-cl" {
+        env::var("QCOM_PRIORITY")
+            .map_or(Ok(8), |value| value.parse::<u8>())
+            .map_err(|_| Error::Contract("invalid QCOM_PRIORITY"))?
+    } else {
+        8
+    };
+    // SAFETY: --trusted-catalog explicitly requires immutable executable artifacts.
+    let mut runtime = unsafe { DriverRuntime::load(bundle, priority) }?;
+    logger.emit(
+        log_site!(),
+        Record::text(
+            Level::Warning,
+            "models loaded, dmonitoringmodeld starting".into(),
+        ),
+    )?;
+    let mut subscriber = Subscriber::for_runtime(
+        "liveCalibration",
+        true,
+        services::lookup("liveCalibration")
+            .ok_or(Error::Contract("liveCalibration service missing"))?
+            .queue_size,
+    )?;
+    let mut publisher = Publisher::for_runtime(
+        "driverStateV2",
+        services::lookup("driverStateV2")
+            .ok_or(Error::Contract("driverStateV2 service missing"))?
+            .queue_size,
+    )?;
     let mut calibration = Calibration::default();
     let mut frames = 0;
     while !stop.load(Ordering::Relaxed) {
@@ -143,53 +177,6 @@ fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Re
             continue;
         };
         let metadata = *frame.metadata();
-        if runtime.is_none() {
-            let camera = [
-                u32::try_from(metadata.width)
-                    .map_err(|_| Error::Contract("camera width overflow"))?,
-                u32::try_from(metadata.height)
-                    .map_err(|_| Error::Contract("camera height overflow"))?,
-            ];
-            let bundle = catalog.select(Kind::Driver, camera)?;
-            let priority = if bundle.backend == "qcom-cl" {
-                env::var("QCOM_PRIORITY")
-                    .map_or(Ok(8), |value| value.parse::<u8>())
-                    .map_err(|_| Error::Contract("invalid QCOM_PRIORITY"))?
-            } else {
-                8
-            };
-            // SAFETY: --trusted-catalog explicitly requires immutable executable artifacts.
-            runtime = Some(unsafe { DriverRuntime::load(bundle, priority) }?);
-            logger.emit(
-                log_site!(),
-                Record::text(
-                    Level::Warning,
-                    "models loaded, dmonitoringmodeld starting".into(),
-                ),
-            )?;
-            subscriber = Some(Subscriber::for_runtime(
-                "liveCalibration",
-                true,
-                services::lookup("liveCalibration")
-                    .ok_or(Error::Contract("liveCalibration service missing"))?
-                    .queue_size,
-            )?);
-            publisher = Some(Publisher::for_runtime(
-                "driverStateV2",
-                services::lookup("driverStateV2")
-                    .ok_or(Error::Contract("driverStateV2 service missing"))?
-                    .queue_size,
-            )?);
-        }
-        let runtime = runtime
-            .as_mut()
-            .ok_or(Error::Contract("driver model not initialized"))?;
-        let subscriber = subscriber
-            .as_mut()
-            .ok_or(Error::Contract("calibration subscriber not initialized"))?;
-        let publisher = publisher
-            .as_mut()
-            .ok_or(Error::Contract("driver publisher not initialized"))?;
         if let Some(message) = subscriber.receive(Duration::ZERO)? {
             calibration.update(&message)?;
         }

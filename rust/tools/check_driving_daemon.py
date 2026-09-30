@@ -84,6 +84,7 @@ def check(args, resolution: tuple[int, int], mode: str):
         processes.append(waiting)
         waiting_lines = Lines(waiting.stderr, destination / "params-wait.log")
         waiting_lines.until(("connected extra cam" if mode == "dual" else "connected main cam",))
+        waiting_lines.until(("models loaded",))
         assert command(f"send 2 {zero} {zero}") == "OK"
         time.sleep(.15)
         assert waiting.poll() is None, 'missing CarParams must keep the daemon waiting'
@@ -106,9 +107,9 @@ def check(args, resolution: tuple[int, int], mode: str):
         processes.append(daemon)
         daemon_lines = Lines(daemon.stderr, destination / "daemon.log")
         daemon_lines.until(("connected extra cam" if mode == "dual" else "connected main cam",))
+        daemon_lines.until(("models loaded",))
         daemon_lines.until(("modeld got CarParams",))
         assert command(f"send 2 {zero} {zero}") == "OK"
-        daemon_lines.until(("models loaded",))
         oracle.prepare(2, (np.zeros(size, dtype=np.uint8), np.zeros(size, dtype=np.uint8)))
         for topic in OUTPUTS:
             assert command(f"receive {topic} 200 {destination / 'unexpected.bin'}") == "TIMEOUT"
@@ -177,6 +178,8 @@ def check(args, resolution: tuple[int, int], mode: str):
                   "raw_predictions": raw, "raw_comparison": "exact bytes", "float_tolerance": 1e-6, "polynomial_tolerance": 2e-5,
                   "discrete_fields": "exact", "llvm_path": os.environ.get("LLVM_PATH"), "device_validation": False, "trace": trace,
                   "queue_capacities": {name: int(SERVICE_LIST[name].queue_size) for name in (*TOPICS, *OUTPUTS)},
+                  "startup": {"model_loaded_before_car_params": True, "model_loaded_before_first_frame": True,
+                              "first_frame_id": 2, "first_frame_prepare_only": True},
                   "signal_checks": ["SIGINT camera discovery", "SIGTERM CarParams wait"] + (["SIGTERM first-frame wait"] if mode == "road" else [])}
         report['logging'] = logging_report
         (destination / "report.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -209,7 +212,7 @@ def main() -> None:
     args.output.mkdir(parents=True, exist_ok=False)
     args.peer = args.output / "driving-daemon-peer"
     build_peer(Path(__file__).resolve().parents[2], args.peer)
-    scenarios = (((1344, 760), "dual"), ((1928, 1208), "dual"), ((1344, 760), "road"), ((1344, 760), "wide"))
+    scenarios = tuple((resolution, mode) for resolution in ((1344, 760), (1928, 1208)) for mode in ("dual", "road", "wide"))
     reports = [check(args, resolution, mode) for resolution, mode in scenarios]
     (args.output / "report.json").write_text(json.dumps({"runs": reports, "device_validation": False}, indent=2) + "\n")
 

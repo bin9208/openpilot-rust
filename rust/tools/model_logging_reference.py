@@ -93,7 +93,12 @@ def driving(records: list[dict], scenario: DrivingScenario) -> dict:
   interrupted = source.expected('got SIGINT')
   assert sum((record['levelnum'], record['msg']) == interrupted for record in records) == 1
   result = source.inventory()
-  result.update(result='pass', compared_records=len(actual), startup_order_gap_issue=55)
+  startup = [message for _level, message in actual if message.startswith(('connected main cam', 'connected extra cam',
+             'loading model', 'models loaded in', 'modeld got CarParams'))]
+  ordered = ['connected main cam'] + (['connected extra cam'] if scenario.mode == 'dual' else [])
+  ordered += ['loading model', 'models loaded in', 'modeld got CarParams']
+  assert len(startup) == len(ordered) and all(text.startswith(prefix) for text, prefix in zip(startup, ordered, strict=True))
+  result.update(result='pass', compared_records=len(actual), startup_order='model load before CarParams')
   return result
 
 

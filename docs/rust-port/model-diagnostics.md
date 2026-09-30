@@ -59,16 +59,15 @@ they do not impersonate Python files or classes.
 
 ## Explicit remaining gaps
 
-The pre-existing startup-order difference is tracked in
-[#55](https://github.com/bin9208/openpilot-rust/issues/55). Python loads models
-before waiting for CarParams and before its loop. Rust currently waits for
-CarParams, then loads on the first received pair. This change keeps that order,
-records its actual first-loop initialization cost and removes the old premature
-`modeld: ready` progress text. No time is subtracted and no sample is skipped.
-Logging evidence does not establish equivalent startup order or readiness.
-Driver monitoring has a separate pre-existing first-frame-before-load difference
-tracked in [#60](https://github.com/bin9208/openpilot-rust/issues/60); its source
-loads from connection dimensions before receiving the first frame.
+The startup-order differences discovered during this increment are tracked in
+[#55](https://github.com/bin9208/openpilot-rust/issues/55) and
+[#60](https://github.com/bin9208/openpilot-rust/issues/60). At the frozen #53
+checkpoint, driving loaded after CarParams on the first pair and DM loaded after
+its first frame. Their [startup follow-up](model-startup.md) moves construction to
+validated connection dimensions before frame reception, with driving also loading
+before CarParams. The #53 evidence retains the actual earlier first-loop cost;
+follow-up evidence verifies the corrected order without subtracting time or
+skipping timing samples. This does not establish whole-runtime readiness.
 
 The following source callsites depend on still-unported eGPU paths and remain
 pending: tmux-capture queue success/conflict/failure (modeld lines 59/63/68), USB

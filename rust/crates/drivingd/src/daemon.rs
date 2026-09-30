@@ -43,6 +43,11 @@ pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Res
     else {
         return Ok(());
     };
+    let layout = main
+        .client
+        .layout()
+        .ok_or(Error::Contract("connected camera has no layout"))?;
+    let mut runtime = process::model(&catalog, &layout, logger)?;
     let mut subscribers = SubMaster::for_runtime(bus::TOPICS, SubscriberOptions::default())?;
     let mut publishers = PubMaster::for_runtime(bus::OUTPUTS)?;
     let Some(car_params) = process::car_params(&params, stop)? else {
@@ -75,7 +80,6 @@ pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Res
         parameters::float(&params, "VEgoStopping")? * 0.01,
         parameters::float(&params, "CameraYawTrimDeg")? * 0.01,
     );
-    let mut runtime = None;
     let mut calibration = DrivingCalibration::default();
     let mut drops = DropTracker::default();
     let mut publication = Publication::default();
@@ -117,12 +121,6 @@ pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Res
         let camera_ready = process::monotonic();
         let frame = pair.main();
         let extra_frame = pair.extra();
-        if runtime.is_none() {
-            runtime = Some(process::model(&catalog, &frame.buffer.layout, logger)?);
-        }
-        let runtime = runtime
-            .as_mut()
-            .ok_or(Error::Contract("driving model not initialized"))?;
         runtime.validate_frame(&frame.buffer.layout)?;
         runtime.validate_frame(&extra_frame.buffer.layout)?;
         subscribers.update(Duration::ZERO)?;

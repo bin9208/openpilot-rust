@@ -6,7 +6,7 @@ use openpilot_logging::{
 };
 use openpilot_model_runtime::catalog::{Catalog, Kind};
 use openpilot_modeld::camera::{self, CameraStream};
-use openpilot_msgq::{VisionClient, VisionMetadata, VisionStream};
+use openpilot_msgq::{VisionClient, VisionLayout, VisionStream};
 use openpilot_params::Params;
 use std::{
     sync::{
@@ -125,7 +125,7 @@ pub fn car_params(params: &Params, stop: &Arc<AtomicBool>) -> Result<Option<Vec<
 
 pub fn model<'a>(
     catalog: &'a Catalog,
-    layout: &VisionMetadata,
+    layout: &VisionLayout,
     logger: &mut Logger,
 ) -> Result<DrivingRuntime<'a>, Error> {
     let camera = [
