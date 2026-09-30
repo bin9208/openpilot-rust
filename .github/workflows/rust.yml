@@ -61,6 +61,8 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
+      - name: Compare driving-model input state with the original loop
+        run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
       - run: python tools/check_params_reference.py
       - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
@@ -81,6 +83,7 @@ jobs:
             ${{ runner.temp }}/dm-native/report.json
             ${{ runner.temp }}/driving-native/report.json
             ${{ runner.temp }}/policy-native/report.json
+            ${{ runner.temp }}/model-inputs/report.json
   model-pipelines:
     name: rust original model pipelines
     runs-on: ubuntu-24.04
@@ -138,6 +141,11 @@ jobs:
               --driving-pipeline "$RUNNER_TEMP/native-catalog/$generation/driving-${1}x${2}/pipeline.json" --driving-outputs "$RUNNER_TEMP/road-pipeline-$1" \
               --driver-pipeline "$RUNNER_TEMP/native-catalog/$generation/driver-${1}x${2}/pipeline.json" --driver-outputs "$RUNNER_TEMP/dm-pipeline-$1"
           done
+      - name: Compare Rust input state through the original driving pipelines
+        run: |
+          python rust/tools/check_input_pipeline.py --inputs-binary rust/target/debug/examples/input_probe \
+            --model-binary rust/target/debug/model-run --trusted-driving "$RUNNER_TEMP/original-models/driving_tinygrad.pkl" \
+            --output "$RUNNER_TEMP/model-input-pipelines"
       - name: Exercise the Rust driver daemon with original camera and message IPC
         run: |
           python rust/tools/check_driver_daemon.py --binary rust/target/debug/openpilot-dmonitoringmodeld \
@@ -150,6 +158,7 @@ jobs:
             ${{ runner.temp }}/dm-pipeline-*/report.json
             ${{ runner.temp }}/native-catalog/current.json
             ${{ runner.temp }}/model-outputs-*/**/report.json
+            ${{ runner.temp }}/model-input-pipelines/**/report.json
             ${{ runner.temp }}/driver-daemon/**/report.json
             ${{ runner.temp }}/driver-daemon/**/*.log
   model-memory:

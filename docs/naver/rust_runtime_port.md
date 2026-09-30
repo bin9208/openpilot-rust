@@ -34,3 +34,9 @@ connects driver VisionIPC, native inference, calibration and `driverStateV2` in
 a continuous Rust process. Its [validation record](../rust-port/driver-daemon-validation.md)
 documents both camera resolutions, original-model/message comparisons and
 remaining QCOM input, manager and full-runtime acceptance work.
+
+[Driving input issue #20](https://github.com/bin9208/openpilot-rust/issues/20)
+ports camera pairing, drop state, calibration and packed policy inputs. The
+[comparison record](../rust-port/model-input-validation.md) includes original
+source sequences and exact native camera/model/recurrent output comparisons.
+Complete driving daemon orchestration remains tracked under #1/#6.
