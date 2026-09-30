@@ -6,10 +6,13 @@ use openpilot_jetlink::{
 };
 use std::{
     os::unix::net::{UnixListener, UnixStream},
-    sync::{atomic::Ordering, mpsc},
+    sync::{atomic::Ordering, mpsc, Mutex},
     thread,
     time::{Duration, Instant},
 };
+// Keep independent socket scenarios from sharing the strict 50 ms frame budget under ASan.
+static FIXTURE_LOCK: Mutex<()> = Mutex::new(());
+
 struct Synthetic {
     last: Option<u32>,
     dead: bool,
@@ -49,6 +52,7 @@ fn ready(server: &Server) {
 }
 #[test]
 fn native_socket_returns_current_frame_and_rejects_reordered_frame() {
+    let _serial = FIXTURE_LOCK.lock().unwrap();
     // Given a real local owner and an otherwise successful hardware-facing backend.
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("jetlink.sock");
@@ -89,6 +93,7 @@ fn native_socket_returns_current_frame_and_rejects_reordered_frame() {
 }
 #[test]
 fn malformed_generation_does_not_destroy_idle_owner() {
+    let _serial = FIXTURE_LOCK.lock().unwrap();
     // Given a real connected owner.
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("jetlink.sock");
@@ -137,6 +142,7 @@ fn malformed_generation_does_not_destroy_idle_owner() {
 }
 #[test]
 fn partial_packet_cannot_extend_whole_deadline() {
+    let _serial = FIXTURE_LOCK.lock().unwrap();
     // Given only part of a declared packet on a real socket.
     let (mut receiver, mut sender) = UnixStream::pair().unwrap();
     use std::io::Write;
@@ -153,6 +159,7 @@ fn partial_packet_cannot_extend_whole_deadline() {
 }
 #[test]
 fn oversize_packet_is_rejected_before_payload_allocation() {
+    let _serial = FIXTURE_LOCK.lock().unwrap();
     // Given a hostile packet size.
     let (mut receiver, mut sender) = UnixStream::pair().unwrap();
     use std::io::Write;
@@ -168,6 +175,7 @@ fn oversize_packet_is_rejected_before_payload_allocation() {
 }
 #[test]
 fn stop_interrupts_waiting_local_client_and_joins_worker() {
+    let _serial = FIXTURE_LOCK.lock().unwrap();
     // Given a client stalled before its handshake.
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("jetlink.sock");
@@ -189,6 +197,7 @@ fn stop_interrupts_waiting_local_client_and_joins_worker() {
 }
 #[test]
 fn wrong_reply_identity_closes_proxy() {
+    let _serial = FIXTURE_LOCK.lock().unwrap();
     // Given a hardware-independent real socket peer that handshakes correctly.
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("jetlink.sock");
@@ -234,6 +243,7 @@ fn wrong_reply_identity_closes_proxy() {
 
 #[test]
 fn saturated_listener_does_not_make_connect_unbounded() {
+    let _serial = FIXTURE_LOCK.lock().unwrap();
     // Given a real Unix listener whose accept queue is deliberately full.
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("busy.sock");
@@ -258,6 +268,7 @@ fn saturated_listener_does_not_make_connect_unbounded() {
 
 #[test]
 fn kernel_stuck_hardware_seam_cannot_extend_explicit_owner_stop() {
+    let _serial = FIXTURE_LOCK.lock().unwrap();
     struct Blocked {
         entered: mpsc::Sender<()>,
         release: mpsc::Receiver<()>,
