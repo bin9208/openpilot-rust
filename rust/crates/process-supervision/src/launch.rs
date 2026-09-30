@@ -53,6 +53,8 @@ enum LaunchRequest {
         cwd: Vec<u8>,
         argv: Vec<Vec<u8>>,
         handshake: Vec<u8>,
+        #[serde(default)]
+        new_session: bool,
     },
 }
 
@@ -94,19 +96,23 @@ enum StreamMode {
 
 impl CapturedCommand {
     pub fn spawn(&self) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(StreamMode::Captured, &[])
+        self.spawn_with_stdio(StreamMode::Captured, &[], false)
     }
 
     pub fn spawn_stdout(&self) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(StreamMode::Stdout, &[])
+        self.spawn_with_stdio(StreamMode::Stdout, &[], false)
     }
 
     pub fn spawn_discarded(&self) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(StreamMode::Redirected(Stdio::null(), Stdio::null()), &[])
+        self.spawn_with_stdio(
+            StreamMode::Redirected(Stdio::null(), Stdio::null()),
+            &[],
+            false,
+        )
     }
 
     pub fn spawn_redirected(&self, stdout: Stdio, stderr: Stdio) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(StreamMode::Redirected(stdout, stderr), &[])
+        self.spawn_with_stdio(StreamMode::Redirected(stdout, stderr), &[], false)
     }
 
     pub fn spawn_piped_stdin(&self) -> Result<CapturedChild, Error> {
@@ -114,20 +120,37 @@ impl CapturedCommand {
     }
 
     pub fn spawn_inherited(&self) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(StreamMode::Inherited, &[])
+        self.spawn_with_stdio(StreamMode::Inherited, &[], false)
     }
 
     pub fn spawn_inherited_with_env(
         &self,
         environment: &[(OsString, OsString)],
     ) -> Result<CapturedChild, Error> {
-        self.spawn_with_stdio(StreamMode::Inherited, environment)
+        self.spawn_with_stdio(StreamMode::Inherited, environment, false)
+    }
+
+    /// Start an owned session with one pipe preserving stdout/stderr ordering.
+    /// The caller owns group termination, including descendants after leader exit.
+    pub fn spawn_session_merged_with_env(
+        &self,
+        environment: &[(OsString, OsString)],
+    ) -> Result<(CapturedChild, std::io::PipeReader), Error> {
+        let (reader, writer) = std::io::pipe()?;
+        let stderr = writer.try_clone()?;
+        let child = self.spawn_with_stdio(
+            StreamMode::Redirected(writer.into(), stderr.into()),
+            environment,
+            true,
+        )?;
+        Ok((child, reader))
     }
 
     fn spawn_with_stdio(
         &self,
         mode: StreamMode,
         environment: &[(OsString, OsString)],
+        new_session: bool,
     ) -> Result<CapturedChild, Error> {
         crate::exec::validate_arguments(&self.argv)?;
         let directory = Builder::new()
@@ -145,6 +168,7 @@ impl CapturedCommand {
                 .map(|arg| arg.as_encoded_bytes().into())
                 .collect(),
             handshake: socket_path.into_os_string().into_vec(),
+            new_session,
         };
         let mut descriptor = tempfile::NamedTempFile::new_in(directory.path())?;
         serde_json::to_writer(descriptor.as_file_mut(), &request)?;
@@ -222,11 +246,15 @@ pub fn run_child(input: impl Read) -> Result<(), Error> {
             cwd,
             argv,
             handshake,
+            new_session,
         } => {
             let mut stream = UnixStream::connect(PathBuf::from(OsString::from_vec(handshake)))?;
             rustix::io::fcntl_setfd(&stream, rustix::io::FdFlags::CLOEXEC)
                 .map_err(std::io::Error::from)?;
             let outcome = (|| {
+                if new_session {
+                    nix::unistd::setsid().map_err(std::io::Error::from)?;
+                }
                 crate::detached_child::prepare(stream.as_raw_fd())?;
                 let environment = crate::exec::environment(None)?;
                 std::env::set_current_dir(PathBuf::from(OsString::from_vec(cwd)))?;

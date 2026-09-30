@@ -104,6 +104,7 @@ fn availability(name: &str) -> RustAvailability {
         "timed" => ("openpilot-timed", "openpilot-timed"),
         "tombstoned" => ("openpilot-tombstoned", "openpilot-tombstoned"),
         "torqued" => ("openpilot-torqued", "openpilot-torqued"),
+        "updated" => ("openpilot-updated", "openpilot-updated"),
         _ => return RustAvailability::NotPorted,
     };
     RustAvailability::Candidate { package, binary, limitation: "Isolated host candidate; native external dependencies remain; manager selection, complete startup/upload and AGNOS/device acceptance pending. See rust/port-status.json for component-specific limits." }

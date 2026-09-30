@@ -1267,6 +1267,8 @@ checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
 dependencies = [
  "equivalent",
  "hashbrown",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -2374,6 +2376,29 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-updated"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "indexmap",
+ "openpilot-hardware-info",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-process-supervision",
+ "openpilot-runtime-core",
+ "openpilot-runtime-version",
+ "openpilot-timed",
+ "rustix",
+ "serde",
+ "serde_json",
  "signal-hook",
  "tempfile",
  "thiserror",
