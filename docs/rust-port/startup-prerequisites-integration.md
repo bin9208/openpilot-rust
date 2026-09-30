@@ -34,7 +34,8 @@ binaries, and verifies all source/artifact/binary ledger hashes. The merge adds
 only nix 0.31.3 and the workspace package to the lockfile; all 371 existing
 package records remain identical. Full catalog and manager adoption stay open.
 
-Combined compilation, source/runtime CI, exact-head review and post-merge checks
+Combined compilation and all eight local startup comparison stages passed at
+`4499aa0ca885772a2290c7be965eea8f6d70ad64`. Required cloud CI and post-merge checks
 remain pending. Native board/modem/spinner implementations and remaining runtime
 components stay explicit. No production selection, vehicle connection, device
 acceptance or CPU measurement is part of this increment. The user's first device
@@ -45,7 +46,8 @@ and original message/Params bindings, then runs the supervision and managed-entr
 comparisons against those artifacts. The aggregate `rust checks` gate requires
 that job to succeed; failed, cancelled, skipped and missing results are rejected.
 Raw comparison and binding evidence is retained even after failure. Registration
-and catalog comparisons are now included; checkout-status is still pending.
+and catalog comparisons are included; checkout-status comparison is also required
+when its component is integrated.
 The job name does not claim that the normal manager or full startup has been ported.
 
 The registration input passes119 scenarios each on host and generic ARM, three
@@ -107,5 +109,12 @@ Before local build, install or large-copy work, reserve 25 GiB plus expected
 growth. If below that floor, recover at least 35 GiB before resuming. Use bounded
 package builds and coordinate reuse of inactive caches after freezing required
 evidence. This engineering resource rule changes no runtime behavior or CI gate.
+
+On 2026-10-01 the user added 100 GB of capacity and requested faster execution
+using Actions for broad validation. Reuse completed local comparisons, run only
+focused checks for new changes, and use required cloud builds and source/runtime
+comparisons for integration. Repeat or expand local checks when a concrete failure
+requires reproduction; do not repeat successful matrices merely to duplicate
+evidence. Preserve the full-runtime and first-device-comparison acceptance gates.
 
 Docs-Not-Needed: internal runtime prerequisites and engineering evidence only.
