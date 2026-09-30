@@ -80,6 +80,15 @@ def exec_failure(peer, kind):
   return {'child_error': 1, 'retained_until_stop': True}
 
 
+def release_held_operation(peer, request):
+  assert peer.read() == {'acknowledged': True}
+  assert not peer.selector.select(0.15), 'operation returned before the held child exited'
+  temporary = peer.root / 'child' / 'exit.tmp'
+  temporary.write_text('0')
+  temporary.replace(temporary.with_name('exit'))
+  return peer.finish(request)
+
+
 def nonblocking_once(peer):
   peer.launch([peer.native(mode='ignore')])
   peer.op('start', name='child')
@@ -88,13 +97,7 @@ def nonblocking_once(peer):
   assert first['result'] is None and first['elapsed'] < 0.1
   assert first['snapshots'][0]['shutting_down'] and not first['snapshots'][0]['state']['shouldBeRunning']
   wait_until(lambda: peer.signals() == [signal.SIGINT])
-  request = peer.begin('stop', name='child', block=False, acknowledge=True)
-  assert peer.read() == {'acknowledged': True}
-  assert not peer.selector.select(0.15), 'second stop returned before the held child exited'
-  temporary = peer.root / 'child' / 'exit.tmp'
-  temporary.write_text('0')
-  temporary.replace(temporary.with_name('exit'))
-  second = peer.finish(request)
+  second = release_held_operation(peer, peer.begin('stop', name='child', block=False, acknowledge=True))
   assert second['result'] == 0 and 0.1 <= second['elapsed'] < 1.5, second
   assert peer.signals() == [signal.SIGINT]
   return {'first': None, 'second': 0, 'single_signal': peer.signals()}
@@ -132,15 +135,16 @@ def explicit_signal(peer, sigkill=False):
 
 
 def start_while_stopping(peer):
-  peer.launch([peer.native(mode='delay')])
+  peer.launch([peer.native(mode='ignore')])
   peer.op('start', name='child')
   old = peer.ready()['pid']
   peer.op('stop', name='child', block=False)
-  started = peer.op('start', name='child')
+  wait_until(lambda: peer.signals() == [signal.SIGINT])
+  started = release_held_operation(peer, peer.begin('start', name='child', acknowledge=True))
   assert started['elapsed'] >= 0.1 and started['error'] is None
   assert peer.state()['pid'] != old and not started['snapshots'][0]['shutting_down']
   wait_until(lambda: peer.ready()['pid'] != old)
-  assert peer.op('stop', name='child')['result'] == 0
+  assert release_held_operation(peer, peer.begin('stop', name='child', acknowledge=True))['result'] == 0
   return {'restarted_after_stop': True}
 
 
