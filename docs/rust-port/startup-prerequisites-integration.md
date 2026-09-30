@@ -55,6 +55,9 @@ The comparison now holds the real child until an explicit atomic release,
 acknowledges receipt of the second request and verifies it cannot return while
 the child remains held. All 43 source/native scenarios pass with that barrier.
 Only the test RPC/example changed; production stop behavior is unchanged.
+The next combined run caught the same fixed-delay assumption in starting a
+process whose previous instance was stopping. That comparison now uses the same
+held-child barrier for restart and cleanup; all19 lifecycle cases pass.
 
 ## Local build capacity
 
