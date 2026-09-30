@@ -22,7 +22,11 @@ A preliminary isolated build showed that the source itself compiles unchanged on
 flag, followed by all twelve upstream unit tests and five integration tests.
 The package audit compares every retained file with the published archive and
 permits exactly that manifest edit. The upstream package is excluded from project
-workspace membership; it remains an explicit external dependency.
+workspace membership; it remains an explicit external dependency. The published
+`src/generated/constants.rs` ends with an extra blank line. An exact-file Git
+attribute disables only `blank-at-eof` for that file so the archive bytes remain
+unchanged; project whitespace checks and every other check remain enabled. The
+standalone compatibility patch has zero context to avoid patch-context whitespace.
 
 ## Source comparisons and limits
 

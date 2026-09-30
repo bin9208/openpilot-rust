@@ -1,11 +1,5 @@
 --- upstream/Cargo.toml
 +++ candidate/Cargo.toml
-@@ -11,7 +11,7 @@
- 
- [package]
- edition = "2024"
+@@ -14 +14 @@
 -rust-version = "1.98"
 +rust-version = "1.94"
- name = "charset-norm"
- version = "3.5.1"
- authors = ["Yehor Smoliakov <egorsmkv@gmail.com>"]
