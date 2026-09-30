@@ -1,6 +1,16 @@
 #[cxx::bridge(namespace = "openpilot_rust")]
 pub(crate) mod ffi {
     #[derive(Debug, Clone, Copy)]
+    struct ConnectionLayout {
+        width: usize,
+        height: usize,
+        stride: usize,
+        uv_offset: usize,
+        len: usize,
+        available: bool,
+    }
+
+    #[derive(Debug, Clone, Copy)]
     struct VisionMetadata {
         width: usize,
         height: usize,
@@ -28,6 +38,7 @@ pub(crate) mod ffi {
         fn vision_streams(name: &str) -> Result<u32>;
         fn connect(self: Pin<&mut VisionConnection>) -> Result<bool>;
         fn connected(self: &VisionConnection) -> bool;
+        fn layout(self: &VisionConnection) -> ConnectionLayout;
         fn receive(self: Pin<&mut VisionConnection>, timeout_ms: i32) -> Result<VisionMetadata>;
         fn copy_frame(self: &VisionConnection, destination: &mut [u8]) -> Result<()>;
     }

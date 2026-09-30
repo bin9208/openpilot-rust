@@ -27,6 +27,16 @@ pub struct VisionClient {
     thread: PhantomData<Rc<()>>,
 }
 
+/// Scalar metadata copied from the first imported buffer, independent of frame reception.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct VisionLayout {
+    pub width: usize,
+    pub height: usize,
+    pub stride: usize,
+    pub uv_offset: usize,
+    pub len: usize,
+}
+
 impl VisionClient {
     pub fn new(name: &str, stream: VisionStream, conflate: bool) -> Result<Self, Error> {
         Ok(Self {
@@ -56,6 +66,19 @@ impl VisionClient {
 
     pub fn is_connected(&self) -> bool {
         self.connection.connected()
+    }
+
+    /// Matches the original client layout properties without polling or consuming a frame.
+    /// The owned scalars remain valid after client destruction; no camera bytes are exposed.
+    pub fn layout(&self) -> Option<VisionLayout> {
+        let layout = self.connection.layout();
+        layout.available.then_some(VisionLayout {
+            width: layout.width,
+            height: layout.height,
+            stride: layout.stride,
+            uv_offset: layout.uv_offset,
+            len: layout.len,
+        })
     }
 
     /// A timeout or a changed server returns no frame; check `is_connected`

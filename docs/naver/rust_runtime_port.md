@@ -187,3 +187,16 @@ eleven-second bodies, preserving per-I/O rather than total-transfer timeout.
 The frozen pre-fix binary, failing captures and fresh validation are indexed in
 `.omo/evidence/uploader-timeout/evidence.json` in the issue-50 worktree. This does
 not enable the optional uploader or establish device validation.
+
+[Model diagnostics issue #53](https://github.com/bin9208/openpilot-rust/issues/53)
+connects original model-daemon log callsites and driving runtimeTiming to the
+Rust producer/collector path. The [validation record](../rust-port/model-diagnostics.md)
+separates exact source-expression checks, real model/VisionIPC publications,
+transport fault handling and source-locked NumPy 2.5.3 artifacts. Driver monitoring
+does not gain timing events absent from its source. The model-loading
+order differences found under [#55](https://github.com/bin9208/openpilot-rust/issues/55)
+and [#60](https://github.com/bin9208/openpilot-rust/issues/60) are corrected in the
+[startup follow-up](../rust-port/model-startup.md): both models load from validated
+connection dimensions before the first frame; driving also loads before CarParams.
+Native reproduction and first-frame/recurrent comparisons remain host evidence;
+parent CI and complete runtime/device gates stay separate.

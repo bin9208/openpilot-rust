@@ -119,6 +119,8 @@ jobs:
         run: |
           python tools/check_runtime_diagnostics.py --binary target/debug/examples/diagnostics_trace --output "$RUNNER_TEMP/runtime-diagnostics"
           python tools/check_communication_snapshot.py --binary target/debug/examples/communication_trace --output "$RUNNER_TEMP/communication-snapshot"
+          cargo build -p openpilot-driving-modeld --example model_timing_trace --locked
+          python tools/check_model_timing.py --binary target/debug/examples/model_timing_trace --output "$RUNNER_TEMP/model-timing"
       - name: Compare driving-model input state with the original loop
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
@@ -204,6 +206,7 @@ jobs:
             ${{ runner.temp }}/driving-native/report.json
             ${{ runner.temp }}/policy-native/report.json
             ${{ runner.temp }}/message-state/report.json
+            ${{ runner.temp }}/model-timing/
             ${{ runner.temp }}/model-desire/report.json
             ${{ runner.temp }}/model-commands/report.json
             ${{ runner.temp }}/model-inputs/report.json
@@ -325,11 +328,13 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: sudo apt-get update && sudo apt-get install -y clang libllvm18 git-lfs capnproto libcapnp-dev
-      - run: python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0
+      - run: python -m pip install numpy==2.5.3 zstandard==0.25.0 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-model-runtime --bins --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-modeld --examples --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dmonitoringmodeld --locked
       - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-driving-modeld --locked
+      - run: cargo build --manifest-path rust/Cargo.toml -p openpilot-logmessaged --bins --locked
+      - run: python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/model-msgq-python"
       - run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Compile the original grouped driving and driver artifacts
         run: |
@@ -368,12 +373,19 @@ jobs:
             --output "$RUNNER_TEMP/model-input-pipelines"
       - name: Exercise the Rust driver daemon with original camera and message IPC
         run: |
-          python rust/tools/check_driver_daemon.py --binary rust/target/debug/openpilot-dmonitoringmodeld \
+          PYTHONPATH="$RUNNER_TEMP/model-msgq-python:$PYTHONPATH" python rust/tools/check_driver_daemon.py \
+            --binary rust/target/debug/openpilot-dmonitoringmodeld --collector rust/target/debug/openpilot-logmessaged \
             --catalog "$RUNNER_TEMP/native-catalog" --models "$RUNNER_TEMP/original-models" --output "$RUNNER_TEMP/driver-daemon"
       - name: Exercise the Rust driving daemon against the original model loop
         run: |
-          python rust/tools/check_driving_daemon.py --binary rust/target/debug/openpilot-driving-modeld \
+          PYTHONPATH="$RUNNER_TEMP/model-msgq-python:$PYTHONPATH" python rust/tools/check_driving_daemon.py \
+            --binary rust/target/debug/openpilot-driving-modeld --collector rust/target/debug/openpilot-logmessaged \
             --catalog "$RUNNER_TEMP/native-catalog" --models "$RUNNER_TEMP/original-models" --output "$RUNNER_TEMP/driving-daemon"
+      - name: Keep native inference running after runtimeTiming transport failures
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/model-msgq-python:$PYTHONPATH" python rust/tools/check_model_logging_faults.py \
+            --catalog "$RUNNER_TEMP/native-catalog" --models "$RUNNER_TEMP/original-models" \
+            --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/model-logging-faults"
       - uses: actions/upload-artifact@v6
         with:
           name: rust-original-pipeline-comparison
@@ -385,8 +397,20 @@ jobs:
             ${{ runner.temp }}/model-input-pipelines/**/report.json
             ${{ runner.temp }}/driver-daemon/**/report.json
             ${{ runner.temp }}/driver-daemon/**/*.log
+            ${{ runner.temp }}/driver-daemon/**/logging/*.bin
+            ${{ runner.temp }}/driver-daemon/**/logging/*.json
+            ${{ runner.temp }}/driver-daemon/**/logging/disk/
             ${{ runner.temp }}/driving-daemon/**/report.json
             ${{ runner.temp }}/driving-daemon/**/*.log
+            ${{ runner.temp }}/driving-daemon/**/logging/*.bin
+            ${{ runner.temp }}/driving-daemon/**/logging/*.json
+            ${{ runner.temp }}/driving-daemon/**/logging/disk/
+            ${{ runner.temp }}/model-logging-faults/**/report.json
+            ${{ runner.temp }}/model-logging-faults/**/audit/*.packet
+            ${{ runner.temp }}/model-logging-faults/**/logging/*.bin
+            ${{ runner.temp }}/model-logging-faults/**/logging/*.json
+            ${{ runner.temp }}/model-logging-faults/*.json
+            ${{ runner.temp }}/model-logging-faults/*.stderr
   model-memory:
     name: rust model memory
     runs-on: ubuntu-24.04

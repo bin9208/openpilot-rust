@@ -2,7 +2,20 @@ mod daemon;
 mod process;
 
 use openpilot_driving_modeld::Error;
-use std::{env, path::PathBuf, process::ExitCode};
+use openpilot_logging::{
+    log_site,
+    producer::Factory,
+    record::{Level, Record},
+};
+use std::{
+    env,
+    path::PathBuf,
+    process::ExitCode,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
 pub struct Options {
     catalog: PathBuf,
@@ -39,11 +52,34 @@ fn options() -> Result<Option<Options>, Error> {
 }
 
 fn main() -> ExitCode {
-    match options().and_then(|options| options.map_or(Ok(()), daemon::run)) {
+    match options().and_then(|options| options.map_or(Ok(()), run)) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("modeld: {error}");
             ExitCode::FAILURE
         }
     }
+}
+
+fn run(options: Options) -> Result<(), Error> {
+    let mut logger = Factory::for_runtime()?.logger();
+    logger.emit(
+        log_site!(),
+        Record::text(Level::Warning, "modeld init".into()),
+    )?;
+    process::configure()?;
+    let stop = Arc::new(AtomicBool::new(false));
+    let interrupted = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&interrupted))?;
+    signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
+    signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stop))?;
+    let result = daemon::run(options, &mut logger, &stop);
+    if interrupted.load(Ordering::Relaxed) {
+        logger.emit(
+            log_site!(),
+            Record::text(Level::Warning, "got SIGINT".into()),
+        )?;
+    }
+    logger.close();
+    result
 }

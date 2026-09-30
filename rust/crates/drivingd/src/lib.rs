@@ -1,6 +1,7 @@
 pub mod bus;
 pub mod camera;
 pub mod clock;
+pub mod diagnostics;
 pub mod jetlink;
 pub mod parameters;
 pub mod publication;
@@ -10,6 +11,8 @@ pub mod wire;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error(transparent)]
+    Logging(#[from] openpilot_logging::Error),
     #[error(
         "active Jetlink output has no raw_pred for SEND_RAW_PRED (inherited original boundary)"
     )]

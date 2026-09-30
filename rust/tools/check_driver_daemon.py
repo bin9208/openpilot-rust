@@ -85,7 +85,11 @@ def check(args, width: int, height: int, raw: bool) -> dict:
     if raw:
         environment["SEND_RAW_PRED"] = "0"
     processes = []
+    capture = None
     try:
+        if args.collector is not None:
+            from model_logging_capture import Collector
+            capture = Collector(args.collector, destination / 'logging', environment)
         daemon = subprocess.Popen([args.binary, "--trusted-catalog", args.catalog], env=environment,
                                   stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, bufsize=0)
         processes.append(daemon)
@@ -99,23 +103,43 @@ def check(args, width: int, height: int, raw: bool) -> dict:
         peer_lines = Lines(peer.stdout, destination / "peer.log")
         ready = peer_lines.until(("READY",))
         header_bytes = int(ready.split()[1])
-        daemon_lines.until(("driver stream connected",))
+        daemon_lines.until(("connected with buffer size",))
 
         def command(value: str) -> str:
             peer.stdin.write((value + "\n").encode())
             peer.stdin.flush()
             return peer_lines.until(("OK", "TIMEOUT"))
 
-        # Native msgq reconnects an existing reader after publisher initialization.
-        # Drain this startup frame before testing the established subscription.
+        daemon_lines.until(("models loaded",))
+        # Establish the reader before the first frame so startup cannot consume an unobserved input.
+        assert command(f"receive 200 {destination / 'unexpected.bin'}") == "TIMEOUT"
         warmup = destination / "warmup.bin"
         warmup.write_bytes(bytes(size))
+        warmup_start = time.monotonic_ns()
         assert command(f"send 10 {warmup}") == "OK"
-        daemon_lines.until(("models loaded",))
         queue_sizes = {name: (Path("/dev/shm") / f"msgq_{prefix}" / name).stat().st_size - header_bytes
                        for name in ("liveCalibration", "driverStateV2")}
         assert queue_sizes == {name: SERVICE_LIST[name].queue_size for name in queue_sizes}, queue_sizes
-        command(f"receive 5000 {destination / 'warmup-message.bin'}")
+        warmup_packet = destination / "warmup-message.bin"
+        assert command(f"receive 30000 {warmup_packet}") == "OK"
+        write_tensor(original.bindings.inputs["frame"], np.zeros(size, dtype=np.uint8))
+        write_tensor(original.bindings.inputs["transform"], transform)
+        write_tensor(original.bindings.inputs["calib"], np.zeros((1, 3), dtype=np.float32))
+        for stage in original.stages:
+            execute(stage)
+        first_output = original.bindings.outputs["model"].numpy().reshape(-1).copy()
+        first_values = {name: first_output[None, start:end] for name, (start, end) in original.metadata.output_slices.items()}
+        first_parsed = reference.parse_model_output(first_values)
+        first_parsed["raw_pred"] = first_output.tobytes() if raw else b""
+        with log.Event.from_bytes(warmup_packet.read_bytes()) as packet:
+            first_actual = packet.to_dict()
+        first_timing = first_actual["driverStateV2"]
+        assert warmup_start <= first_actual["logMonoTime"] <= time.monotonic_ns()
+        assert 0 < first_timing["gpuExecutionTime"] <= first_timing["modelExecutionTime"] < 30
+        first_expected = reference.get_driverstate_packet(first_parsed, 10, 0, first_timing["modelExecutionTime"], first_timing["gpuExecutionTime"])
+        first_expected.logMonoTime = first_actual["logMonoTime"]
+        first_fields = compare(first_expected.to_dict(), first_actual)
+        (destination / "warmup-expected.bin").write_bytes(first_expected.to_bytes())
         assert command(f"receive 200 {destination / 'unexpected.bin'}") == "TIMEOUT"
         random = np.random.default_rng(20260930)
         calibrations = [None, [0.01, -0.02, 0.03], None, [0.04]] if raw else [None]
@@ -178,17 +202,25 @@ def check(args, width: int, height: int, raw: bool) -> dict:
         Lines(waiting.stderr, destination / "waiting.log").until(("connecting to driver stream",))
         waiting.send_signal(signal.SIGINT)
         assert waiting.wait(timeout=5) == 0
+        logging_report = capture.finish('dmonitoringmodeld', [process.pid for process in processes]) if capture is not None else None
+        if capture is not None:
+            from model_logging_reference import driver as check_driver_logs
+            logging_report['source_calls'] = check_driver_logs(capture.records['logMessage'], (daemon.pid, size))
         report = {"camera": [width, height], "frames": len(calibrations), "raw_predictions": raw, "compared_fields": fields,
                   "queue_sizes": queue_sizes, "queue_size_oracle": "original cereal.services.SERVICE_LIST",
+                  "first_frame_id": 10, "first_frame_compared_fields": first_fields, "model_loaded_before_first_frame": True,
                   "raw_comparison": "exact bytes", "parsed_float_tolerance": 1e-6, "device_validation": False,
                   "scenarios": ["original service queue capacities", "delayed camera", "frame identity", "camera validity ignored as original",
                                 "zero calibration", "no-frame timeout", "SIGINT during connect"]
                                + (["invalid-flag calibration update", "retained calibration", "broadcast calibration",
                                                              "malformed calibration exit"] if raw else ["SIGTERM during receive"])}
+        report['logging'] = logging_report
         (destination / "report.json").write_text(json.dumps(report, indent=2) + "\n")
         print(json.dumps(report), flush=True)
         return report
     finally:
+        if capture is not None:
+            capture.close()
         for process in reversed(processes):
             stop(process)
         for process, name in zip(processes, ("daemon-tail", "peer-tail", "waiting-tail"), strict=False):
@@ -207,7 +239,10 @@ def main() -> None:
     parser.add_argument("--catalog", type=Path, required=True)
     parser.add_argument("--models", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument('--collector', type=Path)
     args = parser.parse_args()
+    if args.collector is not None:
+        args.collector = args.collector.resolve()
     for key in ("binary", "catalog", "models", "output"):
         setattr(args, key, getattr(args, key).resolve())
     args.output.mkdir(parents=True, exist_ok=False)
