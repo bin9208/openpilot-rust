@@ -108,7 +108,8 @@ def main():
     assert result["exit"] == 0 and not absent.exists(), result
     rows.append(result)
   namespace = ["sudo", "-n", "unshare", "--mount"] if args.privileged_mount else ["unshare", "--user", "--map-root-user", "--mount"]
-  child = subprocess.run([*namespace, sys.executable, __file__,
+  interpreter = "/usr/bin/python3" if args.privileged_mount else sys.executable
+  child = subprocess.run([*namespace, interpreter, __file__,
                           "--binary", str(binary), "--output", str(args.output.resolve()), "--private-mount"],
                          text=True, capture_output=True, timeout=20)
   (args.output / "namespace.log").write_text(child.stdout + child.stderr)
