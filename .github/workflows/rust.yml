@@ -557,7 +557,7 @@ jobs:
       - name: Configure original sensor and audio IPC imports
         run: printf 'PYTHONPATH=%s/sensor-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Build native sensor and audio daemons
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-sensord -p openpilot-micd -p openpilot-soundd -p openpilot-process-supervision --bins --examples --locked
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-sensord -p openpilot-micd -p openpilot-soundd -p openpilot-feedbackd -p openpilot-process-supervision --bins --examples --locked
       - name: Build original IPC and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/sensor-msgq-python"
@@ -579,6 +579,8 @@ jobs:
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
         run: cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-portaudio --no-default-features --lib --locked
+      - name: Compare actual source and native bookmark IPC
+        run: python rust/tools/check_feedbackd.py --binary "$PWD/rust/target/debug/openpilot-feedbackd" --binding "$RUNNER_TEMP"/sensor-params-binding/params_pyx*.so --output "$RUNNER_TEMP/sensor-audio/feedbackd"
       - name: Retain sensor and audio comparison evidence
         if: always()
         uses: actions/upload-artifact@v6

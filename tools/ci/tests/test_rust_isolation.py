@@ -15,7 +15,7 @@ class RustIsolationTests(unittest.TestCase):
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_sensord.py', 'check_sensord_kernel.py', 'check_sensord_daemon.py',
-                         'check_micd_analysis.py', 'check_micd_daemon.py', 'check_soundd.py', 'check_soundd_daemon.py',
+                         'check_micd_analysis.py', 'check_micd_daemon.py', 'check_soundd.py', 'check_soundd_daemon.py', 'check_feedbackd.py',
                          'build_msgq_python.py', 'build_params_python.py', 'miri test'):
             self.assertIn(required, commands)
         for step in job['steps']:
