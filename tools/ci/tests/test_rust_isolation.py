@@ -15,12 +15,14 @@ class RustIsolationTests(unittest.TestCase):
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_process_supervision.py', 'check_managed_entry.py',
+                         'check_registration.py', 'check_registration_clock.py', 'check_registration_utf7.py',
+                         'check_registration_vendor.py', 'check_manager_catalog.py', '--timeouts',
                          '--launcher rust/target/debug/openpilot-process-child',
                          '--fixture rust/target/debug/examples/process_fixture',
                          'build_msgq_python.py', 'build_params_python.py'):
             self.assertIn(required, commands)
         for step in job['steps']:
-            if 'check_process_supervision.py' in step.get('run', '') or 'check_managed_entry.py' in step.get('run', ''):
+            if 'python rust/tools/check_' in step.get('run', ''):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
         artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]

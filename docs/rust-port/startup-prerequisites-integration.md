@@ -9,9 +9,10 @@ remain unported until separately implemented and observed.
 | Input | Reviewed revision | Status |
 | --- | --- | --- |
 | Process supervision #84 | `097419b937c20ce216b190faf01c7f294a1ae4b7` | Parent production review, 3,555 hash checks and independent 43-scenario source/native replay pass |
-| Registration #85/#88 | Pending | Source, local signed HTTP, charset and clock validation in progress |
+| Registration #85/#88 | `bfa086fe1e830649c377483dd0009cdfe8e96a31` | Parent review,3,705 hash checks and independent119-case source/native replay pass |
 | Managed child entry #86 | `592dd6839695c664dc8fae82aa2205189cb823f6` | Parent code review and independent44 source/native child comparisons pass through both original/native collectors |
 | Checkout update status #92 | Pending | Source policy scoped; implementation not complete |
+| Manager catalog #96 | `b283dbeca022a5c85a9e3554201743a0f7c98fa3` | Parent review and full independent63-entry/10,573-predicate source matrix pass |
 
 The managed-entry input preserves stage order, concrete Rust error information,
 interrupt warning and crash/Params/SDK failure ordering. Parent independently
@@ -44,8 +45,26 @@ and original message/Params bindings, then runs the supervision and managed-entr
 comparisons against those artifacts. The aggregate `rust checks` gate requires
 that job to succeed; failed, cancelled, skipped and missing results are rejected.
 Raw comparison and binding evidence is retained even after failure. Registration
-and checkout-status inputs will be added after their component review; the job
-name does not claim that the normal manager or full startup has been ported.
+and catalog comparisons are now included; checkout-status is still pending.
+The job name does not claim that the normal manager or full startup has been ported.
+
+The registration input passes119 scenarios each on host and generic ARM, three
+real fifteen-second HTTP/progress scenarios,13 clock and107 UTF-7 cases on each
+architecture. Parent repeats the119-case matrix with a fresh pinned environment
+and independent original bindings. The detector's28-file published archive is
+verified in CI, allowing only its documented manifest compiler-version change.
+The shared uploader signing regression remains required. Merge preserves every
+existing dependency version; the metadata dependency is only qualified as
+`unicode-general-category 0.6.0` because the detector introduces version1.1.0.
+
+The catalog input compares all63 registered entries,64 import configurations,
+25 actual environment snapshots,10,573 predicate/access/Params-mutation cases
+and24 fatal integer cases on each architecture. Parent independently repeats
+the full host matrix with freshly built original bindings and verifies22 source
+and executable hashes plus709 artifact references. Candidate metadata lists15
+isolated Rust implementations and48 unported entries at this revision. Typed
+fatal errors must reach the later manager entry boundary; the library API is
+not evidence of identical process abort behavior.
 
 The first combined supervision run exposed a test synchronization defect: the
 child's fixed 200 ms delay could expire between the two stop requests, making a
