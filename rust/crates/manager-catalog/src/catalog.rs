@@ -97,6 +97,7 @@ fn availability(name: &str) -> RustAvailability {
         "journald" => ("openpilot-journald", "journald-rs"),
         "loggerd" => ("openpilot-loggerd", "openpilot-loggerd"),
         "logmessaged" => ("openpilot-logmessaged", "openpilot-logmessaged"),
+        "micd" => ("openpilot-micd", "openpilot-micd"),
         "modeld" => ("openpilot-driving-modeld", "openpilot-driving-modeld"),
         "modem" => ("openpilot-modem", "openpilot-modem"),
         "proclogd" => ("openpilot-proclogd", "openpilot-proclogd-runtime"),

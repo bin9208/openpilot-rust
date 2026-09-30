@@ -260,7 +260,11 @@
       "name": "micd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.micd",
-      "status": "not_ported",
+      "status": "continuous_native_host_validated",
+      "implementation": "rust/crates/micd; PortAudio input, original raw audio bytes and A-weighted pressure publication",
+      "native_dependencies": ["external PortAudio v19", "temporary original msgq through CXX", "libzmq logging", "Linux clocks and signals"],
+      "runtime_scope": "source numerical/callback comparison and actual owned PortAudio ABI/native IPC/retry/shutdown; real audio hardware, target execution, manager selection and full startup/upload acceptance pending",
+      "evidence": "docs/rust-port/micd-validation.md",
       "production_replaced": false
     },
     {
