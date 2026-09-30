@@ -21,10 +21,14 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines'})
-        validation = next(step for step in gate['steps'] if step.get('name') == 'Require model memory and pipeline validation')
-        self.assertEqual(validation['env'], {'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}'})
-        for name in ('MEMORY', 'PIPELINES'):
+        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'web-upload-timeouts'})
+        validation = next(step for step in gate['steps'] if step.get('name') == 'Require model and upload transport validation')
+        self.assertEqual(validation['env'], {
+            'MEMORY': '${{ needs.model-memory.result }}',
+            'PIPELINES': '${{ needs.model-pipelines.result }}',
+            'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}',
+        })
+        for name in ('MEMORY', 'PIPELINES', 'UPLOAD_TIMEOUTS'):
             self.assertIn(f'test "${name}" = success', validation['run'])
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)

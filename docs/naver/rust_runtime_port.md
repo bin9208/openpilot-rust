@@ -120,3 +120,11 @@ comparisons, local signed transfers, real msgq/Params and host ARM emulation.
 The original uploader registration remains commented out. The active Carrot
 upload path and complete normal-startup candidate remain open; the inherited
 marking failure is separately tracked in [#51](https://github.com/bin9208/openpilot-rust/issues/51).
+
+
+[Active Carrot upload transport issue #52](https://github.com/bin9208/openpilot-rust/issues/52)
+ports the shared session, file streaming, completion and tmux helpers. Its
+[validation record](../rust-port/web-upload-validation.md) covers actual source
+functions, local HTTP payloads, partial/canceled requests, unscaled timeouts and
+generic ARM emulation. Dashcam jobs/catalog/server/watchdog integration remains
+open; this library does not switch the active startup path.

@@ -463,6 +463,14 @@
   ],
   "library_ports": [
     {
+      "name": "carrot_web_upload_transport",
+      "source_entrypoint": "openpilot.selfdrive.carrot.web_upload",
+      "status": "native_host_transport_validated",
+      "implementation": "rust/crates/web-upload; URL/session/health, chunked folder uploads, cancellation/progress, completion and tmux multipart helpers",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/web-upload-validation.md"
+    },
+    {
       "name": "legacy_log_uploader_orchestration",
       "source_entrypoint": "openpilot.system.loggerd.uploader",
       "source_process_registration": "commented_out",
