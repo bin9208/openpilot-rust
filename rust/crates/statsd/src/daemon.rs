@@ -100,6 +100,7 @@ pub fn run_with_events(
             }
             let packet = match socket.recv_bytes(zmq::DONTWAIT) {
                 Ok(packet) => packet,
+                Err(zmq::Error::EINTR) => continue,
                 Err(zmq::Error::EAGAIN) => break,
                 Err(error) => return Err(error.into()),
             };

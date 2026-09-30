@@ -16,6 +16,14 @@
 - Host and generic ARM evidence is separate from Actions, AGNOS/device
   acceptance and complete manager integration. No production startup, guide,
   setting, GPIO, vehicle or NAS change is included. Parent owns CI and PRs.
+- [#109](https://github.com/bin9208/openpilot-rust/issues/109): the PR #104 CI
+  Python checkout case failed strict cleanup after two fixture commits on
+  Git 2.55. An isolated 2.55 build reproduced two adopted maintenance children;
+  live `/proc` command lines and Git trace2 identified detached maintenance.
+  Per-command `maintenance.auto=false` prevents this fixture side effect while
+  preserving exact runtime Git arguments and strict child/descriptor checks.
+  The before/after Git comparison artifacts are under the issue worktree's
+  `.omo/evidence/checkout-status/issue109/`; parent owns exact-SHA Actions reruns.
 
 Docs-Not-Needed: internal optional checkout policy with existing public runtime
 behavior preserved.
