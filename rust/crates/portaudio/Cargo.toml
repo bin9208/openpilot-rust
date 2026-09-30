@@ -1,0 +1,13 @@
+[package]
+name = "openpilot-portaudio"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = ["dep:libloading"]
+[dependencies]
+libloading = { version = "0.8", optional = true }
+thiserror = "2"
