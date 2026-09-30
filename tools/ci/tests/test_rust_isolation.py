@@ -21,11 +21,12 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime'})
+        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime', 'web-upload-timeouts'})
         validation = next(step for step in gate['steps'] if step.get('name') == 'Require model memory and pipeline validation')
         self.assertEqual(validation['env'], {'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
-                                            'LOGGER': '${{ needs.logger-runtime.result }}'})
-        for name in ('MEMORY', 'PIPELINES', 'LOGGER'):
+                                            'LOGGER': '${{ needs.logger-runtime.result }}',
+                                            'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
+        for name in ('MEMORY', 'PIPELINES', 'LOGGER', 'UPLOAD_TIMEOUTS'):
             self.assertIn(f'test "${name}" = success', validation['run'])
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)

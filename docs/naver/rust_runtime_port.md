@@ -153,3 +153,37 @@ compete for their original 50 ms deadline. The
 [focused validation record](../rust-port/jetlink-runtime-fixture.md) records fixed
 serial/concurrent comparisons and the test-local lifetime guard. Production
 policy and device acceptance remain unchanged; exact-head CI remains required.
+[Legacy uploader issue #50](https://github.com/bin9208/openpilot-rust/issues/50)
+ports the source upload loop, JWT/HTTP/zstd path and native logging integration.
+Its [validation record](../rust-port/uploader-validation.md) covers original-source
+comparisons, local signed transfers, real msgq/Params and host ARM emulation.
+The original uploader registration remains commented out. The active Carrot
+upload path and complete normal-startup candidate remain open; the inherited
+marking failure is separately tracked in [#51](https://github.com/bin9208/openpilot-rust/issues/51).
+
+
+[Active Carrot upload transport issue #52](https://github.com/bin9208/openpilot-rust/issues/52)
+ports the shared session, file streaming, completion and tmux helpers. Its
+[validation record](../rust-port/web-upload-validation.md) covers actual source
+functions, local HTTP payloads, partial/canceled requests, unscaled timeouts and
+generic ARM emulation. Dashcam jobs/catalog/server/watchdog integration remains
+open; this library does not switch the active startup path.
+
+[Dashcam upload jobs #61](https://github.com/bin9208/openpilot-rust/issues/61)
+add native job execution, required catalog/metadata/report helpers and owned
+worker lifetimes. The [validation record](../rust-port/dashcam-jobs-validation.md)
+describes original-source state/HTTP/Params comparisons, real cancellation and
+process cleanup, and the intentional commit-link repository mapping. The Carrot
+HTTP server, manager selection and complete startup delivery remain pending.
+
+### Legacy uploader timeout follow-up (#50)
+
+A loopback response delayed 10.05 seconds reproduced a native/source discrepancy:
+Python rejected late API headers and bodies without an upload xattr, while the
+native socket timeout rounded up and accepted them. The transport now checks
+monotonic elapsed time after each read/write and rejects late completion. The
+real ten-second regression includes GET/PUT header/body stalls and progressing
+eleven-second bodies, preserving per-I/O rather than total-transfer timeout.
+The frozen pre-fix binary, failing captures and fresh validation are indexed in
+`.omo/evidence/uploader-timeout/evidence.json` in the issue-50 worktree. This does
+not enable the optional uploader or establish device validation.
