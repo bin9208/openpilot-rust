@@ -69,6 +69,8 @@ jobs:
         run: |
           python tools/check_desire_reference.py --binary target/debug/examples/desire_probe --output "$RUNNER_TEMP/model-desire"
           python tools/check_command_reference.py --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-commands"
+      - name: Compare driver monitoring policy and complete cereal packets with original source
+        run: python tools/check_monitoring_reference.py --binary target/debug/monitoring-probe --output "$RUNNER_TEMP/monitoring-policy"
       - name: Compare driving-model input state with the original loop
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
@@ -104,6 +106,7 @@ jobs:
             ${{ runner.temp }}/model-desire/report.json
             ${{ runner.temp }}/model-commands/report.json
             ${{ runner.temp }}/model-inputs/report.json
+            ${{ runner.temp }}/monitoring-policy/report.json
   model-pipelines:
     name: rust original model pipelines
     runs-on: ubuntu-24.04

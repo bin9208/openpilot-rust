@@ -53,6 +53,12 @@ ports camera pairing, drop state, calibration and packed policy inputs. The
 source sequences and exact native camera/model/recurrent output comparisons.
 Complete driving daemon orchestration remains tracked under #1/#6.
 
+[Monitoring policy issue #29](https://github.com/bin9208/openpilot-rust/issues/29)
+ports awareness, distraction, calibration, fallback, lockout and complete
+`driverMonitoringState` messages. Its [validation record](../rust-port/monitoring-validation.md)
+compares 209,144 original-policy frames and packets. Continuous IPC and
+whole-runtime integration remain open.
+
 [Continuous procLog issue #30](https://github.com/bin9208/openpilot-rust/issues/30)
 connects the validated collector and canonical encoder to the original 0.5 Hz
 runtime publication loop. Its [validation record](../rust-port/proclog-runtime-validation.md)
