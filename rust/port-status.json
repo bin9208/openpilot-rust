@@ -492,6 +492,16 @@
   ],
   "library_ports": [
     {
+      "name": "agnos_image_update",
+      "source_entrypoint": "openpilot.system.hardware.tici.agnos; image-only openpilot.system.updated.casync.casync paths",
+      "status": "native_image_and_cli_host_validated",
+      "implementation": "rust/crates/agnos; cache/hash/sparse/casync reconstruction, inactive-slot verification/retry/swap, and openpilot-agnos CLI",
+      "native_dependencies": ["static liblzma via xz2 0.1.7/lzma-sys 0.1.20", "existing native HTTP/TLS", "Linux filesystem/flock/sync", "abctl", "/bin/sh", "process-supervision child helper and its existing cereal/msgq/libzmq dependencies"],
+      "runtime_scope": "actual-source owned regular-file/local HTTP/TLS/harmless abctl fixtures; directory/tar casync, production adoption, actual block-device update, ARM/AGNOS and device acceptance remain unvalidated",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/agnos-validation.md"
+    },
+    {
       "name": "hardware_control_policy",
       "source_entrypoint": "openpilot.system.hardware.base; openpilot.system.hardware.pc.hardware; openpilot.system.hardware.tici.hardware; required common.gpio/utils helpers",
       "status": "native_host_policy_and_adapter_validated",
