@@ -139,3 +139,10 @@ separates original state/parser comparisons, actual Unix-socket interoperability
 FIFO transport tests and driving regressions from still-unrun device acceptance.
 Parent reruns confirm the source decisions and both RPC directions. Existing
 validation/loss latches remain required; no real gadget or vehicle is used.
+
+[Storage/runtime integration issue #56](https://github.com/bin9208/openpilot-rust/issues/56)
+combines reviewed torque, route storage, Jetlink and diagnostic infrastructure.
+The [integration record](../rust-port/storage-runtime-integration.md) preserves
+feature revisions, source-locked dependency regeneration and exact-SHA gate
+requirements. Whole-runtime startup, active uploads and user device acceptance
+remain open.
