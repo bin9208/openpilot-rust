@@ -1,9 +1,11 @@
 #include "bridge.h"
+#include "openpilot-msgq/src/bridge.rs.h"
 #include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <stdexcept>
 #include <system_error>
+#include <set>
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <fcntl.h>
@@ -117,5 +119,41 @@ std::unique_ptr<Queue> open_queue(rust::Str endpoint, bool publisher, bool confl
 
 std::unique_ptr<Queue> open_runtime_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity) {
   return open_checked_queue(endpoint, publisher, conflate, capacity, false);
+}
+
+QueueBatch::QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolated) {
+  if (specifications.empty() || specifications.size() > 256) throw std::invalid_argument("invalid subscription count");
+  std::set<std::string> names;
+  for (const auto &specification : specifications) {
+    if (!names.insert(std::string(specification.endpoint)).second) throw std::invalid_argument("duplicate subscription");
+    queues_.push_back(open_checked_queue(specification.endpoint, false, true, specification.capacity, isolated));
+    const size_t index = queues_.size() - 1;
+    if (specification.polled) {
+      polls_.push_back(msgq_pollitem_t{&queues_.back()->queue_, 0});
+      poll_indices_.push_back(index);
+    } else {
+      unpolled_indices_.push_back(index);
+    }
+  }
+  if (polls_.empty()) throw std::invalid_argument("at least one polled subscription is required");
+}
+
+rust::Vec<QueuedMessage> QueueBatch::receive(int32_t timeout_ms) {
+  if (timeout_ms < 0) throw std::invalid_argument("invalid poll timeout");
+  msgq_poll(polls_.data(), polls_.size(), timeout_ms);
+  rust::Vec<QueuedMessage> result;
+  const auto receive = [&](size_t index) {
+    auto bytes = queues_[index]->receive(0);
+    if (!bytes.empty()) result.push_back(QueuedMessage{index, std::move(bytes)});
+  };
+  for (size_t index = 0; index < polls_.size(); ++index) {
+    if (polls_[index].revents) receive(poll_indices_[index]);
+  }
+  for (const size_t index : unpolled_indices_) receive(index);
+  return result;
+}
+
+std::unique_ptr<QueueBatch> open_batch(rust::Slice<const QueueSpec> specifications, bool isolated) {
+  return std::make_unique<QueueBatch>(specifications, isolated);
 }
 }

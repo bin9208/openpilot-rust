@@ -41,6 +41,12 @@ a continuous Rust process. Its [validation record](../rust-port/driver-daemon-va
 documents both camera resolutions, original-model/message comparisons and
 remaining QCOM input, manager and full-runtime acceptance work.
 
+[Message-state issue #26](https://github.com/bin9208/openpilot-rust/issues/26)
+preserves shared subscription freshness, validity and frequency contracts. Its
+[validation record](../rust-port/messaging-validation.md) covers source state
+comparisons, original service capacities, native collective polling and ownership.
+The source catalog/schema inconsistency is separately tracked in #27.
+
 [Driving input issue #20](https://github.com/bin9208/openpilot-rust/issues/20)
 ports camera pairing, drop state, calibration and packed policy inputs. The
 [comparison record](../rust-port/model-input-validation.md) includes original
