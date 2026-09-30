@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Unchanged beep/Ratekeeper bodies with only external clock/hardware/path fixtures."""
 import ast
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -25,6 +26,12 @@ def definition(path, name, scope):
 
 def main():
   resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+  # Linux core_pattern pipes ignore RLIMIT_CORE; keep expected SIGABRT probes out of host crash collectors.
+  libc = ctypes.CDLL(None, use_errno=True)
+  libc.prctl.argtypes = [ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong]
+  libc.prctl.restype = ctypes.c_int
+  if libc.prctl(4, 0, 0, 0, 0) != 0:  # PR_SET_DUMPABLE
+    raise OSError(ctypes.get_errno(), 'disable fixture core dumping')
   config = json.loads(sys.stdin.readline())
   root = Path(config['root'])
   module, _ = load(Path(config['binding']), 'ipc://' + str(root / 'swaglog'), root / 'logs')
