@@ -8,10 +8,13 @@ use openpilot_jetlink::{
 };
 use openpilot_modeld::prediction::DrivingPrediction;
 use std::{
-    sync::{atomic::Ordering, mpsc, Arc, Condvar, Mutex},
+    sync::{atomic::Ordering, mpsc, Arc, Condvar, Mutex, MutexGuard},
     thread,
     time::{Duration, Instant},
 };
+// Independent fixtures must not compete for each other's 50 ms frame budget under ASan.
+static FIXTURE_LOCK: Mutex<()> = Mutex::new(());
+
 fn identity() -> Identity {
     [
         ("device_model", "fixture"),
@@ -74,9 +77,12 @@ struct Fixture {
     gate: Arc<(Mutex<bool>, Condvar)>,
     started: mpsc::Receiver<u32>,
     validation: Vec<u8>,
+    // Last field: retain isolation until both real worker owners have been dropped.
+    _serial: MutexGuard<'static, ()>,
 }
 impl Fixture {
     fn new(open: bool) -> Self {
+        let serial = FIXTURE_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("rpc.sock");
         let (tx, started) = mpsc::channel();
@@ -102,6 +108,7 @@ impl Fixture {
             gate,
             started,
             validation: validation(),
+            _serial: serial,
         };
         while fixture.runtime.status.decision.phase != Phase::Ready {
             assert!(Instant::now() < end);

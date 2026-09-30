@@ -146,3 +146,10 @@ The [integration record](../rust-port/storage-runtime-integration.md) preserves
 feature revisions, source-locked dependency regeneration and exact-SHA gate
 requirements. Whole-runtime startup, active uploads and user device acceptance
 remain open.
+
+[Jetlink runtime fixture issue #63](https://github.com/bin9208/openpilot-rust/issues/63)
+reproduces ASan active-selection failures when independent real RPC fixtures
+compete for their original 50 ms deadline. The
+[focused validation record](../rust-port/jetlink-runtime-fixture.md) records fixed
+serial/concurrent comparisons and the test-local lifetime guard. Production
+policy and device acceptance remain unchanged; exact-head CI remains required.
