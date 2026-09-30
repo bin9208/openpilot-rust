@@ -52,6 +52,7 @@ type Open = unsafe extern "C" fn(
 pub struct Stream {
     library: Library,
     stream: *mut c_void,
+    selected_device: Option<c_int>,
     callback: Box<Callback>,
     terminate: unsafe extern "C" fn() -> c_int,
     close: Operation,
@@ -104,6 +105,7 @@ impl Stream {
         let mut owner = Self {
             library,
             stream: ptr::null_mut(),
+            selected_device: None,
             callback: Box::new(Callback(Mutex::new(handler))),
             terminate,
             close,
@@ -133,7 +135,7 @@ impl Stream {
             if self.initialized {
                 let code = (self.terminate)();
                 if code < 0 {
-                    eprintln!("soundd PortAudio terminate before open: {code}");
+                    eprintln!("PortAudio terminate before open: {code}");
                 }
                 self.initialized = false;
             }
@@ -142,7 +144,11 @@ impl Stream {
             let index = (self.device)();
             if index < 0 {
                 return Err(Error::Api {
-                    operation: "default output device",
+                    operation: if self.input {
+                        "default input device"
+                    } else {
+                        "default output device"
+                    },
                     code: index,
                 });
             }
@@ -178,10 +184,18 @@ impl Stream {
                 return Err(Error::Contract("successful open returned null stream"));
             }
             self.stream = stream;
+            self.selected_device = Some(index);
         }
         Ok(())
     }
+    pub fn device(&self) -> Result<i32, Error> {
+        self.selected_device
+            .ok_or(Error::Contract("stream is not open"))
+    }
     pub fn start(&self) -> Result<(), Error> {
+        if self.stream.is_null() {
+            return Err(Error::Contract("stream is not open"));
+        }
         // SAFETY: stream was opened successfully and is owned until Drop.
         unsafe {
             check(
@@ -191,6 +205,9 @@ impl Stream {
         }
     }
     pub fn active(&self) -> Result<bool, Error> {
+        if self.stream.is_null() {
+            return Err(Error::Contract("stream is not open"));
+        }
         // SAFETY: live owned stream; function pointer belongs to retained library.
         let result = unsafe { (self.active)(self.stream) };
         check(result, "active")?;
@@ -208,14 +225,14 @@ impl Drop for Stream {
                     ("close", (self.close)(self.stream)),
                 ] {
                     if code < 0 && code != -9983 {
-                        eprintln!("soundd PortAudio {operation}: {code}");
+                        eprintln!("PortAudio {operation}: {code}");
                     }
                 }
             }
             if self.initialized {
                 let code = (self.terminate)();
                 if code < 0 {
-                    eprintln!("soundd PortAudio terminate: {code}");
+                    eprintln!("PortAudio terminate: {code}");
                 }
             }
         }
