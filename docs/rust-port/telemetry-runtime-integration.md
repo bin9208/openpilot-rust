@@ -41,6 +41,15 @@ reviewed crash component lock. The only metadata API conflict was identical
 `python_str` implementations with different documentation; the fuller existing
 API documentation was retained.
 
+The first full-workspace build exposed six exhaustive matches in the older
+upload crates that did not handle the new validated `PythonText` variant
+([#87](https://github.com/bin9208/openpilot-rust/issues/87)). The integration
+handles it explicitly as text, rejects lone-surrogate scalar UTF-8 encoding,
+and preserves Python repr escaping for nested diagnostic/form values. Three
+focused tests and direct CPython results cover those boundaries. Existing
+upload source/HTTP regressions remain required; no placeholder match arm or
+replacement-decoding fallback is used.
+
 The first local metadata collector run used historical pycapnp 2.2.4. Its packet
 observations remain recorded, but it is not the pinned dependency validation.
 The integrated CI and the standalone script dependency declarations use the

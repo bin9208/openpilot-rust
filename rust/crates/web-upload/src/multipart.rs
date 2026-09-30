@@ -26,7 +26,11 @@ impl TmuxUpload<'_> {
                 Value::Array(values) => values.clone(),
                 Value::Object(values) => values.keys().cloned().map(Value::Text).collect(),
                 Value::Null => Vec::new(),
-                Value::Bool(_) | Value::Integer(_) | Value::Float(_) | Value::Text(_) => {
+                Value::Bool(_)
+                | Value::Integer(_)
+                | Value::Float(_)
+                | Value::Text(_)
+                | Value::PythonText(_) => {
                     vec![value.clone()]
                 }
             };
