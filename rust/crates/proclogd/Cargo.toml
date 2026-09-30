@@ -19,3 +19,8 @@ openpilot-msgq = { path = "../msgq" }
 openpilot-params = { path = "../params" }
 rustix = { version = "1", features = ["param", "time"] }
 tempfile = "3"
+signal-hook = "0.3"
+
+[[bin]]
+name = "openpilot-proclogd-runtime"
+path = "src/bin/runtime.rs"
