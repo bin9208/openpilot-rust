@@ -1383,6 +1383,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-http-transport"
+version = "0.1.0"
+dependencies = [
+ "ureq",
+]
+
+[[package]]
 name = "openpilot-jetlink"
 version = "0.1.0"
 dependencies = [
@@ -1577,6 +1584,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-timed"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "chrono",
+ "openpilot-cereal",
+ "openpilot-http-transport",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+ "ureq",
+ "url",
+]
+
+[[package]]
 name = "openpilot-torqued"
 version = "0.1.0"
 dependencies = [
@@ -1607,6 +1637,7 @@ dependencies = [
  "jsonwebtoken",
  "openpilot-cereal",
  "openpilot-deleter",
+ "openpilot-http-transport",
  "openpilot-logging",
  "openpilot-messaging",
  "openpilot-params",

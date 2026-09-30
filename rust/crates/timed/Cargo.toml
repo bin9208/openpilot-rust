@@ -1,5 +1,5 @@
 [package]
-name = "openpilot-uploader"
+name = "openpilot-timed"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
@@ -10,27 +10,22 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-logmessaged = { path = "../logmessaged" }
 openpilot-http-transport = { path = "../http-transport" }
-openpilot-deleter = { path = "../deleter" }
 openpilot-params = { path = "../params" }
 openpilot-params-typed = { path = "../params-typed" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-messaging = { path = "../messaging" }
 openpilot-logging = { path = "../logging" }
-openpilot-runtime-core = { path = "../runtime-core" }
 capnp = "=0.27.2"
-home = "0.5.12"
-rustix = { version = "1", features = ["fs", "thread"] }
+chrono = "=0.4.45"
+rustix = { version = "1", features = ["time"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", features = ["float_roundtrip"] }
+serde_json = "1"
 thiserror = "2"
+url = "=2.5.8"
 signal-hook = "0.3"
 ureq = { version = "=3.4.2", features = ["json", "gzip", "brotli", "rustls", "cookies"] }
-url = "2"
-rand = "0.9"
-jsonwebtoken = { version = "=10.3.0", features = ["rust_crypto"] }
-p256 = { version = "0.13", features = ["pem", "pkcs8"] }
-zstd = "=0.13.3"
 
 [dev-dependencies]
 tempfile = "3"

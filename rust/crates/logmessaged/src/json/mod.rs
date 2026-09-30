@@ -57,3 +57,24 @@ impl Document {
         index
     }
 }
+
+/// Read optional string fields using the original Python JSON decoder semantics.
+/// Duplicate keys keep their last value; unselected nonfinite values and lone
+/// surrogates remain valid. A selected non-string or non-Unicode value is absent.
+pub fn string_fields<const N: usize>(
+    source: &str,
+    keys: [&str; N],
+) -> Result<[Option<String>; N], Error> {
+    let document = parse(source)?;
+    let Value::Object(fields) = &document.values[document.root] else {
+        return Ok(std::array::from_fn(|_| None));
+    };
+    Ok(std::array::from_fn(|index| {
+        let key = Text::from(keys[index]);
+        let (_, value) = fields.iter().find(|(name, _)| *name == key)?;
+        let Value::Text(text) = &document.values[*value] else {
+            return None;
+        };
+        text.0.iter().map(|point| char::from_u32(*point)).collect()
+    }))
+}
