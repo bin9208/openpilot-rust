@@ -153,3 +153,11 @@ compete for their original 50 ms deadline. The
 [focused validation record](../rust-port/jetlink-runtime-fixture.md) records fixed
 serial/concurrent comparisons and the test-local lifetime guard. Production
 policy and device acceptance remain unchanged; exact-head CI remains required.
+
+[Journald issue #65](https://github.com/bin9208/openpilot-rust/issues/65) adds the
+native OS-journal bridge with typed ordered JSON, real androidLog/diagnostic
+transports and owned child cleanup. Its
+[validation record](../rust-port/journald-validation.md) compares the actual
+original main with native host/ASan and generic ARM/QEMU executions. The inherited
+direct-SIGTERM orphan is tracked separately in #66; manager selection and device
+acceptance remain pending.
