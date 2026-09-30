@@ -1,4 +1,5 @@
 use openpilot_dmonitoringmodeld::{driver::Calibration, runtime::DriverRuntime, Error};
+use openpilot_messaging::services;
 use openpilot_model_runtime::catalog::{Catalog, Kind};
 use openpilot_modeld::driver_wire::DriverTiming;
 use openpilot_msgq::{Publisher, Subscriber, VisionClient, VisionStream};
@@ -128,9 +129,16 @@ fn run(options: Options) -> Result<(), Error> {
             subscriber = Some(Subscriber::for_runtime(
                 "liveCalibration",
                 true,
-                1024 * 1024,
+                services::lookup("liveCalibration")
+                    .ok_or(Error::Contract("liveCalibration service missing"))?
+                    .queue_size,
             )?);
-            publisher = Some(Publisher::for_runtime("driverStateV2", 1024 * 1024)?);
+            publisher = Some(Publisher::for_runtime(
+                "driverStateV2",
+                services::lookup("driverStateV2")
+                    .ok_or(Error::Contract("driverStateV2 service missing"))?
+                    .queue_size,
+            )?);
             eprintln!("dmonitoringmodeld: models loaded");
         }
         let runtime = runtime

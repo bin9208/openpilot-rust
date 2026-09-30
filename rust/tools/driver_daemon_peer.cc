@@ -8,6 +8,8 @@
 #include <thread>
 #include <vector>
 #include "msgq/ipc.h"
+#include "msgq/msgq.h"
+#include "services.h"
 #include "msgq/visionipc/visionipc_client.h"
 #include "msgq/visionipc/visionipc_server.h"
 
@@ -23,8 +25,8 @@ int main(int argc, char **argv) {
     const size_t width = std::stoul(argv[1]), height = std::stoul(argv[2]);
     const size_t stride = std::stoul(argv[3]), uv_offset = std::stoul(argv[4]), bytes = std::stoul(argv[5]);
     std::unique_ptr<Context> context(Context::create());
-    std::unique_ptr<PubSocket> calibration(PubSocket::create(context.get(), "liveCalibration"));
-    std::unique_ptr<SubSocket> driver(SubSocket::create(context.get(), "driverStateV2"));
+    std::unique_ptr<PubSocket> calibration(PubSocket::create(context.get(), "liveCalibration", true, services.at("liveCalibration").queue_size));
+    std::unique_ptr<SubSocket> driver(SubSocket::create(context.get(), "driverStateV2", "127.0.0.1", false, true, services.at("driverStateV2").queue_size));
     if (!calibration || !driver) throw std::runtime_error("failed native message sockets");
     VisionIpcServer server("camerad");
     server.create_buffers_with_sizes(VISION_STREAM_DRIVER, 4, width, height, bytes, stride, uv_offset);
@@ -35,7 +37,7 @@ int main(int argc, char **argv) {
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     if (!ready) throw std::runtime_error("camera listener unavailable");
-    std::cout << "READY" << std::endl;
+    std::cout << "READY " << sizeof(msgq_header_t) << std::endl;
     std::string command;
     while (std::cin >> command) {
       if (command == "calib") {

@@ -69,6 +69,52 @@ Cap'n Proto segments; offsets 0 through 7 pass, including symbolic-alignment
 Miri. The workflow preserves this regression check. Exact commit review and
 Actions results are recorded on #19 and its PR.
 
+## Queue-capacity regression and repair (2026-09-30)
+
+Issue #19 was reopened after source integration exposed that both Rust sockets
+and the original QA peer had used 1 MiB defaults. The actual
+`openpilot/cereal/services.py` definitions require 256,000 bytes for each of
+`liveCalibration` and `driverStateV2`. The earlier matched-peer test therefore
+did not establish interoperability with normal source service queues.
+
+The daemon now obtains both capacities from `openpilot-messaging::services`,
+using a catalog-only dependency. The QA peer independently compiles a header
+from the original Python `build_header()` and passes each source capacity to
+its native socket constructor. After the Rust daemon connects, the harness
+checks both actual shared-file lengths minus the native msgq header size
+against Python `SERVICE_LIST`; it records those capacities with every run.
+
+The base `277964e35f3a12037d143288d5641db3ed90e240` binary failed this corrected
+peer scenario before the repair: its first camera frame reached model loading,
+then it exited with `existing msgq queue has incompatible size or type`.
+After the repair, all four original daemon scenarios passed (1344x760 and
+1928x1208, each with raw output enabled and disabled). Both queues measured
+256,000 bytes in every run. Ten publications / 470 fields matched the original
+model oracle; calibration retention/broadcast/rejection, camera/frame policy,
+no-frame timeouts and signal shutdown checks remained enabled.
+
+Host invocation, with the original compiled models and native pipeline catalog:
+
+```sh
+PYTHONPATH="$PWD:$PWD/tinygrad_repo:$PWD/rust/tools" \
+  DEV=CPU:LLVM LLVM_PATH=/usr/lib/x86_64-linux-gnu/libLLVM-20.so \
+  CPU_COUNT=2 JIT=1 JIT_BATCH_SIZE=0 python rust/tools/check_driver_daemon.py \
+  --binary rust/target/debug/openpilot-dmonitoringmodeld \
+  --catalog /path/to/native-pipeline-catalog --models /path/to/original-model-build \
+  --output /path/to/driver-queue-evidence
+```
+
+Local artifacts in the issue worktree: `.omo/evidence/driver-queue-fix/`.
+`red.log` and `red/1344-raw-1/daemon.log` capture the old binary failure;
+`green/report.json` and per-run reports/captured packets prove the corrected
+native interoperation and capacities. `tests.log`, `clippy.log`, `ruff.log`
+and `INDEX.json` record focused verification and exact invocations. The existing
+Rust workflow already runs this complete driver harness; exact-head cloud CI,
+independent review and post-merge verification remain integration gates.
+
+Docs-Not-Needed: internal runtime IPC compatibility repair; no settings,
+production selection or user-facing behavior change.
+
 ## Remaining acceptance
 
 Host CPU results do not validate QCOM execution, AGNOS scheduling, camera ION

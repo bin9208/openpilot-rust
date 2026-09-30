@@ -16,6 +16,7 @@ from check_pipeline_reference import execute, write_tensor
 from model_export.original import DriverArtifacts, driver
 from model_output_reference import compare, new_message, original_functions
 from openpilot.cereal import log
+from openpilot.cereal.services import SERVICE_LIST, build_header
 from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
 from openpilot.common.transformations.model import dmonitoringmodel_intrinsics
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
@@ -59,10 +60,11 @@ def stop(process: subprocess.Popen) -> None:
 
 def build_peer(root: Path, output: Path) -> None:
     source = root / "msgq_repo/msgq"
+    (output.parent / "services.h").write_text(build_header())
     files = [source / name for name in ("ipc.cc", "event.cc", "impl_msgq.cc", "impl_fake.cc", "msgq.cc",
                                        "visionipc/visionipc.cc", "visionipc/visionipc_client.cc",
                                        "visionipc/visionipc_server.cc", "visionipc/visionbuf.cc")]
-    subprocess.run(["g++", "-std=c++17", "-pthread", "-I" + str(source.parent),
+    subprocess.run(["g++", "-std=c++17", "-pthread", "-I" + str(source.parent), "-I" + str(output.parent),
                     root / "rust/tools/driver_daemon_peer.cc", *files, "-o", output], check=True)
 
 
@@ -95,7 +97,8 @@ def check(args, width: int, height: int, raw: bool) -> dict:
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0)
         processes.append(peer)
         peer_lines = Lines(peer.stdout, destination / "peer.log")
-        peer_lines.until(("READY",))
+        ready = peer_lines.until(("READY",))
+        header_bytes = int(ready.split()[1])
         daemon_lines.until(("driver stream connected",))
 
         def command(value: str) -> str:
@@ -109,6 +112,9 @@ def check(args, width: int, height: int, raw: bool) -> dict:
         warmup.write_bytes(bytes(size))
         assert command(f"send 10 {warmup}") == "OK"
         daemon_lines.until(("models loaded",))
+        queue_sizes = {name: (Path("/dev/shm") / f"msgq_{prefix}" / name).stat().st_size - header_bytes
+                       for name in ("liveCalibration", "driverStateV2")}
+        assert queue_sizes == {name: SERVICE_LIST[name].queue_size for name in queue_sizes}, queue_sizes
         command(f"receive 5000 {destination / 'warmup-message.bin'}")
         assert command(f"receive 200 {destination / 'unexpected.bin'}") == "TIMEOUT"
         random = np.random.default_rng(20260930)
@@ -173,9 +179,11 @@ def check(args, width: int, height: int, raw: bool) -> dict:
         waiting.send_signal(signal.SIGINT)
         assert waiting.wait(timeout=5) == 0
         report = {"camera": [width, height], "frames": len(calibrations), "raw_predictions": raw, "compared_fields": fields,
+                  "queue_sizes": queue_sizes, "queue_size_oracle": "original cereal.services.SERVICE_LIST",
                   "raw_comparison": "exact bytes", "parsed_float_tolerance": 1e-6, "device_validation": False,
-                  "scenarios": ["delayed camera", "frame identity", "camera validity ignored as original", "zero calibration", "no-frame timeout",
-                                "SIGINT during connect"] + (["invalid-flag calibration update", "retained calibration", "broadcast calibration",
+                  "scenarios": ["original service queue capacities", "delayed camera", "frame identity", "camera validity ignored as original",
+                                "zero calibration", "no-frame timeout", "SIGINT during connect"]
+                               + (["invalid-flag calibration update", "retained calibration", "broadcast calibration",
                                                              "malformed calibration exit"] if raw else ["SIGTERM during receive"])}
         (destination / "report.json").write_text(json.dumps(report, indent=2) + "\n")
         print(json.dumps(report), flush=True)
