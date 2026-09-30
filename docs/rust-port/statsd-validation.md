@@ -16,7 +16,8 @@ to actual `deviceState` through the existing SubMaster, and publishes statistics
 to the source PC/TICI stats root. It adds no production daemon-selection switch.
 
 The producer uses a fresh PUSH context, LINGER=10, nonblocking sends, and drops
-only EAGAIN. After fork it reconnects before using inherited handles; destruction
+only EAGAIN. EINTR retries the same metric packet, matching PyZMQ; other
+transport errors still propagate. See [the interrupted-send regression](../naver/rust-interrupted-logging-93.md). After fork it reconnects before using inherited handles; destruction
 in the child does not close or terminate the parent's copied libzmq handles.
 Float payloads use the established Python-compatible formatter. The type-safe
 native gauge/sample API retains f32/f64 versus integer values, including the

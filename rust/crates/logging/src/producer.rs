@@ -142,10 +142,13 @@ impl Logger {
         let Connection::Connected(transport) = &self.state else {
             return Err(Error::Contract("logger connection missing"));
         };
-        match transport.socket.send(packet, zmq::DONTWAIT) {
-            Ok(()) => Ok(Delivery::Sent),
-            Err(zmq::Error::EAGAIN) => Ok(Delivery::Dropped),
-            Err(error) => Err(error.into()),
+        loop {
+            match transport.socket.send(packet, zmq::DONTWAIT) {
+                Ok(()) => return Ok(Delivery::Sent),
+                Err(zmq::Error::EINTR) => continue,
+                Err(zmq::Error::EAGAIN) => return Ok(Delivery::Dropped),
+                Err(error) => return Err(error.into()),
+            }
         }
     }
     fn release(&mut self) -> Option<u32> {
