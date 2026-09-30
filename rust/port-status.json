@@ -358,7 +358,10 @@
       "name": "statsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.statsd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_and_emulator_validated",
+      "implementation": "rust/crates/statsd; native StatLog producer and statsd-rs continuous deviceState/aggregation/atomic-file loop",
+      "native_dependencies": ["libzmq", "original C++ msgq through existing messaging", "Linux clock/filesystem/signal APIs", "Git for source metadata without build.json"],
+      "evidence": "docs/rust-port/statsd-validation.md",
       "production_replaced": false
     },
     {
