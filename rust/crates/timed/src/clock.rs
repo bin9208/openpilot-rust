@@ -1,5 +1,5 @@
 use crate::Error;
-use chrono::{DateTime, Local, NaiveDateTime};
+use chrono::{DateTime, Datelike, Local, NaiveDateTime};
 use std::{
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
@@ -38,7 +38,16 @@ impl Clock for SystemClock {
             .ok_or(Error::Contract("monotonic overflow"))
     }
     fn local(&self, epoch: f64) -> Result<NaiveDateTime, Error> {
-        Ok(datetime(epoch)?.with_timezone(&Local).naive_local())
+        let instant = datetime(epoch)?;
+        let local = local_datetime(instant)?;
+        // Python's naive fromtimestamp also constructs a local datetime 24 hours
+        // earlier while detecting folds. That construction can raise at year 1.
+        local_datetime(
+            instant
+                .checked_sub_signed(chrono::Duration::days(1))
+                .ok_or(Error::Contract("datetime fold probe out of range"))?,
+        )?;
+        Ok(local)
     }
     fn sleep(&self, duration: Duration, stop: &AtomicBool) {
         let deadline = Instant::now() + duration;
@@ -49,6 +58,18 @@ impl Clock for SystemClock {
             }
             std::thread::sleep(remaining.min(Duration::from_millis(20)));
         }
+    }
+}
+fn local_datetime(instant: DateTime<chrono::Utc>) -> Result<NaiveDateTime, Error> {
+    let offset = instant.with_timezone(&Local).offset().local_minus_utc();
+    let local = instant
+        .naive_utc()
+        .checked_add_signed(chrono::Duration::seconds(i64::from(offset)))
+        .ok_or(Error::Contract("local datetime out of range"))?;
+    if (1..=9999).contains(&local.year()) {
+        Ok(local)
+    } else {
+        Err(Error::Contract("local datetime year outside 1..9999"))
     }
 }
 /// Python datetime.fromtimestamp rounds to the nearest microsecond, ties to even.
