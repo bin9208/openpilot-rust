@@ -502,6 +502,15 @@
       "evidence": "docs/rust-port/tombstoned-validation.md"
     },
     {
+      "name": "native_process_supervision",
+      "source_entrypoint": "openpilot.system.manager.process",
+      "status": "native_host_and_generic_aarch64_lifecycle_validated",
+      "implementation": "rust/crates/process-supervision; ordered lifecycle/ensure_running, native child helper and persistent PID identity; Python preparation and managed-entry/crash context, catalog and full manager startup remain separate",
+      "native_dependencies": ["Linux process/procfs/filesystem APIs", "libc via nix/rustix", "native logging/libzmq and current CXX transport dependencies"],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/process-supervision-validation.md"
+    },
+    {
       "name": "runtime_build_metadata_and_cached_git",
       "source_entrypoint": "openpilot.system.version; openpilot.common.git",
       "status": "native_host_api_validated",

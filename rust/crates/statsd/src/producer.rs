@@ -79,10 +79,13 @@ impl StatLog {
             .connection
             .as_ref()
             .ok_or(Error::Configuration("stats connection missing"))?;
-        match connection.socket.send(metric, zmq::DONTWAIT) {
-            Ok(()) => Ok(Delivery::Sent),
-            Err(zmq::Error::EAGAIN) => Ok(Delivery::Dropped),
-            Err(error) => Err(error.into()),
+        loop {
+            match connection.socket.send(metric, zmq::DONTWAIT) {
+                Ok(()) => return Ok(Delivery::Sent),
+                Err(zmq::Error::EINTR) => continue,
+                Err(zmq::Error::EAGAIN) => return Ok(Delivery::Dropped),
+                Err(error) => return Err(error.into()),
+            }
         }
     }
     fn release(&mut self) {
