@@ -1592,6 +1592,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-registration"
+version = "0.1.0"
+dependencies = [
+ "cookie_store",
+ "encoding_rs",
+ "flate2",
+ "jsonwebtoken",
+ "openpilot-http-transport",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-runtime-version",
+ "openpilot-uploader",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "ureq",
+ "url",
+]
+
+[[package]]
 name = "openpilot-runtime-core"
 version = "0.1.0"
 dependencies = [
