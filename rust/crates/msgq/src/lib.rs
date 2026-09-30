@@ -3,7 +3,7 @@ mod bridge;
 #[cfg(feature = "native-skip-miri")]
 mod transport;
 #[cfg(feature = "native-skip-miri")]
-pub use transport::{Error, Publisher, Subscriber};
+pub use transport::{Error, MultiSubscriber, Publisher, QueuedMessage, Subscriber, Subscription};
 #[cfg(feature = "native-skip-miri")]
 mod vision;
 #[cfg(feature = "native-skip-miri")]

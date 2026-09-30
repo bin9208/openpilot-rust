@@ -1,4 +1,4 @@
-use openpilot_msgq::{Publisher, Subscriber};
+use openpilot_msgq::{MultiSubscriber, Publisher, Subscriber, Subscription};
 use std::{
     env,
     io::{BufRead, BufReader},
@@ -93,6 +93,54 @@ fn isolated_transport() {
         Some(payload)
     );
     assert!(peer.wait().unwrap().success());
+    let specifications = [
+        Subscription {
+            endpoint: "pollA",
+            capacity: 1024 * 1024,
+            polled: true,
+        },
+        Subscription {
+            endpoint: "pollB",
+            capacity: 1024 * 1024,
+            polled: true,
+        },
+        Subscription {
+            endpoint: "aux",
+            capacity: 1024 * 1024,
+            polled: false,
+        },
+    ];
+    let mut poll_a = Publisher::new("pollA").unwrap();
+    let mut poll_b = Publisher::new("pollB").unwrap();
+    let mut auxiliary = Publisher::new("aux").unwrap();
+    let mut batch = MultiSubscriber::new(&specifications).unwrap();
+    auxiliary.send(b"non-polled").unwrap();
+    let started = Instant::now();
+    let values = batch.receive(Duration::from_millis(30)).unwrap();
+    assert!(started.elapsed() >= Duration::from_millis(25));
+    assert_eq!(values.len(), 1);
+    assert_eq!(
+        (values[0].index, values[0].bytes.as_slice()),
+        (2, b"non-polled".as_slice())
+    );
+    for value in 0..10_u8 {
+        poll_a.send(&[value]).unwrap();
+    }
+    poll_b.send(b"second poll").unwrap();
+    let values = batch.receive(Duration::from_millis(500)).unwrap();
+    assert_eq!(values.len(), 2);
+    assert_eq!(values[0].index, 0);
+    assert_eq!(values[0].bytes, [9]);
+    assert_eq!(values[1].index, 1);
+    assert_eq!(values[1].bytes, b"second poll");
+    poll_b.send(b"only one poll").unwrap();
+    let started = Instant::now();
+    assert_eq!(batch.receive(Duration::from_millis(500)).unwrap().len(), 1);
+    assert!(started.elapsed() < Duration::from_millis(300));
+    assert_eq!(values[0].bytes, [9]);
+    assert!(batch.receive(Duration::ZERO).unwrap().is_empty());
+    assert!(MultiSubscriber::new(&[]).is_err());
+    assert!(MultiSubscriber::new(&specifications[2..]).is_err());
 }
 
 #[test]
