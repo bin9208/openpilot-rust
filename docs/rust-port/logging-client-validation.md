@@ -90,5 +90,63 @@ vehicle behavior changes; no CPU/thermal improvement or complete runtime is
 claimed. Existing Python traceback text is accepted as fixture input only;
 Rust failures must use real Rust error context.
 
+## Native C++ logging prerequisite for loggerd (#41)
+
+`logging::native::Logger` separately implements the `cloudlog_e` producer from
+unchanged `openpilot/common/swaglog.cc`. Its process-wide runtime instance uses
+one mutex-protected PUSH socket, the original 100 ms linger, nonblocking sends,
+and the normal prefixed logmessage IPC endpoint. Clones share socket/context;
+explicit `new` instances allow isolated embedding and validation. The first
+nonempty emission captures native environment context. Empty text does not
+initialize the socket. C-string message truncation, stdout routing, severity
+prefix, sorted json11 key order, spacing, Unicode and control escaping match
+the source. Native LOGPRINT defaults to warning even for unrecognized values.
+
+Records retain the source `ctx`, `levelnum`, `filename`, `lineno`, `funcname`,
+`created` and `msg` fields. Filenames, functions and lines are real Rust
+callsites; timestamps use realtime. Three additional context fields identify
+Rust and the build's actual source commit/tree status. Device/version are
+provided by the embedding runtime. UTF-8 context is required; invalid native
+environment encoding returns a typed error instead of fabricating text.
+Serialization does not change the process-wide numeric locale.
+
+The C++ producer ignores console and send errors. Rust suppresses console
+errors and reports queue drops separately from other typed transport failures;
+source-equivalent runtime callsites must handle emission errors best effort,
+without interrupting daemon work. The owner must call `close()` after its final
+diagnostics during orderly shutdown to apply the 100 ms drain. Rust statics do
+not have the original C++ exit destructor. Closing an initialized logger affects
+all clones; closing before first use is a no-op. Arbitrary fork after native
+initialization is unsupported, as in C++; Python-producer PID guards are separate.
+
+One `rate::RateLimit` belongs to each original rate-limited callsite. The default
+preserves `cloudlog_rl(2, 100, ...)`: CLOCK_BOOTTIME nanoseconds, strict expiry,
+the following call's window restart, and the suppression-warning count emitted
+before the admitted message at the same callsite. The counter returns a typed
+overflow error beyond the source's defined signed-integer range. Callers own
+synchronization if a rate-limited callsite is shared across threads.
+
+The native oracle compiles the unchanged producer and source rate macro using
+the exact `uv.lock` json11 wheel and hash. Only hardware/version/IPC adapters and
+the rate-test boot clock are supplied by the fixture; realtime remains original.
+Link wrappers observe actual libzmq calls, flags, linger and send results. The
+comparison normalizes only real callsite/time metadata and the three additional
+Rust context fields. Captured packet bytes otherwise match. Native dependencies
+remain libzmq; json11 and C++ are oracle-only and are not linked into Rust runtime.
+
+```sh
+cargo build --manifest-path rust/Cargo.toml -p openpilot-logging --example native_logging_probe --locked
+python rust/tools/check_native_logging.py \
+  --binary rust/target/debug/examples/native_logging_probe --output /tmp/native-logging
+```
+
+Host evidence covers seven LOGPRINT/context configurations, all supported
+levels, Unicode/control/NUL text, empty initialization, 516 rate-boundary inputs,
+64 concurrent emitters, real backpressure (1,000 accepted/4,000 dropped by each
+producer), failed stdout with successful IPC, explicit close, prefixed runtime
+IPC and default SIGINT/SIGTERM termination. This remains an isolated prerequisite;
+loggerd callsite integration, full-runtime startup/upload and device comparison
+are separate delivery gates. No vehicle has been contacted.
+
 Docs-Not-Needed: isolated Rust logging library and validation tools; no user
 setting or production selection behavior changes.
