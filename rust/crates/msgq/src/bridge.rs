@@ -21,6 +21,8 @@ pub(crate) mod ffi {
             isolated: bool,
         ) -> Result<UniquePtr<QueueBatch>>;
         fn open_queued_batch(specifications: &[QueueSpec]) -> Result<UniquePtr<QueueBatch>>;
+        fn open_lazy_batch(specifications: &[QueueSpec]) -> Result<UniquePtr<QueueBatch>>;
+        fn set_active(self: Pin<&mut QueueBatch>, index: usize, active: bool) -> Result<()>;
         fn receive(self: Pin<&mut QueueBatch>, timeout_ms: i32) -> Result<Vec<QueuedMessage>>;
         fn poll_ready(self: Pin<&mut QueueBatch>, timeout_ms: i32) -> Result<Vec<usize>>;
         fn receive_one(self: Pin<&mut QueueBatch>, index: usize) -> Result<Vec<u8>>;

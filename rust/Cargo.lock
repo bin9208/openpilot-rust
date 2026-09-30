@@ -1678,6 +1678,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-bridge"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "signal-hook",
+ "thiserror",
+ "zmq",
+]
+
+[[package]]
 name = "openpilot-calibrationd"
 version = "0.1.0"
 dependencies = [
