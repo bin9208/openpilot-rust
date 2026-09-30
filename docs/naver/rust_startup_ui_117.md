@@ -88,3 +88,49 @@ to the broader UI runtime conversion, not these startup widget surfaces. Host
 screenshots, mock board events and GNU dependency staging do not establish AGNOS
 rendering, physical touch input, actual board reboot, or vehicle acceptance.
 No device was contacted, and no complete-runtime readiness or CPU saving is claimed.
+
+## Reproducible host QA in Actions
+
+The tracked runner `rust/tools/check_startup_ui.py` executes the same six scenes,
+state and text-pixel gates, actual XTest/stdin exits, native child lifecycle, and
+adapter ASAN checks. Spinner rotated-edge pixel differences remain measurements,
+not an equality claim. It writes `result.json`, per-command logs, source/native
+PNGs, JSON state, image differences and sanitizer output under `--output`, and
+exits nonzero on a gate failure. `--target` means the Cargo profile directory
+containing binaries, `examples/`, `deps/` and `build/`, not the target triple.
+
+On Ubuntu, install host dependencies with:
+
+```sh
+sudo apt-get install -y g++ libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth
+```
+
+Use the repository's Python environment (including the locked raylib source oracle)
+plus `python-xlib==0.33`. A minimal isolated oracle environment needs
+`comma-deps-raylib==6.0.0.1.post103`, Pillow, numpy, pycapnp, pyzmq, requests,
+setproctitle, psutil, zstandard and python-xlib. The runner uses the same Python
+interpreter for the source subprocess. Rustup with the Cargo build's toolchain
+(default `--rust-toolchain 1.94.0`) is needed for the small CXX sanitizer companion.
+
+After host plugin staging above:
+
+```sh
+cargo build --manifest-path rust/Cargo.toml --release -p openpilot-startup-ui --bins --examples -p openpilot-process-supervision --bin openpilot-process-child
+xvfb-run -a -s '-screen 0 2400x1400x24 -nolisten tcp' \
+  python3 rust/tools/check_startup_ui.py --target rust/target/release \
+  --output "$RUNNER_TEMP/startup-ui-evidence" \
+  --raylib-root "$STARTUP_UI_RAYLIB_ROOT" \
+  --raylib-library "$STARTUP_UI_RAYLIB_LIBRARY"
+```
+
+For a custom `CARGO_TARGET_DIR` or explicit Cargo target triple, point `--target`
+at its actual profile directory. The runner consumes the CI-owned DISPLAY and
+does not start, stop or attach to another desktop. It sets an isolated Params root
+for the actual native processes; no hardware controls run in these PC fixtures.
+
+GNU aarch64 plugin linking additionally requires `g++-aarch64-linux-gnu` and,
+after configuring Ubuntu arm64 package sources/multiarch, `libegl-dev:arm64`,
+`libgles-dev:arm64`, `libdrm-dev:arm64`, and `libgbm-dev:arm64`. Use the aarch64
+staging command above with `--shared --cxx aarch64-linux-gnu-g++`. The generic musl
+Cargo gate only needs the verified headers and C++ loader build; do not run the
+GNU plugin inside the musl process or omit the loader from that build.
