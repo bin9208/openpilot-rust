@@ -534,6 +534,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-deleter"
+version = "0.1.0"
+dependencies = [
+ "home",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-desire"
 version = "0.1.0"
 dependencies = [

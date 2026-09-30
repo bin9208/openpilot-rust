@@ -92,3 +92,9 @@ and rotation, and original `logMessage`/`errorLogMessage` publications. Its
 byte comparisons, native transport/error-path checks and the CPython recursion
 resource difference. External libzmq/msgq remain explicit; manager selection,
 route logger integration and the complete startup/upload candidate remain open.
+
+[Log-space deleter issue #42](https://github.com/bin9208/openpilot-rust/issues/42)
+ports retention ordering, preserved segment caching and continuous low-space
+cleanup. Its [validation record](../rust-port/deleter-validation.md) covers actual
+source-loop filesystem comparisons and a private low-space mount. Existing logs
+are untouched; production selection and whole-runtime acceptance remain pending.
