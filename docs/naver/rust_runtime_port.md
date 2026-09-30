@@ -92,3 +92,12 @@ and rotation, and original `logMessage`/`errorLogMessage` publications. Its
 byte comparisons, native transport/error-path checks and the CPython recursion
 resource difference. External libzmq/msgq remain explicit; manager selection,
 route logger integration and the complete startup/upload candidate remain open.
+
+[Structured logging issue #45](https://github.com/bin9208/openpilot-rust/issues/45)
+adds native per-thread producers, scoped/global context, source-compatible
+records and bounded runtime timing/communication summaries. Its
+[validation record](../rust-port/logging-client-validation.md) covers exact source
+bytes and numeric types, original/Rust collectors, actual OS identity, fork
+reconnection and backpressure. Integration into each daemon's original callsites
+is a subsequent full-runtime requirement; this library does not establish that
+all Rust process diagnostics reach a route or upload.

@@ -79,11 +79,22 @@ jobs:
         run: python tools/check_monitoring_reference.py --binary target/debug/monitoring-probe --output "$RUNNER_TEMP/monitoring-policy"
       - name: Compare diagnostic log formatting and rotation with original source
         run: python tools/check_logmessaged_reference.py --binary target/debug/examples/file_probe --output "$RUNNER_TEMP/logmessaged-reference"
+      - name: Compare bounded diagnostics and receiver state with original source
+        run: |
+          python tools/check_runtime_diagnostics.py --binary target/debug/examples/diagnostics_trace --output "$RUNNER_TEMP/runtime-diagnostics"
+          python tools/check_communication_snapshot.py --binary target/debug/examples/communication_trace --output "$RUNNER_TEMP/communication-snapshot"
       - name: Compare driving-model input state with the original loop
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
       - run: python tools/check_params_reference.py
       - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
+      - name: Exercise structured log producers with original and Rust collectors
+        run: |
+          cargo build -p openpilot-logging --examples --locked
+          cargo build -p openpilot-logmessaged --bins --locked
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" python tools/check_logging_producer.py \
+            --binary target/debug/examples/logging_probe --fork-binary target/debug/examples/logging_fork \
+            --collector target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/logging-producer"
       - name: Compare continuous driver monitoring with the original loop and IPC
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_dmonitoring_daemon.py \
@@ -137,6 +148,10 @@ jobs:
             ${{ runner.temp }}/logmessaged-reference/report.json
             ${{ runner.temp }}/logmessaged-native/**/report.json
             ${{ runner.temp }}/logmessaged-native/**/*.log
+            ${{ runner.temp }}/runtime-diagnostics/report.json
+            ${{ runner.temp }}/communication-snapshot/report.json
+            ${{ runner.temp }}/logging-producer/**/report.json
+            ${{ runner.temp }}/logging-producer/**/*.log
   model-pipelines:
     name: rust original model pipelines
     runs-on: ubuntu-24.04
