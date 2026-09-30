@@ -240,6 +240,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "charset-norm"
+version = "3.5.1"
+dependencies = [
+ "regex",
+ "rustc-hash",
+ "unicode-general-category 1.1.0",
+ "unicode-normalization",
+ "unicode_names2",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1475,6 +1486,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "743fb55ba31b18fb1ecef6bdc9aa2743314978ac084044301a7eee33fb99a20d"
 
 [[package]]
+name = "nix"
+version = "0.31.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
+dependencies = [
+ "bitflags 2.13.2",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1600,6 +1623,18 @@ version = "0.1.0"
 dependencies = [
  "capnp",
  "capnpc",
+]
+
+[[package]]
+name = "openpilot-checkout-status"
+version = "0.1.0"
+dependencies = [
+ "openpilot-logmessaged",
+ "openpilot-process-supervision",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -1812,6 +1847,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-managed-entry"
+version = "0.1.0"
+dependencies = [
+ "openpilot-crash-reporting",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-msgq",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-manager-catalog"
+version = "0.1.0"
+dependencies = [
+ "openpilot-beepd",
+ "openpilot-params",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-messaging"
 version = "0.1.0"
 dependencies = [
@@ -1894,6 +1955,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-process-supervision"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "nix",
+ "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-proclogd"
 version = "0.1.0"
 dependencies = [
@@ -1907,6 +1985,30 @@ dependencies = [
  "signal-hook",
  "tempfile",
  "thiserror",
+]
+
+[[package]]
+name = "openpilot-registration"
+version = "0.1.0"
+dependencies = [
+ "charset-norm",
+ "cookie_store",
+ "encoding_rs",
+ "flate2",
+ "jsonwebtoken",
+ "openpilot-http-transport",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-runtime-version",
+ "openpilot-uploader",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "ureq",
+ "url",
 ]
 
 [[package]]
@@ -1927,7 +2029,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "unicode-general-category",
+ "unicode-general-category 0.6.0",
 ]
 
 [[package]]
@@ -1995,7 +2097,7 @@ dependencies = [
  "signal-hook",
  "tempfile",
  "thiserror",
- "unicode-general-category",
+ "unicode-general-category 0.6.0",
 ]
 
 [[package]]
@@ -2118,6 +2220,44 @@ name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
+
+[[package]]
+name = "phf"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd6780a80ae0c52cc120a26a1a42c1ae51b247a253e4e06113d23d2c2edd078"
+dependencies = [
+ "phf_shared",
+]
+
+[[package]]
+name = "phf_codegen"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aef8048c789fa5e851558d709946d6d79a8ff88c0440c587967f8e94bfb1216a"
+dependencies = [
+ "phf_generator",
+ "phf_shared",
+]
+
+[[package]]
+name = "phf_generator"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c80231409c20246a13fddb31776fb942c38553c51e871f8cbd687a4cfb5843d"
+dependencies = [
+ "phf_shared",
+ "rand 0.8.8",
+]
+
+[[package]]
+name = "phf_shared"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67eabc2ef2a60eb7faa00097bd1ffdb5bd28e62bf39990626a582201b7a754e5"
+dependencies = [
+ "siphasher",
+]
 
 [[package]]
 name = "pin-project-lite"
@@ -2857,6 +2997,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "siphasher"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33f4fe9184a62d842c9ef383018f3306d8ba224fd9d836f56d7288308847c256"
+
+[[package]]
 name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3202,16 +3348,51 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2281c8c1d221438e373249e065ca4989c4c36952c211ff21a0ee91c44a3869e7"
 
 [[package]]
+name = "unicode-general-category"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b993bddc193ae5bd0d623b49ec06ac3e9312875fdae725a975c51db1cc1677f"
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
 
 [[package]]
+name = "unicode-normalization"
+version = "0.1.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8"
+dependencies = [
+ "tinyvec",
+]
+
+[[package]]
 name = "unicode-width"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
+
+[[package]]
+name = "unicode_names2"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ba646312acace3c9ec35d7404b58214b6fbf17cbb0d040f35a88407c424447f"
+dependencies = [
+ "phf",
+ "unicode_names2_generator",
+]
+
+[[package]]
+name = "unicode_names2_generator"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3afbb72a8cff40859641ae4e56679215a15764e5c155a46f0f534611bdc08e0e"
+dependencies = [
+ "phf_codegen",
+ "rand 0.8.8",
+]
 
 [[package]]
 name = "untrusted"

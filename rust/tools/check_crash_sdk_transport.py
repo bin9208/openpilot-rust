@@ -26,6 +26,17 @@ from sentry_sdk.transport import Transport
 from check_tombstoned_reference import ROOT, pair
 
 
+def decode_envelope(raw, encoding):
+  if encoding in (None, "identity"):
+    return raw
+  if encoding == "gzip":
+    return gzip.decompress(raw)
+  if encoding == "br":
+    import brotli
+    return brotli.decompress(raw)
+  raise ValueError(f"unsupported envelope Content-Encoding: {encoding}")
+
+
 class Receiver:
   def __init__(self):
     self.events = Queue()
@@ -33,12 +44,15 @@ class Receiver:
     class Handler(BaseHTTPRequestHandler):
       def do_POST(self):
         raw = self.rfile.read(int(self.headers["Content-Length"]))
-        body = gzip.decompress(raw) if self.headers.get("Content-Encoding") == "gzip" else raw
+        encoding = self.headers.get("Content-Encoding")
+        body = decode_envelope(raw, encoding)
         lines = body.split(b"\n", 2)
         header, item = json.loads(lines[0]), json.loads(lines[1])
         payload = lines[2][:item["length"]]
         assert item["type"] == "event" and self.path == "/api/1/envelope/"
-        owner.events.put({"event": json.loads(payload), "raw": body.decode(), "path": self.path, "header": header, "auth": self.headers.get("X-Sentry-Auth")})
+        owner.events.put({"event": json.loads(payload), "raw": body.decode(), "path": self.path, "header": header,
+                          "auth": self.headers.get("X-Sentry-Auth"), "wire_hex": raw.hex(),
+                          "content_encoding": encoding, "headers": dict(self.headers)})
         response = b"{}"
         self.send_response(200)
         self.send_header("Content-Length", str(len(response)))

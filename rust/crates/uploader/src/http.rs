@@ -29,7 +29,15 @@ impl SigningKey {
         }
         Ok(None)
     }
+    pub fn from_pem(algorithm: Algorithm, pem: Vec<u8>) -> Self {
+        Self { algorithm, pem }
+    }
     pub fn token(&self, identity: &str, seconds: u64) -> Result<String, TransferError> {
+        self.token_claims(
+            &json!({"identity":identity,"nbf":seconds,"iat":seconds,"exp":seconds+3600}),
+        )
+    }
+    pub fn token_claims<T: serde::Serialize>(&self, claims: &T) -> Result<String, TransferError> {
         let key = match self.algorithm {
             Algorithm::RS256 => EncodingKey::from_rsa_pem(&self.pem),
             Algorithm::ES256 if self.pem.starts_with(b"-----BEGIN EC PRIVATE KEY-----") => {
@@ -45,12 +53,8 @@ impl SigningKey {
                 ))
             }
         }?;
-        jsonwebtoken::encode(
-            &Header::new(self.algorithm),
-            &json!({"identity":identity,"nbf":seconds,"iat":seconds,"exp":seconds+3600}),
-            &key,
-        )
-        .map_err(TransferError::from)
+        jsonwebtoken::encode(&Header::new(self.algorithm), claims, &key)
+            .map_err(TransferError::from)
     }
 }
 

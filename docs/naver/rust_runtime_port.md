@@ -220,3 +220,11 @@ tracks the next metadata/Git, statistics, crash-processing and GPIO alert ports.
 The [integration record](../rust-port/telemetry-runtime-integration.md) separates
 reviewed component inputs from pending combined checks and inherited source
 defects. It does not change the complete-runtime first-device-test gate.
+
+[Manager startup prerequisites #94](https://github.com/bin9208/openpilot-rust/issues/94)
+combine process supervision, registration, managed child entry and checkout
+update detection. The [integration record](../rust-port/startup-prerequisites-integration.md)
+keeps component proof separate from complete manager initialization and startup.
+Local build capacity recovery [#95](https://github.com/bin9208/openpilot-rust/issues/95)
+preserved source and runtime evidence while reclaiming completed compiler caches;
+the repository agent instructions now require a capacity check before new builds.

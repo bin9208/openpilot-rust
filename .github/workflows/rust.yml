@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, web-upload-timeouts]
+    needs: [model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -41,6 +41,7 @@ jobs:
           LOGGER: ${{ needs.logger-runtime.result }}
           SUPPORT: ${{ needs.support-runtime.result }}
           TELEMETRY: ${{ needs.telemetry-runtime.result }}
+          STARTUP: ${{ needs.startup-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$MEMORY" = success
@@ -48,6 +49,7 @@ jobs:
           test "$LOGGER" = success
           test "$SUPPORT" = success
           test "$TELEMETRY" = success
+          test "$STARTUP" = success
           test "$UPLOAD_TIMEOUTS" = success
       - uses: actions/setup-python@v6
         with:
@@ -356,6 +358,15 @@ jobs:
         run: |
           python rust/tools/check_stats_runtime.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-runtime"
           python rust/tools/check_stats_flood.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-flood"
+      - name: Compare interrupted metric receives with the original daemon
+        run: |
+          fault_root="$RUNNER_TEMP/telemetry-runtime/stats-receive-boundary"
+          mkdir -p "$fault_root"
+          gcc -Wall -Wextra -Werror -O2 -fPIC -DZMQ_LINK_WRAP -c rust/tools/zmq_receive_boundary.c -o "$fault_root/receive-wrap.o"
+          gcc -Wall -Wextra -Werror -O2 -fPIC -shared rust/tools/zmq_receive_boundary.c -ldl -o "$fault_root/receive-preload.so"
+          cargo rustc --manifest-path rust/Cargo.toml -p openpilot-statsd --example stats_daemon --locked -- -C link-arg=-Wl,--wrap=zmq_msg_recv -C "link-arg=$fault_root/receive-wrap.o"
+          python rust/tools/check_stats_interrupted.py rust/target/debug/examples/stats_daemon \
+            "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$fault_root/receive-preload.so" "$fault_root/comparison"
       - name: Compare crash-file policy, literal filenames and actual SDK transport
         run: |
           python rust/tools/check_tombstoned_reference.py rust/target/debug/examples/tombstone_trace "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/tombstone-reference"
@@ -374,6 +385,79 @@ jobs:
             ${{ runner.temp }}/telemetry-runtime/
             ${{ runner.temp }}/telemetry-params-binding/commands.json
             ${{ runner.temp }}/telemetry-params-binding/provenance.json
+  startup-runtime:
+    name: rust startup prerequisites
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 sentry-sdk==2.55.0 zstandard==0.25.0 setproctitle==1.3.7 requests==2.34.2 PyJWT==2.14.0 cryptography==50.0.1 brotli==1.2.0 charset-normalizer==3.5.1 urllib3==2.7.0
+      - name: Configure original startup IPC imports
+        run: printf 'PYTHONPATH=%s/startup-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Build startup libraries and actual child executables
+        run: |
+          rustc --version
+          cargo --version
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged --bins --examples --locked
+      - name: Build original startup message and Params bindings
+        run: |
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/startup-msgq-python"
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/startup-params-binding"
+      - name: Compare process ownership, signals and persistent child lifecycle
+        run: |
+          python rust/tools/check_process_supervision.py --binary rust/target/debug/examples/process_trace \
+            --launcher rust/target/debug/openpilot-process-child --fixture rust/target/debug/examples/process_fixture \
+            --binding "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so --output "$RUNNER_TEMP/startup-runtime/process-supervision"
+      - name: Compare managed entry and errors through actual collectors and SDK transport
+        run: |
+          python rust/tools/check_sdk_receiver.py "$RUNNER_TEMP/startup-runtime/sdk-receiver.json"
+          python rust/tools/check_managed_entry.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
+            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry"
+      - name: Verify the exact native response detector source archive
+        run: |
+          curl --fail --location --retry 3 https://static.crates.io/crates/charset-norm/charset-norm-3.5.1.crate --output "$RUNNER_TEMP/charset-norm-3.5.1.crate"
+          python rust/tools/check_registration_vendor.py "$RUNNER_TEMP/charset-norm-3.5.1.crate" "$RUNNER_TEMP/startup-runtime/detector-vendor.json"
+      - name: Compare registration signatures, persistence and response decoding
+        run: |
+          python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
+            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration"
+          python rust/tools/check_registration_clock.py rust/target/debug/examples/registration_clock "$RUNNER_TEMP/startup-runtime/registration-clock.json"
+          python rust/tools/check_registration_utf7.py rust/target/debug/examples/registration_utf7 "$RUNNER_TEMP/startup-runtime/registration-utf7.json"
+      - name: Compare actual registration socket deadlines and progressing responses
+        run: |
+          python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
+            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration-timeouts" --timeouts
+      - name: Compare uploader signing after shared registration key support
+        run: python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/startup-runtime/uploader-signing.json"
+      - name: Compare complete manager catalog and ordered Params predicates
+        run: |
+          python rust/tools/check_manager_catalog.py rust/target/debug/examples/catalog_probe \
+            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/catalog"
+      - name: Compare checkout metadata, real Git and child exec boundaries
+        run: |
+          python rust/tools/check_checkout_status.py --binary rust/target/debug/examples/checkout_trace \
+            --fixture rust/target/debug/examples/git_fixture --launcher rust/target/debug/openpilot-process-child \
+            --captured-binary rust/target/debug/examples/captured_trace --handshake-fixture rust/target/debug/examples/handshake_fixture \
+            --output "$RUNNER_TEMP/startup-runtime/checkout-status"
+      - name: Retain startup source comparison and binding evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-startup-runtime-evidence
+          path: |
+            ${{ runner.temp }}/startup-runtime/
+            ${{ runner.temp }}/startup-params-binding/commands.json
+            ${{ runner.temp }}/startup-params-binding/provenance.json
   logger-runtime:
     name: rust original route logger
     runs-on: ubuntu-24.04

@@ -483,6 +483,34 @@
   ],
   "library_ports": [
     {
+      "name": "native_manager_catalog_policy",
+      "source_entrypoint": "openpilot.system.manager.process_config",
+      "status": "native_host_and_generic_aarch64_policy_validated",
+      "implementation": "rust/crates/manager-catalog; 63 ordered source descriptors, explicit isolated-candidate availability and short-circuit predicates using native Params; no process launch or Python fallback",
+      "native_dependencies": ["Linux filesystem and Params storage", "existing beepd signed-integer conversion; its current transitive cereal/msgq dependencies remain"],
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-manager-catalog-96.md"
+    },
+    {
+      "name": "manager_checkout_identity_policy",
+      "source_entrypoint": "openpilot.system.manager.update_status",
+      "status": "native_host_and_generic_aarch64_policy_validated",
+      "implementation": "rust/crates/checkout-status; actual Git/build metadata reads, captured startup identity, strict polling and repeated-change confirmation; explicit captured-exec helper dependency",
+      "native_dependencies": ["Git", "Linux process/procfs/filesystem/Unix-socket APIs", "existing process-supervision helper and native Python-compatible JSON decoder", "existing logging/Params/cereal/libzmq/CXX dependencies"],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/checkout-status-validation.md"
+    },
+    {
+      "name": "managed_child_entry_boundary",
+      "source_entrypoint": "openpilot.system.manager.process:launcher",
+      "status": "native_host_entry_boundary_validated",
+      "implementation": "rust/crates/managed-entry; in-process preparation/context callbacks, daemon logging/Sentry binding, cooperative interrupt and returned-error policy",
+      "native_dependencies": ["existing crash-reporting/logging/Params", "Linux naming and signal APIs", "temporary original C++ msgq in the real child validation context"],
+      "entrypoint_adoption": false,
+      "production_replaced": false,
+      "evidence": "docs/rust-port/managed-entry-validation.md"
+    },
+    {
       "name": "project_sentry_policy",
       "source_entrypoint": "openpilot.system.sentry; registration reporting gate",
       "status": "native_host_transport_validated",
@@ -490,6 +518,25 @@
       "native_dependencies": ["sentry 0.49.3 ureq/rustls", "Git", "libzmq and temporary original C++ msgq"],
       "production_replaced": false,
       "evidence": "docs/rust-port/tombstoned-validation.md"
+    },
+    {
+      "name": "native_process_supervision",
+      "source_entrypoint": "openpilot.system.manager.process",
+      "status": "native_host_and_generic_aarch64_lifecycle_validated",
+      "implementation": "rust/crates/process-supervision; ordered lifecycle/ensure_running, native child helper and persistent PID identity; Python preparation and managed-entry/crash context, catalog and full manager startup remain separate",
+      "native_dependencies": ["Linux process/procfs/filesystem APIs", "libc via nix/rustix", "native logging/libzmq and current CXX transport dependencies"],
+      "production_replaced": false,
+      "evidence": "docs/rust-port/process-supervision-validation.md"
+    },
+    {
+      "name": "registration_startup_policy",
+      "source_entrypoint": "openpilot.system.athena.registration; registration subset of openpilot.common.api",
+      "status": "native_startup_policy_host_and_emulator_validated",
+      "implementation": "rust/crates/registration; typed Params/persist fallback, RSA/EC signed registration, actual HTTP, retries and hardware/spinner interfaces",
+      "native_dependencies": ["libzmq structured logging", "Linux filesystem and clock APIs", "Rust HTTP/TLS/crypto/encoding/cookie libraries", "vendored native charset-norm 3.5.1 with manifest-only Rust 1.94 compatibility patch", "existing C++ msgq in support crates"],
+      "runtime_scope": "hardware serial/modem discovery and visual spinner remain unported interfaces; manager/full startup, normal log-upload comparison and device acceptance pending; no project Python runtime call",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/registration-validation.md"
     },
     {
       "name": "runtime_build_metadata_and_cached_git",
