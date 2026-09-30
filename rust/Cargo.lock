@@ -344,6 +344,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-desire"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-dmonitoringmodeld"
 version = "0.1.0"
 dependencies = [
