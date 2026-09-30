@@ -31,7 +31,8 @@ and either more than 500 ms without a camera packet or a segment longer than
 when opening/finishing files is slow. LOGGERD_TEST retains the source behavior
 that disables these fallbacks. No runtime timing threshold is loosened.
 
-Full HEVC payloads go directly to files. FFVHUFF uses Matroska and H.264 uses
+Full HEVC payloads use a uniquely owned libc stdio wrapper to retain the original
+buffering, EINTR and write/flush/close behavior. FFVHUFF uses Matroska and H.264 uses
 MPEG-TS; codec extradata, packet timestamps and frame durations retain source
 behavior. Qcamera audio preserves 16-bit sample conversion, mono AAC at 32 kbps,
 queueing, padding/flush and packet interleaving. FFmpeg and zstd remain native
@@ -39,7 +40,12 @@ dependencies; project-owned orchestration and file lifecycle are Rust.
 
 SIGINT/SIGTERM/SIGPWR record the actual signal in the final sentinel. SIGPWR
 retains the source sync call. Successful finalization removes locks; malformed
-inputs or failed output retain incomplete locks. With RecordAudio enabled but
+inputs or fatal finalization failures retain incomplete locks. Raw video writes
+follow the source's nonfatal behavior: actual ENOSPC can still leave indices and
+a removed video lock after exit 0. This inherited reporting/completion behavior
+is tracked separately in [#54](https://github.com/bin9208/openpilot-rust/issues/54).
+The Rust port does not silently change upload or retention policy to fix it.
+With RecordAudio enabled but
 no audio ever received, the original VideoWriter crashes at trailer creation;
 Rust returns a typed failure and retains the empty video's lock. Both finalize
 rlog/qlog first. This inherited defect remains open as
@@ -74,6 +80,9 @@ schema and decoded-media comparisons pass:
   contract. Rlog/qlog close failures remain checked through a narrow ownership
   boundary. Storage/media regression and final integration checks cover this
   correction separately from the earlier timing observations.
+- A real `/dev/full` raw-video case first exposed a fatal direct-write Rust
+  difference. The stdio correction matches original exit, index packets and
+  video-lock removal while strace confirms actual ENOSPC in both processes.
 - Worker native AddressSanitizer and generic aarch64-musl build/emulated media
   checks passed. Parent final-head checks and required cloud gates are separate;
   these do not establish device execution or performance.

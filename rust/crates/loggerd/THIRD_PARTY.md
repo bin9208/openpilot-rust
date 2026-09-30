@@ -18,3 +18,8 @@ components. FFmpeg's `COPYING.LGPLv2.1` and `LICENSE.md` accompany cross-build
 evidence artifacts. All original source notices remain in the extracted tree.
 The source, recipe, Rust source and locked bindings permit rebuilding/relinking
 the isolated artifact. No generic artifact is installed on a vehicle here.
+
+Raw HEVC storage uses the OS C library's stdio through locked `libc` Rust
+bindings to retain the original buffering and error behavior. The Rust wrapper
+owns each FILE allocation once and does not share it across threads. The OS
+libc implementation remains an external dependency.

@@ -13,6 +13,7 @@ static-ffmpeg = ["ffmpeg-next/static"]
 capnp = "=0.27.2"
 ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format"] }
 getrandom = "0.4"
+libc = "0.2"
 openpilot-cereal = { path = "../cereal" }
 openpilot-messaging = { path = "../messaging" }
 openpilot-msgq = { path = "../msgq" }

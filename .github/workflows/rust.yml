@@ -199,6 +199,8 @@ jobs:
         run: |
           PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_flush.py \
             --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" --output "$RUNNER_TEMP/logger-flush"
+          PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_io.py \
+            --binary target/debug/openpilot-loggerd --original "$RUNNER_TEMP/logger-original/original-loggerd" --output "$RUNNER_TEMP/logger-io"
       - name: Check pure Rust rotation boundaries with Miri
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
@@ -225,6 +227,7 @@ jobs:
             ${{ runner.temp }}/logger-native/
             ${{ runner.temp }}/logger-asan/
             ${{ runner.temp }}/logger-flush/
+            ${{ runner.temp }}/logger-io/
             ${{ runner.temp }}/logger-original/*.json
             ${{ runner.temp }}/logger-original/*.log
   model-pipelines:

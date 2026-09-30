@@ -1,9 +1,8 @@
-use crate::{audio::Audio, codec, Error};
+use crate::{audio::Audio, codec, raw_file::RawFile, Error};
 use ffmpeg_next::{self as av, codec::Id, format::context::Output, Rescale};
 use openpilot_cereal::log_capnp::encode_index::Type;
 use std::{
-    fs::{self, File, OpenOptions},
-    io::Write,
+    fs::{self, OpenOptions},
     os::unix::fs::OpenOptionsExt,
     path::{Path, PathBuf},
 };
@@ -31,7 +30,7 @@ pub struct Muxer {
 }
 
 enum Destination {
-    Raw(File),
+    Raw(RawFile),
     Mux(Muxer),
 }
 
@@ -53,7 +52,7 @@ impl VideoWriter {
             .mode(0o664)
             .open(&lock)?;
         let destination = match spec.codec {
-            Type::FullHEVC => Destination::Raw(File::create(path)?),
+            Type::FullHEVC => Destination::Raw(RawFile::create(path)?),
             Type::BigBoxLossless
             | Type::QcameraH264
             | Type::LivestreamH264
@@ -102,7 +101,14 @@ impl VideoWriter {
 
     pub fn write(&mut self, packet: Packet<'_>) -> Result<(), Error> {
         match &mut self.destination {
-            Destination::Raw(file) => file.write_all(packet.data)?,
+            Destination::Raw(file) => {
+                if let Err(error) = file.write(packet.data) {
+                    eprintln!(
+                        "failed to write file.errno={}",
+                        error.raw_os_error().unwrap_or(0)
+                    );
+                }
+            }
             Destination::Mux(muxer) => {
                 if packet.configuration {
                     codec::set_extradata(&mut muxer.context, packet.data)?;
@@ -164,12 +170,12 @@ impl VideoWriter {
         }
     }
 
-    pub fn close(mut self) -> Result<(), Error> {
-        match &mut self.destination {
+    pub fn close(self) -> Result<(), Error> {
+        match self.destination {
             Destination::Raw(file) => {
-                file.flush()?;
+                file.finish();
             }
-            Destination::Mux(muxer) => {
+            Destination::Mux(mut muxer) => {
                 if !muxer.header_written {
                     return Err(Error::IncompleteVideo {
                         lock: self.lock.clone(),
@@ -183,7 +189,6 @@ impl VideoWriter {
                 }
             }
         }
-        drop(self.destination);
         fs::remove_file(self.lock)?;
         Ok(())
     }

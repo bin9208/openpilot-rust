@@ -725,6 +725,7 @@ dependencies = [
  "capnp",
  "ffmpeg-next",
  "getrandom",
+ "libc",
  "openpilot-cereal",
  "openpilot-messaging",
  "openpilot-msgq",
