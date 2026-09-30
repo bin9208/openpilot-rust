@@ -2306,6 +2306,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-sensord"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "cxx",
+ "cxx-build",
+ "openpilot-cereal",
+ "openpilot-hardware-control",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-startup-ui"
 version = "0.1.0"
 dependencies = [

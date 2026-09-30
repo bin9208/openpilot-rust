@@ -363,7 +363,11 @@
       "name": "sensord",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.sensord.sensord",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/sensord; continuous openpilot-sensord with Rust LSM6DS3 drivers and thin native Linux UAPI boundary",
+      "native_dependencies": ["Linux SMBus/GPIO/poll and scheduling UAPI", "CXX boundary", "original msgq through native transport", "native logging and hardware-control IRQ-write helper"],
+      "runtime_scope": "source/kernel fixtures, Miri, ASan/UBSan and isolated native IPC lifecycle; physical sensor/timing, actual FIFO/IRQ placement, ARM/AGNOS and device acceptance remain unvalidated",
+      "evidence": "docs/rust-port/sensord-validation.md",
       "production_replaced": false
     },
     {
