@@ -116,7 +116,8 @@ def run(binary,collector,binding,output,scenario,kind,original,runner):
     records['logMessage'].append(value)
     if level>=40:
      error=event(peer,'errorLogMessage',output);assert error==value;records['errorLogMessage'].append(error)
-   if body:assert body_subscriber.receive()==b'managed body IPC'
+   if body:
+    payload=body_subscriber.receive();assert payload==b'managed body IPC';(output/'body-message.bin').write_bytes(payload)
    else:assert body_subscriber.receive(non_blocking=True) is None
    captures=[]
    actual_capture=any(call['op']=='capture_exception' for call in response['sdk_calls']) and not scenario.get('sdk_failure')
