@@ -1812,6 +1812,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-managed-entry"
+version = "0.1.0"
+dependencies = [
+ "openpilot-crash-reporting",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-msgq",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-messaging"
 version = "0.1.0"
 dependencies = [
