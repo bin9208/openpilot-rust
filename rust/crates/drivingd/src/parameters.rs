@@ -1,28 +1,9 @@
 use crate::{state::Settings, Error};
 use openpilot_desire::types::Config;
 use openpilot_params::Params;
-use std::{
-    env,
-    path::{Path, PathBuf},
-};
 
 pub fn open() -> Result<Params, Error> {
-    let prefix = env::var("OPENPILOT_PREFIX").unwrap_or_else(|_| "d".to_owned());
-    let root = env::var_os("PARAMS_ROOT")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            if Path::new("/TICI").is_file() {
-                PathBuf::from("/data/params")
-            } else {
-                PathBuf::from(env::var_os("HOME").unwrap_or_default())
-                    .join(format!(
-                        ".comma{}",
-                        env::var("OPENPILOT_PREFIX").unwrap_or_default()
-                    ))
-                    .join("params")
-            }
-        });
-    Ok(Params::open(&root, &prefix)?)
+    Ok(Params::for_runtime()?)
 }
 
 fn terminated(params: &Params, key: &str) -> Result<Option<Vec<u8>>, Error> {

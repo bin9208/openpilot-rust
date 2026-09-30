@@ -99,3 +99,14 @@ route preservation and shutdown. The [validation record](../rust-port/loggerd-va
 uses original native encoder messages and compares complete full-schema logs
 and decoded media. Original diagnostic callsites still need the shared producer
 integration; storage validation alone does not complete normal uploaded logging.
+
+[Log-space deleter issue #42](https://github.com/bin9208/openpilot-rust/issues/42)
+ports retention ordering, preserved segment caching and continuous low-space
+cleanup. Its [validation record](../rust-port/deleter-validation.md) covers actual
+source-loop filesystem comparisons and a private low-space mount. Existing logs
+are untouched; production selection and whole-runtime acceptance remain pending.
+
+[Daemon integration issue #39](https://github.com/bin9208/openpilot-rust/issues/39)
+combines the verified services under one exact-SHA gate. The
+[integration record](../rust-port/runtime-daemon-integration.md) links each
+component and the [native IPC test correction #47](../rust-port/msgq-handshake-validation.md).
