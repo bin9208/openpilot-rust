@@ -494,6 +494,13 @@
       "production_replaced": false,
       "gpu_backend_validated": false,
       "evidence": "docs/rust-port/qcom-runtime-validation.md"
+    },
+    {
+      "name": "driver_monitoring_policy_and_state_packet",
+      "status": "host_original_sequence_and_cereal_parity_validated",
+      "implementation": "Rust monitoring policy and scalar statistics; dmonitoringd IPC loop and Params persistence remain unported",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/monitoring-validation.md"
     }
   ],
   "device_validation": "not_run",

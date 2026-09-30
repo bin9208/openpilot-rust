@@ -392,6 +392,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-monitoring"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
 name = "openpilot-msgq"
 version = "0.1.0"
 dependencies = [
