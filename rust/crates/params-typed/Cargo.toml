@@ -1,0 +1,21 @@
+[package]
+name = "openpilot-params-typed"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-params = { path = "../params" }
+openpilot-logging = { path = "../logging" }
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+zmq = "=0.10.0"

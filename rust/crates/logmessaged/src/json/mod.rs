@@ -3,8 +3,10 @@
 //! surrogates, which cannot be represented by serde_json::Value/String.
 mod parse;
 mod string;
+mod view;
 mod write;
 pub(crate) use parse::parse;
+pub use view::{JsonValue, JsonView};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Text(pub Vec<u32>);

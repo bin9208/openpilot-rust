@@ -49,6 +49,13 @@ bool VisionConnection::connect() {
 
 bool VisionConnection::connected() const { return client_.connected; }
 
+ConnectionLayout VisionConnection::layout() const {
+  if (client_.num_buffers <= 0) return {};
+  // connect() validates every imported layout; only owned scalars cross this boundary.
+  const VisionBuf &buffer = client_.buffers[0];
+  return {buffer.width, buffer.height, buffer.stride, buffer.uv_offset, buffer.len, true};
+}
+
 VisionMetadata VisionConnection::receive(int32_t timeout_ms) {
   if (!client_.connected || timeout_ms < 0) throw std::invalid_argument("VisionIPC client is not connected or timeout is invalid");
   VisionIpcBufExtra extra{};

@@ -76,6 +76,7 @@ fn original_server_camera_transport() {
         .unwrap()
         .is_empty());
     let mut missing = VisionClient::new("missing", VisionStream::Road, false).unwrap();
+    assert!(missing.layout().is_none());
     assert!(!missing.connect().unwrap());
     assert!(missing.receive(Duration::ZERO).is_err());
     for name in ["", "../bad", "a/b", "a\0b"] {
@@ -93,13 +94,26 @@ fn original_server_camera_transport() {
         ]
     );
     let mut client = VisionClient::new("rustvision", VisionStream::Road, false).unwrap();
+    assert!(client.layout().is_none());
     assert!(client.connect().unwrap());
+    let retained_layout = client.layout().unwrap();
+    assert_eq!(
+        (
+            retained_layout.width,
+            retained_layout.height,
+            retained_layout.stride,
+            retained_layout.uv_offset,
+            retained_layout.len
+        ),
+        (8, 4, 16, 64, 96)
+    );
     let start = Instant::now();
     assert!(client.receive(Duration::from_millis(20)).unwrap().is_none());
     assert!(start.elapsed() >= Duration::from_millis(15));
     assert!(client.receive(Duration::MAX).is_err());
 
     peer.command("send 7");
+    assert_eq!(client.layout(), Some(retained_layout));
     let frame = client.receive(Duration::from_secs(2)).unwrap().unwrap();
     let meta = frame.metadata();
     assert_eq!(
@@ -186,6 +200,7 @@ fn original_server_camera_transport() {
     );
     drop(client);
     assert_eq!(retained[0], 7);
+    assert_eq!(retained_layout.len, 96);
 
     for stream in [
         VisionStream::Driver,
