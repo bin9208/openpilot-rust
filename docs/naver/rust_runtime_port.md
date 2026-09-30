@@ -128,3 +128,15 @@ ports the shared session, file streaming, completion and tmux helpers. Its
 functions, local HTTP payloads, partial/canceled requests, unscaled timeouts and
 generic ARM emulation. Dashcam jobs/catalog/server/watchdog integration remains
 open; this library does not switch the active startup path.
+
+### Legacy uploader timeout follow-up (#50)
+
+A loopback response delayed 10.05 seconds reproduced a native/source discrepancy:
+Python rejected late API headers and bodies without an upload xattr, while the
+native socket timeout rounded up and accepted them. The transport now checks
+monotonic elapsed time after each read/write and rejects late completion. The
+real ten-second regression includes GET/PUT header/body stalls and progressing
+eleven-second bodies, preserving per-I/O rather than total-transfer timeout.
+The frozen pre-fix binary, failing captures and fresh validation are indexed in
+`.omo/evidence/uploader-timeout/evidence.json` in the issue-50 worktree. This does
+not enable the optional uploader or establish device validation.

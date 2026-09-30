@@ -1,4 +1,5 @@
 use crate::{Event, EventSink, Transfer, Uploader};
+use openpilot_logging::log_site;
 use serde::Serialize;
 use serde_json::json;
 use std::{
@@ -73,10 +74,11 @@ pub fn clear_locks(root: &Path, sink: &mut impl EventSink) -> io::Result<()> {
             Ok(())
         })();
         if let Err(error) = result {
-            sink.emit(Event {
-                name: "clear_locks failed",
-                fields: json!({"error": error.to_string()}),
-            });
+            sink.emit(Event::exception(
+                log_site!(),
+                "clear_locks failed",
+                &(entry.path(), error),
+            ));
         }
     }
     Ok(())
@@ -104,10 +106,11 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
         let directories = match directories {
             Ok(dirs) => dirs,
             Err(error) => {
-                self.events.emit(Event {
-                    name: "listdir_by_creation failed",
-                    fields: json!({"error":error.to_string()}),
-                });
+                self.events.emit(Event::exception(
+                    log_site!(),
+                    "listdir_by_creation failed",
+                    &(&self.root, error),
+                ));
                 return Vec::new();
             }
         };
@@ -142,7 +145,8 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                 match uploaded {
                     Ok(value) if value.as_deref() == Some(b"1") => continue,
                     Err(_) => {
-                        self.events.emit(Event {
+                        self.events.emit(Event::Fields {
+                            site: log_site!(),
                             name: "uploader_getxattr_failed",
                             fields: json!({"key":key.to_string_lossy(),"fn":file.to_string_lossy()}),
                         });

@@ -64,11 +64,8 @@ def scenario(binary, output, name, config):
         if config.get('fake'):
           environment['FAKEUPLOAD'] = ''
         process = subprocess.Popen([binary], env=environment, stdout=output_log, stderr=output_log)
-        deadline = time.monotonic() + 5
-        while 'uploader: ready' not in (destination / 'daemon.log').read_text():
-          assert process.poll() is None, (name, (destination / 'daemon.log').read_text())
-          assert time.monotonic() < deadline, 'startup did not complete'
-          time.sleep(0.01)
+        publisher.wait_for_readers(timeout=5)
+        assert process.poll() is None, (name, (destination / 'daemon.log').read_text())
         assert not (root / 'route--0/qlog.lock').exists()
         packet = log.Event.new_message()
         packet.logMonoTime = time.monotonic_ns()

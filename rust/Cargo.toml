@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/runtime-core", "crates/cereal", "crates/proclogd", "crates/msgq", "crates/params", "crates/model-runtime", "crates/modeld", "crates/dmonitoringmodeld", "crates/desire", "crates/messaging", "crates/monitoring", "crates/drivingd", "crates/dmonitoringd", "crates/calibrationd", "crates/logmessaged", "crates/deleter", "crates/logging", "crates/uploader", "crates/web-upload"]
+members = ["crates/runtime-core", "crates/cereal", "crates/proclogd", "crates/msgq", "crates/params", "crates/params-typed", "crates/model-runtime", "crates/modeld", "crates/dmonitoringmodeld", "crates/desire", "crates/messaging", "crates/monitoring", "crates/drivingd", "crates/dmonitoringd", "crates/calibrationd", "crates/logmessaged", "crates/deleter", "crates/logging", "crates/uploader", "crates/web-upload"]
 resolver = "2"
 
 [workspace.package]

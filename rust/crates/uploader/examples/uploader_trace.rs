@@ -1,7 +1,9 @@
+use openpilot_logging::producer::Factory;
 use openpilot_uploader::{
     http::{HttpTransfer, SigningKey},
-    Attributes, Backoff, Candidate, Error, Outcome, Transfer, TransferError, UploadResponse,
-    Uploader, XattrCache,
+    runtime::RuntimeEvents,
+    Attributes, Backoff, Candidate, Error, Event, EventSink, Outcome, Transfer, TransferError,
+    UploadResponse, Uploader, XattrCache,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -29,6 +31,7 @@ struct Request {
     upload: Option<PathBuf>,
     http: Option<Http>,
     backoff: Option<Vec<(Option<bool>, bool, f64)>>,
+    log_endpoint: Option<String>,
 }
 fn status() -> u16 {
     200
@@ -58,7 +61,12 @@ enum Transport {
     Http(HttpTransfer),
 }
 impl Transfer for Transport {
-    fn upload(&mut self, key: &Path, path: &Path) -> Result<UploadResponse, TransferError> {
+    fn upload(
+        &mut self,
+        key: &Path,
+        path: &Path,
+        events: &mut dyn EventSink,
+    ) -> Result<UploadResponse, TransferError> {
         match self {
             Self::Fake {
                 status,
@@ -74,8 +82,20 @@ impl Transfer for Transport {
                     })
                 }
             }
-            Self::Http(http) => http.upload(key, path),
+            Self::Http(http) => http.upload(key, path, events),
         }
+    }
+}
+struct TraceEvents {
+    records: Vec<Event>,
+    logger: Option<RuntimeEvents>,
+}
+impl EventSink for TraceEvents {
+    fn emit(&mut self, event: Event) {
+        if let Some(logger) = &mut self.logger {
+            logger.emit(event.clone());
+        }
+        self.records.push(event);
     }
 }
 struct Attr {
@@ -146,7 +166,15 @@ fn run(request: Request) -> Result<Value, Box<dyn std::error::Error>> {
             cache: XattrCache::default(),
             fail: request.fail_mark,
         },
-        Vec::new(),
+        TraceEvents {
+            records: Vec::new(),
+            logger: request
+                .log_endpoint
+                .map(|endpoint| {
+                    Factory::new(endpoint).map(|factory| RuntimeEvents::new(factory.logger()))
+                })
+                .transpose()?,
+        },
     );
     let files = uploader
         .list_upload_files(request.metered, request.requested.as_deref())
@@ -178,8 +206,9 @@ fn run(request: Request) -> Result<Value, Box<dyn std::error::Error>> {
     }
     let events = uploader
         .events
+        .records
         .iter()
-        .map(|event| event.name)
+        .filter_map(|event| event.name())
         .collect::<Vec<_>>();
     let last = uploader
         .last_filename

@@ -7,13 +7,12 @@ use openpilot_cereal::log_capnp::event;
 use openpilot_logging::{
     log_site,
     producer::{Factory, Logger},
-    record::{Level, Record},
-    Value,
+    record::Level,
+    site::Site,
 };
 use openpilot_messaging::{runtime::SubMaster, state::Options};
 use openpilot_params::Params;
 use rand::Rng;
-use serde_json::json;
 use std::{
     env,
     path::{Path, PathBuf},
@@ -27,29 +26,18 @@ use std::{
 
 pub struct RuntimeEvents(Logger);
 impl RuntimeEvents {
-    fn info(&mut self, text: String) {
-        if let Err(error) = self.0.emit(log_site!(), Record::text(Level::Info, text)) {
-            eprintln!("uploader logging failed: {error}");
-        }
+    pub fn new(logger: Logger) -> Self {
+        Self(logger)
+    }
+    fn info(&mut self, site: Site, text: String) {
+        self.emit(Event::text(site, Level::Info, text));
     }
 }
 impl EventSink for RuntimeEvents {
     fn emit(&mut self, event: Event) {
-        let record = if event.name.contains(' ') {
-            Ok(Record::text(Level::Error, event.name.into())
-                .with_exception(event.fields.to_string()))
-        } else {
-            serde_json::from_value::<Value>(event.fields)
-                .map_err(|error| error.to_string())
-                .and_then(|value| match value {
-                    Value::Object(fields) => Record::event(event.name, Vec::new(), fields)
-                        .map_err(|error| error.to_string()),
-                    _ => Err("event fields must be an object".into()),
-                })
-        };
-        match record {
-            Ok(record) => {
-                if let Err(error) = self.0.emit(log_site!(), record) {
+        match event.into_record() {
+            Ok((site, record)) => {
+                if let Err(error) = self.0.emit(site, record) {
                     eprintln!("uploader logging failed: {error}");
                 }
             }
@@ -67,12 +55,6 @@ pub fn persist_root() -> Result<PathBuf, Error> {
         .ok_or(Error::Configuration("home directory unavailable"))?
         .join(name)
         .join("persist"))
-}
-fn string_param(params: &Params, key: &str) -> Result<Option<String>, Error> {
-    Ok(params
-        .get(key)?
-        .filter(|bytes| !bytes.is_empty())
-        .and_then(|bytes| String::from_utf8(bytes).ok()))
 }
 fn sleep(stop: &AtomicBool, seconds: f64) {
     let end = Instant::now() + Duration::from_secs_f64(seconds);
@@ -101,17 +83,19 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
         cpus.set(cpu);
     }
     if let Err(error) = rustix::thread::sched_setaffinity(None, &cpus) {
-        events.emit(Event {
-            name: "failed to set core affinity",
-            fields: json!({"error":error.to_string()}),
-        });
+        events.emit(Event::exception(
+            log_site!(),
+            "failed to set core affinity",
+            &error,
+        ));
     }
     let root = openpilot_deleter::platform::log_root()
         .map_err(|error| std::io::Error::other(error.to_string()))?;
     clear_locks(&root, &mut events)?;
     let params = Params::for_runtime()?;
-    let Some(dongle_id) = string_param(&params, "DongleId")? else {
-        events.info("uploader missing dongle_id".into());
+    let Some(dongle_id) = openpilot_params_typed::get_string(&params, "DongleId", &mut events.0)?
+    else {
+        events.info(log_site!(), "uploader missing dongle_id".into());
         return Err(Error::Configuration(
             "uploader can't start without dongle id",
         ));
@@ -128,7 +112,6 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
     let mut uploader = Uploader::new(root, transfer, XattrCache::default(), events);
     let mut backoff = Backoff::default();
     let mut remaining = cycles;
-    eprintln!("uploader: ready");
     while !stop.load(Ordering::Relaxed) {
         subscriptions.update(Duration::ZERO)?;
         let offroad = params.get_bool("IsOffroad")?;
@@ -152,7 +135,11 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
                 5.0
             }
         } else {
-            let requested = string_param(&params, "AthenadRecentlyViewedRoutes")?;
+            let requested = openpilot_params_typed::get_string(
+                &params,
+                "AthenadRecentlyViewedRoutes",
+                &mut uploader.events.0,
+            )?;
             let outcome = uploader.step(
                 network_type,
                 device.get_network_metered(),
@@ -161,7 +148,7 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
             if outcome == crate::Outcome::Failure {
                 uploader
                     .events
-                    .info(format!("upload backoff {}", backoff.current()));
+                    .info(log_site!(), format!("upload backoff {}", backoff.current()));
             }
             backoff.next(outcome, offroad, rand::rng().random())
         };

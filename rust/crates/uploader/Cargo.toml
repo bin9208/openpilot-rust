@@ -12,9 +12,11 @@ workspace = true
 [dependencies]
 openpilot-deleter = { path = "../deleter" }
 openpilot-params = { path = "../params" }
+openpilot-params-typed = { path = "../params-typed" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-messaging = { path = "../messaging" }
 openpilot-logging = { path = "../logging" }
+openpilot-runtime-core = { path = "../runtime-core" }
 capnp = "=0.27.2"
 home = "0.5.12"
 rustix = { version = "1", features = ["fs", "thread"] }
