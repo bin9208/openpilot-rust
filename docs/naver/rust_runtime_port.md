@@ -92,3 +92,10 @@ and rotation, and original `logMessage`/`errorLogMessage` publications. Its
 byte comparisons, native transport/error-path checks and the CPython recursion
 resource difference. External libzmq/msgq remain explicit; manager selection,
 route logger integration and the complete startup/upload candidate remain open.
+
+[Route logger issue #41](https://github.com/bin9208/openpilot-rust/issues/41)
+ports continuous rlog/qlog storage, encoder coordination, video/audio muxing,
+route preservation and shutdown. The [validation record](../rust-port/loggerd-validation.md)
+uses original native encoder messages and compares complete full-schema logs
+and decoded media. Original diagnostic callsites still need the shared producer
+integration; storage validation alone does not complete normal uploaded logging.

@@ -69,6 +69,33 @@ impl MultiSubscriber {
         Self::open(specifications, false)
     }
 
+    /// Retain every queued packet for consumers such as route logging.
+    pub fn queued_for_runtime(specifications: &[Subscription<'_>]) -> Result<Self, Error> {
+        let specifications: Vec<_> = specifications
+            .iter()
+            .map(|specification| ffi::QueueSpec {
+                endpoint: specification.endpoint.to_owned(),
+                capacity: specification.capacity,
+                polled: specification.polled,
+            })
+            .collect();
+        Ok(Self {
+            queues: ffi::open_queued_batch(&specifications)?,
+            thread: PhantomData,
+        })
+    }
+
+    /// Poll without consuming packets; callers control drain limits and stop checks.
+    pub fn poll_ready(&mut self, timeout: Duration) -> Result<Vec<usize>, Error> {
+        let milliseconds = i32::try_from(timeout.as_millis()).map_err(|_| Error::TimeoutRange)?;
+        Ok(self.queues.pin_mut().poll_ready(milliseconds)?)
+    }
+
+    pub fn receive_one(&mut self, index: usize) -> Result<Option<Vec<u8>>, Error> {
+        let bytes = self.queues.pin_mut().receive_one(index)?;
+        Ok((!bytes.is_empty()).then_some(bytes))
+    }
+
     fn open(specifications: &[Subscription<'_>], isolated: bool) -> Result<Self, Error> {
         let specifications: Vec<_> = specifications
             .iter()

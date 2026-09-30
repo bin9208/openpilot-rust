@@ -1,0 +1,29 @@
+[package]
+name = "openpilot-loggerd"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+static-ffmpeg = ["ffmpeg-next/static"]
+
+[dependencies]
+capnp = "=0.27.2"
+ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format"] }
+getrandom = "0.4"
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging" }
+openpilot-msgq = { path = "../msgq" }
+openpilot-params = { path = "../params" }
+rustix = { version = "1", features = ["time", "fs", "process", "thread", "try_close"] }
+signal-hook = "0.3"
+thiserror = "2"
+zstd = "0.13"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints.rust]
+unsafe_code = "deny"

@@ -210,7 +210,9 @@
       "name": "loggerd",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
-      "status": "not_ported",
+      "status": "route_storage_runtime_host_validated",
+      "native_dependencies": ["original msgq through CXX", "FFmpeg", "zstd"],
+      "runtime_scope": "continuous route storage and media writer; structured diagnostic callsite integration, manager selection and full startup/upload acceptance pending",
       "production_replaced": false
     },
     {
