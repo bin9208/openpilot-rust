@@ -1,0 +1,52 @@
+[package]
+name = "openpilot-startup-ui"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native"]
+native = ["dep:cxx"]
+
+[dependencies]
+cxx = { version = "1", optional = true }
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+num-traits = "0.2"
+rustix = { version = "1", features = ["fs", "event", "process", "pipe", "stdio"] }
+openpilot-process-supervision = { path = "../process-supervision" }
+openpilot-registration = { path = "../registration" }
+openpilot-hardware-info = { path = "../hardware-info" }
+openpilot-hardware-control = { path = "../hardware-control" }
+openpilot-params = { path = "../params" }
+signal-hook = "0.3"
+
+[build-dependencies]
+cxx-build = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints.rust]
+unsafe_code = "deny"
+
+[[bin]]
+name = "openpilot-spinner"
+path = "src/bin/spinner.rs"
+required-features = ["native"]
+
+[[bin]]
+name = "openpilot-text-window"
+path = "src/bin/text_window.rs"
+required-features = ["native"]
+
+[[example]]
+name = "startup_ui_render"
+required-features = ["native"]
+
+[[example]]
+name = "startup_ui_children"
+required-features = ["native"]
