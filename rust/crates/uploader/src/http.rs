@@ -7,7 +7,7 @@ use std::{
     fs::{self, File},
     io::{self, Cursor, Read, Seek, SeekFrom},
     path::{Path, PathBuf},
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use ureq::unversioned::{
     resolver::DefaultResolver,
@@ -43,25 +43,45 @@ impl Transport for SocketTimeout {
         self.inner.buffers()
     }
     fn transmit_output(&mut self, amount: usize, _: NextTimeout) -> Result<(), ureq::Error> {
-        self.inner.transmit_output(
+        let started = Instant::now();
+        let result = self.inner.transmit_output(
             amount,
             NextTimeout {
                 after: self.timeout.into(),
                 reason: ureq::Timeout::SendBody,
             },
-        )
+        );
+        self.completed(started, ureq::Timeout::SendBody, result)
     }
     fn await_input(&mut self, _: NextTimeout) -> Result<bool, ureq::Error> {
-        self.inner.await_input(NextTimeout {
+        let started = Instant::now();
+        let result = self.inner.await_input(NextTimeout {
             after: self.timeout.into(),
             reason: ureq::Timeout::RecvBody,
-        })
+        });
+        self.completed(started, ureq::Timeout::RecvBody, result)
     }
     fn is_open(&mut self) -> bool {
         self.inner.is_open()
     }
     fn is_tls(&self) -> bool {
         self.inner.is_tls()
+    }
+}
+
+impl SocketTimeout {
+    fn completed<T>(
+        &self,
+        started: Instant,
+        reason: ureq::Timeout,
+        result: Result<T, ureq::Error>,
+    ) -> Result<T, ureq::Error> {
+        // Kernel socket deadlines can round up; late bytes must not mark an upload successful.
+        if started.elapsed() >= self.timeout {
+            Err(ureq::Error::Timeout(reason))
+        } else {
+            result
+        }
     }
 }
 

@@ -65,6 +65,7 @@ jobs:
         run: |
           cargo build -p openpilot-uploader --bins --examples --locked
           python tools/check_uploader.py --binary target/debug/examples/uploader_trace --output "$RUNNER_TEMP/uploader-reference/report.json"
+          python tools/check_uploader_timeouts.py --binary target/debug/examples/uploader_trace --output "$RUNNER_TEMP/uploader-reference/timeouts"
       - name: Compare log-space retention with the original loop and actual low-space filesystem
         run: |
           cargo build -p openpilot-deleter --bins --examples --locked

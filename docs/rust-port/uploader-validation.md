@@ -25,7 +25,9 @@ PUT. FAKEUPLOAD still signs and requests the URL. HTTP 200, 201, 401, 403 and 41
 remain successful marking outcomes. Redirects replay seekable bodies for 307/308
 and retain the source's other method/body transitions. The pinned ureq transport
 adapter applies the source's ten-second I/O timeout without imposing a ten-second
-total transfer deadline; TLS verification remains enabled.
+total transfer deadline; TLS verification remains enabled. Socket operations also
+check monotonic elapsed time after I/O: Linux can round a socket deadline up and
+otherwise accept a response arriving just after the source deadline.
 
 `LOG_ROOT`, HOME/prefix persistence paths, Params, API_HOST, FORCEWIFI presence,
 FAKEUPLOAD presence and UPLOADER_SLEEP retain normal startup roles. The executable
@@ -53,6 +55,11 @@ errors continue to be logged without changing the successful return.
 - 32 local HTTP scenarios verify RS256/ES256 signatures and claims, exact compressed
   request bodies, 412 short-circuiting, fake uploads, rejected status/JSON,
   redirects, timeout failure and slow-but-progressing response bodies.
+- Ten unscaled timeout scenarios exercise GET/PUT headers and bodies delayed
+  10.05 or 10.6 seconds, plus eleven-second response bodies with sub-timeout
+  progress. Actual Python and Rust agree on results and upload xattrs. The
+  pre-fix native binary incorrectly accepted two late API responses; its failing
+  trace is retained separately in the follow-up evidence.
 - Six continuous runtime scenarios connect original msgq deviceState publishers
   to Rust, use disposable Params/HOME/log roots, collect original-compatible ZMQ
   log packets, and inspect actual HTTP request bodies and xattrs. They cover Wi-Fi,
@@ -71,6 +78,8 @@ cargo test --manifest-path rust/Cargo.toml -p openpilot-uploader --all-targets -
 cargo build --manifest-path rust/Cargo.toml -p openpilot-uploader --bins --examples --locked
 python rust/tools/check_uploader.py \
   --binary rust/target/debug/examples/uploader_trace --output /path/to/reference.json
+python rust/tools/check_uploader_timeouts.py \
+  --binary rust/target/debug/examples/uploader_trace --output /path/to/timeout-evidence
 PYTHONPATH=/path/to/original-msgq-binding:.:rust/tools python rust/tools/check_uploader_daemon.py \
   --binary rust/target/debug/openpilot-uploader --output /path/to/fresh-runtime-evidence
 ```
@@ -78,8 +87,9 @@ PYTHONPATH=/path/to/original-msgq-binding:.:rust/tools python rust/tools/check_u
 Python validation dependencies are pinned in the Rust CI workflow. CI preserves
 the existing host/aarch64 requirements and adds the source/HTTP/IPC checks. Local
 artifacts are indexed in `.omo/evidence/uploader/evidence.json` in the issue-50
-worktree; cloud validation belongs to the integration handoff. These results do
-not establish device acceptance, CPU savings, or full-runtime completion.
+worktree. The timeout follow-up is indexed separately in
+`.omo/evidence/uploader-timeout/evidence.json`; cloud validation belongs to the
+integration handoff. These results do not establish device acceptance, CPU savings, or full-runtime completion.
 
 Docs-Not-Needed: optional internal runtime port preserving existing settings and
 the original disabled process registration.
