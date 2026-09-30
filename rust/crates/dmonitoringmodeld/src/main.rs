@@ -55,7 +55,9 @@ fn options() -> Result<Option<Options>, Error> {
 
 fn configure_realtime() -> Result<(), Error> {
     if std::path::Path::new("/TICI").is_file() {
-        let settings = libc::sched_param { sched_priority: 5 };
+        // SAFETY: sched_param contains only integers/timespecs; zero also initializes musl's extra fields.
+        let mut settings: libc::sched_param = unsafe { std::mem::zeroed() };
+        settings.sched_priority = 5;
         // SAFETY: sched_setscheduler borrows a valid parameter for this call only.
         if unsafe { libc::sched_setscheduler(0, libc::SCHED_FIFO, &settings) } != 0 {
             return Err(std::io::Error::last_os_error().into());
