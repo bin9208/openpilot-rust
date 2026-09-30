@@ -39,6 +39,14 @@ components stay explicit. No production selection, vehicle connection, device
 acceptance or CPU measurement is part of this increment. The user's first device
 comparison follows the complete runtime, normal startup and existing upload path.
 
+The required `rust startup prerequisites` CI job now builds real child executables
+and original message/Params bindings, then runs the supervision and managed-entry
+comparisons against those artifacts. The aggregate `rust checks` gate requires
+that job to succeed; failed, cancelled, skipped and missing results are rejected.
+Raw comparison and binding evidence is retained even after failure. Registration
+and checkout-status inputs will be added after their component review; the job
+name does not claim that the normal manager or full startup has been ported.
+
 ## Local build capacity
 
 The user's low-space warning is tracked in
