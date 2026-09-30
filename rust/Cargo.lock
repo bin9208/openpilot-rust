@@ -1795,7 +1795,6 @@ dependencies = [
  "thiserror",
 ]
 
-
 [[package]]
 name = "openpilot-hardware-info"
 version = "0.1.0"
@@ -1809,6 +1808,28 @@ dependencies = [
  "rustix",
  "serde",
  "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-hardwared"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "openpilot-hardware-control",
+ "openpilot-hardware-info",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-runtime-core",
+ "openpilot-runtime-version",
+ "openpilot-statsd",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
  "tempfile",
  "thiserror",
 ]

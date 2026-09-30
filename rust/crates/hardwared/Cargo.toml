@@ -1,0 +1,30 @@
+[package]
+name = "openpilot-hardwared"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-hardware-info = { path = "../hardware-info" }
+openpilot-hardware-control = { path = "../hardware-control" }
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-runtime-version = { path = "../runtime-version" }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging" }
+openpilot-params = { path = "../params" }
+openpilot-logging = { path = "../logging" }
+openpilot-statsd = { path = "../statsd" }
+capnp = "=0.27.2"
+rustix = { version = "1", features = ["time", "fs"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+signal-hook = "0.3"
+
+[dev-dependencies]
+tempfile = "3"
