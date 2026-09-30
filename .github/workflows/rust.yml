@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, web-upload-timeouts]
+    needs: [model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -42,6 +42,7 @@ jobs:
           SUPPORT: ${{ needs.support-runtime.result }}
           TELEMETRY: ${{ needs.telemetry-runtime.result }}
           STARTUP: ${{ needs.startup-runtime.result }}
+          HARDWARE: ${{ needs.hardware-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$MEMORY" = success
@@ -50,6 +51,7 @@ jobs:
           test "$SUPPORT" = success
           test "$TELEMETRY" = success
           test "$STARTUP" = success
+          test "$HARDWARE" = success
           test "$UPLOAD_TIMEOUTS" = success
       - uses: actions/setup-python@v6
         with:
@@ -392,7 +394,7 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
-      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 sentry-sdk==2.55.0 zstandard==0.25.0 setproctitle==1.3.7 requests==2.34.2 PyJWT==2.14.0 cryptography==50.0.1 brotli==1.2.0 charset-normalizer==3.5.1 urllib3==2.7.0
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 sentry-sdk==2.55.0 zstandard==0.25.0 setproctitle==1.3.7 requests==2.34.2 PyJWT==2.14.0 cryptography==50.0.1 brotli==1.2.0 charset-normalizer==3.5.1 urllib3==2.7.0 pyserial==3.5
       - name: Configure original startup IPC imports
         run: printf 'PYTHONPATH=%s/startup-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Build startup libraries and actual child executables
@@ -449,6 +451,65 @@ jobs:
             ${{ runner.temp }}/startup-runtime/
             ${{ runner.temp }}/startup-params-binding/commands.json
             ${{ runner.temp }}/startup-params-binding/provenance.json
+  hardware-runtime:
+    name: rust hardware and boot runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: rustup toolchain install nightly-2026-09-29 --profile minimal
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
+      - name: Build hardware libraries and boot executables
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-bootlog -p openpilot-hardware-info -p openpilot-hardware-control -p openpilot-amplifier -p openpilot-process-supervision --bins --examples --locked
+      - name: Build original Params and boot log comparisons
+        run: |
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/hardware-params-binding"
+          python rust/tools/build_bootlog_native.py "$RUNNER_TEMP/hardware-runtime/original-bootlog"
+          python rust/tools/build_bootlog_native.py "$RUNNER_TEMP/hardware-runtime/original-identifier" --identifier
+          gcc -shared -fPIC -O1 -Wall -Wextra -Werror rust/tools/bootlog_output_fault.c -ldl -o "$RUNNER_TEMP/bootlog-output-fault.so"
+          gcc -shared -fPIC -O1 -Wall -Wextra -Werror rust/tools/amplifier_i2c_fixture.c -ldl -o "$RUNNER_TEMP/amplifier-i2c-fixture.so"
+      - name: Compare boot artifacts, upload selection and counter I/O
+        run: |
+          python rust/tools/check_bootlog.py rust/target/debug/openpilot-bootlog "$RUNNER_TEMP/hardware-runtime/original-bootlog/original-bootlog" \
+            "$RUNNER_TEMP/hardware-runtime/bootlog" --fault-library "$RUNNER_TEMP/bootlog-output-fault.so"
+          python rust/tools/check_logger_identifier.py rust/target/debug/examples/logger_identifier \
+            "$RUNNER_TEMP/hardware-runtime/original-identifier/original-identifier" "$RUNNER_TEMP/hardware-runtime/identifiers"
+          python rust/tools/check_bootlog_snapshot.py rust/target/debug/examples/bootlog_snapshot \
+            "$RUNNER_TEMP"/hardware-params-binding/params_pyx*.so "$RUNNER_TEMP/hardware-runtime/snapshots" --launcher rust/target/debug/openpilot-process-child
+      - name: Compare hardware observations and amplifier transactions
+        run: |
+          python rust/tools/check_hardware_info.py rust/target/debug/examples/hardware_info \
+            "$RUNNER_TEMP"/hardware-params-binding/params_pyx*.so "$RUNNER_TEMP/hardware-runtime/information"
+          python rust/tools/check_amplifier.py rust/target/debug/examples/amplifier_trace "$RUNNER_TEMP/hardware-runtime/amplifier-policy"
+          python rust/tools/check_amplifier_linux.py rust/target/debug/examples/amplifier_linux \
+            "$RUNNER_TEMP/amplifier-i2c-fixture.so" "$RUNNER_TEMP/hardware-runtime/amplifier-io"
+          python rust/tools/check_hardware_control.py rust/target/debug/examples/hardware_control_trace "$RUNNER_TEMP/hardware-runtime/control-policy"
+          rust/target/debug/examples/hardware_control_command rust/target/debug/openpilot-process-child \
+            > "$RUNNER_TEMP/hardware-runtime/command.json" 2> "$RUNNER_TEMP/hardware-runtime/command.stderr"
+          python -c 'import json,pathlib,sys; root=pathlib.Path(sys.argv[1]); assert json.loads((root/"command.json").read_text()) == {"status":7,"stdout_bytes":131072,"stdout_zero":True,"call_status":3,"shell_status":5,"missing_is_io":True}; assert (root/"command.stderr").read_text() == "inherited-stderr"' "$RUNNER_TEMP/hardware-runtime"
+      - name: Exercise boot file ownership and failure cleanup with AddressSanitizer
+        run: |
+          rustc +nightly-2026-09-29 --edition=2021 -Zsanitizer=address -g rust/tools/bootlog_raw_file_probe.rs -o "$RUNNER_TEMP/boot-file-asan"
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 LD_PRELOAD="$RUNNER_TEMP/bootlog-output-fault.so" BOOTLOG_OUTPUT_FAULT=close \
+            "$RUNNER_TEMP/boot-file-asan" "$RUNNER_TEMP/hardware-runtime/file-ownership"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-hardware-runtime-evidence
+          path: |
+            ${{ runner.temp }}/hardware-runtime/
+            ${{ runner.temp }}/hardware-params-binding/commands.json
+            ${{ runner.temp }}/hardware-params-binding/provenance.json
   logger-runtime:
     name: rust original route logger
     runs-on: ubuntu-24.04

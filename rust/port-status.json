@@ -516,7 +516,7 @@
       "status": "native_information_host_validated_actions_pending",
       "implementation": "rust/crates/hardware-info; native filesystem/socket/command/Params adapters, raw modem JSON, identity/network/power observations, model/thermal caches and runtime Paths",
       "native_dependencies": ["Linux filesystem, clocks and Unix datagrams", "/bin/sh, sudo/cat and iwlist", "existing Params and Python-compatible native JSON parser; current transitive cereal/msgq dependencies"],
-      "unported_scope": ["board writes and IRQ/power management", "reboot/shutdown/uninstall", "GPIO and internal Panda reset/recovery", "display/IR setters and amplifier", "SIM LPA", "modem daemon", "hardwared loop"],
+      "unported_scope": ["SIM LPA", "modem daemon", "hardwared loop"],
       "production_replaced": false,
       "evidence": "docs/naver/rust-hardware-info-98.md"
     },
@@ -554,7 +554,7 @@
       "status": "native_startup_policy_host_and_emulator_validated",
       "implementation": "rust/crates/registration; typed Params/persist fallback, RSA/EC signed registration, actual HTTP, retries and hardware/spinner interfaces",
       "native_dependencies": ["libzmq structured logging", "Linux filesystem and clock APIs", "Rust HTTP/TLS/crypto/encoding/cookie libraries", "vendored native charset-norm 3.5.1 with manifest-only Rust 1.94 compatibility patch", "existing C++ msgq in support crates"],
-      "runtime_scope": "hardware serial/modem discovery and visual spinner remain unported interfaces; manager/full startup, normal log-upload comparison and device acceptance pending; no project Python runtime call",
+      "runtime_scope": "native hardware information adapter preserves serial and raw modem identity values; visual spinner, manager/full startup, normal log-upload comparison and device acceptance pending; no project Python runtime call",
       "production_replaced": false,
       "evidence": "docs/rust-port/registration-validation.md"
     },

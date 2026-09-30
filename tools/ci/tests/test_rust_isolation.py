@@ -9,6 +9,20 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_hardware_runtime_requires_source_and_native_boundaries(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['hardware-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_bootlog.py', 'check_bootlog_snapshot.py', 'check_logger_identifier.py',
+                         'check_hardware_info.py', 'check_hardware_control.py', 'check_amplifier.py',
+                         'check_amplifier_linux.py', 'bootlog_raw_file_probe.rs'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python rust/tools/check_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+
     def test_startup_prerequisites_run_actual_children_and_collectors(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['startup-runtime']
@@ -74,13 +88,14 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'web-upload-timeouts'})
+        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'web-upload-timeouts'})
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
                                             'SUPPORT': '${{ needs.support-runtime.result }}',
                                             'TELEMETRY': '${{ needs.telemetry-runtime.result }}',
                                             'STARTUP': '${{ needs.startup-runtime.result }}',
+                                            'HARDWARE': '${{ needs.hardware-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
