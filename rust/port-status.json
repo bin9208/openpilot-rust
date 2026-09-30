@@ -483,6 +483,15 @@
   ],
   "library_ports": [
     {
+      "name": "native_manager_catalog_policy",
+      "source_entrypoint": "openpilot.system.manager.process_config",
+      "status": "native_host_and_generic_aarch64_policy_validated",
+      "implementation": "rust/crates/manager-catalog; 63 ordered source descriptors, explicit isolated-candidate availability and short-circuit predicates using native Params; no process launch or Python fallback",
+      "native_dependencies": ["Linux filesystem and Params storage", "existing beepd signed-integer conversion; its current transitive cereal/msgq dependencies remain"],
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-manager-catalog-96.md"
+    },
+    {
       "name": "managed_child_entry_boundary",
       "source_entrypoint": "openpilot.system.manager.process:launcher",
       "status": "native_host_entry_boundary_validated",
