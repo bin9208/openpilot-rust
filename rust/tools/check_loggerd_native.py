@@ -12,6 +12,7 @@ from loggerd_scenarios import run
 from loggerd_validation import compare
 import loggerd_hevc
 import loggerd_diagnostics
+from check_loggerd_peer import check as check_input_completion
 
 
 def main() -> None:
@@ -29,6 +30,7 @@ def main() -> None:
   arguments = parser.parse_args()
   output = arguments.output.resolve()
   output.mkdir(parents=True, exist_ok=True)
+  check_input_completion(output / 'input-completion')
   if arguments.fixtures:
     fixtures = {kind: [path.read_bytes() for path in sorted((arguments.fixtures / kind).glob('*.capnp'))] for kind in ('road', 'qroad')}
   else:

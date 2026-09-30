@@ -86,6 +86,21 @@ class Peer:
     self.publisher.send(service, data)
     assert self.publisher.wait_for_readers_to_update(service, timeout=10, dt=.001), service
     self.inputs.append((service, data))
+    self.await_idle()
+
+  def await_idle(self, timeout: float = 10) -> None:
+    # The msgq read pointer advances before processing. A subsequent SIGUSR2 can
+    # interrupt that input's best-effort ZMQ diagnostic, so pace this exact oracle.
+    deadline = time.monotonic() + timeout
+    channel = Path(f'/proc/{self.process.pid}/wchan')
+    while True:
+      if self.process.poll() is not None:
+        raise RuntimeError((self.process.returncode, (self.root / 'stderr.log').read_text()))
+      if channel.read_text().strip() == 'hrtimer_nanosleep':
+        return
+      if time.monotonic() >= deadline:
+        raise TimeoutError(f'logger did not finish processing before its next input: {self.root}')
+      time.sleep(.0001)
 
   def barrier(self) -> None:
     message = messaging.new_message(None)
