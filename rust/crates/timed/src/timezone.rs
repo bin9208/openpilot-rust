@@ -5,8 +5,16 @@ use openpilot_logging::{
     record::{Level, Record},
 };
 use openpilot_params::Params;
-use std::{ffi::OsString, io::Read, path::PathBuf, time::Duration};
+use std::{
+    collections::HashMap,
+    ffi::OsString,
+    io::Read,
+    path::PathBuf,
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
 
+#[derive(Clone)]
 pub struct Paths {
     pub localtime: PathBuf,
     pub zoneinfo: PathBuf,
@@ -117,11 +125,7 @@ pub fn from_gps(longitude: f64) -> Result<String, Error> {
         )
     })
 }
-#[derive(serde::Deserialize)]
-struct GeoResponse {
-    status: String,
-    timezone: Option<String>,
-}
+#[derive(Clone)]
 pub struct Internet {
     pub endpoint: String,
     pub timeout: Duration,
@@ -135,29 +139,78 @@ impl Default for Internet {
     }
 }
 impl Internet {
+    pub fn lookup_until_stopped(&self, paths: &Paths, stop: &AtomicBool) -> Option<String> {
+        let internet = self.clone();
+        let paths = paths.clone();
+        let worker = std::thread::Builder::new()
+            .name("timed-geolocation".into())
+            .spawn(move || internet.lookup(&paths))
+            .ok()?;
+        while !worker.is_finished() {
+            if stop.load(Ordering::Relaxed) {
+                // Only runtime shutdown sets this flag. The caller exits without
+                // applying a result; process exit closes this worker's sockets.
+                // Normal lookups always join, retaining per-I/O timeout semantics.
+                return None;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        worker.join().ok().flatten()
+    }
     pub fn lookup(&self, paths: &Paths) -> Option<String> {
         // The source intentionally suppresses every HTTP/JSON/zone validation failure.
         let config = ureq::Agent::config_builder()
             .timeout_connect(Some(self.timeout))
             .timeout_global(None)
             .max_idle_connections(0)
+            .max_redirects(0)
             .user_agent("openpilot-timed")
             .build();
         let agent = openpilot_http_transport::socket_timeout_agent(config, self.timeout);
-        let mut response = agent
-            .get(&self.endpoint)
-            .header("accept-encoding", "identity")
-            .call()
-            .ok()?;
+        let mut endpoint = url::Url::parse(&self.endpoint).ok()?;
+        let mut redirects = HashMap::<String, usize>::new();
+        let mut response = loop {
+            let mut response = agent
+                .get(endpoint.as_str())
+                .header("accept-encoding", "identity")
+                .call()
+                .ok()?;
+            if !matches!(response.status().as_u16(), 301 | 302 | 303 | 307 | 308) {
+                if !response.status().is_success() {
+                    return None;
+                }
+                break response;
+            }
+            let location = response
+                .headers()
+                .get("location")
+                .or_else(|| response.headers().get("uri"))?
+                .to_str()
+                .ok()?;
+            endpoint = endpoint.join(location).ok()?;
+            let previous = redirects.get(endpoint.as_str()).copied().unwrap_or(0);
+            // urllib limits repeated destinations independently of distinct URLs.
+            if previous >= 4 || redirects.len() >= 10 {
+                return None;
+            }
+            redirects.insert(endpoint.as_str().to_owned(), previous + 1);
+            std::io::copy(&mut response.body_mut().as_reader(), &mut std::io::sink()).ok()?;
+        };
         let mut body = Vec::new();
         response
             .body_mut()
             .as_reader()
             .read_to_end(&mut body)
             .ok()?;
-        let data: GeoResponse = serde_json::from_slice(&body).ok()?;
-        let zone = data.timezone?;
-        (data.status == "success" && !zone.is_empty() && paths.zoneinfo.join(&zone).is_file())
-            .then_some(zone)
+        let [status, zone] = openpilot_logmessaged::string_fields(
+            std::str::from_utf8(&body).ok()?,
+            ["status", "timezone"],
+        )
+        .ok()?;
+        let zone = zone?;
+        (status.as_deref() == Some("success")
+            && !zone.is_empty()
+            && paths.zoneinfo.join(&zone).is_file())
+        .then_some(zone)
     }
 }

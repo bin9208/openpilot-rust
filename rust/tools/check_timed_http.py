@@ -23,9 +23,18 @@ def worker(binary, output, mode, implementation):
 
       def do_GET(self):
         captures.append({'path': self.path, 'agent': self.headers.get('User-Agent'), 'encoding': self.headers.get('Accept-Encoding')})
-        if mode == 'redirect' and self.path != '/final':
+        redirect = None
+        if mode in ['redirect-10', 'redirect-11']:
+          index = int(self.path.removeprefix('/r')) if self.path.startswith('/r') else 0
+          if index < int(mode.split('-')[1]):
+            redirect = f'/r{index + 1}'
+        elif mode == 'redirect-loop':
+          redirect = '/again'
+        elif mode == 'redirect' and self.path != '/final':
+          redirect = '/final'
+        if redirect is not None:
           self.send_response(302)
-          self.send_header('Location', '/final')
+          self.send_header('Location', redirect)
           self.send_header('Content-Length', '0')
           self.end_headers()
           return
@@ -35,6 +44,16 @@ def worker(binary, output, mode, implementation):
           body = b'{invalid'
         if mode == 'null-zone':
           body = b'{"status":"success","timezone":null}'
+        json_cases = {
+          'duplicate-status-valid': b'{"status":"fail","status":"success","timezone":"Asia/Seoul"}',
+          'duplicate-status-invalid': b'{"status":"success","status":"fail","timezone":"Asia/Seoul"}',
+          'duplicate-zone-valid': b'{"status":"success","timezone":"missing","timezone":"Asia/Seoul"}',
+          'duplicate-zone-invalid': b'{"status":"success","timezone":"Asia/Seoul","timezone":"missing"}',
+          'extra-nan': b'{"status":"success","timezone":"Asia/Seoul","extra":NaN}',
+          'extra-infinity': b'{"status":"success","timezone":"Asia/Seoul","extra":Infinity}',
+          'extra-negative-infinity': b'{"status":"success","timezone":"Asia/Seoul","extra":-Infinity}',
+        }
+        body = json_cases.get(mode, body)
         if mode.startswith('headers-'):
           time.sleep(5.05 if mode.endswith('late') else 5.6)
         try:
@@ -89,7 +108,9 @@ def main():
     worker(args.binary, args.output, *args.worker)
     return
   modes = ['success', 'redirect', 'http-error', 'failure-status', 'invalid-zone', 'null-zone', 'malformed',
-           'headers-late', 'headers-stall', 'body-late', 'body-stall', 'progress']
+           'headers-late', 'headers-stall', 'body-late', 'body-stall', 'progress',
+           'duplicate-status-valid', 'duplicate-status-invalid', 'duplicate-zone-valid', 'duplicate-zone-invalid',
+           'extra-nan', 'extra-infinity', 'extra-negative-infinity', 'redirect-10', 'redirect-11', 'redirect-loop']
 
   def run(mode, implementation):
     output = args.output / (mode + '-' + implementation)

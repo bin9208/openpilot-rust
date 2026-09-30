@@ -1381,6 +1381,7 @@ dependencies = [
  "openpilot-cereal",
  "openpilot-http-transport",
  "openpilot-logging",
+ "openpilot-logmessaged",
  "openpilot-messaging",
  "openpilot-params",
  "openpilot-params-typed",
@@ -1391,6 +1392,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "ureq",
+ "url",
 ]
 
 [[package]]

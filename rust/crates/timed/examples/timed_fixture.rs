@@ -67,10 +67,10 @@ impl Clock for FixtureClock {
     fn local(&self, epoch: f64) -> Result<chrono::NaiveDateTime, Error> {
         SystemClock.local(epoch)
     }
-    fn sleep(&self, duration: Duration) {
+    fn sleep(&self, duration: Duration, stop: &AtomicBool) {
         self.sleeps.borrow_mut().push(duration.as_secs_f64());
         if self.live {
-            SystemClock.sleep(duration);
+            SystemClock.sleep(duration, stop);
         }
     }
 }
@@ -137,7 +137,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     timezone::apply(&zone, &source, &mut host.services).map(|v| json!(v))
                 }
                 Action::Gps { longitude } => timezone::from_gps(longitude).map(|v| json!(v)),
-                Action::Internet => Ok(json!(internet.lookup(&paths))),
+                Action::Internet => Ok(json!(
+                    internet.lookup_until_stopped(&paths, &AtomicBool::new(false))
+                )),
                 Action::Valid => {
                     openpilot_timed::clock::valid(&clock, &paths.systemd).map(|v| json!(v))
                 }
@@ -145,7 +147,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map(|(a, b)| json!([a.to_string(), b.to_string()])),
                 Action::Step { gps, monotonic } => {
                     *clock.monotonic.borrow_mut() = Some(monotonic);
-                    state.step(gps, &mut host).map(|v| json!(v))
+                    state
+                        .step(gps, &mut host, &AtomicBool::new(false))
+                        .map(|v| json!(v))
                 }
                 Action::SetTime { epoch } => {
                     openpilot_timed::set_time(epoch, &clock, &mut host.services)

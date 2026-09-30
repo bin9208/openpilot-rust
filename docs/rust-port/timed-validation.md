@@ -19,7 +19,9 @@ Internet failure permits fresh-GPS longitude fallback, using Python ties-to-even
 rounding and reversed Etc/GMT signs. Equal symlink targets skip commands while
 still persisting name/source. Failed commands retain source side-effect order.
 The HTTP lookup preserves the original endpoint, user agent, redirects and
-five-second per-I/O timeout. `http-transport` extracts uploader's existing socket
+five-second per-I/O timeout. Redirect accounting retains urllib's ten-distinct-URL
+and four-repeat limits. The existing Python-compatible log JSON decoder preserves
+last duplicate keys and ignores nonfinite/unpaired-surrogate extra values. `http-transport` extracts uploader's existing socket
 timeout adapter without removing its post-syscall monotonic deadline check;
 uploader retains ten-second timeouts and slow-progress response behavior.
 
@@ -39,6 +41,7 @@ python rust/tools/check_timed_http.py --binary rust/target/debug/examples/timed_
 python rust/tools/check_timed_logging.py --binary rust/target/debug/examples/timed_fixture --output /tmp/timed-logging
 python rust/tools/check_timed_daemon.py --binary rust/target/debug/examples/timed_fixture --output /tmp/timed-daemon
 python rust/tools/check_timed_lifecycle.py --binary rust/target/debug/openpilot-timed --output /tmp/timed-entry
+python rust/tools/check_timed_shutdown.py --binary rust/target/debug/openpilot-timed --output /tmp/timed-shutdown
 ```
 
 Evidence is indexed in `.omo/evidence/timed/evidence.json` in the issue-70 worktree.
@@ -49,8 +52,19 @@ failure order. Continuous daemon scenarios exercise both GPS topics, stale/no-fi
 rejection, actual ten-second sleep and command recorder output. The production
 entrypoint is separately exercised without GPS, with app timezone selected, for
 clock publication, bounded exit, signals and CLI errors. Generic GNU aarch64/QEMU
-execution establishes host emulation only. Uploader HTTP and unscaled ten-second
+execution establishes host emulation only. Its missing-command case differs:
+QEMU reports child exit 127 after execve ENOENT, while native x86 and original
+Python propagate the spawn error. This remains an explicit emulation limitation. Uploader HTTP and unscaled ten-second
 timeout oracles guard the shared extraction.
+
+SIGINT/SIGTERM interrupt the GPS sleep using a monotonic deadline and 20 ms
+stop checks. HTTP lookup runs in one owned worker with no Params, command or
+logging side effects. Normal lookup joins that worker, retaining all per-I/O
+timeouts and allowing indefinitely progressing responses. Only process shutdown
+detaches it; the main loop exits immediately and process exit closes its sockets.
+Production-entrypoint tests signal after a real fixture command and during a
+loopback HTTP proxy response progressing for more than five seconds, comparing
+original SIGINT with native SIGINT/SIGTERM and checking peer socket closure.
 
 Remaining external dependencies include original msgq/CXX, libzmq, zoneinfo,
 systemd metadata, OS clocks, privileged sudo/date/rm/ln and Rust HTTP/TLS libraries.

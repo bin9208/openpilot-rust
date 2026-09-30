@@ -2,14 +2,15 @@ use crate::Error;
 use chrono::{DateTime, Local, NaiveDateTime};
 use std::{
     path::Path,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    sync::atomic::{AtomicBool, Ordering},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 pub trait Clock {
     fn wall_nanos(&self) -> Result<u64, Error>;
     fn monotonic(&self) -> Result<u64, Error>;
     fn local(&self, epoch: f64) -> Result<NaiveDateTime, Error>;
-    fn sleep(&self, duration: Duration);
+    fn sleep(&self, duration: Duration, stop: &AtomicBool);
     fn wall_seconds(&self) -> Result<f64, Error> {
         Ok(Duration::from_nanos(self.wall_nanos()?).as_secs_f64())
     }
@@ -39,8 +40,15 @@ impl Clock for SystemClock {
     fn local(&self, epoch: f64) -> Result<NaiveDateTime, Error> {
         Ok(datetime(epoch)?.with_timezone(&Local).naive_local())
     }
-    fn sleep(&self, duration: Duration) {
-        std::thread::sleep(duration);
+    fn sleep(&self, duration: Duration, stop: &AtomicBool) {
+        let deadline = Instant::now() + duration;
+        while !stop.load(Ordering::Relaxed) {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                break;
+            }
+            std::thread::sleep(remaining.min(Duration::from_millis(20)));
+        }
     }
 }
 /// Python datetime.fromtimestamp rounds to the nearest microsecond, ties to even.

@@ -18,7 +18,12 @@ pub struct State {
 }
 impl State {
     /// Called after clocks publication, preserving the original side-effect order.
-    pub fn step(&mut self, gps: wire::Gps, host: &mut Host<'_>) -> Result<bool, Error> {
+    pub fn step(
+        &mut self,
+        gps: wire::Gps,
+        host: &mut Host<'_>,
+        stop: &AtomicBool,
+    ) -> Result<bool, Error> {
         let usable = gps.usable(host.clock.monotonic()?);
         let priority = timezone::priority(&timezone::current(&mut host.services)?);
         if priority < timezone::priority("wifi") {
@@ -30,7 +35,13 @@ impl State {
             let now = host.clock.monotonic()?;
             if now.saturating_sub(self.last_timezone_attempt) > interval {
                 self.last_timezone_attempt = host.clock.monotonic()?;
-                if let Some(zone) = host.internet.lookup(host.services.paths) {
+                let zone = host
+                    .internet
+                    .lookup_until_stopped(host.services.paths, stop);
+                if stop.load(Ordering::Relaxed) {
+                    return Ok(false);
+                }
+                if let Some(zone) = zone {
                     timezone::apply(&zone, "wifi", &mut host.services)?;
                 } else if usable {
                     timezone::apply(
@@ -51,7 +62,7 @@ impl State {
             return Ok(false);
         }
         crate::set_time(epoch, host.clock, &mut host.services)?;
-        host.clock.sleep(Duration::from_secs(10));
+        host.clock.sleep(Duration::from_secs(10), stop);
         Ok(true)
     }
 }
@@ -72,11 +83,14 @@ pub fn run(host: &mut Host<'_>, cycles: Option<u64>, stop: &AtomicBool) -> Resul
     let mut remaining = cycles;
     while !stop.load(Ordering::Relaxed) {
         subscriber.update(Duration::from_secs(1))?;
+        if stop.load(Ordering::Relaxed) {
+            break;
+        }
         let monotonic = host.clock.monotonic()?;
         let valid = clock::valid(host.clock, &host.services.paths.systemd)?;
         let wall = host.clock.wall_nanos()?;
         publisher.send("clocks", &wire::clocks(wall, monotonic, valid))?;
-        state.step(wire::gps(&subscriber.state, service)?, host)?;
+        state.step(wire::gps(&subscriber.state, service)?, host, stop)?;
         if let Some(count) = &mut remaining {
             *count -= 1;
             if *count == 0 {
