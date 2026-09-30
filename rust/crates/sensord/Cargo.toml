@@ -1,0 +1,36 @@
+[package]
+name = "openpilot-sensord"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native"]
+native = ["dep:cxx", "dep:openpilot-msgq", "dep:openpilot-messaging", "dep:openpilot-logging", "dep:openpilot-hardware-control", "dep:signal-hook"]
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dependencies]
+openpilot-msgq = { path = "../msgq", optional = true }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+openpilot-hardware-control = { path = "../hardware-control", optional = true }
+capnp = "=0.27.2"
+cxx = { version = "1.0", optional = true }
+rustix = { version = "1", features = ["time"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+signal-hook = { version = "0.3", optional = true }
+
+[build-dependencies]
+cxx-build = "1.0"
+
+[[bin]]
+name = "openpilot-sensord"
+path = "src/main.rs"
+required-features = ["native"]

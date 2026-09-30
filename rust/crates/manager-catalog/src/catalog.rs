@@ -100,6 +100,7 @@ fn availability(name: &str) -> RustAvailability {
         "modeld" => ("openpilot-driving-modeld", "openpilot-driving-modeld"),
         "modem" => ("openpilot-modem", "openpilot-modem"),
         "proclogd" => ("openpilot-proclogd", "openpilot-proclogd-runtime"),
+        "sensord" => ("openpilot-sensord", "openpilot-sensord"),
         "statsd" => ("openpilot-statsd", "statsd-rs"),
         "timed" => ("openpilot-timed", "openpilot-timed"),
         "tombstoned" => ("openpilot-tombstoned", "openpilot-tombstoned"),
