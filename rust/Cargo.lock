@@ -1312,6 +1312,7 @@ dependencies = [
  "openpilot-logging",
  "openpilot-messaging",
  "openpilot-params",
+ "openpilot-runtime-core",
  "p256",
  "rand 0.9.5",
  "rustix",

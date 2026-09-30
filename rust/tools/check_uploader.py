@@ -268,7 +268,7 @@ def endpoint(settings, captures):
         if settings.get('stall'):
           time.sleep(0.4)
         url = f'http://127.0.0.1:{self.server.server_port}/put'
-        body = json.dumps({'url': url, 'headers': {'X-Fixture': 'synthetic'}}).encode()
+        body = json.dumps({'url': url, 'headers': settings.get('headers', {'X-Fixture': 'synthetic'})}).encode()
         self.reply(settings.get('api_status', 200), b'invalid-json' if settings.get('bad_json') else body)
       else:
         self.reply(settings.get('put_status', 200), b'done')

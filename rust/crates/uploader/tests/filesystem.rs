@@ -1,17 +1,27 @@
 use openpilot_uploader::{
-    clear_locks, Attributes, Candidate, Error, Outcome, Transfer, TransferError, UploadResponse,
-    Uploader, XattrCache,
+    clear_locks, Attributes, Candidate, Error, EventSink, Outcome, Transfer, TransferError,
+    UploadResponse, Uploader, XattrCache,
 };
 use std::{fs, io, path::Path};
 struct NoTransfer;
 impl Transfer for NoTransfer {
-    fn upload(&mut self, _: &Path, _: &Path) -> Result<UploadResponse, TransferError> {
+    fn upload(
+        &mut self,
+        _: &Path,
+        _: &Path,
+        _: &mut dyn EventSink,
+    ) -> Result<UploadResponse, TransferError> {
         panic!("unexpected network transfer")
     }
 }
 struct FailedTransfer;
 impl Transfer for FailedTransfer {
-    fn upload(&mut self, _: &Path, _: &Path) -> Result<UploadResponse, TransferError> {
+    fn upload(
+        &mut self,
+        _: &Path,
+        _: &Path,
+        _: &mut dyn EventSink,
+    ) -> Result<UploadResponse, TransferError> {
         Err(TransferError::Contract("fixture upload failure"))
     }
 }
@@ -34,7 +44,10 @@ fn opaque_filesystem_name_does_not_panic_while_reporting_transfer_failure() {
     );
     // When transfer fails, then diagnostics cannot turn the recoverable failure into a panic.
     assert_eq!(uploader.step(1, false, None).unwrap(), Outcome::Failure);
-    assert_eq!(uploader.events.last().unwrap().name, "upload_failed");
+    assert_eq!(
+        uploader.events.last().unwrap().name(),
+        Some("upload_failed")
+    );
     assert!(!uploader.last_filename.exists());
 }
 #[test]

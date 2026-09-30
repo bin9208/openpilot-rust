@@ -35,7 +35,10 @@ starts from the repository root so the version header resolves as in the normal
 startup layout. FORCEWIFI overrides availability only; raw deviceState network
 type and metering still reach the uploader. Startup clears direct segment locks
 before requiring DongleId. Empty/invalid UTF-8 DongleId is treated as missing.
-Upload events and errors use the native structured logging producer. SIGINT and
+Upload events and errors use the native structured logging producer. The
+[logging follow-up](../naver/uploader_logging_50.md) preserves DEBUG URL records,
+INFO failure response/exception types, ERROR exception records and actual Rust
+producer callsites. Native error traces identify their reporting site honestly. SIGINT and
 SIGTERM interrupt idle waits with 20 ms checks; in-flight HTTP operations retain
 their per-I/O timeout behavior. `--cycles N` bounds host test iterations.
 
@@ -60,6 +63,10 @@ errors continue to be logged without changing the successful return.
   progress. Actual Python and Rust agree on results and upload xattrs. The
   pre-fix native binary incorrectly accepted two late API responses; its failing
   trace is retained separately in the follow-up evidence.
+- Thirty-six logging scenarios execute actual source uploader/formatter code and
+  the continuous native uploader through original and Rust collectors. They check
+  message schemas/levels/order, native callsites and error categories, real cereal
+  publications, typed disk formatting and console filtering.
 - Six continuous runtime scenarios connect original msgq deviceState publishers
   to Rust, use disposable Params/HOME/log roots, collect original-compatible ZMQ
   log packets, and inspect actual HTTP request bodies and xattrs. They cover Wi-Fi,
@@ -88,7 +95,8 @@ Python validation dependencies are pinned in the Rust CI workflow. CI preserves
 the existing host/aarch64 requirements and adds the source/HTTP/IPC checks. Local
 artifacts are indexed in `.omo/evidence/uploader/evidence.json` in the issue-50
 worktree. The timeout follow-up is indexed separately in
-`.omo/evidence/uploader-timeout/evidence.json`; cloud validation belongs to the
+`.omo/evidence/uploader-timeout/evidence.json`; the subsequent diagnostic review
+uses `.omo/evidence/uploader-logging/evidence.json`. Cloud validation belongs to the
 integration handoff. These results do not establish device acceptance, CPU savings, or full-runtime completion.
 
 Docs-Not-Needed: optional internal runtime port preserving existing settings and

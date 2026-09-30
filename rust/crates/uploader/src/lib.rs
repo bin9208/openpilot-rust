@@ -1,7 +1,10 @@
 //! Source-compatible native upload orchestration.
+mod diagnostics;
+pub use diagnostics::{Event, EventSink};
 pub mod http;
 pub mod runtime;
 mod scan;
+use openpilot_logging::log_site;
 pub use scan::{clear_locks, Attributes, Candidate, XattrCache};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -65,20 +68,6 @@ impl Backoff {
     }
 }
 
-#[derive(Debug, Serialize)]
-pub struct Event {
-    pub name: &'static str,
-    pub fields: Value,
-}
-pub trait EventSink {
-    fn emit(&mut self, event: Event);
-}
-impl EventSink for Vec<Event> {
-    fn emit(&mut self, event: Event) {
-        self.push(event);
-    }
-}
-
 pub struct UploadResponse {
     pub status: u16,
     pub content_length: String,
@@ -105,11 +94,18 @@ pub enum TransferError {
     Utf8(#[from] std::str::Utf8Error),
     #[error(transparent)]
     Clock(#[from] std::time::SystemTimeError),
+    #[error(transparent)]
+    Format(#[from] std::fmt::Error),
     #[error("{0}")]
     Contract(&'static str),
 }
 pub trait Transfer {
-    fn upload(&mut self, key: &Path, path: &Path) -> Result<UploadResponse, TransferError>;
+    fn upload(
+        &mut self,
+        key: &Path,
+        path: &Path,
+        events: &mut dyn EventSink,
+    ) -> Result<UploadResponse, TransferError>;
 }
 
 pub struct Uploader<T, A, S> {
@@ -158,15 +154,17 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
         let size = match fs::metadata(&file.path) {
             Ok(meta) => meta.len(),
             Err(error) => {
-                self.events.emit(Event {
-                    name: "upload: getsize failed",
-                    fields: json!({"error":error.to_string()}),
-                });
+                self.events.emit(Event::exception(
+                    log_site!(),
+                    "upload: getsize failed",
+                    &(&file.path, error),
+                ));
                 return Ok(Outcome::Failure);
             }
         };
         let fields = json!({"key":file.key.to_string_lossy(),"fn":file.path.to_string_lossy(),"sz":size,"network_type":network_type,"metered":metered});
-        self.events.emit(Event {
+        self.events.emit(Event::Fields {
+            site: log_site!(),
             name: "upload_start",
             fields: fields.clone(),
         });
@@ -179,7 +177,8 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
         let mut last_exception = None;
         let success = if !transferred {
             if too_large {
-                self.events.emit(Event {
+                self.events.emit(Event::Fields {
+                    site: log_site!(),
                     name: "uploader_too_large",
                     fields: json!({"key":file.key.to_string_lossy(),"fn":file.path.to_string_lossy(),"sz":size}),
                 });
@@ -187,7 +186,10 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
             true
         } else {
             let start = Instant::now();
-            match self.transfer.upload(&file.key, &file.path) {
+            match self
+                .transfer
+                .upload(&file.key, &file.path, &mut self.events)
+            {
                 Ok(response) if matches!(response.status, 200 | 201 | 401 | 403 | 412) => {
                     self.last_filename.clone_from(&file.path);
                     let mut fields = fields.clone();
@@ -204,20 +206,25 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                             json!(length as f64 / 1e6 / start.elapsed().as_secs_f64());
                         "upload_success"
                     };
-                    self.events.emit(Event { name, fields });
+                    self.events.emit(Event::Fields {
+                        site: log_site!(),
+                        name,
+                        fields,
+                    });
                     true
                 }
                 other => {
                     let mut fields = fields.clone();
                     fields["stat"] = match other {
-                        Ok(response) => json!(response.status),
+                        Ok(response) => json!(format!("<Response [{}]>", response.status)),
                         Err(error) => {
-                            last_exception = Some(error.to_string());
+                            last_exception = Some(diagnostics::error_details(log_site!(), &error));
                             Value::Null
                         }
                     };
                     fields["exc"] = json!(last_exception);
-                    self.events.emit(Event {
+                    self.events.emit(Event::Fields {
+                        site: log_site!(),
                         name: "upload_failed",
                         fields,
                     });
@@ -230,7 +237,8 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                 if !transferred {
                     return Err(Error::UninitializedLastException(error));
                 }
-                self.events.emit(Event {
+                self.events.emit(Event::Fields {
+                    site: log_site!(),
                     name: "uploader_setxattr_failed",
                     fields: json!({"exc":last_exception,"key":file.key.to_string_lossy(),"fn":file.path.to_string_lossy(),"sz":size}),
                 });

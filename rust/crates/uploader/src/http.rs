@@ -1,7 +1,8 @@
-use crate::{Transfer, TransferError, UploadResponse};
+use crate::{diagnostics::python_text, Event, EventSink, Transfer, TransferError, UploadResponse};
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
+use openpilot_logging::{log_site, record::Level, Value};
 use p256::pkcs8::EncodePrivateKey;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::{
     collections::BTreeMap,
     fs::{self, File},
@@ -276,7 +277,12 @@ impl HttpTransfer {
         }
         Err(TransferError::Contract("redirect limit"))
     }
-    fn do_upload(&self, key: &Path, path: &Path) -> Result<UploadResponse, TransferError> {
+    fn do_upload(
+        &self,
+        key: &Path,
+        path: &Path,
+        events: &mut dyn EventSink,
+    ) -> Result<UploadResponse, TransferError> {
         let key_text = key
             .to_str()
             .ok_or(TransferError::Contract("upload key is not UTF-8"))?;
@@ -312,31 +318,43 @@ impl HttpTransfer {
             });
         }
         let value: Value = serde_json::from_slice(&response.body)?;
+        let Value::Object(value) = value else {
+            return Err(TransferError::Contract("upload URL missing"));
+        };
         let url = value
             .get("url")
             .ok_or(TransferError::Contract("upload URL missing"))?;
         let headers = value
             .get("headers")
             .ok_or(TransferError::Contract("upload headers missing"))?;
+        events.emit(Event::text(
+            log_site!(),
+            Level::Debug,
+            format!(
+                "upload_url v1.4 {} {}",
+                python_text(url)?,
+                python_text(headers)?
+            ),
+        ));
         if self.fake_upload {
             return Ok(UploadResponse {
                 status: 200,
                 content_length: "0".into(),
             });
         }
-        let url = url
-            .as_str()
-            .ok_or(TransferError::Contract("upload URL is not a string"))?;
-        let headers = headers
-            .as_object()
-            .ok_or(TransferError::Contract("upload headers are not an object"))?;
+        let Value::Text(url) = url else {
+            return Err(TransferError::Contract("upload URL is not a string"));
+        };
+        let Value::Object(headers) = headers else {
+            return Err(TransferError::Contract("upload headers are not an object"));
+        };
         let headers = headers
             .iter()
             .map(|(name, value)| {
-                value
-                    .as_str()
-                    .map(|value| (name.to_ascii_lowercase(), value.to_owned()))
-                    .ok_or(TransferError::Contract("upload header is not a string"))
+                let Value::Text(value) = value else {
+                    return Err(TransferError::Contract("upload header is not a string"));
+                };
+                Ok((name.to_ascii_lowercase(), value.clone()))
             })
             .collect::<Result<BTreeMap<_, _>, _>>()?;
         let compress =
@@ -355,7 +373,12 @@ impl HttpTransfer {
     }
 }
 impl Transfer for HttpTransfer {
-    fn upload(&mut self, key: &Path, path: &Path) -> Result<UploadResponse, TransferError> {
-        self.do_upload(key, path)
+    fn upload(
+        &mut self,
+        key: &Path,
+        path: &Path,
+        events: &mut dyn EventSink,
+    ) -> Result<UploadResponse, TransferError> {
+        self.do_upload(key, path, events)
     }
 }
