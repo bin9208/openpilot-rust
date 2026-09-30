@@ -305,7 +305,7 @@ jobs:
       - name: Configure original telemetry IPC imports
         run: printf 'PYTHONPATH=%s/telemetry-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Build telemetry daemons and source-comparison probes
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-version -p openpilot-beepd -p openpilot-logmessaged --bins --examples --locked
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-logmessaged --bins --examples --locked
       - name: Build original telemetry message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/telemetry-msgq-python"
@@ -322,6 +322,20 @@ jobs:
           python rust/tools/check_beepd_sleep.py --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-sleep"
       - name: Compare continuous alert IPC and owned worker shutdown
         run: python rust/tools/check_beepd_daemon.py --binary rust/target/debug/openpilot-beepd --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-daemon"
+      - name: Compare statistics numeric, clock and producer contracts
+        run: |
+          python rust/tools/check_stats_numbers.py --binary rust/target/debug/examples/stats_trace --output "$RUNNER_TEMP/telemetry-runtime/stats-numbers.json"
+          python rust/tools/check_stats_clock.py rust/target/debug/examples/stats_clock "$RUNNER_TEMP/telemetry-runtime/stats-clock.json"
+          python rust/tools/check_stats_producer.py rust/target/debug/examples "$RUNNER_TEMP/telemetry-runtime/stats-producer"
+      - name: Compare continuous statistics, real Params and collector failure paths
+        run: |
+          python rust/tools/check_stats_daemon.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-daemon"
+          python rust/tools/check_stats_failures.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-failures"
+          python rust/tools/check_stats_log_fault.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-log-fault"
+      - name: Exercise statistics production startup and shutdown under sustained traffic
+        run: |
+          python rust/tools/check_stats_runtime.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-runtime"
+          python rust/tools/check_stats_flood.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-flood"
       - name: Retain raw telemetry runtime and Params build evidence
         if: always()
         uses: actions/upload-artifact@v6

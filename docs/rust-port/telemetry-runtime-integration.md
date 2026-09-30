@@ -12,7 +12,7 @@ existing log upload path first.
 | Component | Reviewed input | Evidence status |
 | --- | --- | --- |
 | Runtime build metadata and cached Git helpers #73 | `97edf4361e145619259407426e621b0387fa54e9` | [Source/API contract and limits](version-validation.md); parent independently passes all 171 source comparisons and the actual native collector path, and verifies all 22 source/executable hashes |
-| Statistics producer and continuous daemon #75 | Pending final review | Component implementation and source/runtime validation in progress |
+| Statistics producer and continuous daemon #75 | `13624a75522b0a70c5166343c8889be0b747c4ee` | [Source/runtime contract](statsd-validation.md); parent independently passes the continuous source/native comparison and both production shutdown signals under sustained traffic, and verifies all 120 ledger hash references |
 | Tombstone daemon and native crash-reporting policy #76 | Pending final review | Component implementation and source/local-transport validation in progress |
 | GPIO alert beep daemon #79 | `a86f99d14f35eaa6e544a9c346d338698a29fed8` | [Source/runtime contract](beepd-validation.md); parent independently passes 17 daemon scenarios and four CLI cases using pinned pycapnp 2.1.0, and verifies all 555 source, binary and artifact hash references |
 
@@ -28,8 +28,9 @@ Supporting runtime PR #80 merged at `96decc71d6fc7505f62b508f381bb0c65cc26e9d`
 after its exact-head Rust, integration, fast and mapped-documentation checks passed.
 This branch includes that merge. A separate required telemetry CI job builds the
 new binaries, compares metadata and alert behavior with the original source, and
-retains raw IPC and Params evidence. Statistics and crash checks are added after
-their component review is complete.
+retains raw IPC and Params evidence. The statistics checks include real numeric
+producer types, atomic files, collector failures and production shutdown while
+metrics continue arriving. Crash checks are added after component review.
 
 The first local metadata collector run used historical pycapnp 2.2.4. Its packet
 observations remain recorded, but it is not the pinned dependency validation.
