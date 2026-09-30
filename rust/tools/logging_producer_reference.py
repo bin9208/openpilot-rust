@@ -74,10 +74,11 @@ def console_handler(value):
 
 
 class Probe:
-  def __init__(self, binary: Path, output: Path, endpoint: str | None = None, print_level: str | None = None):
+  def __init__(self, binary: Path, output: Path, endpoint: str | None = None, print_level: str | None = None,
+               stderr_path: Path | None = None):
     output.mkdir(parents=True, exist_ok=False)
     self.output = output
-    self.stderr = (output / 'stderr.log').open('w')
+    self.stderr = (stderr_path or output / 'stderr.log').open('w')
     env = dict(os.environ)
     if print_level is None:
       env.pop('LOGPRINT', None)

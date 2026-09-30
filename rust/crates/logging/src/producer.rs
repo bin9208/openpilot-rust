@@ -109,11 +109,10 @@ impl Logger {
             return Ok(Delivery::Filtered);
         }
         let metadata = site.metadata(&self.factory.host)?;
-        let console = if record.level >= self.factory.console {
-            write_console(&record)
-        } else {
-            Ok(())
-        };
+        if record.level >= self.factory.console {
+            // StreamHandler suppresses console I/O errors before the IPC handler runs.
+            let _ = write_console(&record);
+        }
         let packet = format_record(
             record.level,
             record.message,
@@ -121,10 +120,7 @@ impl Logger {
             record.exception.as_deref(),
             &metadata,
         )?;
-        let delivery = self.send(&packet)?;
-        // A failed console write must not prevent the later IPC handler from attempting delivery.
-        console?;
-        Ok(delivery)
+        self.send(&packet)
     }
     fn send(&mut self, packet: &[u8]) -> Result<Delivery, Error> {
         let pid = std::process::id();

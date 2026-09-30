@@ -25,7 +25,9 @@ or treats a host build as a device deployment.
 Transport connects lazily, preserves the 10 ms linger and default queue limit,
 and uses nonblocking sends. Queue-full drops remain distinct from other typed
 transport errors. The source console handler runs before IPC. A console I/O
-failure still allows an IPC attempt. PID changes after fork abandon only copied
+failure is suppressed and still allows an IPC attempt, matching StreamHandler;
+the real `/dev/full` source/native regression verifies both delivery and return.
+PID changes after fork abandon only copied
 inherited native handles, matching pyzmq's PID guard, and reconnect in the child;
 the parent retains its own connection. Production Rust uses no unsafe blocks;
 the isolated fork test uses a documented libc boundary.

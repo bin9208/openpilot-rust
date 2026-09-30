@@ -54,6 +54,7 @@ def records(binary: Path, output: Path) -> dict:
 
 def check(binary: Path, fork_binary: Path, collector: Path, output: Path) -> None:
   from logging_producer_native import native, backpressure, console
+  from logging_console_failure import check as console_failure
   from logging_producer_transport import forks, collectors, runtime_endpoint
 
   output.mkdir(parents=True, exist_ok=False)
@@ -63,6 +64,7 @@ def check(binary: Path, fork_binary: Path, collector: Path, output: Path) -> Non
     'runtime_endpoint': runtime_endpoint(binary, output / 'runtime-endpoint'),
     'backpressure': backpressure(binary, output / 'backpressure'),
     'console': console(binary, output / 'console'),
+    'console_failure': console_failure(binary, output / 'console-failure'),
     'fork': forks(fork_binary, output / 'fork'),
     'collectors': collectors(binary, collector, output / 'collectors'),
     'result': 'pass',
