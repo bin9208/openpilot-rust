@@ -61,6 +61,10 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
+      - name: Compare message state and service catalog with original source
+        run: |
+          python tools/check_services.py
+          python tools/check_message_state.py --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
       - name: Compare model desire state and Bluetooth command consumption with original source
         run: |
           python tools/check_desire_reference.py --binary target/debug/examples/desire_probe --output "$RUNNER_TEMP/model-desire"
@@ -96,6 +100,7 @@ jobs:
             ${{ runner.temp }}/dm-native/report.json
             ${{ runner.temp }}/driving-native/report.json
             ${{ runner.temp }}/policy-native/report.json
+            ${{ runner.temp }}/message-state/report.json
             ${{ runner.temp }}/model-desire/report.json
             ${{ runner.temp }}/model-commands/report.json
             ${{ runner.temp }}/model-inputs/report.json

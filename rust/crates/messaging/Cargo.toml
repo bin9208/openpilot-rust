@@ -1,0 +1,26 @@
+[package]
+name = "openpilot-messaging"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = ["native"]
+native = ["openpilot-msgq/native-skip-miri"]
+
+[dependencies]
+openpilot-cereal = { path = "../cereal" }
+openpilot-msgq = { path = "../msgq", default-features = false }
+capnp = "=0.27.2"
+rustix = { version = "1", features = ["time"] }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+
+[dev-dependencies]
+serde_json = { version = "1", features = ["float_roundtrip"] }
+tempfile = "3"
