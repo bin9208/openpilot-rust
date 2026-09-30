@@ -127,7 +127,9 @@
       "name": "dmonitoringmodeld",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.modeld.dmonitoringmodeld",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "native_dependencies": ["original msgq/VisionIPC through CXX", "CPU Clang/LLVM kernels or QCOM OpenCL runtime"],
+      "runtime_scope": "continuous driver-model daemon with source service queue capacities (#19); not selected by manager; QCOM device execution, zero-copy input, whole-runtime integration and device acceptance pending",
       "production_replaced": false
     },
     {

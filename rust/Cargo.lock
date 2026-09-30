@@ -359,6 +359,7 @@ dependencies = [
  "capnp",
  "libc",
  "openpilot-cereal",
+ "openpilot-messaging",
  "openpilot-model-runtime",
  "openpilot-modeld",
  "openpilot-msgq",
