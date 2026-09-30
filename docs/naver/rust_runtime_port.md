@@ -58,3 +58,9 @@ ports awareness, distraction, calibration, fallback, lockout and complete
 `driverMonitoringState` messages. Its [validation record](../rust-port/monitoring-validation.md)
 compares 209,144 original-policy frames and packets. Continuous IPC and
 whole-runtime integration remain open.
+
+[Continuous procLog issue #30](https://github.com/bin9208/openpilot-rust/issues/30)
+connects the validated collector and canonical encoder to the original 0.5 Hz
+runtime publication loop. Its [validation record](../rust-port/proclog-runtime-validation.md)
+includes source deadline comparisons, real IPC, overrun recovery and shutdown.
+Manager selection and whole-runtime device acceptance remain pending.

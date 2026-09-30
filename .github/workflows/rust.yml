@@ -76,6 +76,11 @@ jobs:
       - run: python tools/check_proclog_reference.py
       - run: python tools/check_params_reference.py
       - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
+      - name: Validate continuous procLog cadence and native IPC shutdown
+        run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_proclog_daemon.py \
+            --binary target/debug/openpilot-proclogd-runtime --cadence-binary target/debug/examples/cadence_trace \
+            --output "$RUNNER_TEMP/proclog-runtime"
       - name: Run the actual Python consumer against the bounded Rust producer
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/device_probe.py \
@@ -89,6 +94,10 @@ jobs:
           path: |
             rust/target/release/cpu-sample
             rust/target/release/openpilot-proclogd
+            rust/target/release/openpilot-proclogd-runtime
+            ${{ runner.temp }}/proclog-runtime/**/*.json
+            ${{ runner.temp }}/proclog-runtime/**/*.log
+            ${{ runner.temp }}/proclog-runtime/**/*.capnp
             ${{ runner.temp }}/host-probe.json
             ${{ runner.temp }}/dm-native/report.json
             ${{ runner.temp }}/driving-native/report.json

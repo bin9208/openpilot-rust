@@ -446,6 +446,7 @@ dependencies = [
  "openpilot-params",
  "openpilot-runtime-core",
  "rustix",
+ "signal-hook",
  "tempfile",
  "thiserror",
 ]
