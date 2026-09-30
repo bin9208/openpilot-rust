@@ -2325,6 +2325,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-soundd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "num-traits",
+ "openpilot-beepd",
+ "openpilot-cereal",
+ "openpilot-hardware-info",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-portaudio",
+ "openpilot-runtime-core",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-startup-ui"
 version = "0.1.0"
 dependencies = [

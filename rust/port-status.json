@@ -374,7 +374,11 @@
       "name": "soundd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.ui.soundd",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_validated",
+      "implementation": "rust/crates/soundd and rust/crates/portaudio; Rust assets/resampling/samples, alert/countdown/timeout/volume/MAIN policy, Params/language and continuous 20 Hz native IPC loop",
+      "native_dependencies": ["PortAudio v19 and its host audio backend loaded dynamically", "existing native msgq and libzmq logging", "Linux filesystem/clock/signal APIs"],
+      "runtime_scope": "original source and actual shipped/synthetic WAV sample comparisons; continuous native process with owned PortAudio ABI/isolated msgq; no real host/device audio; manager selection, full startup/upload and device acceptance pending",
+      "evidence": "docs/rust-port/soundd-validation.md",
       "production_replaced": false
     },
     {
