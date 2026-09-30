@@ -69,6 +69,22 @@ five-second watchdog, original SIGABRT, oversized packet, queue capacity and
 Rust error assertions remain. The complete affected native fixture passes
 locally; exact updated-head CI is required before integration.
 
+## Checked integration into dev
+
+[PR #57](https://github.com/bin9208/openpilot-rust/pull/57) merged into dev as
+`ea34b7fed7fea3395fbafd024345da35bc4a94b4` after current-head checks passed at
+`6218d397b67372e8042af6b1c543b0dc69ce1a0d`. The later fixture corrections are
+[logger signal capture #69](../naver/rust_logger_diagnostic_capture_20260930.md)
+and [Jetlink socket isolation #72](../naver/jetlink_socket_fixture_72.md).
+
+- [PR Rust host, sanitizer, source comparisons and aarch64](https://github.com/bin9208/openpilot-rust/actions/runs/36698821113): success.
+- [Separate push Rust checks](https://github.com/bin9208/openpilot-rust/actions/runs/36698813889): success; feature-push aarch64 is intentionally covered by the PR job.
+- [Integration and release build](https://github.com/bin9208/openpilot-rust/actions/runs/36698821624): success.
+- [PR fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/36698821068), [push fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/36698814014), and [mapped documentation](https://github.com/bin9208/openpilot-rust/actions/runs/36698821077): success.
+
+Separate merge-commit validation is pending. The next supporting-runtime
+integration is tracked in [#71](support-runtime-integration.md).
+
 Full-runtime #1/#6 remain open. The remaining daemon ports, production startup,
 model diagnostic callsites (#53), driving startup-order parity (#55), active web
 upload orchestration, and device/drive acceptance are separate requirements.

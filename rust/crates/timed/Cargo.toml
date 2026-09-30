@@ -1,0 +1,31 @@
+[package]
+name = "openpilot-timed"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-http-transport = { path = "../http-transport" }
+openpilot-params = { path = "../params" }
+openpilot-params-typed = { path = "../params-typed" }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging" }
+openpilot-logging = { path = "../logging" }
+capnp = "=0.27.2"
+chrono = "=0.4.45"
+rustix = { version = "1", features = ["time"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+url = "=2.5.8"
+signal-hook = "0.3"
+ureq = { version = "=3.4.2", features = ["json", "gzip", "brotli", "rustls", "cookies"] }
+
+[dev-dependencies]
+tempfile = "3"

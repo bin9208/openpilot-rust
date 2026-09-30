@@ -1,0 +1,31 @@
+[package]
+name = "openpilot-dashcam-upload"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-web-upload = { path = "../web-upload" }
+openpilot-params = { path = "../params" }
+openpilot-params-typed = { path = "../params-typed" }
+openpilot-logging = { path = "../logging" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+regex = "1"
+percent-encoding = "2"
+chrono = "0.4"
+uuid = { version = "1", features = ["v4"] }
+base64 = "0.22"
+rustix = { version = "1", features = ["time","process"] }
+
+[build-dependencies]
+regex = "1"
+
+[dev-dependencies]
+tempfile = "3"

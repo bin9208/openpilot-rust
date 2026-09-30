@@ -1,11 +1,27 @@
 """Prevent inherited publishers from acting in the independent Rust repository."""
 from pathlib import Path
+import subprocess
+import tempfile
 import unittest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_support_binding_path_is_configured_on_the_runner(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        for name, job in data['jobs'].items():
+            for value in job.get('env', {}).values():
+                with self.subTest(job=name):
+                    self.assertNotRegex(value, r'\$\{\{\s*runner[.\[]')
+        support = data['jobs']['support-runtime']
+        setup = next(step for step in support['steps'] if step.get('name') == 'Configure original support IPC imports')
+        with tempfile.TemporaryDirectory(prefix='support env ') as temporary:
+            output = Path(temporary) / 'environment'
+            environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
+            subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
+            self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/support-msgq-python:/fixture/repository:/fixture/tools\n')
+
     def test_inherited_side_effects_are_source_repository_only(self):
         for file, job in [('sync.yml', 'sync'), ('naver-upstream-sync.yml', 'sync'), ('wiki-settings-publish.yaml', 'synchronize'), ('carrot-route-vault-publish.yaml', 'publish')]:
             with self.subTest(file=file):
@@ -21,12 +37,22 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime'})
-        validation = next(step for step in gate['steps'] if step.get('name') == 'Require model memory and pipeline validation')
+        self.assertEqual(set(gate['needs']), {'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'web-upload-timeouts'})
+        validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
-                                            'LOGGER': '${{ needs.logger-runtime.result }}'})
-        for name in ('MEMORY', 'PIPELINES', 'LOGGER'):
-            self.assertIn(f'test "${name}" = success', validation['run'])
+                                            'LOGGER': '${{ needs.logger-runtime.result }}',
+                                            'SUPPORT': '${{ needs.support-runtime.result }}',
+                                            'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
+        results = dict.fromkeys(validation['env'], 'success')
+        command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
+        self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
+        for name in results:
+            for result in ('failure', 'cancelled', 'skipped', ''):
+                with self.subTest(job=name, result=result):
+                    self.assertNotEqual(subprocess.run(command, env=results | {name: result}, capture_output=True).returncode, 0)
+            with self.subTest(job=name, result='absent'):
+                self.assertNotEqual(subprocess.run(command, env={key: value for key, value in results.items() if key != name},
+                                                  capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
 

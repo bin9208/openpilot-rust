@@ -1,0 +1,24 @@
+[package]
+name = "openpilot-web-upload"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-logging = { path = "../logging" }
+openpilot-runtime-core = { path = "../runtime-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+ureq = { version = "=3.4.2", features = ["gzip", "brotli", "rustls", "cookies"] }
+url = "2"
+rand = "0.9"
+encoding_rs = "0.8"
+
+[dev-dependencies]
+tempfile = "3"

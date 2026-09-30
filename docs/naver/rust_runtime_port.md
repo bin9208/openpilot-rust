@@ -153,3 +153,64 @@ compete for their original 50 ms deadline. The
 [focused validation record](../rust-port/jetlink-runtime-fixture.md) records fixed
 serial/concurrent comparisons and the test-local lifetime guard. Production
 policy and device acceptance remain unchanged; exact-head CI remains required.
+[Legacy uploader issue #50](https://github.com/bin9208/openpilot-rust/issues/50)
+ports the source upload loop, JWT/HTTP/zstd path and native logging integration.
+Its [validation record](../rust-port/uploader-validation.md) covers original-source
+comparisons, local signed transfers, real msgq/Params and host ARM emulation.
+The original uploader registration remains commented out. The active Carrot
+upload path and complete normal-startup candidate remain open; the inherited
+marking failure is separately tracked in [#51](https://github.com/bin9208/openpilot-rust/issues/51).
+
+
+[Active Carrot upload transport issue #52](https://github.com/bin9208/openpilot-rust/issues/52)
+ports the shared session, file streaming, completion and tmux helpers. Its
+[validation record](../rust-port/web-upload-validation.md) covers actual source
+functions, local HTTP payloads, partial/canceled requests, unscaled timeouts and
+generic ARM emulation. Dashcam jobs/catalog/server/watchdog integration remains
+open; this library does not switch the active startup path.
+
+[Dashcam upload jobs #61](https://github.com/bin9208/openpilot-rust/issues/61)
+add native job execution, required catalog/metadata/report helpers and owned
+worker lifetimes. The [validation record](../rust-port/dashcam-jobs-validation.md)
+describes original-source state/HTTP/Params comparisons, real cancellation and
+process cleanup, and the intentional commit-link repository mapping. The Carrot
+HTTP server, manager selection and complete startup delivery remain pending.
+
+### Legacy uploader timeout follow-up (#50)
+
+A loopback response delayed 10.05 seconds reproduced a native/source discrepancy:
+Python rejected late API headers and bodies without an upload xattr, while the
+native socket timeout rounded up and accepted them. The transport now checks
+monotonic elapsed time after each read/write and rejects late completion. The
+real ten-second regression includes GET/PUT header/body stalls and progressing
+eleven-second bodies, preserving per-I/O rather than total-transfer timeout.
+The frozen pre-fix binary, failing captures and fresh validation are indexed in
+`.omo/evidence/uploader-timeout/evidence.json` in the issue-50 worktree. This does
+not enable the optional uploader or establish device validation.
+
+[Model diagnostics issue #53](https://github.com/bin9208/openpilot-rust/issues/53)
+connects original model-daemon log callsites and driving runtimeTiming to the
+Rust producer/collector path. The [validation record](../rust-port/model-diagnostics.md)
+separates exact source-expression checks, real model/VisionIPC publications,
+transport fault handling and source-locked NumPy 2.5.3 artifacts. Driver monitoring
+does not gain timing events absent from its source. The model-loading
+order differences found under [#55](https://github.com/bin9208/openpilot-rust/issues/55)
+and [#60](https://github.com/bin9208/openpilot-rust/issues/60) are corrected in the
+[startup follow-up](../rust-port/model-startup.md): both models load from validated
+connection dimensions before the first frame; driving also loads before CarParams.
+Native reproduction and first-frame/recurrent comparisons remain host evidence;
+parent CI and complete runtime/device gates stay separate.
+
+[Journald issue #65](https://github.com/bin9208/openpilot-rust/issues/65) adds the
+native OS-journal bridge with typed ordered JSON, real androidLog/diagnostic
+transports and owned child cleanup. Its
+[validation record](../rust-port/journald-validation.md) compares the actual
+original main with native host/ASan and generic ARM/QEMU executions. The inherited
+direct-SIGTERM orphan is tracked separately in #66; manager selection and device
+acceptance remain pending.
+
+[Supporting runtime integration #71](https://github.com/bin9208/openpilot-rust/issues/71)
+combines upload orchestration, typed Params, model startup/diagnostics and the
+journal bridge. The [integration record](../rust-port/support-runtime-integration.md)
+tracks frozen inputs, combined checks and remaining runtime work. Normal startup,
+active server integration and the complete device-test candidate remain pending.
