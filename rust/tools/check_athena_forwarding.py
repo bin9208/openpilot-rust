@@ -17,6 +17,7 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('binary', type=Path)
   parser.add_argument('output', type=Path)
+  parser.add_argument('--startup-delay', type=float, default=0)
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=True)
   result = {'pass': False}
@@ -56,9 +57,12 @@ def main():
       assert scan.wait(timeout=5) == 0
     result['source_scan_and_cached_external_mutation'] = observations
     os.removexattr(root / 'a', 'user.upload')
+    os.setxattr(root / 'c', 'user.upload', (2147483647).to_bytes(4, sys.byteorder))
     stats = env.home / 'stats'
     (stats / 'tmp-current').write_text('must remain')
     (stats / 'first').write_bytes(b'first\r\nline\rlast')
+    time.sleep(args.startup_delay)
+    result['startup_delay'] = args.startup_delay
     with (args.output / 'daemon.log').open('wb') as output:
       process = subprocess.Popen([args.binary, 'session'], env=env.env, stdout=output, stderr=subprocess.STDOUT)
       try:
