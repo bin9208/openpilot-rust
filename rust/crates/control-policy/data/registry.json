@@ -1,0 +1,1975 @@
+[
+  {
+    "fingerprint": "ACURA_ILX",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "ACURA_RDX",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "ACURA_RDX_3G",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "AUDI_A3_MK3",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "AUDI_Q2_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "AUDI_Q3_MK2",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "BUICK_BABYENCLAVE",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "BUICK_LACROSSE",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "BUICK_REGAL",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CADILLAC_ATS",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CADILLAC_CT6_ACC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CADILLAC_CT6_CC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CADILLAC_ESCALADE",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CADILLAC_ESCALADE_ESV",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CADILLAC_ESCALADE_ESV_2019",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CADILLAC_XT4",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CADILLAC_XT5_CC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_BOLT_CC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": [
+      1.8,
+      1.1,
+      0.3,
+      -0.045
+    ]
+  },
+  {
+    "fingerprint": "CHEVROLET_BOLT_EUV",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": [
+      2.6531724862969748,
+      1.0,
+      0.1919764879840985,
+      0.009054123646805178
+    ]
+  },
+  {
+    "fingerprint": "CHEVROLET_EQUINOX",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_EQUINOX_CC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_MALIBU",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_MALIBU_CC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_SILVERADO",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": [
+      3.29974374,
+      1.0,
+      0.25571356,
+      0.0465122
+    ]
+  },
+  {
+    "fingerprint": "CHEVROLET_SUBURBAN",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_SUBURBAN_CC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_TRAILBLAZER",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_TRAILBLAZER_CC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_TRAVERSE",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_TRAX",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_VOLT",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": true,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_VOLT_2019",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHEVROLET_VOLT_CC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": true,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHRYSLER_PACIFICA_2018",
+    "interface": "chrysler",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHRYSLER_PACIFICA_2018_HYBRID",
+    "interface": "chrysler",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHRYSLER_PACIFICA_2019_HYBRID",
+    "interface": "chrysler",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "CHRYSLER_PACIFICA_2020",
+    "interface": "chrysler",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "COMMA_BODY",
+    "interface": "body",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "DODGE_DURANGO",
+    "interface": "chrysler",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_BRONCO_SPORT_MK1",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_ESCAPE_MK4",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_ESCAPE_MK4_5",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_EXPEDITION_MK4",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_EXPLORER_MK6",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_FOCUS_MK4",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_F_150_LIGHTNING_MK1",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_F_150_MK14",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_MAVERICK_MK1",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_MUSTANG_MACH_E_MK1",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "FORD_RANGER_MK2",
+    "interface": "ford",
+    "accel": "ford",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_EQ900",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_EQ900_L",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_G70",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_G70_2020",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_G80",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_G80_2ND_GEN_FL",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_G90",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_G90_2019",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_GV60_EV_1ST_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_GV70_1ST_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_GV70_ELECTRIFIED_1ST_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_GV70_EV_1ST_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GENESIS_GV80",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GMC_ACADIA",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": [
+      4.78003305,
+      1.0,
+      0.3122,
+      0.05591772
+    ]
+  },
+  {
+    "fingerprint": "GMC_YUKON",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "GMC_YUKON_CC",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HOLDEN_ASTRA",
+    "interface": "gm",
+    "accel": "gm",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_ACCORD",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_CIVIC",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_CIVIC_2022",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_CIVIC_BOSCH",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_CIVIC_BOSCH_DIESEL",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_CRV",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_CRV_5G",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_CRV_EU",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_CRV_HYBRID",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_E",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_FIT",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_FREED",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_HRV",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_HRV_3G",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_INSIGHT",
+    "interface": "honda",
+    "accel": "honda_bosch",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_ODYSSEY",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_ODYSSEY_CHN",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_PILOT",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HONDA_RIDGELINE",
+    "interface": "honda",
+    "accel": "honda_nidec",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_AZERA_6TH_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_AZERA_7TH_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_AZERA_HEV_6TH_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_CASPER",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_CASPER_EV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_CUSTIN_1ST_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_ELANTRA",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_ELANTRA_2021",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_ELANTRA_GT_I30",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_ELANTRA_HEV_2021",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_GENESIS",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_GRANDEUR_IG",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_GRANDEUR_IG_HEV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_5",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_5_N",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_5_PE",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_6",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_9",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_EV_2020",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_EV_LTD",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_HEV_2022",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_PHEV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_IONIQ_PHEV_2019",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_KONA",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_KONA_2022",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_KONA_EV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_KONA_EV_2022",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_KONA_EV_2ND_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_KONA_HEV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_KONA_HEV_2ND_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_NEXO",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_NEXO_1ST_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_PALISADE",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_PORTER_II_EV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SANTAFE_MX5",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SANTAFE_MX5_HEV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SANTA_CRUZ_1ST_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SANTA_FE",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SANTA_FE_2022",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SANTA_FE_HEV_2022",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SANTA_FE_PHEV_2022",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SONATA",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SONATA_2024",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SONATA_HYBRID",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_SONATA_LF",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_STARIA_4TH_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_STARIA_EV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_TUCSON",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_TUCSON_4TH_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "HYUNDAI_VELOSTER",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "JEEP_GRAND_CHEROKEE",
+    "interface": "chrysler",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "JEEP_GRAND_CHEROKEE_2019",
+    "interface": "chrysler",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_CARNIVAL_4TH_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_CEED",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_EV3",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_EV4",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_EV5",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_EV6",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_EV6_PE",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_EV9",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_EV_SK3",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_FORTE",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K5",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K5_2021",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K5_DL3_24",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K5_DL3_24_HEV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K5_HEV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K5_HEV_2020",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K5_HEV_2022",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K7",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K7_HEV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K7_HEV_PE",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K7_PE",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K8_HEV_1ST_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_K9",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_MOHAVE",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_NIRO_EV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_NIRO_EV_2ND_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_NIRO_HEV_2021",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_NIRO_HEV_2ND_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_NIRO_PHEV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_NIRO_PHEV_2022",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_OPTIMA_G4",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_OPTIMA_G4_FL",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_OPTIMA_H",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_OPTIMA_H_G4_FL",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_PV5",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_RAY_EV",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_SELTOS",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_SORENTO",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_SORENTO_4TH_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_SORENTO_HEV_4TH_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_SPORTAGE_5TH_GEN",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_STINGER",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "KIA_STINGER_2022",
+    "interface": "hyundai",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_CTH",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_ES",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_ES_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_GS_F",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_IS",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_IS_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_LC_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_NX",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_NX_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_RC",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_RX",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "LEXUS_RX_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "MAZDA_3",
+    "interface": "mazda",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "MAZDA_6",
+    "interface": "mazda",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "MAZDA_CX5",
+    "interface": "mazda",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "MAZDA_CX5_2022",
+    "interface": "mazda",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "MAZDA_CX9",
+    "interface": "mazda",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "MAZDA_CX9_2021",
+    "interface": "mazda",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "MOCK",
+    "interface": "mock",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "NISSAN_ALTIMA",
+    "interface": "nissan",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "NISSAN_LEAF",
+    "interface": "nissan",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "NISSAN_LEAF_IC",
+    "interface": "nissan",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "NISSAN_ROGUE",
+    "interface": "nissan",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "NISSAN_XTRAIL",
+    "interface": "nissan",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "PSA_PEUGEOT_208",
+    "interface": "psa",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "RAM_1500_5TH_GEN",
+    "interface": "chrysler",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "RAM_HD_5TH_GEN",
+    "interface": "chrysler",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "RIVIAN_R1_GEN1",
+    "interface": "rivian",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SEAT_ATECA_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SKODA_FABIA_MK4",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SKODA_KAMIQ_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SKODA_KAROQ_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SKODA_KODIAQ_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SKODA_OCTAVIA_MK3",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SKODA_SUPERB_MK3",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_ASCENT",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_ASCENT_2023",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_CROSSTREK_HYBRID",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_FORESTER",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_FORESTER_2022",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_FORESTER_HYBRID",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_FORESTER_PREGLOBAL",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_IMPREZA",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_IMPREZA_2020",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_LEGACY",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_LEGACY_PREGLOBAL",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_OUTBACK",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_OUTBACK_2023",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_OUTBACK_PREGLOBAL",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "SUBARU_OUTBACK_PREGLOBAL_2018",
+    "interface": "subaru",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TESLA_MODEL_3",
+    "interface": "tesla",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TESLA_MODEL_X",
+    "interface": "tesla",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TESLA_MODEL_Y",
+    "interface": "tesla",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_ALPHARD_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_AVALON",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_AVALON_2019",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_AVALON_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_CAMRY",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_CAMRY_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_CHR",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_CHR_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_COROLLA",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_COROLLA_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_HIGHLANDER",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_HIGHLANDER_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_MIRAI",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_PRIUS",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_PRIUS_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_PRIUS_V",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_RAV4",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_RAV4H",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_RAV4_PRIME",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_RAV4_TSS2",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_RAV4_TSS2_2022",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_RAV4_TSS2_2023",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_SIENNA",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_SIENNA_4TH_GEN",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "TOYOTA_YARIS",
+    "interface": "toyota",
+    "accel": "toyota",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_ARTEON_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_ATLAS_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_CADDY_MK3",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_CRAFTER_MK2",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_GOLF_MK7",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_ID4_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_ID4_MK2",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_JETTA_MK6",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_JETTA_MK7",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_PASSAT_MK8",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_PASSAT_NMS",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_POLO_MK6",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_SHARAN_MK2",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_TAOS_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_TCROSS_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_TIGUAN_MK2",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_TOURAN_MK2",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_TRANSPORTER_T61",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  },
+  {
+    "fingerprint": "VOLKSWAGEN_TROC_MK1",
+    "interface": "volkswagen",
+    "accel": "base",
+    "volt_feedforward": false,
+    "siglin": null
+  }
+]
