@@ -122,8 +122,8 @@ void Surface::smooth_texture(uint32_t texture) {
   SetTextureFilter(value, TEXTURE_FILTER_BILINEAR);
   SetTextureWrap(value, TEXTURE_WRAP_CLAMP);
 }
-void Surface::ring(Point center, float inner, float outer, float start, float end, int32_t segments, uint32_t tint) {
-  DrawRing({center.x, center.y}, inner, outer, start, end, segments, color(tint));
+void Surface::ring(Ring ring) {
+  DrawRing({ring.center.x, ring.center.y}, ring.inner, ring.outer, ring.start, ring.end, ring.segments, color(ring.color));
 }
 uint32_t Surface::font(rust::Str path, int32_t size,
                        rust::Slice<const int32_t> points, bool atlas,

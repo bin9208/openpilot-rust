@@ -84,17 +84,17 @@ impl Renderer {
         Ok(texture)
     }
     pub fn ring(&mut self, ring: crate::draw::Ring) {
-        self.surface.pin_mut().ring(
-            ffi::Point {
+        self.surface.pin_mut().ring(ffi::Ring {
+            center: ffi::Point {
                 x: ring.center.x,
                 y: ring.center.y,
             },
-            ring.inner,
-            ring.outer,
-            ring.start,
-            ring.end,
-            ring.segments,
-            ring.color,
-        );
+            inner: ring.inner,
+            outer: ring.outer,
+            start: ring.start,
+            end: ring.end,
+            segments: ring.segments,
+            color: ring.color,
+        });
     }
 }

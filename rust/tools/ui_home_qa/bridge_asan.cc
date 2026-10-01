@@ -20,7 +20,7 @@ int main(int argc,char **argv) {
       surface->begin(1);
       surface->clear(0xff000000);
       surface->tinted_texture(texture,{0,0,float(image.width),float(image.height)},{0,0,536,240},{0,0},0,0xffffffff);
-      surface->ring({468,68},53,61,90,float(90+step*20),36,0xff40ff00);
+      surface->ring({{468,68},53,61,90,float(90+step*20),36,0xff40ff00});
       surface->screenshot(argv[2]);
       surface->finish_content(1);surface->present();
       surface->texture_release(texture);

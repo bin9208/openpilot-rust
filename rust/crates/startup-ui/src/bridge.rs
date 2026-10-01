@@ -23,6 +23,16 @@ pub mod ffi {
         y: f32,
         down: bool,
     }
+    #[derive(Clone, Copy, Debug)]
+    struct Ring {
+        center: Point,
+        inner: f32,
+        outer: f32,
+        start: f32,
+        end: f32,
+        segments: i32,
+        color: u32,
+    }
     unsafe extern "C++" {
         include!("bridge.h");
         include!("egl.h");
@@ -61,16 +71,7 @@ pub mod ffi {
             rgba: &[u8],
         ) -> Result<u32>;
         fn smooth_texture(self: Pin<&mut Surface>, texture: u32) -> Result<()>;
-        fn ring(
-            self: Pin<&mut Surface>,
-            center: Point,
-            inner: f32,
-            outer: f32,
-            start: f32,
-            end: f32,
-            segments: i32,
-            color: u32,
-        );
+        fn ring(self: Pin<&mut Surface>, ring: Ring);
         fn font(
             self: Pin<&mut Surface>,
             path: &str,
