@@ -215,9 +215,14 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime', 'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'web-upload-timeouts'})
+        self.assertEqual(set(gate['needs']), {
+            'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
+            'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
+            'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
+        })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
-        self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
+        self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
+                                            'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
                                             'SUPPORT': '${{ needs.support-runtime.result }}',
                                             'TELEMETRY': '${{ needs.telemetry-runtime.result }}',
@@ -230,6 +235,7 @@ class RustIsolationTests(unittest.TestCase):
                                             'ESTIMATION': '${{ needs.estimation-runtime.result }}',
                                             'UI_CONNECTIVITY': '${{ needs.ui-connectivity.result }}',
                                             'ATHENA': '${{ needs.athena-runtime.result }}',
+                                            'CONTROLS': '${{ needs.controls-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]

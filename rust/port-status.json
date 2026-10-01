@@ -121,7 +121,11 @@
       "name": "controlsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.controlsd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/controlsd and control-policy; continuous native control loop, consumed interface policies for 279 identities, longitudinal/coasting, angle/PID/torque/NNFF and MEB curvature control",
+      "native_dependencies": ["pinned NumPy 2.5.3 OpenBLAS 0.3.34.106.0 ILP64 numerical artifact (no Python runtime)", "original shipped Flux/Nano torque weights", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "unchanged-source loop and policy comparisons, synthetic native IPC/Params startup and shutdown, memory gates; original PSA startup defects remain issue #156; production selection, full startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/rust-port/controlsd-validation.md",
       "production_replaced": false
     },
     {

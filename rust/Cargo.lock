@@ -1905,6 +1905,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-control-policy"
+version = "0.1.0"
+dependencies = [
+ "libloading",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-controlsd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "libc",
+ "openpilot-beepd",
+ "openpilot-calibrationd",
+ "openpilot-cereal",
+ "openpilot-control-policy",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "openpilot-runtime-core",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-crash-reporting"
 version = "0.1.0"
 dependencies = [

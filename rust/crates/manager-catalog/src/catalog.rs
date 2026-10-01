@@ -90,6 +90,7 @@ fn availability(name: &str) -> RustAvailability {
         "bridge" => ("openpilot-bridge", "bridge"),
         "calibrationd" => ("openpilot-calibrationd", "openpilot-calibrationd"),
         "carrot_bluetooth" => ("openpilot-bluetooth", "openpilot-bluetoothd"),
+        "controlsd" => ("openpilot-controlsd", "openpilot-controlsd"),
         "cweb_push" => ("openpilot-cweb-push", "openpilot-cweb-push"),
         "deleter" => ("openpilot-deleter", "openpilot-deleter"),
         "dmonitoringd" => ("openpilot-dmonitoringd", "openpilot-dmonitoringd"),

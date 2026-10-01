@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, web-upload-timeouts]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -37,6 +37,7 @@ jobs:
           ESTIMATION: ${{ needs.estimation-runtime.result }}
           UI_CONNECTIVITY: ${{ needs.ui-connectivity.result }}
           ATHENA: ${{ needs.athena-runtime.result }}
+          CONTROLS: ${{ needs.controls-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$WORKSPACE" = success
@@ -54,6 +55,7 @@ jobs:
           test "$ESTIMATION" = success
           test "$UI_CONNECTIVITY" = success
           test "$ATHENA" = success
+          test "$CONTROLS" = success
           test "$UPLOAD_TIMEOUTS" = success
   workspace:
     name: rust workspace checks
@@ -90,6 +92,11 @@ jobs:
           python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
           python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Stage pinned numerical dependency before required workspace tests
+        run: |
+          python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
+          python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-numerics"
+          printf 'CONTROLS_NUMERICS=%s/torque-numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: cargo test --workspace --locked
       - name: Compare QCOM fixtures with the original argument and packet encoder
         run: python tools/qcom_fixtures.py --verify crates/model-runtime/tests/fixtures/qcom
@@ -128,8 +135,6 @@ jobs:
           python tools/check_message_state.py --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
       - name: Stage pinned native torque numerical dependency and compare original estimator
         run: |
-          python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
-          python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-numerics"
           cargo build -p openpilot-torqued --bins --examples --locked
           OPENBLAS_NUM_THREADS=1 python tools/check_torque_reference.py --binary target/debug/examples/torque_trace --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-estimator"
           OPENBLAS_NUM_THREADS=1 python tools/check_torque_loop.py --binary target/debug/examples/torque_loop --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-loop"
@@ -656,6 +661,57 @@ jobs:
         with:
           name: rust-gnss-evidence
           path: ${{ runner.temp }}/gnss/
+  controls-runtime:
+    name: rust control runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 pycryptodome==3.23.0 cffi==2.1.1 zstandard==0.25.0 pyzmq==27.2.0
+      - name: Stage source-pinned control numerical dependency
+        run: |
+          python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/control-wheels"
+          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/control-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/control-numerics"
+          printf 'CONTROLS_NUMERICS=%s/control-numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Build native controller and policy probes
+        run: |
+          python rust/tools/stage_control_dbcs.py
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-controlsd -p openpilot-control-policy --bins --examples --locked
+      - name: Compare every policy identity and neural asset with unchanged source
+        run: |
+          python rust/tools/check_control_policies.py --trace "$PWD/rust/target/debug/examples/policy_trace" --evidence "$RUNNER_TEMP/controls/policies"
+          python rust/tools/check_control_neural.py --trace "$PWD/rust/target/debug/examples/neural_trace" --numerics "$CONTROLS_NUMERICS" --evidence "$RUNNER_TEMP/controls/neural"
+      - name: Compare full control loop, malformed startup and continuous native IPC
+        run: |
+          python rust/tools/check_controlsd.py --trace "$PWD/rust/target/debug/examples/controlsd_trace" --numerics "$CONTROLS_NUMERICS" --evidence "$RUNNER_TEMP/controls/loop"
+          python rust/tools/check_control_failures.py --trace "$PWD/rust/target/debug/examples/controlsd_trace" --numerics "$CONTROLS_NUMERICS" --evidence "$RUNNER_TEMP/controls/rejections"
+          python rust/tools/check_controlsd_daemon.py --target "$PWD/rust/target" --numerics "$CONTROLS_NUMERICS" --evidence "$RUNNER_TEMP/controls/native"
+      - name: Check controller package tests and numerical memory ownership
+        run: |
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-control-policy -p openpilot-controlsd --locked
+          rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
+          RUSTFLAGS=-Zsanitizer=address ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 cargo +nightly-2026-09-29 test --manifest-path rust/Cargo.toml -p openpilot-control-policy --test native --target x86_64-unknown-linux-gnu --locked
+          RUSTFLAGS=-Zsanitizer=address ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 cargo +nightly-2026-09-29 test --manifest-path rust/Cargo.toml -p openpilot-controlsd --lib --target x86_64-unknown-linux-gnu --locked
+          MIRIFLAGS='-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.01' cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-control-policy --lib --test math --locked
+          MIRIFLAGS='-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.01' cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-controlsd --lib --test state --locked
+      - name: Retain controller source and native evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-controls-evidence
+          path: ${{ runner.temp }}/controls/
   estimation-runtime:
     name: rust estimation runtime
     runs-on: ubuntu-24.04
