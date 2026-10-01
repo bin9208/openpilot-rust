@@ -1,5 +1,6 @@
 pub mod config;
 pub mod controller;
+mod feedback;
 pub mod fingerprints;
 mod hud;
 pub mod input_decode;

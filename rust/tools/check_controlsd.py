@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import copy
 import json
 import os
 from pathlib import Path
@@ -19,6 +20,12 @@ def main():
   args = parser.parse_args()
   args.evidence.mkdir(parents=True, exist_ok=True)
   request = {'cases': cases() + scenarios()}
+  for token in ['1_0', '0x_A', '0Xf_f', '0b_10', '0o_10', '0_0', '00', '- 1', '+ 1', '-2147483648']:
+    case = copy.deepcopy(request['cases'][3])
+    case['name'] = 'fingerprints-valid-' + token
+    case['frames'] = case['frames'][:5]
+    case['params']['FingerPrints'] = list(('{0: {' + token + ': 8}, 1: {}, 2: {}, 3: {}}').encode())
+    request['cases'].append(case)
   (args.evidence / 'input.json').write_text(json.dumps(request) + '\n')
   expected = [trace(case) for case in request['cases']]
   (args.evidence / 'source.json').write_text(json.dumps(expected, indent=2) + '\n')

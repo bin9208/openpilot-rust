@@ -68,21 +68,27 @@ Evidence is retained in the parent workspace's ignored `.omo/evidence/controlsd-
 
 | Scenario | Binary observable | Artifact |
 | --- | --- | --- |
-| Full host control loop, 30 cases and 8,605 frames | 701,778 numeric comparisons exactly equal; Params actions, state, flags and both publications agree | `final-loop/results.json` |
+| Full host control loop, 40 cases and 8,655 frames | 705,948 numeric comparisons exactly equal; Params actions, state, flags and both publications agree | `revision-loop/results.json` |
 | All registered identities | 279 identities, 29,295 consumed policy inputs, 1,116 model selections and 280 SequenceMatcher pairs exactly equal | `policies/results.json` |
-| Neural assets on x86_64 and aarch64 | 117 Flux models, 3 Nano models, 66 inputs each and 4,102 exp inputs; bit-identical results | `neural/results.json`, `arm-neural/results.json` |
-| ARM full loop under QEMU | 30 cases / 8,605 frames / 701,778 numeric comparisons exactly equal; no device or physical scheduling claim | `final-arm-loop/results.json` |
-| Native startup, persistence and restart | Waits for CarParams; 140 frames / 280 publications per run; durable personality/hint writes; restart from saved Params; SIGINT/SIGTERM exit zero; no Python mapped | `final-native/2/results.json`, `final-native/15/results.json` |
-| Malformed boundaries | 15 source-rejected scenarios also terminate natively without a control publication trace | `final-failures/results.json` |
-| Native numerical memory boundary | 128 library create/drop cycles; checked matrix layouts and bad dimensions; ASan reports no errors | `asan-native.log` |
+| Neural assets on x86_64 and aarch64 | 117 Flux models, 3 Nano models, 66 inputs each and 4,102 exp inputs; bit-identical results | `revision-neural/results.json`, `revision-arm-neural/results.json` |
+| ARM full loop under QEMU | 40 cases / 8,655 frames / 705,948 numeric comparisons exactly equal; no device or physical scheduling claim | `revision-arm-loop/results.json` |
+| Native startup, persistence and restart | Waits for CarParams; 140 frames / 280 publications per run; durable personality/hint writes; restart from saved Params; SIGINT/SIGTERM exit zero; no Python mapped | `revision-native/2/results.json`, `revision-native/15/results.json` |
+| Malformed boundaries | 27 source-rejected scenarios also terminate natively without a control publication trace | `revision-failures/results.json` |
+| Native numerical memory boundary | 128 library create/drop cycles; checked matrix layouts and bad dimensions; ASan reports no errors | `revision-asan.log` |
 | Scheduler ABI and policy | Initialized FIFO53 ABI arguments; PC bypass; FIFO-before-affinity order and failure propagation; ASan reports no errors | `asan-scheduler.log` |
-| Safe Rust state/memory | Five policy and five controller tests pass Miri strict provenance, symbolic alignment and preemption | `miri-policy.log`, `miri-state.log` |
-| Build and static checks | Bounded host and GNU aarch64 builds, package tests, clippy, formatting and Python checks | `runtime-build.log`, `arm-daemon-build.log`, `unit.log`, `clippy.log`, `ruff.log` |
+| Safe Rust state/memory | Five policy and five controller tests pass Miri strict provenance, symbolic alignment and preemption | `miri-policy.log`, `revision-miri.log` |
+| Build and static checks | Bounded host and GNU aarch64 builds, package tests, clippy, formatting and Python checks | `revision-build.log`, `revision-arm-build.log`, `revision-unit.log`, `revision-clippy.log`, `revision-ruff.log` |
 
 The native numerical test deliberately requires `CONTROLS_NUMERICS`; it does not skip when the artifact is missing. ASan instruments the Rust boundary, not external OpenBLAS internals. Miri does not execute native libraries or kernel scheduling. The scheduler test uses a captured callback instead of applying FIFO scheduling to hardware.
 
 ## Source defect and remaining integration
 
-[Issue #156](https://github.com/bin9208/openpilot-rust/issues/156) records two pre-existing PSA gaps: `get_non_essential_params('PSA_PEUGEOT_208')` raises on a missing torque-data key, and the actual PSA constructor additionally requires absent `psa_aee2010_r3.dbc`. No source policy or DBC is fabricated here. All 15 families' consumed policies are compared directly; full unchanged-source loop coverage spans the other 14 families. The PSA source startup limitation remains open.
+[Issue #156](https://github.com/bin9208/openpilot-rust/issues/156) records two pre-existing PSA gaps: `get_non_essential_params('PSA_PEUGEOT_208')` raises on a missing torque-data key, and the actual PSA constructor additionally requires absent `psa_aee2010_r3.dbc`. Native startup explicitly rejects the PSA identity before publishing, including CarParams carrying otherwise usable tuning. No source policy or DBC is fabricated here. All 15 families' consumed policies are compared directly; full unchanged-source loop coverage spans the other 14 families. The PSA source startup limitation remains open.
 
 The candidate catalog and `rust/port-status.json` expose the native component while preserving original production descriptors. Exact-SHA CI, integration with selfdrived/card/planners and the rest of the project-owned runtime, normal startup/log upload, AGNOS packaging and first user device comparison remain separate gates under #1. No C3X, NAS, real CAN, account service or physical device was accessed. This work establishes neither CPU savings nor vehicle behavior.
+
+## Review revision
+
+The independent review counterexamples were reproduced before repair. PSA with usable Honda-derived tuning now preserves the original missing-DBC startup rejection. FingerPrints retains the persisted nested integer-dictionary contract: signed 32-bit bus/address/length values, decimal and Python radix literals, valid numeric underscores, and optional unary-sign whitespace. Invalid trailing/repeated underscores, invalid radix digits and nonzero decimal leading-zero forms reject instead of being normalized. Ten accepted lexical forms and eleven additional rejected forms are checked against unchanged source; arbitrary Python literals outside the persisted integer-dictionary shape are not implemented. Host and ARM reproduce both reviewer rejection cases.
+
+Nano layers are validated and flattened during deserialization, retaining both final distribution outputs while prediction consumes the first as source does. Repeated inference reuses immutable contiguous weights; the ASan test exercises repeated predictions and rejection of empty/mismatched layers. Pose calibration and safety feedback moved to feedback.rs without changing call order or controller state. Revision artifacts use the revision-* prefix; INDEX.json binds their invocations and hashes to the revision SHA.

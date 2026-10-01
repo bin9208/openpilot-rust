@@ -35,7 +35,9 @@ def main():
     case['name'] = 'malformed-' + key
     case['params'][key] = list(value)
     fixtures.append(case)
-  for value in [b'', b'{', b'{1: {}}', b'\xff']:
+  for value in [b'', b'{', b'{1: {}}', b'\xff'] + [
+    ('{0: {' + token + ': 8}, 1: {}, 2: {}, 3: {}}').encode() for token in ['1_', '_1', '1__0', '0x__1', '0x1_', '0b2', '0o8', '01', '0_1', '0x', '++1']
+  ]:
     case = copy.deepcopy(basic[3])
     case['frames'] = case['frames'][:1]
     case['name'] = 'fingerprints-' + value.hex()
@@ -53,6 +55,15 @@ def main():
       mutate(cp)
       case['params']['CarParams'] = list(cp.to_bytes())
     fixtures.append(case)
+  case = copy.deepcopy(basic[0])
+  case['name'] = 'psa-valid-tuning'
+  case['frames'] = case['frames'][:5]
+  with car.CarParams.from_bytes(bytes(case['params']['CarParams'])) as original:
+    cp = original.as_builder()
+    cp.carFingerprint = 'PSA_PEUGEOT_208'
+    cp.brand = 'psa'
+    case['params']['CarParams'] = list(cp.to_bytes())
+  fixtures.append(case)
   case = copy.deepcopy(basic[1])
   case['name'] = 'zero-torque-factor'
   case['frames'] = case['frames'][:5]

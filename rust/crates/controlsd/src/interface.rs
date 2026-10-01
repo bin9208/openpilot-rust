@@ -138,6 +138,11 @@ fn constructor_parameters(
     params: &mut impl Parameters,
 ) -> Result<(), Error> {
     match interface {
+        Interface::Psa => {
+            return Err(Error::Contract(
+                "PSA startup unsupported: missing source DBC (#156)",
+            ));
+        }
         Interface::Hyundai => {
             params.integer("HyundaiCameraSCC")?;
             params.put_boolean("HyundaiCameraSccHint", false)?;

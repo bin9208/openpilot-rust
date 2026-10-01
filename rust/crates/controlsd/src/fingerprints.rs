@@ -55,37 +55,55 @@ impl Parser<'_> {
     }
     fn integer(&mut self) -> Result<i32, Error> {
         self.space();
+        let sign = if self.take(b'-') {
+            -1
+        } else {
+            self.take(b'+');
+            1
+        };
+        self.space();
         let start = self.index;
-        if matches!(self.chars.get(self.index), Some(b'+' | b'-')) {
+        while self
+            .chars
+            .get(self.index)
+            .is_some_and(|c| c.is_ascii_alphanumeric() || *c == b'_')
+        {
             self.index += 1;
         }
-        while self.chars.get(self.index).is_some_and(|c| {
-            c.is_ascii_hexdigit() || matches!(c, b'x' | b'X' | b'o' | b'O' | b'b' | b'B' | b'_')
-        }) {
-            self.index += 1;
+        let token = &self.chars[start..self.index];
+        let (radix, digits) = match token.get(..2) {
+            Some(b"0x" | b"0X") => (16, &token[2..]),
+            Some(b"0o" | b"0O") => (8, &token[2..]),
+            Some(b"0b" | b"0B") => (2, &token[2..]),
+            _ => (10, token),
+        };
+        let digit = |c: u8| char::from(c).is_digit(radix);
+        if digits.is_empty()
+            || !digits.last().is_some_and(|&last| digit(last))
+            || digits.iter().enumerate().any(|(i, &c)| {
+                if c == b'_' {
+                    (i == 0 && radix == 10)
+                        || (i > 0 && !digit(digits[i - 1]))
+                        || !digits.get(i + 1).is_some_and(|&next| digit(next))
+                } else {
+                    !digit(c)
+                }
+            })
+            || (radix == 10 && digits[0] == b'0' && digits.iter().any(|&c| c != b'0' && c != b'_'))
+        {
+            return Err(Error::Contract("FingerPrints integer syntax"));
         }
-        let value = std::str::from_utf8(&self.chars[start..self.index])
-            .map_err(|_| Error::Contract("FingerPrints integer"))?
-            .replace('_', "");
-        let (sign, unsigned) = if let Some(s) = value.strip_prefix('-') {
-            (-1, s)
-        } else {
-            (1, value.strip_prefix('+').unwrap_or(&value))
-        };
-        let (radix, unsigned) = if unsigned.starts_with("0x") || unsigned.starts_with("0X") {
-            (16, &unsigned[2..])
-        } else if unsigned.starts_with("0o") || unsigned.starts_with("0O") {
-            (8, &unsigned[2..])
-        } else if unsigned.starts_with("0b") || unsigned.starts_with("0B") {
-            (2, &unsigned[2..])
-        } else {
-            (10, unsigned)
-        };
-        i32::from_str_radix(unsigned, radix)
+        let normalized: String = digits
+            .iter()
+            .filter(|&&c| c != b'_')
+            .map(|&c| char::from(c))
+            .collect();
+        i64::from_str_radix(&normalized, radix)
             .ok()
-            .and_then(|v| v.checked_mul(sign))
+            .and_then(|v| i32::try_from(v * sign).ok())
             .ok_or(Error::Contract("FingerPrints integer"))
     }
+
     fn dictionary(&mut self) -> Result<BTreeMap<i32, BTreeMap<i32, i32>>, Error> {
         self.expect(b'{')?;
         let mut result = BTreeMap::new();
