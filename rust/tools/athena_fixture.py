@@ -113,7 +113,7 @@ def daemon(binary, root, env, trace=False):
   log = (root / 'daemon.log').open('wb')
   command = [str(binary)]
   if trace:
-    command = ['strace', '-f', '-e', 'trace=setsockopt', '-o', str(root / 'sockets.log'), *command]
+    command = ['strace', '-f', '-e', 'trace=network,read,write,poll,ppoll', '-o', str(root / 'sockets.log'), *command]
   process = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT)
   pid = process.pid
   if trace:

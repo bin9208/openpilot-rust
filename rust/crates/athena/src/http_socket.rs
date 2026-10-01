@@ -28,7 +28,7 @@ impl<In: Transport> Connector<In> for Tcp {
         let mut failure =
             std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no resolved address");
         for address in &details.addrs {
-            match TcpStream::connect_timeout(address, Duration::from_secs(30)) {
+            match crate::net::connect(address, Duration::from_secs(30)) {
                 Ok(stream) => {
                     SockRef::from(&stream).set_tos_v4(UPLOAD_TOS)?;
                     return Ok(Some(Either::B(Socket {

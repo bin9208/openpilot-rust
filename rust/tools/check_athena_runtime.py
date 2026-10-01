@@ -26,6 +26,8 @@ def main():
     ('ipc', ['check_athena_ipc.py', str(binary / 'examples/athena_ipc'), str(output / 'ipc.json')]),
     ('image', ['check_athena_image.py', str(binary / 'examples/athena_image'), str(output / 'image')]),
     ('daemon', ['check_athena_daemon.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(output / 'daemon')]),
+    ('interrupted-connect', ['check_athena_connect.py', '--binary', str(binary / 'examples/athena_upload'),
+                             '--output', str(output / 'interrupted-connect')]),
     ('transfers', ['check_athena_transfers.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(output / 'transfers')]),
     ('upload-edges', ['check_athena_upload_edges.py', str(binary / 'openpilot-athenad'), str(output / 'upload-edges')]),
     ('metered-abort', ['check_athena_metered_abort.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(output / 'metered-abort')]),
@@ -42,7 +44,7 @@ def main():
   receipts = []
   for name, command in cases:
     command = [sys.executable, str(ROOT / 'rust/tools' / command[0]), *command[1:]]
-    if name in ['proxy', 'proxy-backpressure']:
+    if name in ['proxy', 'proxy-backpressure', 'interrupted-connect']:
       namespace = ['unshare', '--net'] if os.geteuid() == 0 else ['unshare', '--user', '--map-root-user', '--net']
       command = [*namespace, 'sh', '-c', 'ip link set lo up && exec "$@"', 'sh', *command]
     with (output / f'{name}.log').open('w') as log:

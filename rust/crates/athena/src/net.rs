@@ -1,16 +1,72 @@
 use crate::Error;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use socket2::{SockRef, TcpKeepalive};
+use rustix::event::{poll, PollFd, PollFlags, Timespec};
+use socket2::{Domain, SockRef, Socket, TcpKeepalive, Type};
 use std::{
     io::{Read, Write},
-    net::{TcpStream, ToSocketAddrs},
-    time::Duration,
+    net::{SocketAddr, TcpStream, ToSocketAddrs},
+    time::{Duration, Instant},
 };
+
+pub(crate) fn connect(address: &SocketAddr, timeout: Duration) -> std::io::Result<TcpStream> {
+    if timeout.is_zero() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "zero connect timeout",
+        ));
+    }
+    let socket = Socket::new(Domain::for_address(*address), Type::STREAM, None)?;
+    socket.set_nonblocking(true)?;
+    let started = Instant::now();
+    match socket.connect(&(*address).into()) {
+        Ok(()) => {}
+        Err(error)
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::Interrupted | std::io::ErrorKind::WouldBlock
+            ) || rustix::io::Errno::from_io_error(&error)
+                == Some(rustix::io::Errno::INPROGRESS) =>
+        {
+            loop {
+                let remaining = timeout
+                    .checked_sub(started.elapsed())
+                    .filter(|value| !value.is_zero())
+                    .ok_or_else(|| {
+                        std::io::Error::new(std::io::ErrorKind::TimedOut, "connection timed out")
+                    })?;
+                let duration = Timespec::try_from(remaining).map_err(std::io::Error::other)?;
+                let mut fds = [PollFd::new(&socket, PollFlags::OUT)];
+                match poll(&mut fds, Some(&duration)) {
+                    Ok(0) | Err(rustix::io::Errno::INTR) => continue,
+                    Ok(_) => {
+                        if let Some(error) = socket.take_error()? {
+                            return Err(error);
+                        }
+                        if fds[0]
+                            .revents()
+                            .intersects(PollFlags::ERR | PollFlags::HUP | PollFlags::NVAL)
+                        {
+                            return Err(std::io::Error::new(
+                                std::io::ErrorKind::ConnectionAborted,
+                                "connection closed while connecting",
+                            ));
+                        }
+                        break;
+                    }
+                    Err(error) => return Err(error.into()),
+                }
+            }
+        }
+        Err(error) => return Err(error),
+    }
+    socket.set_nonblocking(false)?;
+    Ok(socket.into())
+}
 
 pub fn tcp(host: &str, port: u16, timeout: Duration) -> Result<TcpStream, Error> {
     let mut last = None;
     for address in (host, port).to_socket_addrs()? {
-        match TcpStream::connect_timeout(&address, timeout) {
+        match connect(&address, timeout) {
             Ok(stream) => {
                 stream.set_read_timeout(Some(timeout))?;
                 stream.set_write_timeout(Some(timeout))?;

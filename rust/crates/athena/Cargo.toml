@@ -46,7 +46,7 @@ rand = "0.9"
 zstd = "0.13"
 num-traits = "0.2"
 signal-hook = "0.3"
-rustix = { version = "1", features = ["fs", "process", "thread", "time"] }
+rustix = { version = "1", features = ["fs", "process", "thread", "time", "event"] }
 openpilot-jpeg = { path = "../jpeg" }
 
 [dev-dependencies]
