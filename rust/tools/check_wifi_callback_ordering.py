@@ -32,18 +32,26 @@ def main():
   assert expected == actual, ('source/native callback completion mismatch', args.output)
   assert expected['events'].count({'Forgotten': 'B'}) == 2, expected['events']
   observations = json.loads((args.output / 'source/existing/callback-gate.json').read_text())
+  before_entry = [row for row in observations if row['gate']['approaching'] and not row['gate']['entry_allowed']
+                  and not row['gate']['blocked'] and not row['gate']['released'] and 'B' not in row['saved_ssids']]
+  assert before_entry, ('profile removal before gate entry was not reached', observations)
   waiting = [row for row in observations if row['gate']['blocked'] and not row['gate']['released']
              and 'B' not in row['saved_ssids'] and row['forgotten_count'] == 1]
   assert waiting, ('controlled scheduling gap was not reached', observations)
+  releases = [index for index, row in enumerate(observations) if row['request']['op'] == 'release_final_forget']
+  assert len(releases) == 1, releases
+  observed = observations[releases[0] - 1]
+  assert observed['gate']['blocked'] and not observed['gate']['released'] and 'B' not in observed['saved_ssids'], observed
   assert observations[-1]['gate']['released'] and observations[-1]['forgotten_count'] == 2, observations[-1]
   paths = [Path(__file__), Path(__file__).with_name('check_wifi_runtime.py'),
            Path(__file__).with_name('wifi_fixture') / 'callback_gate.py', Path(__file__).with_name('wifi_fixture') / 'source_peer.py',
            Path(__file__).resolve().parents[2] / 'openpilot/system/ui/lib/wifi_manager.py', args.binary, args.launcher, args.binding]
   report = {'result': 'PASS', 'exact': True, 'source_events': len(expected['events']), 'native_events': len(actual['events']),
             'forgotten_b_callbacks': 2, 'profile_removal_observed_before_final_callback': True,
+            'profile_removal_observed_before_gate_entry': True, 'release_follows_observed_blocked_gate': True,
             'hashes': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}}
   (args.output / 'comparison.json').write_text(json.dumps(report, indent=2) + '\n')
-  print('PASS gated profile removal before callback enqueue; waited for second Forgotten B; exact lifecycle retained')
+  print('PASS delayed gate entry after profile removal; observed blocked gate before release; exact lifecycle retained')
   print(json.dumps(report))
 
 
