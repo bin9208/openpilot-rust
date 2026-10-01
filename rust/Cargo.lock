@@ -2558,6 +2558,7 @@ name = "openpilot-selfdrived"
 version = "0.1.0"
 dependencies = [
  "openpilot-cereal",
+ "openpilot-ui-framework",
  "serde",
  "serde_json",
  "thiserror",

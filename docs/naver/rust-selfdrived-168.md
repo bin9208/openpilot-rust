@@ -44,3 +44,33 @@ Nine Rust behavior tests, strict all-target Clippy, formatting and Python Ruff
 pass. Unknown schema enum values, missing catalog entries and callback failures
 return explicit errors. No Python source executes in the native crate.
 Continuous selfdrived, health gates and whole-runtime integration remain open.
+
+## Dynamic alert callbacks
+
+All 24 callback kinds used by the source catalog now have native bodies. The
+native code reuses the locale parser and original translation data, preserving
+hardware-specific alert ordering, personality spelling, Params read order,
+camera/process ordering, display rounding and ordered `max` behavior for NaN.
+The source oracle executes the original callback and translation class bodies,
+with constants and Hyundai flags read from their original definitions.
+
+`callbacks-wire-final/manifest.json` records 15,852 cases across both hardware
+layouts and 12 languages. The 15,648 alert-producing cases match all fields and
+ordered parameter reads. Another 180 NaN/infinity cases reproduce the original
+integer-rounding failure as an explicit native error. The original exceptions
+are retained separately, alongside source/schema/translation and binary hashes.
+Finite cases include adjacent binary64 values around rounding boundaries and
+large magnitudes. The earlier `callbacks-boundaries` run completed comparisons
+but failed writing provenance due to an incorrect schema path; it is retained.
+
+The remaining 24 cases make `NNFFModelName` absent. The original callback
+returns a null second text, and actual cereal wire assignment subsequently
+raises a type mismatch. Native typed alerts reject that missing text during
+callback resolution. Both reject the input, but the failure phase differs;
+these cases are not claimed as exact callback-return or full-daemon equivalence.
+Continuous-loop integration must retain the failure and its effect ordering.
+
+All-target strict Clippy, formatting, Ruff and diff checks pass. The callback
+comparison currently supplies the Params interface; the real Params adapter,
+event generation, car-specific logic, calibrated pose and continuous daemon
+are subsequent stages. This does not mark selfdrived ported.
