@@ -3,6 +3,7 @@ pub mod api;
 pub mod cache;
 pub mod context;
 pub mod device;
+pub mod layouts;
 pub mod mici;
 pub mod onroad;
 pub mod paint;
