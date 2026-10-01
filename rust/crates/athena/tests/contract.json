@@ -1,0 +1,7 @@
+{
+  "source": ["openpilot/system/athena/athenad.py", "openpilot/system/athena/manage_athenad.py", "openpilot/system/camerad/snapshot.py"],
+  "exact": ["RPC routing/result/error structures", "upload queue heap order, ids and cache", "retry/cancel/age/cellular policy", "status acceptance", "log/stat selection and xattrs", "WebSocket framing and ping/reconnect policy", "proxy whitelist/TOS/byte streams", "supervisor cleanup/restart", "snapshot NV12-to-RGB pixels and lifecycle"],
+  "float_progress": {"absolute": 0, "relative": 0},
+  "external_jpeg": "JPEG quality75, YCbCr420, dimensions and complete decoded images required; external codec bytes are not claimed identical unless source comparison establishes it",
+  "runtime": "owned loopback processes and synthetic keys/data only; no production selection or device handoff"
+}
