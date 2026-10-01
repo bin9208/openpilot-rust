@@ -18,6 +18,7 @@ impl RealtimeParams {
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub struct CarConfig {
     pub alpha_longitudinal_available: bool,
+    pub max_lateral_accel: f64,
     pub openpilot_longitudinal_control: bool,
 }
 impl CarConfig {
@@ -27,6 +28,7 @@ impl CarConfig {
         let cp = reader.get_root::<openpilot_cereal::car_capnp::car_params::Reader<'_>>()?;
         Ok(Self {
             alpha_longitudinal_available: cp.get_alpha_longitudinal_available(),
+            max_lateral_accel: f64::from(cp.get_max_lateral_accel()),
             openpilot_longitudinal_control: cp.get_openpilot_longitudinal_control(),
         })
     }

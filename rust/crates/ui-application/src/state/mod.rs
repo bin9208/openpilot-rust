@@ -23,6 +23,7 @@ pub enum Transition {
 #[derive(Serialize)]
 pub struct UiState {
     pub status: Status,
+    pub personality: i32,
     pub lat_active: bool,
     pub started_frame: i64,
     pub started_time: f64,
@@ -48,6 +49,7 @@ impl UiState {
         slow.refresh(params, models)?;
         Ok(Self {
             status: Status::Disengaged,
+            personality: 1,
             lat_active: false,
             started_frame: 0,
             started_time: 0.0,

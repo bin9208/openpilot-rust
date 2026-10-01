@@ -1,8 +1,15 @@
 //! Native product UI policy from selfdrive/ui (MIT); production selection is external.
+pub mod api;
 pub mod cache;
+pub mod context;
 pub mod device;
+pub mod mici;
+pub mod paint;
 pub mod params;
+pub mod qr;
+pub mod scheduling;
 pub mod state;
+pub mod widgets;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -22,4 +29,13 @@ pub enum Error {
     Parameter(String),
     #[error("UI contract: {0}")]
     Contract(&'static str),
+}
+
+impl From<Error> for openpilot_startup_ui::Error {
+    fn from(error: Error) -> Self {
+        match error {
+            Error::Ui(error) => error,
+            error => Self::Io(std::io::Error::other(error)),
+        }
+    }
 }

@@ -6,10 +6,16 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
-[lints]
-workspace = true
+[lints.rust]
+unsafe_code = "deny"
 
 [dependencies]
+openpilot-registration = { path = "../registration" }
+openpilot-uploader = { path = "../uploader" }
+openpilot-timed = { path = "../timed" }
+cxx = "1"
+qrcodegen = "=1.8.0"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 openpilot-ui-framework = { path = "../ui-framework" }
 openpilot-startup-ui = { path = "../startup-ui" }
 openpilot-params = { path = "../params" }
@@ -24,6 +30,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 thiserror = "2"
 rustix = { version = "1", features = ["time", "process", "thread"] }
+
+[build-dependencies]
+cxx-build = "1"
 
 [dev-dependencies]
 tempfile = "3"

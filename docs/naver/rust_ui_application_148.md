@@ -42,3 +42,41 @@ interfaces remain explicit; no device, C3X, NAS or account was accessed.
 
 Docs-Not-Needed: language conversion preserves settings behavior and production
 selection; no public guide behavior changed.
+
+## Product services and widgets checkpoint
+
+The native crate now owns ordered Params writes, source DisplayScheduler
+sweeps, Mici circle/big/scroll/multi/bool buttons, Prime/setup/Carrot Web screens,
+and UI authentication cache policy. QR segmentation, error correction and
+source mask scoring are preserved over the native qrcodegen dependency.
+Dynamic GPU textures release on the renderer thread; destruction after the
+renderer is gone does not call GL. The external raylib/driver remains native
+and is not claimed to have been rewritten or fully sanitizer-instrumented.
+
+The owned host evidence under `.omo/evidence/ui-application-148/` contains:
+
+| Scenario | Invocation | Binary observable / artifact |
+| --- | --- | --- |
+| UIState/Device regression | `check_ui_state.py --binary .../state_trace --output .../state-stage2` | 2,400 source/native frames; `state-stage2.log` |
+| Display policy | `check_ui_scheduler.py --binary .../scheduler_trace --output .../scheduler-final` | 160 exact ordered sweeps and own-process policy readback; `scheduler-final/result.json` |
+| QR encoding | `check_ui_qr.py --binary .../qr_trace --output .../qr-final` | 64 complete source matrices and masks; `qr-final/result.json` |
+| Mici controls | `check_ui_product_buttons.py --binary .../mici_buttons --output .../buttons-final --display :125` | 280 interaction frames and eight exact pixel scenes; `buttons-final/results.json` |
+| Prime/setup/Carrot Web | `check_ui_product_widgets.py --binary .../product_render --output .../product-final3 --display :125` | All 14 English/Korean screens have zero differing pixels; `product-final3/results.json` |
+| Token policy | `check_ui_api_tokens.py --binary .../api_tokens --output .../api-tokens` | 26 signed JWT claim comparisons, RSA preference/EC fallback, cache/time boundaries; `api-tokens/results.json` |
+| Texture ownership | `check_ui_qr_texture.py --binary .../qr_render --output .../qr-texture-final --display :126` | Exact pixels/lifecycle states and late-drop successful exit; `qr-texture-final/result.json` |
+| Rust ownership checks | `cargo test -p openpilot-ui-application -j2` | Cache retry/acknowledgement and 100 FIFO writes/worker restart; `ownership-final.log` |
+| Adapter sanitizer | `check_startup_ui.adapter_asan(Context(...))` | Repeated/invalid texture release accepted without ASan finding; `resources-asan.log`, `resources-asan/asan-build.log`, `resources-asan/asan.log` |
+
+Native binaries are from the coordinated inactive target cache. Renderer
+checks use the pinned native raylib library and owned Xvfb displays. Source
+oracles load the original classes with isolated Params/clock/IPC seams;
+synthetic authentication keys remain only in ignored local evidence. JWT
+claims and signatures are compared, not encoder-specific JSON member order.
+The Korean Prime check-mark glyph and elided text are inherited from the
+source rendering, not redesigned in this conversion.
+
+This is still an intermediate checkpoint: it does not compose the complete
+UI application or fulfill the #148 handoff. Home/sidebar/onboarding/settings,
+network/API workers, onroad camera/model/HUD/alerts and end-to-end process
+lifecycle remain in progress. Native eGPU backend completion is tracked in
+[#154](https://github.com/bin9208/openpilot-rust/issues/154).
