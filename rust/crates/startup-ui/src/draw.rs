@@ -25,6 +25,14 @@ pub struct ImageDraw {
     pub rotation: f32,
     pub tint: u32,
 }
+pub trait TextureResource {
+    fn id(&self) -> u32;
+    fn dimensions(&self) -> (i32, i32);
+}
+pub struct PixelBuffer<'a> {
+    pub dimensions: (i32, i32),
+    pub rgba: &'a [u8],
+}
 pub enum PolygonPaint<'a> {
     Color(u32),
     Gradient {
@@ -35,6 +43,13 @@ pub enum PolygonPaint<'a> {
     },
 }
 pub trait Draw: Measure {
+    fn upload_pixels(
+        &mut self,
+        _pixels: PixelBuffer<'_>,
+    ) -> Result<Box<dyn TextureResource>, Error> {
+        Err(Error::Contract("dynamic texture upload unavailable"))
+    }
+
     fn rectangle_lines(&mut self, rect: Rect, color: u32) -> Result<(), Error> {
         self.border(rect, 0.0, color)
     }

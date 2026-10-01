@@ -69,6 +69,9 @@ int main(int argc, char **argv) {
     if (surface->capture_pixels().size()!=536*240*4) return 8;
     surface->shader_unload(shader);
     surface->shader_unload(shader);
+    surface->texture_release(pixels);
+    surface->texture_release(pixels);
+    surface->texture_release(0xffffffff);
     bool rejected_shader=false;
     try { surface->uniform_int(shader,"missing",0); }
     catch (const std::runtime_error &) { rejected_shader=true; }

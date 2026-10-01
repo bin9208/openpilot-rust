@@ -58,6 +58,17 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn upload_pixels(
+        &mut self,
+        pixels: crate::draw::PixelBuffer<'_>,
+    ) -> Result<Box<dyn crate::draw::TextureResource>, Error> {
+        Ok(Box::new(self.renderer.dynamic_pixels(
+            pixels.dimensions.0,
+            pixels.dimensions.1,
+            pixels.rgba,
+        )?))
+    }
+
     fn rectangle_lines(&mut self, rect: Rect, color: u32) -> Result<(), Error> {
         self.renderer.rectangle_lines(rect, color)
     }

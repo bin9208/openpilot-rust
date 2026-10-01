@@ -64,7 +64,7 @@ Surface::Surface(int32_t width, int32_t height, rust::Str title,
 Surface::~Surface() {
   std::lock_guard<std::mutex> lock(window_mutex);
   for (auto &texture : textures)
-    UnloadTexture(texture);
+    if (texture.id) UnloadTexture(texture);
   for (auto &font : fonts)
     UnloadFont(font);
   for (auto &shader : shaders)
@@ -88,6 +88,12 @@ uint32_t Surface::texture(Image &image, int32_t logical_width,
   }
   textures.push_back(value);
   return textures.size() - 1;
+}
+void Surface::texture_release(uint32_t index) noexcept {
+  if (index < textures.size() && textures[index].id) {
+    UnloadTexture(textures[index]);
+    textures[index] = {};
+  }
 }
 uint32_t Surface::pixel_texture(int32_t width, int32_t height, rust::Slice<const uint8_t> rgba) {
   if (width <= 0 || height <= 0 || uint64_t(width)*uint64_t(height)*4 != rgba.size())

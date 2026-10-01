@@ -65,6 +65,7 @@ impl Renderer {
         })
     }
     pub fn begin(&mut self) {
+        self.release_dynamic_textures();
         self.surface.pin_mut().begin(self.config.scale);
     }
     pub fn end(&mut self) {

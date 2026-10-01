@@ -51,6 +51,7 @@ pub mod ffi {
             logical_width: i32,
             logical_height: i32,
         ) -> Result<u32>;
+        fn texture_release(self: Pin<&mut Surface>, texture: u32);
         fn pixel_texture(
             self: Pin<&mut Surface>,
             width: i32,
