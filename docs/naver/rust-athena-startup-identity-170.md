@@ -28,3 +28,13 @@ The regression is part of `check_athena_runtime.py`, before other scenarios.
 Fresh exact-head and post-merge CI remain required. No device was accessed.
 
 Docs-Not-Needed: owned validation lifecycle repair only.
+## Evidence upload permissions
+
+Run 36861309481 passed every Athena source/native scenario and codec sanitizer,
+then failed artifact upload because the root-run identity fixture created its
+owned `strace` script with mode 0700. The unprivileged Actions uploader could
+not read that script. Mode 0755 preserves execution and permits evidence
+collection. The script contains no credentials; daemon and test file ownership
+remain unchanged. Local identity checks and archive creation pass, including
+the script's other-user read bit. Local sudo requires a password, so the
+distinct-root/uploader identity check remains assigned to the exact-SHA CI run.

@@ -20,7 +20,7 @@ def main():
                   '-o', str(binary)], check=True)
   tracer = output / 'strace'
   tracer.write_bytes(Path(__file__).with_name('athena_tracer_fixture.py').read_bytes())
-  tracer.chmod(0o700)
+  tracer.chmod(0o755)
   pids = output / 'pids.json'
   environment = dict(os.environ, PATH=f'{output}:{os.environ["PATH"]}', ATHENA_TRACER_PIDS=str(pids))
   try:
