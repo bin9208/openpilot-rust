@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, web-upload-timeouts]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -34,6 +34,7 @@ jobs:
           STARTUP_SERVICES: ${{ needs.startup-services.result }}
           SENSOR_AUDIO: ${{ needs.sensor-audio.result }}
           GNSS: ${{ needs.gnss-runtime.result }}
+          ESTIMATION: ${{ needs.estimation-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$WORKSPACE" = success
@@ -48,6 +49,7 @@ jobs:
           test "$STARTUP_SERVICES" = success
           test "$SENSOR_AUDIO" = success
           test "$GNSS" = success
+          test "$ESTIMATION" = success
           test "$UPLOAD_TIMEOUTS" = success
   workspace:
     name: rust workspace checks
@@ -79,6 +81,10 @@ jobs:
           python tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host"
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: cargo fmt --all --check
+      - name: Install source-pinned Eigen headers
+        run: |
+          python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
+          python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
       - name: Compare QCOM fixtures with the original argument and packet encoder
@@ -502,7 +508,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev openssl
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev openssl iproute2
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
       - name: Configure original startup service IPC imports
         run: printf 'PYTHONPATH=%s/services-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -523,7 +529,7 @@ jobs:
       - name: Compare LPA serial, TLS, profile and notification lifecycle
         run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
       - name: Compare source and native bridge packets and connection lifecycle
-        run: python rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
+        run: sudo -E env "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
       - name: Compare AGNOS images, retry policy, casync and actual CLI
         run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
       - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
@@ -633,6 +639,73 @@ jobs:
         with:
           name: rust-gnss-evidence
           path: ${{ runner.temp }}/gnss/
+  estimation-runtime:
+    name: rust estimation runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CXX: clang++
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 cffi==2.1.1 sympy==1.14.0 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5
+      - name: Install source-pinned Eigen headers
+        run: |
+          python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
+          python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
+      - name: Build native estimators and unchanged source oracle
+        run: |
+          mkdir -p "$RUNNER_TEMP/estimation/lagd"
+          python rust/tools/build_locationd_oracle.py --output "$RUNNER_TEMP/locationd-oracle" --eigen-include "$LOCATIOND_EIGEN_INCLUDE"
+          python rust/tools/build_paramsd_oracle.py --output "$RUNNER_TEMP/paramsd-oracle" --eigen-include "$PARAMSD_EIGEN_INCLUDE" --reuse-wrapper "$RUNNER_TEMP/locationd-oracle"/ekf_sym_pyx*.so
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/estimation-params-binding"
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-locationd -p openpilot-lagd -p openpilot-paramsd --bins --examples --locked
+      - name: Compare location model, complete source loop, timestamps and native IPC
+        run: |
+          python rust/tools/check_locationd.py --oracle "$RUNNER_TEMP/locationd-oracle" --trace "$PWD/rust/target/debug/examples/location_trace" --evidence "$RUNNER_TEMP/estimation/locationd/estimator"
+          python rust/tools/check_locationd_loop.py --oracle "$RUNNER_TEMP/locationd-oracle" --trace "$PWD/rust/target/debug/examples/location_loop" --evidence "$RUNNER_TEMP/estimation/locationd/loop"
+          python rust/tools/check_locationd_timestamp.py --oracle "$RUNNER_TEMP/locationd-oracle" --trace "$PWD/rust/target/debug/examples/location_trace" --evidence "$RUNNER_TEMP/estimation/locationd/timestamp"
+          python rust/tools/check_locationd_daemon.py --oracle "$RUNNER_TEMP/locationd-oracle" --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/estimation/locationd/daemon"
+          python rust/tools/check_locationd_startup.py --oracle "$RUNNER_TEMP/locationd-oracle" --binding "$RUNNER_TEMP/estimation-params-binding"/params_pyx*.so --binary "$PWD/rust/target/debug/openpilot-locationd" --output "$RUNNER_TEMP/estimation/locationd/startup"
+      - name: Compare vehicle model, source main loop, cache migration and native IPC
+        run: |
+          python rust/tools/check_paramsd.py --oracle "$RUNNER_TEMP/paramsd-oracle" --trace "$PWD/rust/target/debug/examples/paramsd_trace" --evidence "$RUNNER_TEMP/estimation/paramsd/estimator"
+          python rust/tools/check_paramsd_loop.py --oracle "$RUNNER_TEMP/paramsd-oracle" --trace "$PWD/rust/target/debug/examples/paramsd_loop" --evidence "$RUNNER_TEMP/estimation/paramsd/loop"
+          python rust/tools/check_paramsd_daemon.py --oracle "$RUNNER_TEMP/paramsd-oracle" --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/estimation/paramsd/daemon"
+          python rust/tools/check_paramsd_startup.py --binary "$PWD/rust/target/debug/openpilot-paramsd" --evidence "$RUNNER_TEMP/estimation/paramsd/startup"
+      - name: Compare delay numerical policy, full source loop, cache and native IPC
+        run: |
+          python rust/tools/check_lagd_numeric.py "$PWD/rust/target/debug/examples/lag_numeric" "$RUNNER_TEMP/estimation/lagd/numeric.json"
+          python rust/tools/check_lagd_loop.py "$PWD/rust/target/debug/examples/lag_loop" "$RUNNER_TEMP/estimation/lagd/loop"
+          python rust/tools/check_lagd_cache.py "$PWD/rust/target/debug/examples/lag_cache" "$RUNNER_TEMP/estimation/lagd/cache.json"
+          python rust/tools/check_lagd_packet.py "$PWD/rust/target/debug/examples/lag_packet" "$RUNNER_TEMP/estimation/lagd/packet.json"
+          python rust/tools/check_lagd_daemon.py "$PWD/rust/target/debug/openpilot-lagd" "$PWD/rust/target/debug/examples/lag_ipc_peer" "$RUNNER_TEMP/estimation/lagd/daemon"
+          python rust/tools/check_lagd_params_io.py "$PWD/rust/target/debug/openpilot-lagd" "$RUNNER_TEMP/estimation/lagd/params-io.json"
+      - name: Check production numerical ownership and native memory boundaries
+        run: |
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-locationd -p openpilot-lagd -p openpilot-paramsd -p openpilot-pocketfft --locked
+          python rust/tools/check_locationd_native.py --evidence "$RUNNER_TEMP/estimation/locationd/native"
+          python rust/tools/check_paramsd_native.py --evidence "$RUNNER_TEMP/estimation/paramsd/native"
+          clang++ -std=c++17 -O1 -g -ffp-contract=off -fsanitize=address,undefined -fno-omit-frame-pointer rust/crates/pocketfft/native/kernel_test.cc -o "$RUNNER_TEMP/estimation/lagd/pocketfft-sanitized"
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 "$RUNNER_TEMP/estimation/lagd/pocketfft-sanitized" > "$RUNNER_TEMP/estimation/lagd/pocketfft-sanitizer.log" 2>&1
+      - name: Retain estimator source and native evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-estimation-evidence
+          path: |
+            ${{ runner.temp }}/estimation/
+            ${{ runner.temp }}/locationd-oracle/build.log
+            ${{ runner.temp }}/paramsd-oracle/build.log
   platform-runtime:
     name: rust platform runtime
     runs-on: ubuntu-24.04
@@ -1001,6 +1074,10 @@ jobs:
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-arm\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build pinned external FFmpeg for generic aarch64 GNU linking
         run: python rust/tools/build_loggerd_ffmpeg.py --root "$RUNNER_TEMP/logger-ffmpeg-gnu" --cc aarch64-linux-gnu-gcc --ar aarch64-linux-gnu-ar --ranlib aarch64-linux-gnu-ranlib
+      - name: Install source-pinned Eigen headers
+        run: |
+          python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
+          python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
       - name: Build generic Linux aarch64 artifact (not AGNOS validation)
         working-directory: rust
         env:

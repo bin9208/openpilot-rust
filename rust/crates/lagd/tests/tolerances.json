@@ -1,0 +1,8 @@
+{
+  "fixed_before_implementation": "2026-10-01",
+  "pose_and_smoothing": {"absolute": 1e-12, "relative": 1e-12},
+  "correlation": {"absolute": 1e-9, "relative": 1e-9},
+  "lag_and_block_statistics": {"absolute": 1e-8, "relative": 1e-8},
+  "cereal_float32": {"absolute": 1e-7, "relative": 1e-7},
+  "policy": "Finite/nonfinite classifications, lag candidate runs/indices, acceptance/rejection branches, okay masks, recovery/block/window cadence, status/validity/confidence decisions, Params actions and counters must agree exactly. Numerical tolerances never excuse a different branch or validity decision. No production threshold changes."
+}

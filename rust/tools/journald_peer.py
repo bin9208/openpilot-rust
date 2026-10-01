@@ -111,13 +111,37 @@ class Peer:
       self.command(command)
     if signum is not None:
       self.process.send_signal(signum)
-    code = self.process.wait(timeout=5)
+    try:
+      code = self.process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+      self.capture_timeout()
+      raise
     alive = Path(f'/proc/{self.child_pid}').exists()
     trace = [json.loads(line) for line in self.trace.read_text().splitlines()]
     assert alive == expect_orphan, (alive, expect_orphan, trace)
     report = {'exit': code, 'elapsed': time.monotonic() - started, 'child_survived': alive, 'trace': trace}
     (self.output / 'exit.json').write_text(json.dumps(report, indent=2))
     return report
+
+  def capture_timeout(self) -> None:
+    for label, pid in (('journal', self.process.pid), ('child', self.child_pid)):
+      proc = Path('/proc') / str(pid)
+      for name in ('status', 'wchan', 'syscall'):
+        try:
+          value = (proc / name).read_text()
+        except OSError as error:
+          value = repr(error)
+        (self.output / f'timeout-{label}-{name}.txt').write_text(value)
+      descriptors: dict[str, str] = {}
+      try:
+        for descriptor in (proc / 'fd').iterdir():
+          try:
+            descriptors[descriptor.name] = str(descriptor.readlink())
+          except OSError as error:
+            descriptors[descriptor.name] = repr(error)
+      except OSError as error:
+        descriptors['error'] = repr(error)
+      (self.output / f'timeout-{label}-fds.json').write_text(json.dumps(descriptors, indent=2))
 
   def close(self):
     if self.process is not None:

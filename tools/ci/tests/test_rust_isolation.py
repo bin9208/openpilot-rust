@@ -9,6 +9,33 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_estimators_require_original_models_loops_and_native_boundaries(self) -> None:
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['estimation-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('build_locationd_oracle.py', 'build_paramsd_oracle.py', 'build_params_python.py',
+                         'check_locationd.py', 'check_locationd_loop.py', 'check_locationd_timestamp.py',
+                         'check_locationd_daemon.py', 'check_locationd_startup.py', 'check_locationd_native.py',
+                         'check_paramsd.py', 'check_paramsd_loop.py', 'check_paramsd_daemon.py',
+                         'check_paramsd_startup.py', 'check_paramsd_native.py',
+                         'check_lagd_numeric.py', 'check_lagd_loop.py', 'check_lagd_cache.py',
+                         'check_lagd_packet.py', 'check_lagd_daemon.py', 'check_lagd_params_io.py',
+                         'pocketfft/native/kernel_test.cc', '-fsanitize=address,undefined'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python rust/tools/check_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+        packages = tomllib.loads((ROOT / 'uv.lock').read_text())['package']
+        eigen = next(package for package in packages if package['name'] == 'eigen')
+        source_commit = eigen['source']['git'].split('#')[-1]
+        for name in ('workspace', 'arm64', 'estimation-runtime'):
+            setup = '\n'.join(step.get('run', '') for step in data['jobs'][name]['steps'])
+            self.assertIn('@' + source_commit + '#subdirectory=eigen', setup)
+            self.assertIn('LOCATIOND_EIGEN_INCLUDE=', setup)
+            self.assertIn('PARAMSD_EIGEN_INCLUDE=', setup)
+
     def test_gnss_requires_source_serial_and_daemon_checks(self) -> None:
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['gnss-runtime']
@@ -45,7 +72,7 @@ class RustIsolationTests(unittest.TestCase):
         for required in ('check_lpa.py', 'check_bridge.py', 'check_agnos.py', 'build_bridge_reference.py', 'build_msgq_python.py'):
             self.assertIn(required, commands)
         for step in job['steps']:
-            if 'python rust/tools/check_' in step.get('run', ''):
+            if 'python rust/tools/check_' in step.get('run', '') or 'check_bridge.py' in step.get('run', ''):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
 
@@ -155,7 +182,7 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime', 'web-upload-timeouts'})
+        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime', 'estimation-runtime', 'web-upload-timeouts'})
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
@@ -167,6 +194,7 @@ class RustIsolationTests(unittest.TestCase):
                                             'STARTUP_SERVICES': '${{ needs.startup-services.result }}',
                                             'SENSOR_AUDIO': '${{ needs.sensor-audio.result }}',
                                             'GNSS': '${{ needs.gnss-runtime.result }}',
+                                            'ESTIMATION': '${{ needs.estimation-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]

@@ -210,7 +210,10 @@
       "name": "lagd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.lagd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/lagd; source-compatible masked correlation, calibration, recovery/window/block policy and continuous native liveDelay/Params loop",
+      "native_dependencies": ["pinned external PocketFFT numerical kernel through CXX (no Python runtime)", "original msgq through CXX", "existing native Params/logging adapters", "Linux clocks, scheduling and filesystem"],
+      "runtime_scope": "fixed-tolerance source numeric/candidate and full-loop comparisons; real private IPC/Params learning, cache, cadence and signal scenarios; source constant-signal decisions retain pinned PocketFFT arithmetic; not selected by manager; full-runtime startup/upload, generic ARM/AGNOS/device acceptance remain separate; see docs/naver/rust-lagd-139.md",
       "production_replaced": false
     },
     {
@@ -224,7 +227,11 @@
       "name": "locationd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.locationd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/locationd; native orchestration, PoseKalman wrapper, generated Rust model equations, transforms, Params and livePose publication",
+      "native_dependencies": ["unchanged external rednose EKFSym and ekf_c.c numerical/rewind implementation via owned CXX boundary", "Eigen 3.4.0 headers, pinned by uv.lock dependency commit 40e5d76de1b33a86c5181b63db6782d8f06da1da", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "actual-source synthetic estimator/main-loop comparisons, native IPC daemon with seeded Params and signals, native ownership/scheduler sanitizers; no Python/Cython runtime or project-owned C++ model fallback; device/AGNOS and whole startup/upload acceptance pending",
+      "evidence": "docs/rust-port/locationd-validation.md",
       "production_replaced": false
     },
     {
@@ -309,7 +316,11 @@
       "name": "paramsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.paramsd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/paramsd; native continuous learner, dynamic CarParams model equations, cache migration/retrieval, GPS and liveParameters persistence",
+      "native_dependencies": ["unchanged external rednose EKFSym and ekf_c.c numerical/rewind implementation via owned CXX boundary", "Eigen 3.4.0 headers pinned by uv.lock dependency commit 40e5d76de1b33a86c5181b63db6782d8f06da1da", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "actual-source estimator/model/main-loop comparisons, native IPC and Params persistence/restart/shutdown, native ownership/scheduler sanitizers; no Python/Cython runtime or generated project C++ model fallback; whole startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/rust-port/paramsd-validation.md",
       "production_replaced": false
     },
     {
