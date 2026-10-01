@@ -1852,6 +1852,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-cweb-push"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "cxx-build",
+ "openpilot-logging",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "rand 0.9.5",
+ "reqwest",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "openpilot-dashcam-upload"
 version = "0.1.0"
 dependencies = [
