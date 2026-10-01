@@ -1769,6 +1769,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-bluetooth"
+version = "0.1.0"
+dependencies = [
+ "indexmap",
+ "openpilot-logmessaged",
+ "openpilot-runtime-version",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-bootlog"
 version = "0.1.0"
 dependencies = [
