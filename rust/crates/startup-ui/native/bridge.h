@@ -13,6 +13,7 @@ public:
   ~Image();
   int32_t width() const;
   int32_t height() const;
+  rust::Vec<uint8_t> rgba();
   void premultiply();
   void flip_horizontal();
   void resize(int32_t width, int32_t height);
@@ -26,6 +27,8 @@ public:
   void clear(uint32_t color) noexcept;
   void texture_release(uint32_t texture) noexcept;
   uint32_t pixel_texture(int32_t width, int32_t height, rust::Slice<const uint8_t> rgba);
+  void smooth_texture(uint32_t texture);
+  void ring(Point center, float inner, float outer, float start, float end, int32_t segments, uint32_t color);
   uint32_t font(rust::Str path, int32_t size, rust::Slice<const int32_t> points,
                 bool atlas, bool mipmaps);
   Point measure(uint32_t font, rust::Str text, float size, float spacing) const;

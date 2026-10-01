@@ -62,6 +62,17 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn ring(&mut self, ring: crate::draw::Ring) -> Result<(), Error> {
+        self.renderer.ring(ring);
+        Ok(())
+    }
+    fn upload_image(
+        &mut self,
+        pixels: crate::draw::PixelBuffer<'_>,
+    ) -> Result<Box<dyn crate::draw::TextureResource>, Error> {
+        Ok(Box::new(self.renderer.dynamic_image(pixels)?))
+    }
+
     fn rounded_outline(
         &mut self,
         rect: Rect,

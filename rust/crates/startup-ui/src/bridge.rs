@@ -42,6 +42,7 @@ pub mod ffi {
         fn image(path: &str) -> Result<UniquePtr<Image>>;
         fn width(self: &Image) -> i32;
         fn height(self: &Image) -> i32;
+        fn rgba(self: Pin<&mut Image>) -> Result<Vec<u8>>;
         fn premultiply(self: Pin<&mut Image>);
         fn flip_horizontal(self: Pin<&mut Image>);
         fn resize(self: Pin<&mut Image>, width: i32, height: i32);
@@ -59,6 +60,17 @@ pub mod ffi {
             height: i32,
             rgba: &[u8],
         ) -> Result<u32>;
+        fn smooth_texture(self: Pin<&mut Surface>, texture: u32) -> Result<()>;
+        fn ring(
+            self: Pin<&mut Surface>,
+            center: Point,
+            inner: f32,
+            outer: f32,
+            start: f32,
+            end: f32,
+            segments: i32,
+            color: u32,
+        );
         fn font(
             self: Pin<&mut Surface>,
             path: &str,

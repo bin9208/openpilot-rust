@@ -42,6 +42,18 @@ Image::Image(const char *path) : value(LoadImage(path)) {
 Image::~Image() { UnloadImage(value); }
 int32_t Image::width() const { return value.width; }
 int32_t Image::height() const { return value.height; }
+rust::Vec<uint8_t> Image::rgba() {
+  ImageFormat(&value, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+  if (!value.data || value.width <= 0 || value.height <= 0 || value.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8)
+    throw std::runtime_error("image RGBA conversion failed");
+  const uint64_t size = uint64_t(value.width) * uint64_t(value.height) * 4;
+  if (size > SIZE_MAX) throw std::runtime_error("image RGBA size overflow");
+  rust::Vec<uint8_t> result;
+  result.reserve(size_t(size));
+  const auto *data = static_cast<const uint8_t *>(value.data);
+  for (size_t index = 0; index < size_t(size); ++index) result.push_back(data[index]);
+  return result;
+}
 void Image::premultiply() { ImageAlphaPremultiply(&value); }
 void Image::flip_horizontal() { ImageFlipHorizontal(&value); }
 void Image::resize(int32_t width, int32_t height) {
@@ -104,6 +116,14 @@ uint32_t Surface::pixel_texture(int32_t width, int32_t height, rust::Slice<const
   if (!value.id) throw std::runtime_error("RGBA texture upload failed");
   textures.push_back(value);
   return textures.size()-1;
+}
+void Surface::smooth_texture(uint32_t texture) {
+  const auto value = textures.at(texture);
+  SetTextureFilter(value, TEXTURE_FILTER_BILINEAR);
+  SetTextureWrap(value, TEXTURE_WRAP_CLAMP);
+}
+void Surface::ring(Point center, float inner, float outer, float start, float end, int32_t segments, uint32_t tint) {
+  DrawRing({center.x, center.y}, inner, outer, start, end, segments, color(tint));
 }
 uint32_t Surface::font(rust::Str path, int32_t size,
                        rust::Slice<const int32_t> points, bool atlas,

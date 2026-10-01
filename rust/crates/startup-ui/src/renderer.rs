@@ -207,4 +207,4 @@ use fonts::{font_points, resolve_font};
 use paint::convert;
 
 mod dynamic;
-pub use dynamic::DynamicTexture;
+pub use dynamic::{DecodedImage, DynamicTexture};

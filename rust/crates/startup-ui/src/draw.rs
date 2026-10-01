@@ -49,7 +49,26 @@ pub struct RoundedOutline {
     pub thickness: f32,
     pub color: u32,
 }
+pub struct Ring {
+    pub center: Point,
+    pub inner: f32,
+    pub outer: f32,
+    pub start: f32,
+    pub end: f32,
+    pub segments: i32,
+    pub color: u32,
+}
 pub trait Draw: Measure {
+    fn ring(&mut self, _ring: Ring) -> Result<(), Error> {
+        Err(Error::Contract("ring drawing unavailable"))
+    }
+    fn upload_image(
+        &mut self,
+        _pixels: PixelBuffer<'_>,
+    ) -> Result<Box<dyn TextureResource>, Error> {
+        Err(Error::Contract("filtered image upload unavailable"))
+    }
+
     fn rounded_outline(&mut self, _rect: Rect, _style: RoundedOutline) -> Result<(), Error> {
         Err(Error::Contract("rounded outline drawing unavailable"))
     }

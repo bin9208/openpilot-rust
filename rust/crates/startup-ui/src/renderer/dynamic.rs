@@ -53,3 +53,48 @@ impl crate::draw::TextureResource for DynamicTexture {
         (self.width, self.height)
     }
 }
+
+/// CPU-only image decode. The foreign image stays on this thread; only owned bytes cross workers.
+pub struct DecodedImage {
+    pub width: i32,
+    pub height: i32,
+    pub rgba: Vec<u8>,
+}
+impl DecodedImage {
+    pub fn load(path: &Path) -> Result<Self, Error> {
+        let mut image = ffi::image(
+            path.to_str()
+                .ok_or(Error::Contract("image path is not UTF-8"))?,
+        )?;
+        let rgba = image.pin_mut().rgba()?;
+        Ok(Self {
+            width: image.width(),
+            height: image.height(),
+            rgba,
+        })
+    }
+}
+impl Renderer {
+    pub fn dynamic_image(
+        &mut self,
+        pixels: crate::draw::PixelBuffer<'_>,
+    ) -> Result<DynamicTexture, Error> {
+        let texture = self.dynamic_pixels(pixels.dimensions.0, pixels.dimensions.1, pixels.rgba)?;
+        self.surface.pin_mut().smooth_texture(texture.id)?;
+        Ok(texture)
+    }
+    pub fn ring(&mut self, ring: crate::draw::Ring) {
+        self.surface.pin_mut().ring(
+            ffi::Point {
+                x: ring.center.x,
+                y: ring.center.y,
+            },
+            ring.inner,
+            ring.outer,
+            ring.start,
+            ring.end,
+            ring.segments,
+            ring.color,
+        );
+    }
+}
