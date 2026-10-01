@@ -117,6 +117,7 @@ def native_records(binary, collector, output, directory, http, settings, origina
   publisher = None
   try:
     peer.start()
+    peer.synchronize()
     publisher = msgq.pub_sock('deviceState', SERVICE_LIST['deviceState'].queue_size)
     params = directory.parent / ('params-' + output.name) / peer.prefix
     params.mkdir(parents=True)
