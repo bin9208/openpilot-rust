@@ -6,7 +6,7 @@ from pathlib import Path
 import signal
 import subprocess
 
-from athena_fixture import daemon
+from athena_fixture import daemon, wait_for
 
 
 def main():
@@ -22,10 +22,16 @@ def main():
   tracer.write_bytes(Path(__file__).with_name('athena_tracer_fixture.py').read_bytes())
   tracer.chmod(0o755)
   pids = output / 'pids.json'
-  environment = dict(os.environ, PATH=f'{output}:{os.environ["PATH"]}', ATHENA_TRACER_PIDS=str(pids))
+  environment = dict(os.environ, PATH=f'{output}:{os.environ["PATH"]}', ATHENA_TRACER_PIDS=str(pids),
+                     ATHENA_TRACER_PUBLISH_DELAY=os.environ.get('ATHENA_TRACER_PUBLISH_DELAY', '0.2'))
+
+  def published_pids():
+    value = json.loads(pids.read_text())
+    return value if 'native' in value else None
+
   try:
     with daemon(binary, output, environment, trace=True) as (process, pid):
-      observed = json.loads(pids.read_text())
+      observed = wait_for(published_pids)
       assert pid == observed['native'] and pid != observed['helper'], observed
       assert Path(f'/proc/{pid}/exe').resolve() == binary
       os.kill(pid, signal.SIGTERM)
