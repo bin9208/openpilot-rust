@@ -4,7 +4,9 @@ use std::path::Path;
 type SetScheduler =
     unsafe extern "C" fn(libc::pid_t, libc::c_int, *const libc::sched_param) -> libc::c_int;
 fn fifo(set: SetScheduler) -> Result<(), Error> {
-    let settings = libc::sched_param { sched_priority: 53 };
+    // SAFETY: sched_param contains integer/time fields; zero initializes both GNU and musl layouts.
+    let mut settings: libc::sched_param = unsafe { std::mem::zeroed() };
+    settings.sched_priority = 53;
     // SAFETY: initialized settings remain valid for this synchronous syscall;
     // pid zero selects this daemon's calling thread before workers are started.
     if unsafe { set(0, libc::SCHED_FIFO, &settings) } != 0 {
