@@ -96,6 +96,14 @@ impl Effects {
                 }
             }
             NavigationRequest::Push(widget) => {
+                if let Ok(nav) = widget.get::<openpilot_ui_framework::navigation::NavWidget>() {
+                    if (nav.content.as_ref() as &dyn std::any::Any)
+                        .is::<openpilot_ui_application::mici::settings::network::wifi::Wifi>()
+                    {
+                        self.values.push(json!({"page":"Wifi"}));
+                        return Ok(());
+                    }
+                }
                 {
                     let keyboard = widget.get::<Keyboard>()?;
                     self.values.push(json!({"keyboard":keyboard.title.text.get(),"text":keyboard.text(),"minimum":keyboard.options.min_length}));

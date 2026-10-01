@@ -2476,6 +2476,7 @@ dependencies = [
  "openpilot-timed",
  "openpilot-ui-framework",
  "openpilot-uploader",
+ "openpilot-wifi",
  "qrcodegen",
  "rustix",
  "serde",

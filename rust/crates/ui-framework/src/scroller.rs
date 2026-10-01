@@ -10,6 +10,7 @@ use crate::{
 };
 use num_traits::ToPrimitive;
 use std::collections::{BTreeMap, BTreeSet};
+pub type AfterItem = Box<dyn FnMut(&mut Scroller, &Frame<'_>) -> Result<(), Error>>;
 struct Item {
     id: u64,
     widget: Box<dyn Widget>,
@@ -32,6 +33,7 @@ pub struct Scroller {
     pub indicator: Option<Texture>,
     pub edge_shadows: bool,
     pub content_size: f64,
+    pub after_item: Option<AfterItem>,
     pub scroll_offset: f64,
     items: Vec<Item>,
     next_id: u64,
@@ -61,6 +63,7 @@ impl Scroller {
             indicator: None,
             edge_shadows: horizontal,
             content_size: 0.0,
+            after_item: None,
             scroll_offset: 0.0,
             items: Vec::new(),
             next_id: 0,
@@ -84,6 +87,29 @@ impl Scroller {
             .ok_or(Error::Contract("scroller item id overflow"))?;
         self.items.push(Item { id, widget });
         Ok(id)
+    }
+    pub fn reorder_items(&mut self, ids: &[u64]) -> Result<(), Error> {
+        let mut seen = BTreeSet::new();
+        if ids
+            .iter()
+            .any(|id| !seen.insert(*id) || !self.items.iter().any(|item| item.id == *id))
+        {
+            return Err(Error::Contract(
+                "scroller reorder requires unique existing ids",
+            ));
+        }
+        let mut items: BTreeMap<_, _> = std::mem::take(&mut self.items)
+            .into_iter()
+            .map(|item| (item.id, item))
+            .collect();
+        for id in ids {
+            self.items.push(
+                items
+                    .remove(id)
+                    .ok_or(Error::Contract("scroller reorder id vanished"))?,
+            );
+        }
+        Ok(())
     }
     pub fn item_id(&self, index: usize) -> Option<u64> {
         self.items.get(index).map(|item| item.id)

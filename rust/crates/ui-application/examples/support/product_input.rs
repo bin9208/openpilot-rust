@@ -8,6 +8,12 @@ use std::collections::BTreeMap;
 #[derive(Default, Deserialize)]
 pub struct Step {
     pub frame: u32,
+    pub wifi: Option<openpilot_wifi::Snapshot>,
+    #[serde(default)]
+    pub wifi_events: Vec<openpilot_wifi::Event>,
+    pub prime: Option<i32>,
+    #[serde(default)]
+    pub show_again: bool,
     #[serde(default)]
     pub events: Vec<MouseEvent>,
     #[serde(default)]
@@ -59,6 +65,9 @@ pub fn apply(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut messages = Vec::new();
     if let Some(step) = step {
+        if let Some(prime) = step.prime {
+            context.prime.set(prime);
+        }
         for (key, value) in &step.params {
             if let Some(value) = value {
                 context.params.put(key, value.as_bytes())?;
@@ -114,6 +123,9 @@ pub const KEYS: &[&str] = &[
     "GithubUsername",
     "GithubSshKeys",
     "UpdaterTargetBranch",
+    "GsmRoaming",
+    "GsmMetered",
+    "GsmApn",
 ];
 
 pub fn scroll(
@@ -133,6 +145,14 @@ pub fn scroll(
             content.scroller.scroll_to(position, false, false, false)?;
         } else if let Some(content) =
             content.downcast_mut::<openpilot_ui_application::mici::settings::developer::Developer>()
+        {
+            content.scroller.scroll_to(position, false, false, false)?;
+        } else if let Some(content) =
+            content.downcast_mut::<openpilot_ui_application::mici::settings::network::Network>()
+        {
+            content.scroller.scroll_to(position, false, false, false)?;
+        } else if let Some(content) =
+            content.downcast_mut::<openpilot_ui_application::mici::settings::network::wifi::Wifi>()
         {
             content.scroller.scroll_to(position, false, false, false)?;
         } else {

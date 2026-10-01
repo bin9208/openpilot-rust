@@ -13,6 +13,8 @@ mod context;
 mod product_effects;
 #[path = "support/product_input.rs"]
 mod product_input;
+#[path = "support/product_network.rs"]
+mod product_network;
 #[path = "support/product_widgets.rs"]
 mod product_widgets;
 #[derive(Deserialize)]
@@ -45,6 +47,9 @@ pub struct Scene {
     dialog: Option<DialogProbe>,
     time_valid: Option<bool>,
     ssh_host: Option<String>,
+    wifi: Option<openpilot_wifi::Snapshot>,
+    #[serde(default)]
+    capture_frames: Vec<u32>,
 }
 #[derive(Deserialize)]
 pub struct DialogProbe {
@@ -74,7 +79,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let assets = root.join("openpilot/selfdrive/assets");
     let renderer = Renderer::new(scene.config, &assets, false, &scene.language)?;
     let mut canvas = Canvas::new(renderer, &assets);
-    let (widget, dialog_results) = product_widgets::create(&context, &mut canvas, &scene)?;
+    let product_widgets::Product {
+        widget,
+        dialogs: dialog_results,
+        network,
+    } = product_widgets::create(&context, &mut canvas, &scene)?;
     if let Some(host) = &scene.ssh_host {
         product_input::ssh_fetcher(&widget, scene.config.big)?
             .borrow_mut()
@@ -86,12 +95,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut results = Vec::new();
     let mut effects = product_effects::Effects::new(context.clone());
     let mut last_event = openpilot_ui_framework::geometry::MouseEvent::default();
+    widget.borrow_mut()?.show(&Frame {
+        index: 0,
+        now: 0.0,
+        monotonic: 0.0,
+        keyboard: &keyboard,
+        navigation: &navigation,
+        dt: 0.05,
+        target_fps: 20.0,
+        awake: true,
+        events: &[],
+        last_event,
+        cursor: last_event.pos,
+        wheel: 0.0,
+        show_touches: false,
+    });
     for index in 0..scene.frames {
         let now = f64::from(index) / 20.0;
         clock.set(now);
         let step = scene.steps.iter().find(|step| step.frame == index);
         product_input::apply(&context, step, now)?;
         product_input::scroll(&widget, step)?;
+        if let Some(network) = &network {
+            network.before(step);
+        }
         effects.before(step)?;
         if step.is_some_and(|step| step.flush_ssh) {
             let fetcher = product_input::ssh_fetcher(&widget, scene.config.big)?;
@@ -122,8 +149,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             wheel: step.map_or(0.0, |step| step.wheel),
             show_touches: false,
         };
-        if index == 0 {
+        if step.is_some_and(|step| step.show_again) {
+            widget.borrow_mut()?.hide(&frame);
             widget.borrow_mut()?.show(&frame);
+        }
+        if let Some(network) = &network {
+            network.ticks.run()?;
         }
         canvas.renderer.begin();
         widget.borrow_mut()?.render(&frame, &mut canvas)?;
@@ -140,7 +171,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         if scene.capture_effects {
             effects.drain(&navigation, &mut canvas)?;
-            results.push(effects.snapshot(scene.raw_params.keys().cloned())?);
+            let mut snapshot = effects.snapshot(scene.raw_params.keys().cloned())?;
+            if let Some(network) = &network {
+                snapshot["network"] = network.snapshot(&widget)?;
+            }
+            results.push(snapshot);
         } else if scene.dialog.is_some() {
             let nav = widget.get::<openpilot_ui_framework::navigation::NavWidget>()?;
             let input = (nav.content.as_ref() as &dyn std::any::Any)
@@ -149,6 +184,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             results.push(serde_json::json!({"callbacks":*dialog_results.borrow(),"dismissing":nav.motion.is_dismissing(),"text":input.map(|input|input.text()),"candidate":input.map(|input|input.candidate())}));
         } else {
             results.push(serde_json::json!({"prime":context.prime.get()}));
+        }
+        if scene.capture_frames.contains(&index) {
+            let stem = output
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .ok_or("invalid output stem")?;
+            canvas
+                .renderer
+                .screenshot(&output.with_file_name(format!("{stem}-frame-{index:04}.png")))?;
         }
         if index + 1 == scene.frames {
             canvas.renderer.screenshot(output)?;

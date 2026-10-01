@@ -10,6 +10,7 @@ publish = false
 unsafe_code = "deny"
 
 [dependencies]
+openpilot-wifi = { path = "../wifi" }
 openpilot-logmessaged = { path = "../logmessaged" }
 openpilot-http-transport = { path = "../http-transport" }
 openpilot-runtime-version = { path = "../runtime-version" }

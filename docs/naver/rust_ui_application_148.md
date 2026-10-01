@@ -208,3 +208,26 @@ account, real updater, host power operation or production selection is involved.
 This is still an intermediate #148 checkpoint: network/eGPU/settings composition,
 home/onboarding/sidebar/onroad/camera, native application startup and the complete
 runtime startup/upload gate are unfinished.
+
+## Compact network recovery checkpoint (2026-10-01)
+
+The native compact Network and Wi-Fi pages now retain the source scan-card
+ordering, connection/authentication/forget callbacks, signal/security icons,
+connection animations, metering/tether controls, cellular visibility and APN
+trimming. Shared scroller moves use stable widget IDs while painting; the Wi-Fi
+session refreshes the synchronous command snapshot before returning. The public
+Wi-Fi widget exposes its tick for onboarding/application lifetime ownership.
+
+The resumed real raylib run covers 46 English/Korean scenarios and 3,740 frames.
+Every captured pixel and per-frame transport/Params/effect trace matches the
+unchanged Python source. All paired images, scene inputs and JSON traces are in
+`.omo/evidence/ui-application-148/network-resume/`; the exact command, binary hash,
+coverage and limits are in `network-resume-receipt.json`. The corresponding
+package/framework tests are captured in `network-tests.log`. A separate existing
+30-scenario widget regression uses `network-widgets-regression/`.
+
+Visual inspection retains source behavior, including English-font fallback for
+Korean SSIDs, English compact labels and source wrapping under the Korean font.
+This verifies an owned transport boundary, not real Wi-Fi or system D-Bus.
+eGPU, settings composition, remaining camera/onroad and full application/runtime
+startup remain open; this checkpoint is not a device-test candidate.

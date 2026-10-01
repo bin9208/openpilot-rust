@@ -29,6 +29,9 @@ KEYS = [
   'GithubUsername',
   'GithubSshKeys',
   'UpdaterTargetBranch',
+  'GsmRoaming',
+  'GsmMetered',
+  'GsmApn',
 ]
 
 
@@ -79,6 +82,9 @@ class Effects:
       gui.set_show_fps = lambda value: self.effects.append({'fps': value})
 
   def push(self, dialog):
+    if type(dialog).__name__ == "WifiUIMici":
+      self.effects.append({"page": "Wifi"})
+      return
     if hasattr(dialog, "options"):
       self.effects.append({"select": dialog.title, "options": dialog.options, "current": dialog.current})
       self.dialogs.append(dialog)
@@ -118,6 +124,8 @@ class Effects:
         self.scene['params'].pop(key, None)
       else:
         self.scene['params'][key] = value
+    if 'prime' in step:
+      self.scene['prime'] = step['prime']
     if 'ignition' in step:
       self.ui.ignition = step['ignition']
     if 'started' in step:

@@ -6,12 +6,25 @@ use openpilot_ui_application::{
 use openpilot_ui_framework::{canvas::Canvas, widget::WidgetHandle};
 use std::{cell::RefCell, rc::Rc};
 pub type DialogResults = Rc<RefCell<Vec<String>>>;
+pub struct Product {
+    pub widget: WidgetHandle,
+    pub dialogs: DialogResults,
+    pub network: Option<super::product_network::Fixture>,
+}
 pub fn create(
     context: &Context,
     canvas: &mut Canvas,
     scene: &Scene,
-) -> Result<(WidgetHandle, DialogResults), Box<dyn std::error::Error>> {
+) -> Result<Product, Box<dyn std::error::Error>> {
     let dialog_results = Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
+    if ["network-mici", "wifi-mici"].contains(&scene.kind.as_str()) {
+        let (widget, network) = super::product_network::Fixture::create(context, canvas, scene)?;
+        return Ok(Product {
+            widget,
+            dialogs: dialog_results,
+            network: Some(network),
+        });
+    }
     let widget = if let Some(options) = &scene.dialog {
         use openpilot_ui_application::mici::widgets::dialog;
         let results = dialog_results.clone();
@@ -135,5 +148,9 @@ pub fn create(
             _ => return Err("unknown product kind".into()),
         })
     };
-    Ok((widget, dialog_results))
+    Ok(Product {
+        widget,
+        dialogs: dialog_results,
+        network: None,
+    })
 }

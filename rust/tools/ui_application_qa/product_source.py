@@ -125,6 +125,7 @@ gui_app.init_window('Source product widget')
 effects = Effects(scene, state_module.ui_state, gui_app, engaged_callbacks)
 effects.offroad_callbacks = offroad_callbacks
 dialog_results = []
+network = None
 if 'dialog' in scene:
   from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog, BigInputDialog
 
@@ -160,6 +161,10 @@ elif scene['kind'] == 'regulatory':
 
   gui_app.pop_widget = lambda: effects.effects.append({'pop': True})
   widget = regulatory(Path(__file__).resolve().parents[3], gui_app, scene['config']['big'])
+elif scene['kind'] in ['network-mici', 'wifi-mici']:
+  from network_source import create
+
+  widget, network = create(scene, state_module.ui_state, gui_app)
 elif scene['kind'] == 'software':
   import openpilot.selfdrive.ui.layouts.settings.software as software_module
 
@@ -251,7 +256,12 @@ results = []
 try:
   for index in range(scene['frames']):
     now = index / 20
+    if network is not None:
+      network.before(next((step for step in scene.get('steps', []) if step['frame'] == index), {}))
     step = effects.before(index, widget)
+    if step.get("show_again"):
+      widget.hide_event()
+      widget.show_event()
     next(loop)
     gui_app._mouse_events = [
       MouseEvent(MousePos(event['pos']['x'], event['pos']['y']), event['slot'], event['pressed'], event['released'], event['down'], event['time'])
@@ -274,6 +284,13 @@ try:
       if scene.get('capture_effects')
       else {'prime': scene['prime']}
     )
+    if network is not None:
+      results[-1]['network'] = network.state(widget)
+    if index in scene.get('capture_frames', []):
+      rl.rl_draw_render_batch_active()
+      capture = rl.load_image_from_screen()
+      assert rl.export_image(capture, str(output.with_name(f'{output.stem}-frame-{index:04}.png')))
+      rl.unload_image(capture)
   rl.rl_draw_render_batch_active()
   image = rl.load_image_from_screen()
   assert rl.export_image(image, str(output))

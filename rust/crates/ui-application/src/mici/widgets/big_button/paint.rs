@@ -5,6 +5,14 @@ impl BigButton {
         frame: &Frame<'_>,
         draw: &mut dyn Draw,
     ) -> Result<(), Error> {
+        self.paint_with(frame, draw, Self::draw_content)
+    }
+    pub(crate) fn paint_with(
+        &mut self,
+        frame: &Frame<'_>,
+        draw: &mut dyn Draw,
+        mut content: impl FnMut(&mut Self, &Frame<'_>, &mut dyn Draw, f64) -> Result<(), Error>,
+    ) -> Result<(), Error> {
         if let Some(position) = self.position_base {
             self.state.rect.x = float(f64::from(position.x) + self.shake(frame.now));
             self.state.rect.y = position.y;
@@ -17,7 +25,7 @@ impl BigButton {
                 u32::from_le_bytes([255, 255, 255, 38]),
                 false,
             )?;
-            return self.content(frame, draw, f64::from(self.state.rect.y));
+            return content(self, frame, draw, f64::from(self.state.rect.y));
         }
         if self.grow_until.is_some_and(|until| frame.now >= until) {
             self.grow_until = None;
@@ -46,7 +54,7 @@ impl BigButton {
                 u32::from_le_bytes([0, 0, 0, 127]),
                 false,
             )?;
-            self.content(frame, draw, y)?;
+            content(self, frame, draw, y)?;
             background.draw(
                 draw,
                 Point {
@@ -66,11 +74,16 @@ impl BigButton {
                 float(scale),
                 WHITE,
             )?;
-            self.content(frame, draw, y)?;
+            content(self, frame, draw, y)?;
         }
         Ok(())
     }
-    fn content(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw, y: f64) -> Result<(), Error> {
+    pub(crate) fn draw_content(
+        &mut self,
+        frame: &Frame<'_>,
+        draw: &mut dyn Draw,
+        y: f64,
+    ) -> Result<(), Error> {
         let grey = matches!(self.kind, Kind::Grey);
         let rect = self.state.rect;
         let vertical = if grey && self.text.is_empty() {
