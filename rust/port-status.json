@@ -313,7 +313,11 @@
       "name": "paramsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.paramsd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/paramsd; native continuous learner, dynamic CarParams model equations, cache migration/retrieval, GPS and liveParameters persistence",
+      "native_dependencies": ["unchanged external rednose EKFSym and ekf_c.c numerical/rewind implementation via owned CXX boundary", "Eigen 3.4.0 headers pinned by uv.lock dependency commit 40e5d76de1b33a86c5181b63db6782d8f06da1da", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "actual-source estimator/model/main-loop comparisons, native IPC and Params persistence/restart/shutdown, native ownership/scheduler sanitizers; no Python/Cython runtime or generated project C++ model fallback; whole startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/rust-port/paramsd-validation.md",
       "production_replaced": false
     },
     {
