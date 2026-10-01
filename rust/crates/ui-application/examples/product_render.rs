@@ -17,6 +17,8 @@ mod product_driver;
 mod product_effects;
 #[path = "support/product_egpu.rs"]
 mod product_egpu;
+#[path = "support/product_indicator.rs"]
+mod product_indicator;
 #[path = "support/product_input.rs"]
 mod product_input;
 #[path = "support/product_network.rs"]
@@ -91,6 +93,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         product_input::apply(&context, step, now)?;
         if let Some(alert) = &scene.alert {
             product_alert::before(&context, alert, index)?;
+        }
+        if let Some(indicator) = &scene.indicator {
+            product_indicator::before(&context, &widget, indicator, index)?;
         }
         product_input::scroll(&widget, step)?;
         if let Some(network) = &network {
@@ -210,6 +215,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if scene.alert.is_some() {
             results.last_mut().ok_or("missing alert trace")?["alert"] =
                 product_alert::snapshot(&widget, scene.config.big, rendered)?;
+        }
+        if scene.indicator.is_some() {
+            results.last_mut().ok_or("missing indicator trace")?["indicator"] =
+                product_indicator::snapshot(&widget, &scene.kind)?;
         }
         if scene.capture_frames.contains(&index) {
             let stem = output

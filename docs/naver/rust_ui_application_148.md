@@ -341,3 +341,36 @@ The checkpoint still leaves Home import, HUD/augmented road composition,
 traffic/confidence/torque/vision/debug widgets and final application
 startup/navigation/services/recording/shutdown open. It is not a complete UI or
 runtime candidate and does not authorize the first device comparison.
+
+## Stage 9: Home integration and compact indicators
+
+The independently reviewed Home slice (`86ddf0675228755dacaf6123f0116304814b8fbe`)
+is imported as `ff2bd5de4a977d7da4fd2963c9dbabed853cf7f4`. It supplies both Home
+layouts, large sidebar, compact cards/tutorial/progress and onboarding roots.
+The UI branch's combined all-target check passes, and a fresh binary exercises
+the English/Korean cached onboarding flows through the original VisionIPC peer.
+The Home receipt and parent review remain separate from this integration check.
+The original peer's earlier startup abort has no established cause; successful
+later stress runs do not establish a fix for it.
+
+Compact confidence and traffic indicators now consume typed modelV2 and
+longitudinalPlan messages. Their original filter rates, status colors, empty
+prediction behavior, green timeout and zero-clock truthiness are preserved.
+The source gradient rectangle and circle-mask integer conversions are retained
+for fractional widget rectangles.
+
+Evidence under `.omo/evidence/ui-application-148/` is recorded by
+`stage9-receipt.json` with immutable binary and source hashes:
+
+| Scenario and invocation | Binary observable | Captured artifact |
+| --- | --- | --- |
+| `check_ui_compact_onboarding.py --filter cached` | Two EN/KO cases, 80 exact frames and matching Params/navigation/lifecycle traces after Home import | `home-integrated-cached/results.json` |
+| `check_ui_indicators.py` | Six original/native cases, 960 exact RGBA pairs, zero filter-state error and exact traffic visibility | `indicators-final2/results.json`, per-frame captures/traces |
+| UI application/framework/startup tests and all-target Clippy | Tests pass, Rust warnings denied; getter-name warning corrected before final check | `stage9-indicators-tests.log`, `stage9-indicators-clippy.log` |
+| Formatting, focused Ruff and diff checks | All recorded command exit codes are zero | `stage9-checks.json` |
+
+The indicator contact sheet covers status/color/filter changes, red/green
+transitions, expiry, unknown state and reentry. This remains host GL evidence;
+ARM GL and the first device comparison are separate. Remaining torque, vision,
+debug/HUD/augmented-road composition and application startup/navigation/services/
+recording/shutdown work still prevent a complete UI/runtime handoff.

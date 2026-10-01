@@ -140,3 +140,15 @@ reader!(
     CarState,
     openpilot_cereal::car_capnp::car_state::Reader<'_>
 );
+reader!(
+    model,
+    "modelV2",
+    ModelV2,
+    openpilot_cereal::log_capnp::model_data_v2::Reader<'_>
+);
+reader!(
+    longitudinal_plan,
+    "longitudinalPlan",
+    LongitudinalPlan,
+    openpilot_cereal::log_capnp::longitudinal_plan::Reader<'_>
+);

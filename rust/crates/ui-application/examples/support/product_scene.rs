@@ -9,6 +9,7 @@ pub struct Scene {
     pub driver: Option<product_driver::Options>,
     pub camera: Option<product_camera::Options>,
     pub alert: Option<super::product_alert::Options>,
+    pub indicator: Option<super::product_indicator::Options>,
     pub config: Config,
     pub language: String,
     pub rect: Rect,

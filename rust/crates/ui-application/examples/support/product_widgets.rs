@@ -39,7 +39,9 @@ pub fn create(
             egpu: Some(egpu),
         });
     }
-    let widget = if let Some(alert) = &scene.alert {
+    let widget = if let Some(indicator) = &scene.indicator {
+        super::product_indicator::create(context, canvas, &scene.kind, indicator)?
+    } else if let Some(alert) = &scene.alert {
         super::product_alert::create(context, canvas, scene.config.big, alert)?
     } else if scene.camera.is_some() {
         super::product_camera::create(context, canvas, scene)?

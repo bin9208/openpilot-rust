@@ -77,7 +77,11 @@ gui_app.init_window('Source product widget')
 effects = Effects(scene, state_module.ui_state, gui_app, engaged_callbacks)
 effects.offroad_callbacks = offroad_callbacks
 dialog_results, network, egpu = [], None, None
-if scene.get('alert') is not None:
+if scene.get('indicator') is not None:
+  from indicator_source import create
+
+  widget = create(scene, state_module.ui_state)
+elif scene.get('alert') is not None:
   from alert_source import create
 
   widget = create(scene, state_module.ui_state)
@@ -208,6 +212,10 @@ try:
       from alert_source import before
 
       before(scene, state_module.ui_state, index)
+    if scene.get('indicator') is not None:
+      from indicator_source import before
+
+      before(scene, state_module.ui_state, widget, index)
     if scene.get("driver") and not scene["config"]["big"] and not scene['driver'].get('navigation') and index == 20:
       widget.hide_event()
     if scene.get("driver") and not scene["config"]["big"] and not scene['driver'].get('navigation') and index == 21:
@@ -251,6 +259,10 @@ try:
       from alert_source import snapshot
 
       results[-1]['alert'] = snapshot(widget, state_module.ui_state, rendered)
+    if scene.get('indicator') is not None:
+      from indicator_source import snapshot
+
+      results[-1]['indicator']=snapshot(scene, widget)
     if index in scene.get('capture_frames', []):
       rl.rl_draw_render_batch_active()
       capture = rl.load_image_from_screen()
