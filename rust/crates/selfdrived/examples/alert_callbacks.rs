@@ -98,7 +98,10 @@ impl AlertParams for Params {
         match self.values.get(key) {
             None | Some(Value::Null) => Ok(None),
             Some(Value::String(value)) => Ok(Some(value.clone())),
-            _ => Err(Error::Params(format!("invalid text {key}"))),
+            _ => Err(Error::ParameterType {
+                key: key.into(),
+                expected: "text",
+            }),
         }
     }
     fn integer(&mut self, key: &str) -> Result<i32, Error> {
@@ -107,14 +110,20 @@ impl AlertParams for Params {
             .get(key)
             .and_then(Value::as_i64)
             .and_then(|value| i32::try_from(value).ok())
-            .ok_or_else(|| Error::Params(format!("invalid integer {key}")))
+            .ok_or_else(|| Error::ParameterType {
+                key: key.into(),
+                expected: "integer",
+            })
     }
     fn boolean(&mut self, key: &str) -> Result<bool, Error> {
         self.reads.push(json!(["get_bool", key]));
         self.values
             .get(key)
             .and_then(Value::as_bool)
-            .ok_or_else(|| Error::Params(format!("invalid boolean {key}")))
+            .ok_or_else(|| Error::ParameterType {
+                key: key.into(),
+                expected: "boolean",
+            })
     }
 }
 

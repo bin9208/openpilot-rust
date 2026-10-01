@@ -2557,7 +2557,11 @@ dependencies = [
 name = "openpilot-selfdrived"
 version = "0.1.0"
 dependencies = [
+ "openpilot-beepd",
  "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-params",
+ "openpilot-params-typed",
  "openpilot-ui-framework",
  "serde",
  "serde_json",

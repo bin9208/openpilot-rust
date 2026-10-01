@@ -74,3 +74,22 @@ All-target strict Clippy, formatting, Ruff and diff checks pass. The callback
 comparison currently supplies the Params interface; the real Params adapter,
 event generation, car-specific logic, calibrated pose and continuous daemon
 are subsequent stages. This does not mark selfdrived ported.
+
+## Physical alert Params adapter
+
+The callback interface now has a native file-backed adapter. STRING reads reuse
+the original-compatible UTF-8/logging boundary, integer reads reuse the verified
+`std::stoi` semantics, and boolean reads match exact byte `1`. File read errors
+produce the source getter's empty value; unknown keys and fatal integer casts
+remain typed errors. No fatal cast is defaulted to zero.
+
+`params-first/report.json` records 47 comparisons against the actual original
+Cython Params binding, using synthetic files and private logging sockets.
+Coverage includes the four callback keys, missing/empty/NUL/Unicode/malformed
+UTF-8 values, permission/directory reads, signed limits and trailing integer
+text, unknown keys, and seven invalid/out-of-range integer reads. Those seven
+source child processes actually terminate with SIGABRT; the native adapter
+returns its explicit fatal integer error for propagation by the daemon.
+Warnings and their transported messages match the original. Strict all-target
+Clippy, formatting, Ruff and diff checks pass. Continuous-loop effect ordering
+and the remaining selfdrived policy are still in progress.

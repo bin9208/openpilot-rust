@@ -12,14 +12,59 @@ pub enum Error {
     NonFiniteInteger,
     #[error("missing alert text parameter {0}")]
     MissingText(&'static str),
-    #[error("alert parameter read failed: {0}")]
-    Params(String),
+    #[error("invalid {expected} alert parameter {key}")]
+    ParameterType { key: String, expected: &'static str },
+    #[error(transparent)]
+    Parameter(#[from] openpilot_params::Error),
+    #[error(transparent)]
+    TextParameter(#[from] openpilot_params_typed::Error),
+    #[error("fatal Cython get_int conversion for {key}: {source}")]
+    IntegerParameter {
+        key: String,
+        source: openpilot_beepd::IntegerError,
+    },
 }
 
 pub trait AlertParams {
     fn text(&mut self, key: &str) -> Result<Option<String>, Error>;
     fn integer(&mut self, key: &str) -> Result<i32, Error>;
     fn boolean(&mut self, key: &str) -> Result<bool, Error>;
+}
+
+pub struct NativeParams<'a> {
+    pub params: &'a openpilot_params::Params,
+    pub logger: &'a mut openpilot_logging::producer::Logger,
+}
+
+impl NativeParams<'_> {
+    fn raw(&self, key: &str) -> Result<Vec<u8>, Error> {
+        match self.params.get(key) {
+            Ok(value) => Ok(value.unwrap_or_default()),
+            Err(openpilot_params::Error::Io(_)) => Ok(Vec::new()),
+            Err(error) => Err(error.into()),
+        }
+    }
+}
+
+impl AlertParams for NativeParams<'_> {
+    fn text(&mut self, key: &str) -> Result<Option<String>, Error> {
+        Ok(openpilot_params_typed::get_string(
+            self.params,
+            key,
+            self.logger,
+        )?)
+    }
+
+    fn integer(&mut self, key: &str) -> Result<i32, Error> {
+        openpilot_beepd::integer(&self.raw(key)?).map_err(|source| Error::IntegerParameter {
+            key: key.to_owned(),
+            source,
+        })
+    }
+
+    fn boolean(&mut self, key: &str) -> Result<bool, Error> {
+        Ok(self.raw(key)? == b"1")
+    }
 }
 
 #[derive(Default, Deserialize)]
