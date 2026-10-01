@@ -1,0 +1,25 @@
+[package]
+name = "openpilot-wifi"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+dbus = { version = "=0.9.12", features = ["futures", "vendored"] }
+dbus-tokio = "=0.7.6"
+tokio = { version = "1", features = ["rt", "macros", "sync", "time", "net"] }
+openpilot-params = { path = "../params" }
+openpilot-logging = { path = "../logging" }
+openpilot-process-supervision = { path = "../process-supervision" }
+rustix = { version = "1", features = ["time"] }
+uuid = { version = "1", features = ["v4"] }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+
+[dev-dependencies]
+serde_json = "1"

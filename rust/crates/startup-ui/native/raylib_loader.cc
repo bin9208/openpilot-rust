@@ -69,7 +69,7 @@ void *library() {
                               "GetMouseWheelMove",
                               "PollInputEvents",
                               "GetMonitorWidth",
-                              "GetMonitorHeight"};
+                              "GetMonitorHeight", "ImageFlipHorizontal", "DrawCircleV", "DrawRectangleGradientEx", "DrawLineEx", "DrawCircleGradient", "SetTextureWrap", "LoadShaderFromMemory", "UnloadShader", "BeginShaderMode", "EndShaderMode", "SetWindowTitle", "GetFPS", "DrawFPS", "GetKeyPressed", "GetCharPressed", "IsKeyDown", "IsKeyPressed", "GetMousePosition", "GetShaderLocation", "SetShaderValueV", "SetShaderValue", "SetShaderValueMatrix", "DrawTriangleStrip", "SetTraceLogLevel", "SetTraceLogCallback", "DrawRectangleLines"};
     for (const char *name : required) {
       if (!dlsym(loaded, name)) {
         dlclose(loaded);
@@ -161,4 +161,33 @@ FORWARD(float, GetMouseWheelMove, (), ())
 FORWARD(void, PollInputEvents, (), ())
 FORWARD(int, GetMonitorWidth, (int monitor), (monitor))
 FORWARD(int, GetMonitorHeight, (int monitor), (monitor))
+FORWARD(void, DrawCircleV, (Vector2 center, float radius, Color color), (center,radius,color))
+FORWARD(void, DrawRectangleGradientEx, (Rectangle rect, Color top_left, Color bottom_left, Color top_right, Color bottom_right), (rect,top_left,bottom_left,top_right,bottom_right))
+FORWARD(void, DrawLineEx, (Vector2 start, Vector2 end, float thick, Color color), (start,end,thick,color))
+FORWARD(void, ImageFlipHorizontal, (Image *image), (image))
+
+FORWARD(void, DrawCircleGradient, (Vector2 center, float radius, Color inner, Color outer), (center, radius, inner, outer))
+
+FORWARD(void, SetTextureWrap, (Texture2D texture, int wrap), (texture, wrap))
+
+FORWARD(Shader, LoadShaderFromMemory, (const char *vertex, const char *fragment), (vertex, fragment))
+FORWARD(void, UnloadShader, (Shader shader), (shader))
+FORWARD(void, BeginShaderMode, (Shader shader), (shader))
+FORWARD(void, EndShaderMode, (), ())
+FORWARD(void, SetWindowTitle, (const char *title), (title))
+FORWARD(int, GetFPS, (), ())
+FORWARD(void, DrawFPS, (int x, int y), (x, y))
+FORWARD(int, GetKeyPressed, (), ())
+FORWARD(int, GetCharPressed, (), ())
+FORWARD(bool, IsKeyDown, (int key), (key))
+FORWARD(bool, IsKeyPressed, (int key), (key))
+FORWARD(Vector2, GetMousePosition, (), ())
+FORWARD(int, GetShaderLocation, (Shader shader, const char *name), (shader, name))
+FORWARD(void, SetShaderValueV, (Shader shader, int location, const void *values, int kind, int count), (shader, location, values, kind, count))
+FORWARD(void, SetShaderValue, (Shader shader, int location, const void *values, int kind), (shader, location, values, kind))
+FORWARD(void, SetShaderValueMatrix, (Shader shader, int location, Matrix matrix), (shader, location, matrix))
+FORWARD(void, DrawTriangleStrip, (const Vector2 *points, int count, Color color), (points, count, color))
+FORWARD(void, SetTraceLogLevel, (int level), (level))
+FORWARD(void, SetTraceLogCallback, (TraceLogCallback callback), (callback))
+FORWARD(void, DrawRectangleLines, (int x, int y, int width, int height, Color color), (x,y,width,height,color))
 #undef FORWARD

@@ -41,3 +41,15 @@ pub mod children;
 pub mod native_children;
 
 mod number;
+
+#[cfg(feature = "native")]
+pub mod renderer_controls;
+
+#[cfg(feature = "native")]
+pub mod diagnostics;
+#[cfg(feature = "native")]
+pub mod egl;
+#[cfg(feature = "native")]
+pub mod logging;
+#[cfg(feature = "native")]
+mod renderer_polygon;

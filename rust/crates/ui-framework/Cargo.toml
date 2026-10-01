@@ -1,0 +1,48 @@
+[package]
+name = "openpilot-ui-framework"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native"]
+native = ["openpilot-startup-ui/native"]
+
+[dependencies]
+openpilot-startup-ui = { path = "../startup-ui", default-features = false }
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-params = { path = "../params" }
+openpilot-wifi = { path = "../wifi" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+num-traits = "0.2"
+rustybuzz = "0.20"
+png = "0.17"
+regex = "1"
+signal-hook = "0.3"
+
+[lints]
+workspace = true
+
+[[example]]
+name = "ui_render"
+required-features = ["native"]
+
+[[example]]
+name = "form_render"
+required-features = ["native"]
+
+[[example]]
+name = "network_render"
+required-features = ["native"]
+
+[[example]]
+name = "polygon_render"
+required-features = ["native"]
+
+[[example]]
+name = "application_run"
+required-features = ["native"]

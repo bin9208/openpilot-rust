@@ -6,6 +6,43 @@ pub struct Config {
     pub scale: f32,
 }
 impl Config {
+    #[cfg(feature = "native")]
+    pub fn for_runtime() -> Result<(Self, String), crate::Error> {
+        use crate::Error;
+        let hardware = openpilot_hardware_info::for_runtime();
+        let device = hardware
+            .get_device_type()
+            .map_err(|_| Error::Contract("hardware type failed"))?;
+        let pc = device == "pc";
+        let big = std::env::var("BIG").as_deref() == Ok("1");
+        let large_viewport = big || matches!(device.as_str(), "tici" | "tizi");
+        let mut config = Config {
+            big,
+            large_viewport,
+            pc,
+            scale: std::env::var("SCALE")
+                .unwrap_or_else(|_| "1.0".into())
+                .parse()
+                .map_err(|_| Error::Contract("invalid SCALE"))?,
+        };
+        if !config.scale.is_finite() || config.scale <= 0.0 {
+            return Err(Error::Contract("SCALE must be finite and positive"));
+        }
+        if pc && std::env::var_os("SCALE").is_none() {
+            let monitor = crate::bridge::ffi::monitor()?;
+            if monitor.x > 0.0
+                && monitor.y > 0.0
+                && (monitor.x < config.width() || monitor.y < config.height())
+            {
+                config.scale = (monitor.x / config.width())
+                    .min(monitor.y / config.height())
+                    .mul_add(0.95, 0.0)
+                    .max(0.3);
+            }
+        }
+        Ok((config, device))
+    }
+
     pub fn width(self) -> f32 {
         if self.large_viewport {
             2160.0
