@@ -818,6 +818,7 @@ jobs:
         run: |
           python rust/tools/check_wifi_policy.py --binary "$PWD/rust/target/debug/examples/wifi_trace" --output "$RUNNER_TEMP/ui-connectivity/wifi-policy.json"
           python rust/tools/check_wifi_runtime.py --binary "$PWD/rust/target/debug/examples/wifi_native" --launcher "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so --output "$RUNNER_TEMP/ui-connectivity/wifi"
+          python rust/tools/check_wifi_callback_ordering.py --binary "$PWD/rust/target/debug/examples/wifi_native" --launcher "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so --output "$RUNNER_TEMP/ui-connectivity/wifi-callback-ordering"
       - name: Compare discovery policy, HTTP, continuous process and address ABI
         run: |
           python rust/tools/check_cweb_policy.py --binary "$PWD/rust/target/debug/examples/cweb_trace" --output "$RUNNER_TEMP/ui-connectivity/cweb/policy"
