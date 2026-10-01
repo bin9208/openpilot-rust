@@ -54,11 +54,20 @@ impl Transport for SocketTimeout {
     }
     fn await_input(&mut self, _: NextTimeout) -> Result<bool, ureq::Error> {
         let started = Instant::now();
-        let result = self.inner.await_input(NextTimeout {
-            after: self.timeout.into(),
-            reason: ureq::Timeout::RecvBody,
-        });
-        self.completed(started, ureq::Timeout::RecvBody, result)
+        loop {
+            let remaining = self.timeout.saturating_sub(started.elapsed());
+            if remaining.is_zero() {
+                return Err(ureq::Error::Timeout(ureq::Timeout::RecvBody));
+            }
+            let result = self.inner.await_input(NextTimeout {
+                after: remaining.into(),
+                reason: ureq::Timeout::RecvBody,
+            });
+            match self.completed(started, ureq::Timeout::RecvBody, result) {
+                Err(ureq::Error::Io(error)) if error.kind() == std::io::ErrorKind::Interrupted => {}
+                result => return result,
+            }
+        }
     }
     fn is_open(&mut self) -> bool {
         self.inner.is_open()
@@ -83,3 +92,6 @@ impl SocketTimeout {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
