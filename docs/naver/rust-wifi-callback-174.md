@@ -67,3 +67,26 @@ by these local checks. Device and whole-runtime acceptance remain separate.
 
 Docs-Not-Needed: this change repairs an owned test fixture completion boundary;
 it adds no user-visible setting and changes no runtime setting behavior.
+
+## Gate ordering review repair
+
+The root review found that the test gate itself could be released early if the
+monitor removed B before the worker reached the gate. The checker now retains
+the complete response and releases only after observing `blocked=true` and
+`released=false` with B absent. The opt-in gate additionally waits for explicit
+entry permission, allowing the focused scenario to force profile removal before
+gate entry without sleeps. The focused checker verifies the pre-entry snapshot,
+the blocked/unreleased snapshot and that the sole release request follows that
+observed blocked state. The normal peer path remains ungated.
+
+Fresh review evidence is under
+`/home/bin9/openpilot-rust/.omo/evidence/wifi-callback-174-review/`.
+The same focused invocation with a fresh `delayed-entry` output exits0 and
+reports exact source/native7 events, two ForgottenB callbacks, removal observed
+before gate entry and release after an observed block. Captures:
+`delayed-entry.log`, `delayed-entry/comparison.json` and
+`delayed-entry/source/existing/callback-gate.json`. The original full checker
+with no defer flag and fresh `normal` output, Ruff, syntax and diff checks also
+exit0; their captured outputs and exact invocations are in `receipt.log` and
+`validation.json`. This review repair changes only owned fixtures/checkers and
+this evidence note; no production code, build or installation is involved.

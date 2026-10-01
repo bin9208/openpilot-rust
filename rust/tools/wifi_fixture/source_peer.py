@@ -29,6 +29,9 @@ def main():
         case 'arm_final_forget':
           assert gate is not None
           gate.armed = True
+        case 'enter_final_forget':
+          assert gate is not None
+          gate.entry_allowed.set()
         case 'release_final_forget':
           assert gate is not None
           gate.released.set()
@@ -72,6 +75,7 @@ def main():
       events.clear()
   finally:
     if gate is not None:
+      gate.entry_allowed.set()
       gate.released.set()
     manager.stop()
 

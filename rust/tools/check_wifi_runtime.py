@@ -75,11 +75,16 @@ def scenario(args, side, hotspot):
         def wait_for(predicate, timeout=8):
           deadline = time.monotonic() + timeout
           while True:
-            value = request({'op': 'snapshot'})['snapshot']
+            row = request({'op': 'snapshot'})
+            value = row['snapshot']
             if predicate(value):
               return value
             if gate_active and side == 'source' and 'B' not in value['saved_ssids']:
-              request({'op': 'release_final_forget'})
+              gate = row['callback_gate']
+              if gate['approaching'] and not gate['entry_allowed']:
+                request({'op': 'enter_final_forget'})
+              elif gate['blocked'] and not gate['released']:
+                request({'op': 'release_final_forget'})
             assert time.monotonic() < deadline, (side, value, service.calls[-8:], (output / 'stderr.log').read_text())
             time.sleep(.02)
 
