@@ -56,6 +56,17 @@ impl Address {
 #[derive(Clone)]
 pub struct Name(JsonValue);
 
+impl PartialEq for Name {
+    fn eq(&self, other: &Self) -> bool {
+        match (self.0.view(), other.0.view()) {
+            (JsonView::Text(left), JsonView::Text(right)) => left == right,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for Name {}
+
 impl Serialize for Name {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let json = self.0.to_json().map_err(serde::ser::Error::custom)?;
@@ -65,7 +76,7 @@ impl Serialize for Name {
     }
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Eq, Serialize)]
 pub struct Device {
     pub name: Name,
     pub profile: Profile,

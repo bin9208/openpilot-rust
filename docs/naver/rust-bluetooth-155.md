@@ -35,6 +35,14 @@ coordinates and deterministic randomized transitions.
   and permissions, including all1,112,064 Unicode scalar values and three
   encoding failures that preserve an existing file. Two ownership tests cover
   serialization failure and replacement of a formerly world-readable file.
+- Daemon state processing:26 scenarios and337 iterations execute the unchanged
+  Python main loop with owned pipes, scripted vehicle snapshots and clocks.
+  Native journals, status/history, reload/open/close decisions match after UUID
+  identity normalization. Cases include11 held-command interruption paths,
+  learning expiry/nonfinite values, config changes, reconnection/errors,
+  throttle/history limits and stale/future event timestamps. The source fixture
+  substitutes only IPC, clock and input discovery/ownership boundaries; this
+  does not yet verify actual native evdev or cereal transport.
 - Strict package Clippy, Rust formatting, Python Ruff and whitespace checks pass.
 
 Source SHA-256:
@@ -47,6 +55,13 @@ serialization now has an explicit UTF-8 file method; the existing ASCII-escaped
 log formatter remains unchanged and its package tests pass. The new method
 retains Python nonfinite values and rejects lone surrogates at the UTF-8 file
 boundary.
+Daemon-state results are in `engine-clock-corrected`. Its first harness attempt
+advanced time inside `SubMaster.update`, after the source's loop timestamp was
+sampled; that produced a false reload-cadence mismatch. The corrected fixture
+provides each scripted timestamp before the loop begins, without changing the
+original daemon. The native long-hold disengagement regression also passes.
+The command-file reader compatibility repair is tracked separately in
+[#159](rust-command-json-159.md).
 
 Run `cargo build --manifest-path rust/Cargo.toml -p openpilot-bluetooth --examples
 --locked -j2` with incremental compilation disabled after the required disk
@@ -57,7 +72,7 @@ to an owned evidence directory.
 
 ## Still in progress
 
-Native evdev ownership and daemon lifecycle, source driving/learning gates,
+Native evdev ownership and daemon lifecycle,
 private BlueZ protocol comparisons and actual
 native IPC remain to be implemented/verified. This stage does not mark the
 component ported and does not establish a complete runtime candidate, physical

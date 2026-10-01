@@ -54,7 +54,7 @@ pub(crate) enum Gesture {
     Long,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct Mapping(pub(crate) IndexMap<Token, Action>);
 

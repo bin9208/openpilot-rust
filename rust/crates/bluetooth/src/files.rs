@@ -15,6 +15,10 @@ pub enum Error {
     Path,
     #[error("Bluetooth command sequence exhausted")]
     Sequence,
+    #[error("unconfigured Bluetooth address: {0}")]
+    Unconfigured(String),
+    #[error("Bluetooth input is not open: {0}")]
+    NotOpen(String),
 }
 
 pub fn atomic_json(path: &Path, value: &impl Serialize) -> Result<(), Error> {
