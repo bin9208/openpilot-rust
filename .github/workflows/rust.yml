@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, web-upload-timeouts]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -33,6 +33,7 @@ jobs:
           PLATFORM: ${{ needs.platform-runtime.result }}
           STARTUP_SERVICES: ${{ needs.startup-services.result }}
           SENSOR_AUDIO: ${{ needs.sensor-audio.result }}
+          GNSS: ${{ needs.gnss-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$WORKSPACE" = success
@@ -46,6 +47,7 @@ jobs:
           test "$PLATFORM" = success
           test "$STARTUP_SERVICES" = success
           test "$SENSOR_AUDIO" = success
+          test "$GNSS" = success
           test "$UPLOAD_TIMEOUTS" = success
   workspace:
     name: rust workspace checks
@@ -587,6 +589,48 @@ jobs:
         with:
           name: rust-sensor-audio-evidence
           path: ${{ runner.temp }}/sensor-audio/
+  gnss-runtime:
+    name: rust GNSS runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 pyserial==3.5 requests==2.32.5
+      - name: Configure original GNSS IPC imports
+        run: printf 'PYTHONPATH=%s/gnss-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Build native GNSS daemons and original IPC peer
+        run: |
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-ublox -p openpilot-qcomgpsd --bins --examples --locked
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/gnss-msgq-python"
+      - name: Compare u-blox source framing, receiver policy, serial ABI and daemon IPC
+        run: |
+          python rust/tools/check_ublox.py --trace "$PWD/rust/target/debug/examples/ublox_trace" --evidence "$RUNNER_TEMP/gnss/ublox"
+          python rust/tools/check_pigeon.py --trace "$PWD/rust/target/debug/examples/pigeon_trace" --evidence "$RUNNER_TEMP/gnss/ublox"
+          python rust/tools/check_ublox_serial.py --binary "$PWD/rust/target/debug/examples/ublox_serial" --evidence "$RUNNER_TEMP/gnss/ublox"
+          python rust/tools/check_ublox_daemons.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/gnss/ublox"
+      - name: Compare Qualcomm reports, setup, continuous IPC, assistance and NMEA
+        run: |
+          python rust/tools/check_qcomgps_reference.py "$PWD/rust/target/debug/examples/qcom_trace" "$RUNNER_TEMP/gnss/qcom/publications.json"
+          python rust/tools/check_qcomgps_daemon.py "$PWD/rust/target/debug/openpilot-qcomgpsd" "$PWD/rust/target/debug/examples/qcom_subscribe" "$RUNNER_TEMP/gnss/qcom/daemon"
+          python rust/tools/check_qcomgps_nmea.py "$PWD/rust/target/debug/examples/nmea_trace" "$PWD/rust/target/debug/nmeaport" "$RUNNER_TEMP/gnss/qcom/nmea"
+          python rust/tools/check_qcomgps_assistance.py "$PWD/rust/target/debug/openpilot-qcomgpsd" "$RUNNER_TEMP/gnss/qcom/assistance"
+      - name: Retain GNSS source and native evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-gnss-evidence
+          path: ${{ runner.temp }}/gnss/
   platform-runtime:
     name: rust platform runtime
     runs-on: ubuntu-24.04
