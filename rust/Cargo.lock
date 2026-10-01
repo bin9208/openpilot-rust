@@ -2557,6 +2557,7 @@ dependencies = [
 name = "openpilot-selfdrived"
 version = "0.1.0"
 dependencies = [
+ "openpilot-cereal",
  "serde",
  "serde_json",
  "thiserror",

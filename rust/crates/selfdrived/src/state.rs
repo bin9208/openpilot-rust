@@ -15,6 +15,23 @@ pub enum EventType {
     Permanent,
 }
 
+impl EventType {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Enable => "enable",
+            Self::PreEnable => "preEnable",
+            Self::OverrideLateral => "overrideLateral",
+            Self::OverrideLongitudinal => "overrideLongitudinal",
+            Self::NoEntry => "noEntry",
+            Self::Warning => "warning",
+            Self::UserDisable => "userDisable",
+            Self::SoftDisable => "softDisable",
+            Self::ImmediateDisable => "immediateDisable",
+            Self::Permanent => "permanent",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum State {
