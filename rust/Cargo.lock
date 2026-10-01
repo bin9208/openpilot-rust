@@ -2557,8 +2557,11 @@ dependencies = [
 name = "openpilot-selfdrived"
 version = "0.1.0"
 dependencies = [
+ "capnp",
  "openpilot-beepd",
+ "openpilot-calibrationd",
  "openpilot-cereal",
+ "openpilot-locationd",
  "openpilot-logging",
  "openpilot-params",
  "openpilot-params-typed",

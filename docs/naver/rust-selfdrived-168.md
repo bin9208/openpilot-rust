@@ -93,3 +93,28 @@ returns its explicit fatal integer error for propagation by the daemon.
 Warnings and their transported messages match the original. Strict all-target
 Clippy, formatting, Ruff and diff checks pass. Continuous-loop effect ordering
 and the remaining selfdrived policy are still in progress.
+
+## Pose and excessive-actuation helpers
+
+The native PoseCalibrator reuses the existing rotation, composition, vector and
+covariance operations. It preserves calibration state, all four measurements,
+and unknown orientation standard deviations. ExcessiveActuationCheck retains
+the original longitudinal/lateral thresholds, strict 25/100-cycle boundaries,
+steering override reset, pose-validity comparison and longitudinal precedence.
+Infinite roll fails at the source sine operation's boundary; NaN remains a
+numeric value with the original false-comparison behavior. Camera packet order
+and all DisableDM/simulation/wide combinations are preserved.
+
+`helpers-final/report.json` records 10,241 original-source steps: 4,015 pose
+transformation cases, 6,198 actuation sequence steps and 28 camera selections.
+Floating pose values match within 2e-12 absolute/relative error; calibration
+flags, counters, camera order, actuation choices and error results match exactly.
+Tests include adjacent representable values around thresholds, reset/override
+sequences, rotation boundaries, negative standard deviations and nonfinite roll.
+Source files and the executed binary are hashed in the receipt.
+
+Focused strict Clippy and Ruff pass. The first Clippy run rejected the explicit
+two-sided float comparison; the comparison is now expressed as named
+acceleration/deceleration predicates, retaining NaN semantics without disabling
+the lint. Generic native message decoding and the continuous selfdrived loop
+remain subsequent work. No validity or safety threshold has been relaxed.

@@ -10,9 +10,12 @@ publish = false
 workspace = true
 
 [dependencies]
+capnp = "=0.27.2"
 openpilot-beepd = { path = "../beepd" }
+openpilot-calibrationd = { path = "../calibrationd", default-features = false }
 openpilot-cereal = { path = "../cereal" }
 openpilot-logging = { path = "../logging" }
+openpilot-locationd = { path = "../locationd", default-features = false }
 openpilot-params = { path = "../params" }
 openpilot-params-typed = { path = "../params-typed" }
 openpilot-ui-framework = { path = "../ui-framework", default-features = false }
