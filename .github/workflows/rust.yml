@@ -182,8 +182,19 @@ jobs:
             --output "$RUNNER_TEMP/proclog-runtime"
       - name: Exercise torque native IPC, cache persistence and inherited DEBUG capacity failure
         run: |
+          PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" OPENBLAS_NUM_THREADS=1 python tools/check_torque_ipc_ordering.py --output "$RUNNER_TEMP/torque-ipc-ordering"
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" OPENBLAS_NUM_THREADS=1 python tools/check_torque_daemon.py --binary target/debug/openpilot-torqued --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-native"
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" OPENBLAS_NUM_THREADS=1 python tools/check_torque_debug_capacity.py --binary target/debug/openpilot-torqued --numerics "$RUNNER_TEMP/torque-numerics" --output "$RUNNER_TEMP/torque-debug-capacity"
+      - name: Preserve torque IPC evidence on failure
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-torque-ipc-evidence
+          path: |
+            ${{ runner.temp }}/torque-ipc-ordering/
+            ${{ runner.temp }}/torque-native/
+            ${{ runner.temp }}/torque-debug-capacity/
+          if-no-files-found: warn
       - name: Exercise calibration daemon with original Python IPC and durable Params
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_calibration_daemon.py \
