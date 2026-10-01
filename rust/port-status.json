@@ -224,7 +224,11 @@
       "name": "locationd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.locationd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/locationd; native orchestration, PoseKalman wrapper, generated Rust model equations, transforms, Params and livePose publication",
+      "native_dependencies": ["unchanged external rednose EKFSym and ekf_c.c numerical/rewind implementation via owned CXX boundary", "Eigen 3.4.0 headers, pinned by uv.lock dependency commit 40e5d76de1b33a86c5181b63db6782d8f06da1da", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "actual-source synthetic estimator/main-loop comparisons, native IPC daemon with seeded Params and signals, native ownership/scheduler sanitizers; no Python/Cython runtime or project-owned C++ model fallback; device/AGNOS and whole startup/upload acceptance pending",
+      "evidence": "docs/rust-port/locationd-validation.md",
       "production_replaced": false
     },
     {

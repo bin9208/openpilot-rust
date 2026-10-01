@@ -1989,6 +1989,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-locationd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "cxx",
+ "cxx-build",
+ "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-loggerd"
 version = "0.1.0"
 dependencies = [
