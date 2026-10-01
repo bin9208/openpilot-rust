@@ -1,6 +1,7 @@
 //! UI Params boundary: raw bytes retain source conversions and write ordering.
 use crate::Error;
 pub mod binding;
+pub mod datetime;
 pub mod numeric;
 pub mod store;
 pub trait Read {
