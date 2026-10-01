@@ -82,3 +82,5 @@ pub fn truthy(value: &openpilot_logmessaged::JsonValue) -> bool {
         JsonView::Object(value) => !value.is_empty(),
     }
 }
+
+pub mod updater;
