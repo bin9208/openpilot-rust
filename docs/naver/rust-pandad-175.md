@@ -74,7 +74,45 @@ source builder takes existing Cap'n Proto and json11 prefixes; it installs no
 dependencies. Invalid-input children disable core-file generation while retaining
 their exit status and stderr.
 
-USB/SPI transport, safety configuration, state/peripheral/CAN worker loops,
+## Safety configuration
+
+The native `Safety` state machine now preserves ELM327 initialization, primary
+versus secondary OBD multiplexing, firmware-query and ControlsReady gates,
+onroad/offroad resets, per-Panda safety model/parameter/alternative-experience
+commands, fallback SILENT for extra Pandas, and the source's log ordering.
+Unknown safety-model ordinals and signed alternative-experience conversion retain
+the original wire semantics. The fixture uses actual native Params files and
+records transport commands; the C++ oracle compiles unchanged PandaSafety and
+Params sources.
+
+The host and emulated ARM64 comparisons each pass 897 scenarios / 4,499 steps:
+889 have exact state, commands, logs, Params and parsing outcomes. Eight explicitly
+separate malformed-input cases cover [#176](https://github.com/bin9208/openpilot-rust/issues/176),
+an inherited `AlignedBuffer` defect: it exposes an extra partially or wholly
+uninitialized word beyond the actual input. The native strict reader rejects the
+truncated CarParams before configured safety commands and then exactly matches
+the original's normal recovery on a complete message. These eight cases are not
+reported as malformed-input parity.
+
+A controlled original-source allocation experiment confirms the defect without
+physical transport. A complete 312-byte configuration gives identical commands
+under allocation fills 0x11 and 0x22. Removing its last eight bytes makes the
+original choose second-Panda safety parameter 4369 or 8738 from the missing word;
+Rust rejects both. Model 17 remains present in the input. The inherited C++
+source is retained unchanged as an oracle. The diagnostic fixture alone controls
+allocator contents, only for the bounded reproduction.
+
+Evidence under the same local base:
+
+- `source-safety-poison/manifest.json`: source, schema, fixture and binary hashes.
+- `safety-host-final/report.json`, `safety-arm-final/report.json`: exact scenarios
+  and the eight separately asserted guard/recovery cases; complete JSONL captures.
+- `safety-padding-final/report.json`: both controlled allocation fills and normal
+  input control; source and native commands retained.
+- `safety-arm-build.log`, `safety-clippy.log`: bounded ARM build and strict
+  all-target lint checks. Python Ruff and diff checks also passed.
+
+USB/SPI transport, state/peripheral/CAN worker loops,
 firmware/DFU supervision, runtime logging and lifecycle composition remain in
 progress. Firmware artifacts, libusb and the Linux driver interfaces will remain
 explicit external dependencies; the final wrapper will not invoke Python.

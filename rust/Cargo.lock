@@ -2395,6 +2395,9 @@ dependencies = [
 name = "openpilot-pandad"
 version = "0.1.0"
 dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "openpilot-params",
  "serde",
  "serde_json",
  "thiserror",
