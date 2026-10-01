@@ -2,93 +2,49 @@ diff --git a/rust/crates/jpeg/native/vendor/ChangeLog.md b/rust/crates/jpeg/nati
 index 7412e90e..e4393f49 100644
 --- a/rust/crates/jpeg/native/vendor/ChangeLog.md
 +++ b/rust/crates/jpeg/native/vendor/ChangeLog.md
-@@ -1,5 +1,5 @@
- 3.1.4.1
+@@ -2 +2 @@
 -=======
 +========
- 
- ### Significant changes relative to 3.1.4:
- 
-@@ -600,7 +600,7 @@ the TurboJPEG API documentation for more details.
- 
- 
- 2.1.5.1
+@@ -603 +603 @@ the TurboJPEG API documentation for more details.
 -=======
 +========
- 
- ### Significant changes relative to 2.1.5:
- 
 diff --git a/rust/crates/jpeg/native/vendor/README.md b/rust/crates/jpeg/native/vendor/README.md
 index f2169476..d1b98547 100644
 --- a/rust/crates/jpeg/native/vendor/README.md
 +++ b/rust/crates/jpeg/native/vendor/README.md
-@@ -29,7 +29,7 @@ More information about libjpeg-turbo can be found at
- 
- 
- Funding
+@@ -32 +32 @@ Funding
 -=======
 +========
- 
- libjpeg-turbo is an independent open source project, but we rely on patronage
- and funded development in order to maintain that independence.  The easiest way
-@@ -44,7 +44,7 @@ strategically important features.
- 
- 
- License
+@@ -47 +47 @@ License
 -=======
 +========
- 
- libjpeg-turbo is covered by three compatible BSD-style open source licenses.
- Refer to [LICENSE.md](LICENSE.md) for a roll-up of license terms.
 diff --git a/rust/crates/jpeg/native/vendor/doc/turbojpeg/doxygen.css b/rust/crates/jpeg/native/vendor/doc/turbojpeg/doxygen.css
 index eeadba5e..345a0e61 100644
 --- a/rust/crates/jpeg/native/vendor/doc/turbojpeg/doxygen.css
 +++ b/rust/crates/jpeg/native/vendor/doc/turbojpeg/doxygen.css
-@@ -1811,7 +1811,7 @@ tr.heading h2 {
-         margin: 0px;
-         padding: 0px;
-         font-size: 12px;
+@@ -1814 +1814 @@ tr.heading h2 {
 -       	font-family: var(--font-family-tooltip);
 +	font-family: var(--font-family-tooltip);
- 	line-height: 16px;
- }
- 
-@@ -2018,10 +2018,8 @@ details>summary::before {
-     padding-right:4px;
-     font-size: 80%;
- }
+@@ -2021 +2020,0 @@ details>summary::before {
 -
- details[open]>summary::before {
-     content: "\25bc";
-     padding-right:4px;
-     font-size: 80%;
- }
+@@ -2027 +2025,0 @@ details[open]>summary::before {
 -
 diff --git a/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/search.css b/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/search.css
 index 19f76f9d..4d90d47a 100644
 --- a/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/search.css
 +++ b/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/search.css
-@@ -288,4 +288,3 @@ div.searchresults {
- .searchpages {
-     margin-top: 10px;
- }
+@@ -291 +290,0 @@ div.searchresults {
 -
 diff --git a/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/searchdata.js b/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/searchdata.js
 index e2d4fb3b..839f6bc1 100644
 --- a/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/searchdata.js
 +++ b/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/searchdata.js
-@@ -33,4 +33,3 @@ var indexSectionLabels =
-   6: "Enumerator",
-   7: "Modules"
- };
+@@ -36 +35,0 @@ var indexSectionLabels =
 -
 diff --git a/rust/crates/jpeg/native/vendor/java/doc/legal/pako.md b/rust/crates/jpeg/native/vendor/java/doc/legal/pako.md
 index de339d89..c01382fa 100644
 --- a/rust/crates/jpeg/native/vendor/java/doc/legal/pako.md
 +++ b/rust/crates/jpeg/native/vendor/java/doc/legal/pako.md
-@@ -41,5 +41,3 @@ appreciated but is not required.
- 3. This notice may not be removed or altered from any source distribution.
- 
- </pre>
+@@ -44,2 +43,0 @@ appreciated but is not required.
 -
 -
