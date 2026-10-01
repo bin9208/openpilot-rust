@@ -18,6 +18,7 @@ import msgq
 from openpilot.cereal import log
 from openpilot.cereal.services import SERVICE_LIST
 from timed_fixtures import commands, environment
+from timed_shutdown_phase import wait_original_gps_sleep
 
 
 def worker(binary, output, mode, implementation, signal_name):
@@ -85,6 +86,7 @@ def worker(binary, output, mode, implementation, signal_name):
           packet = receiver.receive()
           assert packet is not None, ('missing clocks', process.poll())
           (output / 'clocks.capnp').write_bytes(packet)
+          source_phase = None
           if mode == 'gps':
             event = log.Event.new_message()
             event.logMonoTime = time.monotonic_ns()
@@ -97,6 +99,8 @@ def worker(binary, output, mode, implementation, signal_name):
             while not commands(config):
               assert time.monotonic() < deadline, ('missing command', process.poll())
               time.sleep(0.01)
+            if implementation == 'python':
+              source_phase = wait_original_gps_sleep(process, output)
           else:
             assert request_started.wait(5), ('proxy not contacted', process.poll())
             assert not shutdown.wait(6), 'unexpected shutdown'
@@ -112,8 +116,9 @@ def worker(binary, output, mode, implementation, signal_name):
           elapsed = time.monotonic() - started
           closed = mode == 'gps' or peer_closed.wait(2)
           result = {'mode': mode, 'implementation': implementation, 'signal': signal_name, 'elapsed': elapsed,
-                    'exit_code': code, 'peer_closed': closed, 'requests': requests, 'commands': commands(config)}
-          result['passed'] = elapsed < 2 and code == (0 if implementation == 'rust' else -getattr(signal, signal_name)) and closed
+                    'exit_code': code, 'peer_closed': closed, 'requests': requests, 'commands': commands(config), 'source_phase': source_phase}
+          phase_ok = mode != 'gps' or implementation != 'python' or source_phase is not None and source_phase['wchan'] == 'hrtimer_nanosleep'
+          result['passed'] = elapsed < 2 and code == (0 if implementation == 'rust' else -getattr(signal, signal_name)) and closed and phase_ok
           (output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
           return result
       finally:
