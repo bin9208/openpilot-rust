@@ -32,6 +32,8 @@ def main():
     ('upload-edges', ['check_athena_upload_edges.py', str(binary / 'openpilot-athenad'), str(output / 'upload-edges')]),
     ('metered-abort', ['check_athena_metered_abort.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(output / 'metered-abort')]),
     ('forwarding', ['check_athena_forwarding.py', str(binary / 'examples/athena_forwarding'), str(output / 'forwarding')]),
+    ('forwarding-clock-boundary', ['check_athena_forwarding.py', str(binary / 'examples/athena_forwarding'),
+                                  str(output / 'forwarding-clock-boundary'), '--startup-delay', '1.1']),
     ('snapshot', ['check_athena_snapshot.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(vision), str(output / 'snapshot')]),
     ('camera-lifecycle', ['check_athena_camera_lifecycle.py', str(binary / 'examples/athena_snapshot'), str(binary / 'openpilot-process-child'),
                           str(binary / 'examples/athena_ipc'), str(vision), str(output / 'camera-lifecycle')]),
