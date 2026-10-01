@@ -2392,6 +2392,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-panda-usb"
+version = "0.1.0"
+dependencies = [
+ "libloading",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-pandad"
 version = "0.1.0"
 dependencies = [

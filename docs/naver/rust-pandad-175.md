@@ -112,7 +112,57 @@ Evidence under the same local base:
 - `safety-arm-build.log`, `safety-clippy.log`: bounded ARM build and strict
   all-target lint checks. Python Ruff and diff checks also passed.
 
-USB/SPI transport, state/peripheral/CAN worker loops,
+## USB ownership and retry behavior
+
+`openpilot-panda-usb` ports the original USB enumeration, serial selection,
+configuration/claim, transfer retry and cleanup policy to Rust. The external
+libusb-1.0 library remains a native dependency. Library, context, device-list and
+handle lifetimes are owned; a per-handle mutex serializes synchronous transfers,
+with source-compatible atomic connection/health flags. Buffer lengths are checked
+before the C ABI and borrowed through each synchronous call. Runtime callers use
+the fixed system soname; choosing an alternate library requires an explicit
+unsafe ABI contract. Descriptor size/alignment/field offsets are compile-time
+contracts. This follows libusb's documented [thread-safety and resource-release
+requirements](https://libusb.sourceforge.io/api-1.0/libusb_caveats.html).
+
+The source comparator compiles unchanged `panda_comms.cc` against the real pinned
+libusb header, replacing libusb with a recorded ABI implementation. It covers
+serial bytes including embedded nul, multiple and irrelevant devices, 105
+connection failures, partial transfers, timeout/drop, overflow health latching,
+disconnect behavior, retries and every cleanup path. Listing retains its static
+context behavior, including no initialization retry after the first failure,
+partial results before an error and later recovery. Diagnostic events preserve
+their source messages; fixture time advances past the log-rate window. The
+existing shared cloudlog rate limiter still belongs to final daemon composition.
+
+Final host, ARM64/QEMU and combined Rust/C++ sanitizer runs each compare 948
+scenarios / 3,886 scripted operations, plus separately asserted listing startup
+failures. Real 2/4/8-thread callers yield maximum one active transfer for both
+implementations. A fixture control which bypasses the application lock reaches
+eight concurrent calls, confirming the backend does not conceal missing locks.
+This tests owned ABI fixtures only, never physical USB or CAN.
+
+The combined sanitizer lane instruments the Rust wrapper/example with nightly
+AddressSanitizer and the original C++/ABI fixture with AddressSanitizer and
+UndefinedBehaviorSanitizer; leak detection remains enabled. The prebuilt standard
+library and external json11 internals are not fully instrumented. Miri was attempted
+and stops at unsupported `dlopen`, not an observed UB report; native modules use
+the explicit `native-skip-miri` feature. This is not a Miri pass.
+
+Evidence under the local base:
+
+- `usb-host-final/report.json`, `usb-arm-final/report.json`: exact full results,
+  raw input/output and binary/library hashes.
+- `source-usb-concurrency/manifest.json`, `source-usb-arm-2/manifest.json`: source
+  and C ABI provenance. The ARM fixture uses the same pinned json11 version;
+  `deps/json11-arm/manifest.json` records its public package URL and SHA256.
+- `usb-combined-asan-final/report.json`: combined memory-instrumented comparison;
+  `usb-rust-asan-owned-final-build.log` records the native build.
+- `usb-miri.log`: unsupported foreign-call boundary. Earlier sanitizer-loader
+  failures are retained; the final executable exports its ASan runtime and loads
+  the matching standalone UBSan support for the C++ fixture.
+
+SPI transport, state/peripheral/CAN worker loops,
 firmware/DFU supervision, runtime logging and lifecycle composition remain in
 progress. Firmware artifacts, libusb and the Linux driver interfaces will remain
 explicit external dependencies; the final wrapper will not invoke Python.
