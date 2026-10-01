@@ -1952,6 +1952,7 @@ dependencies = [
 name = "openpilot-desire"
 version = "0.1.0"
 dependencies = [
+ "openpilot-logmessaged",
  "serde",
  "serde_json",
  "thiserror",

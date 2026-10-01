@@ -143,6 +143,7 @@ jobs:
         run: |
           python tools/check_desire_reference.py --binary target/debug/examples/desire_probe --output "$RUNNER_TEMP/model-desire"
           python tools/check_command_reference.py --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-commands"
+          python tools/check_command_json_boundary.py --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-command-json"
       - name: Compare driver monitoring policy and complete cereal packets with original source
         run: python tools/check_monitoring_reference.py --binary target/debug/monitoring-probe --output "$RUNNER_TEMP/monitoring-policy"
       - name: Compare diagnostic log formatting and rotation with original source
