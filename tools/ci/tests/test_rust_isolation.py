@@ -72,7 +72,7 @@ class RustIsolationTests(unittest.TestCase):
         for required in ('check_lpa.py', 'check_bridge.py', 'check_agnos.py', 'build_bridge_reference.py', 'build_msgq_python.py'):
             self.assertIn(required, commands)
         for step in job['steps']:
-            if 'python rust/tools/check_' in step.get('run', ''):
+            if 'python rust/tools/check_' in step.get('run', '') or 'check_bridge.py' in step.get('run', ''):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
 
