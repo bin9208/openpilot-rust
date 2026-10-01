@@ -178,6 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         control.widget().set_position(rect.x, rect.y);
         let frame = Frame {
+            index: 0,
             now,
             monotonic: now,
             keyboard: &keyboard,

@@ -137,3 +137,32 @@ Params writes finish at each comparison barrier, so traces establish policy
 outcomes, not background-thread timing equivalence. Root application composition,
 device/network/software/developer settings and the onroad surface remain pending.
 No production selection or device-test readiness is claimed.
+
+## Device settings and dialogs checkpoint
+
+Both device panels now retain the original identity, pairing, updater, reset,
+power, language and regulatory behavior. Compact slide/text dialogs preserve
+keyboard geometry, held backspace, text overflow and dismissal callbacks.
+Calibration descriptions decode original cereal Params, and reset/power actions
+recheck engagement at confirmation. Language options retain JSON insertion order.
+The shared full-width dual-button action follows its source width after the first
+render; this preserves the source power-row placement.
+
+| Scenario | Invocation | Observable / artifact |
+| --- | --- | --- |
+| Device/settings/regulatory/language | `check_ui_device.py --binary .../product_render --output .../device-final --display :125` | 64 scenarios / 5,580 exact Params/effect frames and zero final pixel differences; `device-final/results.json` |
+| Compact dialogs | `check_ui_product_dialogs.py --binary .../product_render --output .../dialogs-final --display :126` | 20 scenarios / 1,200 callback, text, candidate and dismissal frames; every final image matches; `dialogs-final/results.json` |
+| Previous product screens | `check_ui_product_widgets.py --binary .../product_render --output .../product-stage5 --display :126` | All 30 English/Korean screens still match exactly; `product-stage5/results.json` |
+| Toggle/Firehose interactions | `check_ui_settings.py --binary .../product_render --output .../settings-stage5 --display :126` | All 20 scenarios / 1,600 frames still match; `settings-stage5/results.json` |
+| Package and static gates | `cargo test` and `cargo clippy --all-targets -- -D warnings` for both UI crates, focused Ruff | Five package tests and static gates pass; `device-tests-final.log`, `device-clippy-final.log`, `device-ruff-final.log` |
+
+Artifacts are under `.omo/evidence/ui-application-148/`; `stage5-receipt.json`
+records full commands and the tested binary digest. `DESIGN.md` in the product
+crate records the existing source contract and inherited constraints.
+The host checks capture updater requests and use private Params; they do not
+signal a real updater or power down a host. Device-page confirmation results
+are injected at their callback boundary, while the separate dialog scenarios
+drive actual gestures. Unopened driver/training pages are captured as factory
+requests, not claimed as rendered or integrated. Normal application composition,
+updater signal adapter, remaining settings/onboarding/home/onroad/camera and the
+complete runtime startup/upload gate remain pending.

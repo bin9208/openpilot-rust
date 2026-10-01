@@ -25,6 +25,8 @@ params_module = ModuleType('openpilot.common.params')
 
 class Params:
   def get(self, key, *args, **kwargs):
+    if key in scene.get("raw_params", {}):
+      return bytes(scene["raw_params"][key])
     if key == "CarParamsPersistent":
       return car_bytes(scene)
     value = scene.get('params', {}).get(key)
@@ -44,11 +46,15 @@ class Params:
   def put(self, key, value):
     scene.setdefault('params', {})[key] = str(value)
 
+  def put_bool_nonblocking(self, key, value):
+    self.put_bool(key, value)
+
   def put_nonblocking(self, key, value):
     self.put(key, value)
 
   def remove(self, key):
     scene.setdefault('params', {}).pop(key, None)
+    scene.setdefault('raw_params', {}).pop(key, None)
 
   def get_int(self, key, *args):
     return int(self.get(key) or 0)
@@ -77,9 +83,11 @@ class Messages(dict):
 
 
 engaged_callbacks = []
+offroad_callbacks = []
 state_module.device = SimpleNamespace(_awake=True, awake=True)
 state_module.ui_state = SimpleNamespace(
   started=False,
+  ignition=False,
   params=Params(),
   engaged=False,
   CP=None,
@@ -87,6 +95,8 @@ state_module.ui_state = SimpleNamespace(
   personality=1,
   update_params=lambda: None,
   add_engaged_transition_callback=engaged_callbacks.append,
+  add_offroad_transition_callback=offroad_callbacks.append,
+  is_offroad=lambda: not state_module.ui_state.started,
   sm=Messages(deviceState=SimpleNamespace(networkType=scene.get("network_type", 0), networkMetered=scene.get("network_metered", False))),
   prime_state=SimpleNamespace(is_prime=lambda: scene['prime'] > 0, is_paired=lambda: scene['prime'] > -1),
   params_memory=SimpleNamespace(get=lambda key: scene.get('address')),
@@ -103,7 +113,53 @@ multilang._language = scene['language']
 multilang.setup()
 gui_app.init_window('Source product widget')
 effects = Effects(scene, state_module.ui_state, gui_app, engaged_callbacks)
-if scene['kind'] == 'toggles':
+effects.offroad_callbacks = offroad_callbacks
+dialog_results = []
+if 'dialog' in scene:
+  from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog, BigInputDialog
+
+  options = scene['dialog']
+  gui_app.pop_widget = lambda *args, **kwargs: None
+  if scene['kind'] == 'dialog-info':
+    widget = BigDialog(options['title'], options.get('description', ''))
+  elif scene['kind'] == 'dialog-confirm':
+    icon = gui_app.texture('icons_mici/settings/device/reboot.png', 64, 64)
+    widget = BigConfirmationDialog(
+      options['title'], icon, lambda: dialog_results.append('confirm'), exit_on_confirm=not options.get('stay', False), red=options.get('red', False)
+    )
+  else:
+    widget = BigInputDialog(options['title'], options.get('text', ''), confirm_callback=lambda text: dialog_results.append(text))
+elif scene['kind'] == 'language':
+  from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
+  from openpilot.system.ui.lib.application import FontWeight
+  from openpilot.system.ui.lib.multilang import tr
+  from openpilot.system.ui.widgets import DialogResult
+
+  def select_language(result):
+    if result == DialogResult.CONFIRM:
+      code = multilang.languages[widget.selection]
+      multilang.change_language(code)
+      effects.effects.append({'language': code})
+
+  gui_app.pop_widget = lambda: effects.effects.append({'pop': True})
+  widget = MultiOptionDialog(
+    tr('Select a language'), multilang.languages, multilang.codes[multilang.language], option_font_weight=FontWeight.UNIFONT, callback=select_language
+  )
+elif scene['kind'] == 'regulatory':
+  from device_source import regulatory
+
+  gui_app.pop_widget = lambda: effects.effects.append({'pop': True})
+  widget = regulatory(Path(__file__).resolve().parents[3], gui_app, scene['config']['big'])
+elif scene['kind'] == 'device':
+  from device_source import device_layout, mici_device_layout
+
+  root = Path(__file__).resolve().parents[3]
+  widget = (
+    device_layout(root, Params, state_module.ui_state, gui_app)
+    if scene['config']['big']
+    else mici_device_layout(root, Params, state_module.ui_state, gui_app, effects, scene)
+  )
+elif scene['kind'] == 'toggles':
   if scene['config']['big']:
     from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
   else:
@@ -159,7 +215,18 @@ try:
     rl.get_mouse_position = lambda: rl.Vector2(*gui_app.last_mouse_event.pos)
     rl.get_mouse_wheel_move = lambda step=step: step.get('wheel', 0.0)
     widget.render()
-    results.append(effects.snapshot() if scene.get('capture_effects') else {'prime': scene['prime']})
+    results.append(
+      {
+        'callbacks': list(dialog_results),
+        'dismissing': widget.is_dismissing,
+        'text': widget._keyboard.text() if hasattr(widget, '_keyboard') else None,
+        'candidate': widget._keyboard.get_candidate_character() if hasattr(widget, '_keyboard') else None,
+      }
+      if 'dialog' in scene
+      else effects.snapshot()
+      if scene.get('capture_effects')
+      else {'prime': scene['prime']}
+    )
   rl.rl_draw_render_batch_active()
   image = rl.load_image_from_screen()
   assert rl.export_image(image, str(output))

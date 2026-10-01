@@ -187,6 +187,7 @@ impl Application {
             pressed: native.pressed,
         };
         let frame = Frame {
+            index: self.diagnostics.frames,
             now: self.canvas.renderer.time(),
             monotonic: now,
             keyboard: &keyboard,

@@ -20,6 +20,7 @@ pub enum Page {
     Terms,
     Training,
     Language,
+    Regulatory,
 }
 pub struct Confirmation {
     pub text: String,
@@ -28,12 +29,21 @@ pub struct Confirmation {
     pub rich: bool,
     pub callback: Callback<DialogResult>,
 }
+#[derive(Clone, Copy, Debug)]
+pub enum UpdaterAction {
+    Check,
+    Download,
+    Reboot,
+}
 pub enum Action {
     Open(Page),
     PairingCheck,
     Failure(crate::Error),
     Confirm(Confirmation),
     Alert(String),
+    MiciAlert { title: String, description: String },
+    MiciConfirm(crate::mici::widgets::dialog::Confirmation),
+    Updater(UpdaterAction),
     Recording(bool),
     ToggleRecording,
     Bookmark,
@@ -43,6 +53,7 @@ pub enum Action {
     ShowTouches(bool),
     ShowFps(bool),
     SetLanguage(String),
+    SelectLanguage(Callback<()>),
     Exit,
 }
 #[derive(Clone, Default)]

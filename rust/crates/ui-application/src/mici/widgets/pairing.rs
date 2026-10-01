@@ -39,7 +39,7 @@ impl Pairing {
             20.0,
             f64::from(canvas.renderer.config.height()),
         );
-        nav.on_update = Some(Box::new(move |nav| {
+        nav.on_update = Some(Box::new(move |nav, _| {
             if context.prime.is_paired() && !nav.motion.is_dismissing() {
                 nav.dismiss(None);
             }

@@ -81,13 +81,13 @@ impl BigButton {
         let horizontal = if grey { 30.0 } else { 40.0 };
         let width = self.width_hint();
         self.label.text = self.text.clone().into();
-        self.label.size = if grey {
+        self.label.size = self.font_size.unwrap_or(if grey {
             36.0
         } else if self.text.chars().count() <= 18 {
             48.0
         } else {
             42.0
-        };
+        });
         self.label.scroll = self.scroll;
         self.label.vertical = if self.value.is_empty() {
             Vertical::Bottom

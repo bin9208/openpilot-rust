@@ -16,6 +16,11 @@ KEYS = [
   'RecordFront',
   'OpenpilotEnabledToggle',
   'AlphaLongitudinalEnabled',
+  'DevicePosition',
+  'DoReboot',
+  'DoShutdown',
+  'DoUninstall',
+  'LanguageSetting',
 ]
 
 
@@ -59,12 +64,28 @@ class Effects:
     self.callbacks = callbacks
     self.effects = []
     self.dialogs = []
+    self.offroad_callbacks = []
     if scene.get('capture_effects'):
       gui.push_widget = self.push
       gui.set_show_touches = lambda value: self.effects.append({'touches': value})
       gui.set_show_fps = lambda value: self.effects.append({'fps': value})
 
   def push(self, dialog):
+    if hasattr(dialog, "owned_page"):
+      self.effects.append({"page": dialog.owned_page})
+      return
+    if hasattr(dialog, '_card'):
+      self.effects.append({'mici_alert': dialog._card.get_text(), 'description': dialog._card.get_value()})
+      return
+    if hasattr(dialog, '_slider'):
+      self.effects.append(
+        {'mici_confirm': dialog._slider._label._text, 'exit': dialog._exit_on_confirm, 'red': type(dialog._slider).__name__ == 'RedBigSlider'}
+      )
+      self.dialogs.append(dialog)
+      return
+    if dialog._cancel_text == '':
+      self.effects.append({'alert': dialog._label._text})
+      return
     self.effects.append({'confirm': dialog._label._text, 'button': dialog._confirm_button._label._text, 'cancel': dialog._cancel_text, 'rich': dialog._rich})
     self.dialogs.append(dialog)
 
@@ -77,8 +98,12 @@ class Effects:
         self.scene['params'].pop(key, None)
       else:
         self.scene['params'][key] = value
+    if 'ignition' in step:
+      self.ui.ignition = step['ignition']
     if 'started' in step:
       self.ui.started = step['started']
+      for callback in self.offroad_callbacks:
+        callback()
     if 'engaged' in step:
       self.ui.engaged = step['engaged']
       for callback in self.callbacks:
@@ -90,8 +115,18 @@ class Effects:
     if 'confirm' in step and self.dialogs:
       from openpilot.system.ui.widgets import DialogResult
 
-      self.dialogs.pop()._callback(DialogResult.CONFIRM if step['confirm'] else DialogResult.CANCEL)
+      dialog = self.dialogs.pop()
+      if hasattr(dialog, '_slider'):
+        if step['confirm']:
+          dialog._confirm_callback()
+      else:
+        dialog._callback(DialogResult.CONFIRM if step['confirm'] else DialogResult.CANCEL)
     return step
 
   def snapshot(self):
-    return {'params': {key: self.scene.get('params', {}).get(key) for key in KEYS}, 'effects': list(self.effects), 'personality': int(self.ui.personality)}
+    return {
+      'params': {key: self.scene.get('params', {}).get(key) for key in KEYS},
+      'effects': list(self.effects),
+      'personality': int(self.ui.personality),
+      'raw_params': {key: bytes(value).hex() for key, value in self.scene.get('raw_params', {}).items()},
+    }

@@ -71,6 +71,10 @@ pub struct Context {
     pub callbacks: EventCallbacks,
 }
 impl Context {
+    pub fn system_time_valid(&self) -> Result<bool, crate::Error> {
+        openpilot_timed::clock::valid(self.api.clock.as_ref(), &self.api.systemd)
+            .map_err(|error| crate::Error::Io(std::io::Error::other(error)))
+    }
     pub fn refresh_params(&self) -> Result<(), crate::Error> {
         let models = (self.model_status)()?;
         let mut ui = self.ui.borrow_mut();

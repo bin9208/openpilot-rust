@@ -24,6 +24,9 @@ pub fn context(
     for (key, value) in &scene.params {
         params.put(key, value.as_bytes())?;
     }
+    for (key, value) in &scene.raw_params {
+        params.put(key, value)?;
+    }
     if let Some(address) = &scene.address {
         memory.put("NetworkAddress", address.as_bytes())?;
     }
@@ -44,7 +47,7 @@ pub fn context(
         .with_ymd_and_hms(2026, 10, 1, 12, 34, 56)
         .single()
         .ok_or("fixture timestamp invalid")?;
-    let context = Context {
+    let mut context = Context {
         ui: Rc::new(RefCell::new(ui)),
         messages: Rc::new(RefCell::new(SubMaster::isolated(
             &SERVICES,
@@ -78,6 +81,22 @@ pub fn context(
         persist_root: output.join("persist"),
         callbacks: Rc::default(),
     };
+    context.api.clock = Arc::new(FixedClock(scene.time_valid.unwrap_or(true)));
+    context.api.systemd = output.join("missing-systemd");
     context.sync_services();
     Ok(context)
+}
+
+struct FixedClock(bool);
+impl openpilot_timed::clock::Clock for FixedClock {
+    fn wall_nanos(&self) -> Result<u64, openpilot_timed::Error> {
+        Ok(if self.0 { 1_790_812_800_000_000_000 } else { 0 })
+    }
+    fn monotonic(&self) -> Result<u64, openpilot_timed::Error> {
+        Ok(0)
+    }
+    fn local(&self, epoch: f64) -> Result<chrono::NaiveDateTime, openpilot_timed::Error> {
+        Ok(openpilot_timed::clock::datetime(epoch)?.naive_utc())
+    }
+    fn sleep(&self, _: std::time::Duration, _: &std::sync::atomic::AtomicBool) {}
 }

@@ -16,6 +16,7 @@ pub struct Step {
     pub confirm: Option<bool>,
     pub engaged: Option<bool>,
     pub started: Option<bool>,
+    pub ignition: Option<bool>,
     pub personality: Option<u16>,
     #[serde(default)]
     pub params: BTreeMap<String, Option<String>>,
@@ -61,8 +62,12 @@ pub fn apply(
                 context.params.remove(key)?;
             }
         }
+        if let Some(ignition) = step.ignition {
+            context.ui.borrow_mut().ignition = ignition;
+        }
         if let Some(started) = step.started {
             context.ui.borrow_mut().started = started;
+            context.event(Event::Offroad);
         }
         if let Some(engaged) = step.engaged {
             context.ui.borrow_mut().engaged = engaged;
@@ -92,6 +97,11 @@ pub const KEYS: &[&str] = &[
     "RecordFront",
     "OpenpilotEnabledToggle",
     "AlphaLongitudinalEnabled",
+    "DevicePosition",
+    "DoReboot",
+    "DoShutdown",
+    "DoUninstall",
+    "LanguageSetting",
 ];
 
 pub fn scroll(
@@ -100,10 +110,18 @@ pub fn scroll(
 ) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(position) = step.and_then(|step| step.scroll) {
         let mut nav = widget.get_mut::<openpilot_ui_framework::navigation::NavWidget>()?;
-        let content = (nav.content.as_mut() as &mut dyn std::any::Any)
-            .downcast_mut::<openpilot_ui_application::mici::settings::toggles::Toggles>()
-            .ok_or("scroll target is not Mici toggles")?;
-        content.scroller.scroll_to(position, false, false, false)?;
+        let content = nav.content.as_mut() as &mut dyn std::any::Any;
+        if let Some(content) =
+            content.downcast_mut::<openpilot_ui_application::mici::settings::toggles::Toggles>()
+        {
+            content.scroller.scroll_to(position, false, false, false)?;
+        } else if let Some(content) =
+            content.downcast_mut::<openpilot_ui_application::mici::settings::device::Device>()
+        {
+            content.scroller.scroll_to(position, false, false, false)?;
+        } else {
+            return Err("unsupported scroll target".into());
+        }
     }
     Ok(())
 }
