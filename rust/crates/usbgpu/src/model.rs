@@ -169,3 +169,28 @@ pub fn status(paths: &Paths) -> Result<ModelStatus, Error> {
         compile_pending: !installed && !local,
     })
 }
+
+pub fn active_compiled_path(paths: &Paths) -> Option<PathBuf> {
+    let model = active_manifest(paths)?;
+    if let Some(path) = installed(paths, &model) {
+        return Some(path);
+    }
+    if model.precompiled_only() {
+        return None;
+    }
+    let path = local_compiled_path(paths, &model);
+    chunk_manifest_exists(&path).then_some(path)
+}
+
+pub fn remove_active_chunk_manifest(paths: &Paths) -> Result<bool, Error> {
+    let Some(path) = active_compiled_path(paths) else {
+        return Ok(false);
+    };
+    let mut manifest = path.into_os_string();
+    manifest.push(".chunkmanifest");
+    match fs::remove_file(Path::new(&manifest)) {
+        Ok(()) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error.into()),
+    }
+}
