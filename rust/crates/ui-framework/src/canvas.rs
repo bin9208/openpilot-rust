@@ -62,6 +62,22 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn camera_plane(
+        &mut self,
+        dimensions: (i32, i32),
+        format: openpilot_startup_ui::camera::PlaneFormat,
+    ) -> Result<Box<dyn openpilot_startup_ui::draw::TextureResource>, Error> {
+        Ok(Box::new(self.renderer.camera_plane(dimensions, format)?))
+    }
+    fn update_camera_plane(&mut self, texture: u32, bytes: &[u8]) -> Result<(), Error> {
+        self.renderer.update_camera_plane(texture, bytes)
+    }
+    fn native_texture(&self, texture: u32) -> Result<u32, Error> {
+        self.renderer.native_texture(texture)
+    }
+    fn camera(&mut self, camera: openpilot_startup_ui::camera::CameraDraw) -> Result<(), Error> {
+        self.renderer.camera(camera)
+    }
     fn ring(&mut self, ring: crate::draw::Ring) -> Result<(), Error> {
         self.renderer.ring(ring);
         Ok(())

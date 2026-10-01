@@ -34,6 +34,14 @@ fn isolated_transport() {
     for endpoint in ["", "../procLog", "/procLog", "a/b", "a\0b"] {
         assert!(Publisher::new(endpoint).is_err());
     }
+    let mut transient = Publisher::transient_for_runtime("preview", 1024 * 1024).unwrap();
+    assert!(transient.send_if_current(b"preview").unwrap());
+    let mut daemon = Publisher::new("preview").unwrap();
+    assert!(!transient.send_if_current(b"stale preview").unwrap());
+    assert!(Publisher::transient_for_runtime("preview", 1024 * 1024).is_err());
+    assert!(daemon.send_if_current(b"daemon").unwrap());
+    drop(daemon);
+    drop(transient);
     let mut publisher = Publisher::new("procLog").unwrap();
     assert!(Publisher::new("procLog").is_err());
     assert!(Publisher::with_capacity("procLog", 2 * 1024 * 1024).is_err());
@@ -75,6 +83,9 @@ fn isolated_transport() {
         let mut temporary = Subscriber::new("procLog", true).unwrap();
         assert_eq!(temporary.receive(Duration::ZERO).unwrap(), None);
     }
+    let mut displaced = Publisher::new("nativeToRust").unwrap();
+    assert!(displaced.send_if_current(b"current").unwrap());
+    assert!(displaced.send_if_current(&[]).is_err());
     let mut outgoing = Publisher::new("rustToNative").unwrap();
     let mut peer = Command::new(env!("NATIVE_MSGQ_PEER"))
         .stdout(Stdio::piped())
@@ -84,6 +95,8 @@ fn isolated_transport() {
     let mut peer_output = BufReader::new(peer.stdout.take().unwrap());
     peer_output.read_line(&mut ready).unwrap();
     assert_eq!(ready.trim(), "READY");
+    assert!(!displaced.send_if_current(b"stale").unwrap());
+    drop(displaced);
     let mut incoming = Subscriber::new("nativeToRust", false).unwrap();
     let payload: Vec<u8> = (0..=255).cycle().take(200_000).collect();
     outgoing.send(&payload).unwrap();
@@ -194,6 +207,7 @@ fn explicit_runtime_transport_uses_original_namespace() {
     let mut peer_output = BufReader::new(peer.stdout.take().unwrap());
     peer_output.read_line(&mut ready).unwrap();
     assert_eq!(ready.trim(), "READY");
+
     let mut incoming = Subscriber::for_runtime("nativeToRust", false, 1024 * 1024).unwrap();
     outgoing.send(b"runtime\0payload").unwrap();
     let mut sent = String::new();

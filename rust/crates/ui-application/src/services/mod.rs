@@ -1,3 +1,4 @@
+pub mod egpu;
 pub mod firehose;
 pub mod polling;
 pub mod prime;

@@ -111,3 +111,11 @@ impl VisionFrame<'_> {
         Ok(self.client.connection.copy_frame(destination)?)
     }
 }
+
+impl std::os::fd::AsFd for VisionFrame<'_> {
+    fn as_fd(&self) -> std::os::fd::BorrowedFd<'_> {
+        // SAFETY: receive returns a validated imported buffer descriptor, and this
+        // frame exclusively borrows the client that owns it for the entire borrow.
+        unsafe { std::os::fd::BorrowedFd::borrow_raw(self.metadata.fd) }
+    }
+}

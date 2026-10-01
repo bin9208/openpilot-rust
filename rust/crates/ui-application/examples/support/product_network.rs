@@ -48,17 +48,27 @@ pub struct Fixture {
     pub ticks: TickRegistry,
 }
 impl Fixture {
-    pub fn create(
-        context: &Context,
-        canvas: &mut Canvas,
-        scene: &Scene,
-    ) -> Result<(WidgetHandle, Self), Box<dyn std::error::Error>> {
+    pub fn new(scene: &Scene) -> Result<(WifiSession, Self), Box<dyn std::error::Error>> {
         let backend = Rc::new(RefCell::new(Backend {
             snapshot: scene.wifi.clone().ok_or("Wi-Fi fixture missing")?,
             ..Default::default()
         }));
         let session = WifiSession::new(Fake(backend.clone()))?;
-        let ticks = TickRegistry::default();
+        Ok((
+            session,
+            Self {
+                backend,
+                ticks: TickRegistry::default(),
+            },
+        ))
+    }
+    pub fn create(
+        context: &Context,
+        canvas: &mut Canvas,
+        scene: &Scene,
+    ) -> Result<(WidgetHandle, Self), Box<dyn std::error::Error>> {
+        let (session, fixture) = Self::new(scene)?;
+        let ticks = fixture.ticks.clone();
         let widget = if scene.kind == "network-mici" {
             WidgetHandle::new(
                 network::Network::new(
@@ -76,7 +86,7 @@ impl Fixture {
             ticks.add(widget.tick.clone());
             WidgetHandle::new(widget.navigation())
         };
-        Ok((widget, Self { backend, ticks }))
+        Ok((widget, fixture))
     }
     pub fn before(&self, step: Option<&Step>) {
         if let Some(step) = step {
@@ -88,8 +98,10 @@ impl Fixture {
         }
     }
     pub fn snapshot(&self, widget: &WidgetHandle) -> Result<Value, Error> {
-        let nav = widget.get::<NavWidget>()?;
-        let wifi = (nav.content.as_ref() as &dyn std::any::Any).downcast_ref::<Wifi>();
+        let widget = widget.borrow()?;
+        let nav = (widget.as_ref() as &dyn std::any::Any).downcast_ref::<NavWidget>();
+        let wifi =
+            nav.and_then(|nav| (nav.content.as_ref() as &dyn std::any::Any).downcast_ref::<Wifi>());
         Ok(
             json!({"commands":self.backend.borrow().commands,"forgetting":wifi.map(Wifi::any_network_forgetting)}),
         )

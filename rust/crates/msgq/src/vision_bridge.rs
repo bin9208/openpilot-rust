@@ -22,6 +22,8 @@ pub(crate) mod ffi {
         timestamp_eof: u64,
         valid: bool,
         received: bool,
+        index: usize,
+        fd: i32,
     }
 
     // SAFETY: C++ owns the original client and mapped buffers in UniquePtr.

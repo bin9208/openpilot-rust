@@ -10,12 +10,16 @@ pub struct Product {
     pub widget: WidgetHandle,
     pub dialogs: DialogResults,
     pub network: Option<super::product_network::Fixture>,
+    pub egpu: Option<std::sync::Arc<super::product_egpu::Fixture>>,
 }
 pub fn create(
     context: &Context,
     canvas: &mut Canvas,
     scene: &Scene,
 ) -> Result<Product, Box<dyn std::error::Error>> {
+    if scene.kind == "settings-root" {
+        return super::product_settings::create(context, canvas, scene);
+    }
     let dialog_results = Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
     if ["network-mici", "wifi-mici"].contains(&scene.kind.as_str()) {
         let (widget, network) = super::product_network::Fixture::create(context, canvas, scene)?;
@@ -23,9 +27,21 @@ pub fn create(
             widget,
             dialogs: dialog_results,
             network: Some(network),
+            egpu: None,
         });
     }
-    let widget = if let Some(options) = &scene.dialog {
+    if scene.kind == "egpu" {
+        let (widget, egpu) = super::product_egpu::Fixture::create(context, canvas, scene)?;
+        return Ok(Product {
+            widget,
+            dialogs: dialog_results,
+            network: None,
+            egpu: Some(egpu),
+        });
+    }
+    let widget = if scene.camera.is_some() {
+        super::product_camera::create(context, canvas, scene)?
+    } else if let Some(options) = &scene.dialog {
         use openpilot_ui_application::mici::widgets::dialog;
         let results = dialog_results.clone();
         WidgetHandle::new(match scene.kind.as_str() {
@@ -152,5 +168,6 @@ pub fn create(
         widget,
         dialogs: dialog_results,
         network: None,
+        egpu: None,
     })
 }

@@ -1,7 +1,7 @@
 //! Compact device settings from mici/layouts/settings/device.py.
 mod build;
 mod info;
-mod pair;
+pub(crate) mod pair;
 mod updater;
 use crate::{
     context::{Action, Context, Event, Page},

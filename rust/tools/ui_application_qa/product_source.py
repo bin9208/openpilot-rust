@@ -8,7 +8,8 @@ from pathlib import Path
 import sys
 import time
 from types import ModuleType, SimpleNamespace
-from product_effects import car_bytes, attach_refresh, Effects
+from product_effects import attach_refresh, Effects
+from product_params import install
 
 scene = json.loads(Path(sys.argv[1]).read_text())
 output = Path(sys.argv[2]).resolve()
@@ -21,56 +22,7 @@ sys.modules[hardware.__name__] = hardware
 paths = ModuleType('openpilot.system.hardware.hw')
 paths.Paths = SimpleNamespace(swaglog_ipc=lambda: 'inproc://product-source', swaglog_root=lambda: str(output.parent / 'logs'))
 sys.modules[paths.__name__] = paths
-params_module = ModuleType('openpilot.common.params')
-
-
-class Params:
-  def get(self, key, *args, **kwargs):
-    if key in scene.get("raw_params", {}):
-      return bytes(scene["raw_params"][key])
-    if key == "CarParamsPersistent":
-      return car_bytes(scene)
-    value = scene.get('params', {}).get(key)
-    if key == 'LastUpdateTime':
-      try:
-        return datetime.datetime.fromisoformat(value) if value else None
-      except ValueError:
-        return None
-    if key in ['UpdaterCurrentReleaseNotes', 'UpdaterNewReleaseNotes']:
-      return value.encode() if value else None
-    if key in ['LongitudinalPersonality', 'UpdateFailedCount']:
-      try:
-        return int(value.encode()) if value else (1 if kwargs.get('return_default') else None)
-      except ValueError:
-        return 1 if kwargs.get('return_default') else None
-    return json.loads(value) if key == 'ApiCache_FirehoseStats' and value else value
-
-  def get_bool(self, key, *args):
-    return self.get(key) == '1'
-
-  def put_bool(self, key, value):
-    scene.setdefault('params', {})[key] = '1' if value else '0'
-
-  def put(self, key, value):
-    scene.setdefault('params', {})[key] = str(value)
-
-  def put_bool_nonblocking(self, key, value):
-    self.put_bool(key, value)
-
-  def put_nonblocking(self, key, value):
-    self.put(key, value)
-
-  def remove(self, key):
-    scene.setdefault('params', {}).pop(key, None)
-    scene.setdefault('raw_params', {}).pop(key, None)
-
-  def get_int(self, key, *args):
-    return int(self.get(key) or 0)
-
-
-params_module.Params = Params
-params_module.UnknownKeyName = KeyError
-sys.modules[params_module.__name__] = params_module
+Params = install(scene)
 registration = ModuleType('openpilot.system.athena.registration')
 registration.Params = Params
 registration_source = ast.parse((Path(__file__).resolve().parents[3] / 'openpilot/system/athena/registration.py').read_text())
@@ -124,38 +76,15 @@ multilang.setup()
 gui_app.init_window('Source product widget')
 effects = Effects(scene, state_module.ui_state, gui_app, engaged_callbacks)
 effects.offroad_callbacks = offroad_callbacks
-dialog_results = []
-network = None
-if 'dialog' in scene:
-  from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog, BigInputDialog
+dialog_results, network, egpu = [], None, None
+if scene.get('camera') is not None:
+  from camera_source import create
 
-  options = scene['dialog']
-  gui_app.pop_widget = lambda *args, **kwargs: None
-  if scene['kind'] == 'dialog-info':
-    widget = BigDialog(options['title'], options.get('description', ''))
-  elif scene['kind'] == 'dialog-confirm':
-    icon = gui_app.texture('icons_mici/settings/device/reboot.png', 64, 64)
-    widget = BigConfirmationDialog(
-      options['title'], icon, lambda: dialog_results.append('confirm'), exit_on_confirm=not options.get('stay', False), red=options.get('red', False)
-    )
-  else:
-    widget = BigInputDialog(options['title'], options.get('text', ''), confirm_callback=lambda text: dialog_results.append(text))
-elif scene['kind'] == 'language':
-  from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
-  from openpilot.system.ui.lib.application import FontWeight
-  from openpilot.system.ui.lib.multilang import tr
-  from openpilot.system.ui.widgets import DialogResult
+  widget, camera = create(scene, state_module.ui_state)
+elif 'dialog' in scene or scene['kind'] == 'language':
+  from product_forms_source import create
 
-  def select_language(result):
-    if result == DialogResult.CONFIRM:
-      code = multilang.languages[widget.selection]
-      multilang.change_language(code)
-      effects.effects.append({'language': code})
-
-  gui_app.pop_widget = lambda: effects.effects.append({'pop': True})
-  widget = MultiOptionDialog(
-    tr('Select a language'), multilang.languages, multilang.codes[multilang.language], option_font_weight=FontWeight.UNIFONT, callback=select_language
-  )
+  widget = create(scene, effects, dialog_results)
 elif scene['kind'] == 'regulatory':
   from device_source import regulatory
 
@@ -165,6 +94,14 @@ elif scene['kind'] in ['network-mici', 'wifi-mici']:
   from network_source import create
 
   widget, network = create(scene, state_module.ui_state, gui_app)
+elif scene['kind'] == 'egpu':
+  from egpu_source import create
+
+  widget, egpu = create(scene, output)
+elif scene['kind'] == 'settings-root':
+  from settings_source import create
+
+  widget, network, egpu = create(scene, output, SimpleNamespace(ui=state_module.ui_state, gui=gui_app, params=Params, effects=effects))
 elif scene['kind'] == 'software':
   import openpilot.selfdrive.ui.layouts.settings.software as software_module
 
@@ -234,15 +171,9 @@ else:
   widget = CarrotWebDialog()
   widget._session._timestamp_factory = lambda: '12:34:56'
 if scene.get('ssh_host'):
-  import requests
+  from product_forms_source import redirect_ssh
 
-  original_get = requests.get
-
-  def owned_get(url, *args, **kwargs):
-    assert url.startswith('https://github.com/')
-    return original_get(scene['ssh_host'] + url.removeprefix('https://github.com'), *args, **kwargs)
-
-  requests.get = owned_get
+  redirect_ssh(scene)
 now = 0.0
 original = time.monotonic
 time.monotonic = lambda: now
@@ -255,10 +186,18 @@ loop = gui_app.render()
 results = []
 try:
   for index in range(scene['frames']):
+    if scene.get("camera") is not None:
+      camera.before(index)
     now = index / 20
+    if egpu is not None:
+      egpu.before(index)
     if network is not None:
       network.before(next((step for step in scene.get('steps', []) if step['frame'] == index), {}))
     step = effects.before(index, widget)
+    if scene.get("driver") and index == 20:
+      widget.hide_event()
+    if scene.get("driver") and index == 21:
+      widget.show_event()
     if step.get("show_again"):
       widget.hide_event()
       widget.show_event()
@@ -270,6 +209,8 @@ try:
     if gui_app._mouse_events:
       gui_app._last_mouse_event = gui_app._mouse_events[-1]
     rl.get_mouse_position = lambda: rl.Vector2(*gui_app.last_mouse_event.pos)
+    if scene['kind'] == 'settings-root':
+      rl.is_mouse_button_down = lambda button: gui_app.last_mouse_event.left_down
     rl.get_mouse_wheel_move = lambda step=step: step.get('wheel', 0.0)
     widget.render()
     results.append(
@@ -286,6 +227,10 @@ try:
     )
     if network is not None:
       results[-1]['network'] = network.state(widget)
+    if scene['kind'] == 'settings-root':
+      results[-1]['settings'] = widget._current_panel.name.title() if scene['config']['big'] else None
+    if scene.get('camera') is not None:
+      results[-1]['camera'] = camera.snapshot()
     if index in scene.get('capture_frames', []):
       rl.rl_draw_render_batch_active()
       capture = rl.load_image_from_screen()
@@ -296,6 +241,9 @@ try:
   assert rl.export_image(image, str(output))
   rl.unload_image(image)
   output.with_suffix('.json').write_text(json.dumps(results))
+  if egpu is not None:
+    output.with_suffix('.egpu.json').write_text(json.dumps(egpu.snapshot()))
+    egpu.release.set()
   loop.close()
 finally:
   time.monotonic = original

@@ -1,68 +1,31 @@
-use openpilot_startup_ui::{config::Config, renderer::Renderer};
+use openpilot_startup_ui::renderer::Renderer;
 use openpilot_ui_framework::{
     canvas::Canvas,
-    geometry::Rect,
     keys::KeyboardInput,
     widget::{Frame, NavigationQueue},
 };
-use serde::Deserialize;
-use std::{cell::Cell, collections::BTreeMap, path::Path, rc::Rc};
+use std::{cell::Cell, path::Path, rc::Rc};
 #[path = "support/context.rs"]
 mod context;
+#[path = "support/product_camera.rs"]
+mod product_camera;
+#[path = "support/product_driver.rs"]
+mod product_driver;
 #[path = "support/product_effects.rs"]
 mod product_effects;
+#[path = "support/product_egpu.rs"]
+mod product_egpu;
 #[path = "support/product_input.rs"]
 mod product_input;
 #[path = "support/product_network.rs"]
 mod product_network;
+#[path = "support/product_scene.rs"]
+mod product_scene;
+#[path = "support/product_settings.rs"]
+mod product_settings;
 #[path = "support/product_widgets.rs"]
 mod product_widgets;
-#[derive(Deserialize)]
-pub struct Scene {
-    kind: String,
-    config: Config,
-    language: String,
-    rect: Rect,
-    frames: u32,
-    prime: i32,
-    #[serde(default)]
-    params: BTreeMap<String, String>,
-    #[serde(default)]
-    raw_params: BTreeMap<String, Vec<u8>>,
-    #[serde(default)]
-    address: Option<String>,
-    #[serde(default)]
-    network_type: u16,
-    #[serde(default)]
-    network_metered: bool,
-    #[serde(default)]
-    car: Option<openpilot_ui_application::state::CarConfig>,
-    #[serde(default)]
-    models: openpilot_ui_application::state::ModelStatus,
-    #[serde(default)]
-    steps: Vec<product_input::Step>,
-    #[serde(default)]
-    capture_effects: bool,
-    #[serde(default)]
-    dialog: Option<DialogProbe>,
-    time_valid: Option<bool>,
-    ssh_host: Option<String>,
-    wifi: Option<openpilot_wifi::Snapshot>,
-    #[serde(default)]
-    capture_frames: Vec<u32>,
-}
-#[derive(Deserialize)]
-pub struct DialogProbe {
-    title: String,
-    #[serde(default)]
-    text: String,
-    #[serde(default)]
-    description: String,
-    #[serde(default)]
-    red: bool,
-    #[serde(default)]
-    stay: bool,
-}
+pub use product_scene::{DialogProbe, Scene};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();
     let [_, root, scene, output] = args.as_slice() else {
@@ -83,6 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         widget,
         dialogs: dialog_results,
         network,
+        egpu,
     } = product_widgets::create(&context, &mut canvas, &scene)?;
     if let Some(host) = &scene.ssh_host {
         product_input::ssh_fetcher(&widget, scene.config.big)?
@@ -111,6 +75,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         show_touches: false,
     });
     for index in 0..scene.frames {
+        if scene.camera.is_some() {
+            product_camera::before(&context, &widget, &scene, index)?;
+        }
         let now = f64::from(index) / 20.0;
         clock.set(now);
         let step = scene.steps.iter().find(|step| step.frame == index);
@@ -118,6 +85,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         product_input::scroll(&widget, step)?;
         if let Some(network) = &network {
             network.before(step);
+        }
+        if let Some(egpu) = &egpu {
+            egpu.before(index);
         }
         effects.before(step)?;
         if step.is_some_and(|step| step.flush_ssh) {
@@ -149,6 +119,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             wheel: step.map_or(0.0, |step| step.wheel),
             show_touches: false,
         };
+        if scene.driver.is_some() && index == 20 {
+            widget.borrow_mut()?.hide(&frame);
+        }
+        if scene.driver.is_some() && index == 21 {
+            widget.borrow_mut()?.show(&frame);
+        }
         if step.is_some_and(|step| step.show_again) {
             widget.borrow_mut()?.hide(&frame);
             widget.borrow_mut()?.show(&frame);
@@ -175,6 +151,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(network) = &network {
                 snapshot["network"] = network.snapshot(&widget)?;
             }
+            if scene.kind == "settings-root" {
+                snapshot["settings"] = if scene.config.big {
+                    serde_json::json!(format!(
+                        "{:?}",
+                        widget
+                            .get::<openpilot_ui_application::settings::layout::Settings>()?
+                            .current()
+                    ))
+                } else {
+                    serde_json::Value::Null
+                };
+            }
             results.push(snapshot);
         } else if scene.dialog.is_some() {
             let nav = widget.get::<openpilot_ui_framework::navigation::NavWidget>()?;
@@ -184,6 +172,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             results.push(serde_json::json!({"callbacks":*dialog_results.borrow(),"dismissing":nav.motion.is_dismissing(),"text":input.map(|input|input.text()),"candidate":input.map(|input|input.candidate())}));
         } else {
             results.push(serde_json::json!({"prime":context.prime.get()}));
+        }
+        if scene.camera.is_some() {
+            results.last_mut().ok_or("missing trace")?["camera"] =
+                product_camera::snapshot(&context, &widget, &scene)?;
         }
         if scene.capture_frames.contains(&index) {
             let stem = output
@@ -203,5 +195,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         output.with_extension("json"),
         serde_json::to_vec_pretty(&results)?,
     )?;
+    if let Some(egpu) = &egpu {
+        std::fs::write(
+            output.with_extension("egpu.json"),
+            serde_json::to_vec_pretty(&egpu.snapshot())?,
+        )?;
+    }
     Ok(())
 }

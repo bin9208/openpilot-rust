@@ -8,6 +8,7 @@ struct Point;
 struct Rect;
 struct Sample;
 struct Ring;
+struct CameraRect;
 class Image {
 public:
   explicit Image(const char *path);
@@ -30,6 +31,10 @@ public:
   uint32_t pixel_texture(int32_t width, int32_t height, rust::Slice<const uint8_t> rgba);
   void smooth_texture(uint32_t texture);
   void ring(Ring ring);
+  uint32_t plane_texture(int32_t width, int32_t height, bool chroma);
+  void plane_update(uint32_t texture, rust::Slice<const uint8_t> bytes);
+  uint32_t texture_native(uint32_t texture) const;
+  void camera_texture(uint32_t shader, uint32_t luma, uint32_t chroma, bool external, CameraRect source, CameraRect destination);
   uint32_t font(rust::Str path, int32_t size, rust::Slice<const int32_t> points,
                 bool atlas, bool mipmaps);
   Point measure(uint32_t font, rust::Str text, float size, float spacing) const;

@@ -9,7 +9,7 @@ import sys
 from types import ModuleType
 
 
-def create(scene, ui, gui):
+def prepare(scene, ui):
   module = ModuleType('openpilot.system.ui.lib.wifi_manager')
   sys.modules[module.__name__] = module
   module.dataclass = dataclass
@@ -124,6 +124,11 @@ def create(scene, ui, gui):
   manager = Manager()
   module.WifiManager = lambda: manager
   ui.prime_state.get_type = lambda: scene['prime']
+  return manager
+
+
+def create(scene, ui, gui):
+  manager = prepare(scene, ui)
   if scene['kind'] == 'network-mici':
     from openpilot.selfdrive.ui.mici.layouts.settings.network.network_layout import NetworkLayoutMici
 

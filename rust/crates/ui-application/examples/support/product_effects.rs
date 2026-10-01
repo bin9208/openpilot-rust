@@ -96,6 +96,10 @@ impl Effects {
                 }
             }
             NavigationRequest::Push(widget) => {
+                if let Some(page) = super::product_settings::page(&widget)? {
+                    self.values.push(json!({"page":page}));
+                    return Ok(());
+                }
                 if let Ok(nav) = widget.get::<openpilot_ui_framework::navigation::NavWidget>() {
                     if (nav.content.as_ref() as &dyn std::any::Any)
                         .is::<openpilot_ui_application::mici::settings::network::wifi::Wifi>()

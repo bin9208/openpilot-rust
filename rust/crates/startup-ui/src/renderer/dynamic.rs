@@ -5,10 +5,10 @@ use std::{
     rc::{Rc, Weak},
 };
 pub struct DynamicTexture {
-    id: u32,
+    pub(super) id: u32,
     pub width: i32,
     pub height: i32,
-    releases: Weak<RefCell<Vec<u32>>>,
+    pub(super) releases: Weak<RefCell<Vec<u32>>>,
 }
 impl DynamicTexture {
     pub fn id(&self) -> u32 {

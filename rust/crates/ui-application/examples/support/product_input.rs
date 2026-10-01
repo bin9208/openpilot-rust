@@ -155,6 +155,14 @@ pub fn scroll(
             content.downcast_mut::<openpilot_ui_application::mici::settings::network::wifi::Wifi>()
         {
             content.scroller.scroll_to(position, false, false, false)?;
+        } else if let Some(content) =
+            content.downcast_mut::<openpilot_ui_application::mici::settings::egpu::Egpu>()
+        {
+            content.scroller.scroll_to(position, false, false, false)?;
+        } else if let Some(content) =
+            content.downcast_mut::<openpilot_ui_application::mici::settings::layout::Settings>()
+        {
+            content.scroller.scroll_to(position, false, false, false)?;
         } else {
             return Err("unsupported scroll target".into());
         }

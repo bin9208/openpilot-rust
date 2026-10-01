@@ -1,5 +1,6 @@
 #include "bridge.h"
 #include "openpilot-startup-ui/src/bridge.rs.h"
+#include "openpilot-startup-ui/src/camera_bridge.rs.h"
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -64,6 +65,26 @@ int main(int argc, char **argv) {
     surface->gradient({90, 160, 80, 40}, 0xff000000, 0xff000000, 0xffffffff, 0xffffffff);
     surface->line({180, 180}, {220, 210}, 3, 0xffffffff);
     surface->tinted_texture(pixels, {0, 0, 4, 4}, {400, 160, 40, 40}, {0, 0}, 0, 0xffffffff);
+    const auto luma=surface->plane_texture(4,4,false);
+    const auto chroma=surface->plane_texture(2,2,true);
+    std::vector<uint8_t> plane(16,128);
+    surface->plane_update(luma,{plane.data(),plane.size()});
+    surface->plane_update(chroma,{plane.data(),8});
+    bool short_plane=false;
+    try { surface->plane_update(luma,{plane.data(),1}); }
+    catch (const std::invalid_argument &) { short_plane=true; }
+    if (!short_plane || !surface->texture_native(luma)) return 11;
+    surface->camera_texture(shader,luma,chroma,false,{0,0,-4,4},{0,0,40,40});
+    bool invalid_external=false;
+    try { surface->camera_texture(shader,luma,0,true,{0,0,2147483648.0f,4},{0,0,40,40}); }
+    catch (const std::invalid_argument &) { invalid_external=true; }
+    if (!invalid_external) return 12;
+    surface->texture_release(luma);
+    surface->texture_release(chroma);
+    bool released_plane=false;
+    try { surface->plane_update(luma,{plane.data(),plane.size()}); }
+    catch (const std::invalid_argument &) { released_plane=true; }
+    if (!released_plane) return 13;
     surface->draw_texture(texture, {268, 120, 140, 140}, {70, 70}, 45);
     surface->screenshot(argv[2]);
     surface->finish_content(1);

@@ -11,7 +11,7 @@ use openpilot_ui_framework::{
     widget::{Frame, RenderResult, Widget, WidgetState},
     Error,
 };
-pub(super) struct Pair {
+pub(crate) struct Pair {
     button: BigButton,
     context: Context,
 }

@@ -23,7 +23,7 @@ void *library() {
       throw std::runtime_error(
           "native startup raylib plugin contract mismatch");
     }
-    const char *required[] = {"LoadImage", "ImageFormat", "DrawRing",
+    const char *required[] = {"LoadImage", "ImageFormat", "DrawRing", "UpdateTexture", "SetShaderValueTexture",
                               "UnloadImage",
                               "ImageAlphaPremultiply",
                               "ImageResize",
@@ -95,6 +95,8 @@ template <typename Function> Function resolve(const char *name) {
     return function arguments;                                                 \
   }
 FORWARD(Image, LoadImage, (const char *path), (path))
+FORWARD(void, UpdateTexture, (Texture2D texture, const void *pixels), (texture, pixels))
+FORWARD(void, SetShaderValueTexture, (Shader shader, int location, Texture2D texture), (shader, location, texture))
 FORWARD(void, ImageFormat, (Image *image, int format), (image, format))
 FORWARD(void, DrawRing, (Vector2 center, float inner, float outer, float start, float end, int segments, Color color), (center, inner, outer, start, end, segments, color))
 FORWARD(void, UnloadImage, (Image image), (image))

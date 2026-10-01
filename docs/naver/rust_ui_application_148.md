@@ -231,3 +231,65 @@ Korean SSIDs, English compact labels and source wrapping under the Korean font.
 This verifies an owned transport boundary, not real Wi-Fi or system D-Bus.
 eGPU, settings composition, remaining camera/onroad and full application/runtime
 startup remain open; this checkpoint is not a device-test candidate.
+
+## Stage 7: settings roots, eGPU controls and owned camera preview (2026-10-01)
+
+Both settings roots now compose the existing native panels. The large root keeps
+panel instances and the shared resolved Params namespace across hide/show; the
+compact root emits the original page selections and gates Pair/eGPU cards using
+the same state. The shared label helper retains Python's double precision until
+passing final coordinates to raylib, fixing the observed 1-channel Network-label
+pixel differences without changing layout rules.
+
+Large/compact eGPU panels use the native USB status/link/check/manifest boundary.
+Checks own their worker, reject duplicate starts and cancel/join on destruction.
+The source status priority, onroad disable rule and compile confirmation are
+preserved. These UI tests use owned synthetic USB paths/probes; the actual eGPU
+probe implementation and device/model execution remain separately tracked in
+#154 and are not established by this UI checkpoint.
+
+The camera widget owns a real VisionIPC client and NV12 textures, preserves the
+last frame between arrivals, switches only after a target frame arrives, and
+reconnects using the original transition/retry rules. Host shaders retain the
+large/compact conversion, driver enhancement and driver flip. The target EGL
+path owns duplicated frame descriptors and images independently of the client
+borrow. Its ABI lifecycle is tested with a private fixture, not AGNOS hardware.
+
+Compact driver preview includes both normal and onboarding setup variants,
+face/eye/glasses overlays, source filters and dmoji geometry. `Preview::new`
+constructs the setup variant for Home; `with_camera(..., setup)` permits an owned
+server in QA. `driver_orientation` refreshes selected-driver metadata before
+Tutorial positioning without advancing filters. Show/hide retains the original
+Params and interactive-timeout behavior. The temporary offroad `selfdriveState`
+feed uses the registered service queue size and yields ownership to a later
+normal daemon publisher. Ordinary publishers retain their exclusive lock; an
+existing normal publisher cannot be displaced by the transient UI constructor.
+The current DriverMonitoringState schema has no events list, matching the
+source's absent-events fallback and default no-alert-sound publication.
+
+Evidence under `.omo/evidence/ui-application-148/`:
+
+| Scenario and invocation | Binary observable | Captured artifact |
+| --- | --- | --- |
+| `check_ui_egpu.py` | 72 EN/KO cases, 2,320 exact source/native frames; effects, call counts and compile confirmation agree | `egpu-final2/results.json`, per-case frames/traces, `egpu-tests.log` |
+| `check_ui_settings_root.py` | 38 EN/KO cases, 1,640 exact frames and identical panel/page/Params outcomes | `settings-root-final/results.json` |
+| `check_ui_camera.py` | 10 large/compact cases, 240 exact real VisionIPC frames and identical frame/stream metadata | `camera-all/results.json` |
+| `check_ui_camera.py --filter lifecycle` | Both layouts retain frames through pauses and recover after server restart/onroad/offroad transitions; 48 exact frames and metadata | `camera-lifecycle/results.json` |
+| `check_ui_camera.py --driver` | Five setup/normal preview cases, exact frames including fractional crop rectangles; hide/reshow Params and timeout checks; live owned msgq alert records stop on IsOnroad | `driver-transient-final/results.json`, `*-messages.json` |
+| `check_ui_egl.py` with borrowed and owned modes | Seven cases each, exact source/native ABI traces, zero descriptor delta, owned image retains context after original owner drops | `egl-camera-borrowed/results.json`, `egl-camera-owned/results.json` |
+| `cargo test` for UI application/framework/msgq | Worker/Params tests, duplicated VisionIPC descriptor bytes and transient-to-daemon publisher replacement pass | `transient-tests.log` |
+| `check_ui_native_resources.py`, `check_msgq_sanitizers.py` | ASan/UBSan pass; short/released planes and overflowing dimensions rejected, normal publisher preemption preserved | `camera-asan/`, `msgq-transient-asan.log` |
+| `check_ui_product_widgets.py` | 30 existing EN/KO screens still match exactly after the shared label precision correction | `stage7-widget-regression/results.json` |
+
+`stage7-receipt.json` records exact invocations, artifact paths and binary digests.
+Contact sheets retain the observed original elision and untranslated compact
+English copy in the Korean locale. Captured live alert comparison uses the stable
+subscriber window: msgq can discard the first packet during publisher-reset
+resynchronization, so these records do not claim to capture every constructor
+publication. Queue-replacement behavior is separately exercised at the transport
+boundary.
+
+Home/onboarding integration, the large driver dialog, remaining onroad HUD and
+alerts, and the final application startup/recording/shutdown path remain open.
+No production selection, C3X connection, measured CPU saving or first device-test
+readiness is claimed.

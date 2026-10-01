@@ -44,6 +44,7 @@ pub struct Renderer {
     pub config: Config,
     pub(crate) dimensions: (f32, f32),
     pub(crate) polygon_shader: Option<u32>,
+    camera_shaders: [Option<u32>; 4],
     normal: u32,
     medium: u32,
     pretendard: u32,
@@ -172,6 +173,7 @@ impl Renderer {
         let display = fonts.get("KaiGenGothicKR-Bold").copied();
         let mut renderer = Self {
             texture_releases: Rc::default(),
+            camera_shaders: [None; 4],
             surface,
             config,
             dimensions,
@@ -206,5 +208,6 @@ mod paint;
 use fonts::{font_points, resolve_font};
 use paint::convert;
 
+mod camera;
 mod dynamic;
 pub use dynamic::{DecodedImage, DynamicTexture};

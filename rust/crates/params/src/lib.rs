@@ -31,6 +31,7 @@ pub enum Error {
     Io(#[from] io::Error),
 }
 
+#[derive(Clone)]
 pub struct Params {
     root: PathBuf,
     directory: PathBuf,

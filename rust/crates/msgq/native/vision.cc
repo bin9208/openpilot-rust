@@ -24,7 +24,7 @@ void validate_name(const std::string &name) {
 
 void validate_buffer(const VisionBuf &buffer) {
   const size_t maximum = std::numeric_limits<size_t>::max();
-  if (!buffer.addr || !buffer.width || !buffer.height || buffer.width % 2 || buffer.height % 2 ||
+  if (buffer.fd < 0 || !buffer.addr || !buffer.width || !buffer.height || buffer.width % 2 || buffer.height % 2 ||
       buffer.stride < buffer.width || buffer.height > maximum / buffer.stride ||
       buffer.uv_offset < buffer.stride * buffer.height || buffer.uv_offset > buffer.len ||
       buffer.stride * (buffer.height / 2) > buffer.len - buffer.uv_offset ||
@@ -62,7 +62,8 @@ VisionMetadata VisionConnection::receive(int32_t timeout_ms) {
   current_ = client_.recv(&extra, timeout_ms);
   if (!current_) return {};
   return {current_->width, current_->height, current_->stride, current_->uv_offset, current_->len,
-          extra.frame_id, extra.timestamp_sof, extra.timestamp_eof, extra.valid, true};
+          extra.frame_id, extra.timestamp_sof, extra.timestamp_eof, extra.valid, true,
+          static_cast<size_t>(current_->idx), current_->fd};
 }
 
 void VisionConnection::copy_frame(rust::Slice<uint8_t> destination) const {

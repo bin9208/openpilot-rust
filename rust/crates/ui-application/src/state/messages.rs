@@ -120,3 +120,16 @@ reader!(
     PandaStates,
     capnp::struct_list::Reader<'_, openpilot_cereal::log_capnp::panda_state::Owned>
 );
+
+reader!(
+    driver_state,
+    "driverStateV2",
+    DriverStateV2,
+    openpilot_cereal::log_capnp::driver_state_v2::Reader<'_>
+);
+reader!(
+    driver_monitoring_state,
+    "driverMonitoringState",
+    DriverMonitoringState,
+    openpilot_cereal::log_capnp::driver_monitoring_state::Reader<'_>
+);

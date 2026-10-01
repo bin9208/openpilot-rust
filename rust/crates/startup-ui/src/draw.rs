@@ -59,6 +59,22 @@ pub struct Ring {
     pub color: u32,
 }
 pub trait Draw: Measure {
+    fn camera_plane(
+        &mut self,
+        _dimensions: (i32, i32),
+        _format: crate::camera::PlaneFormat,
+    ) -> Result<Box<dyn TextureResource>, Error> {
+        Err(Error::Contract("camera plane allocation unavailable"))
+    }
+    fn update_camera_plane(&mut self, _texture: u32, _bytes: &[u8]) -> Result<(), Error> {
+        Err(Error::Contract("camera plane upload unavailable"))
+    }
+    fn native_texture(&self, _texture: u32) -> Result<u32, Error> {
+        Err(Error::Contract("native texture unavailable"))
+    }
+    fn camera(&mut self, _camera: crate::camera::CameraDraw) -> Result<(), Error> {
+        Err(Error::Contract("camera drawing unavailable"))
+    }
     fn ring(&mut self, _ring: Ring) -> Result<(), Error> {
         Err(Error::Contract("ring drawing unavailable"))
     }
