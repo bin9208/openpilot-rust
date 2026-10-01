@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Callable, Iterator
@@ -126,6 +127,27 @@ def incoming(binary: Path, output: Path) -> str:
         return sha256(b"".join(packets)).hexdigest()
 
 
+def isolated_case(binary: Path, scenario: str, output: Path) -> str:
+    namespace = ['unshare', '--net'] if os.geteuid() == 0 else ['unshare', '--user', '--map-root-user', '--net']
+    command = [*namespace, sys.executable, str(Path(__file__).resolve()), '--binary', str(binary),
+               '--output', str(output), '--scenario', scenario]
+    environment = os.environ | {'BRIDGE_PARENT_NETWORK': os.readlink('/proc/self/ns/net')}
+    with (output / 'namespace.log').open('w') as transcript:
+        transcript.write(json.dumps(command) + '\n')
+        transcript.flush()
+        with subprocess.Popen(command, env=environment, stdout=transcript, stderr=subprocess.STDOUT, start_new_session=True) as process:
+            try:
+                status = process.wait(timeout=60)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
+                raise
+        assert status == 0, (scenario, status, (output / 'namespace.log').read_text())
+    result = json.loads((output / 'scenario.json').read_text())
+    assert result['network_namespace'] != environment['BRIDGE_PARENT_NETWORK']
+    return result['digest']
+
+
 def check(original: Path, binary: Path, output: Path) -> None:
     records = {}
     for label, executable in (("source", original), ("rust", binary)):
@@ -133,7 +155,7 @@ def check(original: Path, binary: Path, output: Path) -> None:
         for scenario in (outgoing, incoming):
             destination = output / label / scenario.__name__
             destination.mkdir(parents=True)
-            values[scenario.__name__] = scenario(executable, destination)
+            values[scenario.__name__] = isolated_case(executable, scenario.__name__, destination)
         records[label] = values
     assert records["source"] == records["rust"]
     (output / "result.json").write_text(json.dumps(records, indent=2) + "\n")
@@ -142,8 +164,20 @@ def check(original: Path, binary: Path, output: Path) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--original", required=True, type=Path)
+    parser.add_argument("--original", type=Path)
     parser.add_argument("--binary", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--scenario", choices=('outgoing', 'incoming'), help=argparse.SUPPRESS)
     args = parser.parse_args()
-    check(args.original.resolve(), args.binary.resolve(), args.output.resolve())
+    if args.scenario:
+        parent = os.environ['BRIDGE_PARENT_NETWORK']
+        namespace = os.readlink('/proc/self/ns/net')
+        assert namespace != parent, 'loopback setup requires a private network namespace'
+        subprocess.run(['ip', 'link', 'set', 'lo', 'up'], check=True)
+        scenario = {'outgoing': outgoing, 'incoming': incoming}[args.scenario]
+        digest = scenario(args.binary.resolve(), args.output.resolve())
+        (args.output / 'scenario.json').write_text(json.dumps({'digest': digest, 'network_namespace': namespace}) + '\n')
+    else:
+        if args.original is None:
+            parser.error('--original is required for source/native comparison')
+        check(args.original.resolve(), args.binary.resolve(), args.output.resolve())
