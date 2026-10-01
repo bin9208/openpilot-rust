@@ -46,6 +46,8 @@ pub fn create(
             )?,
             _ => return Err("unknown dialog".into()),
         })
+    } else if scene.kind == "software" {
+        openpilot_ui_application::settings::software::Software::create(context.clone())?
     } else if scene.kind == "device" {
         if scene.config.big {
             openpilot_ui_application::settings::device::Device::create(context.clone())?
@@ -66,6 +68,24 @@ pub fn create(
         }
     } else {
         WidgetHandle::from_box(match scene.kind.as_str() {
+            "developer" => {
+                if scene.config.big {
+                    Box::new(
+                        openpilot_ui_application::settings::developer::Developer::new(
+                            context.clone(),
+                            canvas,
+                        )?,
+                    )
+                } else {
+                    Box::new(
+                        openpilot_ui_application::mici::settings::developer::Developer::new(
+                            context.clone(),
+                            canvas,
+                        )?
+                        .navigation(),
+                    )
+                }
+            }
             "language" => Box::new(openpilot_ui_application::widgets::language::dialog(
                 context.clone(),
                 None,

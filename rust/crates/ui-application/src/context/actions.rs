@@ -35,7 +35,14 @@ pub enum UpdaterAction {
     Download,
     Reboot,
 }
+pub struct Selection {
+    pub title: String,
+    pub options: Vec<String>,
+    pub selected: String,
+    pub callback: Callback<Option<String>>,
+}
 pub enum Action {
+    Select(Selection),
     Open(Page),
     PairingCheck,
     Failure(crate::Error),
@@ -43,6 +50,7 @@ pub enum Action {
     Alert(String),
     MiciAlert { title: String, description: String },
     MiciConfirm(crate::mici::widgets::dialog::Confirmation),
+    MiciInput(crate::mici::widgets::dialog::InputOptions),
     Updater(UpdaterAction),
     Recording(bool),
     ToggleRecording,

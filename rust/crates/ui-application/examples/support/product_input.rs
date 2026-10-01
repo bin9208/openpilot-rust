@@ -14,6 +14,10 @@ pub struct Step {
     pub wheel: f64,
     pub scroll: Option<f64>,
     pub confirm: Option<bool>,
+    pub input_text: Option<String>,
+    pub selection: Option<String>,
+    #[serde(default)]
+    pub flush_ssh: bool,
     pub engaged: Option<bool>,
     pub started: Option<bool>,
     pub ignition: Option<bool>,
@@ -102,6 +106,14 @@ pub const KEYS: &[&str] = &[
     "DoShutdown",
     "DoUninstall",
     "LanguageSetting",
+    "AdbEnabled",
+    "SshEnabled",
+    "JoystickDebugMode",
+    "LongitudinalManeuverMode",
+    "ShowDebugInfo",
+    "GithubUsername",
+    "GithubSshKeys",
+    "UpdaterTargetBranch",
 ];
 
 pub fn scroll(
@@ -119,9 +131,41 @@ pub fn scroll(
             content.downcast_mut::<openpilot_ui_application::mici::settings::device::Device>()
         {
             content.scroller.scroll_to(position, false, false, false)?;
+        } else if let Some(content) =
+            content.downcast_mut::<openpilot_ui_application::mici::settings::developer::Developer>()
+        {
+            content.scroller.scroll_to(position, false, false, false)?;
         } else {
             return Err("unsupported scroll target".into());
         }
     }
     Ok(())
+}
+
+pub fn ssh_fetcher(
+    widget: &openpilot_ui_framework::widget::WidgetHandle,
+    big: bool,
+) -> Result<
+    std::rc::Rc<std::cell::RefCell<openpilot_ui_application::services::ssh::Fetcher>>,
+    Box<dyn std::error::Error>,
+> {
+    if big {
+        let mut panel =
+            widget.get_mut::<openpilot_ui_application::settings::developer::Developer>()?;
+        let item = panel
+            .scroller
+            .item_mut::<openpilot_ui_framework::list::ListItem>(2)
+            .ok_or("SSH item missing")?;
+        Ok(item
+            .action_mut::<openpilot_ui_application::widgets::ssh::SshAction>()
+            .ok_or("SSH action missing")?
+            .fetcher
+            .clone())
+    } else {
+        let mut nav = widget.get_mut::<openpilot_ui_framework::navigation::NavWidget>()?;
+        let panel = (nav.content.as_mut() as &mut dyn std::any::Any)
+            .downcast_mut::<openpilot_ui_application::mici::settings::developer::Developer>()
+            .ok_or("Mici developer panel missing")?;
+        Ok(panel.fetcher.clone())
+    }
 }

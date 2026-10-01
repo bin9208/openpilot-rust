@@ -181,8 +181,15 @@ impl Widget for SshAction {
             paint::text(
                 draw,
                 Point {
-                    x: rect.x + rect.width - 250.0 - size.x - 30.0,
-                    y: rect.y + (rect.height - size.y) / 2.0,
+                    x: text_layout::float(
+                        f64::from(rect.x) + f64::from(rect.width)
+                            - 250.0
+                            - f64::from(size.x)
+                            - 30.0,
+                    ),
+                    y: text_layout::float(
+                        f64::from(rect.y) + (f64::from(rect.height) - f64::from(size.y)) / 2.0,
+                    ),
                 },
                 Text {
                     value: &model.username,

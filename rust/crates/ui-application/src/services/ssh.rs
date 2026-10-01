@@ -84,6 +84,9 @@ impl Fetcher {
         );
         Ok(())
     }
+    pub fn is_fetching(&self) -> bool {
+        self.workers.iter().any(|worker| !worker.is_finished())
+    }
     pub fn clear(&self) -> Result<(), Error> {
         for key in ["GithubUsername", "GithubSshKeys"] {
             match self.params.remove(key) {

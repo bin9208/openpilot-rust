@@ -21,6 +21,14 @@ KEYS = [
   'DoShutdown',
   'DoUninstall',
   'LanguageSetting',
+  'AdbEnabled',
+  'SshEnabled',
+  'JoystickDebugMode',
+  'LongitudinalManeuverMode',
+  'ShowDebugInfo',
+  'GithubUsername',
+  'GithubSshKeys',
+  'UpdaterTargetBranch',
 ]
 
 
@@ -71,8 +79,20 @@ class Effects:
       gui.set_show_fps = lambda value: self.effects.append({'fps': value})
 
   def push(self, dialog):
+    if hasattr(dialog, "options"):
+      self.effects.append({"select": dialog.title, "options": dialog.options, "current": dialog.current})
+      self.dialogs.append(dialog)
+      return
     if hasattr(dialog, "owned_page"):
       self.effects.append({"page": dialog.owned_page})
+      return
+    if hasattr(dialog, '_min_text_size'):
+      self.effects.append({'keyboard': dialog._title._text, 'text': dialog.text, 'minimum': dialog._min_text_size})
+      self.dialogs.append(dialog)
+      return
+    if hasattr(dialog, '_minimum_length'):
+      self.effects.append({'mici_input': dialog._hint_label._text, 'text': dialog._keyboard.text(), 'minimum': dialog._minimum_length})
+      self.dialogs.append(dialog)
       return
     if hasattr(dialog, '_card'):
       self.effects.append({'mici_alert': dialog._card.get_text(), 'description': dialog._card.get_value()})
@@ -112,6 +132,25 @@ class Effects:
     if 'personality' in step:
       name = next(name for name, value in log.LongitudinalPersonality.schema.enumerants.items() if value == step['personality'])
       self.ui.sm['selfdriveState'] = SimpleNamespace(personality=name)
+    if 'input_text' in step:
+      dialog = self.dialogs.pop()
+      if hasattr(dialog, '_minimum_length'):
+        dialog._keyboard.set_text(step['input_text'])
+        dialog._confirm_callback()
+        dialog._dismiss_callback()
+      else:
+        from openpilot.system.ui.widgets import DialogResult
+
+        dialog.set_text(step['input_text'])
+        dialog._callback(DialogResult.CONFIRM)
+    if step.get('flush_ssh'):
+      fetcher = widget._ssh_keys.action_item._fetcher if self.scene['config']['big'] else widget._ssh_fetcher
+      deadline = time.perf_counter() + 5
+      while not fetcher._done:
+        assert time.perf_counter() < deadline, 'owned SSH fixture did not finish'
+        time.sleep(0.001)
+    if 'selection' in step:
+      self.dialogs[-1].selection = step['selection']
     if 'confirm' in step and self.dialogs:
       from openpilot.system.ui.widgets import DialogResult
 

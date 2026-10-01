@@ -9,6 +9,8 @@ use serde::Deserialize;
 use std::{cell::Cell, collections::BTreeMap, path::Path, rc::Rc};
 #[path = "support/context.rs"]
 mod context;
+#[path = "support/product_effects.rs"]
+mod product_effects;
 #[path = "support/product_input.rs"]
 mod product_input;
 #[path = "support/product_widgets.rs"]
@@ -42,6 +44,7 @@ pub struct Scene {
     #[serde(default)]
     dialog: Option<DialogProbe>,
     time_valid: Option<bool>,
+    ssh_host: Option<String>,
 }
 #[derive(Deserialize)]
 pub struct DialogProbe {
@@ -72,14 +75,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let renderer = Renderer::new(scene.config, &assets, false, &scene.language)?;
     let mut canvas = Canvas::new(renderer, &assets);
     let (widget, dialog_results) = product_widgets::create(&context, &mut canvas, &scene)?;
+    if let Some(host) = &scene.ssh_host {
+        product_input::ssh_fetcher(&widget, scene.config.big)?
+            .borrow_mut()
+            .host = host.clone();
+    }
     widget.borrow_mut()?.set_rect(scene.rect);
     let keyboard = KeyboardInput::default();
     let navigation = NavigationQueue::default();
     let mut results = Vec::new();
-    let mut effects = Vec::new();
-    let mut confirmations: Vec<openpilot_ui_application::context::Confirmation> = Vec::new();
-    let mut mici_confirmations =
-        Vec::<openpilot_ui_application::mici::widgets::dialog::Confirmation>::new();
+    let mut effects = product_effects::Effects::new(context.clone());
     let mut last_event = openpilot_ui_framework::geometry::MouseEvent::default();
     for index in 0..scene.frames {
         let now = f64::from(index) / 20.0;
@@ -87,20 +92,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let step = scene.steps.iter().find(|step| step.frame == index);
         product_input::apply(&context, step, now)?;
         product_input::scroll(&widget, step)?;
-        if let Some(confirm) = step.and_then(|step| step.confirm) {
-            if let Some(dialog) = confirmations.pop() {
-                dialog.callback.call(if confirm {
-                    openpilot_ui_framework::widget::DialogResult::Confirm
-                } else {
-                    openpilot_ui_framework::widget::DialogResult::Cancel
-                });
-            }
-        }
-        if let Some(result) = step.and_then(|step| step.confirm) {
-            if let Some(dialog) = mici_confirmations.pop() {
-                if result {
-                    (dialog.callback)();
+        effects.before(step)?;
+        if step.is_some_and(|step| step.flush_ssh) {
+            let fetcher = product_input::ssh_fetcher(&widget, scene.config.big)?;
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+            while fetcher.borrow().is_fetching() {
+                if std::time::Instant::now() >= deadline {
+                    return Err("owned SSH fixture did not finish".into());
                 }
+                std::thread::sleep(std::time::Duration::from_millis(1));
             }
         }
         let events = step.map_or(&[][..], |step| step.events.as_slice());
@@ -127,99 +127,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         canvas.renderer.begin();
         widget.borrow_mut()?.render(&frame, &mut canvas)?;
-        if scene.dialog.is_some() || scene.kind == "regulatory" {
-            if let Some(openpilot_ui_framework::widget::NavigationRequest::Pop(callback)) =
-                widget.borrow_mut()?.take_navigation()
-            {
-                if scene.kind == "regulatory" {
-                    effects.push(serde_json::json!({"pop":true}));
-                }
-                if let Some(callback) = callback {
-                    callback();
-                }
-            }
-        }
-        while let Some(request) = navigation.pop() {
-            if let openpilot_ui_framework::widget::NavigationRequest::Pop(callback) = request {
-                effects.push(serde_json::json!({"pop":true}));
-                if let Some(callback) = callback {
+        if let Some(request) = widget.borrow_mut()?.take_navigation() {
+            if scene.dialog.is_some() {
+                if let openpilot_ui_framework::widget::NavigationRequest::Pop(Some(callback)) =
+                    request
+                {
                     callback();
                 }
             } else {
-                return Err("unexpected native widget navigation".into());
+                effects.navigation(request)?;
             }
         }
         if scene.capture_effects {
-            while let Some(action) = context.actions.pop() {
-                use openpilot_ui_application::context::Action;
-                match action {
-                    Action::Confirm(dialog) => {
-                        effects.push(serde_json::json!({"confirm":dialog.text,"button":dialog.confirm,"cancel":dialog.cancel,"rich":dialog.rich}));
-                        confirmations.push(dialog);
-                    }
-                    Action::ShowTouches(value) => {
-                        effects.push(serde_json::json!({"touches":value}))
-                    }
-                    Action::ShowFps(value) => effects.push(serde_json::json!({"fps":value})),
-                    Action::MiciAlert { title, description } => effects
-                        .push(serde_json::json!({"mici_alert":title,"description":description})),
-                    Action::MiciConfirm(dialog) => {
-                        effects.push(serde_json::json!({"mici_confirm":dialog.title,"exit":dialog.exit_on_confirm,"red":dialog.red}));
-                        mici_confirmations.push(dialog);
-                    }
-                    Action::Updater(action) => {
-                        if matches!(
-                            action,
-                            openpilot_ui_application::context::actions::UpdaterAction::Reboot
-                        ) {
-                            context.params.put_bool("DoReboot", true)?;
-                        } else {
-                            effects.push(serde_json::json!({"updater":format!("{action:?}")}));
-                        }
-                    }
-                    Action::SetLanguage(code) => {
-                        canvas.renderer.set_language(&code);
-                        effects.push(serde_json::json!({"language":code}));
-                    }
-                    Action::Alert(value) => effects.push(serde_json::json!({"alert":value})),
-                    Action::Open(page) => {
-                        effects.push(serde_json::json!({"page":format!("{page:?}")}))
-                    }
-                    Action::Failure(error) => return Err(error.into()),
-                    _ => return Err("unexpected product effect".into()),
-                }
-            }
-            context.params.flush()?;
-            use openpilot_ui_application::params::Read;
-            let params = product_input::KEYS
-                .iter()
-                .map(|key| {
-                    Ok((
-                        key.to_string(),
-                        context
-                            .params
-                            .bytes(key)?
-                            .map(String::from_utf8)
-                            .transpose()?,
-                    ))
-                })
-                .collect::<Result<BTreeMap<_, _>, Box<dyn std::error::Error>>>()?;
-            let raw_params = scene
-                .raw_params
-                .keys()
-                .filter_map(|key| match context.params.bytes(key) {
-                    Ok(Some(bytes)) => Some(Ok((
-                        key.clone(),
-                        bytes
-                            .iter()
-                            .map(|byte| format!("{byte:02x}"))
-                            .collect::<String>(),
-                    ))),
-                    Ok(None) => None,
-                    Err(error) => Some(Err(error)),
-                })
-                .collect::<Result<BTreeMap<_, _>, _>>()?;
-            results.push(serde_json::json!({"params":params,"effects":effects,"personality":context.ui.borrow().personality,"raw_params":raw_params}));
+            effects.drain(&navigation, &mut canvas)?;
+            results.push(effects.snapshot(scene.raw_params.keys().cloned())?);
         } else if scene.dialog.is_some() {
             let nav = widget.get::<openpilot_ui_framework::navigation::NavWidget>()?;
             let input = (nav.content.as_ref() as &dyn std::any::Any)

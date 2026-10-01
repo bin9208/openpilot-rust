@@ -2,6 +2,7 @@
 
 import json
 import ast
+import datetime
 import os
 from pathlib import Path
 import sys
@@ -30,7 +31,14 @@ class Params:
     if key == "CarParamsPersistent":
       return car_bytes(scene)
     value = scene.get('params', {}).get(key)
-    if key == 'LongitudinalPersonality':
+    if key == 'LastUpdateTime':
+      try:
+        return datetime.datetime.fromisoformat(value) if value else None
+      except ValueError:
+        return None
+    if key in ['UpdaterCurrentReleaseNotes', 'UpdaterNewReleaseNotes']:
+      return value.encode() if value else None
+    if key in ['LongitudinalPersonality', 'UpdateFailedCount']:
       try:
         return int(value.encode()) if value else (1 if kwargs.get('return_default') else None)
       except ValueError:
@@ -88,6 +96,7 @@ state_module.device = SimpleNamespace(_awake=True, awake=True)
 state_module.ui_state = SimpleNamespace(
   started=False,
   ignition=False,
+  is_release=scene.get("params", {}).get("IsReleaseBranch") == "1",
   params=Params(),
   engaged=False,
   CP=None,
@@ -97,6 +106,7 @@ state_module.ui_state = SimpleNamespace(
   add_engaged_transition_callback=engaged_callbacks.append,
   add_offroad_transition_callback=offroad_callbacks.append,
   is_offroad=lambda: not state_module.ui_state.started,
+  is_onroad=lambda: state_module.ui_state.started,
   sm=Messages(deviceState=SimpleNamespace(networkType=scene.get("network_type", 0), networkMetered=scene.get("network_metered", False))),
   prime_state=SimpleNamespace(is_prime=lambda: scene['prime'] > 0, is_paired=lambda: scene['prime'] > -1),
   params_memory=SimpleNamespace(get=lambda key: scene.get('address')),
@@ -150,6 +160,33 @@ elif scene['kind'] == 'regulatory':
 
   gui_app.pop_widget = lambda: effects.effects.append({'pop': True})
   widget = regulatory(Path(__file__).resolve().parents[3], gui_app, scene['config']['big'])
+elif scene['kind'] == 'software':
+  import openpilot.selfdrive.ui.layouts.settings.software as software_module
+
+  class FixedDatetime(datetime.datetime):
+    @classmethod
+    def now(cls, tz=None):
+      return datetime.datetime(2026, 10, 1, 12, 34, 56).astimezone().astimezone(tz)
+
+  software_module.datetime = SimpleNamespace(datetime=FixedDatetime, UTC=datetime.UTC)
+  software_module.system_time_valid = lambda: scene.get('time_valid', True)
+
+  def updater_signal(command):
+    assert command in ['pkill -SIGUSR1 -f system.updated.updated', 'pkill -SIGHUP -f system.updated.updated']
+    effects.effects.append({'updater': 'Check' if '-SIGUSR1' in command else 'Download'})
+    return 0
+
+  software_module.os = SimpleNamespace(system=updater_signal)
+  widget = software_module.SoftwareLayout()
+elif scene['kind'] == 'developer':
+  if scene['config']['big']:
+    from openpilot.selfdrive.ui.layouts.settings.developer import DeveloperLayout
+  else:
+    import openpilot.selfdrive.ui.mici.layouts.settings.developer as developer_module
+
+    developer_module.system_time_valid = lambda: scene.get('time_valid', True)
+    DeveloperLayout = developer_module.DeveloperLayoutMici
+  widget = DeveloperLayout()
 elif scene['kind'] == 'device':
   from device_source import device_layout, mici_device_layout
 
@@ -191,6 +228,16 @@ elif scene['kind'] == 'prime':
 else:
   widget = CarrotWebDialog()
   widget._session._timestamp_factory = lambda: '12:34:56'
+if scene.get('ssh_host'):
+  import requests
+
+  original_get = requests.get
+
+  def owned_get(url, *args, **kwargs):
+    assert url.startswith('https://github.com/')
+    return original_get(scene['ssh_host'] + url.removeprefix('https://github.com'), *args, **kwargs)
+
+  requests.get = owned_get
 now = 0.0
 original = time.monotonic
 time.monotonic = lambda: now

@@ -166,3 +166,45 @@ drive actual gestures. Unopened driver/training pages are captured as factory
 requests, not claimed as rendered or integrated. Normal application composition,
 updater signal adapter, remaining settings/onboarding/home/onroad/camera and the
 complete runtime startup/upload gate remain pending.
+
+## Intermediate developer/software checkpoint (2026-10-01)
+
+Both developer layouts now use the original release, offroad, longitudinal and
+mutual-toggle policy. Compact SSH entry preserves its original whitespace and
+clock behavior; the large layout retains its trimmed username and separate
+confirmation. The software panel retains release notes, branch ordering, the
+strict ten-second idle wait, install/uninstall writes and the original timestamp
+presentation. These are existing settings ported without a new setting or guide
+change.
+
+The native updater adapter uses the running, positive `updated` PID from
+`managerState`, verifies the expected `openpilot-updated` executable and process
+start time, and uses an owned pidfd where available. Its legacy-kernel fallback
+rechecks identity before signalling; it cannot eliminate the final check-to-kill
+race. Missing or changed identity reports an unavailable outcome. The panel's
+waiting state is not a fabricated updater-success response. Normal application
+wiring remains pending.
+
+| Scenario | Binary observable | Captured evidence |
+| --- | --- | --- |
+| Developer release/offroad/CP gating, mutual toggles, alpha confirmation, ADB/SSH/debug, and owned HTTP key success/empty/404/pending responses in English and Korean | 52 real original/native render scenarios; identical per-frame Params/effects and zero final differing pixels | `stage6-developer-final/results.json`, paired PNGs/traces and `http-requests.json` |
+| Software release notes, check/download states, timeout, install/uninstall, branch selection, malformed Params and elapsed-date boundaries | 52 real original/native render scenarios; identical effects and pixels, including unpadded early-year dates | `stage6-software-final/results.json` and paired PNGs/traces |
+| Owned updater processes: actual signals, wrong identity, invalid/stopped PIDs, exec replacement and restart | 17 managerState/pidfd/legacy-path cases pass using real owned children | `stage6-updater-signal/results.json` and child/build logs |
+| Params TIME parsing | 17,258 CPython/native conversions agree for calendar/week/basic dates, offsets, fractions, invalid and mutated strings | `stage6-datetime/results.json` |
+| Prior toggle/Firehose, device, regulatory/language and compact-dialog interactions | 20 + 64 + 20 scenarios retain exact original/native pixels and traces | `stage6-settings-regression/`, `stage6-device-regression/`, `stage6-dialogs-regression/` |
+| Prior product widgets | 30 original/native screenshots remain pixel-identical | `stage6-widgets-regression/results.json` |
+| Package and static checks | Package tests, Clippy with denied warnings and Ruff pass | `stage6-tests.log`, `stage6-clippy-final.log`, `stage6-ruff-final.log` |
+
+The timestamp compatibility investigation used CPython's
+[`_datetimemodule.c` parser](https://github.com/python/cpython/blob/v3.12.3/Modules/_datetimemodule.c),
+then checked behavior directly against the installed pinned Python. The pure
+Python fallback parser alone does not establish C-parser equivalence.
+
+Evidence remains under `.omo/evidence/ui-application-148/`. SSH uses only an owned
+loopback server and fictitious keys; updater signalling targets only owned test
+children. Modal results are injected at the policy callback boundary while the
+separate compact-dialog regression drives actual gestures. No vehicle, C3X,
+account, real updater, host power operation or production selection is involved.
+This is still an intermediate #148 checkpoint: network/eGPU/settings composition,
+home/onboarding/sidebar/onroad/camera, native application startup and the complete
+runtime startup/upload gate are unfinished.
