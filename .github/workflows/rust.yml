@@ -264,6 +264,8 @@ jobs:
         run: python rust/tools/check_web_upload.py --binary rust/target/debug/examples/web_upload_trace --output "$RUNNER_TEMP/support-runtime/web-upload-reference"
       - name: Exercise uploader with original deviceState IPC, synthetic Params and loopback uploads
         run: python rust/tools/check_uploader_daemon.py --binary rust/target/debug/openpilot-uploader --output "$RUNNER_TEMP/support-runtime/uploader-native"
+      - name: Keep interrupted socket reads within one upload and its original deadline
+        run: python rust/tools/check_uploader_http_interrupted.py --binary rust/target/debug/openpilot-uploader --output "$RUNNER_TEMP/support-runtime/uploader-http-interrupted"
       - name: Compare real Params getters and uploader behavior through both collectors
         run: |
           python rust/tools/check_params_string.py --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so \
