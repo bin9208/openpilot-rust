@@ -41,7 +41,8 @@ def scenario(args, side, hotspot):
     assert address.startswith('unix:')
     service = Service(address, hotspot)
     process = None
-    records, events = [], []
+    records, events, gate_observations = [], [], []
+    gate_active = False
     try:
       service.start()
       environment = os.environ | {'DBUS_SYSTEM_BUS_ADDRESS': address, 'PARAMS_ROOT': str(root / 'params'), 'OPENPILOT_PREFIX': prefix,
@@ -52,7 +53,10 @@ def scenario(args, side, hotspot):
         executable = str(Path(f'/proc/{process.pid}/exe').resolve())
         if side == 'native':
           assert executable == str(args.binary), executable
-        process.stdin.write(json.dumps({'address': address, 'launcher': str(args.launcher)}) + '\n')
+        start = {'address': address, 'launcher': str(args.launcher)}
+        if args.defer_final_forgotten and side == 'source':
+          start['defer_final_forgotten'] = True
+        process.stdin.write(json.dumps(start) + '\n')
         process.stdin.flush()
 
         def request(payload):
@@ -63,6 +67,9 @@ def scenario(args, side, hotspot):
           assert line, (process.poll(), (output / 'stderr.log').read_text())
           row = json.loads(line)
           events.extend(row.get('events', []))
+          if 'callback_gate' in row:
+            gate_observations.append({'request': payload, 'gate': row['callback_gate'], 'saved_ssids': row['snapshot']['saved_ssids'],
+                                      'forgotten_count': events.count({'Forgotten': 'B'})})
           return row
 
         def wait_for(predicate, timeout=8):
@@ -71,6 +78,8 @@ def scenario(args, side, hotspot):
             value = request({'op': 'snapshot'})['snapshot']
             if predicate(value):
               return value
+            if gate_active and side == 'source' and 'B' not in value['saved_ssids']:
+              request({'op': 'release_final_forget'})
             assert time.monotonic() < deadline, (side, value, service.calls[-8:], (output / 'stderr.log').read_text())
             time.sleep(.02)
 
@@ -99,8 +108,12 @@ def scenario(args, side, hotspot):
           records.append(wait_for(lambda s: s['tethering_password'] == 'fixture-new-password' and s['connected_ssid'] == 'weedle-test' and saves() >= 4))
           send('SetTetheringActive', False)
           records.append(wait_for(lambda s: s['wifi_state']['ssid'] is None))
+          forgotten_before = events.count({'Forgotten': 'B'})
+          if args.defer_final_forgotten and side == 'source':
+            request({'op': 'arm_final_forget'})
+            gate_active = True
           send('Forget', 'B')
-          records.append(wait_for(lambda s: 'B' not in s['saved_ssids']))
+          records.append(wait_for(lambda s: 'B' not in s['saved_ssids'] and events.count({'Forgotten': 'B'}) > forgotten_before))
         else:
           wait_for(lambda _: any(call['method'] == 'AddConnection' for call in service.calls))
         started = time.monotonic()
@@ -116,6 +129,7 @@ def scenario(args, side, hotspot):
       print('PASS', side, 'existing' if hotspot else 'create', flush=True)
       return result
     finally:
+      (output / 'callback-gate.json').write_text(json.dumps(gate_observations, indent=2) + '\n')
       (output / 'calls.json').write_text(json.dumps(service.calls, indent=2) + '\n')
       if process is not None and process.poll() is None:
         process.kill()
@@ -133,6 +147,7 @@ def main():
   parser.add_argument('--launcher', type=Path, required=True)
   parser.add_argument('--binding', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
+  parser.add_argument('--defer-final-forgotten', action='store_true')
   args = parser.parse_args()
   args.binary, args.launcher, args.binding, args.output = [path.resolve() for path in (args.binary, args.launcher, args.binding, args.output)]
   for hotspot in (True, False):
