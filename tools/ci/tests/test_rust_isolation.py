@@ -9,6 +9,20 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_gnss_requires_source_serial_and_daemon_checks(self) -> None:
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['gnss-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_ublox.py', 'check_pigeon.py', 'check_ublox_serial.py', 'check_ublox_daemons.py',
+                         'check_qcomgps_reference.py', 'check_qcomgps_daemon.py', 'check_qcomgps_nmea.py',
+                         'check_qcomgps_assistance.py', 'build_msgq_python.py'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python rust/tools/check_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+
     def test_sensor_audio_requires_original_and_live_native_checks(self) -> None:
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['sensor-audio']
@@ -141,7 +155,7 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'web-upload-timeouts'})
+        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime', 'web-upload-timeouts'})
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
@@ -152,6 +166,7 @@ class RustIsolationTests(unittest.TestCase):
                                             'PLATFORM': '${{ needs.platform-runtime.result }}',
                                             'STARTUP_SERVICES': '${{ needs.startup-services.result }}',
                                             'SENSOR_AUDIO': '${{ needs.sensor-audio.result }}',
+                                            'GNSS': '${{ needs.gnss-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]

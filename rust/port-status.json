@@ -316,7 +316,11 @@
       "name": "pigeond",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.ubloxd.pigeond",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/ublox; openpilot-pigeond with native serial, GPIO, Params, AssistNow and ubloxRaw publication",
+      "native_dependencies": ["Linux terminal and GPIO APIs", "CXX DTR/RTS ioctl boundary", "original msgq transport", "native logging, hardware-control, typed Params, timed clock validation and HTTP transport"],
+      "runtime_scope": "unchanged-source policy, owned PTY, native IPC lifecycle and local HTTP fixtures; no physical receiver/GPIO, ARM/AGNOS or device acceptance",
+      "evidence": "docs/rust-port/ublox-validation.md",
       "production_replaced": false
     },
     {
@@ -339,7 +343,10 @@
       "name": "qcomgpsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.qcomgpsd.qcomgpsd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/qcomgpsd; native diagnostic framing, five GNSS reports, modem setup/assistance/lifecycle and separate NMEA debug entrypoint",
+      "native_dependencies": ["Linux serial/termios/flock and GPIO34 sysfs", "Quectel/Qualcomm modem firmware", "mmcli/ModemManager assistance injection", "HTTP/TLS transport", "original msgq through CXX; existing native logging transport"],
+      "runtime_scope": "source report/setup comparisons and real native processes with private PTYs, GPIO files, loopback HTTP and isolated msgq; NMEA source delimiter-only checksum and nonempty AT response TypeError preserved; not selected by manager; whole-runtime startup/upload, AGNOS and device acceptance pending; see docs/naver/rust-qcomgps-130.md",
       "production_replaced": false
     },
     {
@@ -436,7 +443,11 @@
       "name": "ubloxd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.ubloxd.ubloxd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/ublox; openpilot-ubloxd framing, binary field readers, GPS/GLONASS ephemeris and full cereal publication",
+      "native_dependencies": ["original msgq transport", "generated full cereal schema"],
+      "runtime_scope": "actual-source synthetic packet and native IPC comparisons, strict Miri; physical GNSS timing, ARM/AGNOS and device acceptance remain unvalidated",
+      "evidence": "docs/rust-port/ublox-validation.md",
       "production_replaced": false
     },
     {
