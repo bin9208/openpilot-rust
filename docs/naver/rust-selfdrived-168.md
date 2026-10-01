@@ -118,3 +118,23 @@ two-sided float comparison; the comparison is now expressed as named
 acceleration/deceleration predicates, retaining NaN semantics without disabling
 the lint. Generic native message decoding and the continuous selfdrived loop
 remain subsequent work. No validity or safety threshold has been relaxed.
+
+## Cut-in audio event helper
+
+`cutin::promoted` and `cutin::Tracker` port the unchanged alert candidate matching
+and repeat suppression helper. Selection requires the existing nonnegative
+leadTwo identity and the original three 0.1 thresholds; repeated physical
+objects retain the original same-ID/re-ID distance, lateral and velocity limits.
+Disabled updates and explicit resets clear previous candidates, and candidate
+order and duplicates remain observable. Radar detection and lead selection are
+unchanged; this helper only decides the existing selfdrived audio event.
+
+`cutin-final/report.json` records 5,786 exact source/native steps covering both
+selection and complete retained candidate state. Cases include boundary-adjacent
+binary64 values, negative/zero/large IDs, duplicates, enable/reset sequences,
+5,000 seeded mixed frames and NaN/infinite/signed-zero inputs. Input/output bit
+patterns preserve these values through the fixture protocol. Source SHA256 is
+`ed39e0ad32462ee7ff2ef605303a06282406fe81d21d458d4495ecfc27a521e4`;
+native example SHA256 is
+`e16e0f55bb130f0a13a5c0ee7b2496efa49071f04ece078180573fe3d9963589`.
+Bounded build, strict library/example Clippy, Ruff and diff checks passed.
