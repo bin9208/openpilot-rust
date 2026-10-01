@@ -51,15 +51,22 @@ impl Widget for Toggle {
             ..rect
         };
     }
-    fn mouse_release(&mut self, _: Point, _: &Frame<'_>) {
+    fn mouse_release(
+        &mut self,
+        _: Point,
+        _: &Frame<'_>,
+        _draw: &mut dyn Draw,
+    ) -> Result<(), Error> {
         if !self.state.enabled.get() {
-            return;
+            return Ok(());
         }
         self.clicked = true;
         self.set_value(!self.value);
         if let Some(changed) = &mut self.changed {
             changed(self.value);
         }
+
+        Ok(())
     }
     fn paint(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         if (self.progress - self.target).abs() > 0.01 {

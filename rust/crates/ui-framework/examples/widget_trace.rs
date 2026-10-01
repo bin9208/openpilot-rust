@@ -35,15 +35,31 @@ impl Widget for Probe {
             .push(format!("paint:{}", self.state.is_pressed()));
         Ok(RenderResult::None)
     }
-    fn mouse_press(&mut self, _: Point, _: &Frame<'_>) {
+    fn mouse_press(&mut self, _: Point, _: &Frame<'_>, _draw: &mut dyn Draw) -> Result<(), Error> {
         self.calls.push("press".into());
+
+        Ok(())
     }
-    fn mouse_release(&mut self, _: Point, frame: &Frame<'_>) {
+    fn mouse_release(
+        &mut self,
+        _: Point,
+        frame: &Frame<'_>,
+        _draw: &mut dyn Draw,
+    ) -> Result<(), Error> {
         self.calls.push("release".into());
         self.state.release(frame.now);
+
+        Ok(())
     }
-    fn mouse_event(&mut self, event: MouseEvent, _: &Frame<'_>) {
+    fn mouse_event(
+        &mut self,
+        event: MouseEvent,
+        _: &Frame<'_>,
+        _draw: &mut dyn Draw,
+    ) -> Result<(), Error> {
         self.calls.push(format!("event:{}", event.slot));
+
+        Ok(())
     }
 }
 struct NoDraw;
@@ -98,11 +114,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         probe.state.touch_valid = Some(Box::new(move || valid));
         let frame = Frame {
             now: input.now,
+            monotonic: 0.0,
+            keyboard: &Default::default(),
+            navigation: &Default::default(),
             dt: 0.05,
             target_fps: 20.0,
             awake: input.awake,
             events: &input.events,
             last_event: input.events.last().copied().unwrap_or_default(),
+            cursor: openpilot_ui_framework::geometry::Point::default(),
             wheel: 0.0,
             show_touches: false,
         };

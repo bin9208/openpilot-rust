@@ -159,11 +159,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
             let frame = Frame {
                 now: index.to_f64().ok_or("frame overflow")? / 20.0,
+                monotonic: 0.0,
+                keyboard: &Default::default(),
+                navigation: &Default::default(),
                 dt: 0.05,
                 target_fps: 20.0,
                 awake: true,
                 events,
                 last_event: events.last().copied().unwrap_or_default(),
+                cursor: openpilot_ui_framework::geometry::Point::default(),
                 wheel: 0.0,
                 show_touches: false,
             };

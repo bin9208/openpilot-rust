@@ -58,6 +58,34 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn rectangle_lines(&mut self, rect: Rect, color: u32) -> Result<(), Error> {
+        self.renderer.rectangle_lines(rect, color)
+    }
+
+    fn triangle_strip(&mut self, points: &[Point], color: u32) -> Result<(), Error> {
+        self.renderer.triangle_strip(points, color)
+    }
+    fn shaded_strip(
+        &mut self,
+        points: &[Point],
+        paint: crate::draw::PolygonPaint<'_>,
+    ) -> Result<(), Error> {
+        self.renderer.shaded_strip(points, paint)
+    }
+
+    fn rounded_segments(
+        &mut self,
+        rect: Rect,
+        roundness: f32,
+        segments: i32,
+        color: u32,
+        border: bool,
+    ) -> Result<(), Error> {
+        self.renderer
+            .rounded_segments(rect, roundness, segments, color, border);
+        Ok(())
+    }
+
     fn font_scale(&self) -> f64 {
         if self.renderer.config.big {
             1.242
@@ -88,6 +116,15 @@ impl Draw for Canvas {
     }
     fn circle(&mut self, center: Point, radius: f32, color: u32) -> Result<(), Error> {
         self.renderer.circle(center, radius, color);
+        Ok(())
+    }
+    fn circle_gradient(
+        &mut self,
+        center: Point,
+        radius: f32,
+        colors: [u32; 2],
+    ) -> Result<(), Error> {
+        self.renderer.circle_gradient(center, radius, colors);
         Ok(())
     }
     fn gradient(&mut self, rect: Rect, colors: [u32; 4]) -> Result<(), Error> {

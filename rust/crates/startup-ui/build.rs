@@ -9,6 +9,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     cxx_build::bridge("src/bridge.rs")
         .file("native/bridge.cc")
         .file("native/raylib_loader.cc")
+        .file("native/graphics.cc")
+        .file("native/egl.cc")
         .include("native")
         .include(raylib.join("include"))
         .std("c++17")
@@ -20,6 +22,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "native/bridge.cc",
         "native/bridge.h",
         "native/raylib_loader.cc",
+        "native/graphics.cc",
+        "native/egl.cc",
+        "native/egl.h",
     ] {
         println!("cargo:rerun-if-changed={file}");
     }

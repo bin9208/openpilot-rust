@@ -53,7 +53,7 @@ impl Widget for HBox {
                     VerticalAlignment::Bottom => rect.height - child_rect.height,
                 };
             child.set_position(x, y);
-            child.state_mut().parent_rect = Some(rect);
+            child.set_parent_rect(rect);
             child.render(frame, draw)?;
         }
         Ok(RenderResult::None)

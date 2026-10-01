@@ -2,6 +2,9 @@
 // borrowed strings/slices, never retains Rust pointers, and releases raylib objects once.
 #[cxx::bridge(namespace = "startup_ui")]
 pub mod ffi {
+    extern "Rust" {
+        fn trace_log(level: i32, message: &[u8]);
+    }
     #[derive(Clone, Copy, Debug)]
     struct Point {
         x: f32,
@@ -22,6 +25,16 @@ pub mod ffi {
     }
     unsafe extern "C++" {
         include!("bridge.h");
+        include!("egl.h");
+        type EglApi;
+        fn egl_api(egl_path: &str, gles_path: &str) -> Result<UniquePtr<EglApi>>;
+        fn current_display(self: &EglApi) -> u64;
+        fn initialize(self: &EglApi, display: u64) -> bool;
+        fn extensions(self: &EglApi, display: u64) -> String;
+        fn error(self: &EglApi) -> i32;
+        fn create_image(self: &EglApi, display: u64, attributes: &[i32]) -> Result<u64>;
+        fn destroy_image(self: &EglApi, display: u64, image: u64) -> bool;
+        fn bind_image(self: &EglApi, texture: u32, image: u64);
         type Surface;
         type Image;
         fn create(width: i32, height: i32, title: &str, flags: u32) -> Result<UniquePtr<Surface>>;
@@ -80,6 +93,13 @@ pub mod ffi {
             tint: u32,
         ) -> Result<()>;
         fn circle(self: Pin<&mut Surface>, center: Point, radius: f32, color: u32);
+        fn circle_gradient(
+            self: Pin<&mut Surface>,
+            center: Point,
+            radius: f32,
+            inner: u32,
+            outer: u32,
+        );
         fn gradient(
             self: Pin<&mut Surface>,
             rect: Rect,
@@ -89,12 +109,66 @@ pub mod ffi {
             bottom_right: u32,
         );
         fn line(self: Pin<&mut Surface>, start: Point, end: Point, thick: f32, color: u32);
+        fn rounded_segments(
+            self: Pin<&mut Surface>,
+            rect: Rect,
+            roundness: f32,
+            segments: i32,
+            color: u32,
+            border: bool,
+        );
         fn rounded(self: Pin<&mut Surface>, rect: Rect, roundness: f32, color: u32, border: bool);
         fn scissor(self: Pin<&mut Surface>, rect: Rect, enabled: bool);
         fn render_target(self: Pin<&mut Surface>, width: i32, height: i32) -> Result<()>;
+        fn has_render_target(self: &Surface) -> bool;
+        fn burn_in(self: Pin<&mut Surface>, vertex: &str, fragment: &str) -> Result<()>;
+        fn capture_pixels(self: &Surface) -> Result<Vec<u8>>;
+        fn shader_load(self: Pin<&mut Surface>, vertex: &str, fragment: &str) -> Result<u32>;
+        fn shader_unload(self: Pin<&mut Surface>, shader: u32) -> Result<()>;
+        fn uniform_floats(
+            self: Pin<&mut Surface>,
+            shader: u32,
+            name: &str,
+            values: &[f32],
+            kind: i32,
+            count: i32,
+        ) -> Result<()>;
+        fn uniform_int(self: Pin<&mut Surface>, shader: u32, name: &str, value: i32) -> Result<()>;
+        fn uniform_matrix(
+            self: Pin<&mut Surface>,
+            shader: u32,
+            name: &str,
+            values: &[f32],
+        ) -> Result<()>;
+        fn triangle_strip(
+            self: Pin<&mut Surface>,
+            points: &[Point],
+            color: u32,
+            shader: u32,
+            shaded: bool,
+        ) -> Result<()>;
+        fn set_title(self: Pin<&mut Surface>, title: &str);
+        fn fps(self: &Surface) -> i32;
+        fn draw_fps(self: Pin<&mut Surface>, x: i32, y: i32);
+        fn key_pressed(self: &Surface) -> i32;
+        fn char_pressed(self: &Surface) -> i32;
+        fn key_down(self: &Surface, key: i32) -> bool;
+        fn key_started(self: &Surface, key: i32) -> bool;
+        fn mouse_position(self: &Surface) -> Point;
+        fn finish_content(self: Pin<&mut Surface>, scale: f32);
+        fn present(self: Pin<&mut Surface>);
         fn begin(self: Pin<&mut Surface>, scale: f32);
         fn end(self: Pin<&mut Surface>, scale: f32);
         fn screenshot(self: &Surface, path: &str) -> Result<()>;
+        fn screen_screenshot(self: &Surface, path: &str) -> Result<()>;
+        fn rectangle_lines(
+            self: Pin<&mut Surface>,
+            x: i32,
+            y: i32,
+            width: i32,
+            height: i32,
+            color: u32,
+        );
         fn should_close(self: &Surface) -> bool;
         fn target_fps(self: Pin<&mut Surface>, fps: i32);
         fn frame_time(self: &Surface) -> f32;
@@ -104,4 +178,8 @@ pub mod ffi {
         fn poll_input();
         fn sample_input(slot: i32) -> Sample;
     }
+}
+
+fn trace_log(level: i32, message: &[u8]) {
+    crate::logging::trace_log(level, &String::from_utf8_lossy(message));
 }

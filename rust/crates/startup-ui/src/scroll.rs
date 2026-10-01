@@ -14,6 +14,7 @@ pub struct Scroll {
     start_y: f64,
     last_time: f64,
     velocity_initialized: bool,
+    fps: f64,
 }
 impl Default for Scroll {
     fn default() -> Self {
@@ -25,13 +26,33 @@ impl Default for Scroll {
             start_y: 0.0,
             last_time: 0.0,
             velocity_initialized: true,
+            fps: 20.0,
         }
     }
 }
 impl Scroll {
+    pub fn with_fps(fps: f64) -> Result<Self, crate::Error> {
+        if !fps.is_finite() || fps <= 0.0 {
+            return Err(crate::Error::Contract("scroll FPS must be positive"));
+        }
+        Ok(Self {
+            fps,
+            ..Self::default()
+        })
+    }
+    pub fn set_offset(&mut self, position: f64) {
+        self.offset = position;
+        self.velocity = 0.0;
+        self.state = State::Idle;
+    }
+    pub fn touch_valid(&self) -> bool {
+        matches!(self.state, State::Idle) && self.velocity.abs() < 120.0
+    }
+
     fn velocity_update(&mut self, value: f64) {
         self.velocity = if self.velocity_initialized {
-            0.5 * self.velocity + 0.5 * value
+            let alpha = (1.0 / self.fps) / (0.05 + 1.0 / self.fps);
+            (1.0 - alpha) * self.velocity + alpha * value
         } else {
             self.velocity_initialized = true;
             value
@@ -44,7 +65,7 @@ impl Scroll {
         events: &[MouseEvent],
         wheel: f32,
     ) -> f32 {
-        let maximum = f64::from((content_height - bounds.height).max(0.0));
+        let maximum = (f64::from(content_height) - f64::from(bounds.height)).max(0.0);
         for event in events.iter().filter(|event| event.slot == 0) {
             match self.state {
                 State::Idle => {
@@ -86,15 +107,19 @@ impl Scroll {
             State::Idle => {
                 let outside = self.offset > 0.0 || self.offset < -maximum;
                 self.velocity = if self.velocity.abs() > 2.0 {
-                    self.velocity * (-5.0_f64 / 20.0).exp().powi(if outside { 2 } else { 1 })
+                    self.velocity
+                        * (-5.0_f64 / self.fps)
+                            .exp()
+                            .powi(if outside { 2 } else { 1 })
                 } else {
                     0.0
                 };
                 if outside {
-                    self.offset = (1.0 - 0.05 / (0.1 + 0.05)) * self.offset
-                        + (0.05 / (0.1 + 0.05)) * if self.offset > 0.0 { 0.0 } else { -maximum };
+                    self.offset = (1.0 - (1.0 / self.fps) / (0.1 + 1.0 / self.fps)) * self.offset
+                        + ((1.0 / self.fps) / (0.1 + 1.0 / self.fps))
+                            * if self.offset > 0.0 { 0.0 } else { -maximum };
                 }
-                self.offset += self.velocity / 20.0;
+                self.offset += self.velocity / self.fps;
             }
             State::Dragging => {
                 if events.is_empty() {

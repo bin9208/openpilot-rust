@@ -25,12 +25,55 @@ pub struct ImageDraw {
     pub rotation: f32,
     pub tint: u32,
 }
+pub enum PolygonPaint<'a> {
+    Color(u32),
+    Gradient {
+        start: Point,
+        end: Point,
+        colors: &'a [u32],
+        stops: &'a [f32],
+    },
+}
 pub trait Draw: Measure {
+    fn rectangle_lines(&mut self, rect: Rect, color: u32) -> Result<(), Error> {
+        self.border(rect, 0.0, color)
+    }
+
+    fn triangle_strip(&mut self, _points: &[Point], _color: u32) -> Result<(), Error> {
+        Err(Error::Contract("triangle drawing unavailable"))
+    }
+    fn shaded_strip(&mut self, _points: &[Point], _paint: PolygonPaint<'_>) -> Result<(), Error> {
+        Err(Error::Contract("polygon shader unavailable"))
+    }
+
+    fn rounded_segments(
+        &mut self,
+        rect: Rect,
+        roundness: f32,
+        _segments: i32,
+        color: u32,
+        border: bool,
+    ) -> Result<(), Error> {
+        if border {
+            self.border(rect, roundness, color)
+        } else {
+            self.rounded(rect, roundness, color)
+        }
+    }
+
     fn font_scale(&self) -> f64 {
         1.0
     }
     fn circle(&mut self, _center: Point, _radius: f32, _color: u32) -> Result<(), Error> {
         Err(Error::Contract("circle drawing unavailable"))
+    }
+    fn circle_gradient(
+        &mut self,
+        _center: Point,
+        _radius: f32,
+        _colors: [u32; 2],
+    ) -> Result<(), Error> {
+        Err(Error::Contract("circle gradient drawing unavailable"))
     }
     fn gradient(&mut self, _rect: Rect, _colors: [u32; 4]) -> Result<(), Error> {
         Err(Error::Contract("gradient drawing unavailable"))
