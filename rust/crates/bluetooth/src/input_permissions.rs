@@ -8,11 +8,14 @@ use std::{
     os::{fd::OwnedFd, unix::process::ExitStatusExt},
     path::Path,
     process::{Child, Command, ExitStatus, Stdio},
+    sync::atomic::{AtomicBool, Ordering},
     time::{Duration, Instant},
 };
 
 #[derive(Debug, thiserror::Error)]
 pub enum PermissionError {
+    #[error("Bluetooth input reader stopped")]
+    Stopped,
     #[error("{}", crate::input::io_message(.0, None))]
     Io(#[from] io::Error),
     #[error("{}", crate::input::io_message(.0, Some(Path::new("sudo"))))]
@@ -80,7 +83,11 @@ impl Pipe {
     }
 }
 
-fn capture(child: &mut Child, command: &str) -> Result<ExitStatus, PermissionError> {
+fn capture(
+    child: &mut Child,
+    command: &str,
+    stop: &AtomicBool,
+) -> Result<ExitStatus, PermissionError> {
     let started = Instant::now();
     let mut stdout = Pipe::new(
         child
@@ -97,6 +104,9 @@ fn capture(child: &mut Child, command: &str) -> Result<ExitStatus, PermissionErr
             .into(),
     )?;
     loop {
+        if stop.load(Ordering::Relaxed) {
+            return Err(PermissionError::Stopped);
+        }
         let remaining = Duration::from_secs(3)
             .checked_sub(started.elapsed())
             .ok_or_else(|| PermissionError::Timeout {
@@ -125,8 +135,11 @@ fn capture(child: &mut Child, command: &str) -> Result<ExitStatus, PermissionErr
     }
 }
 
-pub(crate) fn grant(path: &Path) -> Result<(), PermissionError> {
+pub(crate) fn grant(path: &Path, stop: &AtomicBool) -> Result<(), PermissionError> {
     for args in [["-n", "chgrp", "gpio"], ["-n", "chmod", "g+rw"]] {
+        if stop.load(Ordering::Relaxed) {
+            return Err(PermissionError::Stopped);
+        }
         let command = format!(
             "['sudo', '-n', '{}', '{}', '{}']",
             args[1],
@@ -141,7 +154,7 @@ pub(crate) fn grant(path: &Path) -> Result<(), PermissionError> {
             .spawn()
             .map_err(PermissionError::Spawn)?;
         let mut child = OwnedChild(child);
-        let status = capture(&mut child.0, &command)?;
+        let status = capture(&mut child.0, &command, stop)?;
         if let Some(signal) = status.signal() {
             return Err(PermissionError::Signal { command, signal });
         }

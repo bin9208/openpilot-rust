@@ -72,6 +72,36 @@ The final Miri run uses `input-miri-target` after the reused cache reported
 missing dependency metadata; `input-miri-isolated.log` records the clean pass.
 No system input permissions or Bluetooth services were changed by the fixtures.
 
+The native `openpilot-bluetoothd` process now connects the input owner and
+gesture engine to the existing `carState`, `deviceState` and `selfdriveState`
+transport. It retains the source runtime/config paths, nonblocking exclusive
+reader lock, polling and reload/status cadence. Explicit path and frame
+arguments support owned host validation. It does not launch a Python runtime.
+
+The original main loop and native binary both pass actual cereal IPC plus
+owned-FIFO comparisons for offroad suppression, onroad command publication,
+invalid carState, invalid CAN, stale carState, brake cancellation of a held
+command, learning, partial-read recovery, device disappearance/reappearance
+and reader-lock exclusion. All recorded semantic results and five complete
+open/grab/clock/close sequences match. These complement the 337 deterministic
+engine iterations; sampled runtime clocks are checked by deadlines and state
+ordering rather than compared as equal timestamps.
+
+Three additional source/native shutdown scenarios match: SIGINT writes the
+stopped status and exits with signal 2; default SIGTERM exits with signal 15
+without writing stopped status; SIGINT during a blocked permission command
+kills and reaps the owned child before exit. Both ordinary signal paths release
+the lock and descriptors so a fresh reader can start. Native exec traces from
+bounded process runs contain only the native executable. The original sixteen
+input-owner scenarios still pass after adding cooperative interruption.
+
+Actual IPC/lifecycle results are retained in `daemon-ipc-final` and
+`daemon-shutdown-final`; individual signal baselines are in
+`source-signal-green`/`native-signal-green`. Initial fixture attempts used an
+invalid mapping and incorrectly expected a release event after offroad hold
+cancellation. Corrected fixtures use source-valid mappings and require
+unchanged event state on those blocked inputs; no source behavior was changed.
+
 Source SHA-256:
 `74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633`.
 Exact binary hashes, inputs, original/native outputs and command logs are in the
@@ -99,9 +129,8 @@ to an owned evidence directory.
 
 ## Still in progress
 
-Native daemon lifecycle,
-private BlueZ protocol comparisons and actual
-native IPC remain to be implemented/verified. This stage does not mark the
+Private BlueZ protocol handling and comparisons remain to be
+implemented/verified. This stage does not mark the
 component ported and does not establish a complete runtime candidate, physical
 Bluetooth behavior, vehicle acceptance or CPU savings. No device or system
 Bluetooth service was accessed.

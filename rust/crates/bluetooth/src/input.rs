@@ -9,6 +9,7 @@ use std::{
         unix::fs::{FileTypeExt, OpenOptionsExt},
     },
     path::{Path, PathBuf},
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 const EVENT_BYTES: usize = 24;
@@ -16,6 +17,8 @@ const _: () = assert!(size_of::<libc::c_long>() == 8);
 
 #[derive(Debug, thiserror::Error)]
 pub enum InputError {
+    #[error("Bluetooth input reader stopped")]
+    Stopped,
     #[error("HID device disconnected or incomplete event")]
     Disconnected,
     #[error("input timestamp cannot be converted to binary64")]
@@ -43,6 +46,13 @@ impl AsFd for Input {
 
 impl Input {
     pub fn open(path: &Path) -> Result<Self, InputError> {
+        Self::open_interruptible(path, &AtomicBool::new(false))
+    }
+
+    pub fn open_interruptible(path: &Path, stop: &AtomicBool) -> Result<Self, InputError> {
+        if stop.load(Ordering::Relaxed) {
+            return Err(InputError::Stopped);
+        }
         let open = || {
             OpenOptions::new()
                 .read(true)
@@ -64,7 +74,7 @@ impl Input {
                         source: error,
                     });
                 }
-                crate::input_permissions::grant(path)?;
+                crate::input_permissions::grant(path, stop)?;
                 open().map_err(|source| InputError::Open {
                     path: path.to_owned(),
                     source,
@@ -77,14 +87,17 @@ impl Input {
                 })
             }
         };
-        Self::claim(file)
+        Self::claim(file, stop)
     }
 
-    fn claim(file: File) -> Result<Self, InputError> {
+    fn claim(file: File, stop: &AtomicBool) -> Result<Self, InputError> {
         crate::input_kernel::claim(&file)?;
         let mut owned = Self(file);
         let mut buffer = [0; EVENT_BYTES * 64];
         loop {
+            if stop.load(Ordering::Relaxed) {
+                return Err(InputError::Stopped);
+            }
             match owned.0.read(&mut buffer) {
                 Ok(0) => return Ok(owned),
                 Ok(_) => {}
@@ -96,8 +109,15 @@ impl Input {
     }
 
     pub fn read(&mut self) -> Result<InputBatch, InputError> {
+        self.read_interruptible(&AtomicBool::new(false))
+    }
+
+    pub fn read_interruptible(&mut self, stop: &AtomicBool) -> Result<InputBatch, InputError> {
         let mut buffer = [0; EVENT_BYTES * 128];
         loop {
+            if stop.load(Ordering::Relaxed) {
+                return Err(InputError::Stopped);
+            }
             match self.0.read(&mut buffer) {
                 Ok(length) => return Ok(InputBatch::Events(decode_events(&buffer[..length])?)),
                 Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
