@@ -102,8 +102,11 @@ impl BigButton {
             match &mut self.kind {
                 Kind::Toggle(checked) => *checked = binding.boolean()?,
                 Kind::Multiple { options, .. } => {
-                    let index = usize::try_from(binding.integer()?)
-                        .map_err(|_| Error::Contract("negative UI option index"))?;
+                    let raw = i64::from(binding.integer()?);
+                    let length = i64::try_from(options.len())
+                        .map_err(|_| Error::Contract("UI option count overflow"))?;
+                    let index = usize::try_from(if raw < 0 { length + raw } else { raw })
+                        .map_err(|_| Error::Contract("UI option index out of range"))?;
                     self.value = options
                         .get(index)
                         .ok_or(Error::Contract("UI option index out of range"))?

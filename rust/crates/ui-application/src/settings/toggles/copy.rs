@@ -1,0 +1,14 @@
+//! Source toggle definitions and localized copy (MIT).
+use super::Definition;
+pub const DEFINITIONS:&[Definition]=&[
+    Definition{key:"OpenpilotEnabledToggle",title:"Enable openpilot",description:"Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature.",icon:"chffr_wheel.png",restart:true},
+    Definition{key:"ExperimentalMode",title:"Experimental Mode",description:"",icon:"experimental_white.png",restart:false},
+    Definition{key:"DisengageOnAccelerator",title:"Disengage on Accelerator Pedal",description:"When enabled, pressing the accelerator pedal will disengage openpilot.",icon:"disengage_on_accelerator.png",restart:false},
+    Definition{key:"IsLdwEnabled",title:"Enable Lane Departure Warnings",description:"Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).",icon:"warning.png",restart:false},
+    Definition{key:"AlwaysOnDM",title:"Always-On Driver Monitoring",description:"Enable driver monitoring even when openpilot is not engaged.",icon:"monitoring.png",restart:false},
+    Definition{key:"RecordFront",title:"Record and Upload Driver Camera",description:"Upload data from the driver facing camera and help improve the driver monitoring algorithm.",icon:"monitoring.png",restart:true},
+    Definition{key:"RecordAudio",title:"Record and Upload Microphone Audio",description:"Record and store microphone audio while driving. The audio will be included in the dashcam video in comma connect.",icon:"microphone.png",restart:true},
+    Definition{key:"IsMetric",title:"Use Metric System",description:"Display speed in km/h instead of mph.",icon:"metric.png",restart:false},
+];
+pub const PERSONALITY:&str="Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.";
+pub const EXPERIMENTAL:&str="openpilot defaults to driving in chill mode. Experimental mode enables alpha-level features that aren't ready for chill mode. Experimental features are listed below:<br><h4>End-to-End Longitudinal Control</h4><br>Let the driving model control the gas and brakes. openpilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.<br><h4>New Driving Visualization</h4><br>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.";

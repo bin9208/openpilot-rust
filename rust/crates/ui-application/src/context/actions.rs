@@ -40,6 +40,8 @@ pub enum Action {
     SetOffroadBrightness(Option<i32>),
     SetInteractiveTimeout(Option<i32>),
     RefreshParams,
+    ShowTouches(bool),
+    ShowFps(bool),
     SetLanguage(String),
     Exit,
 }

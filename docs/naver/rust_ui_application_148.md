@@ -112,3 +112,28 @@ checks. The shared registration decoder is only made public for reuse; its
 conversion policy is unchanged. No real account, NAS or vehicle endpoint was
 contacted. These checkpoints do not close #148 or replace complete runtime,
 settings/onroad/camera and normal-startup/log-upload acceptance.
+
+## Toggles and Firehose checkpoint
+
+Both display layouts now implement the original toggle panels and Firehose
+information/scrolling views. Toggle confirmation, engaged/parameter locks,
+CarParams-dependent experimental/alpha availability, restart requests,
+personality synchronization and compact debug actions retain source behavior.
+Typed integer Params preserve Python negative-index behavior for compact
+personality controls. Firehose uses the existing native polling service.
+
+| Scenario | Invocation | Observable / artifact |
+| --- | --- | --- |
+| Full product regression | `check_ui_product_widgets.py --binary .../product_render --output .../product-stage4 --display :125` | 30 English/Korean source/native scenes, all zero differing pixels; `product-stage4/results.json` |
+| Interactive settings | `check_ui_settings.py --binary .../product_render --output .../settings-trace2 --display :125` | 20 scenarios, 1,600 exact Params/action/personality frames and zero final pixel differences; `settings-trace2/results.json` |
+| Package regression | `cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application --locked -j2` | Four cache/FIFO/poller tests pass; `settings-tests-final.log` |
+| Static checks | `cargo clippy ... -p openpilot-ui-application --all-targets -- -D warnings`, `ruff check` | Successful checks; `settings-clippy.log`, `settings-ruff-final.log` |
+
+Evidence is under `.omo/evidence/ui-application-148/`. The interaction oracle
+executes the original refresh methods with real cereal CarParams/selfdrive
+messages and owned Params. It injects confirmation results at the callback
+boundary; this is not a claim of full modal gesture coverage. Native asynchronous
+Params writes finish at each comparison barrier, so traces establish policy
+outcomes, not background-thread timing equivalence. Root application composition,
+device/network/software/developer settings and the onroad surface remain pending.
+No production selection or device-test readiness is claimed.

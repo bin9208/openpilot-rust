@@ -57,16 +57,31 @@ pub struct Context {
     pub memory: Rc<Store>,
     pub translations: Translations,
     pub prime: Arc<PrimeStatus>,
+    pub api: crate::services::Api,
+    pub poll_gate: Arc<crate::services::polling::Gate>,
     pub actions: Actions,
     pub big: bool,
     pub pc: bool,
     pub device_type: String,
+    pub now_monotonic: Rc<dyn Fn() -> f64>,
+    pub model_status: Rc<dyn Fn() -> Result<crate::state::ModelStatus, crate::Error>>,
     pub now_wall: Rc<dyn Fn() -> chrono::DateTime<chrono::Local>>,
     pub source_root: std::path::PathBuf,
     pub persist_root: std::path::PathBuf,
     pub callbacks: EventCallbacks,
 }
 impl Context {
+    pub fn refresh_params(&self) -> Result<(), crate::Error> {
+        let models = (self.model_status)()?;
+        let mut ui = self.ui.borrow_mut();
+        ui.slow.refresh(self.params.as_ref(), models)?;
+        ui.param_update_time = (self.now_monotonic)();
+        Ok(())
+    }
+    pub fn sync_services(&self) {
+        self.poll_gate
+            .update(self.ui.borrow().started, self.device.borrow().awake);
+    }
     pub fn tr(&self, text: &str) -> String {
         self.translations.tr(text)
     }

@@ -1,0 +1,97 @@
+"""Owned clock, subscription and modal-result seams for real product widget code."""
+
+import ast
+from pathlib import Path
+import time
+from types import SimpleNamespace, MethodType
+from openpilot.cereal import car, log
+
+KEYS = [
+  'ExperimentalMode',
+  'ExperimentalModeConfirmed',
+  'OnroadCycleRequested',
+  'LongitudinalPersonality',
+  'IsMetric',
+  'RecordAudio',
+  'RecordFront',
+  'OpenpilotEnabledToggle',
+  'AlphaLongitudinalEnabled',
+]
+
+
+def car_bytes(scene):
+  value = scene.get('car')
+  if value is None:
+    return None
+  return car.CarParams.new_message(
+    alphaLongitudinalAvailable=value['alpha_longitudinal_available'],
+    openpilotLongitudinalControl=value['openpilot_longitudinal_control'],
+    maxLateralAccel=value.get('max_lateral_accel', 0),
+  ).to_bytes()
+
+
+def attach_refresh(ui, scene):
+  root = Path(__file__).resolve().parents[3]
+  source = ast.parse((root / 'openpilot/selfdrive/ui/ui_state.py').read_text())
+  cls = next(node for node in source.body if isinstance(node, ast.ClassDef) and node.name == 'UIState')
+  method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == 'update_params')
+
+  def decode(data, struct):
+    with struct.from_bytes(data) as value:
+      return value
+
+  namespace = {
+    'car': car,
+    'messaging': SimpleNamespace(log_from_bytes=decode),
+    'time': time,
+    'active_usbgpu_compiled_path': lambda: 'fixture' if scene.get('models', {}).get('compiled') else None,
+    'usbgpu_compile_pending': lambda: scene.get('models', {}).get('compile_pending', False),
+  }
+  exec(compile(ast.Module(body=[method], type_ignores=[]), 'ui_state.py', 'exec'), namespace)
+  ui.update_params = MethodType(namespace['update_params'], ui)
+
+
+class Effects:
+  def __init__(self, scene, ui, gui, callbacks):
+    self.scene = scene
+    self.ui = ui
+    self.gui = gui
+    self.callbacks = callbacks
+    self.effects = []
+    self.dialogs = []
+    if scene.get('capture_effects'):
+      gui.push_widget = self.push
+      gui.set_show_touches = lambda value: self.effects.append({'touches': value})
+      gui.set_show_fps = lambda value: self.effects.append({'fps': value})
+
+  def push(self, dialog):
+    self.effects.append({'confirm': dialog._label._text, 'button': dialog._confirm_button._label._text, 'cancel': dialog._cancel_text, 'rich': dialog._rich})
+    self.dialogs.append(dialog)
+
+  def before(self, index, widget):
+    step = next((step for step in self.scene.get('steps', []) if step['frame'] == index), {})
+    if 'scroll' in step:
+      widget._scroller.scroll_to(step['scroll'])
+    for key, value in step.get('params', {}).items():
+      if value is None:
+        self.scene['params'].pop(key, None)
+      else:
+        self.scene['params'][key] = value
+    if 'started' in step:
+      self.ui.started = step['started']
+    if 'engaged' in step:
+      self.ui.engaged = step['engaged']
+      for callback in self.callbacks:
+        callback()
+    self.ui.sm.updated['selfdriveState'] = 'personality' in step
+    if 'personality' in step:
+      name = next(name for name, value in log.LongitudinalPersonality.schema.enumerants.items() if value == step['personality'])
+      self.ui.sm['selfdriveState'] = SimpleNamespace(personality=name)
+    if 'confirm' in step and self.dialogs:
+      from openpilot.system.ui.widgets import DialogResult
+
+      self.dialogs.pop()._callback(DialogResult.CONFIRM if step['confirm'] else DialogResult.CANCEL)
+    return step
+
+  def snapshot(self):
+    return {'params': {key: self.scene.get('params', {}).get(key) for key in KEYS}, 'effects': list(self.effects), 'personality': int(self.ui.personality)}

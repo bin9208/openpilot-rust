@@ -12,7 +12,10 @@ impl WidgetHandle {
         WeakWidgetHandle(std::rc::Rc::downgrade(&self.0))
     }
     pub fn new(widget: impl Widget) -> Self {
-        Self(std::rc::Rc::new(std::cell::RefCell::new(Box::new(widget))))
+        Self::from_box(Box::new(widget))
+    }
+    pub fn from_box(widget: Box<dyn Widget>) -> Self {
+        Self(std::rc::Rc::new(std::cell::RefCell::new(widget)))
     }
     pub fn same(&self, other: &Self) -> bool {
         std::rc::Rc::ptr_eq(&self.0, &other.0)

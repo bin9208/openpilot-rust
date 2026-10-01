@@ -19,6 +19,10 @@ args.output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[2]
 results = []
 cases = [
+  ('toggles', 'toggles', 0, None),
+  ('toggles-mici', 'toggles', 0, None),
+  ('firehose', 'firehose', 0, None),
+  ('firehose-mici', 'firehose', 0, None),
   ('ssh-add', 'ssh', 0, None),
   ('ssh-remove', 'ssh', 0, None),
   ('pairing', 'pairing', -2, None),
@@ -33,7 +37,7 @@ cases = [
 ]
 for language in ['en', 'ko']:
   for name, kind, prime, address in cases:
-    big = (kind != 'carrot-web' or name == 'web-ipv6') and name != 'pairing-mici'
+    big = (kind != 'carrot-web' or name == 'web-ipv6') and name not in ['pairing-mici', 'firehose-mici', 'toggles-mici']
     width, height = (2160, 1080) if big else (536, 240)
     scene = {
       'kind': kind,
@@ -67,4 +71,4 @@ for language in ['en', 'ko']:
     print(json.dumps(row), flush=True)
 (args.output / 'results.json').write_text(json.dumps(results, indent=2))
 assert all(row['different_pixels'] == 0 for row in results), results
-print('PASS: 22 source/native SSH, pairing, Prime, setup and Carrot Web QR screens in English/Korean with exact pixels')
+print('PASS: 30 source/native toggles, Firehose, SSH, pairing, Prime, setup and Carrot Web QR screens in English/Korean with exact pixels')

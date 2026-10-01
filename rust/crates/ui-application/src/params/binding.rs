@@ -15,7 +15,7 @@ impl Binding {
         self.params.boolean(&self.key)
     }
     pub fn integer(&self) -> Result<i32, Error> {
-        self.params.integer(&self.key)
+        Ok(super::typed::integer(self.params.as_ref(), &self.key, false)?.unwrap_or(0))
     }
     pub fn write_bool(&self, value: bool) -> Result<(), Error> {
         self.write(if value { b"1".to_vec() } else { b"0".to_vec() })

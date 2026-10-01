@@ -45,3 +45,33 @@ const DECIMAL_ZEROES: &[u32] = &[
     0x16b50, 0x1d7ce, 0x1d7d8, 0x1d7e2, 0x1d7ec, 0x1d7f6, 0x1e140, 0x1e2f0, 0x1e4f0, 0x1e950,
     0x1fbf0,
 ];
+
+pub fn integer_value(
+    params: &dyn super::Read,
+    key: &str,
+    return_default: bool,
+) -> Result<Option<String>, crate::Error> {
+    let value = params.bytes(key)?.as_deref().and_then(integer_bytes);
+    Ok(value.or_else(|| {
+        return_default
+            .then(|| {
+                openpilot_params::metadata(key)
+                    .and_then(|item| item.default)
+                    .and_then(integer_text)
+            })
+            .flatten()
+    }))
+}
+pub fn integer(
+    params: &dyn super::Read,
+    key: &str,
+    return_default: bool,
+) -> Result<Option<i32>, crate::Error> {
+    integer_value(params, key, return_default)?
+        .map(|value| {
+            value
+                .parse()
+                .map_err(|_| crate::Error::Parameter(key.into()))
+        })
+        .transpose()
+}
