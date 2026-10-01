@@ -1777,7 +1777,9 @@ dependencies = [
  "openpilot-runtime-version",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
+ "uuid",
 ]
 
 [[package]]

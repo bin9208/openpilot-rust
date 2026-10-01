@@ -27,6 +27,14 @@ coordinates and deterministic randomized transitions.
   device/mapping order match; invalid cases retain source error messages.
   Includes strict booleans, count limits, malformed tokens, Unicode uppercase
   expansion, lone surrogates, nonfinite names and arbitrary integer names.
+- Command journal comparison:721 operations match file values and rewrite
+  decisions after normalizing the random UUID session. Both channels retain
+  the64-event bound,0.4-second expiry, hold replacement and repeated flags.
+  Files remain mode0600 and temporary files are removed.
+- Atomic JSON comparison:15 source/native file scenarios match exact bytes
+  and permissions, including all1,112,064 Unicode scalar values and three
+  encoding failures that preserve an existing file. Two ownership tests cover
+  serialization failure and replacement of a formerly world-readable file.
 - Strict package Clippy, Rust formatting, Python Ruff and whitespace checks pass.
 
 Source SHA-256:
@@ -34,6 +42,11 @@ Source SHA-256:
 Exact binary hashes, inputs, original/native outputs and command logs are in the
 private `2026-10-01-rust-bluetooth` scratch directory, under
 `gesture-policy-final` and `config-policy-final`.
+Journal and file results are in `journal-utf8` and `files-first`. Shared JSON
+serialization now has an explicit UTF-8 file method; the existing ASCII-escaped
+log formatter remains unchanged and its package tests pass. The new method
+retains Python nonfinite values and rejects lone surrogates at the UTF-8 file
+boundary.
 
 Run `cargo build --manifest-path rust/Cargo.toml -p openpilot-bluetooth --examples
 --locked -j2` with incremental compilation disabled after the required disk
@@ -44,8 +57,8 @@ to an owned evidence directory.
 
 ## Still in progress
 
-Command journals and atomic files, native evdev ownership and daemon lifecycle,
-source driving/learning gates, private BlueZ protocol comparisons and actual
+Native evdev ownership and daemon lifecycle, source driving/learning gates,
+private BlueZ protocol comparisons and actual
 native IPC remain to be implemented/verified. This stage does not mark the
 component ported and does not establish a complete runtime candidate, physical
 Bluetooth behavior, vehicle acceptance or CPU savings. No device or system

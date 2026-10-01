@@ -16,3 +16,5 @@ serde_json = { version = "1", features = ["raw_value", "float_roundtrip"] }
 thiserror = "2"
 openpilot-logmessaged = { path = "../logmessaged" }
 openpilot-runtime-version = { path = "../runtime-version" }
+tempfile = "3"
+uuid = { version = "=1.26.1", features = ["v4"] }
