@@ -1,5 +1,6 @@
 //! Shared product data and typed UI effects, independent of any concrete layout.
 pub mod actions;
+pub mod translations;
 use crate::{
     device::Device,
     params::store::Store,
@@ -7,7 +8,7 @@ use crate::{
 };
 pub use actions::{Action, Actions, Confirmation, Page, Panel};
 use openpilot_messaging::runtime::SubMaster;
-use openpilot_ui_framework::{callback::Callback, multilang::Multilang, widget::Property};
+use openpilot_ui_framework::{callback::Callback, widget::Property};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -16,6 +17,7 @@ use std::{
         Arc,
     },
 };
+pub use translations::Translations;
 pub struct PrimeStatus(AtomicI32);
 impl Default for PrimeStatus {
     fn default() -> Self {
@@ -53,7 +55,7 @@ pub struct Context {
     pub device: Rc<RefCell<Device>>,
     pub params: Rc<Store>,
     pub memory: Rc<Store>,
-    pub translations: Rc<RefCell<Multilang>>,
+    pub translations: Translations,
     pub prime: Arc<PrimeStatus>,
     pub actions: Actions,
     pub big: bool,
@@ -66,15 +68,15 @@ pub struct Context {
 }
 impl Context {
     pub fn tr(&self, text: &str) -> String {
-        self.translations.borrow().tr(text).into()
+        self.translations.tr(text)
     }
     pub fn trn(&self, singular: &str, plural: &str, n: i64) -> String {
-        self.translations.borrow().trn(singular, plural, n).into()
+        self.translations.trn(singular, plural, n)
     }
     pub fn text(&self, text: &str) -> Property<String> {
         let translations = self.translations.clone();
         let text = text.to_owned();
-        Property::Dynamic(Box::new(move || translations.borrow().tr(&text).into()))
+        Property::Dynamic(Box::new(move || translations.tr(&text)))
     }
     pub fn event(&self, event: Event) {
         let callbacks: Vec<_> = self

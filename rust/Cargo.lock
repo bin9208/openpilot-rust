@@ -2457,16 +2457,21 @@ version = "0.1.0"
 dependencies = [
  "capnp",
  "chrono",
+ "cookie_store",
  "cxx",
  "cxx-build",
+ "flate2",
  "num-traits",
  "openpilot-cereal",
  "openpilot-hardware-control",
  "openpilot-hardware-info",
+ "openpilot-http-transport",
  "openpilot-logging",
+ "openpilot-logmessaged",
  "openpilot-messaging",
  "openpilot-params",
  "openpilot-registration",
+ "openpilot-runtime-version",
  "openpilot-startup-ui",
  "openpilot-timed",
  "openpilot-ui-framework",
@@ -2477,6 +2482,8 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror",
+ "ureq",
+ "url",
 ]
 
 [[package]]

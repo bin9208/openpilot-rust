@@ -1,7 +1,7 @@
 use chrono::TimeZone;
 use openpilot_messaging::{runtime::SubMaster, state::Options};
 use openpilot_ui_application::{
-    context::{Actions, Context, PrimeStatus},
+    context::{Actions, Context, PrimeStatus, Translations},
     device::{Config as DeviceConfig, Device},
     params::store::Store,
     state::{messages::SERVICES, ModelStatus, UiState},
@@ -47,10 +47,10 @@ pub fn context(
         device: Rc::new(RefCell::new(device)),
         params,
         memory,
-        translations: Rc::new(RefCell::new(Multilang::new(
+        translations: Translations::new(Multilang::new(
             &root.join("openpilot/selfdrive/ui/translations"),
             Some(&scene.language),
-        )?)),
+        )?),
         prime: Arc::new(PrimeStatus::new(scene.prime)),
         actions: Actions::default(),
         big: scene.config.big,

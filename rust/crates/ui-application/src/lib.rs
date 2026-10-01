@@ -8,6 +8,7 @@ pub mod paint;
 pub mod params;
 pub mod qr;
 pub mod scheduling;
+pub mod services;
 pub mod state;
 pub mod widgets;
 

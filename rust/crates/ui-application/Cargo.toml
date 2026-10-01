@@ -10,6 +10,13 @@ publish = false
 unsafe_code = "deny"
 
 [dependencies]
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-http-transport = { path = "../http-transport" }
+openpilot-runtime-version = { path = "../runtime-version" }
+ureq = { version = "=3.4.2", features = ["json", "gzip", "brotli", "rustls", "cookies"] }
+url = "2"
+cookie_store = { version = "=0.22.1", default-features = false, features = ["preserve_order"] }
+flate2 = "1"
 openpilot-registration = { path = "../registration" }
 openpilot-uploader = { path = "../uploader" }
 openpilot-timed = { path = "../timed" }

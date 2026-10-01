@@ -23,3 +23,5 @@ impl Read for openpilot_params::Params {
         Ok(self.get(key)?)
     }
 }
+
+pub mod typed;

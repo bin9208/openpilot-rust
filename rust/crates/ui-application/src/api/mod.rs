@@ -1,4 +1,5 @@
 //! UI authentication policy from common/api.py and ui/lib/api_helpers.py.
+pub mod http;
 use num_traits::ToPrimitive;
 use openpilot_timed::clock::{self, Clock};
 use openpilot_uploader::http::SigningKey;
