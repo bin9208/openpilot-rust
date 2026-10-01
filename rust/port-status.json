@@ -115,7 +115,11 @@
       "name": "cweb_push",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.cweb_push",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/cweb-push; native discovery, report/heartbeat state, Params identity and continuous CLI",
+      "native_dependencies": ["Linux address/socket APIs through a small CXX ioctl boundary", "reqwest/Hyper/Rustls and platform certificate verification", "Tokio", "native Params and logging"],
+      "evidence": "docs/rust-port/cweb-push-validation.md",
+      "runtime_scope": "16000 source state transitions, 20 source HTTP cases, six actual source/native CLI lifecycle scenarios and address ownership sanitizer; no real report endpoint or vehicle; production selection and complete startup/upload remain pending",
       "production_replaced": false
     },
     {
