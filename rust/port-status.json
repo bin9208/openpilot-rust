@@ -156,7 +156,11 @@
       "name": "feedbackd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.ui.feedback.feedbackd",
-      "status": "not_ported",
+      "status": "continuous_native_host_validated",
+      "implementation": "rust/crates/feedbackd",
+      "native_dependencies": ["original msgq through CXX", "Linux clocks and signals"],
+      "runtime_scope": "Active bookmark loop matches unchanged source over actual IPC; source-disabled LKAS audio recording remains disabled; Actions/ARM and complete startup/upload pending",
+      "evidence": "docs/rust-port/feedbackd-validation.md",
       "production_replaced": false
     },
     {
@@ -260,7 +264,11 @@
       "name": "micd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.micd",
-      "status": "not_ported",
+      "status": "continuous_native_host_validated",
+      "implementation": "rust/crates/micd; PortAudio input, original raw audio bytes and A-weighted pressure publication",
+      "native_dependencies": ["external PortAudio v19", "temporary original msgq through CXX", "libzmq logging", "Linux clocks and signals"],
+      "runtime_scope": "source numerical/callback comparison and actual owned PortAudio ABI/native IPC/retry/shutdown; real audio hardware, target execution, manager selection and full startup/upload acceptance pending",
+      "evidence": "docs/rust-port/micd-validation.md",
       "production_replaced": false
     },
     {
@@ -359,14 +367,22 @@
       "name": "sensord",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.sensord.sensord",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/sensord; continuous openpilot-sensord with Rust LSM6DS3 drivers and thin native Linux UAPI boundary",
+      "native_dependencies": ["Linux SMBus/GPIO/poll and scheduling UAPI", "CXX boundary", "original msgq through native transport", "native logging and hardware-control IRQ-write helper"],
+      "runtime_scope": "source/kernel fixtures, Miri, ASan/UBSan and isolated native IPC lifecycle; physical sensor/timing, actual FIFO/IRQ placement, ARM/AGNOS and device acceptance remain unvalidated",
+      "evidence": "docs/rust-port/sensord-validation.md",
       "production_replaced": false
     },
     {
       "name": "soundd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.ui.soundd",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_validated",
+      "implementation": "rust/crates/soundd and rust/crates/portaudio; Rust assets/resampling/samples, alert/countdown/timeout/volume/MAIN policy, Params/language and continuous 20 Hz native IPC loop",
+      "native_dependencies": ["PortAudio v19 and its host audio backend loaded dynamically", "existing native msgq and libzmq logging", "Linux filesystem/clock/signal APIs"],
+      "runtime_scope": "original source and actual shipped/synthetic WAV sample comparisons; continuous native process with owned PortAudio ABI/isolated msgq; no real host/device audio; manager selection, full startup/upload and device acceptance pending",
+      "evidence": "docs/rust-port/soundd-validation.md",
       "production_replaced": false
     },
     {
