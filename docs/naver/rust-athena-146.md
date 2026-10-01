@@ -92,3 +92,54 @@ or public-user workflow; no user guides or Wiki content are changed.
 vendor archive contains Markdown seven-equals headings and generated CSS/JS
 whitespace that this check flags; `jpeg-vendor-integrity.json` verifies all 633
 files against the release archive, and `diff-check.log` retains those findings.
+
+## Review H1: proxy backpressure and EOF
+
+Independent review blocked candidate `241ca327` because nonblocking WebSocket
+`WouldBlock` was presented as a completed flush. The proxy continued reading its
+local socket and then dropped queued WebSocket output at local EOF. The added
+`check_athena_proxy_backpressure.py` reproduced this with the original candidate
+binary: 8,388,608 bytes sent, 2,728,960 received; its SHA-256 matches the original
+receipt. `h1-red/native-up-eof/result.json` and `h1-red/summary.json` retain that
+failure and binary identity.
+
+`Connection::flush` now distinguishes fully drained output from pending output.
+The proxy accepts another 4 KiB local frame (or local EOF) only after the previous
+output drains, and caps its WebSocket write buffer at 8 KiB. Normal EOF and peer
+close also drain queued close frames; local EOF sends the source normal-close
+code 1000. Reverse-direction work continues while
+outbound data is blocked; the existing stop flag is checked every iteration.
+No new overall stall deadline is imposed: the original proxy WebSocket has no
+configured send timeout. Bounded polling and prompt cancellation retain its idle
+behavior without accumulating an unbounded application output queue.
+
+The new portable gate is included in `check_athena_runtime.py`, inside a private
+network namespace. Its final source/native evidence is `h1-final/summary.json`
+and each named subdirectory's `result.json`:
+
+- `source-up-eof`, `native-up-eof`: remote application waits 12 seconds before
+  reading; both receive all 8,388,608 bytes with identical SHA-256 and a WebSocket
+  close frame (code 1000). The local producer remains blocked until the receiver drains.
+- `source-down-close`, `native-down-close`: remote sends 8 MiB and closes; the
+  local side receives every byte before EOF.
+- `native-stalled-cancel`: remote never drains outbound data; reverse traffic
+  still arrives, and global SIGTERM terminates the blocked session within the
+  eight-second fixture deadline.
+- `native-peer-reset`: the same stalled-output/reverse-traffic setup ends with
+  a peer socket reset; the proxy releases its local socket and the daemon still
+  responds to RPC afterward.
+
+Exact invocation (with the implementation worktree's documented Python test
+environment and native binary directory):
+
+```sh
+unshare --user --map-root-user --net sh -c 'ip link set lo up && exec "$@"' sh \
+  env PYTHONPATH=.:rust/tools python rust/tools/check_athena_proxy_backpressure.py \
+  "$CARGO_TARGET_DIR/debug/openpilot-athenad" .omo/evidence/athena-146/h1-final
+```
+
+The original daemon/RPC/framing/upload/ping/reconnect and active-reader proxy
+checks are rerun as `h1-daemon` and `h1-proxy`. Bounded Athena build, package tests,
+Clippy and source-format checks accompany the fix. Unrelated image/upload policy
+matrices remain the baseline evidence above. This correction must return through
+independent review; the executor's passing evidence does not close that gate.

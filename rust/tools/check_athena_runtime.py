@@ -34,12 +34,13 @@ def main():
     ('camera-lifecycle', ['check_athena_camera_lifecycle.py', str(binary / 'examples/athena_snapshot'), str(binary / 'openpilot-process-child'), str(binary / 'examples/athena_ipc'), str(vision), str(output / 'camera-lifecycle')]),
     ('supervisor', ['check_athena_supervisor.py', str(binary / 'openpilot-manage-athenad'), str(binary / 'examples/athena_log_capture'), str(output / 'supervisor')]),
     ('proxy', ['check_athena_proxy.py', str(binary / 'openpilot-athenad'), str(output / 'proxy')]),
+    ('proxy-backpressure', ['check_athena_proxy_backpressure.py', str(binary / 'openpilot-athenad'), str(output / 'proxy-backpressure')]),
     ('reconnect', ['check_athena_reconnect.py', str(binary / 'openpilot-athenad'), str(output / 'reconnect')]),
   ]
   receipts = []
   for name, command in cases:
     command = [sys.executable, str(ROOT / 'rust/tools' / command[0]), *command[1:]]
-    if name == 'proxy':
+    if name in ['proxy', 'proxy-backpressure']:
       command = ['unshare', '--user', '--map-root-user', '--net', 'sh', '-c', 'ip link set lo up && exec "$@"', 'sh', *command]
     with (output / f'{name}.log').open('w') as log:
       process = subprocess.run(command, env=environment, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, timeout=180)

@@ -163,16 +163,24 @@ impl Connection {
         }
         Ok(())
     }
-    pub fn flush(&mut self) -> Result<(), Error> {
+    /// True means all accepted frames have reached the underlying stream.
+    pub fn flush(&mut self) -> Result<bool, Error> {
         match self.socket.flush() {
-            Ok(()) => Ok(()),
+            Ok(()) => Ok(true),
             Err(tungstenite::Error::Io(error))
-                if error.kind() == std::io::ErrorKind::WouldBlock =>
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::WouldBlock | std::io::ErrorKind::Interrupted
+                ) =>
             {
-                Ok(())
+                Ok(false)
             }
             Err(error) => Err(error.into()),
         }
+    }
+    pub(crate) fn bound_proxy_output(&mut self) {
+        self.socket
+            .set_config(|config| config.max_write_buffer_size = 8192);
     }
     pub fn read_timeout(&self) -> Result<bool, Error> {
         let mut last = self

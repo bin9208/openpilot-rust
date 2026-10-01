@@ -13,7 +13,10 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-use tungstenite::Message;
+use tungstenite::{
+    protocol::{frame::coding::CloseCode, CloseFrame},
+    Message,
+};
 
 pub fn start(
     shared: Arc<Shared>,
@@ -48,17 +51,29 @@ pub fn start(
     Ok(())
 }
 pub fn bridge(mut ws: Connection, mut local: TcpStream, stop: &Stop) -> Result<(), Error> {
+    ws.bound_proxy_output();
     let mut pending = Vec::new();
     let mut offset = 0;
     let mut buffer = [0; 4096];
+    let mut closing = false;
     while !stop.requested() {
+        if closing {
+            if ws.flush()? {
+                break;
+            }
+            stop.wait(Duration::from_millis(5));
+            continue;
+        }
         if offset == pending.len() {
             pending.clear();
             offset = 0;
             match ws.read()? {
                 Some(Message::Text(text)) => pending.extend_from_slice(text.as_bytes()),
                 Some(Message::Binary(bytes)) => pending.extend_from_slice(&bytes),
-                Some(Message::Close(_)) => break,
+                Some(Message::Close(_)) => {
+                    closing = true;
+                    continue;
+                }
                 Some(Message::Ping(_) | Message::Pong(_) | Message::Frame(_)) | None => {}
             }
         }
@@ -74,17 +89,25 @@ pub fn bridge(mut ws: Connection, mut local: TcpStream, stop: &Stop) -> Result<(
                 Err(error) => return Err(error.into()),
             }
         }
-        match local.read(&mut buffer) {
-            Ok(0) => break,
-            Ok(count) => ws.send(Message::Binary(buffer[..count].to_vec().into()))?,
-            Err(error)
-                if matches!(
-                    error.kind(),
-                    std::io::ErrorKind::WouldBlock | std::io::ErrorKind::Interrupted
-                ) => {}
-            Err(error) => return Err(error.into()),
+        // Do not consume another local frame or EOF while an accepted frame is buffered.
+        if ws.flush()? {
+            match local.read(&mut buffer) {
+                Ok(0) => {
+                    ws.send(Message::Close(Some(CloseFrame {
+                        code: CloseCode::Normal,
+                        reason: "".into(),
+                    })))?;
+                    closing = true;
+                }
+                Ok(count) => ws.send(Message::Binary(buffer[..count].to_vec().into()))?,
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::Interrupted
+                    ) => {}
+                Err(error) => return Err(error.into()),
+            }
         }
-        ws.flush()?;
         stop.wait(Duration::from_millis(5));
     }
     local.shutdown(std::net::Shutdown::Both)?;
