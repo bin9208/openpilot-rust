@@ -29,7 +29,7 @@ More information about libjpeg-turbo can be found at
 
 
 Funding
-=======
+========
 
 libjpeg-turbo is an independent open source project, but we rely on patronage
 and funded development in order to maintain that independence.  The easiest way
@@ -44,7 +44,7 @@ strategically important features.
 
 
 License
-=======
+========
 
 libjpeg-turbo is covered by three compatible BSD-style open source licenses.
 Refer to [LICENSE.md](LICENSE.md) for a roll-up of license terms.

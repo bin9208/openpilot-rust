@@ -72,6 +72,7 @@ suite is under `final/`. No captures or synthetic credentials are committed.
 | camera lifecycle, `check_athena_camera_lifecycle.py` | native process child starts/reaps owned camera; existing camera preserved; Params cleared | `final/camera-lifecycle/result.json` |
 | supervisor, `check_athena_supervisor.py` | SIGKILL restart after five seconds, inherited logging context despite metadata mutation, SIGTERM child reaping and PID cleanup | `final/supervisor/result.json`, `records.jsonl` |
 | proxy, `check_athena_proxy.py` | 22/8022 map, rejected23, signed WebSocket, exact 1 MiB duplex bytes, TOS144, global stop | `final/proxy/result.json`, `sockets.log` |
+| proxy backpressure, `check_athena_proxy_backpressure.py` | source/native8MiB EOF and close bytes match; blocked producer, reverse traffic, cancellation and peer-reset cleanup | `proxy-backpressure/summary.json` |
 | reconnect, `check_athena_reconnect.py` | 503 recovery clears old ping; real 30-second reads enforce >70-second ping timeout at about90seconds | `final/reconnect/result.json` |
 | JPEG sanitizer, `check_jpeg_sanitizers.py` | complete C codec plus C/CXX boundary instrumented; ownership/rejection test passes, no sanitizer/leak errors | `jpeg-sanitizers/result.json`, `run.log`, `build.jsonl` |
 
@@ -88,10 +89,33 @@ existing upload path remain the integration gate before the user's first device
 comparison. Docs-Not-Needed: experimental runtime implementation adds no setting
 or public-user workflow; no user guides or Wiki content are changed.
 
-`git diff --check` is clean for project-owned changes. The unchanged upstream
-vendor archive contains Markdown seven-equals headings and generated CSS/JS
-whitespace that this check flags; `jpeg-vendor-integrity.json` verifies all 633
-files against the release archive, and `diff-check.log` retains those findings.
+## Integration and independent review
+
+Independent review found real proxy data loss when local EOF overtook buffered
+WebSocket output. The original reproduction received2,787,328 of8,388,608 bytes;
+unchanged Python delivered the complete payload. Commit `7a96061a` gates local
+reads and EOF on successful drain of the previous frame. It bounds the write
+buffer to8KiB, preserves reverse traffic and cancellation, and drains normal
+close code1000. The source has no overall proxy stall deadline; none is added.
+Independent rereview passed all six backpressure/close/error scenarios with
+exact full-payload hashes and no remaining correctness blocker.
+
+Parent integration adds required `rust Athena runtime` CI coverage for the
+complete16-scenario driver and instrumented JPEG codec. Host and ARM workspace
+lanes explicitly install CMake. Every scenario remains required, and evidence
+is uploaded on failure. Proxy cases run in new network namespaces: regular users
+create user/network namespaces, while the CI privilege wrapper creates network
+namespaces directly. The selected Python interpreter and import path are kept.
+The parent exercised this root code path inside its own isolated user/network
+namespace; all16 scenarios passed using preserved, hash-verified worker binaries.
+Merged-source builds and exact-SHA cloud/post-merge results remain separate gates.
+
+The release codec and license text remain unchanged. To preserve the inherited
+whitespace/conflict-marker check, integration normalizes only six upstream
+documentation files. `rust/crates/jpeg/vendor-format.patch` records the complete
+patch, and `PROVENANCE.md` describes it. An archive comparison verifies627 of633
+files are byte-identical and the remaining six differ only by that packaging
+patch. Reverse application checks pass. The fast check has no vendor exclusion.
 
 ## Review H1: proxy backpressure and EOF
 

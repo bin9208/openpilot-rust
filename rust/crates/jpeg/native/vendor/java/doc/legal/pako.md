@@ -41,5 +41,3 @@ appreciated but is not required.
 3. This notice may not be removed or altered from any source distribution.
 
 </pre>
-
-

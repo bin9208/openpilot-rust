@@ -31,8 +31,10 @@ def main():
     ('metered-abort', ['check_athena_metered_abort.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(output / 'metered-abort')]),
     ('forwarding', ['check_athena_forwarding.py', str(binary / 'examples/athena_forwarding'), str(output / 'forwarding')]),
     ('snapshot', ['check_athena_snapshot.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(vision), str(output / 'snapshot')]),
-    ('camera-lifecycle', ['check_athena_camera_lifecycle.py', str(binary / 'examples/athena_snapshot'), str(binary / 'openpilot-process-child'), str(binary / 'examples/athena_ipc'), str(vision), str(output / 'camera-lifecycle')]),
-    ('supervisor', ['check_athena_supervisor.py', str(binary / 'openpilot-manage-athenad'), str(binary / 'examples/athena_log_capture'), str(output / 'supervisor')]),
+    ('camera-lifecycle', ['check_athena_camera_lifecycle.py', str(binary / 'examples/athena_snapshot'), str(binary / 'openpilot-process-child'),
+                          str(binary / 'examples/athena_ipc'), str(vision), str(output / 'camera-lifecycle')]),
+    ('supervisor', ['check_athena_supervisor.py', str(binary / 'openpilot-manage-athenad'), str(binary / 'examples/athena_log_capture'),
+                   str(output / 'supervisor')]),
     ('proxy', ['check_athena_proxy.py', str(binary / 'openpilot-athenad'), str(output / 'proxy')]),
     ('proxy-backpressure', ['check_athena_proxy_backpressure.py', str(binary / 'openpilot-athenad'), str(output / 'proxy-backpressure')]),
     ('reconnect', ['check_athena_reconnect.py', str(binary / 'openpilot-athenad'), str(output / 'reconnect')]),
@@ -41,7 +43,8 @@ def main():
   for name, command in cases:
     command = [sys.executable, str(ROOT / 'rust/tools' / command[0]), *command[1:]]
     if name in ['proxy', 'proxy-backpressure']:
-      command = ['unshare', '--user', '--map-root-user', '--net', 'sh', '-c', 'ip link set lo up && exec "$@"', 'sh', *command]
+      namespace = ['unshare', '--net'] if os.geteuid() == 0 else ['unshare', '--user', '--map-root-user', '--net']
+      command = [*namespace, 'sh', '-c', 'ip link set lo up && exec "$@"', 'sh', *command]
     with (output / f'{name}.log').open('w') as log:
       process = subprocess.run(command, env=environment, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, timeout=180)
     receipts.append({'scenario': name, 'command': command, 'returncode': process.returncode, 'log': str(output / f'{name}.log')})

@@ -1,10 +1,20 @@
 # JPEG dependency provenance
 
-`native/vendor` is the unmodified libjpeg-turbo 3.1.4.1 release source from
+`native/vendor` contains the libjpeg-turbo 3.1.4.1 release source from
 https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.1.4.1/libjpeg-turbo-3.1.4.1.tar.gz
 
 Release archive SHA-256:
 `ecae8008e2cc9ade2f2c1bb9d5e6d4fb73e7c433866a056bd82980741571a022`.
+
+The codec, build inputs and license text remain byte-identical to that release.
+Integration applies only documentation formatting changes: four seven-equals
+Markdown heading underlines gain one equals sign (same rendered heading), one
+generated CSS indentation loses leading spaces before a tab, and trailing
+blank lines are removed from generated CSS/JavaScript and a license HTML
+wrapper. These six files otherwise retain upstream content and notices. This
+keeps the inherited repository whitespace/conflict-marker gate active without
+excluding the dependency. `vendor-format.patch` records the complete packaging
+patch; no C/C++/assembly implementation or runtime behavior is changed.
 
 The upstream `LICENSE.md`, `README.ijg`, source copyright notices and associated
 license files remain in the vendor tree. This software is based in part on the

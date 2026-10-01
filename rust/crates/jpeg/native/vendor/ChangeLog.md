@@ -1,5 +1,5 @@
 3.1.4.1
-=======
+========
 
 ### Significant changes relative to 3.1.4:
 
@@ -600,7 +600,7 @@ the TurboJPEG API documentation for more details.
 
 
 2.1.5.1
-=======
+========
 
 ### Significant changes relative to 2.1.5:
 

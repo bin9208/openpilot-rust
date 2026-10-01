@@ -1811,7 +1811,7 @@ tr.heading h2 {
         margin: 0px;
         padding: 0px;
         font-size: 12px;
-       	font-family: var(--font-family-tooltip);
+	font-family: var(--font-family-tooltip);
 	line-height: 16px;
 }
 
@@ -2018,10 +2018,8 @@ details>summary::before {
     padding-right:4px;
     font-size: 80%;
 }
-
 details[open]>summary::before {
     content: "\25bc";
     padding-right:4px;
     font-size: 80%;
 }
-
