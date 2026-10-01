@@ -38,3 +38,20 @@ collection. The script contains no credentials; daemon and test file ownership
 remain unchanged. Local identity checks and archive creation pass, including
 the script's other-user read bit. Local sudo requires a password, so the
 distinct-root/uploader identity check remains assigned to the exact-SHA CI run.
+
+## Tracer metadata publication
+
+[Run 36863031862](https://github.com/bin9208/openpilot-rust/actions/runs/36863031862/job/110372448620)
+selected the real daemon successfully, then read the tracer's earlier metadata
+before it contained the native PID. The result was `KeyError: native` in the
+assertion fixture. A controlled 200 ms delay between child launch and atomic
+metadata replacement reproduced the failure. The assertion now waits for the
+native key using the existing five-second fixture timeout, while the startup
+check continues to identify the actual executable. The controlled delay stays
+in the regression; production startup and deadlines are unchanged.
+
+Local delayed checks and Ruff pass. Evidence is in the root ignored
+`2026-10-01-bluetooth-ci/identity-publish-{red,green,final}` directories.
+The earlier evidence-permission repair also passed the complete Athena job
+and artifact upload in run 36862959318 at
+`736d392c93418d4fe37edc6613b79f76b63b7246`.

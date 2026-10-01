@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 
 def main():
@@ -16,6 +17,7 @@ def main():
   if os.environ.get('ATHENA_TRACER_FAIL') == '1':
     raise SystemExit(7)
   child = subprocess.Popen([sys.argv[-1]])
+  time.sleep(float(os.environ.get('ATHENA_TRACER_PUBLISH_DELAY', '0')))
   temporary = output.with_suffix('.tmp')
   temporary.write_text(json.dumps({'tracer': os.getpid(), 'helper': helper.pid, 'native': child.pid}))
   temporary.replace(output)
