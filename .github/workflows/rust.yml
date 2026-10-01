@@ -510,7 +510,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev openssl
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev openssl iproute2
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
       - name: Configure original startup service IPC imports
         run: printf 'PYTHONPATH=%s/services-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -531,7 +531,7 @@ jobs:
       - name: Compare LPA serial, TLS, profile and notification lifecycle
         run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
       - name: Compare source and native bridge packets and connection lifecycle
-        run: python rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
+        run: sudo -E "$(command -v python)" rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
       - name: Compare AGNOS images, retry policy, casync and actual CLI
         run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
       - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
