@@ -123,6 +123,7 @@ pub mod ffi {
             top_right: u32,
             bottom_right: u32,
         );
+        fn spline(self: Pin<&mut Surface>, points: &[Point], thick: f32, color: u32) -> Result<()>;
         fn line(self: Pin<&mut Surface>, start: Point, end: Point, thick: f32, color: u32);
         fn rounded_segments(
             self: Pin<&mut Surface>,

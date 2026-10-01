@@ -33,6 +33,24 @@ pub fn create(
 ) -> Result<WidgetHandle, Box<dyn std::error::Error>> {
     let options = scene.camera.as_ref().ok_or("camera options missing")?;
     if let Some(driver) = &scene.driver {
+        if scene.config.big {
+            return Ok(WidgetHandle::new(
+                openpilot_ui_application::onroad::driver_camera::Dialog::with_camera(
+                    context.clone(),
+                    canvas,
+                    "rustvision",
+                )?,
+            ));
+        }
+        if driver.navigation {
+            return Ok(WidgetHandle::new(
+                openpilot_ui_application::mici::onroad::driver_camera::dialog::with_camera(
+                    context.clone(),
+                    canvas,
+                    "rustvision",
+                )?,
+            ));
+        }
         return Ok(WidgetHandle::new(
             openpilot_ui_application::mici::onroad::driver_camera::Preview::with_camera(
                 context.clone(),
@@ -99,8 +117,13 @@ pub fn snapshot(
     widget: &WidgetHandle,
     scene: &Scene,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    if scene.driver.is_some() {
-        return super::product_driver::snapshot(context, widget);
+    if let Some(driver) = &scene.driver {
+        return super::product_driver::snapshot(
+            context,
+            widget,
+            scene.config.big,
+            driver.navigation,
+        );
     }
     let widget = widget.get::<CameraView>()?;
     Ok(

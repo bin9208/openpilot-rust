@@ -69,7 +69,7 @@ void *library() {
                               "GetMouseWheelMove",
                               "PollInputEvents",
                               "GetMonitorWidth",
-                              "GetMonitorHeight", "ImageFlipHorizontal", "DrawCircleV", "DrawRectangleGradientEx", "DrawLineEx", "DrawCircleGradient", "SetTextureWrap", "LoadShaderFromMemory", "UnloadShader", "BeginShaderMode", "EndShaderMode", "SetWindowTitle", "GetFPS", "DrawFPS", "GetKeyPressed", "GetCharPressed", "IsKeyDown", "IsKeyPressed", "GetMousePosition", "GetShaderLocation", "SetShaderValueV", "SetShaderValue", "SetShaderValueMatrix", "DrawTriangleStrip", "SetTraceLogLevel", "SetTraceLogCallback", "DrawRectangleLines"};
+                              "GetMonitorHeight", "ImageFlipHorizontal", "DrawCircleV", "DrawRectangleGradientEx", "DrawLineEx", "DrawCircleGradient", "SetTextureWrap", "LoadShaderFromMemory", "UnloadShader", "BeginShaderMode", "EndShaderMode", "SetWindowTitle", "GetFPS", "DrawFPS", "GetKeyPressed", "GetCharPressed", "IsKeyDown", "IsKeyPressed", "GetMousePosition", "GetShaderLocation", "SetShaderValueV", "SetShaderValue", "SetShaderValueMatrix", "DrawTriangleStrip", "DrawSplineLinear", "SetTraceLogLevel", "SetTraceLogCallback", "DrawRectangleLines"};
     for (const char *name : required) {
       if (!dlsym(loaded, name)) {
         dlclose(loaded);
@@ -195,4 +195,5 @@ FORWARD(void, DrawTriangleStrip, (const Vector2 *points, int count, Color color)
 FORWARD(void, SetTraceLogLevel, (int level), (level))
 FORWARD(void, SetTraceLogCallback, (TraceLogCallback callback), (callback))
 FORWARD(void, DrawRectangleLines, (int x, int y, int width, int height, Color color), (x,y,width,height,color))
+FORWARD(void, DrawSplineLinear, (const Vector2 *points, int count, float thick, Color color), (points, count, thick, color))
 #undef FORWARD

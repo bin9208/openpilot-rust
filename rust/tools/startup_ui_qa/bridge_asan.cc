@@ -59,6 +59,10 @@ int main(int argc, char **argv) {
     if (cleared.size() != 536*240*4 || cleared[0] != 0x11 || cleared[1] != 0x22 || cleared[2] != 0x33) return 10;
     const std::vector<startup_ui::Point> polygon_points{{200,20},{240,20},{220,80}};
     surface->triangle_strip({polygon_points.data(),polygon_points.size()},0xffffffff,shader,true);
+    surface->spline({polygon_points.data(),0},3,0xffffffff);
+    surface->spline({polygon_points.data(),1},3,0xffffffff);
+    surface->spline({polygon_points.data(),2},3,0xffffffff);
+    surface->spline({polygon_points.data(),polygon_points.size()},3,0xffffffff);
     surface->circle_gradient({80,80},25,0xff0000ff,0);
     surface->text(font, "ABC", {12, 12}, 30, 0, 0xffffffff);
     surface->circle({40, 180}, 20, 0xff00ff00);

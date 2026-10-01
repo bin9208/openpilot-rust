@@ -62,6 +62,9 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn spline(&mut self, points: &[Point], thick: f32, color: u32) -> Result<(), Error> {
+        self.renderer.spline(points, thick, color)
+    }
     fn camera_plane(
         &mut self,
         dimensions: (i32, i32),

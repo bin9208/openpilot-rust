@@ -39,7 +39,9 @@ pub fn create(
             egpu: Some(egpu),
         });
     }
-    let widget = if scene.camera.is_some() {
+    let widget = if let Some(alert) = &scene.alert {
+        super::product_alert::create(context, canvas, scene.config.big, alert)?
+    } else if scene.camera.is_some() {
         super::product_camera::create(context, canvas, scene)?
     } else if let Some(options) = &scene.dialog {
         use openpilot_ui_application::mici::widgets::dialog;

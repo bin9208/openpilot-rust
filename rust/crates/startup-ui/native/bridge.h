@@ -45,6 +45,7 @@ public:
   void circle(Point center, float radius, uint32_t color);
   void circle_gradient(Point center, float radius, uint32_t inner, uint32_t outer);
   void gradient(Rect rect, uint32_t top_left, uint32_t bottom_left, uint32_t top_right, uint32_t bottom_right);
+  void spline(rust::Slice<const Point> points, float thick, uint32_t color);
   void line(Point start, Point end, float thick, uint32_t color);
   void rounded_segments(Rect rect, float roundness, int32_t segments, uint32_t color, bool border);
   int32_t measure_default(rust::Str text, int32_t size) const;

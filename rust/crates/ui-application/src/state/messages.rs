@@ -133,3 +133,10 @@ reader!(
     DriverMonitoringState,
     openpilot_cereal::log_capnp::driver_monitoring_state::Reader<'_>
 );
+
+reader!(
+    car_state,
+    "carState",
+    CarState,
+    openpilot_cereal::car_capnp::car_state::Reader<'_>
+);

@@ -7,6 +7,8 @@ use openpilot_ui_framework::{
 use std::{cell::Cell, path::Path, rc::Rc};
 #[path = "support/context.rs"]
 mod context;
+#[path = "support/product_alert.rs"]
+mod product_alert;
 #[path = "support/product_camera.rs"]
 mod product_camera;
 #[path = "support/product_driver.rs"]
@@ -79,9 +81,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             product_camera::before(&context, &widget, &scene, index)?;
         }
         let now = f64::from(index) / 20.0;
-        clock.set(now);
+        clock.set(
+            scene
+                .alert
+                .as_ref()
+                .map_or(now, |options| options.now(index)),
+        );
         let step = scene.steps.iter().find(|step| step.frame == index);
         product_input::apply(&context, step, now)?;
+        if let Some(alert) = &scene.alert {
+            product_alert::before(&context, alert, index)?;
+        }
         product_input::scroll(&widget, step)?;
         if let Some(network) = &network {
             network.before(step);
@@ -119,10 +129,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             wheel: step.map_or(0.0, |step| step.wheel),
             show_touches: false,
         };
-        if scene.driver.is_some() && index == 20 {
+        if scene
+            .driver
+            .as_ref()
+            .is_some_and(|driver| !driver.navigation)
+            && !scene.config.big
+            && index == 20
+        {
             widget.borrow_mut()?.hide(&frame);
         }
-        if scene.driver.is_some() && index == 21 {
+        if scene
+            .driver
+            .as_ref()
+            .is_some_and(|driver| !driver.navigation)
+            && !scene.config.big
+            && index == 21
+        {
             widget.borrow_mut()?.show(&frame);
         }
         if step.is_some_and(|step| step.show_again) {
@@ -133,7 +155,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             network.ticks.run()?;
         }
         canvas.renderer.begin();
-        widget.borrow_mut()?.render(&frame, &mut canvas)?;
+        let rendered = widget.borrow_mut()?.render(&frame, &mut canvas)?;
+        if scene
+            .driver
+            .as_ref()
+            .is_some_and(|driver| scene.config.big || driver.navigation)
+            && index + 1 == scene.frames
+        {
+            widget.borrow_mut()?.hide(&frame);
+        }
         if let Some(request) = widget.borrow_mut()?.take_navigation() {
             if scene.dialog.is_some() {
                 if let openpilot_ui_framework::widget::NavigationRequest::Pop(Some(callback)) =
@@ -177,6 +207,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             results.last_mut().ok_or("missing trace")?["camera"] =
                 product_camera::snapshot(&context, &widget, &scene)?;
         }
+        if scene.alert.is_some() {
+            results.last_mut().ok_or("missing alert trace")?["alert"] =
+                product_alert::snapshot(&widget, scene.config.big, rendered)?;
+        }
         if scene.capture_frames.contains(&index) {
             let stem = output
                 .file_stem()
@@ -199,6 +233,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::fs::write(
             output.with_extension("egpu.json"),
             serde_json::to_vec_pretty(&egpu.snapshot())?,
+        )?;
+    }
+    if scene.driver.is_some() {
+        drop(widget);
+        std::fs::write(
+            output.with_extension("driver-lifecycle.json"),
+            serde_json::to_vec_pretty(
+                &serde_json::json!({"remaining_callbacks":context.callbacks.borrow().len()}),
+            )?,
         )?;
     }
     Ok(())

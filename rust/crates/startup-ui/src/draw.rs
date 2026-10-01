@@ -59,6 +59,9 @@ pub struct Ring {
     pub color: u32,
 }
 pub trait Draw: Measure {
+    fn spline(&mut self, _points: &[Point], _thick: f32, _color: u32) -> Result<(), Error> {
+        Err(Error::Contract("spline drawing unavailable"))
+    }
     fn camera_plane(
         &mut self,
         _dimensions: (i32, i32),

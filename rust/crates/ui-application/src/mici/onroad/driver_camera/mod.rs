@@ -1,3 +1,5 @@
+pub mod dialog;
+pub use dialog::dialog;
 mod overlay;
 mod publisher;
 use super::driver_state::DriverState;

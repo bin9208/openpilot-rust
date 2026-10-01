@@ -293,3 +293,51 @@ Home/onboarding integration, the large driver dialog, remaining onroad HUD and
 alerts, and the final application startup/recording/shutdown path remain open.
 No production selection, C3X connection, measured CPU saving or first device-test
 readiness is claimed.
+
+## Stage 8: driver dialogs and alert renderers
+
+The large driver dialog now composes the owned VisionIPC camera, original
+33-point 3D driver-state geometry and source face-box projection. Native
+`DrawSplineLinear` is carried through the shared drawing adapter. Compact driver
+preview is wrapped by the original navigation motion. Both dialogs bind timeout
+callbacks to the frame's navigation queue and remove their listeners on
+destruction; show/hide, touch and swipe effects retain the source behavior.
+Large driver state also freezes its pose and RHD metadata while an alert or an
+old driver frame hides it, matching the original Widget visibility gate. The
+retained pre-fix binary reproduces the metadata mismatch before the fix.
+
+Large and compact alerts retain the original five-second startup/communication
+gate, fifteen-second enabled timeout boundary, large-only suppression of old
+alerts and differing reboot fallbacks. Compact fade/slide, gradient, text sizing,
+icon blinking and prior-side lane-change texture selection are preserved. Only
+normal current alerts enter the compact cached-alert state; fallback equality
+cannot turn a timeout preset into a remembered current alert.
+
+Evidence under `.omo/evidence/ui-application-148/` is recorded in
+`stage8-receipt.json`, including exact commands, immutable binary hashes and
+artifact paths:
+
+| Scenario | Binary observable | Captured artifact |
+| --- | --- | --- |
+| `check_ui_camera.py --driver --large` | Five cases, 120 exact real VisionIPC frames, timeout/click Pop, final enabled=false/frame=false and zero listeners after destruction | `large-driver-sol-green/results.json`, `native-*.driver-lifecycle.json` |
+| `check_ui_camera.py --driver --large --visibility --filter big-matrix-engaged` | Pre-fix binary fails twice with RHD differences during hidden frames; fixed binary matches all 24 frames and metadata through hide/resume | `driver-visibility-red/`, `driver-visibility-red-confirm/`, `driver-visibility-green/results.json` |
+| `check_ui_camera.py --driver --navigation` | Five cases, 300 exact frames, real compact navigation motion, timeout/swipe Pop, final enabled=false/timeout=None, matching stable alert publications and zero listeners | `driver-nav-sol-final/results.json`, per-case messages/lifecycle/traces |
+| `check_ui_driver_geometry.py` | 600 actual-source/native poses/fades/arcs, f64 error at most 1e-11 and exact float32 drawing points | `driver-geometry-sol-final/result.json` |
+| `check_ui_alert_policy.py` | 1,538 cases / 1,541 steps execute original get_alert ASTs, matching current/previous selection at timeout boundaries and all updated/stale/PC/TICI/old-frame combinations | `alert-policy-sol-final/results.json`, input/source/native JSON |
+| `check_ui_alerts.py` | 36 EN/KO cases, 1,440 exact RGBA frame pairs and matching selected alerts/render return values | `alerts-sol-final/results.json`, per-frame captures/traces |
+| `check_ui_alerts.py --cache` | Four layout/locale cases, 160 exact frame pairs exercise the real fallback-equals-current cache path and immediate absence after fallback removal | `alerts-sol-cache-final/results.json` |
+| `cargo test --lib --tests` for UI application/framework/startup UI | All 18 tests pass | `sol-stage8-tests-final.log` |
+| All-target Clippy, formatting, focused Ruff and diff checks | Commands exit 0; Rust warnings denied | `stage8-checks.json`, `sol-stage8-clippy-final.log`, `sol-stage8-ruff-final.log` |
+| `check_ui_native_resources.py` | ASan/UBSan exercises empty/one/two/three-point native splines, original shapes/camera/texture ownership and teardown; external driver remains uninstrumented | `spline-asan-sol-final/asan.log`, `result.json` |
+
+Manual capture inspection covers both layouts, English/Korean text, full and
+partial alerts, fade-out, side-switching icons, camera overlays and navigation
+bars. Source font substitution for Korean text under English font selection and
+source compact text clipping are preserved, not claimed as corrected. Captured
+camera pixels are owned synthetic NV12 buffers through the original VisionIPC
+server; no physical camera or AGNOS GL behavior is established.
+
+The checkpoint still leaves Home import, HUD/augmented road composition,
+traffic/confidence/torque/vision/debug widgets and final application
+startup/navigation/services/recording/shutdown open. It is not a complete UI or
+runtime candidate and does not authorize the first device comparison.

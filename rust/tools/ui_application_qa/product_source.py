@@ -77,9 +77,15 @@ gui_app.init_window('Source product widget')
 effects = Effects(scene, state_module.ui_state, gui_app, engaged_callbacks)
 effects.offroad_callbacks = offroad_callbacks
 dialog_results, network, egpu = [], None, None
-if scene.get('camera') is not None:
+if scene.get('alert') is not None:
+  from alert_source import create
+
+  widget = create(scene, state_module.ui_state)
+elif scene.get('camera') is not None:
   from camera_source import create
 
+  if scene.get('driver') and (scene['config']['big'] or scene['driver'].get('navigation')):
+    gui_app.pop_widget = lambda: effects.effects.append({'pop': True})
   widget, camera = create(scene, state_module.ui_state)
 elif 'dialog' in scene or scene['kind'] == 'language':
   from product_forms_source import create
@@ -189,14 +195,22 @@ try:
     if scene.get("camera") is not None:
       camera.before(index)
     now = index / 20
+    if scene.get('alert') is not None:
+      from alert_source import monotonic
+
+      now = monotonic(scene, index)
     if egpu is not None:
       egpu.before(index)
     if network is not None:
       network.before(next((step for step in scene.get('steps', []) if step['frame'] == index), {}))
     step = effects.before(index, widget)
-    if scene.get("driver") and index == 20:
+    if scene.get('alert') is not None:
+      from alert_source import before
+
+      before(scene, state_module.ui_state, index)
+    if scene.get("driver") and not scene["config"]["big"] and not scene['driver'].get('navigation') and index == 20:
       widget.hide_event()
-    if scene.get("driver") and index == 21:
+    if scene.get("driver") and not scene["config"]["big"] and not scene['driver'].get('navigation') and index == 21:
       widget.show_event()
     if step.get("show_again"):
       widget.hide_event()
@@ -212,7 +226,9 @@ try:
     if scene['kind'] == 'settings-root':
       rl.is_mouse_button_down = lambda button: gui_app.last_mouse_event.left_down
     rl.get_mouse_wheel_move = lambda step=step: step.get('wheel', 0.0)
-    widget.render()
+    rendered = widget.render()
+    if scene.get("driver") and (scene["config"]["big"] or scene['driver'].get('navigation')) and index + 1 == scene["frames"]:
+      widget.hide_event()
     results.append(
       {
         'callbacks': list(dialog_results),
@@ -231,6 +247,10 @@ try:
       results[-1]['settings'] = widget._current_panel.name.title() if scene['config']['big'] else None
     if scene.get('camera') is not None:
       results[-1]['camera'] = camera.snapshot()
+    if scene.get('alert') is not None:
+      from alert_source import snapshot
+
+      results[-1]['alert'] = snapshot(widget, state_module.ui_state, rendered)
     if index in scene.get('capture_frames', []):
       rl.rl_draw_render_batch_active()
       capture = rl.load_image_from_screen()

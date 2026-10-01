@@ -26,7 +26,7 @@ def create(scene, ui):
   else:
     preview = None
     widget = CameraView('rustvision', VisionStreamType(options['stream']))
-  camera = widget if preview is None else widget._camera_view
+  camera = widget if preview is None or scene["config"]["big"] else widget._camera_view
   if preview is None:
     camera._set_placeholder_color(rl.Color(22, 33, 44, 255))
   base = camera._calc_frame_matrix
@@ -65,6 +65,8 @@ def create(scene, ui):
         time.sleep(0.001)
 
     def snapshot(self):
+      if preview is not None and scene['config']['big']:
+        return {'frame':camera.frame is not None,'rhd':widget.driver_state_renderer.is_rhd,'enabled':ui.params.get_bool('IsDriverViewEnabled')}
       if preview is not None:
         return {
           "frame": camera.frame is not None,
