@@ -529,7 +529,7 @@ jobs:
       - name: Compare LPA serial, TLS, profile and notification lifecycle
         run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
       - name: Compare source and native bridge packets and connection lifecycle
-        run: sudo -E "$(command -v python)" rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
+        run: sudo -E env "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
       - name: Compare AGNOS images, retry policy, casync and actual CLI
         run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
       - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
