@@ -1,0 +1,22 @@
+[package]
+name = "openpilot-bridge"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+libc = "0.2"
+openpilot-messaging = { path = "../messaging" }
+openpilot-msgq = { path = "../msgq" }
+signal-hook = "0.3"
+thiserror = "2"
+zmq = "=0.10.0"
+
+[[bin]]
+name = "bridge"
+path = "src/main.rs"

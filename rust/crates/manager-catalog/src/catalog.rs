@@ -87,6 +87,7 @@ impl Descriptor {
 fn availability(name: &str) -> RustAvailability {
     let (package, binary) = match name {
         "beep" => ("openpilot-beepd", "openpilot-beepd"),
+        "bridge" => ("openpilot-bridge", "bridge"),
         "calibrationd" => ("openpilot-calibrationd", "openpilot-calibrationd"),
         "deleter" => ("openpilot-deleter", "openpilot-deleter"),
         "dmonitoringd" => ("openpilot-dmonitoringd", "openpilot-dmonitoringd"),
@@ -103,6 +104,7 @@ fn availability(name: &str) -> RustAvailability {
         "timed" => ("openpilot-timed", "openpilot-timed"),
         "tombstoned" => ("openpilot-tombstoned", "openpilot-tombstoned"),
         "torqued" => ("openpilot-torqued", "openpilot-torqued"),
+        "updated" => ("openpilot-updated", "openpilot-updated"),
         _ => return RustAvailability::NotPorted,
     };
     RustAvailability::Candidate { package, binary, limitation: "Isolated host candidate; native external dependencies remain; manager selection, complete startup/upload and AGNOS/device acceptance pending. See rust/port-status.json for component-specific limits." }

@@ -1,0 +1,26 @@
+[package]
+name = "openpilot-lpa"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-timed = { path = "../timed" }
+openpilot-process-supervision = { path = "../process-supervision" }
+openpilot-http-transport = { path = "../http-transport" }
+serialport = { version = "=4.10.1", default-features = false }
+rustix = { version = "1", features = ["fs"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+base64 = "0.22"
+sha2 = "0.10"
+ureq = { version = "=3.4.2", features = ["json", "gzip", "brotli", "rustls", "cookies"] }
+url = "=2.5.8"
+cookie_store = { version = "=0.22.1", default-features = false, features = ["preserve_order"] }
+flate2 = "1"

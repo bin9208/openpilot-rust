@@ -1,0 +1,26 @@
+[package]
+name = "openpilot-agnos"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-http-transport = { path = "../http-transport" }
+openpilot-process-supervision = { path = "../process-supervision" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+ureq = { version = "=3.4.2", features = ["rustls"] }
+url = "2"
+xz2 = { version = "=0.1.7", features = ["static"] }
+rustix = { version = "1", features = ["fs"] }
+tempfile = "3"
+
+rustls = { version = "=0.23.45", default-features = false }
+cookie_store = { version = "=0.22.1", default-features = false, features = ["preserve_order"] }

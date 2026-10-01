@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, web-upload-timeouts]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -31,6 +31,7 @@ jobs:
           STARTUP: ${{ needs.startup-runtime.result }}
           HARDWARE: ${{ needs.hardware-runtime.result }}
           PLATFORM: ${{ needs.platform-runtime.result }}
+          STARTUP_SERVICES: ${{ needs.startup-services.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$WORKSPACE" = success
@@ -42,11 +43,12 @@ jobs:
           test "$STARTUP" = success
           test "$HARDWARE" = success
           test "$PLATFORM" = success
+          test "$STARTUP_SERVICES" = success
           test "$UPLOAD_TIMEOUTS" = success
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'
@@ -68,6 +70,10 @@ jobs:
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1
+      - name: Stage pinned native startup UI headers
+        run: |
+          python tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host"
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
@@ -448,6 +454,12 @@ jobs:
         run: |
           python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration-timeouts" --timeouts
+      - name: Exercise registration collector publisher startup race
+        run: |
+          cc -shared -fPIC -Wall -Wextra -Werror rust/tools/registration_collector_delay.c -ldl -o "$RUNNER_TEMP/registration-collector-delay.so"
+          LD_PRELOAD="$RUNNER_TEMP/registration-collector-delay.so" python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
+            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration-ready" --case clock_year_ten_thousand
+          python -c 'from pathlib import Path; import sys; files=list(Path(sys.argv[1]).glob("clock_year_ten_thousand/*/collector-*/stderr.log")); assert len(files)==2; assert all("pausing before error publisher initialization" in path.read_text() for path in files)' "$RUNNER_TEMP/startup-runtime/registration-ready"
       - name: Compare uploader signing after shared registration key support
         run: python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/startup-runtime/uploader-signing.json"
       - name: Compare complete manager catalog and ordered Params predicates
@@ -469,6 +481,59 @@ jobs:
             ${{ runner.temp }}/startup-runtime/
             ${{ runner.temp }}/startup-params-binding/commands.json
             ${{ runner.temp }}/startup-params-binding/provenance.json
+  startup-services:
+    name: rust startup services
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev openssl
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
+      - name: Configure original startup service IPC imports
+        run: printf 'PYTHONPATH=%s/services-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - run: python -m pip install pycryptodome==3.23.0
+      - run: python -m pip install comma-deps-raylib==6.0.0.1.post103 Pillow==12.3.0 python-xlib==0.33 setproctitle==1.3.7 psutil==7.2.2
+      - name: Stage pinned native startup renderer
+        run: |
+          sudo apt-get install -y libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth
+          python rust/tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host" --shared
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\nSTARTUP_UI_RAYLIB_LIBRARY=%s/startup-raylib-host/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Build native startup service boundaries
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-updated -p openpilot-startup-ui -p openpilot-process-supervision --bins --examples --locked
+      - name: Build original IPC binding and messaging bridge
+        run: |
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/services-msgq-python"
+          python rust/tools/build_bridge_reference.py --output "$RUNNER_TEMP/services-bridge-source"
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/services-params-binding"
+      - name: Compare LPA serial, TLS, profile and notification lifecycle
+        run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
+      - name: Compare source and native bridge packets and connection lifecycle
+        run: python rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
+      - name: Compare AGNOS images, retry policy, casync and actual CLI
+        run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
+      - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
+        run: |
+          python rust/tools/check_updated.py --binary "$PWD/rust/target/debug/examples/updated_trace" --launcher "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP"/services-params-binding/params_pyx*.so --output "$RUNNER_TEMP/startup-services/updated-source"
+          python rust/tools/check_updated_process.py --binary "$PWD/rust/target/debug/examples/updated_command" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/startup-services/updated-process"
+          python rust/tools/check_updated_daemon.py --binary "$PWD/rust/target/debug/openpilot-updated" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/startup-services/updated-daemon"
+          python rust/tools/check_updated_agnos.py --target "$PWD/rust/target" --output "$RUNNER_TEMP/startup-services/updated-agnos"
+      - name: Compare actual startup UI rendering, input and child lifecycle
+        run: xvfb-run -a -s '-screen 0 2400x1400x24 -nolisten tcp' python rust/tools/check_startup_ui.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/startup-services/ui"
+      - name: Retain startup service comparison evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-startup-services-evidence
+          path: ${{ runner.temp }}/startup-services/
   platform-runtime:
     name: rust platform runtime
     runs-on: ubuntu-24.04
@@ -828,6 +893,13 @@ jobs:
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make
+      - name: Stage native GNU aarch64 startup renderer and portable loader headers
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- update
+          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
+          python rust/tools/stage_startup_ui_raylib.py --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-arm" --shared --cxx aarch64-linux-gnu-g++
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-arm\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build pinned external FFmpeg for generic aarch64 GNU linking
         run: python rust/tools/build_loggerd_ffmpeg.py --root "$RUNNER_TEMP/logger-ffmpeg-gnu" --cc aarch64-linux-gnu-gcc --ar aarch64-linux-gnu-ar --ranlib aarch64-linux-gnu-ranlib
       - name: Build generic Linux aarch64 artifact (not AGNOS validation)
@@ -889,6 +961,9 @@ jobs:
             rust/target/aarch64-unknown-linux-musl/release/openpilot-loggerd
             ${{ runner.temp }}/logger-ffmpeg-gnu/invocation.json
             ${{ runner.temp }}/logger-ffmpeg-gnu/build.log
+            ${{ runner.temp }}/startup-raylib-arm/SOURCE_SHA256
+            ${{ runner.temp }}/startup-raylib-arm/plugin-build.json
+            ${{ runner.temp }}/startup-raylib-arm/lib/libopenpilot-raylib.so
             ${{ runner.temp }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/COPYING.LGPLv2.1
             ${{ runner.temp }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/LICENSE.md
             ${{ runner.temp }}/logger-ffmpeg-musl/invocation.json

@@ -25,7 +25,11 @@
       "name": "bridge",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/cereal/messaging",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/bridge; continuous bidirectional msgq/ZMQ bridge with source service ports and connection-driven subscriptions",
+      "native_dependencies": ["libzmq 4.3.4 through existing zmq crate", "temporary original msgq through CXX", "Linux signals"],
+      "evidence": "docs/rust-port/bridge-validation.md",
+      "runtime_scope": "original C++ versus native loopback TCP/IPC bursts, substring whitelist, disconnect/reconnect and shutdown; manager selection, full-runtime startup/upload and AGNOS/device acceptance pending",
       "production_replaced": false
     },
     {
@@ -430,7 +434,11 @@
       "name": "updated",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.updated.updated",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_validated",
+      "implementation": "rust/crates/updated; continuous staged checkout daemon, original release-note renderer, consistency/copy lifecycle, signals, Params/alerts and owned command sessions",
+      "native_dependencies": ["Git and Git LFS", "bash/find/sudo/mount/umount/chmod/rm", "util-linux ionice", "Linux filesystem/xattr/sync/locking/process APIs", "existing native process-supervision captured child helper and logging dependencies"],
+      "runtime_scope": "original-body/Params comparisons, actual owned Git/process/signal lifecycle and native background AGNOS compressed/casync/corrupt-image comparisons; physical OverlayFS/AGNOS, manager selection, full startup/upload and device acceptance pending",
+      "evidence": "docs/rust-port/updated-validation.md",
       "production_replaced": false
     },
     {
@@ -491,6 +499,36 @@
     }
   ],
   "library_ports": [
+    {
+      "name": "startup_ui_widgets",
+      "source_entrypoint": "openpilot.common.spinner/text_window/network_info; openpilot.system.ui.spinner/text and shared drawing/input dependencies",
+      "status": "native_render_and_child_lifecycle_host_validated",
+      "implementation": "rust/crates/startup-ui; native Spinner/TextWindow state, rendering/input, IP display and owning child wrappers",
+      "native_dependencies": ["uv.lock-pinned comma-deps-raylib 6.0.0.1.post103 native plugin", "host GL/X11 or board EGL/GLES/DRM/GBM", "Linux input events and process helper", "existing msgq/libzmq in shared support"],
+      "runtime_scope": "six source/native scenes, actual window/input/child lifecycle and CXX ASan; main UI and shared debug/record/burn-in utilities, manager adoption, ARM plugin/AGNOS execution and full startup/upload remain pending",
+      "production_replaced": false,
+      "evidence": "docs/naver/rust_startup_ui_117.md"
+    },
+    {
+      "name": "tici_esim_lpa",
+      "source_entrypoint": "openpilot.system.hardware.tici.lpa; openpilot.system.hardware.base.Profile/LPABase",
+      "status": "native_protocol_and_adapter_host_validated",
+      "implementation": "rust/crates/lpa; native AT/APDU, profile management, ES9+ TLS authentication/download/cancellation and notifications; openpilot-lpa JSON operation entrypoint",
+      "native_dependencies": ["Linux serial/termios and flock", "original GSMA CI certificate bundle", "/usr/comma/lte/lte.sh start", "process-supervision child helper and existing cereal/msgq/libzmq dependencies", "shared timed clock validation"],
+      "runtime_scope": "actual-source differential on owned PTYs and synthetic loopback TLS; modem/SIM/carrier provisioning, production adoption, ARM/AGNOS and device acceptance remain unvalidated",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/lpa-validation.md"
+    },
+    {
+      "name": "agnos_image_update",
+      "source_entrypoint": "openpilot.system.hardware.tici.agnos; image-only openpilot.system.updated.casync.casync paths",
+      "status": "native_image_and_cli_host_validated",
+      "implementation": "rust/crates/agnos; cache/hash/sparse/casync reconstruction, inactive-slot verification/retry/swap, and openpilot-agnos CLI",
+      "native_dependencies": ["static liblzma via xz2 0.1.7/lzma-sys 0.1.20", "existing native HTTP/TLS", "Linux filesystem/flock/sync", "abctl", "/bin/sh", "process-supervision child helper and its existing cereal/msgq/libzmq dependencies"],
+      "runtime_scope": "actual-source owned regular-file/local HTTP/TLS/harmless abctl fixtures; directory/tar casync, production adoption, actual block-device update, ARM/AGNOS and device acceptance remain unvalidated",
+      "production_replaced": false,
+      "evidence": "docs/rust-port/agnos-validation.md"
+    },
     {
       "name": "hardware_control_policy",
       "source_entrypoint": "openpilot.system.hardware.base; openpilot.system.hardware.pc.hardware; openpilot.system.hardware.tici.hardware; required common.gpio/utils helpers",
