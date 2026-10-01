@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, web-upload-timeouts]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -30,6 +30,7 @@ jobs:
           TELEMETRY: ${{ needs.telemetry-runtime.result }}
           STARTUP: ${{ needs.startup-runtime.result }}
           HARDWARE: ${{ needs.hardware-runtime.result }}
+          PLATFORM: ${{ needs.platform-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$WORKSPACE" = success
@@ -40,6 +41,7 @@ jobs:
           test "$TELEMETRY" = success
           test "$STARTUP" = success
           test "$HARDWARE" = success
+          test "$PLATFORM" = success
           test "$UPLOAD_TIMEOUTS" = success
   workspace:
     name: rust workspace checks
@@ -467,6 +469,57 @@ jobs:
             ${{ runner.temp }}/startup-runtime/
             ${{ runner.temp }}/startup-params-binding/commands.json
             ${{ runner.temp }}/startup-params-binding/provenance.json
+  platform-runtime:
+    name: rust platform runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libzmq5
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
+      - name: Configure original platform IPC imports
+        run: printf 'PYTHONPATH=%s/platform-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Build native manager and serial daemon boundaries
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-manager -p openpilot-modem -p openpilot-hardwared -p openpilot-process-supervision --bins --examples --locked
+      - name: Build original platform IPC and Params bindings
+        run: |
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/platform-msgq-python"
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/platform-params-binding"
+      - name: Compare manager initialization, transitions and lifecycle logging
+        run: |
+          python rust/tools/check_manager.py rust/target/debug/examples/manager_trace "$RUNNER_TEMP"/platform-params-binding/params_pyx*.so "$RUNNER_TEMP/platform-runtime/manager"
+          python rust/tools/check_manager_logging.py rust/target/debug/examples/manager_trace "$RUNNER_TEMP"/platform-params-binding/params_pyx*.so "$RUNNER_TEMP/platform-runtime/manager-logging"
+          python rust/tools/generate_manager_cars.py rust/crates/manager/data/cars --check --binding "$RUNNER_TEMP"/platform-params-binding/params_pyx*.so
+      - name: Exercise native manager IPC, owned children and boot composition
+        run: |
+          rust/target/debug/examples/manager_native "$RUNNER_TEMP/platform-runtime/manager-native" "$PWD/rust/target/debug/openpilot-process-child"
+          rust/target/debug/examples/manager_adapters "$RUNNER_TEMP/platform-runtime/manager-adapters" "$PWD/rust/target/debug/openpilot-process-child"
+      - name: Compare serial modem state and continuous native reconnect lifecycle
+        run: |
+          python rust/tools/check_modem_process_boundary.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/platform-runtime/modem-process"
+          python rust/tools/check_modem.py --binary "$PWD/rust/target/debug/openpilot-modem" --trace "$PWD/rust/target/debug/examples/modem_trace" --evidence "$RUNNER_TEMP/platform-runtime/modem"
+      - name: Compare hardware policy and continuous native state publication
+        run: |
+          python rust/tools/check_hardwared.py rust/target/debug/examples/hardwared_trace "$RUNNER_TEMP/platform-runtime/hardwared-source"
+          python rust/tools/check_hardwared_daemon.py --binary "$PWD/rust/target/debug/openpilot-hardwared" --output "$RUNNER_TEMP/platform-runtime/hardwared-ipc"
+      - name: Retain platform source comparison and native runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-platform-runtime-evidence
+          path: |
+            ${{ runner.temp }}/platform-runtime/
+            ${{ runner.temp }}/platform-params-binding/commands.json
+            ${{ runner.temp }}/platform-params-binding/provenance.json
   hardware-runtime:
     name: rust hardware and boot runtime
     runs-on: ubuntu-24.04

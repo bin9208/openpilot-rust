@@ -9,6 +9,21 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_platform_runtime_requires_original_source_and_live_native_processes(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['platform-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_manager.py', 'check_manager_logging.py', 'generate_manager_cars.py',
+                         'examples/manager_native', 'examples/manager_adapters',
+                         'check_modem.py', 'check_modem_process_boundary.py',
+                         'check_hardwared.py', 'check_hardwared_daemon.py'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python rust/tools/check_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+
     def test_workspace_checks_run_without_waiting_for_runtime_jobs(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['workspace']
@@ -100,7 +115,7 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'web-upload-timeouts'})
+        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'platform-runtime', 'web-upload-timeouts'})
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
@@ -108,6 +123,7 @@ class RustIsolationTests(unittest.TestCase):
                                             'TELEMETRY': '${{ needs.telemetry-runtime.result }}',
                                             'STARTUP': '${{ needs.startup-runtime.result }}',
                                             'HARDWARE': '${{ needs.hardware-runtime.result }}',
+                                            'PLATFORM': '${{ needs.platform-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
