@@ -285,6 +285,7 @@ jobs:
             --binary rust/target/debug/openpilot-uploader --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/params-uploader"
       - name: Compare uploader logs and transport failures through both collectors
         run: |
+          python rust/tools/check_logmessaged_startup.py --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/logmessaged-startup"
           python rust/tools/check_uploader_logging.py --binary rust/target/debug/openpilot-uploader \
             --trace rust/target/debug/examples/uploader_trace --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-logging"
           python rust/tools/check_uploader_log_fault.py --native rust/target/debug/examples/uploader_log_fault \
