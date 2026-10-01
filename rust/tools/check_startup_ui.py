@@ -4,6 +4,7 @@
 Requires an already running, CI-owned Xvfb DISPLAY. --target is the Cargo profile
 output directory containing binaries, examples/, deps/, and build/ (not a triple).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -36,8 +37,7 @@ class Context:
     with (self.output / f'{name}.log').open('w') as log:
       log.write('Invocation: ' + json.dumps(command) + '\n')
       log.flush()
-      subprocess.run(command, cwd=self.root, env=self.environment | (extra_env or {}),
-                     stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180)
+      subprocess.run(command, cwd=self.root, env=self.environment | (extra_env or {}), stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180)
 
 
 def require(condition: bool, message: str) -> None:
@@ -50,18 +50,32 @@ def write_json(path: Path, value: object) -> None:
 
 
 def render_comparisons(ctx: Context) -> None:
-  base = {'config': {'big': False, 'large_viewport': False, 'pc': True, 'scale': 1.0}, 'kind': 'spinner',
-              'ip': '192.0.2.10:6999', 'updates': ['Building native startup runtime', '42']}
+  base = {
+    'config': {'big': False, 'large_viewport': False, 'pc': True, 'scale': 1.0},
+    'kind': 'spinner',
+    'ip': '192.0.2.10:6999',
+    'updates': ['Building native startup runtime', '42'],
+  }
   scenes = {
     'small-spinner': base,
-    'large-spinner': dict(base, config={'big': True, 'large_viewport': True, 'pc': False, 'scale': 1.0}, updates=[
-      'A very long status message testing the native startup progress status ellipsis display and its correct placement above the progress bar ' * 2, '88']),
+    'large-spinner': dict(
+      base,
+      config={'big': True, 'large_viewport': True, 'pc': False, 'scale': 1.0},
+      updates=[
+        'A very long status message testing the native startup progress status ellipsis display and its correct placement above the progress bar ' * 2,
+        '88',
+      ],
+    ),
     'wrapped-spinner': dict(base, updates=['Installing runtime components\n  validating source-compatible text wrapping']),
     'scaled-spinner': dict(base, config={'big': False, 'large_viewport': False, 'pc': True, 'scale': 0.75}),
-    'small-text': dict(base, kind='text', text='Startup error\n' +
-                       'A long recovery diagnostic text with word-wrapping and scrolling.\n' * 20, wheel=2.0),
-    'large-ko-text': dict(base, kind='text', config={'big': True, 'large_viewport': True, 'pc': False, 'scale': 1.0}, language='ko',
-                          text='시작 오류: 런타임 구성 요소를 확인하십시오.\n' + '네트워크 연결 및 로그 업로드 상태 확인\n' * 16),
+    'small-text': dict(base, kind='text', text='Startup error\n' + 'A long recovery diagnostic text with word-wrapping and scrolling.\n' * 20, wheel=2.0),
+    'large-ko-text': dict(
+      base,
+      kind='text',
+      config={'big': True, 'large_viewport': True, 'pc': False, 'scale': 1.0},
+      language='ko',
+      text='시작 오류: 런타임 구성 요소를 확인하십시오.\n' + '네트워크 연결 및 로그 업로드 상태 확인\n' * 16,
+    ),
   }
   report = []
   states = []
@@ -77,8 +91,10 @@ def render_comparisons(ctx: Context) -> None:
     if 'spinner' in name:
       require(native == source, f'{name}: source/native state mismatch')
     else:
-      require(native['lines'] == source['lines'] and native['scroll']['offset'] == source['offset'] and
-              native['scroll']['velocity'] == source['velocity'], f'{name}: source/native text/scroll mismatch')
+      require(
+        native['lines'] == source['lines'] and native['scroll']['offset'] == source['offset'] and native['scroll']['velocity'] == source['velocity'],
+        f'{name}: source/native text/scroll mismatch',
+      )
     states.append(f'PASS {name}: native/source state equal')
     with Image.open(native_path) as a, Image.open(source_path) as b:
       require(a.size == b.size, f'{name}: source/native image dimensions differ')
@@ -105,9 +121,13 @@ def live_interaction(ctx: Context) -> None:
   connection.set_error_handler(lambda error, _request: protocol_errors.append(str(error)))
   try:
     with (ctx.output / 'live-text.log').open('w') as log:
-      process = subprocess.Popen([str(ctx.target / 'openpilot-text-window'), '--source-root', str(ctx.root),
-                                  '--text', 'Actual native window click test'], env=env, cwd=ctx.root,
-                                 stdout=log, stderr=subprocess.STDOUT)
+      process = subprocess.Popen(
+        [str(ctx.target / 'openpilot-text-window'), '--source-root', str(ctx.root), '--text', 'Actual native window click test'],
+        env=env,
+        cwd=ctx.root,
+        stdout=log,
+        stderr=subprocess.STDOUT,
+      )
       try:
         window = None
         deadline = time.monotonic() + 30
@@ -145,8 +165,14 @@ def live_interaction(ctx: Context) -> None:
           process.kill()
         process.wait()
     with (ctx.output / 'live-spinner.log').open('w') as log:
-      process = subprocess.Popen([str(ctx.target / 'openpilot-spinner'), '--source-root', str(ctx.root)],
-                                 env=env, cwd=ctx.root, stdin=subprocess.PIPE, stdout=log, stderr=subprocess.STDOUT)
+      process = subprocess.Popen(
+        [str(ctx.target / 'openpilot-spinner'), '--source-root', str(ctx.root)],
+        env=env,
+        cwd=ctx.root,
+        stdin=subprocess.PIPE,
+        stdout=log,
+        stderr=subprocess.STDOUT,
+      )
       try:
         require(process.stdin is not None, 'spinner stdin pipe missing')
         process.stdin.write(b'Actual stdin update\n')
@@ -164,8 +190,7 @@ def live_interaction(ctx: Context) -> None:
         process.wait()
         if process.stdin is not None:
           process.stdin.close()
-    write_json(ctx.output / 'live-result.json', {'text_actual_XTest_click_exit': 0, 'text_click_attempts': attempts,
-                                                  'spinner_stdin_then_SIGINT_exit': 0})
+    write_json(ctx.output / 'live-result.json', {'text_actual_XTest_click_exit': 0, 'text_click_attempts': attempts, 'spinner_stdin_then_SIGINT_exit': 0})
     (ctx.output / 'live-result.log').write_text('PASS actual native text XTest click exit 0; spinner stdin/SIGINT exit 0\n')
   finally:
     connection.close()
@@ -180,16 +205,53 @@ def adapter_asan(ctx: Context) -> None:
   cxx = max(libraries, key=lambda path: path.stat().st_mtime)
   helpers = ctx.root / 'rust/tools/startup_ui_qa'
   runtime = ctx.output / 'libcxx_runtime.a'
-  ctx.run('asan-runtime-build', ['rustup', 'run', ctx.rust_toolchain, 'rustc', '--edition=2024', '--crate-type=staticlib',
-                               str(helpers / 'cxx_runtime.rs'), '--extern', f'cxx={cxx}',
-                               '-L', f'dependency={ctx.target / "deps"}', '-o', str(runtime)])
+  ctx.run(
+    'asan-runtime-build',
+    [
+      'rustup',
+      'run',
+      ctx.rust_toolchain,
+      'rustc',
+      '--edition=2024',
+      '--crate-type=staticlib',
+      str(helpers / 'cxx_runtime.rs'),
+      '--extern',
+      f'cxx={cxx}',
+      '-L',
+      f'dependency={ctx.target / "deps"}',
+      '-o',
+      str(runtime),
+    ],
+  )
   executable = ctx.output / 'bridge-asan'
-  ctx.run('asan-build', [ctx.cxx, '-std=c++17', '-g', '-fsanitize=address', '-fno-omit-frame-pointer',
-                        f'-I{header}', f'-I{ctx.root / "rust/crates/startup-ui/native"}', f'-I{ctx.raylib / "include"}',
-                        str(helpers / 'bridge_asan.cc'), str(ctx.root / 'rust/crates/startup-ui/native/bridge.cc'),
-                        str(ctx.root / 'rust/crates/startup-ui/native/raylib_loader.cc'), str(runtime), '-ldl', '-lpthread', '-o', str(executable)])
-  ctx.run('asan', [str(executable), str(ctx.root / 'openpilot/selfdrive/assets/img_spinner_track.png'), str(ctx.output / 'asan.png')],
-          {'ASAN_OPTIONS': 'detect_leaks=0:halt_on_error=1'})
+  ctx.run(
+    'asan-build',
+    [
+      ctx.cxx,
+      '-std=c++17',
+      '-g',
+      '-fsanitize=address',
+      '-fno-omit-frame-pointer',
+      f'-I{header}',
+      f'-I{ctx.root / "rust/crates/startup-ui/native"}',
+      f'-I{ctx.raylib / "include"}',
+      str(helpers / 'bridge_asan.cc'),
+      str(ctx.root / 'rust/crates/startup-ui/native/bridge.cc'),
+      str(ctx.root / 'rust/crates/startup-ui/native/raylib_loader.cc'),
+      str(ctx.root / 'rust/crates/startup-ui/native/graphics.cc'),
+      str(ctx.root / 'rust/crates/startup-ui/native/egl.cc'),
+      str(runtime),
+      '-ldl',
+      '-lpthread',
+      '-o',
+      str(executable),
+    ],
+  )
+  ctx.run(
+    'asan',
+    [str(executable), str(ctx.root / 'openpilot/selfdrive/assets/img_spinner_track.png'), str(ctx.output / 'asan.png')],
+    {'ASAN_OPTIONS': 'detect_leaks=0:halt_on_error=1'},
+  )
 
 
 def main() -> None:
@@ -207,9 +269,14 @@ def main() -> None:
   require(args.raylib_root is not None and args.raylib_library is not None, 'provide native raylib root and plugin path')
   output = args.output.resolve()
   output.mkdir(parents=True, exist_ok=True)
-  environment = dict(os.environ, DISPLAY=args.display, OFFSCREEN='1', PYTHONPATH=str(args.root.resolve()),
-                     PARAMS_ROOT=str(output / 'params'),
-                     STARTUP_UI_RAYLIB_LIBRARY=str(args.raylib_library.resolve()))
+  environment = dict(
+    os.environ,
+    DISPLAY=args.display,
+    OFFSCREEN='1',
+    PYTHONPATH=str(args.root.resolve()),
+    PARAMS_ROOT=str(output / 'params'),
+    STARTUP_UI_RAYLIB_LIBRARY=str(args.raylib_library.resolve()),
+  )
   ctx = Context(args.root.resolve(), args.target.resolve(), output, args.raylib_root.resolve(), environment, args.cxx, args.rust_toolchain)
   write_json(output / 'result.json', {'status': 'running'})
   try:
@@ -220,9 +287,19 @@ def main() -> None:
   except Exception:
     write_json(output / 'result.json', {'status': 'failed', 'traceback': traceback.format_exc()})
     raise
-  write_json(output / 'result.json', {'status': 'passed', 'scenes': 6, 'text_pixel_equality': True, 'source_state_equality': True,
-                                    'live_input': True, 'native_children': True, 'adapter_asan': True,
-                                    'asan_limit': 'prebuilt external raylib uninstrumented; driver leak checks disabled'})
+  write_json(
+    output / 'result.json',
+    {
+      'status': 'passed',
+      'scenes': 6,
+      'text_pixel_equality': True,
+      'source_state_equality': True,
+      'live_input': True,
+      'native_children': True,
+      'adapter_asan': True,
+      'asan_limit': 'prebuilt external raylib uninstrumented; driver leak checks disabled',
+    },
+  )
   print(f'PASS startup UI source/render/input/children/ASAN checks: {output / "result.json"}')
 
 

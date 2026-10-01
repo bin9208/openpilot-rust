@@ -16,13 +16,15 @@ thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 num-traits = "0.2"
-rustix = { version = "1", features = ["fs", "event", "process", "pipe", "stdio"] }
+rustix = { version = "1", features = ["fs", "event", "process", "pipe", "stdio", "time"] }
 openpilot-process-supervision = { path = "../process-supervision" }
 openpilot-registration = { path = "../registration" }
 openpilot-hardware-info = { path = "../hardware-info" }
 openpilot-hardware-control = { path = "../hardware-control" }
 openpilot-params = { path = "../params" }
+openpilot-logging = { path = "../logging" }
 signal-hook = "0.3"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 [build-dependencies]
 cxx-build = "1"
@@ -49,4 +51,16 @@ required-features = ["native"]
 
 [[example]]
 name = "startup_ui_children"
+required-features = ["native"]
+
+[[example]]
+name = "egl_trace"
+required-features = ["native"]
+
+[[example]]
+name = "fps_trace"
+required-features = ["native"]
+
+[[example]]
+name = "diagnostic_render"
 required-features = ["native"]

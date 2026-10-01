@@ -538,12 +538,28 @@
   ],
   "library_ports": [
     {
+      "name": "shared_ui_framework",
+      "source_entrypoint": "openpilot.system.ui.lib and openpilot.system.ui.widgets",
+      "status": "native_shared_framework_host_validated",
+      "implementation": "rust/crates/ui-framework; startup-ui graphics/input/diagnostics/EGL; wifi NetworkManager library from #135",
+      "native_dependencies": [
+        "uv.lock-pinned comma-deps-raylib 6.0.0.1.post103 native plugin",
+        "original fonts/images; Rust font shaping and PNG decoding",
+        "host GL/X11 or board EGL/GLES/DRM/GBM",
+        "Linux input, NetworkManager/D-Bus, ffmpeg recording",
+        "existing Rust logging/msgq/libzmq IPC"
+      ],
+      "runtime_scope": "source/native widget, navigation, stack, scrolling, text/emoji/localization, forms, network commands, shaders and diagnostics; real XTest typing/click, profiling, recording and logging IPC; EGL ABI fixture only, not real DMA-BUF; product selfdrive/ui, production selection and complete normal startup/upload remain integration work",
+      "production_replaced": false,
+      "evidence": "docs/naver/rust_ui_framework_125.md"
+    },
+    {
       "name": "startup_ui_widgets",
       "source_entrypoint": "openpilot.common.spinner/text_window/network_info; openpilot.system.ui.spinner/text and shared drawing/input dependencies",
       "status": "native_render_and_child_lifecycle_host_validated",
       "implementation": "rust/crates/startup-ui; native Spinner/TextWindow state, rendering/input, IP display and owning child wrappers",
       "native_dependencies": ["uv.lock-pinned comma-deps-raylib 6.0.0.1.post103 native plugin", "host GL/X11 or board EGL/GLES/DRM/GBM", "Linux input events and process helper", "existing msgq/libzmq in shared support"],
-      "runtime_scope": "six source/native scenes, actual window/input/child lifecycle and CXX ASan; main UI and shared debug/record/burn-in utilities, manager adoption, ARM plugin/AGNOS execution and full startup/upload remain pending",
+      "runtime_scope": "six source/native scenes, actual window/input/child lifecycle and CXX ASan; shared debug/record/burn-in/profile implemented in #125; main UI, manager adoption, ARM plugin/AGNOS execution and full startup/upload remain pending",
       "production_replaced": false,
       "evidence": "docs/naver/rust_startup_ui_117.md"
     },

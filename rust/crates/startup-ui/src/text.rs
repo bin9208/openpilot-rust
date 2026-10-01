@@ -1,12 +1,16 @@
 use crate::geometry::Point;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Font {
     Normal,
     NormalRaw,
     Medium,
     Pretendard,
     Display,
+    Bold,
+    SemiBold,
+    Unifont,
+    Regular,
 }
 pub trait Measure {
     fn measure(&self, font: Font, text: &str, size: f32, spacing: f32) -> Point;
