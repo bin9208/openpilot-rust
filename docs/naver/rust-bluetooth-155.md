@@ -177,5 +177,28 @@ manager selection/startup, physical Bluetooth behavior, vehicle acceptance
 and CPU comparisons remain outside this component evidence. Full-runtime #1
 is open; this is not a first-device handoff.
 
+## CI boundary repairs
+
+The first PR #167 runs exposed a missing candidate entry in the manager catalog;
+the manifest and catalog now both identify `openpilot-bluetoothd` as an isolated
+candidate without selecting it for production. They also exposed
+[#171](https://github.com/bin9208/openpilot-rust/issues/171): GitHub's Python
+uses direct `stat64`, which the input fixture did not intercept. The original
+therefore saw no synthetic character device and skipped permission fallback.
+System Python 3.12 reproduced all seven permission mismatches locally, while
+the uv Python used an already covered stat entrypoint. The fixture now covers
+direct `stat64` only for its owned synthetic path. All sixteen source/native
+cases pass with both Python builds and the fixture compiled under UBSan.
+Evidence: `input-system-python-red`, `input-system-python-green` and
+`input-uv-python-green`; runtime permission policy is unchanged.
+
 Docs-Not-Needed: implementation-language conversion of existing behavior; no
 setting or user-visible behavior change.
+# Manager catalog follow-up
+
+The candidate manager catalog now records the Bluetooth crate and executable,
+matching the runtime inventory. The unchanged-source catalog comparison passed
+63 descriptors, 64 configurations, 25 environment snapshots, 10,573 predicate
+cases and 24 fatal cases. Evidence is retained in the local
+`2026-10-01-bluetooth-ci/bluetooth-catalog-green-full-deps` directory. This adds
+candidate availability only; whole-runtime startup remains tracked by #1.

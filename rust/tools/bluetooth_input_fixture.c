@@ -106,6 +106,13 @@ int fstatat64(int dirfd, const char *path, struct stat64 *result, int flags) {
   return status;
 }
 
+int stat64(const char *path, struct stat64 *result) {
+  int (*real_stat)(const char *, struct stat64 *) = dlsym(RTLD_NEXT, "stat64");
+  int status = real_stat(matches(path) ? getenv("INPUT_FIXTURE_FIFO") : path, result);
+  if (status == 0 && matches(path) && !getenv("INPUT_FIXTURE_NOT_CHAR")) result->st_mode = (result->st_mode & ~S_IFMT) | S_IFCHR;
+  return status;
+}
+
 int __xstat64(int version, const char *path, struct stat64 *result) {
   int (*real_stat)(int, const char *, struct stat64 *) = dlsym(RTLD_NEXT, "__xstat64");
   int status = real_stat(version, matches(path) ? getenv("INPUT_FIXTURE_FIFO") : path, result);
