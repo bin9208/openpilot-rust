@@ -335,7 +335,10 @@
       "name": "qcomgpsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.qcomgpsd.qcomgpsd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/qcomgpsd; native diagnostic framing, five GNSS reports, modem setup/assistance/lifecycle and separate NMEA debug entrypoint",
+      "native_dependencies": ["Linux serial/termios/flock and GPIO34 sysfs", "Quectel/Qualcomm modem firmware", "mmcli/ModemManager assistance injection", "HTTP/TLS transport", "original msgq through CXX; existing native logging transport"],
+      "runtime_scope": "source report/setup comparisons and real native processes with private PTYs, GPIO files, loopback HTTP and isolated msgq; NMEA source delimiter-only checksum and nonempty AT response TypeError preserved; not selected by manager; whole-runtime startup/upload, AGNOS and device acceptance pending; see docs/naver/rust-qcomgps-130.md",
       "production_replaced": false
     },
     {

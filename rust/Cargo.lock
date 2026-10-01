@@ -2260,6 +2260,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-qcomgpsd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "chrono",
+ "num-bigint",
+ "num-traits",
+ "openpilot-cereal",
+ "openpilot-hardware-control",
+ "openpilot-http-transport",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-runtime-core",
+ "openpilot-timed",
+ "rustix",
+ "serde",
+ "serde_json",
+ "serialport",
+ "signal-hook",
+ "thiserror",
+ "ureq",
+]
+
+[[package]]
 name = "openpilot-registration"
 version = "0.1.0"
 dependencies = [
