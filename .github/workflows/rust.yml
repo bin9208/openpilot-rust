@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, web-upload-timeouts]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, web-upload-timeouts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -35,6 +35,7 @@ jobs:
           SENSOR_AUDIO: ${{ needs.sensor-audio.result }}
           GNSS: ${{ needs.gnss-runtime.result }}
           ESTIMATION: ${{ needs.estimation-runtime.result }}
+          UI_CONNECTIVITY: ${{ needs.ui-connectivity.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
         run: |
           test "$WORKSPACE" = success
@@ -50,6 +51,7 @@ jobs:
           test "$SENSOR_AUDIO" = success
           test "$GNSS" = success
           test "$ESTIMATION" = success
+          test "$UI_CONNECTIVITY" = success
           test "$UPLOAD_TIMEOUTS" = success
   workspace:
     name: rust workspace checks
@@ -706,6 +708,61 @@ jobs:
             ${{ runner.temp }}/estimation/
             ${{ runner.temp }}/locationd-oracle/build.log
             ${{ runner.temp }}/paramsd-oracle/build.log
+  ui-connectivity:
+    name: rust UI and connectivity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CXX: clang++
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev libgl-dev libx11-dev xvfb xauth ffmpeg dbus-daemon
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 cffi==2.1.1 pillow==12.3.0 python-xlib==0.33 jeepney==0.9.0 comma-deps-raylib==6.0.0.1.post103
+      - name: Stage source-pinned native renderer
+        run: |
+          python rust/tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/ui-raylib" --shared
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/ui-raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-raylib/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Build native UI and connectivity with original Params oracle
+        run: |
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision --bins --examples --locked
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/ui-params-binding"
+      - name: Compare shared UI state, pixels, real input and native lifecycle
+        run: |
+          xvfb-run -a -s '-screen 0 2160x1080x24' bash -euc '
+            python rust/tools/check_ui_framework.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/framework" --display "$DISPLAY"
+            python rust/tools/check_startup_ui.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/startup" --display "$DISPLAY" --raylib-root "$STARTUP_UI_RAYLIB_ROOT" --raylib-library "$STARTUP_UI_RAYLIB_LIBRARY"
+          '
+          python rust/tools/check_ui_emoji.py --binary "$PWD/rust/target/debug/examples/emoji_raster" --output "$RUNNER_TEMP/ui-connectivity/emoji"
+          python rust/tools/check_ui_translations.py --binary "$PWD/rust/target/debug/examples/translation_trace" --output "$RUNNER_TEMP/ui-connectivity/translations"
+      - name: Compare Wi-Fi policy and original/native private NetworkManager protocol
+        run: |
+          python rust/tools/check_wifi_policy.py --binary "$PWD/rust/target/debug/examples/wifi_trace" --output "$RUNNER_TEMP/ui-connectivity/wifi-policy.json"
+          python rust/tools/check_wifi_runtime.py --binary "$PWD/rust/target/debug/examples/wifi_native" --launcher "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so --output "$RUNNER_TEMP/ui-connectivity/wifi"
+      - name: Compare discovery policy, HTTP, continuous process and address ABI
+        run: |
+          python rust/tools/check_cweb_policy.py --binary "$PWD/rust/target/debug/examples/cweb_trace" --output "$RUNNER_TEMP/ui-connectivity/cweb/policy"
+          python rust/tools/check_cweb_http.py --binary "$PWD/rust/target/debug/examples/cweb_http" --output "$RUNNER_TEMP/ui-connectivity/cweb/http"
+          python rust/tools/check_cweb_daemon.py --binary "$PWD/rust/target/debug/openpilot-cweb-push" --binding "$RUNNER_TEMP/ui-params-binding"/params_pyx*.so --output "$RUNNER_TEMP/ui-connectivity/cweb/daemon"
+          python rust/tools/check_cweb_address.py --binary "$PWD/rust/target/debug/examples/cweb_address" --output "$RUNNER_TEMP/ui-connectivity/cweb/address"
+      - name: Retain source/native images and connectivity evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-ui-connectivity-evidence
+          path: |
+            ${{ runner.temp }}/ui-connectivity/
+            ${{ runner.temp }}/ui-params-binding/provenance.json
+            ${{ runner.temp }}/ui-raylib/SOURCE_SHA256
+            ${{ runner.temp }}/ui-raylib/plugin-build.json
   platform-runtime:
     name: rust platform runtime
     runs-on: ubuntu-24.04
