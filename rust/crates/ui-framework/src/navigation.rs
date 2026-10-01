@@ -10,12 +10,14 @@ use num_traits::ToPrimitive;
 
 mod motion;
 pub use motion::NavMotion;
+pub type UpdateCallback = Box<dyn FnMut(&mut NavWidget)>;
 pub struct NavWidget {
     pub state: WidgetState,
     pub motion: NavMotion,
     pub content: Box<dyn Widget>,
     pub back_enabled: Box<dyn Fn() -> bool>,
     on_back: Option<crate::callback::Callback<()>>,
+    pub on_update: Option<UpdateCallback>,
     pub on_shown: Option<Box<dyn FnOnce()>>,
     dismiss_callback: Option<Box<dyn FnOnce()>>,
     pop_requested: bool,
@@ -30,6 +32,7 @@ impl NavWidget {
             back_enabled: Box::new(|| true),
             on_back: None,
             on_shown: None,
+            on_update: None,
             dismiss_callback: None,
             pop_requested: false,
             window_height,
@@ -80,7 +83,10 @@ impl Widget for NavWidget {
         }
         self.pop_requested |= pop;
         self.set_position(self.state.rect.x, float(y));
-
+        if let Some(mut callback) = self.on_update.take() {
+            callback(self);
+            self.on_update = Some(callback);
+        }
         Ok(())
     }
     fn mouse_event(

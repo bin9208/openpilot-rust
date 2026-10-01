@@ -80,3 +80,35 @@ UI application or fulfill the #148 handoff. Home/sidebar/onboarding/settings,
 network/API workers, onroad camera/model/HUD/alerts and end-to-end process
 lifecycle remain in progress. Native eGPU backend completion is tracked in
 [#154](https://github.com/bin9208/openpilot-rust/issues/154).
+
+## Pairing and API worker checkpoint
+
+Both pairing layouts, their distinct QR styles and the big-display SSH action
+are now native. All 22 product render scenes match the original pixels exactly
+in English/Korean (`product-ssh/results.json`). The small pairing label retains
+its source English string and tight line spacing even under Korean font selection.
+Background callbacks and rendering share the current translation catalog.
+
+Prime and Firehose preserve their authenticated GET sessions, offroad/awake
+polling gates, 5/30-second fetch cadence and 10-second/unbounded request timeout
+policies. SSH retains its 15-second timeout, ordered username/key writes,
+error clearing before callback and localized outcomes. Polling stop wakes idle
+workers and preserves the source one-second join limit for active requests;
+any outstanding request owns its data until completion. These are implemented
+services; application-wide gate updates and lifecycle composition remain part
+of the pending full UI integration.
+
+| Scenario | Invocation | Observable / artifact |
+| --- | --- | --- |
+| GET transport | `check_ui_api_http.py --binary .../api_get --output .../api-http` | Exact response text/status and selected request headers, cookies, cross-port auth removal, both deflate formats, redirect limit, progressing body and timeout; `api-http/results.json` |
+| Prime/Firehose | `check_ui_api_services.py --binary .../api_services --persist .../synthetic-persist --output .../api-services-final` | Original class bodies and real native Params/loopback HTTP: initial typed values, missing/unregistered identities, changed/unchanged status, malformed/nonfinite/arbitrary-integer JSON and exact stored JSON bytes; `api-services-final/results.json` |
+| SSH workers | `check_ui_ssh_fetch.py --binary .../ssh_fetch --output .../ssh-fetch-final` | Nine real worker scenarios, including the actual 15-second timeout, Unicode whitespace, callback Params state and Korean errors; `ssh-fetch-final/results.json` |
+| Polling lifecycle | `cargo test -p openpilot-ui-application -j2` | Onroad/asleep requests suppressed, offroad/awake execution, idle worker closure release, repeated stop; `services-tests.log` |
+| Pairing/SSH screens | `check_ui_product_widgets.py --binary .../product_render --output .../product-ssh --display :125` | 22 exact source/native screens; `product-ssh/results.json` |
+| Native ownership | `check_ui_native_resources.py --target .../debug --raylib .../raylib-host --output .../resources-stage3 --display :126` | Actual clear-color readback, idempotent release and ASan; per-compiler disk checks and exact invocations under `resources-stage3/` |
+
+`services-clippy.log` and `services-ruff-final.log` capture the package/code
+checks. The shared registration decoder is only made public for reuse; its
+conversion policy is unchanged. No real account, NAS or vehicle endpoint was
+contacted. These checkpoints do not close #148 or replace complete runtime,
+settings/onroad/camera and normal-startup/log-upload acceptance.

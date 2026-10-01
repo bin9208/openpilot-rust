@@ -58,6 +58,9 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn clear(&mut self, color: u32) -> Result<(), Error> {
+        self.renderer.clear(color)
+    }
     fn upload_pixels(
         &mut self,
         pixels: crate::draw::PixelBuffer<'_>,

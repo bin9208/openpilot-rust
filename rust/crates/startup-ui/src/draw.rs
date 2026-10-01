@@ -43,6 +43,9 @@ pub enum PolygonPaint<'a> {
     },
 }
 pub trait Draw: Measure {
+    fn clear(&mut self, _color: u32) -> Result<(), Error> {
+        Err(Error::Contract("background clear unavailable"))
+    }
     fn upload_pixels(
         &mut self,
         _pixels: PixelBuffer<'_>,

@@ -89,6 +89,7 @@ uint32_t Surface::texture(Image &image, int32_t logical_width,
   textures.push_back(value);
   return textures.size() - 1;
 }
+void Surface::clear(uint32_t tint) noexcept { ClearBackground(color(tint)); }
 void Surface::texture_release(uint32_t index) noexcept {
   if (index < textures.size() && textures[index].id) {
     UnloadTexture(textures[index]);

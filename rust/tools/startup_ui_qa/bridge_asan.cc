@@ -53,6 +53,9 @@ int main(int argc, char **argv) {
     surface->set_title("ASAN frame ownership");
     surface->key_pressed();surface->char_pressed();surface->key_down(257);surface->key_started(257);surface->mouse_position();surface->fps();
     surface->begin(1);
+    surface->clear(0xff332211);
+    const auto cleared = surface->capture_pixels();
+    if (cleared.size() != 536*240*4 || cleared[0] != 0x11 || cleared[1] != 0x22 || cleared[2] != 0x33) return 10;
     const std::vector<startup_ui::Point> polygon_points{{200,20},{240,20},{220,80}};
     surface->triangle_strip({polygon_points.data(),polygon_points.size()},0xffffffff,shader,true);
     surface->circle_gradient({80,80},25,0xff0000ff,0);

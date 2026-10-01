@@ -49,10 +49,21 @@ from openpilot.selfdrive.ui.widgets.carrot_web_dialog import CarrotWebDialog
 multilang._language = scene['language']
 multilang.setup()
 gui_app.init_window('Source product widget')
-if scene['kind'] == 'setup':
+if scene['kind'] == 'ssh':
+  from openpilot.selfdrive.ui.widgets.ssh_key import SshKeyAction
+
+  widget = SshKeyAction()
+elif scene['kind'] == 'setup':
   from openpilot.selfdrive.ui.widgets.setup import SetupWidget
 
   widget = SetupWidget()
+elif scene['kind'] == 'pairing':
+  if scene['config']['big']:
+    from openpilot.selfdrive.ui.widgets.pairing_dialog import PairingDialog
+  else:
+    from openpilot.selfdrive.ui.mici.widgets.pairing_dialog import PairingDialog
+  widget = PairingDialog()
+  widget._get_pairing_url = lambda: 'https://connect.comma.ai/?pair=fixture'
 elif scene['kind'] == 'prime':
   widget = PrimeWidget()
 else:

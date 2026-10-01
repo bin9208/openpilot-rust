@@ -54,15 +54,24 @@ pub fn encode(data: &str, correction: Correction) -> Result<Matrix, Error> {
 }
 impl Matrix {
     pub fn rgba(&self) -> (usize, Vec<u8>) {
-        let width = (self.size + 8) * 10;
-        let mut output = vec![255; width * width * 4];
+        self.rgba_style(false)
+    }
+    pub fn rgba_style(&self, mici: bool) -> (usize, Vec<u8>) {
+        let border = if mici { 0 } else { 4 };
+        let width = (self.size + border * 2) * 10;
+        let background = if mici { 0 } else { 255 };
+        let foreground = if mici { 255 } else { 0 };
+        let mut output = vec![background; width * width * 4];
+        for pixel in output.chunks_exact_mut(4) {
+            pixel[3] = 255;
+        }
         for y in 0..self.size {
             for x in 0..self.size {
                 if self.modules[y * self.size + x] {
                     for dy in 0..10 {
                         for dx in 0..10 {
-                            let p = (((y + 4) * 10 + dy) * width + (x + 4) * 10 + dx) * 4;
-                            output[p..p + 3].fill(0);
+                            let p = (((y + border) * 10 + dy) * width + (x + border) * 10 + dx) * 4;
+                            output[p..p + 3].fill(foreground);
                         }
                     }
                 }

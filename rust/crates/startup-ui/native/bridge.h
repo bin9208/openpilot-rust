@@ -23,6 +23,7 @@ public:
   Surface(int32_t width, int32_t height, rust::Str title, uint32_t flags);
   ~Surface();
   uint32_t texture(Image &image, int32_t logical_width, int32_t logical_height);
+  void clear(uint32_t color) noexcept;
   void texture_release(uint32_t texture) noexcept;
   uint32_t pixel_texture(int32_t width, int32_t height, rust::Slice<const uint8_t> rgba);
   uint32_t font(rust::Str path, int32_t size, rust::Slice<const int32_t> points,

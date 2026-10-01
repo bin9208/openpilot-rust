@@ -19,6 +19,10 @@ args.output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[2]
 results = []
 cases = [
+  ('ssh-add', 'ssh', 0, None),
+  ('ssh-remove', 'ssh', 0, None),
+  ('pairing', 'pairing', -2, None),
+  ('pairing-mici', 'pairing', -2, None),
   ('prime-free', 'prime', 0, None),
   ('prime-paid', 'prime', 1, None),
   ('setup-pair', 'setup', -2, None),
@@ -29,17 +33,17 @@ cases = [
 ]
 for language in ['en', 'ko']:
   for name, kind, prime, address in cases:
-    big = kind != 'carrot-web' or name == 'web-ipv6'
+    big = (kind != 'carrot-web' or name == 'web-ipv6') and name != 'pairing-mici'
     width, height = (2160, 1080) if big else (536, 240)
     scene = {
       'kind': kind,
       'config': {'big': big, 'large_viewport': big, 'pc': True, 'scale': 1.0},
       'language': language,
-      'rect': {'x': 0, 'y': 0, 'width': 750 if kind != 'carrot-web' else width, 'height': 900 if kind != 'carrot-web' else height},
+      'rect': {'x': 0, 'y': 0, 'width': 750 if kind in ['prime', 'setup'] else width, 'height': 900 if kind in ['prime', 'setup'] else height},
       'frames': 3,
       'prime': prime,
       'address': address,
-      'params': {},
+      'params': {'GithubUsername': 'fixture-user', 'GithubSshKeys': 'ssh-ed25519 fixture'} if name == 'ssh-remove' else {},
     }
     case = f'{name}-{language}'
     path = args.output / f'{case}.json'
@@ -63,4 +67,4 @@ for language in ['en', 'ko']:
     print(json.dumps(row), flush=True)
 (args.output / 'results.json').write_text(json.dumps(results, indent=2))
 assert all(row['different_pixels'] == 0 for row in results), results
-print('PASS: 14 source/native Prime, setup and Carrot Web QR screens in English/Korean with exact pixels')
+print('PASS: 22 source/native SSH, pairing, Prime, setup and Carrot Web QR screens in English/Korean with exact pixels')

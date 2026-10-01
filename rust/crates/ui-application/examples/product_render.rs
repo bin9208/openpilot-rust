@@ -38,8 +38,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let renderer = Renderer::new(scene.config, &assets, false, &scene.language)?;
     let mut canvas = Canvas::new(renderer, &assets);
     let mut widget: Box<dyn Widget> = match scene.kind.as_str() {
+        "ssh" => Box::new(openpilot_ui_application::widgets::ssh::SshAction::new(context.clone(), &mut canvas)?),
         "prime" => Box::new(PrimeWidget::new(context.clone())),
         "setup" => Box::new(SetupWidget::new(context.clone())),
+        "pairing" if !scene.config.big => {
+            let mut widget = openpilot_ui_application::mici::widgets::pairing::Pairing::new(
+                context.clone(),
+                &mut canvas,
+            )?;
+            widget.url = Box::new(|| "https://connect.comma.ai/?pair=fixture".into());
+            Box::new(widget.navigation(context.clone(), &canvas))
+        }
+        "pairing" => {
+            let mut widget = openpilot_ui_application::widgets::pairing::Pairing::new(
+                context.clone(),
+                &mut canvas,
+            )?;
+            widget.url = Box::new(|| "https://connect.comma.ai/?pair=fixture".into());
+            Box::new(widget)
+        }
         "carrot-web" => Box::new(CarrotWeb::new(context.clone())),
         _ => return Err("unknown product kind".into()),
     };

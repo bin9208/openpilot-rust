@@ -8,6 +8,7 @@ pub struct Texture {
     data: Option<String>,
     texture: Option<Box<dyn TextureResource>>,
     correction: Correction,
+    mici: bool,
 }
 impl Texture {
     pub fn new(correction: Correction) -> Self {
@@ -15,7 +16,13 @@ impl Texture {
             data: None,
             texture: None,
             correction,
+            mici: false,
         }
+    }
+    pub fn mici() -> Self {
+        let mut texture = Self::new(Correction::Low);
+        texture.mici = true;
+        texture
     }
     pub fn available(&self) -> bool {
         self.texture.is_some()
@@ -32,7 +39,7 @@ impl Texture {
         }
         match encode(data, self.correction) {
             Ok(matrix) => {
-                let (size, bytes) = matrix.rgba();
+                let (size, bytes) = matrix.rgba_style(self.mici);
                 let size =
                     i32::try_from(size).map_err(|_| Error::Contract("QR image size overflow"))?;
                 match draw.upload_pixels(PixelBuffer {
