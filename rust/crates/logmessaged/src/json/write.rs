@@ -1,8 +1,19 @@
 use super::{Document, Text, Value};
 use openpilot_runtime_core::python_float::write_float as float;
 use std::fmt::Write;
+
+#[derive(Clone, Copy)]
+pub(super) enum TextEncoding {
+    AsciiEscaped,
+    Utf8,
+}
+
 impl Text {
-    fn write(&self, output: &mut String) -> std::fmt::Result {
+    fn write(&self, output: &mut String, encoding: TextEncoding) -> std::fmt::Result {
+        let utf8 = match encoding {
+            TextEncoding::AsciiEscaped => false,
+            TextEncoding::Utf8 => true,
+        };
         output.push('"');
         for &point in &self.0 {
             match point {
@@ -17,6 +28,9 @@ impl Text {
                     if let Some(character) = char::from_u32(point) {
                         output.push(character);
                     }
+                }
+                point if utf8 && point >= 127 => {
+                    output.push(char::from_u32(point).ok_or(std::fmt::Error)?);
                 }
                 0..=0xffff => write!(output, "\\u{point:04x}")?,
                 _ => {
@@ -41,9 +55,14 @@ enum Part<'a> {
 }
 impl Document {
     pub fn write(&self, output: &mut String) -> std::fmt::Result {
-        self.write_node(self.root, output)
+        self.write_node(self.root, output, TextEncoding::AsciiEscaped)
     }
-    pub(super) fn write_node(&self, root: usize, output: &mut String) -> std::fmt::Result {
+    pub(super) fn write_node(
+        &self,
+        root: usize,
+        output: &mut String,
+        encoding: TextEncoding,
+    ) -> std::fmt::Result {
         let mut stack = vec![Part::Node(root)];
         while let Some(part) = stack.pop() {
             let node = match part {
@@ -52,7 +71,7 @@ impl Document {
                     continue;
                 }
                 Part::Text(text) => {
-                    text.write(output)?;
+                    text.write(output, encoding)?;
                     continue;
                 }
                 Part::Node(index) => &self.values[index],
@@ -62,7 +81,7 @@ impl Document {
                 Value::Bool(value) => output.push_str(if *value { "true" } else { "false" }),
                 Value::Integer(value) => output.push_str(value),
                 Value::Float(value) => float(*value, output)?,
-                Value::Text(text) => text.write(output)?,
+                Value::Text(text) => text.write(output, encoding)?,
                 Value::Array(values) => {
                     output.push('[');
                     stack.push(Part::Token("]"));
