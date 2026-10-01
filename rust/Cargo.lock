@@ -2470,6 +2470,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-ublox"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "chrono",
+ "cxx",
+ "cxx-build",
+ "openpilot-cereal",
+ "openpilot-hardware-control",
+ "openpilot-http-transport",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-timed",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+ "ureq",
+ "url",
+]
+
+[[package]]
 name = "openpilot-updated"
 version = "0.1.0"
 dependencies = [

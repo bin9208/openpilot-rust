@@ -101,6 +101,7 @@ fn availability(name: &str) -> RustAvailability {
         "micd" => ("openpilot-micd", "openpilot-micd"),
         "modeld" => ("openpilot-driving-modeld", "openpilot-driving-modeld"),
         "modem" => ("openpilot-modem", "openpilot-modem"),
+        "pigeond" => ("openpilot-ublox", "openpilot-pigeond"),
         "proclogd" => ("openpilot-proclogd", "openpilot-proclogd-runtime"),
         "sensord" => ("openpilot-sensord", "openpilot-sensord"),
         "soundd" => ("openpilot-soundd", "openpilot-soundd"),
@@ -108,6 +109,7 @@ fn availability(name: &str) -> RustAvailability {
         "timed" => ("openpilot-timed", "openpilot-timed"),
         "tombstoned" => ("openpilot-tombstoned", "openpilot-tombstoned"),
         "torqued" => ("openpilot-torqued", "openpilot-torqued"),
+        "ubloxd" => ("openpilot-ublox", "openpilot-ubloxd"),
         "updated" => ("openpilot-updated", "openpilot-updated"),
         _ => return RustAvailability::NotPorted,
     };
