@@ -2272,6 +2272,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-paramsd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "cxx",
+ "cxx-build",
+ "openpilot-cereal",
+ "openpilot-locationd",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "openpilot-runtime-core",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-pocketfft"
 version = "0.1.0"
 dependencies = [
