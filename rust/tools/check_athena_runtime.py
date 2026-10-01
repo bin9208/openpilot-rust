@@ -20,6 +20,7 @@ def main():
   environment = dict(os.environ, PYTHONPATH=str(ROOT) + ':' + str(ROOT / 'rust/tools'))
   vision = output / 'athena-vision-peer'
   cases = [
+    ('startup-identity', ['check_athena_identity.py', '--output', str(output / 'startup-identity')]),
     ('vision-build', ['build_athena_vision_peer.py', str(vision)]),
     ('policy', ['check_athena_policy.py', str(binary / 'examples/athena_policy'), str(output / 'policy.json')]),
     ('rpc', ['check_athena_rpc.py', str(binary / 'examples/athena_rpc'), str(output / 'rpc.json')]),
