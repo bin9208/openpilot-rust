@@ -210,7 +210,10 @@
       "name": "lagd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.lagd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/lagd; source-compatible masked correlation, calibration, recovery/window/block policy and continuous native liveDelay/Params loop",
+      "native_dependencies": ["pinned external PocketFFT numerical kernel through CXX (no Python runtime)", "original msgq through CXX", "existing native Params/logging adapters", "Linux clocks, scheduling and filesystem"],
+      "runtime_scope": "fixed-tolerance source numeric/candidate and full-loop comparisons; real private IPC/Params learning, cache, cadence and signal scenarios; source constant-signal decisions retain pinned PocketFFT arithmetic; not selected by manager; full-runtime startup/upload, generic ARM/AGNOS/device acceptance remain separate; see docs/naver/rust-lagd-139.md",
       "production_replaced": false
     },
     {

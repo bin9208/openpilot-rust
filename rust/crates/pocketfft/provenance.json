@@ -1,0 +1,9 @@
+{
+  "numpy_version": "2.5.3",
+  "numpy_commit": "dd88c0c19b54ad9ed3533224221285bf0873249a",
+  "pocketfft_commit": "33ae5dc94c9cdc7f1c78346504a85de87cadaa12",
+  "files": {
+    "pocketfft_hdronly.h": "50f4ddbe60432325f560c706b6f1c49f9e0949fc7f20ae6499f2299e37d9790c",
+    "LICENSE.md": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056"
+  }
+}

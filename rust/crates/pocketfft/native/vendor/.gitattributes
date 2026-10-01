@@ -1,0 +1,2 @@
+# Preserve the pinned upstream header verbatim, including its existing trailing spaces.
+pocketfft_hdronly.h whitespace=-blank-at-eol
