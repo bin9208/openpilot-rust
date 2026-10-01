@@ -48,6 +48,10 @@ impl Canvas {
     }
 }
 impl Measure for Canvas {
+    fn measure_default(&self, text: &str, size: i32) -> Result<i32, Error> {
+        self.renderer.measure_default(text, size)
+    }
+
     fn measure(&self, font: Font, text: &str, size: f32, spacing: f32) -> Point {
         self.renderer
             .measure_raw(font, text, size, spacing)
@@ -58,6 +62,15 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn rounded_outline(
+        &mut self,
+        rect: Rect,
+        style: crate::draw::RoundedOutline,
+    ) -> Result<(), Error> {
+        self.renderer.rounded_outline(rect, style);
+        Ok(())
+    }
+
     fn clear(&mut self, color: u32) -> Result<(), Error> {
         self.renderer.clear(color)
     }

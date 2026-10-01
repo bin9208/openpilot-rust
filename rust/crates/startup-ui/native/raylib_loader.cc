@@ -39,7 +39,7 @@ void *library() {
                               "LoadFont",
                               "LoadFontEx",
                               "GenTextureMipmaps",
-                              "MeasureTextEx",
+                              "MeasureTextEx", "MeasureText",
                               "DrawTextEx",
                               "DrawTexturePro",
                               "DrawRectangleRoundedLinesEx",
@@ -115,6 +115,7 @@ FORWARD(Font, LoadFontEx,
         (const char *path, int size, const int *points, int count),
         (path, size, points, count))
 FORWARD(void, GenTextureMipmaps, (Texture2D * texture), (texture))
+FORWARD(int, MeasureText, (const char *text, int size), (text, size))
 FORWARD(Vector2, MeasureTextEx,
         (Font font, const char *text, float size, float spacing),
         (font, text, size, spacing))

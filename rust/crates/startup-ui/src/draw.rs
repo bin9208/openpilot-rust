@@ -42,7 +42,18 @@ pub enum PolygonPaint<'a> {
         stops: &'a [f32],
     },
 }
+#[derive(Clone, Copy, Debug)]
+pub struct RoundedOutline {
+    pub roundness: f32,
+    pub segments: i32,
+    pub thickness: f32,
+    pub color: u32,
+}
 pub trait Draw: Measure {
+    fn rounded_outline(&mut self, _rect: Rect, _style: RoundedOutline) -> Result<(), Error> {
+        Err(Error::Contract("rounded outline drawing unavailable"))
+    }
+
     fn clear(&mut self, _color: u32) -> Result<(), Error> {
         Err(Error::Contract("background clear unavailable"))
     }

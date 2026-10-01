@@ -1,5 +1,18 @@
 use super::*;
 impl Renderer {
+    pub fn measure_default(&self, text: &str, size: i32) -> Result<i32, Error> {
+        Ok(self.surface.measure_default(text, size)?)
+    }
+    pub fn rounded_outline(&mut self, rect: Rect, style: crate::draw::RoundedOutline) {
+        self.surface.pin_mut().rounded_outline(
+            convert(rect),
+            style.roundness,
+            style.segments,
+            style.thickness,
+            style.color,
+        );
+    }
+
     pub fn rounded_segments(
         &mut self,
         rect: Rect,

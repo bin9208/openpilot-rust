@@ -119,6 +119,15 @@ pub mod ffi {
             color: u32,
             border: bool,
         );
+        fn measure_default(self: &Surface, text: &str, size: i32) -> Result<i32>;
+        fn rounded_outline(
+            self: Pin<&mut Surface>,
+            rect: Rect,
+            roundness: f32,
+            segments: i32,
+            thickness: f32,
+            color: u32,
+        );
         fn rounded(self: Pin<&mut Surface>, rect: Rect, roundness: f32, color: u32, border: bool);
         fn scissor(self: Pin<&mut Surface>, rect: Rect, enabled: bool);
         fn render_target(self: Pin<&mut Surface>, width: i32, height: i32) -> Result<()>;

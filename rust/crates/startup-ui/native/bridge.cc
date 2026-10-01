@@ -149,6 +149,13 @@ void Surface::rounded_segments(Rect rect, float roundness, int32_t segments, uin
   if (border) DrawRectangleRoundedLinesEx(rectangle(rect), roundness, segments, 2, color(tint));
   else DrawRectangleRounded(rectangle(rect), roundness, segments, color(tint));
 }
+int32_t Surface::measure_default(rust::Str text, int32_t size) const {
+  const std::string owned(text);
+  return MeasureText(owned.c_str(), size);
+}
+void Surface::rounded_outline(Rect rect, float roundness, int32_t segments, float thickness, uint32_t tint) {
+  DrawRectangleRoundedLinesEx(rectangle(rect), roundness, segments, thickness, color(tint));
+}
 void Surface::rounded(Rect rect, float roundness, uint32_t tint, bool border) {
   if (border)
     DrawRectangleRoundedLinesEx(rectangle(rect), roundness, 10, 2, color(tint));

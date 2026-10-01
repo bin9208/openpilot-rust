@@ -4,9 +4,11 @@ pub mod cache;
 pub mod context;
 pub mod device;
 pub mod mici;
+pub mod onroad;
 pub mod paint;
 pub mod params;
 pub mod qr;
+pub mod render_diagnostics;
 pub mod scheduling;
 pub mod services;
 pub mod settings;
@@ -15,6 +17,8 @@ pub mod widgets;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error(transparent)]
+    Logging(#[from] openpilot_logging::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]

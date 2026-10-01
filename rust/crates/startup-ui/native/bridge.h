@@ -38,6 +38,8 @@ public:
   void gradient(Rect rect, uint32_t top_left, uint32_t bottom_left, uint32_t top_right, uint32_t bottom_right);
   void line(Point start, Point end, float thick, uint32_t color);
   void rounded_segments(Rect rect, float roundness, int32_t segments, uint32_t color, bool border);
+  int32_t measure_default(rust::Str text, int32_t size) const;
+  void rounded_outline(Rect rect, float roundness, int32_t segments, float thickness, uint32_t color);
   void rounded(Rect rect, float roundness, uint32_t color, bool border);
   void scissor(Rect rect, bool enabled);
   void render_target(int32_t width, int32_t height);
