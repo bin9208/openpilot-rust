@@ -603,6 +603,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "data-encoding"
+version = "2.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4583a4551df46e2792f82ceeac45e850d2e2d5debba0b91f102385cda5b11f06"
+
+[[package]]
 name = "dbus"
 version = "0.9.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1753,6 +1759,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-athena"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "capnp",
+ "num-traits",
+ "openpilot-cereal",
+ "openpilot-crash-reporting",
+ "openpilot-hardware-info",
+ "openpilot-jpeg",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-managed-entry",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-process-supervision",
+ "openpilot-registration",
+ "openpilot-runtime-version",
+ "openpilot-uploader",
+ "rand 0.9.5",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha1",
+ "signal-hook",
+ "socket2",
+ "tempfile",
+ "thiserror",
+ "tungstenite",
+ "ureq",
+ "url",
+ "zmq",
+ "zstd",
+]
+
+[[package]]
 name = "openpilot-beepd"
 version = "0.1.0"
 dependencies = [
@@ -1908,6 +1952,7 @@ dependencies = [
 name = "openpilot-desire"
 version = "0.1.0"
 dependencies = [
+ "openpilot-logmessaged",
  "serde",
  "serde_json",
  "thiserror",
@@ -2074,6 +2119,15 @@ dependencies = [
  "serde_json",
  "signal-hook",
  "thiserror",
+]
+
+[[package]]
+name = "openpilot-jpeg"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "cxx",
+ "cxx-build",
 ]
 
 [[package]]
@@ -3561,6 +3615,7 @@ version = "1.0.151"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14"
 dependencies = [
+ "indexmap",
  "itoa",
  "memchr",
  "serde",
@@ -3593,6 +3648,17 @@ dependencies = [
  "scopeguard",
  "unescaper",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "sha1"
+version = "0.10.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a978451301f4db1d02937a4ab3ccce137717b81826e79b7d49ffe3244a13c3b8"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.2.17",
+ "digest",
 ]
 
 [[package]]
@@ -4056,6 +4122,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
 dependencies = [
  "core_maths",
+]
+
+[[package]]
+name = "tungstenite"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c01152af293afb9c7c2a57e4b559c5620b421f6d133261c60dd2d0cdb38e6b8"
+dependencies = [
+ "bytes",
+ "data-encoding",
+ "http",
+ "httparse",
+ "log",
+ "rand 0.9.5",
+ "rustls",
+ "rustls-native-certs",
+ "rustls-pki-types",
+ "sha1",
+ "thiserror",
 ]
 
 [[package]]
