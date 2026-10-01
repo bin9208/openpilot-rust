@@ -1,0 +1,18 @@
+[package]
+name = "openpilot-jpeg"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT AND BSD-3-Clause AND IJG AND Zlib"
+publish = false
+
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = []
+
+[dependencies]
+cxx = "1.0"
+
+[build-dependencies]
+cxx-build = "1.0"
+cc = "1.2"

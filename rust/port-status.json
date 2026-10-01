@@ -261,8 +261,16 @@
       "name": "manage_athenad",
       "source_kind": "DaemonProcess",
       "source_entrypoint": "openpilot.system.athena.manage_athenad",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "continuous_native_host_validated_pending_integration",
+      "production_replaced": false,
+      "implementation": "rust/crates/athena; openpilot-manage-athenad and openpilot-athenad",
+      "native_dependencies": [
+        "temporary original msgq/VisionIPC through CXX",
+        "external libjpeg-turbo 3.1.4.1 through bounded C/CXX bridge",
+        "libzmq logging; rustls TLS; zstd compression"
+      ],
+      "runtime_scope": "owned host WebSocket/RPC/upload/proxy/log/stat/snapshot/supervisor runtime; original camerad remains a separate project-owned runtime dependency; manager selection, full startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/naver/rust-athena-146.md"
     },
     {
       "name": "maneuversd",
