@@ -104,7 +104,9 @@ static std::unique_ptr<Queue> open_checked_queue(rust::Str endpoint, bool publis
   const std::string path = "/dev/shm/msgq_" + (raw_prefix ? prefix + "/" : "") + name;
   struct stat info{};
   if (::stat(path.c_str(), &info) == 0) {
-    if (!S_ISREG(info.st_mode) || info.st_size != static_cast<off_t>(capacity + sizeof(msgq_header_t))) {
+    // Original msgq exposes an empty inode between open(O_CREAT) and ftruncate.
+    const bool compatible_size = info.st_size == 0 || info.st_size == static_cast<off_t>(capacity + sizeof(msgq_header_t));
+    if (!S_ISREG(info.st_mode) || !compatible_size) {
       throw std::invalid_argument("existing msgq queue has incompatible size or type");
     }
   } else if (errno != ENOENT) {
