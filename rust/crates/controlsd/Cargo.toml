@@ -1,0 +1,45 @@
+[package]
+name = "openpilot-controlsd"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native"]
+native = ["openpilot-messaging/native", "openpilot-calibrationd/native-skip-miri", "dep:openpilot-msgq", "dep:openpilot-logging", "dep:signal-hook", "dep:libc"]
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dependencies]
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-control-policy = { path = "../control-policy" }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging", default-features = false }
+openpilot-params = { path = "../params" }
+openpilot-beepd = { path = "../beepd" }
+openpilot-calibrationd = { path = "../calibrationd", default-features = false }
+openpilot-msgq = { path = "../msgq", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+capnp = "=0.27.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+rustix = { version = "1", features = ["time", "thread"] }
+signal-hook = { version = "0.3", optional = true }
+libc = { version = "0.2", optional = true }
+
+[[bin]]
+name = "openpilot-controlsd"
+path = "src/main.rs"
+required-features = ["native"]
+
+[[example]]
+name = "controlsd_trace"
+required-features = ["native"]
+
+[[example]]
+name = "controlsd_peer"
+required-features = ["native"]

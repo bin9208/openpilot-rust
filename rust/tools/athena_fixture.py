@@ -9,7 +9,7 @@ import tempfile
 import threading
 import time
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization
 from websockets.sync.server import serve
@@ -99,8 +99,10 @@ class Environment:
     (self.home / 'persist/comma/id_ecdsa').write_bytes(private)
     (self.home / 'persist/comma/id_ecdsa.pub').write_bytes(self.public)
     (self.params / 'DongleId').write_text('synthetic146')
-    (root / 'build.json').write_text(json.dumps({'channel': 'fixture', 'openpilot': {'version': '1.2.3', 'git_origin': 'https://github.com/synthetic/athena.git', 'git_commit': '0' * 40}}))
-    self.env = dict(os.environ, PARAMS_ROOT=str(root / 'params'), OPENPILOT_PREFIX=self.prefix, LOG_ROOT=str(self.logs), OPENPILOT_BASEDIR=str(root), ATHENA_HOST=f'ws://127.0.0.1:{port}', LOGPRINT='debug')
+    (root / 'build.json').write_text(json.dumps({'channel': 'fixture', 'openpilot': {
+      'version': '1.2.3', 'git_origin': 'https://github.com/synthetic/athena.git', 'git_commit': '0' * 40}}))
+    self.env = dict(os.environ, PARAMS_ROOT=str(root / 'params'), OPENPILOT_PREFIX=self.prefix, LOG_ROOT=str(self.logs),
+                    OPENPILOT_BASEDIR=str(root), ATHENA_HOST=f'ws://127.0.0.1:{port}', LOGPRINT='debug')
 
   def close(self):
     shutil.rmtree(self.home)
@@ -114,23 +116,45 @@ def daemon(binary, root, env, trace=False):
   command = [str(binary)]
   if trace:
     command = ['strace', '-f', '-e', 'trace=network,read,write,poll,ppoll', '-o', str(root / 'sockets.log'), *command]
-  process = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT)
-  pid = process.pid
-  if trace:
-    pid = wait_for(lambda: Path(f'/proc/{process.pid}/task/{process.pid}/children').read_text().strip())
-    pid = int(pid.split()[0])
+  process = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+  pid = None
+  target = binary.resolve()
+
+  def native_pid():
+    if process.poll() is not None:
+      raise ChildProcessError(f'owned Athena process exited before readiness: {process.returncode}')
+    candidates = [process.pid]
+    if trace:
+      try:
+        candidates = [int(value) for value in Path(f'/proc/{process.pid}/task/{process.pid}/children').read_text().split()]
+      except (FileNotFoundError, ProcessLookupError):
+        return None
+    for candidate in candidates:
+      try:
+        if Path(f'/proc/{candidate}/exe').resolve(strict=True) == target:
+          return candidate
+      except (FileNotFoundError, ProcessLookupError):
+        continue
+    return None
+
   try:
-    wait_for(lambda: Path(f'/proc/{pid}/exe').resolve() == binary.resolve())
+    pid = wait_for(native_pid)
     yield process, pid
   finally:
     if process.poll() is None:
-      os.kill(pid, signal.SIGTERM)
+      with suppress(ProcessLookupError):
+        if pid is None:
+          os.killpg(process.pid, signal.SIGTERM)
+        else:
+          os.kill(pid, signal.SIGTERM)
     try:
       process.wait(timeout=36)
     except subprocess.TimeoutExpired:
-      os.kill(pid, signal.SIGKILL)
-      process.kill()
+      with suppress(ProcessLookupError):
+        os.killpg(process.pid, signal.SIGKILL)
       process.wait(timeout=5)
+    with suppress(ProcessLookupError):
+      os.killpg(process.pid, signal.SIGKILL)
     log.close()
 
 
