@@ -96,6 +96,7 @@ fn availability(name: &str) -> RustAvailability {
         "hardwared" => ("openpilot-hardwared", "openpilot-hardwared"),
         "jetlinkd" => ("openpilot-jetlink", "jetlinkd-rs"),
         "journald" => ("openpilot-journald", "journald-rs"),
+        "lagd" => ("openpilot-lagd", "openpilot-lagd"),
         "loggerd" => ("openpilot-loggerd", "openpilot-loggerd"),
         "logmessaged" => ("openpilot-logmessaged", "openpilot-logmessaged"),
         "micd" => ("openpilot-micd", "openpilot-micd"),

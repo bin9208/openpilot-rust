@@ -1989,6 +1989,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-lagd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "cxx",
+ "num-traits",
+ "openpilot-calibrationd",
+ "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-pocketfft",
+ "openpilot-torqued",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-loggerd"
 version = "0.1.0"
 dependencies = [
@@ -2230,6 +2250,14 @@ dependencies = [
  "tempfile",
  "thiserror",
  "zmq",
+]
+
+[[package]]
+name = "openpilot-pocketfft"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "cxx-build",
 ]
 
 [[package]]
