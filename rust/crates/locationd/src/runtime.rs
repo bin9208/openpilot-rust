@@ -67,7 +67,12 @@ pub fn run(mut remaining: Option<u64>) -> Result<(), Error> {
     let params = openpilot_params::Params::for_runtime()?;
     let mut state = LoopState::new(flag("DEBUG")?, flag("SIMULATION")?)?;
     let mut logger = Factory::for_runtime()?.logger();
-    if let Some(bytes) = params.get("LocationFilterInitialState")? {
+    let initial = match params.get("LocationFilterInitialState") {
+        Ok(value) => value.filter(|bytes| !bytes.is_empty()),
+        Err(openpilot_params::Error::Io(_)) => None,
+        Err(error) => return Err(error.into()),
+    };
+    if let Some(bytes) = initial {
         let seed = wire::seed(&bytes)?;
         state.estimator.kf.reset(None, &seed.x, &seed.covariance)?;
     }
