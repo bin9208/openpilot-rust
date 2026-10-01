@@ -45,6 +45,33 @@ coordinates and deterministic randomized transitions.
   does not yet verify actual native evdev or cereal transport.
 - Strict package Clippy, Rust formatting, Python Ruff and whitespace checks pass.
 
+Native Linux input ownership now opens nonblocking read-only descriptors, grabs
+the device, selects its monotonic event clock and drains buffered fragments.
+The two evdev ioctls are confined to a small audited boundary; event parsing
+uses safe native-endian byte conversions. Descriptor and permission-child
+ownership are released on failures. The existing three-second sudo timeout,
+command arguments and permission-fallback eligibility are preserved.
+
+- Sixteen original/native FIFO scenarios match outcomes, error messages,
+  ioctl order, permission command arguments and zero descriptor growth. Cases
+  include partial/empty input, interrupted reads, ownership failures, permission
+  failure, missing sudo, terminated children, timeout and full output pipes.
+- 10,049 decode cases match signed fields and binary64 timestamp bits exactly.
+- Forty synthetic sysfs nodes produce the same 31 accepted devices in source
+  order, including all Python whitespace characters; malformed UTF-8, missing
+  files, non-Bluetooth nodes and invalid addresses are excluded.
+- Rust AddressSanitizer passes all sixteen input scenarios and decode cases.
+  The separate C syscall fixture passes UndefinedBehaviorSanitizer. Miri with
+  strict provenance, symbolic alignment and preemption checks passes the safe
+  decoder regression. Miri does not execute kernel ioctls; these checks do not
+  establish physical HID behavior.
+
+Input evidence is retained in `input-io-expanded-green`, `input-decode-green`,
+`enumerate-green`, `input-asan`, `input-decode-asan` and `input-ubsan`.
+The final Miri run uses `input-miri-target` after the reused cache reported
+missing dependency metadata; `input-miri-isolated.log` records the clean pass.
+No system input permissions or Bluetooth services were changed by the fixtures.
+
 Source SHA-256:
 `74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633`.
 Exact binary hashes, inputs, original/native outputs and command logs are in the
@@ -72,7 +99,7 @@ to an owned evidence directory.
 
 ## Still in progress
 
-Native evdev ownership and daemon lifecycle,
+Native daemon lifecycle,
 private BlueZ protocol comparisons and actual
 native IPC remain to be implemented/verified. This stage does not mark the
 component ported and does not establish a complete runtime candidate, physical

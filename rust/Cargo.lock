@@ -1773,8 +1773,12 @@ name = "openpilot-bluetooth"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "libc",
+ "nix 0.31.3",
+ "num-traits",
  "openpilot-logmessaged",
  "openpilot-runtime-version",
+ "rustix",
  "serde",
  "serde_json",
  "tempfile",
