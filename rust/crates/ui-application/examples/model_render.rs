@@ -134,6 +134,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 model.transform(matrix);
             }
             let frame = Frame {
+                index: 0,
                 now: step.now,
                 monotonic: step.now,
                 keyboard: &keyboard,
