@@ -21,6 +21,9 @@ nix = { version = "=0.31.3", default-features = false, features = ["signal"] }
 rustix = { version = "1", features = ["fs", "event", "time"] }
 capnp = "=0.27.2"
 signal-hook = "0.3"
+dbus = { version = "=0.9.12", features = ["futures", "vendored"] }
+dbus-tokio = "=0.7.6"
+tokio = { version = "1", features = ["rt", "macros", "sync", "time", "net", "io-util", "io-std"] }
 openpilot-cereal = { path = "../cereal" }
 openpilot-messaging = { path = "../messaging" }
 serde = { version = "1", features = ["derive"] }

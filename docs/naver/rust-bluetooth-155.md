@@ -127,13 +127,55 @@ preflight. Then run `rust/tools/check_bluetooth_gestures.py` and
 matching `gesture_fixture`/`config_fixture` executable and `--output` pointing
 to an owned evidence directory.
 
-## Still in progress
+## Native BlueZ coordinator
 
-Private BlueZ protocol handling and comparisons remain to be
-implemented/verified. This stage does not mark the
-component ported and does not establish a complete runtime candidate, physical
-Bluetooth behavior, vehicle acceptance or CPU savings. No device or system
-Bluetooth service was accessed.
+The Rust library now owns its D-Bus connection, application pairing agent,
+scan and pair tasks, cancellation, discovery, device actions and snapshots.
+It preserves first-adapter wire order, source defaults, application owner,
+interface and target checks, KeyboardDisplay registration, trust/connect
+ordering, remote error bodies and paired-with-connect-error state. Pending
+calls and spawned work are cancelled and joined when closing the owner.
+The existing libdbus/dbus-tokio boundary remains an explicit native dependency.
+
+The unchanged Python source and the native client ran against owned private
+`dbus-daemon` instances, with no system bus or physical radio access:
+
+- Policy: 6,363 input cases, 3,598 accepted, match exact responses. All Unicode
+  code points were checked against CPython 3.12's Unicode 15 digit/decimal data.
+- D-Bus operations: 72 observations, 22 ordered calls and six agent replies
+  match, including errors and 20 close/reopen cycles with zero descriptor growth.
+- Prompts: PIN, decimal passkey, confirmation, authorization, duplicate prompt,
+  Cancel/Release, display overlap and failed serialization match. Thirty
+  prompt/conversion scenarios include signed/Unicode/underscore text, finite and
+  nonfinite floats, uint32 limits and the 4,300-digit conversion limit.
+- Real elapsed-time tests retain 30-second discovery, 60-second prompt and
+  90-second pairing deadlines in both implementations. Expired responses are
+  rejected and the final prompt/target state matches.
+- Invalid NUL-containing PINs expose an inherited source defect tracked in
+  [#166](https://github.com/bin9208/openpilot-rust/issues/166). The original
+  emits an invalid D-Bus string and loses its connection. Rust sends no invalid
+  frame and keeps its connection usable. This invalid-wire case is an explicit
+  difference, not counted as exact parity. Lone-surrogate PIN serialization
+  fails without a wire reply in both implementations.
+
+Evidence is retained under `bluez-policy-first`, `bluez-reopen-first`,
+`bluez-prompts-second`, `bluez-prompts-conversion` and `bluez-invalid-first`.
+Each result records the native binary hash; source and native observations are
+saved separately. `check_bluetooth_bluez.py`, `check_bluetooth_bluez_prompts.py`
+and `check_bluetooth_bluez_invalid.py` are rerunnable private-bus checks.
+The combined `check_bluetooth_runtime.py` command passes all fourteen cases
+in `complete-runtime-first/suite.json`, including 31 prompt/deadline scenarios
+and 62 exact agent replies. The CI connectivity job builds the original msgq
+binding and invokes the same command. The small Unicode-file fixture no longer
+imposes a workstation-specific 26 GiB free-space requirement on CI; local
+build/install/large-copy disk preflights remain required before those operations.
+Package tests, strict Clippy, formatting and Python Ruff pass. The inherited
+C++ msgq compiler warnings remain separate from Rust diagnostics.
+
+The HTTP adapter is part of the subsequent Carrot server conversion. Normal
+manager selection/startup, physical Bluetooth behavior, vehicle acceptance
+and CPU comparisons remain outside this component evidence. Full-runtime #1
+is open; this is not a first-device handoff.
 
 Docs-Not-Needed: implementation-language conversion of existing behavior; no
 setting or user-visible behavior change.

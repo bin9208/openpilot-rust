@@ -6,7 +6,6 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 
@@ -20,7 +19,6 @@ def main() -> None:
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
   args = parser.parse_args()
-  assert shutil.disk_usage(ROOT).free >= 26 * 1024**3
   args.output.mkdir(parents=True, exist_ok=True)
   values = [None, True, False, 0, -0.0, 1e-7, 1e20, float('inf'), float('-inf'), float('nan'),
             {'z': '한😀\u0000\u007f', 'a': [True, None, 10**200]}, '\ud800', '\udfff', {'\ud800': 'value'},

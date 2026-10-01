@@ -1,4 +1,5 @@
 mod activity;
+pub mod bluez;
 mod clicks;
 mod config;
 mod decoder;
