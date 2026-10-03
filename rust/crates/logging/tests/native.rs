@@ -44,11 +44,9 @@ fn empty_text_does_not_initialize_transport() {
             .unwrap(),
         Delivery::Filtered
     );
-    assert!(
-        logger
-            .emit(log_site!(), Level::Error, "nonempty".into())
-            .is_err()
-    );
+    assert!(logger
+        .emit(log_site!(), Level::Error, "nonempty".into())
+        .is_err());
 }
 
 #[test]

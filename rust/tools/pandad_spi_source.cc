@@ -22,6 +22,8 @@ static size_t ignored_uninitialized_tx_bytes;
 static uint64_t timestamp = 1000000000;
 static uint64_t tick_ns = 100000;
 static constexpr int fixture_fd = 517;
+static bool fixture_active = false;
+extern "C" int __real_sched_yield();
 
 static Json bytes(const unsigned char *data, size_t length) {
   Json::array result;
@@ -63,7 +65,11 @@ extern "C" int __wrap_close(int fd) {
 extern "C" int __wrap_flock(int fd, int operation) {
   descriptor(fd); calls.push_back(Json::array{"flock", operation}); return 0;
 }
-extern "C" int __wrap_sched_yield() { calls.push_back("yield"); return 0; }
+extern "C" int __wrap_sched_yield() {
+  if (!fixture_active) return __real_sched_yield();
+  calls.push_back("yield");
+  return 0;
+}
 extern "C" int __wrap_usleep(useconds_t micros) {
   calls.push_back(Json::array{"sleep", static_cast<int>(micros)});
   timestamp += static_cast<uint64_t>(micros) * 1000;
@@ -121,6 +127,7 @@ static Json event() {
 }
 int main() {
   unsetenv("SPI_ERR_PROB");
+  fixture_active = true;
   std::string line;
   while (std::getline(std::cin, line)) {
     std::string error;
@@ -164,4 +171,5 @@ int main() {
     output["clock_ns"] = static_cast<double>(timestamp); output["event"] = event();
     std::cout << Json(output).dump() << '\n';
   }
+  fixture_active = false;
 }

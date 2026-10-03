@@ -71,6 +71,8 @@ fn camera_server_preserves_frames_and_buffer_owners() {
         timestamp_eof: 23100,
         valid: false,
         received: true,
+        index: 2,
+        fd: -1,
     };
     images[2].publish(metadata).unwrap();
     let frame = client.receive(Duration::from_secs(2)).unwrap().unwrap();
@@ -78,6 +80,8 @@ fn camera_server_preserves_frames_and_buffer_owners() {
     assert_eq!(frame.metadata().timestamp_sof, 23000);
     assert_eq!(frame.metadata().timestamp_eof, 23100);
     assert!(!frame.metadata().valid);
+    assert_eq!(frame.metadata().index, 2);
+    assert!(frame.metadata().fd >= 0);
     let mut copied = vec![0; 96];
     frame.copy_into(&mut copied).unwrap();
     assert_eq!(copied, data);

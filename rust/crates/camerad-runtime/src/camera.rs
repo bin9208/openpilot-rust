@@ -279,6 +279,8 @@ impl<'pool, 'device> CameraPort<'pool, 'device> {
                 uv_offset: layout.uv_offset,
                 len: layout.len,
                 received: true,
+                index: frame.slot,
+                fd: -1,
             },
         )
     }

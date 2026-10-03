@@ -15,7 +15,6 @@ import json
 import os
 from pathlib import Path
 import resource
-import select
 import signal
 import struct
 import subprocess
@@ -24,6 +23,7 @@ import time
 
 from openpilot.cereal import car, log, messaging
 from selfdrived_cases import event, healthy_messages, TOPICS
+from selfdrived_stderr import wait_for_stderr
 
 
 def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
@@ -56,14 +56,12 @@ def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
     publishers = messaging.PubMaster(topics)
     observed = messaging.sub_sock('selfdriveState', conflate=False, timeout=100)
     command = [str(binary)] + (['--frames', '20'] if name == 'bounded-frames' else [])
-    process = subprocess.Popen(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    records, ready, stderr_prefix = [], False, ''
+    process = subprocess.Popen(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    records, ready, stderr_prefix = [], False, bytearray()
     try:
       if name == 'wait-sigterm':
         assert process.stderr is not None
-        assert select.select([process.stderr], [], [], 5)[0], 'waiting startup never logged readiness'
-        stderr_prefix = process.stderr.readline()
-        assert 'waiting for CarParams' in stderr_prefix
+        wait_for_stderr(process.stderr, b'waiting for CarParams', stderr_prefix)
         assert process.poll() is None
         process.send_signal(signal.SIGTERM)
       elif name not in ('truncated-carparams', 'fatal-integer'):
@@ -112,7 +110,8 @@ def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
             with log.Event.from_bytes(raw) as state:
               records.append(state.to_dict())
       stdout, stderr = process.communicate(timeout=5)
-      stderr = stderr_prefix + stderr
+      stdout = stdout.decode()
+      stderr = (stderr_prefix + stderr).decode()
       while (raw := observed.receive(non_blocking=True)) is not None:
         with log.Event.from_bytes(raw) as state:
           records.append(state.to_dict())
@@ -158,8 +157,8 @@ def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
       if process.poll() is None:
         process.send_signal(signal.SIGTERM)
         stdout, stderr = process.communicate(timeout=5)
-        (output / f'{name}.stdout').write_text(stdout or 'no stdout\n')
-        (output / f'{name}.stderr').write_text(stderr_prefix + stderr or 'no stderr\n')
+        (output / f'{name}.stdout').write_text(stdout.decode() or 'no stdout\n')
+        (output / f'{name}.stderr').write_text((stderr_prefix + stderr).decode() or 'no stderr\n')
 
 
 def main() -> None:

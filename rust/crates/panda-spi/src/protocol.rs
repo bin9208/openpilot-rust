@@ -424,14 +424,30 @@ mod tests {
         io.steps[2].0[5] = 0;
         io.steps[2].0[7] ^= 1;
         for _ in 0..3 {
-            let mut reply = vec![0; 1024]; reply[0] = 0x1f;
+            let mut reply = vec![0; 1024];
+            reply[0] = 0x1f;
             io.steps.push_back((vec![0x14; 1024], reply, 1024));
         }
         let mut state = Protocol::default();
         let mut bus = BusTiming::default();
         let data = [0xa1, 0, 0, 0, 0, 0, 0];
-        let request = Request { endpoint: 0, data: Some(&data), maximum: 0, timeout_ms: 100 };
-        assert_eq!(state.attempt(&mut io, &mut bus, request, None, 1_000_000_000, 1_000_100_000), Ok(-1));
+        let request = Request {
+            endpoint: 0,
+            data: Some(&data),
+            maximum: 0,
+            timeout_ms: 100,
+        };
+        assert_eq!(
+            state.attempt(
+                &mut io,
+                &mut bus,
+                request,
+                None,
+                1_000_000_000,
+                1_000_100_000
+            ),
+            Ok(-1)
+        );
         assert_eq!(state.timing.failure_phase, FailurePhase::RxLength);
         assert!(io.steps.is_empty());
     }

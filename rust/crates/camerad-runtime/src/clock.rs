@@ -83,12 +83,7 @@ impl FrameClock for SystemClock {
             && self.milliseconds() - self.last_trigger > config.interval;
         if triggered {
             self.last_trigger = self.milliseconds();
-            camera_log!(
-                Error,
-                "stress test (cam {}): {}",
-                self.camera,
-                point.name()
-            );
+            camera_log!(Error, "stress test (cam {}): {}", self.camera, point.name());
         }
         Ok(triggered)
     }

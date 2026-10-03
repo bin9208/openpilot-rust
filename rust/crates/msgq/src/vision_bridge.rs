@@ -23,6 +23,7 @@ pub(crate) mod ffi {
         valid: bool,
         received: bool,
         index: usize,
+        // Only received frames populate this; publication uses the VisionImage descriptor.
         fd: i32,
     }
 
