@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime, camera-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime, camera-runtime, panda-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -42,6 +42,7 @@ jobs:
           CARD: ${{ needs.card-runtime.result }}
           SELFDRIVE: ${{ needs.selfdrive-runtime.result }}
           CAMERA: ${{ needs.camera-runtime.result }}
+          PANDA: ${{ needs.panda-runtime.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -63,6 +64,7 @@ jobs:
           test "$CARD" = success
           test "$SELFDRIVE" = success
           test "$CAMERA" = success
+          test "$PANDA" = success
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
@@ -293,6 +295,61 @@ jobs:
             ${{ runner.temp }}/communication-snapshot/report.json
             ${{ runner.temp }}/logging-producer/**/report.json
             ${{ runner.temp }}/logging-producer/**/*.log
+  panda-runtime:
+    name: rust Panda runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original Panda IPC imports
+        run: printf 'PYTHONPATH=%s/panda-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve capacity and install Panda prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake pkg-config curl
+      - name: Install pinned Panda oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 libusb1==3.4.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 setproctitle==1.3.7
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build original Panda IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/panda-native/msgq"
+          python -P -c 'import msgq.ipc_pyx, usb1; from openpilot.cereal import log; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(usb1.__file__)' > "$RUNNER_TEMP/panda-native/msgq/imports.txt"
+      - name: Check native Panda packages
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux --all-targets --locked -- -D warnings
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux --all-targets --locked
+      - name: Build native Panda and record resolved dependency outputs
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          set -o pipefail
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
+      - name: Require Panda source, transport and continuous supervisor comparisons
+        run: python rust/tools/check_pandad_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/panda-native/native-build.jsonl" --output "$RUNNER_TEMP/panda-native/oracles"
+      - name: Preserve Panda evidence including failed cases
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-panda-runtime-evidence
+          path: ${{ runner.temp }}/panda-native/
+          if-no-files-found: warn
   camera-runtime:
     name: rust camera runtime
     runs-on: ubuntu-24.04
@@ -1566,6 +1623,28 @@ jobs:
         with:
           name: rust-camera-arm-evidence
           path: ${{ runner.temp }}/camera-arm/
+          if-no-files-found: warn
+      - name: Build native Panda for generic Linux aarch64
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          mkdir -p "$RUNNER_TEMP/panda-arm"
+          git rev-parse HEAD > "$RUNNER_TEMP/panda-arm/SOURCE_COMMIT"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux --bins --examples --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/panda-arm/build.log"
+          file target/aarch64-unknown-linux-gnu/release/openpilot-pandad target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor > "$RUNNER_TEMP/panda-arm/file.txt"
+          sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-pandad target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor > "$RUNNER_TEMP/panda-arm/SHA256SUMS"
+      - name: Preserve Panda generic ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-panda-arm-evidence
+          path: |
+            ${{ runner.temp }}/panda-arm/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-pandad
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor
           if-no-files-found: warn
       - name: Stage native GNU aarch64 torque dependency (not AGNOS validation)
         working-directory: rust

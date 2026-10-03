@@ -435,5 +435,29 @@ probe executable and build/command records are preserved. The reviewed core and
 supervisor production sources are unchanged; this registration does not select
 either candidate in the production launcher.
 
+## Fresh-runner CI integration (2026-10-03)
+
+Merge `d416dabc` combines this Panda component with the reviewed Card,
+Selfdrived and camera components. The required `panda-runtime` CI job rebuilds
+original msgq and Panda references, downloads checksum-pinned json11 and
+spidev source, and runs the existing full protocol, safety, device, state,
+CAN, peripheral, firmware, USB/SPI and supervisor comparisons. The original
+and Rust continuous captures must also pass the separate semantic comparator.
+Both explicit and default firmware supervisor CLI compositions remain required.
+
+`check_pandad_ci.py` records native/source identities and command outcomes.
+It resolves the original runtime's static ZeroMQ dependency from the final
+Cargo JSON build receipt, rejecting missing or ambiguous output instead of
+selecting another build's cache directory. Disk guards precede each build and
+comparison; failed artifacts are retained. The separate ARM job builds the
+native core and supervisor without claiming target hardware execution.
+
+Local integration checks passed 18 routing tests with 190 subtests, seven
+Card/Panda tooling tests, 271 shell syntax checks and 30 CLI import/help checks.
+The help checks use the existing pinned Card Python environment and retained
+msgq binding; they are not fresh native execution. The independent static CI
+review has no open findings. Exact-commit hosted execution is still required,
+and the earlier component receipts remain the runtime evidence at this stage.
+
 Docs-Not-Needed: isolated native runtime and host validation only; no user setting
 or production process behavior change.
