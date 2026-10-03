@@ -9,6 +9,7 @@ import shutil
 import struct
 import subprocess
 import tempfile
+from urllib.parse import quote
 
 from check_camerad_kernel import digest, disable_core
 from check_camerad_isp_lifecycle import normalize
@@ -46,7 +47,7 @@ def result_value(stdout: str, native: bool):
 
 
 def run(args, lane: str, binary: Path, name: str, arguments: list[str], overrides: dict) -> tuple[dict, list[dict]]:
-  folder = args.output / name / lane
+  folder = args.output / quote(name, safe='-_.') / lane
   folder.mkdir(parents=True)
   trace = folder / 'trace.jsonl'
   with tempfile.TemporaryDirectory(prefix='msgq_camera_lifecycle_', dir='/dev/shm') as namespace:

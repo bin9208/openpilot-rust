@@ -459,7 +459,7 @@ jobs:
           rustup toolchain install 1.94.0 --profile minimal --component clippy
       - name: Build original Panda IPC bindings
         run: |
-          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_pandad_spi.py -q
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_pandad_spi.py rust/tools/tests/test_pandad_ci.py -q
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/panda-native/msgq"
           python -P -c 'import msgq.ipc_pyx, usb1; from openpilot.cereal import log; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(usb1.__file__)' > "$RUNNER_TEMP/panda-native/msgq/imports.txt"
@@ -510,11 +510,12 @@ jobs:
       - name: Install pinned camera oracle dependencies
         run: |
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
-          python -m pip install pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1
+          python -m pip install pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - name: Build original camera IPC bindings
         run: |
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_camerad_artifact_paths.py -q
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/camera-native/python"
           python -P -c 'import msgq.ipc_pyx, msgq.visionipc.visionipc_pyx, zmq; from openpilot.cereal import CEREAL_PATH, log; from pathlib import Path; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(msgq.visionipc.visionipc_pyx.__file__); print(Path(CEREAL_PATH)/"log.capnp"); print(zmq.__file__)' > "$RUNNER_TEMP/camera-native/python/imports.txt"
@@ -1699,7 +1700,7 @@ jobs:
           BINDGEN_EXTRA_CLANG_ARGS: --target=aarch64-linux-gnu -I/usr/aarch64-linux-gnu/include
           FFMPEG_DIR: ${{ env.ENCODER_ARM_FFMPEG }}
           ENCODER_LIBYUV_LIB: ${{ env.ENCODER_ARM_LIBYUV }}
-          ENCODER_FFMPEG_EXTRA_LIBS: swresample,x264,z,va,va-drm,drm
+          ENCODER_FFMPEG_EXTRA_LIBS: swresample,x264,z,va,va-drm,drm,gcc
         run: |
           python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
           git rev-parse HEAD > "$RUNNER_TEMP/encoder-arm/SOURCE_COMMIT"

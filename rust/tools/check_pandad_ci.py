@@ -97,8 +97,8 @@ class PandaCheck:
     import usb1
     self.check('usb_raw', ['--binary', str(self.examples / 'raw_fixture'), '--fixture', str(usb), '--binding', str(Path(usb1.__file__).resolve())])
     self.python('build-spidev', 'build_pandad_firmware_spi_fixture.py',
-      ['--output', str(self.output / 'spidev'), *common, '--spidev-source', str(self.spidev())])
-    self.check('spidev', ['--native', str(self.examples / 'spi_policy'), '--library', str(self.output / 'spidev/libpandad_firmware_spi.so')])
+      ['--output', str(self.output / 'spidev-src'), *common, '--spidev-source', str(self.spidev())])
+    self.check('spidev', ['--native', str(self.examples / 'spi_policy'), '--library', str(self.output / 'spidev-src/libpandad_firmware_spi.so')])
     self.python('build-runtime-fixture', 'build_pandad_runtime_fixture.py',
       ['--output', str(self.output / 'runtime-fixture'), *common, '--libusb-include', '/usr/include'])
     runtime_usb = self.output / 'runtime-fixture/libusb-1.0.so.0'

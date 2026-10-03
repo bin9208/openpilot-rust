@@ -105,6 +105,7 @@ fn main() {
     println!("cargo:rustc-link-lib=static=yuv");
     println!("cargo:rerun-if-env-changed=ENCODER_LIBYUV_LIB");
     if let Ok(libraries) = env::var("ENCODER_FFMPEG_EXTRA_LIBS") {
+        println!("cargo:rustc-link-arg=-Wl,--start-group");
         for library in libraries.split(',').filter(|name| !name.is_empty()) {
             assert!(
                 library
@@ -112,8 +113,10 @@ fn main() {
                     .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-')),
                 "invalid external FFmpeg library name"
             );
-            println!("cargo:rustc-link-lib=static={library}");
+            // GNU ld needs the codec dependencies after ffmpeg-sys's archive.
+            println!("cargo:rustc-link-arg=-l:lib{library}.a");
         }
+        println!("cargo:rustc-link-arg=-Wl,--end-group");
     }
     println!("cargo:rerun-if-env-changed=ENCODER_FFMPEG_EXTRA_LIBS");
     println!("cargo:rerun-if-changed={source}");
