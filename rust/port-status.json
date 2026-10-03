@@ -45,7 +45,13 @@
       "name": "camerad",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/camerad",
-      "status": "not_ported",
+      "status": "native_daemon_host_and_arm_simulated",
+      "implementation": "rust/crates/camerad, camera-kernel and camerad-runtime; three-camera sensor/ISP/PHY lifecycle, exposure, request/fence handling, VisionIPC and camera-state publications, native diagnostics and normal main loop",
+      "native_dependencies": ["original msgq/VisionIPC allocation and transport through CXX", "ION allocator for the target build", "Linux Qualcomm camera/ISP/BPS/sync driver APIs and firmware", "libc strtod/rand and BOOTTIME clock", "native libzmq log transport"],
+      "runtime_scope": "host and generic ARM actual-main simulation passed 16 scenarios and 212 paired state/Vision frames; exact retained original frame-state/exposure oracle, publication barrier, cleanup and stress gates; separate ION build passed offline linkage against the exact published AGNOS 19.8-carrot-bt1 libraries",
+      "unported_scope": ["full manager startup and active log-upload integration", "project-owned C++ msgq/VisionIPC implementation remains a tracked runtime boundary"],
+      "validation_limits": ["ION/sensor/ISP operation and target scheduling are not validated on hardware", "full NV12 copy for exposure sampling is an added unmeasured cost", "LOG_RAW_FRAMES with road IFE retains a fatal missing-raw boundary"],
+      "evidence": "docs/naver/rust-camerad-187.md",
       "production_replaced": false
     },
     {

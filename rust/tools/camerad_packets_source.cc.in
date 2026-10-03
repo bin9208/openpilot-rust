@@ -1,0 +1,230 @@
+#include <array>
+#include <cassert>
+#include <cstddef>
+#include <cstring>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+#include "media/cam_defs.h"
+#include "media/cam_sensor.h"
+#include "media/cam_isp.h"
+#include "media/cam_isp_ife.h"
+#include "media/cam_icp.h"
+#include "system/camerad/cameras/cdm.h"
+#include "system/camerad/cameras/nv12_info.h"
+#include "system/camerad/cameras/bps_blobs.h"
+#include "system/camerad/sensors/sensor.h"
+
+#define LOG(...) ((void)0)
+#define LOGD(...) ((void)0)
+#define LOGE(...) ((void)0)
+#define ALIGNED_SIZE(x, align) (((x) + (align)-1) & ~((align)-1))
+enum {
+  CAMERA_SENSOR_CMD_TYPE_PROBE = 1, CAMERA_SENSOR_CMD_TYPE_PWR_UP = 2,
+  CAMERA_SENSOR_CMD_TYPE_PWR_DOWN = 3, CAMERA_SENSOR_CMD_TYPE_I2C_INFO = 4,
+  CAMERA_SENSOR_CMD_TYPE_I2C_RNDM_WR = 5, CAMERA_SENSOR_CMD_TYPE_WAIT = 9,
+  CAMERA_SENSOR_WAIT_OP_SW_UCND = 3, CAMERA_SENSOR_I2C_TYPE_BYTE = 1,
+  CAMERA_SENSOR_I2C_TYPE_WORD = 2, I2C_FAST_MODE = 1,
+  CAM_SENSOR_PACKET_OPCODE_SENSOR_PROBE = 3, CAM_SENSOR_PACKET_OPCODE_SENSOR_NOP = 127,
+  CSLDeviceTypeImageSensor = 0x01000000, MIPI_SETTLE_CNT = 33,
+  CSLDeviceTypeIFE = 0x0f000000, OpcodesIFEUpdate = 1, OpcodesIFEInitialConfig = 0,
+  CSLDeviceTypeBPS = 0x10000000,
+  ISP_RAW_OUTPUT = 0, ISP_IFE_PROCESSED = 1, ISP_BPS_PROCESSED = 2,
+};
+struct MemoryManager {
+  struct Allocation { uint32_t handle; size_t size; std::unique_ptr<char[]> data; };
+  std::vector<Allocation> allocated;
+  template<class T> auto alloc(int size, uint32_t *handle) {
+    *handle = allocated.size() + 1;
+    allocated.push_back({*handle, static_cast<size_t>(size), std::make_unique<char[]>(size)});
+    return std::unique_ptr<T, std::function<void(T *)>>(reinterpret_cast<T *>(allocated.back().data.get()), [](T *) {});
+  }
+};
+struct Master { MemoryManager mem_mgr; int isp_fd = 10, icp_fd = 18; };
+struct CameraConfig { int camera_num; int output_type = ISP_IFE_PROCESSED; bool vignetting_correction = false; uint32_t phy = 0x4001; };
+struct SensorRef {
+  const SensorInfo *value;
+  SensorRef(const SensorInfo *sensor) : value(sensor) {}
+  const SensorInfo *operator->() const { return value; }
+  const SensorInfo *get() const { return value; }
+  SensorRef &operator=(const SensorInfo *sensor) { value = sensor; return *this; }
+};
+struct SpectraBuf {
+  int handle, size;
+  std::vector<uint8_t> storage;
+  uint8_t *ptr;
+  unsigned aligned_size() const { return (size + 31) & ~31U; }
+  void init(int id, int length, int count = 1) {
+    handle = id; size = length;
+    storage.assign(aligned_size() * count, 0xcc); ptr = storage.data();
+  }
+};
+struct SpectraCamera {
+  Master *m;
+  CameraConfig cc;
+  SensorRef sensor;
+  int sensor_fd = 11, session_handle = 12, sensor_dev_handle = 13, csiphy_fd = 0, csiphy_dev_handle = 0;
+  bool enabled = true;
+  int isp_dev_handle = 16;
+  int icp_dev_handle = 17;
+  struct { uint32_t out_img_width, out_img_height; } buf;
+  uint32_t stride, y_height, uv_height, yuv_size, uv_offset;
+  int buf_handle_raw[20], buf_handle_yuv[20], sync_objs_ife[20];
+  int sync_objs_bps[20];
+  SpectraBuf ife_cmd, ife_gamma_lut, ife_linearization_lut, ife_vignetting_lut;
+  SpectraBuf bps_cmd, bps_cdm_program_array, bps_cdm_striping_bl, bps_iq, bps_striping, bps_gamma_lut, bps_linearization_lut, bps_fullres_dummy;
+  std::vector<uint32_t> bps_lin_reg, bps_ccm_reg;
+  void sensors_poke(int);
+  void sensors_i2c(const i2c_random_wr_payload *, int, int, bool);
+  int sensors_init();
+  void configCSIPHY();
+  void config_ife(int, int, bool);
+  void config_bps(int, int);
+  void linearization() {
+    @LINEARIZATION@
+  }
+  void acquire_port() {
+    @ACQUIRE_PORT@
+    auto data = std::make_unique<char[]>(sizeof(in_port_info));
+    std::memcpy(data.get(), &in_port_info, sizeof(in_port_info));
+    m->mem_mgr.allocated.push_back({0, sizeof(in_port_info), std::move(data)});
+  }
+  void acquire_bps(int cfg_handle, uint32_t cfg_size) {
+    @ACQUIRE_BPS@
+    auto data = std::make_unique<char[]>(sizeof(icp_info));
+    std::memcpy(data.get(), &icp_info, sizeof(icp_info));
+    m->mem_mgr.allocated.push_back({0, sizeof(icp_info), std::move(data)});
+  }
+};
+int device_config(int, int, int, uint64_t) { return 0; }
+int do_cam_control(int, int, void *, int) { return 0; }
+int open_v4l_by_name_and_index(const char *, int) { return 14; }
+std::optional<int32_t> device_acquire(int, int, void *) { return 15; }
+
+@IFE@
+
+@METHODS@
+
+void emit(const MemoryManager &memory) {
+  std::cout << '[';
+  bool first = true;
+  for (const auto &allocation : memory.allocated) {
+    if (!first) std::cout << ',';
+    first = false;
+    std::cout << '[';
+    for (size_t i = 0; i < allocation.size; ++i) {
+      if (i) std::cout << ',';
+      std::cout << static_cast<unsigned>(static_cast<uint8_t>(allocation.data[i]));
+    }
+    std::cout << ']';
+  }
+  std::cout << "]\n";
+}
+
+int main() {
+  AR0231 ar; OX03C10 ox; OS04C10 os;
+  const std::array<const SensorInfo *, 3> sensors = {&ar, &ox, &os};
+  std::string op;
+  while (std::cin >> op) {
+    Master master;
+    SpectraCamera camera{&master, {0}, sensors[0]};
+    if (op == "probe") {
+      int sensor, port;
+      if (!(std::cin >> sensor >> port)) return 2;
+      camera.sensor = sensors.at(sensor - 1); camera.cc.camera_num = port;
+      camera.sensors_init();
+    } else if (op == "poke") {
+      int32_t request;
+      if (!(std::cin >> request)) return 2;
+      camera.sensors_poke(request);
+    } else if (op == "i2c") {
+      int words, opcode, count;
+      if (!(std::cin >> words >> opcode >> count)) return 2;
+      std::vector<i2c_random_wr_payload> registers(count ? count : 1);
+      for (int i = 0; i < count; ++i) {
+        uint32_t address, value;
+        if (!(std::cin >> address >> value)) return 2;
+        registers[i] = {address, value};
+      }
+      camera.sensors_i2c(registers.data(), count, opcode, words);
+    } else if (op == "csiphy") {
+      camera.configCSIPHY();
+    } else if (op == "ife" || op == "bps") {
+      int sensor, raw, vignetting, slot, request, initial;
+      uint32_t width, height;
+      if (!(std::cin >> sensor >> raw >> vignetting >> slot >> request >> initial >> width >> height)) return 2;
+      camera.sensor = sensors.at(sensor - 1);
+      camera.cc.output_type = raw ? ISP_RAW_OUTPUT : ISP_IFE_PROCESSED;
+      camera.cc.vignetting_correction = vignetting;
+      camera.buf = {width, height};
+      std::tie(camera.stride, camera.y_height, camera.uv_height, camera.yuv_size) = get_nv12_info(width, height);
+      camera.uv_offset = camera.stride * camera.y_height;
+      camera.ife_cmd.init(100, 67984, 20);
+      camera.ife_gamma_lut.init(101, 256);
+      camera.ife_linearization_lut.init(102, 144);
+      camera.ife_vignetting_lut.init(103, 884);
+      for (int i = 0; i < 20; ++i) { camera.buf_handle_raw[i] = 200 + i; camera.buf_handle_yuv[i] = 300 + i; camera.sync_objs_ife[i] = 400 + i; camera.sync_objs_bps[i] = 500 + i; }
+      if (op == "ife") camera.config_ife(slot, request, initial);
+      else {
+        camera.bps_cmd.init(110, 464, 20);
+        camera.bps_cdm_program_array.init(111, 0x1000);
+        camera.bps_cdm_striping_bl.init(112, 0xcfe0);
+        camera.bps_iq.init(113, 684);
+        camera.bps_striping.init(114, 0xc58);
+        camera.bps_gamma_lut.init(115, 256);
+        camera.bps_linearization_lut.init(116, 144);
+        camera.bps_fullres_dummy.init(117, 1);
+        camera.config_bps(slot, request);
+      }
+      const auto *packet = reinterpret_cast<const cam_packet *>(master.mem_mgr.allocated[0].data.get());
+      const auto *command = reinterpret_cast<const cam_cmd_buf_desc *>(packet->payload);
+      auto data = std::make_unique<char[]>(command->length);
+      auto *commands = op == "ife" ? camera.ife_cmd.ptr : camera.bps_cmd.ptr;
+      std::memcpy(data.get(), commands + command->offset, command->length);
+      master.mem_mgr.allocated.push_back({0, command->length, std::move(data)});
+      if (op == "bps") {
+        uint32_t length;
+        std::memcpy(&length, commands + command->offset + 204, 4);
+        length = (length >> 12) + 1;
+        auto program = std::make_unique<char[]>(length);
+        std::memcpy(program.get(), camera.bps_cdm_program_array.ptr, length);
+        master.mem_mgr.allocated.push_back({0, length, std::move(program)});
+      }
+    } else if (op == "bps_tables") {
+      int sensor;
+      if (!(std::cin >> sensor)) return 2;
+      camera.sensor = sensors.at(sensor - 1);
+      int index = get_bps_blob_index(camera.sensor.get());
+      for (auto [pointer, length] : std::vector<std::pair<const unsigned char *, size_t>>{
+        {bps_cfg[index], sizeof(bps_cfg[index])}, {bps_settings[index], sizeof(bps_settings[index])},
+        {bps_striping_output[index], sizeof(bps_striping_output[index])}}) {
+        auto data = std::make_unique<char[]>(length);
+        std::memcpy(data.get(), pointer, length);
+        master.mem_mgr.allocated.push_back({0, length, std::move(data)});
+      }
+      camera.bps_linearization_lut.init(116, 144);
+      camera.linearization();
+      auto data = std::make_unique<char[]>(144);
+      std::memcpy(data.get(), camera.bps_linearization_lut.ptr, 144);
+      master.mem_mgr.allocated.push_back({0, 144, std::move(data)});
+    } else if (op == "acquire") {
+      int sensor, raw, handle;
+      uint32_t phy, width, height, size;
+      if (!(std::cin >> sensor >> raw >> phy >> width >> height >> handle >> size)) return 2;
+      camera.sensor = sensors.at(sensor - 1);
+      camera.cc.output_type = raw ? ISP_RAW_OUTPUT : ISP_IFE_PROCESSED;
+      camera.cc.phy = phy;
+      camera.buf = {width, height};
+      camera.acquire_port();
+      camera.acquire_bps(handle, size);
+    } else if (op == "layout") {
+      std::cout << '[' << sizeof(cam_packet) << ',' << offsetof(cam_packet, payload) << ','
+                << sizeof(cam_cmd_buf_desc) << ',' << sizeof(cam_buf_io_cfg) << ',' << sizeof(cam_patch_desc) << "]\n";
+      continue;
+    } else return 3;
+    emit(master.mem_mgr);
+  }
+}

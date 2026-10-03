@@ -1,0 +1,79 @@
+// The generator inserts unchanged source helpers, sensor methods and probe-order control flow.
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <cassert>
+#include <cerrno>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <memory>
+#include <map>
+#include <queue>
+#include <optional>
+#include <iostream>
+#include <media/cam_defs.h>
+#include <media/cam_req_mgr.h>
+#include <media/cam_sensor.h>
+#include "system/camerad/sensors/sensor.h"
+#define LOG(...) ((void)0)
+#define LOGD(...) ((void)0)
+#define LOGE(...) ((void)0)
+#define CSLDeviceTypeImageSensor (0x01 << 24)
+@CONSTANTS@
+@HELPERS@
+
+struct Master {
+  unique_fd video0_fd;
+  MemoryManager mem_mgr;
+};
+int open_v4l_by_name_and_index(const char* name, int index) {
+  assert(!strcmp(name, "cam-sensor-driver"));
+  assert(index >= 0 && index < 3);
+  return open("/dev/camera-fixture-sensor", O_RDWR | O_NONBLOCK);
+}
+struct SpectraCamera {
+  Master *m;
+  struct { int camera_num; } cc;
+  std::unique_ptr<const SensorInfo> sensor;
+  unique_fd sensor_fd;
+  int session_handle = -1, sensor_dev_handle = -1;
+  bool enabled;
+  int sensors_init();
+  void sensors_i2c(const struct i2c_random_wr_payload*, int, int, bool);
+  void sensors_poke(int);
+  void sensors_start();
+  bool openSensor();
+};
+@METHODS@
+
+int main(int argc, char** argv) {
+  assert(argc == 3);
+  int port = atoi(argv[1]);
+  Master master;
+  master.video0_fd = open("/dev/camera-fixture-request", O_RDWR | O_NONBLOCK);
+  master.mem_mgr.init(master.video0_fd);
+  SpectraCamera camera{.m = &master, .cc = {port}, .enabled = atoi(argv[2]) != 0};
+  bool opened = camera.openSensor();
+  camera.sensors_start();
+  if (opened) {
+    camera.sensors_poke(INT32_MIN + 1);
+    struct i2c_random_wr_payload registers[] = {{0x1234, 0x5678}, {0x4321, 0x8765}};
+    camera.sensors_i2c(registers, 2, CAM_SENSOR_PACKET_OPCODE_SENSOR_CONFIG, camera.sensor->data_word);
+  }
+  auto kind = camera.sensor->image_sensor;
+  const char* name = kind == cereal::FrameData::ImageSensor::AR0231 ? "Ar0231" : kind == cereal::FrameData::ImageSensor::OS04C10 ? "Os04c10" : "Ox03c10";
+  std::cout << "{\"enabled\":" << (camera.enabled ? "true" : "false") << ",\"sensor\":\"" << name << "\",\"session\":";
+  if (opened) std::cout << camera.session_handle; else std::cout << "null";
+  std::cout << ",\"device\":";
+  if (opened) std::cout << camera.sensor_dev_handle; else std::cout << "null";
+  std::cout << "}\n";
+  if (opened) {
+    device_control(camera.sensor_fd, CAM_RELEASE_DEV, camera.session_handle, camera.sensor_dev_handle);
+    struct cam_req_mgr_session_info info = {.session_hdl = camera.session_handle};
+    do_cam_control(master.video0_fd, CAM_REQ_MGR_DESTROY_SESSION, &info, sizeof(info));
+  }
+}

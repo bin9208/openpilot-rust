@@ -12,3 +12,7 @@ mod vision_bridge;
 pub use vision::{VisionClient, VisionFrame, VisionLayout, VisionStream};
 #[cfg(feature = "native-skip-miri")]
 pub use vision_bridge::ffi::VisionMetadata;
+#[cfg(feature = "native-skip-miri")]
+mod vision_server;
+#[cfg(feature = "native-skip-miri")]
+pub use vision_server::{RawVisionImage, VisionImage, VisionServer};
