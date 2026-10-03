@@ -2210,6 +2210,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-encoderd"
+version = "0.1.0"
+dependencies = [
+ "bindgen",
+ "capnp",
+ "ffmpeg-next",
+ "libc",
+ "openpilot-cereal",
+ "openpilot-jpeg",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-feedbackd"
 version = "0.1.0"
 dependencies = [
@@ -2580,10 +2601,42 @@ dependencies = [
 name = "openpilot-msgq"
 version = "0.1.0"
 dependencies = [
- "cxx",
- "cxx-build",
+ "cc",
+ "libc",
  "tempfile",
  "thiserror",
+]
+
+[[package]]
+name = "openpilot-navd"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "brotli-decompressor",
+ "capnp",
+ "charset-norm",
+ "cookie_store",
+ "crossbeam-channel",
+ "flate2",
+ "num-traits",
+ "openpilot-beepd",
+ "openpilot-cereal",
+ "openpilot-hardware-info",
+ "openpilot-http-transport",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-registration",
+ "openpilot-runtime-core",
+ "openpilot-uploader",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+ "ureq",
+ "url",
 ]
 
 [[package]]

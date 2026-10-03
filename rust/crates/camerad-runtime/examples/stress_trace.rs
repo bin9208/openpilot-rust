@@ -5,7 +5,10 @@ use serde_json::json;
 use std::{
     fs::{File, OpenOptions},
     io::{Read, Write},
-    sync::{OnceLock, atomic::{AtomicUsize, Ordering}},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        OnceLock,
+    },
 };
 
 static SAMPLES: OnceLock<Vec<(i64, i64)>> = OnceLock::new();
@@ -14,13 +17,21 @@ static POSITION: AtomicUsize = AtomicUsize::new(0);
 
 fn sample() -> (i64, i64) {
     let index = POSITION.fetch_add(1, Ordering::Relaxed);
-    let Some(value) = SAMPLES.get().and_then(|samples| samples.get(index)).copied() else {
+    let Some(value) = SAMPLES
+        .get()
+        .and_then(|samples| samples.get(index))
+        .copied()
+    else {
         panic!("owned clock fixture exhausted at {index}");
     };
     let Some(mut trace) = TRACE.get() else {
         panic!("owned trace initialized before clock construction");
     };
-    if let Err(error) = writeln!(trace, "{}", json!({"op":"clock", "id":7, "sec":value.0, "nsec":value.1})) {
+    if let Err(error) = writeln!(
+        trace,
+        "{}",
+        json!({"op":"clock", "id":7, "sec":value.0, "nsec":value.1})
+    ) {
         panic!("owned trace write: {error}");
     }
     value
@@ -35,12 +46,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let samples = std::env::var("STRESS_CLOCK")?
         .split(',')
         .map(|sample| {
-            let (seconds, nanos) = sample.split_once(':').ok_or("seconds:nanoseconds required")?;
+            let (seconds, nanos) = sample
+                .split_once(':')
+                .ok_or("seconds:nanoseconds required")?;
             Ok((seconds.parse()?, nanos.parse()?))
         })
         .collect::<Result<Vec<(i64, i64)>, Box<dyn std::error::Error>>>()?;
-    SAMPLES.set(samples).map_err(|_| "clock fixture initialized twice")?;
-    TRACE.set(OpenOptions::new().create(true).append(true).open(std::env::var("STRESS_TRACE")?)?)
+    SAMPLES
+        .set(samples)
+        .map_err(|_| "clock fixture initialized twice")?;
+    TRACE
+        .set(
+            OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(std::env::var("STRESS_TRACE")?)?,
+        )
         .map_err(|_| "trace initialized twice")?;
     let mut clock = SystemClock::with_boottime(sample);
     let mut input = String::new();
@@ -54,7 +75,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some("now") => results.push(json!({"now":clock.now_ns()})),
             Some("stress") => {
                 let camera = fields.next().ok_or("camera required")?.parse()?;
-                let point = match fields.next().ok_or("stress point required")?.parse::<u8>()? {
+                let point = match fields
+                    .next()
+                    .ok_or("stress point required")?
+                    .parse::<u8>()?
+                {
                     0 => StressPoint::SkipSof,
                     1 => StressPoint::SyncSleep,
                     2 => StressPoint::IfeWait,
@@ -78,6 +103,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => return Err("unknown fixture action".into()),
         }
     }
-    println!("{}", json!({"results":results,"error":error,"error_step":error_step}));
+    println!(
+        "{}",
+        json!({"results":results,"error":error,"error_step":error_step})
+    );
     Ok(())
 }

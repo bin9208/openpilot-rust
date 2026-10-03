@@ -98,6 +98,13 @@ fn availability(name: &str) -> RustAvailability {
         "deleter" => ("openpilot-deleter", "openpilot-deleter"),
         "dmonitoringd" => ("openpilot-dmonitoringd", "openpilot-dmonitoringd"),
         "dmonitoringmodeld" => ("openpilot-dmonitoringmodeld", "openpilot-dmonitoringmodeld"),
+        "encoderd"
+        | "stream_encoderd"
+        | "carrot_vision_encoderd"
+        | "youtube_low_encoderd"
+        | "youtube_medium_encoderd"
+        | "youtube_encoderd"
+        | "youtube_wide_encoderd" => ("openpilot-encoderd", "openpilot-encoderd"),
         "feedbackd" => ("openpilot-feedbackd", "openpilot-feedbackd"),
         "hardwared" => ("openpilot-hardwared", "openpilot-hardwared"),
         "jetlinkd" => ("openpilot-jetlink", "jetlinkd-rs"),
@@ -110,6 +117,7 @@ fn availability(name: &str) -> RustAvailability {
         "micd" => ("openpilot-micd", "openpilot-micd"),
         "modeld" => ("openpilot-driving-modeld", "openpilot-driving-modeld"),
         "modem" => ("openpilot-modem", "openpilot-modem"),
+        "navd" => ("openpilot-navd", "openpilot-navd"),
         "pandad" => ("openpilot-pandad", "openpilot-pandad-supervisor"),
         "paramsd" => ("openpilot-paramsd", "openpilot-paramsd"),
         "pigeond" => ("openpilot-ublox", "openpilot-pigeond"),

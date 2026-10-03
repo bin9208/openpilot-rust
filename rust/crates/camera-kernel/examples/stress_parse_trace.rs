@@ -1,4 +1,4 @@
-use openpilot_camera_kernel::{DoubleParseError, parse_double_prefix};
+use openpilot_camera_kernel::{parse_double_prefix, DoubleParseError};
 use serde_json::json;
 use std::ffi::CString;
 
@@ -16,6 +16,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(DoubleParseError::InvalidArgument) => json!({"error":"invalid_argument"}),
         Err(DoubleParseError::OutOfRange) => json!({"error":"out_of_range"}),
     };
-    println!("{}", json!({"previous_errno":previous,"after_errno":after,"result":result}));
+    println!(
+        "{}",
+        json!({"previous_errno":previous,"after_errno":after,"result":result})
+    );
     Ok(())
 }

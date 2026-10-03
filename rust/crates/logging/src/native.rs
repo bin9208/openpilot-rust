@@ -5,7 +5,7 @@
 //! diagnostics on orderly shutdown to drain with the original 100 ms linger. Rust statics have
 //! no C++ exit destructor. Arbitrary fork after initialization is unsupported (as in C++).
 mod wire;
-use crate::{Error, producer::Delivery, record::Level, site::Site};
+use crate::{producer::Delivery, record::Level, site::Site, Error};
 use std::{
     env,
     io::{self, Write},

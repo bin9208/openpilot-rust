@@ -6,6 +6,7 @@ pub struct RunOptions {
     pub numerics: PathBuf,
     pub max_steps: Option<NonZeroU64>,
     pub frequency_trace: Option<PathBuf>,
+    pub fixture_phase_fence: Option<PathBuf>,
 }
 
 pub enum Command {
@@ -19,6 +20,7 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Result<Command, E
     let mut numerics = None;
     let mut max_steps = None;
     let mut frequency_trace = None;
+    let mut fixture_phase_fence = None;
     while let Some(argument) = arguments.next() {
         let flag = argument
             .to_str()
@@ -62,6 +64,15 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Result<Command, E
                         .ok_or(Error::Arguments("missing frequency trace path"))?,
                 ));
             }
+            "--fixture-phase-fence" => {
+                if fixture_phase_fence.is_some() {
+                    return Err(Error::Arguments("fixture phase fence supplied twice"));
+                }
+                fixture_phase_fence =
+                    Some(PathBuf::from(arguments.next().ok_or(Error::Arguments(
+                        "missing fixture phase fence path",
+                    ))?));
+            }
             _ => return Err(Error::Arguments("unknown argument")),
         }
     }
@@ -70,11 +81,17 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Result<Command, E
             "frequency trace requires a fixture step bound",
         ));
     }
+    if fixture_phase_fence.is_some() && (frequency_trace.is_none() || max_steps.is_none()) {
+        return Err(Error::Arguments(
+            "fixture phase fence requires frequency trace and a fixture step bound",
+        ));
+    }
     Ok(Command::Run(RunOptions {
         root: root.ok_or(Error::Arguments("--root is required"))?,
         numerics: numerics.ok_or(Error::Arguments("--numerics is required"))?,
         max_steps,
         frequency_trace,
+        fixture_phase_fence,
     }))
 }
 
@@ -110,5 +127,46 @@ mod tests {
         ] {
             assert!(parse(args.into_iter().map(OsString::from)).is_err());
         }
+    }
+
+    #[test]
+    fn phase_fence_is_rejected_outside_bounded_frequency_diagnostics() {
+        let base = [
+            "--root",
+            "/r",
+            "--numerics",
+            "/n",
+            "--fixture-phase-fence",
+            "/f",
+        ];
+        for extra in [
+            vec![],
+            vec!["--max-steps", "4"],
+            vec!["--frequency-trace", "/t"],
+        ] {
+            assert!(parse(base.into_iter().chain(extra).map(OsString::from)).is_err());
+        }
+        let Command::Run(options) = parse(
+            base.into_iter()
+                .chain(["--max-steps", "4", "--frequency-trace", "/t"])
+                .map(OsString::from),
+        )
+        .unwrap() else {
+            panic!("run")
+        };
+        assert_eq!(options.fixture_phase_fence, Some(PathBuf::from("/f")));
+        assert!(parse(
+            base.into_iter()
+                .chain([
+                    "--max-steps",
+                    "4",
+                    "--frequency-trace",
+                    "/t",
+                    "--fixture-phase-fence",
+                    "/g"
+                ])
+                .map(OsString::from)
+        )
+        .is_err());
     }
 }

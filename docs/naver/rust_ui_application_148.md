@@ -482,10 +482,50 @@ calibration, torque and native-adapter checks. Every capture step checks the
 
 The shared aarch64 job separately preserves generic and ION `openpilot-ui`
 artifacts, the pinned ARM raylib plugin, ELF metadata and hashes. These are
-generic GNU builds. The retained AGNOS ABI extraction currently contains only
-the C/C++ loader closure; its graphics libraries, unversioned EGL/GLES aliases,
-recursive dependencies and extension resolution need separate offline checks.
-An executable or `--help` pass cannot establish a display or camera import.
+generic GNU builds. A separate offline target preparation recovered the retained
+published AGNOS 19.8-carrot-bt1 image, verified its raw SHA256
+`375c5d22335770ac08750660bb5b29a3331c550d6a9875b35f36b88af792ea44`,
+and extracted 33 library aliases covering 27 distinct graphics/loader/codec
+objects with their recursive DT_NEEDED closure. Both versioned and unversioned
+EGL/GLES names resolve to the image's Adreno libraries. Original alias chains,
+image paths, byte hashes and commands are retained independently of the earlier
+minimal camerad ABI evidence.
+
+The pinned ARM raylib archive links against these exact image libraries with
+undefined symbols rejected. The resulting plugin SHA256 is
+`f62d902f04c9b329d1a8f0741e9ca83dd7c3b92beddaea4a3ec393b1f4bafa44`.
+An actual ARM/QEMU loader process using the extracted AGNOS loader passed
+RTLD_NOW loading, the pinned contract marker, all 82 required raylib names,
+five direct EGL and two direct GLES names, and all three extension pointer
+lookups used by the camera adapter. It did not initialize a display. The
+temporary expanded image was removed after retaining the verified compressed
+source, extracted libraries, plugin, probe and execution evidence.
+
+The complete UI ARM executable is still awaiting its fresh hosted build.
+Display/DRM ownership, target rendering, DMA-BUF camera import and hardware
+input remain separate from the successful offline plugin boundary. An
+executable or `--help` pass cannot establish those behaviors.
+
+The original dependency shim's ARM FFmpeg release payload was separately
+downloaded and verified at SHA256
+`ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4`
+(11,743,600 bytes). Package label `7.1.0` contains native program version
+`b08d7969`, avcodec 61.19.100 and avutil 59.39.100. The CLI embeds its codec
+libraries and loads the image's libc/libm/libpthread/libdl; its native executable
+must be exposed directly in the candidate PATH, bypassing the Python console
+launcher. The wheel also supplies static development archives for native
+consumers; this does not establish their final link closure.
+
+Using the actual extracted AGNOS loader and libraries under QEMU, both native
+FFmpeg/ffprobe version commands pass. A synthetic 64x32, eight-frame RGBA input
+passes the UI recording command's pipe input, vertical flip, yuv420p conversion,
+libx264 encoding and MP4 output. ffprobe observes eight H.264/yuv420p frames;
+decoding them back verifies the frame count and top/bottom color reversal.
+Payload hashes, commands, input, video, decoded pixels and receipts are retained
+under `.analysis/scratch/2026-10-02-port-resume/ffmpeg-arm-pinned/`. This is
+offline external-codec evidence, separate from the complete UI ARM executable,
+real screen capture and device throughput. Earlier host FFmpeg 6.1.1 captures
+remain preserved with their original dependency identities.
 
 Local CI integration checks cover runner import/CLI and current-build peer
 selection, dependency resolution, workflow shell syntax and required gate

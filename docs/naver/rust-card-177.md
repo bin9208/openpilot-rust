@@ -165,6 +165,87 @@ for all 32 reference checkers pass with the fresh binding environment. The
 [failed job](https://github.com/bin9208/openpilot-rust/actions/runs/37115007935/job/111180009509)
 retains its complete evidence artifact. No native runtime policy changed.
 
+At `5023fb78`, the [PR Rust run](https://github.com/bin9208/openpilot-rust/actions/runs/37117329497)
+passed every job, including the full Card source comparisons, nineteen actual
+host IPC scenarios and ARM build. The independent
+[push run](https://github.com/bin9208/openpilot-rust/actions/runs/37117327693)
+failed the Mazda native warmup: all 320 ordered CAN packets were received, but
+the receiver entered another unchanged 20 ms wait while the controller observed
+phase completion. Its extra empty-CAN step appeared 20.804 ms after the final
+receive. The failed archive is retained at SHA256
+`b841b26d03ee06723911a1aaa794691b853116f542595756d531acb6b8c2edde`.
+The passing PR run does not override the failed same-head push run.
+
+The bounded fixture now explicitly arms a completed-step stop using
+`--fixture-phase-fence`, accepted only with `--frequency-trace` and
+`--max-steps`. Both the original-source diagnostic wrapper and Rust stop after
+the monitor and flushed trace, before entering another CAN wait. Warmup setup
+queues each next independently produced packet before resuming the receiver;
+the fence is removed before the independently paced 80-packet measured stream.
+Every one of the 320 setup steps retains its actual send/receive timestamp,
+one-packet metadata, source diagnostic prefix, readiness and CAN error count.
+No row is discarded and no runtime timeout or frequency/validity policy changes.
+
+A controlled 100 ms final-observer delay reproduced extra empty steps on both
+old source/native fixtures. A subsequent final-only-fence run exposed a distinct
+31.588 ms mid-warmup producer gap. Its cause was not established from concurrent
+host CPU activity. The completed-step setup seam was then tested with a deliberate
+100 ms producer delay near tick 310 plus the final observer delay. Both lanes
+retained exactly 320 setup and 80 measured packets, followed by the expected
+post-stream timeout, SIGINT and Params drain. The delays and initial failures
+remain in `.omo/evidence/card-phase-fence/`; stepped setup is not free-running
+runtime or performance evidence. The final local matrix passes all nineteen
+scenarios and 1,520 independently sent measured packets with native ELF SHA256
+`431a47a2f61529c11dcaa4a5da55ba7ad2cc4617e1d5455a9b2fac73fc6c5884`.
+Its `host-19/pumped/result.json`, command/exit records and per-lane audit retain
+the exact inputs, 320 setup steps, CAN timing, validity and shutdown outcomes.
+Seven affected Rust runtime tests, two Python fence tests, Clippy and formatting
+pass; unchanged broad vehicle oracles were reused. Independent final review and
+the parent's focused CI selection check also pass: the reviewer independently
+recomputed all 19 measured pairs and 12,160 setup steps from retained data,
+verified the frozen source/ELF identities and closed with no findings. Its
+504-artifact receipt is SHA256
+`2afe9179eda7f9b26cab195ffe9b44aa5cba8d71571db8100c59848fa28e578e`.
+Exact-head hosted checks remain required after this repair.
+
+Head `540612257ce27775d13fc81802371408da4e074a` then passed the push Rust run
+[37123213229](https://github.com/bin9208/openpilot-rust/actions/runs/37123213229),
+but PR run [37123214759](https://github.com/bin9208/openpilot-rust/actions/runs/37123214759)
+failed the Nissan X-Trail exact comparison. Its preserved raw artifact SHA256 is
+`5fa1aa6e355bc33eeda61137293259dbf056850fb2db01acd203c4693a8354b1`.
+After consuming the last startup CAN, the original process continued through
+two normal empty-CAN waits at 20.796 and 41.680 ms while the unfenced fixture
+observed startup completion. This left counter 2 in every setup/measured state;
+the native lane retained 0. Both lanes' 320 setup and 80 measured packets were
+otherwise ordered and complete. The observed pause is a fixture boundary;
+its host scheduling cause is not established. No error count is subtracted or
+discarded to make the comparison pass.
+
+The Python harness now arms the existing frame-0 fence before process launch,
+observes its actual completed-step stop, and pauses the startup pump while the
+receiver is already stopped. It resumes only to consume already queued startup
+packets, one fenced step at a time, until the last sent timestamp is observed.
+Every initial CP/CS/CO and nonempty CAN step must be present, with counter 0.
+The original constructor, production Rust, native ELF and runtime timeouts are
+unchanged. The setup fence is still removed before the independent stream.
+
+The exact old helpers reproduce five startup empty-CAN steps in both lanes
+under deliberate 100 ms observer delays before/after pause acknowledgment.
+With the repaired helpers, both Nissan lanes retain two nonempty startup steps,
+including the queued tail, and counter 0 under the same delays. A fresh full
+matrix passes all 19 profiles, 1,520 measured steps and 12,160 setup steps across
+both lanes; post-stream timeout increments, SIGINT and Params drain pass.
+Seven focused tooling tests and Ruff pass. Evidence is retained under
+`.omo/evidence/card-startup-fence/`; its receipt SHA256 is
+`e8e927db02a8b6d232d6accfe6fe6ff23eabaf4e0b3016aa779740364abf4071`.
+The two-helper source archive is bound to both successful captures; 454 prior
+source files and the executed native ELF are unchanged. The single final
+independent review passes with no actionable findings after recomputing all
+19 pairs, controlled RED/GREEN, source/ELF mappings and shutdown outcomes.
+Its 564-artifact receipt SHA256 is
+`c1322172e398d7248294038342644a369d35bbcd7d008ac5249298b7321ba6db`.
+New exact-head hosted checks remain required before merge.
+
 A separate ARM replay passes 17 full vehicle traces / 7,700 frames across the
 six added brands, with exact raw JSON equality to the retained source-equivalent
 host results. Original Python oracles were reused without rerunning unchanged

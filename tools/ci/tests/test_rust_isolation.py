@@ -226,7 +226,7 @@ class RustIsolationTests(unittest.TestCase):
             'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
-            'card-runtime', 'selfdrive-runtime', 'camera-runtime', 'panda-runtime', 'ui-runtime',
+            'card-runtime', 'selfdrive-runtime', 'camera-runtime', 'panda-runtime', 'ui-runtime', 'encoder-runtime', 'navd-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -249,7 +249,9 @@ class RustIsolationTests(unittest.TestCase):
                                             'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}',
                                             'CAMERA': '${{ needs.camera-runtime.result }}',
                                             'PANDA': '${{ needs.panda-runtime.result }}',
-                                            'UI_RUNTIME': '${{ needs.ui-runtime.result }}'})
+                                            'UI_RUNTIME': '${{ needs.ui-runtime.result }}',
+                                            'ENCODER': '${{ needs.encoder-runtime.result }}',
+                                            'NAVD': '${{ needs.navd-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
@@ -262,6 +264,54 @@ class RustIsolationTests(unittest.TestCase):
                                                   capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
+
+    def test_navigation_requires_original_transport_auth_and_timer_evidence(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['navd-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('build_params_python.py', 'build_msgq_python.py', 'NAVD_PARAMS_BINDING',
+                         'requests==2.34.2', 'urllib3==2.7.0', 'PyJWT==2.14.0',
+                         '-p openpilot-navd --features native --bins --examples --locked',
+                         'check_navd_policy.py', 'check_navd_engine.py', 'check_navd_http.py', '--timeouts',
+                         'check_navd_config.py', 'check_navd_destination.py', 'check_navd_ipc.py'):
+            self.assertIn(required, commands)
+        self.assertTrue(any(step.get('if') == 'always()' and
+                            'navd-native/' in step.get('with', {}).get('path', '') for step in job['steps']))
+        arm = '\n'.join(step.get('run', '') for step in data['jobs']['arm64']['steps'])
+        self.assertIn('cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu', arm)
+        self.assertIn('release/openpilot-set-destination', arm)
+
+    def test_encoder_requires_source_runtime_and_pinned_arm_artifacts(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['encoder-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('build_visionipc_python.py', 'check_encoder_ci.py', 'test_encoder_outcomes.py',
+                         'test_encoder_target_stage.py', '--features native --bins --examples',
+                         '--features openpilot-encoderd/native', '--message-format=json', 'zstandard==0.25.0'):
+            self.assertIn(required, commands)
+        check = next(step for step in job['steps'] if 'check_encoder_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', check)
+        self.assertNotIn('continue-on-error', check)
+        setup = next(step for step in job['steps'] if step.get('name') == 'Configure original encoder IPC imports')
+        with tempfile.TemporaryDirectory(prefix='encoder IPC env ') as temporary:
+            output = Path(temporary) / 'environment'
+            environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
+            subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
+            self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/encoder-native/python:/fixture/repository:/fixture/tools\n'
+                                                f'ENCODER_MSGQ_PYTHON={temporary}/encoder-native/python\n')
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(artifacts[0]['if'], 'always()')
+        arm = next(step for step in data['jobs']['arm64']['steps']
+                   if step.get('name') == 'Build encoder daemon and probes with pinned ARM codecs and ION')
+        self.assertEqual(arm['working-directory'], 'rust')
+        self.assertIn('--features static-ffmpeg,visionipc-ion', arm['run'])
+        self.assertNotIn('if', arm)
+        self.assertNotIn('continue-on-error', arm)
+        self.assertIn('ENCODER_ARM_FFMPEG', arm['env']['FFMPEG_DIR'])
+        self.assertIn('ENCODER_ARM_LIBYUV', arm['env']['ENCODER_LIBYUV_LIB'])
 
     def test_selfdrived_requires_source_loop_native_ipc_and_failure_checks(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)

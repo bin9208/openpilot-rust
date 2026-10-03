@@ -1,10 +1,13 @@
 #![cfg(feature = "native-skip-miri")]
 
+mod support;
+
 use openpilot_msgq::{VisionClient, VisionStream};
 use std::{
     env,
     io::{BufRead, BufReader, Write},
-    process::{Child, Command, Stdio},
+    os::unix::fs::FileExt,
+    process::{Child, Stdio},
     time::{Duration, Instant},
 };
 
@@ -15,7 +18,7 @@ struct Peer {
 
 impl Peer {
     fn start() -> Self {
-        let mut process = Command::new(env!("NATIVE_VISION_PEER"))
+        let mut process = support::command(env!("NATIVE_VISION_PEER"))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
@@ -61,7 +64,7 @@ fn original_server_camera_transport() {
             .tempdir_in("/dev/shm")
             .unwrap();
         let prefix = namespace.path().file_name().unwrap().to_str().unwrap();
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args(["--exact", "original_server_camera_transport", "--nocapture"])
             .env("RUST_VISION_TEST_CHILD", "1")
             .env("OPENPILOT_PREFIX", prefix.strip_prefix("msgq_").unwrap())
@@ -79,6 +82,7 @@ fn original_server_camera_transport() {
     assert!(missing.layout().is_none());
     assert!(!missing.connect().unwrap());
     assert!(missing.receive(Duration::ZERO).is_err());
+    assert!(missing.receive_retained(Duration::ZERO).is_err());
     for name in ["", "../bad", "a/b", "a\0b"] {
         assert!(VisionClient::new(name, VisionStream::Road, false).is_err());
     }
@@ -151,6 +155,11 @@ fn original_server_camera_transport() {
             .map(|index| index.wrapping_add(7))
             .collect::<Vec<_>>()
     );
+    let descriptor = frame.descriptor().unwrap();
+    assert_eq!(descriptor.buffer_frame_id, 7);
+    assert!(descriptor.mmap_len >= meta.len + 8);
+    let original_server_id = descriptor.server_id;
+    let owned_fd = descriptor.fd.try_clone_to_owned().unwrap();
 
     let mut latest = VisionClient::new("rustvision", VisionStream::Road, true).unwrap();
     assert!(latest.connect().unwrap());
@@ -194,18 +203,26 @@ fn original_server_camera_transport() {
         }
     }
     assert!(!client.is_connected());
+    assert!(client.receive(Duration::ZERO).is_err());
+    for _ in 0..4 {
+        peer.command("send 10");
+        assert!(client
+            .receive_retained(Duration::from_millis(50))
+            .unwrap()
+            .is_none());
+        assert!(!client.is_connected());
+    }
     assert!(client.connect().unwrap());
     peer.command("send 11");
-    assert_eq!(
-        client
-            .receive(Duration::from_secs(2))
-            .unwrap()
-            .unwrap()
-            .metadata()
-            .frame_id,
-        11
-    );
+    let next = client.receive(Duration::from_secs(2)).unwrap().unwrap();
+    assert_eq!(next.metadata().frame_id, 11);
+    assert_ne!(next.descriptor().unwrap().server_id, original_server_id);
     drop(client);
+    let mut old_payload = vec![0; 96];
+    std::fs::File::from(owned_fd)
+        .read_exact_at(&mut old_payload, 0)
+        .unwrap();
+    assert_eq!(old_payload, retained);
     assert_eq!(retained[0], 7);
     assert_eq!(retained_layout.len, 96);
 
@@ -236,8 +253,25 @@ fn original_server_camera_transport() {
     assert!(invalid.connect().is_err());
     assert!(!invalid.is_connected());
     assert!(invalid.receive(Duration::ZERO).is_err());
+    assert!(invalid.receive_retained(Duration::ZERO).is_err());
     peer.command("restart");
     assert!(invalid.connect().unwrap());
+    peer.command("unaligned-buffer");
+    let mut unaligned = VisionClient::new("rustvision", VisionStream::Road, false).unwrap();
+    assert!(unaligned.connect().unwrap());
+    assert_eq!(unaligned.layout().unwrap().len, 98);
+    peer.command("send 17");
+    let frame = unaligned
+        .receive_retained(Duration::from_secs(2))
+        .unwrap()
+        .unwrap();
+    let descriptor = frame.descriptor().unwrap();
+    assert_eq!(frame.metadata().len, 98);
+    assert_eq!(descriptor.data_len, 98);
+    assert_eq!(descriptor.mmap_len, 106);
+    assert_eq!(descriptor.buffer_frame_id, 17);
+    assert_eq!(frame.metadata().frame_id, 17);
+    drop(unaligned);
     peer.command("stop");
     assert!(peer.process.wait().unwrap().success());
 }

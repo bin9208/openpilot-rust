@@ -34,7 +34,13 @@ pub fn run(options: RunOptions) -> Result<(), Error> {
     let mut frequency = options
         .frequency_trace
         .as_deref()
-        .map(super::frequency_trace::FrequencyTrace::open)
+        .map(|path| {
+            super::frequency_trace::FrequencyTrace::open(
+                path,
+                options.fixture_phase_fence.clone(),
+                options.max_steps.map_or(u64::MAX, |limit| limit.get()),
+            )
+        })
         .transpose()?;
     loop {
         if stop.load(Ordering::Relaxed) {
@@ -57,6 +63,9 @@ pub fn run(options: RunOptions) -> Result<(), Error> {
             })?;
         }
         monitor.monitor(monotonic);
+        if let Some(trace) = &mut frequency {
+            trace.completed_step(io.subscribers().frame())?;
+        }
         if options
             .max_steps
             .is_some_and(|limit| monitor.frames >= limit.get())

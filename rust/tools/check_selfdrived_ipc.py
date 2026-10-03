@@ -89,16 +89,23 @@ def main():
         try:
           started = time.monotonic()
           ready = None
+          startup_event = None
           while time.monotonic()-started < 10:
             assert process.poll() is None, process.communicate()
             for topic, raw in inputs.items():
               publishers.send(topic, raw)
             send_car(20.)
             ready = receive(output)
+            events = receive(onroad, 0)
+            if events is not None:
+              assert events['valid'] and isinstance(events['onroadEvents'], list)
+              onroad_records.append(events)
+              startup_event = events
             if ready is not None:
               records.append(ready)
               state = ready['selfdriveState']
-              if state['enabled'] and state['active'] and state['engageable'] and state['experimentalMode'] and state['personality'] == 'standard':
+              if (state['enabled'] and state['active'] and state['engageable'] and state['experimentalMode'] and
+                  state['personality'] == 'standard' and startup_event is not None):
                 break
           assert ready is not None and ready['selfdriveState']['enabled'], 'startup never enabled'
           identity = {'exe': os.readlink(f'/proc/{process.pid}/exe'),
@@ -113,9 +120,7 @@ def main():
           identity['launcher_sha256'] = hashlib.sha256(Path(identity['exe']).read_bytes()).hexdigest()
           assert 'libpython' not in identity['maps']
           identities.append(identity)
-          events = receive(onroad)
-          assert events is not None and events['valid'] and isinstance(events['onroadEvents'], list)
-          onroad_records.append(events)
+          assert startup_event is not None, 'startup never published onroadEvents'
           # Wait until warm-up inputs have actually reached every native reader.
           started = time.monotonic()
           while not all(publishers.sock[topic].all_readers_updated() for topic in inputs.keys() | {'carState'}):

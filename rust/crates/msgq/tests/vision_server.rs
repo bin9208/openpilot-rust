@@ -1,9 +1,11 @@
 #![cfg(feature = "native-skip-miri")]
 
+mod support;
+
 use openpilot_msgq::{
     RawVisionImage, VisionClient, VisionLayout, VisionMetadata, VisionServer, VisionStream,
 };
-use std::{env, os::fd::AsFd, process::Command, thread, time::Duration};
+use std::{env, os::fd::AsFd, thread, time::Duration};
 
 #[test]
 fn camera_server_preserves_frames_and_buffer_owners() {
@@ -13,7 +15,7 @@ fn camera_server_preserves_frames_and_buffer_owners() {
             .tempdir_in("/dev/shm")
             .unwrap();
         let prefix = namespace.path().file_name().unwrap().to_str().unwrap();
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args([
                 "--exact",
                 "camera_server_preserves_frames_and_buffer_owners",
@@ -71,6 +73,8 @@ fn camera_server_preserves_frames_and_buffer_owners() {
         timestamp_eof: 23100,
         valid: false,
         received: true,
+        index: 2,
+        fd: -1,
     };
     images[2].publish(metadata).unwrap();
     let frame = client.receive(Duration::from_secs(2)).unwrap().unwrap();
@@ -78,6 +82,8 @@ fn camera_server_preserves_frames_and_buffer_owners() {
     assert_eq!(frame.metadata().timestamp_sof, 23000);
     assert_eq!(frame.metadata().timestamp_eof, 23100);
     assert!(!frame.metadata().valid);
+    assert_eq!(frame.metadata().index, 2);
+    assert!(frame.metadata().fd >= 0);
     let mut copied = vec![0; 96];
     frame.copy_into(&mut copied).unwrap();
     assert_eq!(copied, data);

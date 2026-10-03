@@ -1,6 +1,6 @@
-use crate::{Error, record::Level, site::Site};
+use crate::{record::Level, site::Site, Error};
 use serde::Serialize;
-use serde_json::{Value, ser::Formatter};
+use serde_json::{ser::Formatter, Value};
 use std::{
     collections::BTreeMap,
     env,
