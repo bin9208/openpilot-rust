@@ -10,7 +10,7 @@ pub enum VisionStream {
 }
 
 impl VisionStream {
-    fn native(self) -> i32 {
+    pub(crate) fn native(self) -> i32 {
         match self {
             Self::Road => 0,
             Self::Driver => 1,

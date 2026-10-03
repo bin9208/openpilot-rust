@@ -49,22 +49,44 @@
       "name": "camerad",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/camerad",
-      "status": "not_ported",
+      "status": "native_daemon_host_and_arm_simulated",
+      "implementation": "rust/crates/camerad, camera-kernel and camerad-runtime; three-camera sensor/ISP/PHY lifecycle, exposure, request/fence handling, VisionIPC and camera-state publications, native diagnostics and normal main loop",
+      "native_dependencies": ["original msgq/VisionIPC allocation and transport through CXX", "ION allocator for the target build", "Linux Qualcomm camera/ISP/BPS/sync driver APIs and firmware", "libc strtod/rand and BOOTTIME clock", "native libzmq log transport"],
+      "runtime_scope": "host and generic ARM actual-main simulation passed 16 scenarios and 212 paired state/Vision frames; exact retained original frame-state/exposure oracle, publication barrier, cleanup and stress gates; separate ION build passed offline linkage against the exact published AGNOS 19.8-carrot-bt1 libraries",
+      "unported_scope": ["full manager startup and active log-upload integration", "project-owned C++ msgq/VisionIPC implementation remains a tracked runtime boundary"],
+      "validation_limits": ["ION/sensor/ISP operation and target scheduling are not validated on hardware", "full NV12 copy for exposure sampling is an added unmeasured cost", "LOG_RAW_FRAMES with road IFE retains a fatal missing-raw boundary"],
+      "evidence": "docs/naver/rust-camerad-187.md",
       "production_replaced": false
     },
     {
       "name": "card",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.car.card",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "production_replaced": false,
+      "implementation": "rust/crates/{can,card}; native CAN codecs/parser, VIN/firmware/fingerprint startup, continuous card core, CruiseCarrot and fourteen registered vehicle interfaces (Body, Mock, Hyundai, Tesla, Mazda, Nissan, Chrysler, Rivian, Ford, Subaru, Toyota, GM, Honda, Volkswagen); PSA has typed source-failure boundaries only; 23 VW MQB identities preserve the inherited first-update failure (#189)",
+      "evidence": "docs/naver/rust-card-177.md",
+      "runtime_scope": "Owned original msgq/Cereal/Params full-Car comparison: latest six-brand batch passes 17 scenarios/1360 measured steps per architecture, normal host nominal100Hz and separately paced ARM/QEMU under unchanged SIMULATION=1 policy; earlier14 scenarios/1120 steps per architecture are retained on their separately hashed builds. Registered278/279 identities,273 parameterizable; five source missing-torque failures, GM pedal missing-message failures and23 VW MQB first-update failures remain explicit, and PSA is separately blocked. Source-equivalent SecOC warning/order correction passes354 cases; offline linkage against exact published AGNOS19.8 libraries passes. Fresh-runner CI, full-runtime startup/upload, production selection and device/performance acceptance remain pending; project-owned C++ msgq transport is still an explicit temporary dependency"
     },
     {
       "name": "carrot_bluetooth",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.bluetooth.daemon",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "continuous_native_runtime_host_validated",
+      "implementation": "rust/crates/bluetooth; native input descriptors, gestures, journals, continuous cereal loop and owned BlueZ pairing/discovery library",
+      "native_dependencies": [
+        "Linux evdev/filesystem/process/signal APIs",
+        "sudo chmod permission fallback and system BlueZ daemon",
+        "libdbus through dbus/dbus-tokio",
+        "current original C++ msgq/libzmq transport boundary"
+      ],
+      "unported_scope": [
+        "Carrot HTTP server adapter and complete normal startup selection",
+        "physical Bluetooth and vehicle acceptance"
+      ],
+      "known_source_difference": "Invalid NUL-containing PIN cannot form a D-Bus string; native suppresses the invalid frame without reproducing the original session disconnect (#166).",
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-bluetooth-155.md"
     },
     {
       "name": "carrot_cluster",
@@ -112,7 +134,11 @@
       "name": "controlsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.controlsd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/controlsd and control-policy; continuous native control loop, consumed interface policies for 279 identities, longitudinal/coasting, angle/PID/torque/NNFF and MEB curvature control",
+      "native_dependencies": ["pinned NumPy 2.5.3 OpenBLAS 0.3.34.106.0 ILP64 numerical artifact (no Python runtime)", "original shipped Flux/Nano torque weights", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "unchanged-source loop and policy comparisons, synthetic native IPC/Params startup and shutdown, memory gates; original PSA startup defects remain issue #156; production selection, full startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/rust-port/controlsd-validation.md",
       "production_replaced": false
     },
     {
@@ -398,7 +424,11 @@
       "name": "selfdrived",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.selfdrived.selfdrived",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "implementation": "rust/crates/selfdrived; continuous native carState loop, engagement/events/alerts, complete car policy, calibrated pose/actuation checks, Params worker and cereal publications",
+      "native_dependencies": ["original msgq/VisionIPC through CXX", "libzmq native logging", "Linux clocks/signals/scheduling/filesystem", "Git executable for source build metadata"],
+      "runtime_scope": "source state/event/alert/callback/controller parity; ARM matches retained source-verified host controller/clock captures and passes native IPC restart/refresh plus nine failure cases under QEMU; offline linkage against the pinned AGNOS image passes. Runtime Python absent; core6/FIFO53 policy preserved in code. Actual AGNOS scheduling, complete manager startup/log upload and user device comparison remain pending under #1",
+      "evidence": "docs/naver/rust-selfdrived-168.md",
       "production_replaced": false
     },
     {

@@ -1,0 +1,25 @@
+[package]
+name = "openpilot-control-policy"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["numerics"]
+numerics = ["dep:libloading", "dep:sha2"]
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+libloading = { version = "0.8", optional = true }
+sha2 = { version = "0.10", optional = true }
+
+[[example]]
+name = "neural_trace"
+required-features = ["numerics"]

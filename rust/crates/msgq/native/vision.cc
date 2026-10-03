@@ -34,6 +34,8 @@ void validate_buffer(const VisionBuf &buffer) {
 }
 }
 
+void validate_vision_name(const std::string &name) { validate_name(name); }
+
 VisionConnection::VisionConnection(const std::string &name, VisionStreamType stream, bool conflate)
     : client_(name, stream, conflate) {}
 

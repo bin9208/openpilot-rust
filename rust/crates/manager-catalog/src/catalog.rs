@@ -90,6 +90,10 @@ fn availability(name: &str) -> RustAvailability {
         "beep" => ("openpilot-beepd", "openpilot-beepd"),
         "bridge" => ("openpilot-bridge", "bridge"),
         "calibrationd" => ("openpilot-calibrationd", "openpilot-calibrationd"),
+        "camerad" => ("openpilot-camerad-runtime", "openpilot-camerad"),
+        "card" => ("openpilot-card", "openpilot-card"),
+        "carrot_bluetooth" => ("openpilot-bluetooth", "openpilot-bluetoothd"),
+        "controlsd" => ("openpilot-controlsd", "openpilot-controlsd"),
         "cweb_push" => ("openpilot-cweb-push", "openpilot-cweb-push"),
         "deleter" => ("openpilot-deleter", "openpilot-deleter"),
         "dmonitoringd" => ("openpilot-dmonitoringd", "openpilot-dmonitoringd"),
@@ -111,6 +115,7 @@ fn availability(name: &str) -> RustAvailability {
         "pigeond" => ("openpilot-ublox", "openpilot-pigeond"),
         "proclogd" => ("openpilot-proclogd", "openpilot-proclogd-runtime"),
         "qcomgpsd" => ("openpilot-qcomgpsd", "openpilot-qcomgpsd"),
+        "selfdrived" => ("openpilot-selfdrived", "openpilot-selfdrived"),
         "sensord" => ("openpilot-sensord", "openpilot-sensord"),
         "soundd" => ("openpilot-soundd", "openpilot-soundd"),
         "statsd" => ("openpilot-statsd", "statsd-rs"),
@@ -121,7 +126,11 @@ fn availability(name: &str) -> RustAvailability {
         "updated" => ("openpilot-updated", "openpilot-updated"),
         _ => return RustAvailability::NotPorted,
     };
-    RustAvailability::Candidate { package, binary, limitation: "Isolated host candidate; native external dependencies remain; manager selection, complete startup/upload and AGNOS/device acceptance pending. See rust/port-status.json for component-specific limits." }
+    RustAvailability::Candidate {
+        package,
+        binary,
+        limitation: "Isolated host candidate; native external dependencies remain; manager selection, complete startup/upload and AGNOS/device acceptance pending. See rust/port-status.json for component-specific limits.",
+    }
 }
 
 /// All registered entries, in source order, including disabled and unported

@@ -1,0 +1,146 @@
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+#include "system/camerad/cameras/camera_event_timing.h"
+
+#define LOGD(...) ((void)0)
+#define LOGW(...) ((void)0)
+#define LOGE(...) ((void)0)
+namespace cereal { struct FrameData { enum class ImageSensor { AR0231, OTHER }; }; }
+struct Sensor { cereal::FrameData::ImageSensor image_sensor; uint64_t readout_time_ns; };
+struct Config { int camera_num; bool staggered_sof; bool enabled; };
+std::array<Config, 3> ALL_CAMERA_CONFIGS;
+struct Master { int cam_sync_fd = 7; };
+struct FrameMetadata { uint32_t frame_id, request_id; uint64_t timestamp_sof, timestamp_eof; float processing_time; };
+struct Buffer { int cur_buf_idx = 0; FrameMetadata cur_frame_data = {}; };
+struct cam_req_mgr_message { struct { struct { uint64_t request_id, frame_id, timestamp; uint32_t sof_status; } frame_msg; } u; };
+struct cam_sync_wait { int32_t sync_obj; uint64_t timeout_ms; };
+const int CAM_SYNC_WAIT = 3;
+std::vector<std::string> calls;
+uint64_t first_now, later_now;
+int clock_calls = 0, failures = 0, stress_mask = 0;
+uint64_t nanos_since_boot() { calls.push_back("\"clock\""); return clock_calls++ == 0 ? first_now : later_now; }
+double millis_since_boot() { return 0; }
+namespace util { void sleep_for(int ms) { calls.push_back("[\"sleep\"," + std::to_string(ms) + "]"); } }
+int do_sync_control(int, int, void *ptr, size_t) {
+  const auto &wait = *static_cast<cam_sync_wait *>(ptr);
+  calls.push_back("[\"wait\"," + std::to_string(wait.sync_obj) + "," + std::to_string(wait.timeout_ms) + "]");
+  return failures & (wait.sync_obj >= 200 ? 2 : 1) ? -1 : 0;
+}
+class SpectraCamera {
+public:
+  int ife_buf_depth = 18;
+  Config cc;
+  Sensor *sensor;
+  Master *m;
+  bool bps = false, published = false;
+  Buffer buf;
+  int sync_objs_ife[20] = {}, sync_objs_bps[20] = {};
+  uint64_t request_id_last = 0, last_requeue_ts = 0, frame_id_raw_last = 0;
+  int invalid_request_count = 0;
+  bool skip_expected = true;
+  CameraEventTiming event_timing;
+  struct SyncData { uint64_t timestamp, frame_id_offset = 0; bool staggered = false; };
+  inline static std::map<int, SyncData> camera_sync_data;
+  inline static bool first_frame_synced = false;
+  bool handle_camera_event(const cam_req_mgr_message *);
+  bool validateEvent(uint64_t, uint64_t);
+  void clearAndRequeue(uint64_t);
+  bool waitForFrameReady(uint64_t);
+  bool processFrame(int, uint64_t, uint64_t, uint64_t);
+  static bool syncFirstFrame(int, uint64_t, uint64_t, uint64_t, bool);
+  bool stress_test(const std::string &name) {
+    calls.push_back("[\"stress\",\"" + name + "\"]");
+    int bit = name == "skipping SOF event" ? 1 : name == "sync sleep time" ? 2 : name == "IFE sync" ? 4 : 8;
+    return stress_mask & bit;
+  }
+  int clear_req_queue() {
+    calls.push_back("\"flush\"");
+    std::fill(std::begin(sync_objs_ife), std::end(sync_objs_ife), 0);
+    std::fill(std::begin(sync_objs_bps), std::end(sync_objs_bps), 0);
+    return 0;
+  }
+  void enqueue_frame(uint64_t request) {
+    calls.push_back("[\"enqueue\"," + std::to_string(request) + "]");
+    auto slot = request % ife_buf_depth;
+    sync_objs_ife[slot] = 100 + slot;
+    sync_objs_bps[slot] = bps ? 200 + slot : 0;
+  }
+  void destroySyncObjectAt(int slot) {
+    calls.push_back("[\"destroy\"," + std::to_string(slot) + "]");
+    sync_objs_ife[slot] = sync_objs_bps[slot] = 0;
+  }
+};
+
+@METHODS@
+
+void state(const SpectraCamera &c, bool accepted) {
+  std::cout << "{\"accepted\":" << accepted << ",\"request_id_last\":" << c.request_id_last
+            << ",\"frame_id_raw_last\":" << c.frame_id_raw_last << ",\"last_requeue_ts\":" << c.last_requeue_ts
+            << ",\"invalid_request_count\":" << c.invalid_request_count << ",\"skip_expected\":" << c.skip_expected
+            << ",\"synced\":" << c.first_frame_synced << ",\"sync\":[";
+  bool first = true;
+  for (const auto &[id, s] : c.camera_sync_data) {
+    if (!first) std::cout << ',';
+    first = false;
+    std::cout << '[' << id << ',' << s.timestamp << ',' << s.frame_id_offset << ',' << s.staggered << ']';
+  }
+  std::cout << "],\"frame\":";
+  if (c.published) {
+    const auto &f = c.buf.cur_frame_data;
+    uint32_t bits;
+    std::memcpy(&bits, &f.processing_time, sizeof(bits));
+    std::cout << '[' << c.buf.cur_buf_idx << ',' << f.frame_id << ',' << f.request_id << ',' << f.timestamp_sof
+              << ',' << f.timestamp_eof << ',' << bits << ']';
+  } else std::cout << "null";
+  std::cout << ",\"fences\":[";
+  for (int i = 0; i < 20; ++i) {
+    if (i) std::cout << ',';
+    std::cout << '[' << c.sync_objs_ife[i] << ',' << c.sync_objs_bps[i] << ']';
+  }
+  std::cout << "],\"calls\":[";
+  for (size_t i = 0; i < calls.size(); ++i) { if (i) std::cout << ','; std::cout << calls[i]; }
+  std::cout << "]}\n";
+}
+
+int main() {
+  std::cout << std::boolalpha;
+  Master master;
+  std::array<Sensor, 3> sensors;
+  std::array<SpectraCamera, 3> cameras;
+  std::string op;
+  while (std::cin >> op) {
+    if (op == "reset") {
+      int depth, enabled, bps, ar, staggered;
+      uint64_t readout;
+      if (!(std::cin >> depth >> enabled >> bps >> ar >> staggered >> readout)) return 2;
+      SpectraCamera::camera_sync_data.clear();
+      SpectraCamera::first_frame_synced = false;
+      for (int i = 0; i < 3; ++i) {
+        ALL_CAMERA_CONFIGS[i] = {i, bool(staggered & (1 << i)), bool(enabled & (1 << i))};
+        sensors[i] = {ar & (1 << i) ? cereal::FrameData::ImageSensor::AR0231 : cereal::FrameData::ImageSensor::OTHER, readout};
+        cameras[i] = SpectraCamera{};
+        auto &c = cameras[i];
+        c.cc = ALL_CAMERA_CONFIGS[i]; c.sensor = &sensors[i]; c.m = &master; c.bps = bps & (1 << i); c.ife_buf_depth = depth;
+        for (int j = 0; j < depth; ++j) { c.sync_objs_ife[j] = 100 + j; c.sync_objs_bps[j] = c.bps ? 200 + j : 0; }
+      }
+      std::cout << "{}\n";
+    } else if (op == "step") {
+      int id;
+      cam_req_mgr_message event;
+      auto &f = event.u.frame_msg;
+      if (!(std::cin >> id >> f.request_id >> f.frame_id >> f.timestamp >> f.sof_status
+            >> first_now >> later_now >> failures >> stress_mask)) return 2;
+      clock_calls = 0; calls.clear();
+      bool accepted = cameras.at(id).handle_camera_event(&event);
+      cameras[id].published |= accepted;
+      state(cameras[id], accepted);
+    } else return 3;
+  }
+}

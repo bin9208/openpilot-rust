@@ -11,6 +11,7 @@ fn main() {
     build
         .file("native/bridge.cc")
         .file("native/vision.cc")
+        .file("native/vision_server.cc")
         .file(root.join("msgq_repo/msgq/msgq.cc"))
         .include("native")
         .include(root.join("msgq_repo"))
@@ -96,6 +97,8 @@ fn main() {
         "native/peer.cc",
         "native/vision.h",
         "native/vision.cc",
+        "native/vision_server.h",
+        "native/vision_server.cc",
         "native/vision_peer.cc",
     ] {
         println!("cargo:rerun-if-changed={path}");
