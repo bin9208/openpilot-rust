@@ -52,15 +52,31 @@
       "name": "card",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.car.card",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "production_replaced": false,
+      "implementation": "rust/crates/{can,card}; native CAN codecs/parser, VIN/firmware/fingerprint startup, continuous card core, CruiseCarrot and fourteen registered vehicle interfaces (Body, Mock, Hyundai, Tesla, Mazda, Nissan, Chrysler, Rivian, Ford, Subaru, Toyota, GM, Honda, Volkswagen); PSA has typed source-failure boundaries only; 23 VW MQB identities preserve the inherited first-update failure (#189)",
+      "evidence": "docs/naver/rust-card-177.md",
+      "runtime_scope": "Owned original msgq/Cereal/Params full-Car comparison: latest six-brand batch passes 17 scenarios/1360 measured steps per architecture, normal host nominal100Hz and separately paced ARM/QEMU under unchanged SIMULATION=1 policy; earlier14 scenarios/1120 steps per architecture are retained on their separately hashed builds. Registered278/279 identities,273 parameterizable; five source missing-torque failures, GM pedal missing-message failures and23 VW MQB first-update failures remain explicit, and PSA is separately blocked. Source-equivalent SecOC warning/order correction passes354 cases; offline linkage against exact published AGNOS19.8 libraries passes. Fresh-runner CI, full-runtime startup/upload, production selection and device/performance acceptance remain pending; project-owned C++ msgq transport is still an explicit temporary dependency"
     },
     {
       "name": "carrot_bluetooth",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.bluetooth.daemon",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "continuous_native_runtime_host_validated",
+      "implementation": "rust/crates/bluetooth; native input descriptors, gestures, journals, continuous cereal loop and owned BlueZ pairing/discovery library",
+      "native_dependencies": [
+        "Linux evdev/filesystem/process/signal APIs",
+        "sudo chmod permission fallback and system BlueZ daemon",
+        "libdbus through dbus/dbus-tokio",
+        "current original C++ msgq/libzmq transport boundary"
+      ],
+      "unported_scope": [
+        "Carrot HTTP server adapter and complete normal startup selection",
+        "physical Bluetooth and vehicle acceptance"
+      ],
+      "known_source_difference": "Invalid NUL-containing PIN cannot form a D-Bus string; native suppresses the invalid frame without reproducing the original session disconnect (#166).",
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-bluetooth-155.md"
     },
     {
       "name": "carrot_cluster",
@@ -108,7 +124,11 @@
       "name": "controlsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.controlsd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/controlsd and control-policy; continuous native control loop, consumed interface policies for 279 identities, longitudinal/coasting, angle/PID/torque/NNFF and MEB curvature control",
+      "native_dependencies": ["pinned NumPy 2.5.3 OpenBLAS 0.3.34.106.0 ILP64 numerical artifact (no Python runtime)", "original shipped Flux/Nano torque weights", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "unchanged-source loop and policy comparisons, synthetic native IPC/Params startup and shutdown, memory gates; original PSA startup defects remain issue #156; production selection, full startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/rust-port/controlsd-validation.md",
       "production_replaced": false
     },
     {

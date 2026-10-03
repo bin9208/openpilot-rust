@@ -111,7 +111,22 @@ impl JsonValue {
     /// Returns a formatting error if the underlying writer fails.
     pub fn to_json(&self) -> Result<String, std::fmt::Error> {
         let mut output = String::new();
-        self.document.write_node(self.index, &mut output)?;
+        self.document.write_node(
+            self.index,
+            &mut output,
+            super::write::TextEncoding::AsciiEscaped,
+        )?;
+        Ok(output)
+    }
+
+    /// Encode Python json.dumps(ensure_ascii=False) for a strict UTF-8 file.
+    ///
+    /// # Errors
+    /// Rejects lone surrogates, matching the source file encoder.
+    pub fn to_json_utf8(&self) -> Result<String, std::fmt::Error> {
+        let mut output = String::new();
+        self.document
+            .write_node(self.index, &mut output, super::write::TextEncoding::Utf8)?;
         Ok(output)
     }
 }

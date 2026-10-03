@@ -61,6 +61,33 @@ class Peer:
                       'binary_sha256': None if self.original else sha256(self.binary.read_bytes()).hexdigest()}
         (self.output / 'invocation.json').write_text(json.dumps(invocation))
 
+    def synchronize(self):
+        assert self.frames is None, 'readiness records consume bounded collector frames'
+        deadline = time.monotonic() + 20
+        sequence = 0
+        while time.monotonic() < deadline:
+            assert self.process.poll() is None, (self.process.returncode, (self.output / 'stderr.log').read_text())
+            sequence += 1
+            marker = json.dumps({'msg': f'ready-{self.prefix}-{sequence}'})
+            self.socket.send_multipart([bytes([10]), marker.encode()])
+            retry = min(deadline, time.monotonic() + .05)
+            while time.monotonic() < retry:
+                packet = self.subscribers['logMessage'].receive(non_blocking=True)
+                if packet is None:
+                    time.sleep(.001)
+                    continue
+                with (self.output / 'readiness.bin').open('ab') as stream:
+                    stream.write(packet)
+                with log.Event.from_bytes(packet) as event:
+                    assert event.valid and event.which() == 'logMessage'
+                    if event.logMessage != marker:
+                        continue
+                # Publisher construction resets readers; reconnect the error reader before test records arrive.
+                assert self.subscribers['errorLogMessage'].receive(non_blocking=True) is None
+                (self.output / 'readiness.json').write_text(json.dumps({'acknowledged_marker': marker, 'attempts': sequence}))
+                return
+        raise TimeoutError('collector did not acknowledge readiness')
+
     def send(self, parts: list[bytes], tag: str):
         raw = b''.join(parts)
         (self.output / f'{tag}.input').write_bytes(raw)

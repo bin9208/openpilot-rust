@@ -1,0 +1,35 @@
+[package]
+name = "openpilot-bluetooth"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints.rust]
+unsafe_code = "deny"
+
+[[bin]]
+name = "openpilot-bluetoothd"
+path = "src/main.rs"
+
+[dependencies]
+indexmap = { version = "=2.14.2", features = ["serde"] }
+libc = "0.2"
+num-traits = "0.2"
+nix = { version = "=0.31.3", default-features = false, features = ["signal"] }
+rustix = { version = "1", features = ["fs", "event", "time"] }
+capnp = "=0.27.2"
+signal-hook = "0.3"
+dbus = { version = "=0.9.12", features = ["futures", "vendored"] }
+dbus-tokio = "=0.7.6"
+tokio = { version = "1", features = ["rt", "macros", "sync", "time", "net", "io-util", "io-std"] }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["raw_value", "float_roundtrip"] }
+thiserror = "2"
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-runtime-version = { path = "../runtime-version" }
+tempfile = "3"
+uuid = { version = "=1.26.1", features = ["v4"] }
