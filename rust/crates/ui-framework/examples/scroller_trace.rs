@@ -67,6 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             last = *event;
         }
         let frame = Frame {
+            index: 0,
             now: input.now,
             monotonic: 0.0,
             keyboard: &Default::default(),

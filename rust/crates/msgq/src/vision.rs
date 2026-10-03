@@ -1,94 +1,155 @@
-use crate::{vision_bridge::ffi, Error, VisionMetadata};
-use std::{marker::PhantomData, rc::Rc, time::Duration};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VisionStream {
-    Road,
-    Driver,
-    WideRoad,
-    Map,
-}
-
-impl VisionStream {
-    fn native(self) -> i32 {
-        match self {
-            Self::Road => 0,
-            Self::Driver => 1,
-            Self::WideRoad => 2,
-            Self::Map => 3,
-        }
-    }
-}
+use crate::{
+    queue::{Kind, Namespace, Queue},
+    vision_memory::Buffer,
+    vision_socket, vision_wire, Error, VisionLayout, VisionMetadata, VisionStream,
+};
+use std::{
+    marker::PhantomData,
+    os::fd::{AsFd, AsRawFd},
+    path::PathBuf,
+    rc::Rc,
+    time::Duration,
+};
 
 /// Client for the original trusted local VisionIPC server protocol.
-/// Native assertions and driver failures retain the original fail-stop behavior.
 pub struct VisionClient {
-    connection: cxx::UniquePtr<ffi::VisionConnection>,
+    socket_path: PathBuf,
+    stream: VisionStream,
+    queue: Queue,
+    buffers: Vec<Buffer>,
+    connected: bool,
     thread: PhantomData<Rc<()>>,
-}
-
-/// Scalar metadata copied from the first imported buffer, independent of frame reception.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct VisionLayout {
-    pub width: usize,
-    pub height: usize,
-    pub stride: usize,
-    pub uv_offset: usize,
-    pub len: usize,
 }
 
 impl VisionClient {
     pub fn new(name: &str, stream: VisionStream, conflate: bool) -> Result<Self, Error> {
+        let socket_path = vision_socket::path(name)?;
+        let queue = Queue::open(
+            &format!("visionipc_{name}_{}", stream.native()),
+            Kind::Subscriber { conflate },
+            1024 * 1024,
+            Namespace::Runtime,
+        )?;
         Ok(Self {
-            connection: ffi::open_vision(name, stream.native(), conflate)?,
+            socket_path,
+            stream,
+            queue,
+            buffers: Vec::new(),
+            connected: false,
             thread: PhantomData,
         })
     }
 
     /// Attempts discovery once; an absent server returns an empty list.
     pub fn available_streams(name: &str) -> Result<Vec<VisionStream>, Error> {
-        let mask = ffi::vision_streams(name)?;
-        Ok([
-            VisionStream::Road,
-            VisionStream::Driver,
-            VisionStream::WideRoad,
-            VisionStream::Map,
-        ]
-        .into_iter()
-        .filter(|stream| mask & (1 << stream.native()) != 0)
-        .collect())
+        let Some(socket) = vision_socket::connect(&vision_socket::path(name)?)? else {
+            return Ok(Vec::new());
+        };
+        vision_socket::send(socket.as_fd(), &4_i32.to_le_bytes(), &[])?;
+        let (payload, descriptors) = match vision_socket::receive(socket.as_fd(), 16) {
+            Err(Error::Io(_, error)) if error.kind() == std::io::ErrorKind::ConnectionReset => {
+                return Ok(Vec::new())
+            }
+            value => value?,
+        };
+        if !descriptors.is_empty() {
+            return Err(Error::Corrupt(
+                "VisionIPC discovery transferred unexpected descriptors",
+            ));
+        }
+        vision_wire::decode_streams(&payload)
     }
 
     /// Attempts connection once, without the native infinite retry loop.
     pub fn connect(&mut self) -> Result<bool, Error> {
-        Ok(self.connection.pin_mut().connect()?)
+        self.connected = false;
+        self.buffers.clear();
+        let Some(socket) = vision_socket::connect(&self.socket_path)? else {
+            return Ok(false);
+        };
+        vision_socket::send(socket.as_fd(), &self.stream.native().to_le_bytes(), &[])?;
+        let (payload, descriptors) = match vision_socket::receive(
+            socket.as_fd(),
+            vision_wire::BUFFER_BYTES * vision_wire::MAX_FDS,
+        ) {
+            Err(Error::Io(_, error)) if error.kind() == std::io::ErrorKind::ConnectionReset => {
+                return Ok(false)
+            }
+            value => value?,
+        };
+        let records = vision_wire::decode_buffers(&payload, descriptors.len(), self.stream)?;
+        let buffers: Result<Vec<_>, _> = records
+            .into_iter()
+            .zip(descriptors)
+            .map(|(wire, fd)| Buffer::import(wire, fd))
+            .collect();
+        self.buffers = buffers?;
+        self.connected = true;
+        Ok(true)
     }
 
     pub fn is_connected(&self) -> bool {
-        self.connection.connected()
+        self.connected
     }
 
-    /// Matches the original client layout properties without polling or consuming a frame.
-    /// The owned scalars remain valid after client destruction; no camera bytes are exposed.
+    /// Matches the original layout properties without consuming a frame.
     pub fn layout(&self) -> Option<VisionLayout> {
-        let layout = self.connection.layout();
-        layout.available.then_some(VisionLayout {
-            width: layout.width,
-            height: layout.height,
-            stride: layout.stride,
-            uv_offset: layout.uv_offset,
-            len: layout.len,
-        })
+        self.buffers.first().map(|buffer| buffer.wire.layout)
     }
 
     /// A timeout or a changed server returns no frame; check `is_connected`
     /// to distinguish a reconnect requirement from an ordinary timeout.
     pub fn receive(&mut self, timeout: Duration) -> Result<Option<VisionFrame<'_>>, Error> {
-        let milliseconds = i32::try_from(timeout.as_millis()).map_err(|_| Error::TimeoutRange)?;
-        let metadata = self.connection.pin_mut().receive(milliseconds)?;
-        Ok(metadata.received.then_some(VisionFrame {
-            client: self,
+        if !self.connected {
+            return Err(Error::Invalid("VisionIPC client is not connected"));
+        }
+        self.receive_retained(timeout)
+    }
+
+    /// Encoder opt-in matching the original receive-only loop after disconnection.
+    /// Validated imported buffers must exist. This method never reconnects automatically.
+    pub fn receive_retained(
+        &mut self,
+        timeout: Duration,
+    ) -> Result<Option<VisionFrame<'_>>, Error> {
+        let timeout = i32::try_from(timeout.as_millis()).map_err(|_| Error::TimeoutRange)?;
+        if self.buffers.is_empty() {
+            return Err(Error::Invalid(
+                "VisionIPC has no validated imported buffers",
+            ));
+        }
+        let Some(payload) = self.queue.receive(timeout)? else {
+            return Ok(None);
+        };
+        let packet = vision_wire::decode_packet(&payload)?;
+        let Some(buffer) = self.buffers.get(packet.index) else {
+            self.connected = false;
+            return Ok(None);
+        };
+        if buffer.wire.server_id != packet.server_id {
+            self.connected = false;
+            return Ok(None);
+        }
+        buffer.sync(false);
+        let layout = buffer.wire.layout;
+        let metadata = VisionMetadata {
+            width: layout.width,
+            height: layout.height,
+            stride: layout.stride,
+            uv_offset: layout.uv_offset,
+            len: layout.len,
+            frame_id: packet.frame_id,
+            timestamp_sof: packet.timestamp_sof,
+            timestamp_eof: packet.timestamp_eof,
+            valid: packet.valid,
+            received: true,
+            index: packet.index,
+            fd: buffer.fd.as_raw_fd(),
+        };
+        Ok(Some(VisionFrame {
+            buffer,
             metadata,
+            client: PhantomData,
         }))
     }
 }
@@ -96,8 +157,9 @@ impl VisionClient {
 /// Keeps the imported mapping alive and excludes another receive/reconnect.
 /// The producer may still recycle the buffer: this is not a producer lease.
 pub struct VisionFrame<'a> {
-    client: &'a mut VisionClient,
+    buffer: &'a Buffer,
     metadata: VisionMetadata,
+    client: PhantomData<&'a mut VisionClient>,
 }
 
 impl VisionFrame<'_> {
@@ -105,9 +167,28 @@ impl VisionFrame<'_> {
         &self.metadata
     }
 
+    /// Borrowed FD/scalars, without a camera-memory slice or producer lease.
+    /// Duplicate the FD before retaining it beyond this frame's lifetime.
+    pub fn descriptor(&self) -> Result<crate::VisionBufferDescriptor<'_>, Error> {
+        Ok(crate::VisionBufferDescriptor {
+            fd: self.buffer.fd.as_fd(),
+            mmap_len: self.buffer.mapping.mapped_length(),
+            data_len: self.buffer.wire.layout.len,
+            index: self.buffer.wire.index,
+            server_id: self.buffer.wire.server_id,
+            buffer_frame_id: self.buffer.mapping.frame_id()?,
+        })
+    }
+
     /// Copies the original mapped bytes into exactly `metadata().len` bytes.
     /// Like the source API, copying does not make producer updates atomic.
     pub fn copy_into(&self, destination: &mut [u8]) -> Result<(), Error> {
-        Ok(self.client.connection.copy_frame(destination)?)
+        self.buffer.mapping.copy_into(destination)
+    }
+}
+
+impl AsFd for VisionFrame<'_> {
+    fn as_fd(&self) -> std::os::fd::BorrowedFd<'_> {
+        self.buffer.fd.as_fd()
     }
 }

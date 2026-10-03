@@ -4,6 +4,7 @@ fn descriptors() -> Result<usize, std::io::Error> {
     Ok(std::fs::read_dir("/proc/self/fd")?.count())
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let owned = std::env::var_os("EGL_OWNED_IMAGE").is_some();
     let count = descriptors()?;
     let layout = FrameLayout {
         width: 1928,
@@ -17,9 +18,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match Context::new() {
         Ok(context) => {
             initialized = true;
+            let mut context = Some(std::rc::Rc::new(context));
             let file = std::fs::File::open("/dev/null")?;
-            for _ in 0..3 {
-                match context.create(layout, file.as_fd()) {
+            for index in 0..3 {
+                if owned {
+                    match context
+                        .as_ref()
+                        .ok_or("context missing")?
+                        .create_owned(layout, file.as_fd())
+                    {
+                        Ok(image) => {
+                            if index == 2 {
+                                let weak = std::rc::Rc::downgrade(
+                                    context.as_ref().ok_or("context missing")?,
+                                );
+                                drop(context.take());
+                                assert_eq!(weak.strong_count(), 1);
+                            }
+                            image.bind(17);
+                            created += 1;
+                        }
+                        Err(_) => rejected += 1,
+                    }
+                    continue;
+                }
+                match context
+                    .as_ref()
+                    .ok_or("context missing")?
+                    .create(layout, file.as_fd())
+                {
                     Ok(image) => {
                         image.bind(17);
                         created += 1;

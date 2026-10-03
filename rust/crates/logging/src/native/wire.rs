@@ -26,7 +26,7 @@ pub(super) fn context(version: &str, device: &str) -> Result<Context, Error> {
             }
             Err(env::VarError::NotPresent) => {}
             Err(env::VarError::NotUnicode(_)) => {
-                return Err(Error::Contract("native logging context is not UTF-8"))
+                return Err(Error::Contract("native logging context is not UTF-8"));
             }
         }
     }
@@ -44,10 +44,12 @@ pub(super) fn context(version: &str, device: &str) -> Result<Context, Error> {
 
 pub(super) fn packet(
     site: Site,
+    source: &str,
     level: Level,
     text: &str,
     created: f64,
     context: &Context,
+    timestamp: Option<(u64, Option<u32>)>,
 ) -> Result<Vec<u8>, Error> {
     // json11 sorts object keys, emits UTF-8, and inserts spaces after commas and colons.
     #[derive(Serialize)]
@@ -58,16 +60,40 @@ pub(super) fn packet(
         funcname: &'a str,
         levelnum: u8,
         lineno: u32,
-        msg: &'a str,
+        msg: Payload<'a>,
+    }
+    #[derive(Serialize)]
+    #[serde(untagged)]
+    enum Payload<'a> {
+        Text(&'a str),
+        Timestamp { timestamp: Timestamp<'a> },
+    }
+    #[derive(Serialize)]
+    struct Timestamp<'a> {
+        event: &'a str,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        frame_id: Option<String>,
+        time: String,
     }
     let record = Record {
         created,
         ctx: context,
-        filename: c_string(site.file),
+        filename: c_string(source),
         funcname: c_string(site.function),
         levelnum: level as u8,
         lineno: site.line,
-        msg: text,
+        msg: match timestamp {
+            None => Payload::Text(text),
+            Some((now_ns, frame_id)) => Payload::Timestamp {
+                timestamp: Timestamp {
+                    event: text,
+                    frame_id: frame_id
+                        .filter(|frame| *frame < u32::MAX)
+                        .map(|frame| frame.to_string()),
+                    time: now_ns.to_string(),
+                },
+            },
+        },
     };
     let mut packet = vec![level as u8];
     record

@@ -11,6 +11,7 @@ pub use handles::{NavigationQueue, NavigationRequest, WeakWidgetHandle, WidgetHa
 pub use state::WidgetState;
 pub use types::{DialogResult, Property, RenderResult};
 pub struct Frame<'a> {
+    pub index: u64,
     pub now: f64,
     pub monotonic: f64,
     pub keyboard: &'a crate::keys::KeyboardInput,

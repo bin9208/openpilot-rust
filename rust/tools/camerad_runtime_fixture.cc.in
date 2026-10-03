@@ -1,0 +1,76 @@
+#include <time.h>
+
+static int runtime_sessions = 0, runtime_port = 0, runtime_round = 0, runtime_cursor = 0;
+static int runtime_ports[3], runtime_count = 0;
+static uint64_t runtime_sof = 0;
+
+static uint64_t runtime_now() {
+  timespec value{};
+  syscall(SYS_clock_gettime, CLOCK_BOOTTIME, &value);
+  return uint64_t(value.tv_sec) * 1000000000 + value.tv_nsec;
+}
+
+static int runtime_open(const char* path, int flags) {
+  if (!strcmp(path, "/dev/v4l/by-path/platform-soc:qcom_cam-req-mgr-video-index0")) return 501;
+  if (!strcmp(path, "/dev/v4l/by-path/platform-cam_sync-video-index0")) return 505;
+  int index = -1, consumed = 0;
+  if (sscanf(path, "/sys/class/video4linux/v4l-subdev%d/name%n", &index, &consumed) == 1 && path[consumed] == 0) {
+    const char* names[] = {"cam-isp", "cam-icp", "cam-sensor-driver", "cam-sensor-driver", "cam-sensor-driver", "cam-csiphy-driver", "cam-csiphy-driver", "cam-csiphy-driver"};
+    if (index < 0 || index > 7) { errno = ENOENT; return -2; }
+    int fd = syscall(SYS_memfd_create, "camera-runtime-discovery", 0);
+    if (fd < 0 || syscall(SYS_write, fd, names[index], strlen(names[index])) < 0 || syscall(SYS_lseek, fd, 0, SEEK_SET)) abort();
+    trace("{\"op\":\"discovery\",\"index\":%d,\"name\":\"%s\"}", index, names[index]);
+    return -fd-100;
+  }
+  if (sscanf(path, "/dev/v4l-subdev%d%n", &index, &consumed) == 1 && path[consumed] == 0) {
+    if (index == 0) return 503;
+    if (index == 1) return 504;
+    if (index >= 2 && index <= 4) { runtime_port = index - 2; return 510 + runtime_port; }
+    if (index >= 5 && index <= 7) return 520 + index - 5;
+    errno = ENOENT; return -2;
+  }
+  return -1;
+}
+
+static void runtime_pause() {
+  timespec delay{0, 1000000};
+  syscall(SYS_nanosleep, &delay, nullptr);
+}
+
+static void runtime_poll() {
+  static bool initialized = false;
+  if (!initialized) {
+    const char* names[] = {"DISABLE_WIDE_ROAD", "DISABLE_ROAD", "DISABLE_DRIVER"};
+    for (int port = 0; port < 3; ++port) {
+      if (!getenv(names[port]) && setting("CK_MISSING_PORT", -1) != port) runtime_ports[runtime_count++] = port;
+    }
+    trace("{\"op\":\"runtime-ready\",\"streams\":%d}", runtime_count);
+    initialized = true;
+  }
+  const char* gate = getenv("CK_START_GATE");
+  while (gate && syscall(SYS_faccessat, AT_FDCWD, gate, F_OK) != 0) {
+    runtime_pause();
+  }
+  if (runtime_cursor == 0) {
+    uint64_t now = runtime_now();
+    if (!runtime_sof) runtime_sof = now;
+    else runtime_sof += 50000000;
+    while (runtime_now() < runtime_sof + 40000000) runtime_pause();
+    ++runtime_round;
+  }
+  trace("{\"op\":\"runtime-poll\",\"round\":%d,\"port\":%d,\"sof\":%llu}", runtime_round, runtime_ports[runtime_cursor],
+        static_cast<unsigned long long>(runtime_sof));
+}
+
+static void runtime_event(cam_req_mgr_message* data) {
+  int port = runtime_ports[runtime_cursor];
+  data->session_hdl = 10001 + port;
+  data->u.frame_msg.link_hdl = 20001 + port;
+  data->u.frame_msg.request_id = runtime_round;
+  data->u.frame_msg.frame_id = runtime_round;
+  data->u.frame_msg.timestamp = runtime_sof;
+  data->u.frame_msg.sof_status = 0;
+  trace("{\"op\":\"runtime-event\",\"port\":%d,\"round\":%d,\"session\":%d,\"sof\":%llu}", port, runtime_round,
+        data->session_hdl, static_cast<unsigned long long>(runtime_sof));
+  runtime_cursor = (runtime_cursor + 1) % runtime_count;
+}

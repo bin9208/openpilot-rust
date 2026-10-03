@@ -1,0 +1,37 @@
+static void lifecycle_event(cam_req_mgr_message* data, int index) {
+  const char* mode = getenv("CK_EVENT_CASE");
+  if (!mode || !strcmp(mode, "baseline")) return;
+  if (!strcmp(mode, "stale")) {
+    if (index == 1) data->u.frame_msg.timestamp = 999999999;
+    else { data->u.frame_msg.request_id--; data->u.frame_msg.frame_id--; }
+  } else if (!strcmp(mode, "frame-gap")) {
+    if (index >= 3) { data->u.frame_msg.request_id += 2; data->u.frame_msg.frame_id += 4; }
+  } else if (!strcmp(mode, "request-gap")) {
+    if (index >= 3) data->u.frame_msg.request_id += 2;
+  } else if (!strcmp(mode, "invalid")) {
+    data->u.frame_msg.request_id = 0;
+  } else abort();
+}
+// @IOCTL@
+    if (control->op_code == CAM_REQ_MGR_MAP_BUF) {
+      const auto* map = reinterpret_cast<cam_mem_mgr_map_cmd*>(control->handle);
+      struct stat image = {};
+      if (fstat(map->fd, &image) != 0) abort();
+      if (map->fd < 0 || map->fd >= 2048 || (tracked[map->fd] && tracked[map->fd] != 3)) abort();
+      tracked[map->fd] = 3;
+      trace("{\"op\":\"image-import\",\"fd\":%d,\"length\":%ld}", map->fd, static_cast<long>(image.st_size));
+    }
+    if (control->op_code == CAM_SENSOR_PROBE_CMD) {
+      uint32_t handle = control->handle;
+      snapshot(handle, 0, SIZE_MAX);
+      const auto* packet = static_cast<cam_packet*>(mappings[handle >> 16]);
+      const auto* descriptors = reinterpret_cast<const cam_cmd_buf_desc*>(reinterpret_cast<const uint8_t*>(&packet->payload) + packet->cmd_buf_offset);
+      if (packet->num_cmd_buf != 2) abort();
+      for (uint32_t index = 0; index < packet->num_cmd_buf; ++index) snapshot(descriptors[index].mem_handle, descriptors[index].offset, descriptors[index].length);
+      const auto* info = static_cast<cam_cmd_i2c_info*>(mappings[descriptors[0].mem_handle >> 16]);
+      const auto* probe = reinterpret_cast<const cam_cmd_probe*>(info + 1);
+      uint32_t expected = static_cast<uint32_t>(setting("CK_SENSOR", 0));
+      int ret = expected && probe->expected_data != expected ? -1 : 0;
+      trace("{\"op\":\"sensor-probe\",\"expected\":%u,\"selected\":%u,\"ret\":%d}", probe->expected_data, expected, ret);
+      if (ret) { errno = ENODEV; return ret; }
+    }

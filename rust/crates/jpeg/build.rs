@@ -58,6 +58,8 @@ fn main() {
         .compile("openpilot-jpeg-encode");
     println!("cargo:rustc-link-search=native={}", output.display());
     println!("cargo:rustc-link-lib=static=jpeg");
+    println!("cargo:source_include={}", source.join("src").display());
+    println!("cargo:build_include={}", output.display());
     for path in [
         "src/bridge.rs",
         "native/bridge.h",

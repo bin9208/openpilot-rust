@@ -1,0 +1,110 @@
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <algorithm>
+#include <cassert>
+#include <cerrno>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <memory>
+#include <map>
+#include <queue>
+#include <optional>
+#include <iostream>
+#include <media/cam_defs.h>
+#include <media/cam_req_mgr.h>
+#include <media/cam_sensor.h>
+#include <media/cam_isp.h>
+#include <media/cam_isp_ife.h>
+#include <media/cam_icp.h>
+#include <media/cam_sync.h>
+#include "system/camerad/cameras/cdm.h"
+#include "system/camerad/cameras/nv12_info.h"
+#include "system/camerad/cameras/bps_blobs.h"
+#include "system/camerad/cameras/camera_event_timing.h"
+#include "system/camerad/sensors/sensor.h"
+#include "msgq/visionipc/visionipc_server.h"
+#define LOG(...) ((void)0)
+#define LOGD(...) ((void)0)
+#define LOGE(...) ((void)0)
+#define LOGW(...) ((void)0)
+#define ALIGNED_SIZE(x, align) (((x) + (align)-1) & ~((align)-1))
+#define MAX_IFE_BUFS 20
+const int VIPC_BUFFER_COUNT = 18, MIPI_SETTLE_CNT = 33;
+enum SpectraOutputType { ISP_RAW_OUTPUT, ISP_IFE_PROCESSED, ISP_BPS_PROCESSED };
+enum { CSLDeviceTypeImageSensor = 0x01000000, CSLDeviceTypeIFE = 0x0f000000, OpcodesIFEUpdate = 1,
+  OpcodesIFEInitialConfig = 0, CSLDeviceTypeBPS = 0x10000000 };
+@CONSTANTS@
+@HELPERS@
+uint64_t nanos_since_boot() { return 1000000000; }
+double millis_since_boot() { return 1000; }
+namespace util {
+std::string getenv(const char* name, const char* fallback) { const char* value = std::getenv(name); return value ? value : fallback; }
+void sleep_for(int) {}
+}
+int open_v4l_by_name_and_index(const char* name, int index) {
+  assert(index == 0);
+  return open(!strcmp(name, "cam-sensor-driver") ? "/dev/camera-fixture-sensor" : "/dev/camera-fixture-phy", O_RDWR | O_NONBLOCK);
+}
+struct CameraConfig {
+  int camera_num;
+  VisionStreamType stream_type;
+  bool enabled;
+  uint32_t phy;
+  bool vignetting_correction;
+  SpectraOutputType output_type;
+  bool staggered_sof;
+};
+const CameraConfig ALL_CAMERA_CONFIGS[] = {{0, VISION_STREAM_ROAD, true, 0x4001, true, ISP_IFE_PROCESSED, false}};
+@MASTER@
+@BUFFER@
+class SpectraCamera;
+@IMAGE@
+@CAMERA@
+@IFE@
+@METHODS@
+@IMAGE_METHODS@
+
+int main(int argc, char** argv) {
+  assert(argc == 3 || argc == 4);
+  int mode = atoi(argv[1]), depth = atoi(argv[2]), events = argc == 4 ? atoi(argv[3]) : 1;
+  SpectraMaster master;
+  master.video0_fd = open("/dev/camera-fixture-request", O_RDWR | O_NONBLOCK);
+  master.isp_fd = open("/dev/camera-fixture-isp", O_RDWR | O_NONBLOCK);
+  master.icp_fd = open("/dev/camera-fixture-icp", O_RDWR | O_NONBLOCK);
+  master.cam_sync_fd = open("/dev/camera-fixture-sync", O_RDWR | O_NONBLOCK);
+  master.device_iommu = 0x102; master.cdm_iommu = 0x304; master.icp_device_iommu = 0x506;
+  master.mem_mgr.init(master.video0_fd);
+  VisionIpcServer server("camerad-lifecycle");
+  bool enabled = !std::getenv("CK_ENABLED") || strcmp(std::getenv("CK_ENABLED"), "0");
+  SpectraCamera camera(&master, {0, VISION_STREAM_ROAD, enabled, 0x4001, true, static_cast<SpectraOutputType>(mode), false});
+  camera.ife_buf_depth = depth;
+  camera.camera_open(&server);
+  camera.sensors_start();
+  auto kind = camera.sensor->image_sensor;
+  std::cout << "{\"enabled\":" << (camera.enabled ? "true" : "false") << ",\"kind\":"
+            << (kind == cereal::FrameData::ImageSensor::AR0231 ? 0 : kind == cereal::FrameData::ImageSensor::OX03C10 ? 1 : 2)
+            << ",\"session\":";
+  if (camera.session_handle == -1) std::cout << "null"; else std::cout << camera.session_handle;
+  std::cout << ",\"events\":[";
+  for (int index = 0; index < events; ++index) {
+    struct v4l2_event event = {};
+    int result = HANDLE_EINTR(ioctl(master.video0_fd, VIDIOC_DQEVENT, &event));
+    assert(result == 0);
+    bool accepted = camera.handle_camera_event(reinterpret_cast<const cam_req_mgr_message*>(event.u.data));
+    if (index) std::cout << ',';
+    std::cout << "{\"accepted\":" << (accepted ? "true" : "false") << ",\"frame\":";
+    if (accepted) {
+      const auto& frame = camera.buf.cur_frame_data;
+      uint32_t processing_bits; memcpy(&processing_bits, &frame.processing_time, sizeof(processing_bits));
+      std::cout << '[' << camera.buf.cur_buf_idx << ',' << frame.frame_id << ',' << frame.request_id << ','
+                << frame.timestamp_sof << ',' << frame.timestamp_eof << ',' << processing_bits << ']';
+    } else std::cout << "null";
+    std::cout << '}';
+  }
+  std::cout << "]}\n";
+}
