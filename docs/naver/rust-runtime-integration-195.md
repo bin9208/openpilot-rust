@@ -222,3 +222,39 @@ Rust IPC binaries in `ipc-selfdrived-cxx-green/` and
 SIGINT joins each. All nine independent failure/lifecycle scenarios also pass
 in `ipc-selfdrived-v1/failures/`. These are host transport-consumer checks;
 remaining consumers and complete startup/upload are separate gates.
+
+## Native IPC and navigation composition
+
+Commit `1199fc53` composes the native IPC implementation `f148b6b6`; commit
+`341350f4` additionally composes navigation `f404234b`. The parent reviewed the
+IPC implementation and independently checked 158 retained hashes, 19 ELF symbol
+and dependency audits, the ARM interoperability outcomes and the ION contract
+reports. `ipc-parent-verification.json` and `REVIEW-ipc-f148b6b6.md` retain this
+review. The project-owned transport is Rust; external ZeroMQ diagnostics and
+other documented native library boundaries remain.
+
+Fresh binaries from the composed sources are frozen in `ipc-consumers-v2/`,
+`ipc-consumers-v3/` and `ipc-consumers-v4/`. Camera actual-main checks pass all
+eight signal, missing/disabled camera, injected driver-error and publication
+ordering scenarios using the retained original frame-state oracle. Results,
+raw messages and hashes are under `ipc-consumers-runtime-v1/camera-*`.
+
+The encoder passes all ten original/native runtime scenarios against those
+fresh transport libraries, including all seven profiles, multiple streams,
+receive-only restart and lag. Its receipt is
+`ipc-consumers-runtime-v1/encoder/receipt.json`, SHA-256
+`80bdba61f9c15ea87bf91b9ee1e8332ef0123e909fa10b45195be3494ca233d1`.
+UI verification passes four actual X11/IPC/input/recording/cleanup scenarios,
+compact and large settings/overlay/dialog interactions, and original/native
+driver/navigation camera rendering. Its receipt is `ipc-ui-v1/receipt.json`,
+SHA-256 `b7f95fab9dfbce072586c7a9cfd013f2d9ad2a8a27cd0e8d98d9c80d15bd4622`.
+The first local launch lacked Xvfb on PATH; the successful run uses the already
+staged Xvfb and its libraries. Earlier build-environment failures remain in
+`ipc-consumers-v1/` and `ipc-consumers-v2/encoder/`.
+
+Card and both model daemons also compile with the new IPC library; their fresh
+consumer replay remains separate from that compilation claim. Navigation passes
+its complete host/GNU ARM comparisons and five actual IPC scenarios through the
+extracted AGNOS loader, as recorded in
+[navigation validation](rust-navd-196.md). All of these remain intermediate
+component/composition evidence before normal startup and existing log upload.
