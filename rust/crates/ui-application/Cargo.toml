@@ -1,0 +1,53 @@
+[package]
+name = "openpilot-ui-application"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "openpilot-ui"
+path = "src/bin/ui.rs"
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dependencies]
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-msgq = { path = "../msgq" }
+openpilot-usbgpu = { path = "../usbgpu", default-features = false }
+openpilot-wifi = { path = "../wifi" }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-http-transport = { path = "../http-transport" }
+openpilot-runtime-version = { path = "../runtime-version" }
+ureq = { version = "=3.4.2", features = ["json", "gzip", "brotli", "rustls", "cookies"] }
+url = "2"
+cookie_store = { version = "=0.22.1", default-features = false, features = ["preserve_order"] }
+flate2 = "1"
+openpilot-registration = { path = "../registration" }
+openpilot-uploader = { path = "../uploader" }
+openpilot-timed = { path = "../timed" }
+cxx = "1"
+qrcodegen = "=1.8.0"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+openpilot-ui-framework = { path = "../ui-framework" }
+openpilot-startup-ui = { path = "../startup-ui" }
+openpilot-params = { path = "../params" }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging" }
+openpilot-hardware-control = { path = "../hardware-control" }
+openpilot-hardware-info = { path = "../hardware-info" }
+openpilot-logging = { path = "../logging" }
+capnp = "=0.27.2"
+num-traits = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+rustix = { version = "1", features = ["time", "process", "thread"] }
+
+[build-dependencies]
+cxx-build = "1"
+
+[dev-dependencies]
+tempfile = "3"

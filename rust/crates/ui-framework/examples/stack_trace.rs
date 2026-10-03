@@ -55,6 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
     let mut stack = NavigationStack::default();
     let frame = Frame {
+        index: 0,
         now: 0.0,
         monotonic: 0.0,
         keyboard: &Default::default(),

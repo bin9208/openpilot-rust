@@ -1,5 +1,6 @@
 #include "bridge.h"
 #include "openpilot-startup-ui/src/bridge.rs.h"
+#include "openpilot-startup-ui/src/camera_bridge.rs.h"
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -53,14 +54,45 @@ int main(int argc, char **argv) {
     surface->set_title("ASAN frame ownership");
     surface->key_pressed();surface->char_pressed();surface->key_down(257);surface->key_started(257);surface->mouse_position();surface->fps();
     surface->begin(1);
+    surface->clear(0xff332211);
+    const auto cleared = surface->capture_pixels();
+    if (cleared.size() != 536*240*4 || cleared[0] != 0x11 || cleared[1] != 0x22 || cleared[2] != 0x33) return 10;
     const std::vector<startup_ui::Point> polygon_points{{200,20},{240,20},{220,80}};
     surface->triangle_strip({polygon_points.data(),polygon_points.size()},0xffffffff,shader,true);
+    surface->spline({polygon_points.data(),0},3,0xffffffff);
+    surface->spline({polygon_points.data(),1},3,0xffffffff);
+    surface->spline({polygon_points.data(),2},3,0xffffffff);
+    surface->spline({polygon_points.data(),polygon_points.size()},3,0xffffffff);
     surface->circle_gradient({80,80},25,0xff0000ff,0);
     surface->text(font, "ABC", {12, 12}, 30, 0, 0xffffffff);
     surface->circle({40, 180}, 20, 0xff00ff00);
+    surface->circle_lines(40, 180, 21, 0xffffffff);
     surface->gradient({90, 160, 80, 40}, 0xff000000, 0xff000000, 0xffffffff, 0xffffffff);
     surface->line({180, 180}, {220, 210}, 3, 0xffffffff);
+    surface->integer_line(180,180,220,210,0xffffffff);
+    surface->default_text("default 123.45",10,220,16,0xffffffff);
+    surface->default_text("",0,0,16,0xffffffff);
     surface->tinted_texture(pixels, {0, 0, 4, 4}, {400, 160, 40, 40}, {0, 0}, 0, 0xffffffff);
+    const auto luma=surface->plane_texture(4,4,false);
+    const auto chroma=surface->plane_texture(2,2,true);
+    std::vector<uint8_t> plane(16,128);
+    surface->plane_update(luma,{plane.data(),plane.size()});
+    surface->plane_update(chroma,{plane.data(),8});
+    bool short_plane=false;
+    try { surface->plane_update(luma,{plane.data(),1}); }
+    catch (const std::invalid_argument &) { short_plane=true; }
+    if (!short_plane || !surface->texture_native(luma)) return 11;
+    surface->camera_texture(shader,luma,chroma,false,{0,0,-4,4},{0,0,40,40});
+    bool invalid_external=false;
+    try { surface->camera_texture(shader,luma,0,true,{0,0,2147483648.0f,4},{0,0,40,40}); }
+    catch (const std::invalid_argument &) { invalid_external=true; }
+    if (!invalid_external) return 12;
+    surface->texture_release(luma);
+    surface->texture_release(chroma);
+    bool released_plane=false;
+    try { surface->plane_update(luma,{plane.data(),plane.size()}); }
+    catch (const std::invalid_argument &) { released_plane=true; }
+    if (!released_plane) return 13;
     surface->draw_texture(texture, {268, 120, 140, 140}, {70, 70}, 45);
     surface->screenshot(argv[2]);
     surface->finish_content(1);
@@ -69,6 +101,9 @@ int main(int argc, char **argv) {
     if (surface->capture_pixels().size()!=536*240*4) return 8;
     surface->shader_unload(shader);
     surface->shader_unload(shader);
+    surface->texture_release(pixels);
+    surface->texture_release(pixels);
+    surface->texture_release(0xffffffff);
     bool rejected_shader=false;
     try { surface->uniform_int(shader,"missing",0); }
     catch (const std::runtime_error &) { rejected_shader=true; }

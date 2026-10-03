@@ -16,6 +16,7 @@ public:
   Queue(const Queue &) = delete;
   Queue &operator=(const Queue &) = delete;
   void send(rust::Slice<const uint8_t> bytes);
+  bool send_if_current(rust::Slice<const uint8_t> bytes);
   bool readers_caught_up();
   rust::Vec<uint8_t> receive(int32_t timeout_ms);
 private:
@@ -26,6 +27,7 @@ private:
 };
 std::unique_ptr<Queue> open_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity);
 std::unique_ptr<Queue> open_runtime_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity);
+std::unique_ptr<Queue> open_transient_runtime_publisher(rust::Str endpoint, size_t capacity);
 class QueueBatch final {
 public:
   QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolated, bool conflate, bool lazy = false);

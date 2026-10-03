@@ -1,0 +1,26 @@
+
+static void snapshot(uint32_t handle) {
+  int fd = handle >> 16;
+  if (fd < 0 || fd >= 2048 || !mappings[fd] || lengths[fd] > 65536) abort();
+  char bytes[131073]; hex(mappings[fd], lengths[fd], bytes);
+  trace("{\"op\":\"snapshot\",\"handle\":%u,\"bytes\":\"%s\"}", handle, bytes);
+}
+extern "C" int ioctl(int fd, unsigned long request, ...) noexcept {
+  va_list args; va_start(args, request); void* payload = va_arg(args, void*); va_end(args);
+  if (fd != 501 && fd != 502) { errno = ENOTTY; return -1; }
+  trace("{\"op\":\"target\",\"fd\":%d}", fd);
+  if (request == VIDIOC_CAM_CONTROL) {
+    const auto* control = static_cast<cam_control*>(payload);
+    uint32_t handle = 0;
+    if (control->op_code == 0x10a) handle = control->handle;
+    if (control->op_code == CAM_CONFIG_DEV) handle = reinterpret_cast<cam_config_dev_cmd*>(control->handle)->packet_handle;
+    if (handle) {
+      snapshot(handle);
+      const auto* packet = static_cast<cam_packet*>(mappings[handle >> 16]);
+      if (packet->num_cmd_buf > 2) abort();
+      auto* descriptors = reinterpret_cast<const cam_cmd_buf_desc*>(reinterpret_cast<const uint8_t*>(&packet->payload) + packet->cmd_buf_offset);
+      for (uint32_t index = 0; index < packet->num_cmd_buf; ++index) snapshot(descriptors[index].mem_handle);
+    }
+  }
+  return kernel_ioctl(501, request, payload);
+}

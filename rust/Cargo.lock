@@ -9,6 +9,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 
 [[package]]
+name = "aes"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b169f7a6d4742236a0a00c541b845991d0ac43e546831af1249753ab4c3aa3a0"
+dependencies = [
+ "cfg-if",
+ "cipher",
+ "cpufeatures 0.2.17",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -276,6 +287,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cipher"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "773f3b9af64447d2ce9850330c473515014aa235e6a783b02db81ff39e4a3dad"
+dependencies = [
+ "crypto-common",
+ "inout",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -311,6 +332,17 @@ name = "clap_lex"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
+
+[[package]]
+name = "cmac"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8543454e3c3f5126effff9cd44d562af4e31fb8ce1cc0d3dcd8f084515dbc1aa"
+dependencies = [
+ "cipher",
+ "dbl",
+ "digest",
+]
 
 [[package]]
 name = "cmake"
@@ -607,6 +639,15 @@ name = "data-encoding"
 version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4583a4551df46e2792f82ceeac45e850d2e2d5debba0b91f102385cda5b11f06"
+
+[[package]]
+name = "dbl"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd2735a791158376708f9347fe8faba9667589d82427ef3aed6794a8981de3d9"
+dependencies = [
+ "generic-array",
+]
 
 [[package]]
 name = "dbus"
@@ -1326,6 +1367,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "inout"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "879f10e63c20629ecabbb64a8010319738c66a5cd0c29b02d63d272b03751d01"
+dependencies = [
+ "generic-array",
+]
+
+[[package]]
 name = "io-kit-sys"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1528,6 +1578,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 
 [[package]]
+name = "lock_api"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
+dependencies = [
+ "scopeguard",
+]
+
+[[package]]
 name = "log"
 version = "0.4.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1649,6 +1708,7 @@ checksum = "c89e69e7e0f03bea5ef08013795c25018e101932225a656383bd384495ecc367"
 dependencies = [
  "num-integer",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -1885,6 +1945,83 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-camera-kernel"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "openpilot-camerad",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-camerad"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-camerad-runtime"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-camera-kernel",
+ "openpilot-camerad",
+ "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-can"
+version = "0.1.0"
+dependencies = [
+ "num-bigint",
+ "num-traits",
+ "regex",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-card"
+version = "0.1.0"
+dependencies = [
+ "aes",
+ "capnp",
+ "chrono",
+ "cmac",
+ "libc",
+ "num-bigint",
+ "num-traits",
+ "openpilot-can",
+ "openpilot-cereal",
+ "openpilot-control-policy",
+ "openpilot-desire",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-cereal"
 version = "0.1.0"
 dependencies = [
@@ -2069,6 +2206,27 @@ dependencies = [
  "serde_json",
  "signal-hook",
  "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-encoderd"
+version = "0.1.0"
+dependencies = [
+ "bindgen",
+ "capnp",
+ "ffmpeg-next",
+ "libc",
+ "openpilot-cereal",
+ "openpilot-jpeg",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
  "thiserror",
 ]
 
@@ -2450,6 +2608,58 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-panda-spi"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-panda-spi-linux"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "cxx-build",
+ "openpilot-panda-spi",
+]
+
+[[package]]
+name = "openpilot-panda-usb"
+version = "0.1.0"
+dependencies = [
+ "libloading",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-pandad"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "libc",
+ "openpilot-cereal",
+ "openpilot-hardware-control",
+ "openpilot-hardware-info",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-panda-spi",
+ "openpilot-panda-spi-linux",
+ "openpilot-panda-usb",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+ "unicode-general-category 0.6.0",
+]
+
+[[package]]
 name = "openpilot-params"
 version = "0.1.0"
 dependencies = [
@@ -2609,6 +2819,32 @@ dependencies = [
  "serde_json",
  "thiserror",
  "unicode-general-category 0.6.0",
+]
+
+[[package]]
+name = "openpilot-selfdrived"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "libc",
+ "openpilot-beepd",
+ "openpilot-calibrationd",
+ "openpilot-cereal",
+ "openpilot-hardware-info",
+ "openpilot-locationd",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-runtime-version",
+ "openpilot-ui-framework",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
 ]
 
 [[package]]
@@ -2790,6 +3026,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-ui-application"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "chrono",
+ "cookie_store",
+ "cxx",
+ "cxx-build",
+ "flate2",
+ "num-traits",
+ "openpilot-cereal",
+ "openpilot-hardware-control",
+ "openpilot-hardware-info",
+ "openpilot-http-transport",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "openpilot-registration",
+ "openpilot-runtime-core",
+ "openpilot-runtime-version",
+ "openpilot-startup-ui",
+ "openpilot-timed",
+ "openpilot-ui-framework",
+ "openpilot-uploader",
+ "openpilot-usbgpu",
+ "openpilot-wifi",
+ "qrcodegen",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "ureq",
+ "url",
+]
+
+[[package]]
 name = "openpilot-ui-framework"
 version = "0.1.0"
 dependencies = [
@@ -2860,6 +3135,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-usbgpu"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "cxx-build",
+ "parking_lot",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+ "url",
+]
+
+[[package]]
 name = "openpilot-web-upload"
 version = "0.1.0"
 dependencies = [
@@ -2920,6 +3211,29 @@ dependencies = [
  "elliptic-curve",
  "primeorder",
  "sha2",
+]
+
+[[package]]
+name = "parking_lot"
+version = "0.12.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93857453250e3077bd71ff98b6a65ea6621a19bb0f559a85248955ac12c45a1a"
+dependencies = [
+ "lock_api",
+ "parking_lot_core",
+]
+
+[[package]]
+name = "parking_lot_core"
+version = "0.9.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2621685985a2ebf1c516881c026032ac7deafcda1a2c9b7850dc81e3dfcb64c1"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "redox_syscall",
+ "smallvec",
+ "windows-link",
 ]
 
 [[package]]
@@ -3081,6 +3395,12 @@ checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
 ]
+
+[[package]]
+name = "qrcodegen"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4339fc7a1021c9c1621d87f5e3505f2805c8c105420ba2f2a4df86814590c142"
 
 [[package]]
 name = "quinn"
@@ -3263,6 +3583,15 @@ checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
+]
+
+[[package]]
+name = "redox_syscall"
+version = "0.5.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
+dependencies = [
+ "bitflags 2.13.2",
 ]
 
 [[package]]

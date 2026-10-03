@@ -22,6 +22,19 @@ pub(crate) mod ffi {
         timestamp_eof: u64,
         valid: bool,
         received: bool,
+        index: usize,
+        // Only received frames populate this; publication uses the VisionImage descriptor.
+        fd: i32,
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    struct BufferDescriptor {
+        fd: i32,
+        mmap_len: usize,
+        data_len: usize,
+        index: usize,
+        server_id: u64,
+        buffer_frame_id: u64,
     }
 
     // SAFETY: C++ owns the original client and mapped buffers in UniquePtr.
@@ -40,6 +53,52 @@ pub(crate) mod ffi {
         fn connected(self: &VisionConnection) -> bool;
         fn layout(self: &VisionConnection) -> ConnectionLayout;
         fn receive(self: Pin<&mut VisionConnection>, timeout_ms: i32) -> Result<VisionMetadata>;
+        fn receive_retained(
+            self: Pin<&mut VisionConnection>,
+            timeout_ms: i32,
+        ) -> Result<VisionMetadata>;
+        fn frame_descriptor(self: &VisionConnection) -> Result<BufferDescriptor>;
         fn copy_frame(self: &VisionConnection, destination: &mut [u8]) -> Result<()>;
+    }
+
+    // SAFETY: native owners keep mappings and descriptors alive. All transfers copy checked
+    // ranges without retaining Rust slices. The Rust API confines owners to one caller thread.
+    unsafe extern "C++" {
+        include!("vision_server.h");
+        type VisionPublisher;
+        type RawVisionBuffer;
+        fn open_vision_server(name: &str) -> Result<UniquePtr<VisionPublisher>>;
+        fn create_stream(
+            self: Pin<&mut VisionPublisher>,
+            stream: i32,
+            count: usize,
+            layout: &ConnectionLayout,
+        ) -> Result<()>;
+        fn start_listener(self: Pin<&mut VisionPublisher>) -> Result<()>;
+        fn descriptor(self: Pin<&mut VisionPublisher>, stream: i32, index: usize) -> Result<i32>;
+        fn write_buffer(
+            self: Pin<&mut VisionPublisher>,
+            stream: i32,
+            index: usize,
+            offset: usize,
+            bytes: &[u8],
+        ) -> Result<()>;
+        fn copy_buffer(
+            self: Pin<&mut VisionPublisher>,
+            stream: i32,
+            index: usize,
+            bytes: &mut [u8],
+        ) -> Result<()>;
+        fn publish(
+            self: Pin<&mut VisionPublisher>,
+            stream: i32,
+            index: usize,
+            metadata: &VisionMetadata,
+        ) -> Result<()>;
+        fn allocate_raw_vision(length: usize) -> Result<UniquePtr<RawVisionBuffer>>;
+        fn descriptor(self: &RawVisionBuffer) -> i32;
+        fn write_buffer(self: Pin<&mut RawVisionBuffer>, offset: usize, bytes: &[u8])
+            -> Result<()>;
+        fn copy_buffer(self: &RawVisionBuffer, bytes: &mut [u8]) -> Result<()>;
     }
 }

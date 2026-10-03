@@ -130,6 +130,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .borrow_mut()
             .extend(input.chars.chars().map(u32::from));
         let frame = Frame {
+            index: 0,
             now,
             monotonic: now,
             keyboard: &keyboard,

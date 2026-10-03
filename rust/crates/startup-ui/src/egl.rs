@@ -90,6 +90,32 @@ impl Context {
         Ok(())
     }
     pub fn create(&self, layout: FrameLayout, fd: BorrowedFd<'_>) -> Result<Image<'_>, EglError> {
+        let (image, fd) = self.create_handle(layout, fd)?;
+        Ok(Image {
+            context: self,
+            display: self.display.get(),
+            image,
+            fd,
+        })
+    }
+    pub fn create_owned(
+        self: &Rc<Self>,
+        layout: FrameLayout,
+        fd: BorrowedFd<'_>,
+    ) -> Result<OwnedImage, EglError> {
+        let (image, fd) = self.create_handle(layout, fd)?;
+        Ok(OwnedImage {
+            context: self.clone(),
+            display: self.display.get(),
+            image,
+            fd,
+        })
+    }
+    fn create_handle(
+        &self,
+        layout: FrameLayout,
+        fd: BorrowedFd<'_>,
+    ) -> Result<(u64, OwnedFd), EglError> {
         let fd = rustix::io::dup(fd)
             .map_err(std::io::Error::from)
             .map_err(Error::from)?;
@@ -100,12 +126,7 @@ impl Context {
                 .create_image(self.display.get(), &attributes)
                 .map_err(Error::from)?;
             if image != 0 {
-                return Ok(Image {
-                    context: self,
-                    display: self.display.get(),
-                    image,
-                    fd,
-                });
+                return Ok((image, fd));
             }
             let error = self.api.error();
             if error == 0x3001 && attempt == 0 && self.initialize(true).is_ok() {
@@ -114,6 +135,31 @@ impl Context {
             return Err(EglError::Create(error_text(error)));
         }
         Err(EglError::Create("retry exhausted".into()))
+    }
+}
+pub struct OwnedImage {
+    context: Rc<Context>,
+    display: u64,
+    image: u64,
+    fd: OwnedFd,
+}
+impl OwnedImage {
+    pub fn bind(&self, texture: u32) {
+        self.context.api.bind_image(texture, self.image);
+    }
+    pub fn duplicated_fd(&self) -> BorrowedFd<'_> {
+        use std::os::fd::AsFd;
+        self.fd.as_fd()
+    }
+}
+impl Drop for OwnedImage {
+    fn drop(&mut self) {
+        if !self.context.api.destroy_image(self.display, self.image) {
+            eprintln!(
+                "Failed to destroy EGL image: {}",
+                error_text(self.context.api.error())
+            );
+        }
     }
 }
 pub struct Image<'context> {

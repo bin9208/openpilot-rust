@@ -24,7 +24,7 @@ void validate_name(const std::string &name) {
 
 void validate_buffer(const VisionBuf &buffer) {
   const size_t maximum = std::numeric_limits<size_t>::max();
-  if (!buffer.addr || !buffer.width || !buffer.height || buffer.width % 2 || buffer.height % 2 ||
+  if (buffer.fd < 0 || !buffer.addr || !buffer.width || !buffer.height || buffer.width % 2 || buffer.height % 2 ||
       buffer.stride < buffer.width || buffer.height > maximum / buffer.stride ||
       buffer.uv_offset < buffer.stride * buffer.height || buffer.uv_offset > buffer.len ||
       buffer.stride * (buffer.height / 2) > buffer.len - buffer.uv_offset ||
@@ -34,15 +34,19 @@ void validate_buffer(const VisionBuf &buffer) {
 }
 }
 
+void validate_vision_name(const std::string &name) { validate_name(name); }
+
 VisionConnection::VisionConnection(const std::string &name, VisionStreamType stream, bool conflate)
     : client_(name, stream, conflate) {}
 
 bool VisionConnection::connect() {
   current_ = nullptr;
+  imported_valid_ = false;
   if (!client_.connect(false)) return false;
   client_.connected = false;
   if (client_.num_buffers == 0) throw std::runtime_error("VisionIPC stream has no buffers");
   for (int i = 0; i < client_.num_buffers; ++i) validate_buffer(client_.buffers[i]);
+  imported_valid_ = true;
   client_.connected = true;
   return true;
 }
@@ -58,11 +62,24 @@ ConnectionLayout VisionConnection::layout() const {
 
 VisionMetadata VisionConnection::receive(int32_t timeout_ms) {
   if (!client_.connected || timeout_ms < 0) throw std::invalid_argument("VisionIPC client is not connected or timeout is invalid");
+  return receive_retained(timeout_ms);
+}
+
+VisionMetadata VisionConnection::receive_retained(int32_t timeout_ms) {
+  if (!imported_valid_ || timeout_ms < 0) throw std::invalid_argument("VisionIPC has no validated imported buffers or timeout is invalid");
   VisionIpcBufExtra extra{};
   current_ = client_.recv(&extra, timeout_ms);
   if (!current_) return {};
   return {current_->width, current_->height, current_->stride, current_->uv_offset, current_->len,
-          extra.frame_id, extra.timestamp_sof, extra.timestamp_eof, extra.valid, true};
+          extra.frame_id, extra.timestamp_sof, extra.timestamp_eof, extra.valid, true,
+          static_cast<size_t>(current_->idx), current_->fd};
+}
+
+BufferDescriptor VisionConnection::frame_descriptor() const {
+  if (!current_ || current_->fd < 0) throw std::invalid_argument("VisionIPC descriptor requires a received frame");
+  uint64_t frame_id;
+  std::memcpy(&frame_id, static_cast<const uint8_t *>(current_->addr) + current_->len, sizeof(frame_id));
+  return {current_->fd, current_->mmap_len, current_->len, current_->idx, current_->server_id, frame_id};
 }
 
 void VisionConnection::copy_frame(rust::Slice<uint8_t> destination) const {

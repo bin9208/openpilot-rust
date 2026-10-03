@@ -10,7 +10,7 @@ pub enum VisionStream {
 }
 
 impl VisionStream {
-    fn native(self) -> i32 {
+    pub(crate) fn native(self) -> i32 {
         match self {
             Self::Road => 0,
             Self::Driver => 1,
@@ -91,6 +91,20 @@ impl VisionClient {
             metadata,
         }))
     }
+
+    /// Encoder opt-in matching the original receive-only loop after disconnection.
+    /// Validated imported buffers must exist. This method never reconnects automatically.
+    pub fn receive_retained(
+        &mut self,
+        timeout: Duration,
+    ) -> Result<Option<VisionFrame<'_>>, Error> {
+        let milliseconds = i32::try_from(timeout.as_millis()).map_err(|_| Error::TimeoutRange)?;
+        let metadata = self.connection.pin_mut().receive_retained(milliseconds)?;
+        Ok(metadata.received.then_some(VisionFrame {
+            client: self,
+            metadata,
+        }))
+    }
 }
 
 /// Keeps the imported mapping alive and excludes another receive/reconnect.
@@ -105,9 +119,23 @@ impl VisionFrame<'_> {
         &self.metadata
     }
 
+    /// Borrowed FD/scalars, without a camera-memory slice or producer lease.
+    /// Duplicate the FD before retaining it beyond this frame's lifetime.
+    pub fn descriptor(&self) -> Result<crate::VisionBufferDescriptor<'_>, Error> {
+        crate::vision_buffer::descriptor(&self.client.connection)
+    }
+
     /// Copies the original mapped bytes into exactly `metadata().len` bytes.
     /// Like the source API, copying does not make producer updates atomic.
     pub fn copy_into(&self, destination: &mut [u8]) -> Result<(), Error> {
         Ok(self.client.connection.copy_frame(destination)?)
+    }
+}
+
+impl std::os::fd::AsFd for VisionFrame<'_> {
+    fn as_fd(&self) -> std::os::fd::BorrowedFd<'_> {
+        // SAFETY: receive returns a validated imported buffer descriptor, and this
+        // frame exclusively borrows the client that owns it for the entire borrow.
+        unsafe { std::os::fd::BorrowedFd::borrow_raw(self.metadata.fd) }
     }
 }

@@ -45,7 +45,7 @@ struct Received {
 }
 
 Queue::Queue(const std::string &endpoint, bool publisher, bool conflate, size_t capacity, const std::string &lock_path) : publisher_(publisher) {
-  if (publisher) lock_ = std::make_unique<PublisherLock>(lock_path);
+  if (publisher && !lock_path.empty()) lock_ = std::make_unique<PublisherLock>(lock_path);
   if (msgq_new_queue(&queue_, endpoint.c_str(), capacity) != 0) {
     throw std::system_error(errno, std::generic_category(), "open msgq");
   }
@@ -68,6 +68,15 @@ void Queue::send(rust::Slice<const uint8_t> bytes) {
   }
 }
 
+bool Queue::send_if_current(rust::Slice<const uint8_t> bytes) {
+  try { send(bytes); }
+  catch (const std::system_error &error) {
+    if (error.code() == std::errc::address_in_use) return false;
+    throw;
+  }
+  return true;
+}
+
 rust::Vec<uint8_t> Queue::receive(int32_t timeout_ms) {
   if (publisher_ || timeout_ms < 0) throw std::invalid_argument("invalid receive");
   Received received;
@@ -88,7 +97,7 @@ rust::Vec<uint8_t> Queue::receive(int32_t timeout_ms) {
   return bytes;
 }
 
-static std::unique_ptr<Queue> open_checked_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity, bool isolated) {
+static std::unique_ptr<Queue> open_checked_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity, bool isolated, bool transient = false) {
   const char *raw_prefix = std::getenv("OPENPILOT_PREFIX");
   const std::string prefix = raw_prefix ? raw_prefix : "";
   if (isolated && (!component(prefix) || prefix.rfind("rust-probe-", 0) != 0 || prefix.size() <= 11)) {
@@ -112,7 +121,9 @@ static std::unique_ptr<Queue> open_checked_queue(rust::Str endpoint, bool publis
   } else if (errno != ENOENT) {
     throw std::system_error(errno, std::generic_category(), "inspect msgq");
   }
-  return std::make_unique<Queue>(name, publisher, conflate, capacity, path + ".rust-publisher-lock");
+  std::unique_ptr<PublisherLock> transient_lock;
+  if (transient) transient_lock = std::make_unique<PublisherLock>(path + ".rust-publisher-lock");
+  return std::make_unique<Queue>(name, publisher, conflate, capacity, transient ? "" : path + ".rust-publisher-lock");
 }
 
 std::unique_ptr<Queue> open_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity) {
@@ -121,6 +132,10 @@ std::unique_ptr<Queue> open_queue(rust::Str endpoint, bool publisher, bool confl
 
 std::unique_ptr<Queue> open_runtime_queue(rust::Str endpoint, bool publisher, bool conflate, size_t capacity) {
   return open_checked_queue(endpoint, publisher, conflate, capacity, false);
+}
+
+std::unique_ptr<Queue> open_transient_runtime_publisher(rust::Str endpoint, size_t capacity) {
+  return open_checked_queue(endpoint, true, false, capacity, false, true);
 }
 
 QueueBatch::QueueBatch(rust::Slice<const QueueSpec> specifications, bool isolated, bool conflate, bool lazy) : lazy_(lazy) {

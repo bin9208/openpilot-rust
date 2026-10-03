@@ -48,6 +48,10 @@ impl Canvas {
     }
 }
 impl Measure for Canvas {
+    fn measure_default(&self, text: &str, size: i32) -> Result<i32, Error> {
+        self.renderer.measure_default(text, size)
+    }
+
     fn measure(&self, font: Font, text: &str, size: f32, spacing: f32) -> Point {
         self.renderer
             .measure_raw(font, text, size, spacing)
@@ -58,6 +62,77 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn integer_line(
+        &mut self,
+        start: (i32, i32),
+        end: (i32, i32),
+        color: u32,
+    ) -> Result<(), Error> {
+        self.renderer.integer_line(start, end, color);
+        Ok(())
+    }
+    fn default_text(
+        &mut self,
+        text: &str,
+        position: (i32, i32),
+        size: i32,
+        color: u32,
+    ) -> Result<(), Error> {
+        self.renderer.default_text(text, position, size, color)
+    }
+    fn spline(&mut self, points: &[Point], thick: f32, color: u32) -> Result<(), Error> {
+        self.renderer.spline(points, thick, color)
+    }
+    fn camera_plane(
+        &mut self,
+        dimensions: (i32, i32),
+        format: openpilot_startup_ui::camera::PlaneFormat,
+    ) -> Result<Box<dyn openpilot_startup_ui::draw::TextureResource>, Error> {
+        Ok(Box::new(self.renderer.camera_plane(dimensions, format)?))
+    }
+    fn update_camera_plane(&mut self, texture: u32, bytes: &[u8]) -> Result<(), Error> {
+        self.renderer.update_camera_plane(texture, bytes)
+    }
+    fn native_texture(&self, texture: u32) -> Result<u32, Error> {
+        self.renderer.native_texture(texture)
+    }
+    fn camera(&mut self, camera: openpilot_startup_ui::camera::CameraDraw) -> Result<(), Error> {
+        self.renderer.camera(camera)
+    }
+    fn ring(&mut self, ring: crate::draw::Ring) -> Result<(), Error> {
+        self.renderer.ring(ring);
+        Ok(())
+    }
+    fn upload_image(
+        &mut self,
+        pixels: crate::draw::PixelBuffer<'_>,
+    ) -> Result<Box<dyn crate::draw::TextureResource>, Error> {
+        Ok(Box::new(self.renderer.dynamic_image(pixels)?))
+    }
+
+    fn rounded_outline(
+        &mut self,
+        rect: Rect,
+        style: crate::draw::RoundedOutline,
+    ) -> Result<(), Error> {
+        self.renderer.rounded_outline(rect, style);
+        Ok(())
+    }
+
+    fn clear(&mut self, color: u32) -> Result<(), Error> {
+        self.renderer.clear(color)
+    }
+    fn upload_pixels(
+        &mut self,
+        pixels: crate::draw::PixelBuffer<'_>,
+    ) -> Result<Box<dyn crate::draw::TextureResource>, Error> {
+        Ok(Box::new(self.renderer.dynamic_pixels(
+            pixels.dimensions.0,
+            pixels.dimensions.1,
+            pixels.rgba,
+        )?))
+    }
+
     fn rectangle_lines(&mut self, rect: Rect, color: u32) -> Result<(), Error> {
         self.renderer.rectangle_lines(rect, color)
     }
@@ -116,6 +191,10 @@ impl Draw for Canvas {
     }
     fn circle(&mut self, center: Point, radius: f32, color: u32) -> Result<(), Error> {
         self.renderer.circle(center, radius, color);
+        Ok(())
+    }
+    fn circle_lines(&mut self, center: (i32, i32), radius: f32, color: u32) -> Result<(), Error> {
+        self.renderer.circle_lines(center, radius, color);
         Ok(())
     }
     fn circle_gradient(

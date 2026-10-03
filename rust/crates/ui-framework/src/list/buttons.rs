@@ -20,7 +20,7 @@ impl DualButtonAction {
 }
 impl ItemAction for DualButtonAction {
     fn width_hint(&self, _: &dyn Draw) -> f64 {
-        0.0
+        f64::from(self.state.rect.width)
     }
 }
 impl Widget for DualButtonAction {

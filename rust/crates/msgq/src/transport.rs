@@ -15,6 +15,15 @@ pub struct Publisher {
 }
 
 impl Publisher {
+    /// Temporary UI feeds yield ownership to a later daemon publisher. They must
+    /// use `send_if_current` and stop on false rather than reclaim the endpoint.
+    pub fn transient_for_runtime(endpoint: &str, capacity: usize) -> Result<Self, Error> {
+        Ok(Self {
+            queue: ffi::open_transient_runtime_publisher(endpoint, capacity)?,
+            thread: PhantomData,
+        })
+    }
+
     pub fn for_runtime(endpoint: &str, capacity: usize) -> Result<Self, Error> {
         Ok(Self {
             queue: ffi::open_runtime_queue(endpoint, true, false, capacity)?,
@@ -35,6 +44,10 @@ impl Publisher {
 
     pub fn send(&mut self, bytes: &[u8]) -> Result<(), Error> {
         Ok(self.queue.pin_mut().send(bytes)?)
+    }
+
+    pub fn send_if_current(&mut self, bytes: &[u8]) -> Result<bool, Error> {
+        Ok(self.queue.pin_mut().send_if_current(bytes)?)
     }
 
     pub fn readers_caught_up(&mut self) -> bool {
