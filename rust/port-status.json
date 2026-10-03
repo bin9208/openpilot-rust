@@ -518,9 +518,9 @@
       "status": "native_continuous_runtime_host_validated",
       "implementation": "rust/crates/ui-application with ui-framework and startup-ui; native openpilot-ui, both main layouts, road and compact rendering, settings/onboarding/dialog routes, IPC, recording, resource workers and cleanup",
       "native_dependencies": ["pinned comma-deps-raylib 6.0.0.1.post103 graphics plugin and native graphics adapters", "OpenGL or target EGL/GLES/DRM/GBM driver stack", "temporary original msgq/VisionIPC through CXX", "external ffmpeg executable for recording", "NetworkManager/D-Bus and Linux hardware/scheduling APIs", "native process-child and updated siblings"],
-      "runtime_scope": "original-source host pixel/state comparisons, actual IPC/VisionIPC and XTest input, recording/ffprobe, normal and injected-error cleanup, bounded Miri and native adapter sanitizers; four independent host reviews and separate complete eight-plot-mode amendment accepted",
+      "runtime_scope": "original-source host pixel/state comparisons, actual IPC/VisionIPC and XTest input, recording/ffprobe, normal and injected-error cleanup, bounded Miri and native adapter sanitizers; four independent host reviews and separate complete eight-plot-mode amendment accepted; separately built ARM raylib plugin passes actual offline loading and required symbol/extension-pointer resolution against exact published AGNOS libraries",
       "unported_scope": ["complete manager normal startup and existing log upload integration", "project-owned msgq/VisionIPC C++ transport remains a tracked runtime boundary"],
-      "validation_limits": ["fresh hosted application CI pending", "generic ARM and ION UI builds, AGNOS graphics closure and target rendering pending", "synthetic camera/input and owned hardware/network seams do not establish device behavior or performance"],
+      "validation_limits": ["fresh hosted application CI pending", "generic ARM and ION UI executable builds and target rendering pending; the offline graphics plugin check initializes no display and proves no DMA-BUF import", "synthetic camera/input and owned hardware/network seams do not establish device behavior or performance"],
       "evidence": "docs/naver/rust_ui_application_148.md",
       "production_replaced": false
     },
