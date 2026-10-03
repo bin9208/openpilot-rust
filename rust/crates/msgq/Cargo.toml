@@ -8,15 +8,18 @@ publish = false
 
 [features]
 default = ["native-skip-miri"]
-native-skip-miri = []
+native-skip-miri = ["dep:libc"]
 visionipc-ion = ["native-skip-miri"]
 
 [dependencies]
-cxx = "1.0"
+libc = { version = "0.2", optional = true }
 thiserror = "2"
 
 [build-dependencies]
-cxx-build = "1.0"
+cc = "1.2"
 
 [dev-dependencies]
 tempfile = "3"
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
