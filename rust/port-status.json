@@ -62,8 +62,21 @@
       "name": "carrot_bluetooth",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.bluetooth.daemon",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "continuous_native_runtime_host_validated",
+      "implementation": "rust/crates/bluetooth; native input descriptors, gestures, journals, continuous cereal loop and owned BlueZ pairing/discovery library",
+      "native_dependencies": [
+        "Linux evdev/filesystem/process/signal APIs",
+        "sudo chmod permission fallback and system BlueZ daemon",
+        "libdbus through dbus/dbus-tokio",
+        "current original C++ msgq/libzmq transport boundary"
+      ],
+      "unported_scope": [
+        "Carrot HTTP server adapter and complete normal startup selection",
+        "physical Bluetooth and vehicle acceptance"
+      ],
+      "known_source_difference": "Invalid NUL-containing PIN cannot form a D-Bus string; native suppresses the invalid frame without reproducing the original session disconnect (#166).",
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-bluetooth-155.md"
     },
     {
       "name": "carrot_cluster",

@@ -29,3 +29,28 @@ fn unicode_constructor_checks_range_but_accepts_python_surrogates() {
     assert_eq!(value.to_json().unwrap(), r#""\ud800""#);
     assert!(rejected.is_none());
 }
+#[test]
+fn utf8_writer_preserves_python_nonfinite_values_and_control_escaping() {
+    let value = openpilot_logmessaged::JsonValue::parse(
+        r#"{"text":"한😀\u0000\u007f","number":Infinity,"negative":-0.0}"#,
+    )
+    .expect("test JSON");
+    assert_eq!(
+        value.to_json_utf8().expect("Unicode JSON"),
+        "{\"text\": \"한😀\\u0000\u{7f}\", \"number\": Infinity, \"negative\": -0.0}"
+    );
+    assert_eq!(
+        value.to_json().expect("default JSON"),
+        r#"{"text": "\ud55c\ud83d\ude00\u0000\u007f", "number": Infinity, "negative": -0.0}"#
+    );
+}
+
+#[test]
+fn utf8_writer_rejects_lone_surrogates_without_changing_ascii_writer() {
+    let value = openpilot_logmessaged::JsonValue::parse(r#"{"text":"\ud800"}"#).expect("test JSON");
+    assert!(value.to_json_utf8().is_err());
+    assert_eq!(
+        value.to_json().expect("default JSON"),
+        r#"{"text": "\ud800"}"#
+    );
+}
