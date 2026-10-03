@@ -465,3 +465,30 @@ hardware/Wi-Fi/eGPU data boundaries. These results do not establish AGNOS/C3X
 behavior, CPU savings or the complete project runtime delivery gate. No device
 test is requested. The old interrupted Miri output remains empty and is not a
 pass; only the explicitly bounded replacement is claimed.
+
+## Fresh CI and target build integration
+
+The required `ui-runtime` job installs one explicit source-GUI environment,
+including the accepted host capture's pycapnp 2.2.4 and pinned comma raylib
+6.0.0.1.post103. It builds current original msgq/VisionIPC bindings, native UI
+packages and examples, then selects the original VisionIPC peer from that
+invocation's Cargo JSON rather than a stale cache glob. The original/native
+checker runner starts and owns a free Xvfb display, records graphics/import/
+version/executable provenance, and retains failures, traces, PNGs, recordings
+and sanitizer evidence. It covers the central state, scheduler, QR, main,
+augmented-road, camera, runtime, input-page, eight-plot-mode, traffic-number,
+calibration, torque and native-adapter checks. Every capture step checks the
+25 GiB reserve plus its growth allowance.
+
+The shared aarch64 job separately preserves generic and ION `openpilot-ui`
+artifacts, the pinned ARM raylib plugin, ELF metadata and hashes. These are
+generic GNU builds. The retained AGNOS ABI extraction currently contains only
+the C/C++ loader closure; its graphics libraries, unversioned EGL/GLES aliases,
+recursive dependencies and extension resolution need separate offline checks.
+An executable or `--help` pass cannot establish a display or camera import.
+
+Local CI integration checks cover runner import/CLI and current-build peer
+selection, dependency resolution, workflow shell syntax and required gate
+failure propagation. The component's accepted host captures remain separate
+from these tooling checks. Fresh hosted execution and the complete runtime
+normal-startup/upload gate are pending.
