@@ -1,0 +1,8 @@
+{
+  "unicode_version": "15.0.0",
+  "python_version": "3.12.14 (main, Sep  1 2026, 14:16:52) [Clang 22.1.3 ]",
+  "algorithm": "inclusive maximal Unicode ranges where Python str.isprintable is false",
+  "range_count": 712,
+  "generator_sha256": "f039be33b43216ffe7207744d43628f8929db386d2fd957a1d8b0326c88f90e1",
+  "table_sha256": "feb2596dc5815fcbbf553ebf830e70bca16946c4ab3a6e0be138e75b28851557"
+}
