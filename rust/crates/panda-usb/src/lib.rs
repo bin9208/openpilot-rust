@@ -5,6 +5,8 @@ mod connection;
 #[cfg(feature = "native-skip-miri")]
 mod enumeration;
 #[cfg(feature = "native-skip-miri")]
+pub mod raw;
+#[cfg(feature = "native-skip-miri")]
 mod transfer;
 
 #[cfg(feature = "native-skip-miri")]
@@ -26,6 +28,8 @@ pub enum Error {
     Contract(&'static str),
     #[error("Panda USB transfer mutex poisoned")]
     Poisoned,
+    #[error("USB {operation} failed with code {code}")]
+    Usb { operation: &'static str, code: i32 },
 }
 
 #[derive(Debug)]

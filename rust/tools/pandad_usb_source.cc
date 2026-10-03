@@ -2,9 +2,12 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <csignal>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -53,7 +56,7 @@ Json bytes(const unsigned char *data, size_t length) {
 
 const Json &next_step() {
   const auto &steps = operation["steps"].array_items();
-  if (step_index >= steps.size()) throw std::runtime_error("transfer script exhausted");
+  if (step_index >= steps.size()) std::abort();
   return steps[step_index++];
 }
 
@@ -84,8 +87,10 @@ int libusb_get_device_descriptor(libusb_device *device, libusb_device_descriptor
   auto config = request["devices"][device->index];
   calls.push_back(Json::array{"descriptor", static_cast<int>(device->index)});
   *out = {};
-  out->idVendor = config["vendor"].int_value(); out->idProduct = config["product"].int_value(); out->iSerialNumber = 3;
-  return 0;
+  out->idVendor = config["vendor"].int_value(); out->idProduct = config["product"].int_value();
+  out->bcdDevice = config["bcd"].int_value();
+  out->iSerialNumber = config["serial_index"].is_null() ? 3 : config["serial_index"].int_value();
+  return config["descriptor_error"].int_value();
 }
 int libusb_open(libusb_device *device, libusb_device_handle **out) {
   calls.push_back(Json::array{"open", static_cast<int>(device->index)});
@@ -105,8 +110,9 @@ int libusb_get_string_descriptor_ascii(libusb_device_handle *handle, uint8_t ind
 }
 int libusb_kernel_driver_active(libusb_device_handle *, int interface) { calls.push_back(Json::array{"active", interface}); return request["active"].int_value(); }
 int libusb_detach_kernel_driver(libusb_device_handle *, int interface) { calls.push_back(Json::array{"detach", interface}); return 0; }
+int libusb_set_auto_detach_kernel_driver(libusb_device_handle *, int enabled) { calls.push_back(Json::array{"auto_detach", enabled}); return request["auto_detach"].int_value(); }
 int libusb_set_configuration(libusb_device_handle *, int config) { calls.push_back(Json::array{"config", config}); return request["config"].int_value(); }
-int libusb_claim_interface(libusb_device_handle *, int interface) { calls.push_back(Json::array{"claim", interface}); return request["claim"].int_value(); }
+int libusb_claim_interface(libusb_device_handle *, int interface) { calls.push_back(Json::array{"claim", interface}); return request[request["raw"].bool_value() ? "claim_code" : "claim"].int_value(); }
 int libusb_release_interface(libusb_device_handle *, int interface) { calls.push_back(Json::array{"release", interface}); return 0; }
 const char *libusb_strerror(int) { return "fixture USB error"; }
 int libusb_control_transfer(libusb_device_handle *, uint8_t kind, uint8_t req, uint16_t value, uint16_t index, unsigned char *data, uint16_t length, unsigned int timeout) {
@@ -119,16 +125,19 @@ int libusb_control_transfer(libusb_device_handle *, uint8_t kind, uint8_t req, u
     active_calls.fetch_sub(1);
     return 0;
   }
-  calls.push_back(Json::array{"control", kind, req, value, index, length, static_cast<double>(timeout)});
+  Json::array trace{"control", kind, req, value, index, length, static_cast<double>(timeout)};
+  if (request["raw"].bool_value()) trace.push_back(kind & 0x80 ? Json() : bytes(data, length));
+  calls.push_back(trace);
   const auto &step = next_step();
-  if (step["data"].array_items().size() > length) throw std::runtime_error("control input exceeds buffer");
+  if (!step["signal"].is_null()) { std::raise(step["signal"].int_value()); std::this_thread::sleep_for(std::chrono::milliseconds(10)); }
+  if (step["data"].array_items().size() > length) std::abort();
   for (size_t i = 0; i < step["data"].array_items().size(); ++i) data[i] = step["data"][i].int_value();
   return step["ret"].int_value();
 }
 int libusb_bulk_transfer(libusb_device_handle *, unsigned char endpoint, unsigned char *data, int length, int *transferred, unsigned int timeout) {
   calls.push_back(Json::array{"bulk", endpoint, length, static_cast<double>(timeout), endpoint & 0x80 ? Json() : bytes(data, length)});
   const auto &step = next_step();
-  if (step["data"].array_items().size() > static_cast<size_t>(length)) throw std::runtime_error("bulk input exceeds buffer");
+  if (step["data"].array_items().size() > static_cast<size_t>(length)) std::abort();
   for (size_t i = 0; i < step["data"].array_items().size(); ++i) data[i] = step["data"][i].int_value();
   *transferred = step["transferred"].int_value();
   return step["ret"].int_value();
@@ -155,6 +164,11 @@ extern "C" void fixture_operation(const char *input) {
   if (!error.empty()) std::abort();
   step_index = 0;
 }
+extern "C" void raw_fixture_begin(const char *input) {
+  fixture_begin(input);
+  operation = request["script"];
+  step_index = 0;
+}
 extern "C" void fixture_log(int level, const char *message) {
   logs.push_back(Json::object{{"level", level}, {"message", message}});
 }
@@ -171,6 +185,19 @@ extern "C" const char *fixture_finish() {
   output = Json(Json::object{{"calls", calls}, {"logs", logs}}).dump();
   return output.c_str();
 }
+
+struct AutomaticFixture {
+  AutomaticFixture() {
+    if (const char *input = std::getenv("PANDA_FIRMWARE_USB_CASE")) raw_fixture_begin(input);
+  }
+  ~AutomaticFixture() {
+    if (const char *path = std::getenv("PANDA_FIRMWARE_USB_TRACE")) {
+      std::ofstream output(path);
+      output << fixture_finish() << '\n';
+    }
+  }
+};
+static AutomaticFixture automatic_fixture;
 
 #ifndef PANDA_USB_ABI_ONLY
 Json run(const Json &input) {

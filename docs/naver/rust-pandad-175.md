@@ -2,10 +2,13 @@
 
 Issue [#175](https://github.com/bin9208/openpilot-rust/issues/175) is part of the
 approved full-runtime conversion [#1](https://github.com/bin9208/openpilot-rust/issues/1).
-The component is in progress. No physical Panda, USB/SPI device, C3X, vehicle CAN
+The native core/supervisor component has reviewed host and ARM/QEMU evidence.
+No physical Panda, USB/SPI device, C3X, vehicle CAN
 or firmware-flashing operation has been used. Registered daemon selection remains
-unchanged; the following library checks do not establish a complete Panda daemon
-or the whole-runtime startup/log-upload gate.
+unchanged. Native core and supervisor checks are intermediate evidence;
+the whole-runtime startup/log-upload gate remains incomplete. The catalog now
+records both native executables as candidates, while preserving the disabled
+standalone core descriptor and the always-enabled supervisor descriptor.
 
 ## CAN codec and SPI alert state
 
@@ -162,10 +165,275 @@ Evidence under the local base:
   failures are retained; the final executable exports its ASan runtime and loads
   the matching standalone UBSan support for the C++ fixture.
 
-SPI transport, state/peripheral/CAN worker loops,
-firmware/DFU supervision, runtime logging and lifecycle composition remain in
-progress. Firmware artifacts, libusb and the Linux driver interfaces will remain
-explicit external dependencies; the final wrapper will not invoke Python.
+## SPI and peripheral continuation (2026-10-02)
 
-Docs-Not-Needed: native library and host validation only; no user setting or
-production process behavior change.
+The interrupted SPI implementation remains in the same issue worktree. The
+corrected-clock host and ARM/QEMU comparisons both pass 122 scenarios, 204
+operations and 7,387 recorded calls. The safe SPI tests pass five cases and the
+Linux boundary passes two owned-file tests. Earlier oversized source reads stay
+separately tracked in #179; their undefined behavior is not a parity target.
+
+The native peripheral controller now preserves the 20 Hz fan/IR policy,
+100-update command refresh, camera frame-counter reset, conditional driver-view
+Params read and strict one-second camera timeout. The C++ filter uses mixed
+float/double evaluation; reusing the Python-style binary64 filter would change
+the source arithmetic, so this controller retains the original rounding stages.
+The unchanged source function, constants and FirstOrderFilter/map_val definitions
+are compiled against recorded message/Params/hardware boundaries with ASan/UBSan.
+All ordered commands and Params reads match across 38 scenarios / 30,240 steps.
+Four focused behavior tests first failed for the absent module and now pass.
+
+The native control-read adapter decodes the packed 58-byte health and 64-byte CAN
+health structures without unaligned pointers. It preserves original zero-filled
+short successful reads, missing results on negative reads, two-part firmware
+signature checks, NUL-terminated identity reads and binary serial-log reads.
+Against unchanged Panda methods and packed C++ structures, 1,746 scenarios /
+2,490 operations match every field, exact interrupt-load float bits, command
+order/parameters and returned bytes. Two packed-layout and four read-lifecycle
+tests pass. The original comparator runs under ASan/UBSan. Strict package Clippy
+passes; C++ language-server checks with the actual generated-schema/dependency
+include paths also pass. Python type-server installation remains unavailable;
+the existing Ruff/static and executable comparison paths are used.
+
+New evidence: `.analysis/scratch/2026-10-02-port-resume/` contains
+`peripheral-red.log`, `peripheral-source/{build,manifest}.json`,
+`peripheral-differential/report.json`, `device-source/{commands,manifest}.json`
+and `device-differential/report.json`, with raw inputs/results and binary hashes.
+The peripheral and packed-device corpora also pass under ARM64/QEMU.
+
+## Continuous native core (2026-10-02)
+
+The native executable now owns the CAN send/receive, state, peripheral, serial
+logging and SPI diagnostic workers, native Params/msgq/Cereal composition,
+signal handling and connection lifecycle. Board scheduling retains main FIFO54
+on core3, CAN-send FIFO55 and CAN-receive FIFO56; host fixtures do not exercise
+privileged target scheduling. Rates remain 100 Hz for main/CAN receive, 20 Hz for
+peripherals, 10 Hz for state and serial reads, and 2 Hz for peripheral publication.
+
+The packed state publisher matches all serialized cereal bytes and ordered
+effects in 16 scenarios / 4,632 steps. CAN I/O matches 2,167 scenarios / 3,857
+operations, including fragmented packets, communications health, MAXOUT,
+checksums, partial writes and bus selection. Both host and ARM64/QEMU pass.
+Unknown wire enum ordinals and the original fault-list allocation semantics are
+preserved. No physical transport is used by these comparisons.
+
+`build_pandad_runtime_source.py` compiles the unchanged complete C++ daemon with
+ASan/UBSan. An owned libusb ABI supplies synthetic devices and records all
+control/bulk operations, without forwarding to system USB. The original msgq
+and cereal Python peer drives the original C++ and native Rust processes; Python
+is test infrastructure only. `/proc/PID/maps` verifies the selected ABI fixture
+and absence of libpython in each tested daemon.
+
+Nine continuous scenarios pass on original C++, x86_64 Rust and ARM64 Rust under
+QEMU: offroad, onroad with trace timestamps, C3 DOS/red ordering, fake send,
+disabled fan/SIGTERM, hotplug, disconnect, firmware mismatch and malformed
+CarParams. The last case reproduced an extra Rust exit-relay command on a
+parsing error; cleanup now follows the source's successful-loop exit path.
+Malformed input fails with a typed native error instead of the source abort.
+
+The saved host and emulated ARM captures also pass a separate semantic comparison: complete
+publication transitions, log payload multiplicity, ordered changes per USB
+control request, and every ordered CAN write. Run clocks, log process/callsite
+metadata, repeated identical periodic samples and cross-thread log ordering are
+explicit normalizations. Control reads are grouped by request/value/index;
+every CAN-health read cycle must still contain buses 0, 1, 2 in order. A pipe
+barrier in the owned USB fixture lets the peer synchronize after publisher
+initialization and before the first state publication, avoiding a missed initial
+sample in msgq. This does not claim deterministic scheduling or CPU
+savings. Existing logging gains native virtual-filename and timestamp payload
+APIs, with six real-ZMQ logger tests; serial messages retain `panda[index]`
+metadata and unchanged text.
+
+Evidence under `.analysis/scratch/2026-10-02-port-resume/`:
+
+- `state-differential/report.json`, `state-arm/report.json`,
+  `can-io-differential/report.json`, `can-io-arm/report.json`.
+- `runtime-source-fixed/manifest.json`: unchanged source/build provenance.
+- `runtime-source-gated/manifest.json`, `runtime-native-gated/manifest.json`,
+  `runtime-arm-gated/manifest.json`: nine scenarios and complete captures.
+- `runtime-gated-comparison.json`, `runtime-gated-comparison-arm.json`: captured
+  semantic comparison and hashes.
+- `runtime-proof/`: retained x86_64/ARM64 ELF files and native log collector.
+- `pandad-combined-tests.log`, `pandad-runtime-clippy-fixed.log` and
+  `panda-log-api-{red,green}.log`: focused tests and strict Rust lint evidence.
+
+Retained x86_64 executable SHA256:
+`fb7117bc0f9ecd335aa0a43abe474333cf75344248219822aa62bc7bd10c2c8b`.
+Retained ARM64 executable SHA256:
+`d422bb0875298ae5a2a80c63f11026d3bcb901ddaf6a2fafd128c3e2b7201f1b`.
+
+Firmware/DFU supervision is implemented and undergoing composition checks. Firmware artifacts, libusb and
+Linux driver interfaces remain explicit external dependencies. This component
+has not been enabled in production startup or delivered for a vehicle test.
+
+The first firmware library slice now implements MCU configuration/UID conversion,
+application-sector bounds, 16-byte flashing, USB DFU status clearing, erase,
+block padding, jump and bootstub recovery. Unchanged original Python function
+bodies match 3,324 scenarios and 528,880 recorded commands on both x86_64 and
+ARM64/QEMU, including transport faults and source-rejected inputs. It has not
+been attached to physical USB/SPI.
+The DFU direct libusb calls retain the binding's default zero timeout; normal
+Panda calls retain 15 seconds, as confirmed in the
+[python-libusb1 source](https://chromium.googlesource.com/external/github.com/vpelletier/python-libusb1/+/dab4906eac9ad61613e21b90ce7279204efa33ab/usb1/__init__.py).
+Evidence: `firmware-differential-fixed/report.json`, `firmware-arm/report.json`,
+full input/source/native JSONL captures, and retained
+`runtime-proof/firmware-x86_64` / `runtime-proof/firmware-aarch64`.
+The ARM64 firmware example SHA256 is
+`15a8e2917861f58df316cab6f27779a7c9f6d7c27f3704875ee156056f86d1a0`.
+
+The supervisor policy now ports the original wrapper's flash/recovery decisions,
+stable Panda ordering, missing-internal retry escalation, startup health Params,
+first-success resets, cleanup and child restart boundary. Unchanged `pandad.py`
+and `panda_helpers.py` function bodies match 3,752 scenarios / 190,812 calls on
+x86_64 and ARM64/QEMU. Every baseline call position receives four independently
+injected error classes, including errors during cleanup, logging and child launch.
+The comparisons include ordered logs and Params writes; traceback implementation
+details are not compared. Native transport composition and real signal delivery
+remain separate open work, so this is not a complete firmware daemon.
+Evidence: `supervisor-{differential,arm}/report.json`, complete JSONL captures,
+`supervisor-{red,green,clippy}.log`, and retained
+`runtime-proof/supervisor-{x86_64,aarch64}`. The host executable SHA256 is
+`01ccd36c4227df716aeb96d5d78f5ae36b8840134b5e8442e440d32cd2489cf1`;
+the ARM64 SHA256 is
+`2e9d33de0b1b83397a6073b2ca5ed98ae7c9601569a5a98f6a9561d06ae222fd`.
+
+## Native firmware environment and supervisor continuation
+
+The later nullable-serial corpus supersedes the initial supervisor and client
+counts above: 3,999 supervisor cases / 195,459 calls and 2,474 client cases /
+45,801 calls pass on host and ARM64/QEMU. The SPI firmware protocol comparison
+passes 9,599 cases / 435,725 calls on both architectures. Original libusb binding
+semantics are separately covered by 171 policy scenarios and 578 raw ABI cases.
+USB first, SPI fallback, DFU discovery/recovery, signature-file tail reads,
+Panda ordering, packet-version failures and transport cleanup remain explicit.
+
+The native spidev adapter is compared with the actual preserved spidev 3.8 C
+extension and unchanged `SpiDevice` and kernel-transfer Python bodies. Both host
+and ARM64 native implementations pass 517 scenarios / 6,843 operational calls,
+covering cached descriptors/speeds, configuration, flock, transfer limits,
+short reads/writes and failures at each syscall boundary. The checker excludes
+only trailing destructor close calls from the ordered comparison and retains
+raw traces. The Python negative-descriptor `ValueError` and native `EBADF` are
+classified as nonretryable I/O failures. The source's exceptional unlock can
+leave its Python lock held; those fault cases end at the outer exception
+boundary and do not establish subsequent recovery. Kernel ioctl `EINTR` remains
+a failure, matching this original Python binding, while flock retries it.
+
+`NativeEnvironment` composes the actual USB/SPI adapters with regular firmware
+files and DFU helpers. `openpilot-pandad-supervisor` composes that environment,
+Params, hardware control, structured native logs and the existing native process
+launcher. The launcher closes inherited descriptors before executing the child.
+SIGINT is recorded while setup or reset sleep finishes, forwarded to an active
+child, and prevents the next outer restart. Setup-time SIGINT still permits the
+current source-compatible child launch. Only the original wrapper's SIGINT policy
+is ported; the core daemon has its own separately tested signal handling.
+
+The unchanged Python wrapper/client bodies and actual native supervisor match
+161 composed scenarios on host and ARM64/QEMU: real firmware and Params files,
+owned libusb ABI calls, live structured-log IPC, actual exec, descriptor closure,
+child exit 7 and missing-child failure. Three additional real-signal scenarios
+match source log ordering and process termination: interrupt while waiting for a
+child, interrupt during setup followed by child interrupt, and interrupt during
+the three-second reset sleep. ARM runs use explicit QEMU launcher scripts around
+the retained ARM process helper and fixture child, without installing binfmt.
+They do not establish AGNOS scheduling or physical device behavior. The source
+comparison scripts replace transport/discovery/Params boundaries explicitly;
+they do not claim that Python source runs on ARM.
+
+Evidence under `.analysis/scratch/2026-10-02-port-resume/`:
+
+- `supervisor-nullable{,-arm}/report.json` and
+  `firmware-client-nullable{,-arm}/report.json`.
+- `firmware-spi-differential-fixed/report.json`, `firmware-spi-arm/report.json`.
+- `firmware-usb-policy-{differential,arm}/report.json` and
+  `firmware-usb-raw-{final,arm}/report.json`.
+- `firmware-spidev-differential-final/report.json`,
+  `firmware-spidev-arm/report.json`, `firmware-spidev-fixture-third/manifest.json`.
+- `supervisor-native-release-check/report.json`, `supervisor-native-arm/report.json`.
+- `supervisor-signals-release-check/report.json`, `supervisor-signals-arm/report.json`.
+- `supervisor-arm-fixtures/{commands,manifest}.json`: native ABI and ARM child
+  source/build hashes. `arm-process-launcher` and `arm-supervisor-child` name the
+  exact retained helper/child artifacts used by the emulation checks.
+- `pandad-supervisor-tests.log`, `pandad-supervisor-clippy-final.log`,
+  `pandad-supervisor-final-host-build.log`, `pandad-supervisor-arm-build.log`.
+
+Retained supervisor probe SHA256, host:
+`1843fa022526a643ef1366a6bbd4ee9e5fa0d5f0fbd3a662b6ef1c13f0ba86b0`;
+ARM64:
+`673809436b7553cb86aab95ff819f839bcbe9b0e70003bfdfa5cc93c8d3bde7b`.
+The actual supervisor CLI, native process helper and native core now pass three
+connected scenarios on each architecture: offroad, onroad and two Pandas. Each
+scenario starts the core, exchanges CAN/state/peripheral/log messages through
+original Cereal/msgq, checks recorded signatures and configured safety commands,
+interrupts the first core to cause a wrapper restart, then interrupts the wrapper
+and verifies the second child is reaped. The native log collector remains on the
+host in the ARM lane. Parent and child maps contain the owned USB fixture and no
+libpython. Core signature comparison is explicitly bypassed for synthetic
+firmware; its strict mismatch behavior has separate original-source coverage.
+
+Composition also reproduced a CLI path defect: `--basedir` did not update the
+default firmware directory. The default now follows the selected base unless
+`--firmware` was supplied. The failure capture is
+`runtime-composed-default-red/`; final verification covers explicit and default
+firmware paths, all three scenarios and both architectures (12 executions).
+`runtime-composed-final-{host,arm}-/{explicit,default}/report.json` contains the
+captures and immediate artifact hashes; `runtime-composed-final-report.json`
+additionally pins the ARM helper/core and QEMU binaries behind the explicit
+launcher scripts. `runtime-composed-final-commands.json` records commands and
+outputs. `supervisor-cli-default-clippy.log` records strict CLI linting.
+
+Source discovery uses a Python set, whose enumeration varies with its hash seed.
+Native discovery deduplicates the same device membership while preserving the
+enumeration order; this is not a claim of cross-language hash-set ordering.
+The supervisor's subsequent source-defined device sort and child serial order
+are covered separately by the policy corpus.
+
+The initial independent component review verified the recorded source, binary
+and raw integration evidence, but found one missing observable effect: USB DFU
+programming did not print the original per-block progress. The protocol oracle
+had discarded source stdout and therefore could not detect that loss. The
+review and reproduction remain in `.omo/evidence/pandad-component-review/`.
+
+USB DFU programming now accepts a fallible progress callback, and the actual
+`NativeEnvironment` recovery path writes each original message to stdout before
+the corresponding block transfer. The extended unchanged-source oracle checks
+the message and its position among transport calls, including stdout failures.
+It passes 3,340 scenarios, 529,168 transfers and 112 progress attempts on both
+host and ARM64/QEMU. Reports are `firmware-progress-final-{host,arm}/report.json`
+under the evidence root above.
+
+A separate executable now exercises the actual native USB DFU environment:
+USB discovery and descriptor decoding, regular firmware-file reads, all-sector
+erase, padded programming, reset, stdout and USB cleanup. Whole unchanged
+`PandaDFU` and `STBootloaderUSBHandle` class bodies provide the reference, with
+controlled USB boundaries. Both the host ASan fixture and ARM64/QEMU pass 118
+scenarios, 3,010 transfers and 121 stdout lines, including empty/missing firmware,
+both MCUs, nullable serial selection and failures throughout recovery. Reports
+are `dfu-recovery-host-asan/report.json` and `dfu-recovery-arm/report.json`.
+This closes the native USB recovery composition gap; native SPI DFU environment
+recovery still relies on its separately tested protocol and ABI components.
+
+The rebuilt supervisor CLI also passes the complete 12-execution
+supervisor/core/IPC composition again with explicit and default firmware paths.
+Its new captures are `runtime-composed-progress-{host,arm}/{explicit,default}/`,
+with exact commands and underlying ARM artifacts in
+`runtime-composed-progress-{commands,report}.json`. The initial receipt remains
+preserved; `pandad-component-progress-receipt.json` records this correction.
+The independent follow-up review marked the correction resolved after checking
+the new hashes and raw captures (`.omo/evidence/pandad-component-review/followup/`).
+`pandad-component-reviewed-receipt.json` links that review to the preserved
+progress receipt; only this review-status documentation changed afterward.
+Manager selection, complete normal startup, the existing upload path and user
+device comparison remain full-runtime work. No CPU savings have been measured.
+
+The later candidate-catalog probe passed both executable mappings and all eight
+offroad/onroad, car/not-car predicate combinations. It also confirms that the
+standalone `_pandad` source descriptor remains disabled while the `pandad`
+supervisor remains enabled. Both retain the original Always predicate. Evidence
+is `pandad-catalog/report.json` under the continuation directory; its native
+probe executable and build/command records are preserved. The reviewed core and
+supervisor production sources are unchanged; this registration does not select
+either candidate in the production launcher.
+
+Docs-Not-Needed: isolated native runtime and host validation only; no user setting
+or production process behavior change.

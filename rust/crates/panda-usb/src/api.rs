@@ -24,7 +24,7 @@ pub(crate) struct Descriptor {
     packet_size: u8,
     pub vendor: u16,
     pub product: u16,
-    device: u16,
+    pub device: u16,
     manufacturer: u8,
     product_string: u8,
     pub serial: u8,
@@ -58,6 +58,15 @@ pub struct Api {
 }
 
 impl Api {
+    pub(crate) fn auto_detach(&self) -> Result<Interface, crate::Error> {
+        // SAFETY: libusb declares this symbol with the Interface signature; this Api retains the library.
+        Ok(unsafe {
+            *self
+                ._library
+                .get(b"libusb_set_auto_detach_kernel_driver\0")?
+        })
+    }
+
     pub fn system() -> Result<Arc<Self>, crate::Error> {
         // SAFETY: this fixed soname is the platform's trusted libusb-1.0 dependency.
         unsafe { Self::load(Path::new("libusb-1.0.so.0")) }
