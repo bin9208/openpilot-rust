@@ -9,6 +9,94 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_athena_requires_complete_native_runtime_and_codec_checks(self):
+        workflow = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = workflow['jobs']['athena-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('openpilot-athena', 'openpilot-process-supervision', 'check_athena_runtime.py', 'check_jpeg_sanitizers.py'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'check_athena_runtime.py' in step.get('run', '') or 'check_jpeg_sanitizers.py' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(artifacts[0]['if'], 'always()')
+
+    def test_ui_connectivity_requires_source_render_and_private_protocol_checks(self) -> None:
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['ui-connectivity']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('xvfb-run', 'check_ui_framework.py', 'check_startup_ui.py',
+                         'check_ui_emoji.py', 'check_ui_translations.py', 'check_wifi_policy.py',
+                         'check_wifi_runtime.py', 'check_cweb_policy.py', 'check_cweb_http.py',
+                         'check_cweb_daemon.py', 'check_cweb_address.py', 'build_params_python.py'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python rust/tools/check_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(artifacts[0]['if'], 'always()')
+
+    def test_estimators_require_original_models_loops_and_native_boundaries(self) -> None:
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['estimation-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('build_locationd_oracle.py', 'build_paramsd_oracle.py', 'build_params_python.py',
+                         'check_locationd.py', 'check_locationd_loop.py', 'check_locationd_timestamp.py',
+                         'check_locationd_daemon.py', 'check_locationd_startup.py', 'check_locationd_native.py',
+                         'check_paramsd.py', 'check_paramsd_loop.py', 'check_paramsd_daemon.py',
+                         'check_paramsd_startup.py', 'check_paramsd_native.py',
+                         'check_lagd_numeric.py', 'check_lagd_loop.py', 'check_lagd_cache.py',
+                         'check_lagd_packet.py', 'check_lagd_daemon.py', 'check_lagd_params_io.py',
+                         'pocketfft/native/kernel_test.cc', '-fsanitize=address,undefined'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python rust/tools/check_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+        packages = tomllib.loads((ROOT / 'uv.lock').read_text())['package']
+        eigen = next(package for package in packages if package['name'] == 'eigen')
+        source_commit = eigen['source']['git'].split('#')[-1]
+        for name in ('workspace', 'arm64', 'estimation-runtime'):
+            setup = '\n'.join(step.get('run', '') for step in data['jobs'][name]['steps'])
+            self.assertIn('@' + source_commit + '#subdirectory=eigen', setup)
+            self.assertIn('LOCATIOND_EIGEN_INCLUDE=', setup)
+            self.assertIn('PARAMSD_EIGEN_INCLUDE=', setup)
+
+    def test_gnss_requires_source_serial_and_daemon_checks(self) -> None:
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['gnss-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_ublox.py', 'check_pigeon.py', 'check_ublox_serial.py', 'check_ublox_daemons.py',
+                         'check_qcomgps_reference.py', 'check_qcomgps_daemon.py', 'check_qcomgps_nmea.py',
+                         'check_qcomgps_assistance.py', 'build_msgq_python.py'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python rust/tools/check_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+
+    def test_sensor_audio_requires_original_and_live_native_checks(self) -> None:
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['sensor-audio']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_sensord.py', 'check_sensord_kernel.py', 'check_sensord_daemon.py',
+                         'check_micd_analysis.py', 'check_micd_daemon.py', 'check_soundd.py', 'check_soundd_daemon.py', 'check_feedbackd.py',
+                         'build_msgq_python.py', 'build_params_python.py', 'miri test'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python rust/tools/check_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+
     def test_startup_services_require_source_and_live_native_protocols(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['startup-services']
@@ -17,7 +105,7 @@ class RustIsolationTests(unittest.TestCase):
         for required in ('check_lpa.py', 'check_bridge.py', 'check_agnos.py', 'build_bridge_reference.py', 'build_msgq_python.py'):
             self.assertIn(required, commands)
         for step in job['steps']:
-            if 'python rust/tools/check_' in step.get('run', ''):
+            if 'python rust/tools/check_' in step.get('run', '') or 'check_bridge.py' in step.get('run', ''):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
 
@@ -104,13 +192,19 @@ class RustIsolationTests(unittest.TestCase):
             for value in job.get('env', {}).values():
                 with self.subTest(job=name):
                     self.assertNotRegex(value, r'\$\{\{\s*runner[.\[]')
-        support = data['jobs']['support-runtime']
-        setup = next(step for step in support['steps'] if step.get('name') == 'Configure original support IPC imports')
-        with tempfile.TemporaryDirectory(prefix='support env ') as temporary:
-            output = Path(temporary) / 'environment'
-            environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
-            subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
-            self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/support-msgq-python:/fixture/repository:/fixture/tools\n')
+        for name, step_name, binding in (
+            ('support-runtime', 'Configure original support IPC imports', 'support-msgq-python'),
+            ('card-runtime', 'Configure original Card IPC imports', 'card-native/msgq'),
+            ('selfdrive-runtime', 'Configure original selfdrived IPC imports', 'selfdrived-native/msgq'),
+            ('camera-runtime', 'Configure original camera IPC imports', 'camera-native/python'),
+            ('panda-runtime', 'Configure original Panda IPC imports', 'panda-native/msgq'),
+        ):
+            setup = next(step for step in data['jobs'][name]['steps'] if step.get('name') == step_name)
+            with self.subTest(job=name), tempfile.TemporaryDirectory(prefix='IPC env ') as temporary:
+                output = Path(temporary) / 'environment'
+                environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
+                subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
+                self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/{binding}:/fixture/repository:/fixture/tools\n')
 
     def test_inherited_side_effects_are_source_repository_only(self):
         for file, job in [('sync.yml', 'sync'), ('naver-upstream-sync.yml', 'sync'), ('wiki-settings-publish.yaml', 'synchronize'), ('carrot-route-vault-publish.yaml', 'publish')]:
@@ -127,9 +221,15 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
         self.assertEqual(gate['if'], '${{ always() }}')
-        self.assertEqual(set(gate['needs']), {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime', 'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'web-upload-timeouts'})
+        self.assertEqual(set(gate['needs']), {
+            'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
+            'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
+            'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
+            'card-runtime', 'selfdrive-runtime', 'camera-runtime', 'panda-runtime',
+        })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
-        self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}', 'PIPELINES': '${{ needs.model-pipelines.result }}',
+        self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
+                                            'PIPELINES': '${{ needs.model-pipelines.result }}',
                                             'LOGGER': '${{ needs.logger-runtime.result }}',
                                             'SUPPORT': '${{ needs.support-runtime.result }}',
                                             'TELEMETRY': '${{ needs.telemetry-runtime.result }}',
@@ -137,7 +237,17 @@ class RustIsolationTests(unittest.TestCase):
                                             'HARDWARE': '${{ needs.hardware-runtime.result }}',
                                             'PLATFORM': '${{ needs.platform-runtime.result }}',
                                             'STARTUP_SERVICES': '${{ needs.startup-services.result }}',
-                                            'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
+                                            'SENSOR_AUDIO': '${{ needs.sensor-audio.result }}',
+                                            'GNSS': '${{ needs.gnss-runtime.result }}',
+                                            'ESTIMATION': '${{ needs.estimation-runtime.result }}',
+                                            'UI_CONNECTIVITY': '${{ needs.ui-connectivity.result }}',
+                                            'ATHENA': '${{ needs.athena-runtime.result }}',
+                                            'CONTROLS': '${{ needs.controls-runtime.result }}',
+                                            'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}',
+                                            'CARD': '${{ needs.card-runtime.result }}',
+                                            'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}',
+                                            'CAMERA': '${{ needs.camera-runtime.result }}',
+                                            'PANDA': '${{ needs.panda-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
@@ -150,6 +260,55 @@ class RustIsolationTests(unittest.TestCase):
                                                   capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
+
+    def test_selfdrived_requires_source_loop_native_ipc_and_failure_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['selfdrive-runtime']
+        self.assertNotIn('if', job)
+        for checker in ('check_selfdrived_controller.py', 'check_selfdrived_ipc.py', 'check_selfdrived_failures.py'):
+            step = next(step for step in job['steps'] if checker in step.get('run', ''))
+            self.assertNotIn('if', step)
+            self.assertNotIn('continue-on-error', step)
+        steps = '\n'.join(step.get('run', '') for step in job['steps'])
+        self.assertIn('-p openpilot-selfdrived -p openpilot-messaging --locked', steps)
+        self.assertIn('build_params_python.py', steps)
+        self.assertIn('build_msgq_python.py', steps)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+
+    def test_camera_requires_source_driver_fixture_and_visionipc_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['camera-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_camerad_ci.py', 'build_visionipc_python.py', 'libclang-rt-18-dev',
+                         'openpilot-camerad-runtime --features native-skip-miri', '--test vision --test vision_server'):
+            self.assertIn(required, commands)
+        step = next(step for step in job['steps'] if 'check_camerad_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', step)
+        self.assertNotIn('continue-on-error', step)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+        arm = next(step['run'] for step in data['jobs']['arm64']['steps'] if step.get('name') == 'Build generic and ION camera aarch64 artifacts')
+        self.assertLess(arm.index('cp target/'), arm.index('--features visionipc-ion'))
+        self.assertIn('--features native-skip-miri', arm)
+        self.assertIn('sha256sum', arm)
+
+    def test_panda_requires_native_transports_and_source_composition(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['panda-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_pandad_ci.py', 'build_msgq_python.py', 'libusb1==3.4.0',
+                         '-p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux',
+                         '--message-format=json', '--build-messages'):
+            self.assertIn(required, commands)
+        step = next(step for step in job['steps'] if 'check_pandad_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', step)
+        self.assertNotIn('continue-on-error', step)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+
 
 if __name__ == '__main__':
     unittest.main()

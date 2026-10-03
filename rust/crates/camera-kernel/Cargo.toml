@@ -1,0 +1,34 @@
+[package]
+name = "openpilot-camera-kernel"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[features]
+default = []
+native-skip-miri = ["dep:libc"]
+
+[dependencies]
+libc = { version = "0.2", optional = true }
+openpilot-camerad = { path = "../camerad" }
+thiserror = "2"
+
+[dev-dependencies]
+serde_json = "1"
+
+[[example]]
+name = "kernel_master"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "kernel_operations"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "stress_parse_trace"
+required-features = ["native-skip-miri"]

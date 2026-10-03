@@ -10,6 +10,7 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-agnos = { path = "../agnos" }
 openpilot-process-supervision = { path = "../process-supervision" }
 openpilot-params = { path = "../params" }
 openpilot-params-typed = { path = "../params-typed" }

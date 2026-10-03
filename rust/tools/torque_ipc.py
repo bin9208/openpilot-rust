@@ -3,6 +3,7 @@
 from __future__ import annotations
 from contextlib import contextmanager
 import os
+import json
 from pathlib import Path
 import shutil
 import signal
@@ -17,6 +18,12 @@ from openpilot.cereal import car, log, messaging
 from openpilot.cereal.services import SERVICE_LIST
 
 TOPICS = ["carControl", "carOutput", "carState", "liveCalibration", "livePose", "liveDelay"]
+
+
+def wait_for_input_readers(publishers) -> None:
+  # The poll queue is consumed before the other queues, so its acknowledgement alone does not finish a batch.
+  for publisher in publishers.values():
+    publisher.wait_for_readers(timeout=2)
 
 
 class Peer:
@@ -100,7 +107,14 @@ class Peer:
         assert timestamp <= time.monotonic_ns()
         self.timestamps.append(timestamp)
         expected.logMonoTime = timestamp
-        self.fields += compare(actual, expected.to_dict())
+        wanted = expected.to_dict()
+        try:
+          self.fields += compare(actual, wanted)
+        except AssertionError:
+          (self.destination / "comparison-failure.json").write_text(json.dumps({
+            "source_frame": self.sm.frame, "actual": actual, "expected": wanted,
+          }, indent=2) + "\n")
+          raise
         return actual
       assert self.process.poll() is None, (self.process.returncode, self.destination / "daemon.log")
     raise TimeoutError(f"no torque publication: {self.destination}")
@@ -135,7 +149,7 @@ class Peer:
     for event in sorted(messages, key=lambda m: m.which() == "livePose"):
       self.publishers[event.which()].send(event.to_bytes())
     self.source_step(messages)
-    self.publishers["livePose"].wait_for_readers(timeout=2)
+    wait_for_input_readers(self.publishers)
     assert self.sm.frame == index
     return self.receive(self.sent[-1]) if index % 5 == 0 else None
 

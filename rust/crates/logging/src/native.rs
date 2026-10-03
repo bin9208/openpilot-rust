@@ -5,7 +5,7 @@
 //! diagnostics on orderly shutdown to drain with the original 100 ms linger. Rust statics have
 //! no C++ exit destructor. Arbitrary fork after initialization is unsupported (as in C++).
 mod wire;
-use crate::{producer::Delivery, record::Level, site::Site, Error};
+use crate::{Error, producer::Delivery, record::Level, site::Site};
 use std::{
     env,
     io::{self, Write},
@@ -53,7 +53,7 @@ impl Logger {
             Ok(value) => value,
             Err(env::VarError::NotPresent) => String::new(),
             Err(env::VarError::NotUnicode(_)) => {
-                return Err(Error::Contract("logging IPC prefix is not UTF-8"))
+                return Err(Error::Contract("logging IPC prefix is not UTF-8"));
             }
         };
         let logger = Self::new(format!("ipc:///tmp/logmessage{prefix}"), version, device)?;
@@ -61,6 +61,39 @@ impl Logger {
         Ok(logger)
     }
     pub fn emit(&self, site: Site, level: Level, text: String) -> Result<Delivery, Error> {
+        self.emit_with(site, site.file, level, text, None)
+    }
+    pub fn emit_named(
+        &self,
+        site: Site,
+        source: &str,
+        level: Level,
+        text: String,
+    ) -> Result<Delivery, Error> {
+        self.emit_with(site, source, level, text, None)
+    }
+    pub fn emit_timestamp(
+        &self,
+        site: Site,
+        level: Level,
+        text: String,
+        frame_id: Option<u32>,
+    ) -> Result<Delivery, Error> {
+        if text.is_empty() {
+            return Ok(Delivery::Filtered);
+        }
+        let now = rustix::time::clock_gettime(rustix::time::ClockId::Boottime);
+        let now_ns = now.tv_sec as u64 * 1_000_000_000 + now.tv_nsec as u64;
+        self.emit_with(site, site.file, level, text, Some((now_ns, frame_id)))
+    }
+    fn emit_with(
+        &self,
+        site: Site,
+        source: &str,
+        level: Level,
+        text: String,
+        timestamp: Option<(u64, Option<u32>)>,
+    ) -> Result<Delivery, Error> {
         if text.is_empty() {
             return Ok(Delivery::Filtered);
         }
@@ -95,15 +128,10 @@ impl Logger {
                 let created = rustix::time::clock_gettime(rustix::time::ClockId::Realtime);
                 let created = created.tv_sec as f64 + created.tv_nsec as f64 * 1e-9;
                 let text = wire::c_string(&text);
-                let packet = wire::packet(site, level, text, created, context)?;
+                let packet = wire::packet(site, source, level, text, created, context, timestamp)?;
                 if level >= *console {
                     // Match printf failure suppression without recursively logging a console error.
-                    let _ = writeln!(
-                        io::stdout().lock(),
-                        "{}: {}",
-                        wire::c_string(site.file),
-                        text
-                    );
+                    let _ = writeln!(io::stdout().lock(), "{}: {}", wire::c_string(source), text);
                 }
                 match socket.send(packet, zmq::DONTWAIT) {
                     Ok(()) => Ok(Delivery::Sent),

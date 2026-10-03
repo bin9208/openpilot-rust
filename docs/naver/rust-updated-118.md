@@ -37,10 +37,14 @@ AGNOS-slot flash, reboot, production selection or C3X access is performed.
 `Agnos` is a typed integration interface exposing target-slot selection and
 `flash_agnos_update(manifest, target_slot)`. The updater preserves the current /
 requested OS-version comparison, consistency invalidation, NeosUpdate alert and
-c3/tici manifest selection. This branch's `NotLinked` adapter returns a typed
-error on a required flash, leaving the checkout inconsistent and the alert set;
-it never marks that update ready or launches Python. The project-owned native
-AGNOS implementation is tracked in #119 and must be linked by parent integration.
+c3/tici manifest selection. Integration #120 links the project-owned AGNOS #119
+implementation directly, preserving background casync selection and bounded
+network retries (`standalone=false`, `retry_network=false`). Native errors leave
+the checkout inconsistent and the alert set. The adapter uses the existing
+native logger, child launcher and harmless path overrides for owned fixtures.
+`--agnos-config` uses the AGNOS typed config; its default paths address the device
+partitions independently of `--system-root`. Background flashing does not switch
+the active boot slot; normal startup retains verification and swap ownership.
 Automatic verified inactive-slot update behavior is not replaced by an approval
 prompt or bypass.
 
@@ -53,6 +57,6 @@ normal-startup/existing-upload device handoff.
 
 Focused host commands and artifact descriptions are in
 [updated validation](../rust-port/updated-validation.md). Parent integration
-owns exact-SHA Actions host/aarch64 checks and the #119 connection.
+owns exact-SHA Actions host/aarch64 checks and the complete startup composition.
 
 Docs-Not-Needed: isolated runtime candidate; no selected setting or user behavior changes.

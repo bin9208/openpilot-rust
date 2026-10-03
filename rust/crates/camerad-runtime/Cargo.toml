@@ -1,0 +1,56 @@
+[package]
+name = "openpilot-camerad-runtime"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = []
+native-skip-miri = ["openpilot-camera-kernel/native-skip-miri", "openpilot-msgq/native-skip-miri", "dep:openpilot-logging", "dep:openpilot-params", "dep:signal-hook"]
+visionipc-ion = ["native-skip-miri", "openpilot-msgq/visionipc-ion"]
+
+[dependencies]
+capnp = "=0.27.2"
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging", default-features = false }
+openpilot-camerad = { path = "../camerad" }
+openpilot-camera-kernel = { path = "../camera-kernel", default-features = false }
+openpilot-msgq = { path = "../msgq", default-features = false }
+openpilot-logging = { path = "../logging", optional = true }
+openpilot-params = { path = "../params", optional = true }
+signal-hook = { version = "0.3", optional = true }
+rustix = { version = "1", features = ["time", "thread", "process"] }
+thiserror = "2"
+
+[[bin]]
+name = "openpilot-camerad"
+path = "src/main.rs"
+required-features = ["native-skip-miri"]
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[[example]]
+name = "frame_state"
+
+[[example]]
+name = "sensor_lifecycle"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "isp_lifecycle"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "camera_lifecycle"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "stress_trace"
+required-features = ["native-skip-miri"]

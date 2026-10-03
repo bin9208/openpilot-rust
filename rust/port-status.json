@@ -9,7 +9,11 @@
       "name": "_pandad",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/selfdrive/pandad",
-      "status": "not_ported",
+      "status": "native_core_host_and_arm_simulated",
+      "implementation": "rust/crates/pandad; native CAN codec, USB/SPI communication, state/safety/peripheral workers and cereal publications",
+      "native_dependencies": ["external libusb", "Linux USB/SPI drivers and Panda firmware", "temporary project-owned C++ msgq through CXX", "Linux clocks/signals/scheduling"],
+      "evidence": "docs/naver/rust-pandad-175.md",
+      "runtime_scope": "original-source component comparisons and actual supervised core IPC on host and ARM/QEMU with owned transport fixtures; source descriptor stays disabled because the supervisor launches the child. Full manager startup/upload, retained project-owned IPC conversion, actual hardware/AGNOS and user device acceptance remain pending",
       "production_replaced": false
     },
     {
@@ -45,22 +49,44 @@
       "name": "camerad",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/camerad",
-      "status": "not_ported",
+      "status": "native_daemon_host_and_arm_simulated",
+      "implementation": "rust/crates/camerad, camera-kernel and camerad-runtime; three-camera sensor/ISP/PHY lifecycle, exposure, request/fence handling, VisionIPC and camera-state publications, native diagnostics and normal main loop",
+      "native_dependencies": ["original msgq/VisionIPC allocation and transport through CXX", "ION allocator for the target build", "Linux Qualcomm camera/ISP/BPS/sync driver APIs and firmware", "libc strtod/rand and BOOTTIME clock", "native libzmq log transport"],
+      "runtime_scope": "host and generic ARM actual-main simulation passed 16 scenarios and 212 paired state/Vision frames; exact retained original frame-state/exposure oracle, publication barrier, cleanup and stress gates; separate ION build passed offline linkage against the exact published AGNOS 19.8-carrot-bt1 libraries",
+      "unported_scope": ["full manager startup and active log-upload integration", "project-owned C++ msgq/VisionIPC implementation remains a tracked runtime boundary"],
+      "validation_limits": ["ION/sensor/ISP operation and target scheduling are not validated on hardware", "full NV12 copy for exposure sampling is an added unmeasured cost", "LOG_RAW_FRAMES with road IFE retains a fatal missing-raw boundary"],
+      "evidence": "docs/naver/rust-camerad-187.md",
       "production_replaced": false
     },
     {
       "name": "card",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.car.card",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "production_replaced": false,
+      "implementation": "rust/crates/{can,card}; native CAN codecs/parser, VIN/firmware/fingerprint startup, continuous card core, CruiseCarrot and fourteen registered vehicle interfaces (Body, Mock, Hyundai, Tesla, Mazda, Nissan, Chrysler, Rivian, Ford, Subaru, Toyota, GM, Honda, Volkswagen); PSA has typed source-failure boundaries only; 23 VW MQB identities preserve the inherited first-update failure (#189)",
+      "evidence": "docs/naver/rust-card-177.md",
+      "runtime_scope": "Owned original msgq/Cereal/Params full-Car comparison: latest six-brand batch passes 17 scenarios/1360 measured steps per architecture, normal host nominal100Hz and separately paced ARM/QEMU under unchanged SIMULATION=1 policy; earlier14 scenarios/1120 steps per architecture are retained on their separately hashed builds. Registered278/279 identities,273 parameterizable; five source missing-torque failures, GM pedal missing-message failures and23 VW MQB first-update failures remain explicit, and PSA is separately blocked. Source-equivalent SecOC warning/order correction passes354 cases; offline linkage against exact published AGNOS19.8 libraries passes. Fresh-runner CI, full-runtime startup/upload, production selection and device/performance acceptance remain pending; project-owned C++ msgq transport is still an explicit temporary dependency"
     },
     {
       "name": "carrot_bluetooth",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.bluetooth.daemon",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "continuous_native_runtime_host_validated",
+      "implementation": "rust/crates/bluetooth; native input descriptors, gestures, journals, continuous cereal loop and owned BlueZ pairing/discovery library",
+      "native_dependencies": [
+        "Linux evdev/filesystem/process/signal APIs",
+        "sudo chmod permission fallback and system BlueZ daemon",
+        "libdbus through dbus/dbus-tokio",
+        "current original C++ msgq/libzmq transport boundary"
+      ],
+      "unported_scope": [
+        "Carrot HTTP server adapter and complete normal startup selection",
+        "physical Bluetooth and vehicle acceptance"
+      ],
+      "known_source_difference": "Invalid NUL-containing PIN cannot form a D-Bus string; native suppresses the invalid frame without reproducing the original session disconnect (#166).",
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-bluetooth-155.md"
     },
     {
       "name": "carrot_cluster",
@@ -108,14 +134,22 @@
       "name": "controlsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.controlsd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/controlsd and control-policy; continuous native control loop, consumed interface policies for 279 identities, longitudinal/coasting, angle/PID/torque/NNFF and MEB curvature control",
+      "native_dependencies": ["pinned NumPy 2.5.3 OpenBLAS 0.3.34.106.0 ILP64 numerical artifact (no Python runtime)", "original shipped Flux/Nano torque weights", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "unchanged-source loop and policy comparisons, synthetic native IPC/Params startup and shutdown, memory gates; original PSA startup defects remain issue #156; production selection, full startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/rust-port/controlsd-validation.md",
       "production_replaced": false
     },
     {
       "name": "cweb_push",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.cweb_push",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/cweb-push; native discovery, report/heartbeat state, Params identity and continuous CLI",
+      "native_dependencies": ["Linux address/socket APIs through a small CXX ioctl boundary", "reqwest/Hyper/Rustls and platform certificate verification", "Tokio", "native Params and logging"],
+      "evidence": "docs/rust-port/cweb-push-validation.md",
+      "runtime_scope": "16000 source state transitions, 20 source HTTP cases, six actual source/native CLI lifecycle scenarios and address ownership sanitizer; no real report endpoint or vehicle; production selection and complete startup/upload remain pending",
       "production_replaced": false
     },
     {
@@ -156,7 +190,11 @@
       "name": "feedbackd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.ui.feedback.feedbackd",
-      "status": "not_ported",
+      "status": "continuous_native_host_validated",
+      "implementation": "rust/crates/feedbackd",
+      "native_dependencies": ["original msgq through CXX", "Linux clocks and signals"],
+      "runtime_scope": "Active bookmark loop matches unchanged source over actual IPC; source-disabled LKAS audio recording remains disabled; Actions/ARM and complete startup/upload pending",
+      "evidence": "docs/rust-port/feedbackd-validation.md",
       "production_replaced": false
     },
     {
@@ -206,7 +244,10 @@
       "name": "lagd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.lagd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/lagd; source-compatible masked correlation, calibration, recovery/window/block policy and continuous native liveDelay/Params loop",
+      "native_dependencies": ["pinned external PocketFFT numerical kernel through CXX (no Python runtime)", "original msgq through CXX", "existing native Params/logging adapters", "Linux clocks, scheduling and filesystem"],
+      "runtime_scope": "fixed-tolerance source numeric/candidate and full-loop comparisons; real private IPC/Params learning, cache, cadence and signal scenarios; source constant-signal decisions retain pinned PocketFFT arithmetic; not selected by manager; full-runtime startup/upload, generic ARM/AGNOS/device acceptance remain separate; see docs/naver/rust-lagd-139.md",
       "production_replaced": false
     },
     {
@@ -220,7 +261,11 @@
       "name": "locationd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.locationd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/locationd; native orchestration, PoseKalman wrapper, generated Rust model equations, transforms, Params and livePose publication",
+      "native_dependencies": ["unchanged external rednose EKFSym and ekf_c.c numerical/rewind implementation via owned CXX boundary", "Eigen 3.4.0 headers, pinned by uv.lock dependency commit 40e5d76de1b33a86c5181b63db6782d8f06da1da", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "actual-source synthetic estimator/main-loop comparisons, native IPC daemon with seeded Params and signals, native ownership/scheduler sanitizers; no Python/Cython runtime or project-owned C++ model fallback; device/AGNOS and whole startup/upload acceptance pending",
+      "evidence": "docs/rust-port/locationd-validation.md",
       "production_replaced": false
     },
     {
@@ -246,8 +291,16 @@
       "name": "manage_athenad",
       "source_kind": "DaemonProcess",
       "source_entrypoint": "openpilot.system.athena.manage_athenad",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "continuous_native_host_validated_pending_integration",
+      "production_replaced": false,
+      "implementation": "rust/crates/athena; openpilot-manage-athenad and openpilot-athenad",
+      "native_dependencies": [
+        "temporary original msgq/VisionIPC through CXX",
+        "external libjpeg-turbo 3.1.4.1 through bounded C/CXX bridge",
+        "libzmq logging; rustls TLS; zstd compression"
+      ],
+      "runtime_scope": "owned host WebSocket/RPC/upload/proxy/log/stat/snapshot/supervisor runtime; original camerad remains a separate project-owned runtime dependency; manager selection, full startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/naver/rust-athena-146.md"
     },
     {
       "name": "maneuversd",
@@ -260,7 +313,11 @@
       "name": "micd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.micd",
-      "status": "not_ported",
+      "status": "continuous_native_host_validated",
+      "implementation": "rust/crates/micd; PortAudio input, original raw audio bytes and A-weighted pressure publication",
+      "native_dependencies": ["external PortAudio v19", "temporary original msgq through CXX", "libzmq logging", "Linux clocks and signals"],
+      "runtime_scope": "source numerical/callback comparison and actual owned PortAudio ABI/native IPC/retry/shutdown; real audio hardware, target execution, manager selection and full startup/upload acceptance pending",
+      "evidence": "docs/rust-port/micd-validation.md",
       "production_replaced": false
     },
     {
@@ -294,21 +351,33 @@
       "name": "pandad",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.pandad.pandad",
-      "status": "not_ported",
+      "status": "native_supervisor_host_and_arm_simulated",
+      "implementation": "rust/crates/pandad; native firmware/client policies, USB/SPI discovery and recovery, child launch/restart and source signal handling",
+      "native_dependencies": ["external libusb", "Linux USB/SPI drivers and Panda firmware", "temporary project-owned C++ msgq through CXX", "native process launcher and hardware control"],
+      "evidence": "docs/naver/rust-pandad-175.md",
+      "runtime_scope": "reviewed source comparisons, 12 actual supervisor/core/IPC executions across host and ARM/QEMU, and native USB DFU composition including progress output. SPI DFU environment composition retains constituent protocol/ABI evidence. Full manager startup/upload, retained project-owned IPC conversion, actual hardware/AGNOS and user device acceptance remain pending",
       "production_replaced": false
     },
     {
       "name": "paramsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.paramsd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/paramsd; native continuous learner, dynamic CarParams model equations, cache migration/retrieval, GPS and liveParameters persistence",
+      "native_dependencies": ["unchanged external rednose EKFSym and ekf_c.c numerical/rewind implementation via owned CXX boundary", "Eigen 3.4.0 headers pinned by uv.lock dependency commit 40e5d76de1b33a86c5181b63db6782d8f06da1da", "original msgq, cereal, Params, native logging and Linux scheduler APIs"],
+      "runtime_scope": "actual-source estimator/model/main-loop comparisons, native IPC and Params persistence/restart/shutdown, native ownership/scheduler sanitizers; no Python/Cython runtime or generated project C++ model fallback; whole startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/rust-port/paramsd-validation.md",
       "production_replaced": false
     },
     {
       "name": "pigeond",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.ubloxd.pigeond",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/ublox; openpilot-pigeond with native serial, GPIO, Params, AssistNow and ubloxRaw publication",
+      "native_dependencies": ["Linux terminal and GPIO APIs", "CXX DTR/RTS ioctl boundary", "original msgq transport", "native logging, hardware-control, typed Params, timed clock validation and HTTP transport"],
+      "runtime_scope": "unchanged-source policy, owned PTY, native IPC lifecycle and local HTTP fixtures; no physical receiver/GPIO, ARM/AGNOS or device acceptance",
+      "evidence": "docs/rust-port/ublox-validation.md",
       "production_replaced": false
     },
     {
@@ -331,7 +400,10 @@
       "name": "qcomgpsd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.qcomgpsd.qcomgpsd",
-      "status": "not_ported",
+      "status": "continuous_runtime_host_validated",
+      "implementation": "rust/crates/qcomgpsd; native diagnostic framing, five GNSS reports, modem setup/assistance/lifecycle and separate NMEA debug entrypoint",
+      "native_dependencies": ["Linux serial/termios/flock and GPIO34 sysfs", "Quectel/Qualcomm modem firmware", "mmcli/ModemManager assistance injection", "HTTP/TLS transport", "original msgq through CXX; existing native logging transport"],
+      "runtime_scope": "source report/setup comparisons and real native processes with private PTYs, GPIO files, loopback HTTP and isolated msgq; NMEA source delimiter-only checksum and nonempty AT response TypeError preserved; not selected by manager; whole-runtime startup/upload, AGNOS and device acceptance pending; see docs/naver/rust-qcomgps-130.md",
       "production_replaced": false
     },
     {
@@ -352,21 +424,33 @@
       "name": "selfdrived",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.selfdrived.selfdrived",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "implementation": "rust/crates/selfdrived; continuous native carState loop, engagement/events/alerts, complete car policy, calibrated pose/actuation checks, Params worker and cereal publications",
+      "native_dependencies": ["original msgq/VisionIPC through CXX", "libzmq native logging", "Linux clocks/signals/scheduling/filesystem", "Git executable for source build metadata"],
+      "runtime_scope": "source state/event/alert/callback/controller parity; ARM matches retained source-verified host controller/clock captures and passes native IPC restart/refresh plus nine failure cases under QEMU; offline linkage against the pinned AGNOS image passes. Runtime Python absent; core6/FIFO53 policy preserved in code. Actual AGNOS scheduling, complete manager startup/log upload and user device comparison remain pending under #1",
+      "evidence": "docs/naver/rust-selfdrived-168.md",
       "production_replaced": false
     },
     {
       "name": "sensord",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.sensord.sensord",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/sensord; continuous openpilot-sensord with Rust LSM6DS3 drivers and thin native Linux UAPI boundary",
+      "native_dependencies": ["Linux SMBus/GPIO/poll and scheduling UAPI", "CXX boundary", "original msgq through native transport", "native logging and hardware-control IRQ-write helper"],
+      "runtime_scope": "source/kernel fixtures, Miri, ASan/UBSan and isolated native IPC lifecycle; physical sensor/timing, actual FIFO/IRQ placement, ARM/AGNOS and device acceptance remain unvalidated",
+      "evidence": "docs/rust-port/sensord-validation.md",
       "production_replaced": false
     },
     {
       "name": "soundd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.ui.soundd",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_validated",
+      "implementation": "rust/crates/soundd and rust/crates/portaudio; Rust assets/resampling/samples, alert/countdown/timeout/volume/MAIN policy, Params/language and continuous 20 Hz native IPC loop",
+      "native_dependencies": ["PortAudio v19 and its host audio backend loaded dynamically", "existing native msgq and libzmq logging", "Linux filesystem/clock/signal APIs"],
+      "runtime_scope": "original source and actual shipped/synthetic WAV sample comparisons; continuous native process with owned PortAudio ABI/isolated msgq; no real host/device audio; manager selection, full startup/upload and device acceptance pending",
+      "evidence": "docs/rust-port/soundd-validation.md",
       "production_replaced": false
     },
     {
@@ -420,7 +504,11 @@
       "name": "ubloxd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.ubloxd.ubloxd",
-      "status": "not_ported",
+      "status": "native_daemon_host_validated",
+      "implementation": "rust/crates/ublox; openpilot-ubloxd framing, binary field readers, GPS/GLONASS ephemeris and full cereal publication",
+      "native_dependencies": ["original msgq transport", "generated full cereal schema"],
+      "runtime_scope": "actual-source synthetic packet and native IPC comparisons, strict Miri; physical GNSS timing, ARM/AGNOS and device acceptance remain unvalidated",
+      "evidence": "docs/rust-port/ublox-validation.md",
       "production_replaced": false
     },
     {
@@ -434,10 +522,10 @@
       "name": "updated",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.updated.updated",
-      "status": "native_continuous_runtime_host_validated_agnos_integration_pending",
+      "status": "native_continuous_runtime_host_validated",
       "implementation": "rust/crates/updated; continuous staged checkout daemon, original release-note renderer, consistency/copy lifecycle, signals, Params/alerts and owned command sessions",
       "native_dependencies": ["Git and Git LFS", "bash/find/sudo/mount/umount/chmod/rm", "util-linux ionice", "Linux filesystem/xattr/sync/locking/process APIs", "existing native process-supervision captured child helper and logging dependencies"],
-      "runtime_scope": "original-body/Params comparisons and actual owned Git/process/signal lifecycle; AGNOS flash trait awaits #119 integration; physical OverlayFS/AGNOS, manager selection, full startup/upload and device acceptance pending",
+      "runtime_scope": "original-body/Params comparisons, actual owned Git/process/signal lifecycle and native background AGNOS compressed/casync/corrupt-image comparisons; physical OverlayFS/AGNOS, manager selection, full startup/upload and device acceptance pending",
       "evidence": "docs/rust-port/updated-validation.md",
       "production_replaced": false
     },

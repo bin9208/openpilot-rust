@@ -1,0 +1,53 @@
+[package]
+name = "openpilot-paramsd"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native"]
+solver = ["dep:cxx"]
+native = ["solver", "openpilot-messaging/native", "dep:openpilot-msgq", "dep:openpilot-logging", "dep:signal-hook"]
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dependencies]
+openpilot-runtime-core = { path = "../runtime-core" }
+serde_json = { version = "1", features = ["raw_value", "float_roundtrip"] }
+openpilot-locationd = { path = "../locationd", default-features = false }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging", default-features = false }
+openpilot-msgq = { path = "../msgq", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+openpilot-params = { path = "../params" }
+capnp = "=0.27.2"
+cxx = { version = "1.0", optional = true }
+thiserror = "2"
+rustix = { version = "1", features = ["time"] }
+signal-hook = { version = "0.3", optional = true }
+serde = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+cxx-build = "1.0"
+
+[dev-dependencies]
+
+[[example]]
+name = "paramsd_trace"
+required-features = ["solver"]
+
+[[bin]]
+name = "openpilot-paramsd"
+path = "src/main.rs"
+required-features = ["native"]
+
+[[example]]
+name = "paramsd_loop"
+required-features = ["solver"]
+
+[[example]]
+name = "paramsd_peer"
+required-features = ["native"]

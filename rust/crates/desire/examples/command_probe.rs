@@ -1,6 +1,6 @@
 use openpilot_desire::command::CommandReader;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::{
     collections::BTreeMap,
     error::Error,
@@ -14,6 +14,8 @@ struct Step {
     now: f64,
     allowed: bool,
     writes: BTreeMap<String, Value>,
+    #[serde(default)]
+    raw_writes: BTreeMap<String, String>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -38,12 +40,23 @@ fn main() -> Result<(), Box<dyn Error>> {
                 serde_json::to_vec(&value)?,
             )?;
         }
+        for (name, value) in step.raw_writes {
+            if !matches!(name.as_str(), "lane" | "learn" | "cancelled") {
+                return Err("unknown raw journal file".into());
+            }
+            fs::write(root.join(format!("{name}.json")), value)?;
+        }
         let action = reader.read(step.allowed, step.now);
-        serde_json::to_writer(
-            &mut output,
-            &json!({"action":action,"last_id":reader.last_id,"repeat":reader.is_repeat}),
+        writeln!(
+            output,
+            "{{\"action\":{},\"last_id\":{},\"repeat\":{}}}",
+            serde_json::to_string(&action)?,
+            reader
+                .last_id
+                .as_ref()
+                .map_or_else(|| Ok("null".to_owned()), |id| id.to_json())?,
+            reader.is_repeat
         )?;
-        writeln!(output)?;
     }
     output.flush()?;
     Ok(())

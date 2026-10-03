@@ -20,4 +20,5 @@ private:
 };
 std::unique_ptr<VisionConnection> open_vision(rust::Str name, int32_t stream, bool conflate);
 uint32_t vision_streams(rust::Str name);
+void validate_vision_name(const std::string &name);
 }

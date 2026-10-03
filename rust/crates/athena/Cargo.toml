@@ -1,0 +1,54 @@
+[package]
+name = "openpilot-athena"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "openpilot-athenad"
+path = "src/bin/athenad.rs"
+
+[[bin]]
+name = "openpilot-manage-athenad"
+path = "src/bin/manage_athenad.rs"
+
+[dependencies]
+openpilot-params = { path = "../params" }
+openpilot-params-typed = { path = "../params-typed" }
+openpilot-logging = { path = "../logging" }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-messaging = { path = "../messaging" }
+openpilot-msgq = { path = "../msgq" }
+openpilot-cereal = { path = "../cereal" }
+openpilot-runtime-version = { path = "../runtime-version" }
+openpilot-hardware-info = { path = "../hardware-info" }
+openpilot-uploader = { path = "../uploader" }
+openpilot-registration = { path = "../registration" }
+openpilot-process-supervision = { path = "../process-supervision" }
+openpilot-managed-entry = { path = "../managed-entry" }
+openpilot-crash-reporting = { path = "../crash-reporting" }
+capnp = "=0.27.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+thiserror = "2"
+tungstenite = { version = "=0.29.0", features = ["rustls-tls-native-roots"] }
+ureq = { version = "=3.4.2", features = ["json", "gzip", "brotli", "rustls", "cookies"] }
+socket2 = { version = "=0.6.5", features = ["all"] }
+url = "2"
+sha1 = "0.10"
+base64 = "0.22"
+rand = "0.9"
+zstd = "0.13"
+num-traits = "0.2"
+signal-hook = "0.3"
+rustix = { version = "1", features = ["fs", "process", "thread", "time", "event"] }
+openpilot-jpeg = { path = "../jpeg" }
+
+[dev-dependencies]
+tempfile = "3"
+zmq = "0.10"

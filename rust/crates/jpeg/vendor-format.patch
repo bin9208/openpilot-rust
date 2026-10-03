@@ -1,0 +1,50 @@
+diff --git a/rust/crates/jpeg/native/vendor/ChangeLog.md b/rust/crates/jpeg/native/vendor/ChangeLog.md
+index 7412e90e..e4393f49 100644
+--- a/rust/crates/jpeg/native/vendor/ChangeLog.md
++++ b/rust/crates/jpeg/native/vendor/ChangeLog.md
+@@ -2 +2 @@
+-=======
++========
+@@ -603 +603 @@ the TurboJPEG API documentation for more details.
+-=======
++========
+diff --git a/rust/crates/jpeg/native/vendor/README.md b/rust/crates/jpeg/native/vendor/README.md
+index f2169476..d1b98547 100644
+--- a/rust/crates/jpeg/native/vendor/README.md
++++ b/rust/crates/jpeg/native/vendor/README.md
+@@ -32 +32 @@ Funding
+-=======
++========
+@@ -47 +47 @@ License
+-=======
++========
+diff --git a/rust/crates/jpeg/native/vendor/doc/turbojpeg/doxygen.css b/rust/crates/jpeg/native/vendor/doc/turbojpeg/doxygen.css
+index eeadba5e..345a0e61 100644
+--- a/rust/crates/jpeg/native/vendor/doc/turbojpeg/doxygen.css
++++ b/rust/crates/jpeg/native/vendor/doc/turbojpeg/doxygen.css
+@@ -1814 +1814 @@ tr.heading h2 {
+-       	font-family: var(--font-family-tooltip);
++	font-family: var(--font-family-tooltip);
+@@ -2021 +2020,0 @@ details>summary::before {
+-
+@@ -2027 +2025,0 @@ details[open]>summary::before {
+-
+diff --git a/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/search.css b/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/search.css
+index 19f76f9d..4d90d47a 100644
+--- a/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/search.css
++++ b/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/search.css
+@@ -291 +290,0 @@ div.searchresults {
+-
+diff --git a/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/searchdata.js b/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/searchdata.js
+index e2d4fb3b..839f6bc1 100644
+--- a/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/searchdata.js
++++ b/rust/crates/jpeg/native/vendor/doc/turbojpeg/search/searchdata.js
+@@ -36 +35,0 @@ var indexSectionLabels =
+-
+diff --git a/rust/crates/jpeg/native/vendor/java/doc/legal/pako.md b/rust/crates/jpeg/native/vendor/java/doc/legal/pako.md
+index de339d89..c01382fa 100644
+--- a/rust/crates/jpeg/native/vendor/java/doc/legal/pako.md
++++ b/rust/crates/jpeg/native/vendor/java/doc/legal/pako.md
+@@ -44,2 +43,0 @@ appreciated but is not required.
+-
+-

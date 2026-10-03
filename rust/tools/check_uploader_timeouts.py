@@ -28,7 +28,7 @@ def scenario(root, binary, output, stage, mode, implementation):
 
     def respond(self, body, current):
       active = current == stage.split('-')[0]
-      delay = 10.05 if mode == 'late' else 10.6
+      delay = 11.0 if mode == 'late' else 12.0
       if active and stage.endswith('headers'):
         time.sleep(delay)
       self.send_response(200)
