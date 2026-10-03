@@ -144,6 +144,17 @@ Card worktree's `.omo/evidence/card-ci-reproducibility/`. This establishes the
 local fresh dependency/fixture path; the complete required reference job,
 exact-SHA GitHub Actions and post-merge checks still remain to be observed.
 
+[PR #192](https://github.com/bin9208/openpilot-rust/pull/192) starts hosted
+integration at `17db8ad83066561fdd69f45ee133b5abacff46cd`, after preserving
+the integrated Bluetooth work from dev. The first
+[fast check](https://github.com/bin9208/openpilot-rust/actions/runs/37114765269)
+caught the unsupported job-level `runner.temp` import path and the inherited
+required-job assertion missing Card. The repair uses the existing runtime
+`GITHUB_ENV` import setup and extends the exact gate assertions to Card,
+including failed, cancelled, skipped and absent results. All 22 CI-routing,
+eight synchronization-guard and four Card CI tests pass locally. The failed
+hosted run and corrected checks are retained; this is not a hosted pass claim.
+
 A separate ARM replay passes 17 full vehicle traces / 7,700 frames across the
 six added brands, with exact raw JSON equality to the retained source-equivalent
 host results. Original Python oracles were reused without rerunning unchanged

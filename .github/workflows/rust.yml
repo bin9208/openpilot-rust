@@ -299,7 +299,7 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       OPENBLAS_NUM_THREADS: '1'
-      PYTHONPATH: ${{ runner.temp }}/card-native/msgq:${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
         with:
@@ -307,6 +307,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Configure original Card IPC imports
+        run: printf 'PYTHONPATH=%s/card-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity before dependency installation
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
