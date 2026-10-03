@@ -141,6 +141,8 @@ def capture(arguments: RuntimeInvocation, scenario: Scenario, source: bool) -> C
   for flag in ('REPLAY', 'SKIP_FW_QUERY', 'DISABLE_FW_CACHE'):
     environment.pop(flag, None)
   set_phase(output, 'pause')
+  from card_qa.runtime_phase_fence import arm, startup
+  arm(output, 0)
   pump_command = [os.sys.executable, str(ROOT / 'rust/tools/card_qa/runtime_pump.py'), '--prefix', prefix,
     '--inputs', str(arguments.evidence / (scenario.candidate + '-inputs.json')), '--control', str(output / 'pump-control'), '--evidence', str(output / 'pump')]
   pump_command.extend(['--cc-every', str(arguments.controls_every), '--can-interval', str(arguments.can_interval)])
@@ -160,35 +162,8 @@ def capture(arguments: RuntimeInvocation, scenario: Scenario, source: bool) -> C
           time.sleep(.001)
         set_phase(output, 'startup')
         startup_started = time.monotonic()
-        deadline = startup_started + 60
-        initial = {name: [] for name in OUTPUTS}
-        while not all(initial[name] for name in ('carParams', 'carOutput', 'carState')):
-          assert process.poll() is None, process.returncode
-          assert time.monotonic() < deadline, 'startup publication timed out'
-          for name, rows in drain(subscribers).items():
-            initial[name].extend(rows)
-          time.sleep(.001)
-        pause_pump(output)
-        startup_sends = [json.loads(line) for line in (output / 'pump/sends.jsonl').read_text().splitlines()]
-        last_startup = max(row['timestamp'] for row in startup_sends if row['mode'] == 'startup')
-        while last_startup not in {row['carState']['radarInput']['lastCanMonoTime'] for row in initial['carState']}:
-          assert time.monotonic() < deadline, 'final startup CAN not observed'
-          for name, values in drain(subscribers).items():
-            initial[name].extend(values)
-          time.sleep(.001)
-        while True:
-          trace = (output / 'frequency.jsonl').read_text().split('\n')[:-1]
-          if trace and json.loads(trace[-1])['frame'] >= len(initial['carState']) - 1:
-            break
-          assert time.monotonic() < deadline, 'final startup step not complete'
-          for name, values in drain(subscribers).items():
-            initial[name].extend(values)
-          time.sleep(.001)
-        stop(process)
+        initial = startup(process, pump, subscribers, output)
         startup_seconds = time.monotonic() - startup_started
-        for name, rows in drain(subscribers).items():
-          initial[name].extend(rows)
-        (output / 'initial-raw.json').write_text(json.dumps(initial) + '\n')
         stored = (params / 'CarParams').read_bytes()
         with car.CarParams.from_bytes(stored) as cp:
           passive = cp.passive
