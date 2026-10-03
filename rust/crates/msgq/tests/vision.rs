@@ -1,11 +1,13 @@
 #![cfg(feature = "native-skip-miri")]
 
+mod support;
+
 use openpilot_msgq::{VisionClient, VisionStream};
 use std::{
     env,
     io::{BufRead, BufReader, Write},
     os::unix::fs::FileExt,
-    process::{Child, Command, Stdio},
+    process::{Child, Stdio},
     time::{Duration, Instant},
 };
 
@@ -16,7 +18,7 @@ struct Peer {
 
 impl Peer {
     fn start() -> Self {
-        let mut process = Command::new(env!("NATIVE_VISION_PEER"))
+        let mut process = support::command(env!("NATIVE_VISION_PEER"))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
@@ -62,7 +64,7 @@ fn original_server_camera_transport() {
             .tempdir_in("/dev/shm")
             .unwrap();
         let prefix = namespace.path().file_name().unwrap().to_str().unwrap();
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args(["--exact", "original_server_camera_transport", "--nocapture"])
             .env("RUST_VISION_TEST_CHILD", "1")
             .env("OPENPILOT_PREFIX", prefix.strip_prefix("msgq_").unwrap())

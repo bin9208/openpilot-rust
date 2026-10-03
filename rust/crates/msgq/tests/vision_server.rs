@@ -1,9 +1,11 @@
 #![cfg(feature = "native-skip-miri")]
 
+mod support;
+
 use openpilot_msgq::{
     RawVisionImage, VisionClient, VisionLayout, VisionMetadata, VisionServer, VisionStream,
 };
-use std::{env, os::fd::AsFd, process::Command, thread, time::Duration};
+use std::{env, os::fd::AsFd, thread, time::Duration};
 
 #[test]
 fn camera_server_preserves_frames_and_buffer_owners() {
@@ -13,7 +15,7 @@ fn camera_server_preserves_frames_and_buffer_owners() {
             .tempdir_in("/dev/shm")
             .unwrap();
         let prefix = namespace.path().file_name().unwrap().to_str().unwrap();
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args([
                 "--exact",
                 "camera_server_preserves_frames_and_buffer_owners",

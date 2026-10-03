@@ -7,14 +7,10 @@ fn main() {
     let root = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").expect("manifest directory"))
         .join("../../..");
     let ion = env::var_os("CARGO_FEATURE_VISIONIPC_ION").is_some();
-    let mut build = cxx_build::bridges(["src/bridge.rs", "src/vision_bridge.rs"]);
+    let mut build = cc::Build::new();
     build
-        .file("native/bridge.cc")
-        .file("native/vision.cc")
-        .file("native/vision_server.cc")
-        .file(root.join("msgq_repo/msgq/msgq.cc"))
-        .include("native")
-        .include(root.join("msgq_repo"))
+        .cpp(true)
+        .cargo_metadata(false)
         .std("c++17")
         .flag("-UNDEBUG");
     let sources = [
@@ -31,13 +27,6 @@ fn main() {
             "visionipc/visionbuf.cc"
         },
     ];
-    for source in sources {
-        build.file(root.join("msgq_repo/msgq").join(source));
-    }
-    if ion {
-        build.include(root.join("third_party/linux/include"));
-    }
-    build.compile("openpilot-msgq-bridge");
     let peer =
         PathBuf::from(env::var_os("OUT_DIR").expect("output directory")).join("native-msgq-peer");
     let mut command = build.get_compiler().to_command();
@@ -89,17 +78,26 @@ fn main() {
         "cargo:rustc-env=NATIVE_VISION_PEER={}",
         vision_peer.display()
     );
+    let abi_peer = PathBuf::from(env::var_os("OUT_DIR").expect("output directory"))
+        .join("native-ipc-abi-peer");
+    let status = build
+        .get_compiler()
+        .to_command()
+        .args(["-std=c++17", "-I"])
+        .arg(root.join("msgq_repo"))
+        .arg("-I")
+        .arg(root.join("third_party/linux/include"))
+        .arg("native/abi_peer.cc")
+        .arg("-o")
+        .arg(&abi_peer)
+        .status()
+        .expect("compile native IPC ABI peer");
+    assert!(status.success(), "native IPC ABI peer compilation failed");
+    println!("cargo:rustc-env=NATIVE_IPC_ABI_PEER={}", abi_peer.display());
     for path in [
-        "src/bridge.rs",
-        "src/vision_bridge.rs",
-        "native/bridge.h",
-        "native/bridge.cc",
         "native/peer.cc",
-        "native/vision.h",
-        "native/vision.cc",
-        "native/vision_server.h",
-        "native/vision_server.cc",
         "native/vision_peer.cc",
+        "native/abi_peer.cc",
     ] {
         println!("cargo:rerun-if-changed={path}");
     }
