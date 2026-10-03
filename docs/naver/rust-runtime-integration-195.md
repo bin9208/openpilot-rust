@@ -188,3 +188,37 @@ module reproduces the musl error and the new module passes the same target
 check. The callback test passes natively and under pinned Miri's default,
 strict-provenance and Tree Borrows configurations. These checks cover the
 initializer; hosted CI still supplies the full static workspace build gate.
+
+## Complete ARM job duration
+
+The [PR run for `92d5b89e`](https://github.com/bin9208/openpilot-rust/actions/runs/37141988490)
+passed all host runtime jobs and the aggregate Rust checks. The ARM job
+`111258166725` completed the native GNU builds, then exceeded its 45-minute job
+limit during the final static musl workspace build. The Actions annotation
+explicitly records the timeout; it is not a completed static build or another
+scheduler compilation error. Its raw log and annotation remain in
+`92d-arm-111258166725.log` and `92d-arm-timeout-annotation.json`.
+
+The ARM job now has a bounded 75-minute limit, tracked in
+[#198](https://github.com/bin9208/openpilot-rust/issues/198). Build commands,
+targets, assertions and artifacts are unchanged. A successful final-head run is
+still required before integration; the timeout change itself proves no build.
+
+## Selfdrived startup fixture readiness (#199)
+
+Composing native Rust IPC exposed a startup assumption in the actual Selfdrived
+checker. It stopped supplying inputs after the state topic became enabled and
+expected the independently initialized events topic within its next 100 ms
+receive. The retained CI CXX-backed daemon reproduced the same missing-event
+failure. The checker now keeps supplying inputs within the existing ten-second
+startup deadline until both the enabled state and a valid event list arrive.
+Production code, payload assertions and runtime deadlines are unchanged. The
+fixture defect is tracked in [#199](https://github.com/bin9208/openpilot-rust/issues/199).
+
+The old checker failures remain in `ipc-selfdrived-cxx-control/` and
+`ipc-selfdrived-v1/ipc/`. The repaired checker passes both retained CXX and fresh
+Rust IPC binaries in `ipc-selfdrived-cxx-green/` and
+`ipc-selfdrived-v1/ipc-v2/`: two starts, non-conflated bursts, Params refresh and
+SIGINT joins each. All nine independent failure/lifecycle scenarios also pass
+in `ipc-selfdrived-v1/failures/`. These are host transport-consumer checks;
+remaining consumers and complete startup/upload are separate gates.
