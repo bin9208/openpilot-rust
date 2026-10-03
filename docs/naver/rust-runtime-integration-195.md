@@ -258,3 +258,50 @@ its complete host/GNU ARM comparisons and five actual IPC scenarios through the
 extracted AGNOS loader, as recorded in
 [navigation validation](rust-navd-196.md). All of these remain intermediate
 component/composition evidence before normal startup and existing log upload.
+
+## Native IPC musl correction and consumer replay (2026-10-04)
+
+At `0bce1eb06b45688e67f6af7262ff63934b1befcf`, all 23 other Rust jobs and
+the inherited integration gate pass. The [ARM job](https://github.com/bin9208/openpilot-rust/actions/runs/37148293326/job/111276644934)
+passes GNU ARM consumers and fails the static musl workspace build: musl's
+`cmsghdr.cmsg_len` and `msghdr.msg_controllen` are narrower integer types than
+GNU's `usize` fields. Checked conversions now isolate the socket ABI while
+length arithmetic and indexing remain `usize`. Polling retains its existing
+timespec values without naming libc's deprecated musl `time_t` alias.
+
+The first static ARM execution also exposes uninitialized padding in the C++
+ABI fixture's `VisionBuf` record between `fd` and `width`. The fixture now
+explicitly initializes the complete representations of its trivially copyable
+records before setting fields. The full serialized-byte assertion is retained.
+Production reference sources and Rust wire layout are unchanged.
+
+Fresh checks pass: 46 host tests, strict all-feature Clippy, all nine static
+ARM test executables under QEMU (including original C++ peers), the host suite
+with Rust ASAN and C++ ASAN/UBSAN, and 21 pure memory tests at all four Miri
+levels including strict provenance and Tree Borrows. Miri does not execute the
+native socket boundary; the real socket tests and sanitizer run cover it.
+Receipts under the private `runtime-195/ipc-musl-fix/` directory are:
+
+| Receipt | SHA-256 |
+| --- | --- |
+| `host-v2/receipt.json` | `0a375d00d5026efc175ffad7d175984b051a7f34246952931006483ff3003cd0` |
+| `musl-v3/receipt.json` | `8d452bcd0cf317829913ca4c8b6492a41f9b0a37fd28fb81a3658861ef7ef8f2` |
+| `asan-v1/receipt.json` | `830319a35f4d8596e2346c01e83dca9bb06f3ebdb1986ab4b3b1b07adaf1857f` |
+| `miri-v1/receipt.json` | `0c7d51410eb15cd03c51264a732cfa1106c5bf87a0157cd94d2e62d3a5d9dd8c` |
+
+Fresh native-IPC consumer replay also passes the Card constructor, independent
+100 Hz CAN/control input, complete wire output, Params persistence and shutdown
+checks for 19 scenarios and 1,520 paired steps. All 38 source/native peers exit
+with the expected statuses. `ipc-card-v2/result.json` has SHA-256
+`281062fbcb6ec5e5a5a553ebee7a2917b5cbd165b304dee35d31fec45da6538b`.
+An earlier source Python Nissan peer exceeded the five-second shutdown timeout;
+its completed KeyboardInterrupt traceback and raw evidence are preserved.
+The cause remains unresolved in [issue #201](https://github.com/bin9208/openpilot-rust/issues/201): narrow repeats and the complete fresh sweep do
+not reproduce it. No source shutdown code, timeout, or assertion was changed.
+
+Both model consumers pass startup plus actual original-camera/message
+comparisons using freshly frozen native-IPC executables. The separate
+`ipc-models-v2/receipt.json` SHA-256 is
+`280eb31789e3e70cefb6500194dd225f02902e2fd33fe0a175080d707892d278`.
+That focused run does not select the optional log collector. Full normal
+startup/upload composition and user device acceptance remain outstanding.

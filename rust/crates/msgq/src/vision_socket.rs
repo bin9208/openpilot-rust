@@ -142,6 +142,10 @@ struct Control {
     descriptors: [libc::c_int; MAX_FDS],
 }
 
+fn control_length<T, U: TryFrom<T>>(length: T) -> Result<U, Error> {
+    U::try_from(length).map_err(|_| Error::Invalid("VisionIPC control length exceeds socket ABI"))
+}
+
 pub(crate) fn send(
     socket: BorrowedFd<'_>,
     payload: &[u8],
@@ -163,14 +167,14 @@ pub(crate) fn send(
     if !descriptors.is_empty() {
         control.header.cmsg_level = libc::SOL_SOCKET;
         control.header.cmsg_type = libc::SCM_RIGHTS;
-        control.header.cmsg_len =
-            size_of::<libc::cmsghdr>() + descriptors.len() * size_of::<libc::c_int>();
+        let length = size_of::<libc::cmsghdr>() + descriptors.len() * size_of::<libc::c_int>();
+        control.header.cmsg_len = control_length(length)?;
         for (target, fd) in control.descriptors.iter_mut().zip(descriptors) {
             *target = fd.as_raw_fd();
         }
         message.msg_control = std::ptr::from_mut(&mut control).cast();
         message.msg_controllen =
-            (control.header.cmsg_len + size_of::<usize>() - 1) & !(size_of::<usize>() - 1);
+            control_length((length + size_of::<usize>() - 1) & !(size_of::<usize>() - 1))?;
     }
     // SAFETY: every msghdr/iovec/control pointer covers initialized storage alive
     // throughout sendmsg; the kernel reads but never mutates the borrowed payload.
@@ -200,7 +204,7 @@ pub(crate) fn receive(
     message.msg_iov = &mut vector;
     message.msg_iovlen = 1;
     message.msg_control = std::ptr::from_mut(&mut control).cast();
-    message.msg_controllen = size_of::<Control>();
+    message.msg_controllen = control_length(size_of::<Control>())?;
     // SAFETY: all output pointers cover writable allocations of the advertised
     // sizes; the kernel owns creation of descriptors returned in SCM_RIGHTS.
     let result = unsafe { libc::recvmsg(socket.as_raw_fd(), &mut message, libc::MSG_CMSG_CLOEXEC) };
@@ -215,7 +219,8 @@ pub(crate) fn receive(
         let mut header = libc::CMSG_FIRSTHDR(&message);
         while !header.is_null() {
             let value = &*header;
-            let length = value.cmsg_len.saturating_sub(size_of::<libc::cmsghdr>());
+            let length: usize = control_length(value.cmsg_len)?;
+            let length = length.saturating_sub(size_of::<libc::cmsghdr>());
             if value.cmsg_level == libc::SOL_SOCKET && value.cmsg_type == libc::SCM_RIGHTS {
                 invalid |= length == 0 || !length.is_multiple_of(size_of::<libc::c_int>());
                 for index in 0..length / size_of::<libc::c_int>() {

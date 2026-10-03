@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <type_traits>
 #include <linux/ion.h>
 #include <linux/msm_ion.h>
 #include "msgq/msgq.h"
@@ -15,6 +16,8 @@
 int main(int argc, char **argv) {
   if (argc == 2 && std::strcmp(argv[1], "wire") == 0) {
     VisionBuf buffer{};
+    static_assert(std::is_trivially_copyable_v<VisionBuf>);
+    std::memset(static_cast<void *>(&buffer), 0, sizeof(buffer));
     buffer.len = 96;
     buffer.mmap_len = 104;
     buffer.addr = reinterpret_cast<void *>(0x1000);
@@ -31,6 +34,8 @@ int main(int argc, char **argv) {
     buffer.type = VISION_STREAM_WIDE_ROAD;
     buffer.handle = 0;
     VisionIpcPacket packet{};
+    static_assert(std::is_trivially_copyable_v<VisionIpcPacket>);
+    std::memset(static_cast<void *>(&packet), 0, sizeof(packet));
     packet.server_id = 5;
     packet.idx = 3;
     packet.extra.frame_id = 7;

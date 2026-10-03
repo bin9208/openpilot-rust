@@ -309,7 +309,7 @@ pub(crate) fn poll(
     }
     let milliseconds = if timeout_ms == -1 { 100 } else { timeout_ms };
     let mut remaining = libc::timespec {
-        tv_sec: libc::time_t::from(milliseconds / 1000),
+        tv_sec: (milliseconds / 1000).into(),
         tv_nsec: libc::c_long::from(milliseconds % 1000) * 1_000_000,
     };
     loop {
