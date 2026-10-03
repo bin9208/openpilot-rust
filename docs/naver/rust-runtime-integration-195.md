@@ -168,3 +168,23 @@ The path/routing repair passes 15 focused tests, 26 CI routing checks and eight
 inherited policy tests. Pinned workspace formatting also passes. These results
 authorize a new exact-head CI run; they do not replace its required result or
 the later full-startup/device acceptance gate.
+
+## Static musl scheduler initialization
+
+The [next PR run for `9fcf24de`](https://github.com/bin9208/openpilot-rust/actions/runs/37137697986)
+passed every host runtime job, including the repaired Card, Panda and camera
+jobs. The ARM job passed the encoder GNU BFD build and subsequent native daemon
+builds, then failed in the final static musl workspace build: libc's musl
+`sched_param` contains additional reserved fields, so the priority-only literal
+did not compile. The raw failing job is `111245482634`.
+
+Selfdrived now zero-initializes the complete libc structure before assigning
+priority 53. The `/TICI` guard, FIFO scheduling, core 6 placement and syscall
+error propagation are unchanged. A callback regression observes the actual
+production initializer's PID, policy and priority without changing host
+scheduling. An isolated proof crate includes the production module and retains
+the exact old module as a separate failing control. With libc 0.2.189, the old
+module reproduces the musl error and the new module passes the same target
+check. The callback test passes natively and under pinned Miri's default,
+strict-provenance and Tree Borrows configurations. These checks cover the
+initializer; hosted CI still supplies the full static workspace build gate.
