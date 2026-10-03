@@ -38,7 +38,7 @@ pub(crate) mod enum_wire {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Alert {
     pub alert_text_1: String,
-    pub alert_text_2: String,
+    pub alert_text_2: Option<String>,
     #[serde(with = "enum_wire")]
     pub alert_status: AlertStatus,
     #[serde(with = "enum_wire")]
@@ -54,11 +54,21 @@ pub struct Alert {
     pub event_type: Option<EventType>,
 }
 
+#[derive(Debug, thiserror::Error)]
+#[error("null alertText2 rejected at cereal encoding")]
+pub struct MissingAlertText;
+
+impl Alert {
+    pub fn wire_text_2(&self) -> Result<&str, MissingAlertText> {
+        self.alert_text_2.as_deref().ok_or(MissingAlertText)
+    }
+}
+
 impl Default for Alert {
     fn default() -> Self {
         Self {
             alert_text_1: String::new(),
-            alert_text_2: String::new(),
+            alert_text_2: Some(String::new()),
             alert_status: AlertStatus::Normal,
             alert_size: AlertSize::None,
             priority: Priority::Lowest,
@@ -87,6 +97,9 @@ pub struct AlertManager {
 }
 
 impl AlertManager {
+    pub fn current(&self) -> &Alert {
+        &self.current
+    }
     pub fn entries(&self) -> &[AlertEntry] {
         &self.entries
     }

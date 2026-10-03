@@ -133,7 +133,7 @@ fn normal(first: impl Into<String>, second: impl Into<String>) -> Alert {
         } else {
             AlertSize::Mid
         },
-        alert_text_2: second,
+        alert_text_2: Some(second),
         priority: Priority::Lower,
         duration: 20,
         ..Alert::default()
@@ -184,7 +184,7 @@ impl Context<'_> {
         };
         Alert {
             alert_text_1: first,
-            alert_text_2: second,
+            alert_text_2: Some(second),
             alert_size: AlertSize::Mid,
             priority: Priority::Low,
             audible_alert: AudibleAlert::Refuse,
@@ -221,7 +221,7 @@ impl Context<'_> {
                         "TAKE CONTROL IMMEDIATELY"
                     }
                     .into(),
-                    alert_text_2: text.clone(),
+                    alert_text_2: Some(text.clone()),
                     alert_status: if immediate {
                         AlertStatus::Critical
                     } else {
@@ -245,7 +245,7 @@ impl Context<'_> {
             }
             Callback::StartupMasterAlert => Alert {
                 alert_text_1: "WARNING: This branch is not tested".into(),
-                alert_text_2: if self.replay { "replay" } else { self.branch }.into(),
+                alert_text_2: Some(if self.replay { "replay" } else { self.branch }.into()),
                 alert_status: AlertStatus::UserPrompt,
                 alert_size: if self.mici {
                     AlertSize::Small
@@ -284,10 +284,10 @@ impl Context<'_> {
                         }),
                     )
                     .replace("{percent:.0f}", &s.calibration_percent.to_string()),
-                alert_text_2: self.tr("Drive Above {speed}").replace(
+                alert_text_2: Some(self.tr("Drive Above {speed}").replace(
                     "{speed}",
                     &self.display_speed(15.0 * (1.609344 * (1.0 / 3.6)))?,
-                ),
+                )),
                 alert_size: AlertSize::Mid,
                 duration: 20,
                 ..Alert::default()
@@ -310,11 +310,8 @@ impl Context<'_> {
                 }
             }
             Callback::TorqueNnLoadAlert => {
-                let name = self
-                    .params
-                    .text("NNFFModelName")?
-                    .ok_or(Error::MissingText("NNFFModelName"))?;
-                let empty = name.is_empty();
+                let name = self.params.text("NNFFModelName")?;
+                let empty = name.as_deref() == Some("");
                 Alert {
                     alert_text_1: if empty {
                         "NNFF Torque Controller not available"
@@ -323,7 +320,7 @@ impl Context<'_> {
                     }
                     .into(),
                     alert_text_2: if empty {
-                        "Donate logs to Twilsonco to get it added!".into()
+                        Some("Donate logs to Twilsonco to get it added!".into())
                     } else {
                         name
                     },
@@ -468,7 +465,7 @@ impl Context<'_> {
             ),
             Callback::LongitudinalManeuverAlert => Alert {
                 alert_text_1: s.debug_text_1.clone(),
-                alert_text_2: s.debug_text_2.clone(),
+                alert_text_2: Some(s.debug_text_2.clone()),
                 alert_status: if s.debug_text_1.contains("Active") {
                     AlertStatus::UserPrompt
                 } else {
@@ -524,11 +521,11 @@ impl Context<'_> {
                         "CAN Error: Check Connections!!"
                     }
                     .into(),
-                    alert_text_2: if hint {
+                    alert_text_2: Some(if hint {
                         "SCC detected on camera bus".into()
                     } else {
                         self.params.text("CanParserResult")?.unwrap_or_default()
-                    },
+                    }),
                     alert_size: if hint {
                         AlertSize::Mid
                     } else {

@@ -5,6 +5,11 @@ The complete component is tracked in
 #1. Its preimplementation scope is in
 [the runtime contract](../rust-port/selfdrived-contract.md).
 
+Current status: the native component has reviewed host evidence, ARM/QEMU
+controller/runtime evidence and offline dynamic linkage against the pinned AGNOS
+image. Complete manager startup/log upload and user device acceptance remain
+open. The earlier sections below record the implementation stages.
+
 The first verified stage implements the engagement state machine. All five
 source states, ten event categories, disable/pre-enable/override precedence,
 300-cycle soft-disable expiry and alert-category ordering are retained. Three
@@ -138,3 +143,113 @@ patterns preserve these values through the fixture protocol. Source SHA256 is
 native example SHA256 is
 `e16e0f55bb130f0a13a5c0ee7b2496efa49071f04ece078180573fe3d9963589`.
 Bounded build, strict library/example Clippy, Ruff and diff checks passed.
+
+## Complete continuous host component (2026-10-02)
+
+The interrupted controller/runtime changes are now completed and independently
+verified. `rust/crates/selfdrived/src/controller/` owns source sampling, event
+generation, health gates, pose/actuation integration, alert resolution and wire
+publication. `runtime/` owns physical Params, sockets, Ratekeeper, settings
+refresh and cleanup. The native executable has no runtime Python dependency;
+captured `/proc` executable identities and maps verify the process used in QA.
+The original msgq/VisionIPC CXX boundary and libzmq remain native dependencies.
+
+Null second alert text now survives every source phase up to selected-alert
+wire assignment; both implementations fail there. Ordered effects, manager
+state and earlier publication behavior compare exactly. Process-failure logs
+retain source set-repr text instead of a JSON array, including quotes, controls
+and Unicode. Only unspecified set order is normalized in the oracle.
+
+Evidence is retained inside this worktree at
+`.omo/evidence/selfdrived-resume-20261002/`. `LEDGER.md` gives the exact scenario,
+invocation, binary observable and captured paths for each completion criterion.
+`receipt.json` binds authoritative and owned source hashes, executed ELF hashes,
+artifact sizes/hashes, the preserved dirty base and limits. The `proof/` directory
+retains exact executable hardlinks without additional binary disk allocation.
+
+| Criterion | Fresh observed result | Evidence directory/file |
+| --- | --- | --- |
+| All five engagement states/category/timer boundaries | 51,023 exact steps, including 30,720 exhaustive single steps | `state-verified/result.json` |
+| Alert tie/expiry/replacement and event storage/translation/callback dispatch | 25,000 manager steps and 4,872 event steps exactly match source | `alert-manager-verified/manifest.json`, `events-verified/manifest.json` |
+| All 24 callback kinds and source failure phase | 15,876 cases across tici/mici and 12 languages; 204 original exceptions retained | `callbacks-verified/manifest.json`, `source-exceptions.json` |
+| Full controller, Params effects, health/state and actual wire | 295 requests / 9,436 steps exactly match; source personality KeyError and cereal KjException retained | `controller-verified/manifest.json`, `source-coverage.json` |
+| Pose, actuation and camera policy | 10,241 source steps; discrete results exact, pose tolerance 2e-12 | `helpers-verified/report.json` |
+| Ratekeeper lagging and all moving-average state | 20,000 exact steps | `ratekeeper-verified/manifest.json` |
+| Owned continuous start/engagement/nonconflated inputs/settings/stop/restart | Two native starts, two ten-message queue bursts, two Params refreshes, both publications and SIGINT joins | `ipc-verified/manifest.json`, message captures and `native-processes.json` |
+| Startup/input/runtime rejection and bounded exit | Nine real-process scenarios: waiting SIGTERM, malformed CP, fatal integer SIGABRT, wrong union, malformed state, unknown gear/personality, null alert text, 20-frame exit | `failures-verified/manifest.json`, per-scenario captures and bounded queue bytes |
+| Package and messaging seam regressions | Nine selfdrived tests and seven messaging tests pass; no failed/ignored tests in their full runs | `test.log`, `messaging-test.log` |
+| Build/lint/format/CLI | Selected native executable/examples build; all-target strict Clippy, Rustfmt, Ruff and help/bad-argument exits pass | `build-final.log`, `clippy.log`, `validation.json`, CLI captures |
+
+The complete car-specific policy is unchanged from the separately recorded
+29,787-step proof. Its exact retained ELF and all owned/authoritative source
+hashes were rechecked before reuse; `car-policy-receipt-check.json` records that
+audit. No unverified old report is used as a current-binary lifecycle result.
+
+Early continuation failures remain captured: wrong Python module search path,
+process-log array/text mismatch, the Ratekeeper oracle's aliased mutable buffer,
+empty legitimate onroad event payload, and initial subscriber handshake loss.
+The corrected timing oracle copies each buffer snapshot. The bounded-frame
+check decodes the owned shared queue after exit and proves exactly 20 valid
+state messages, including frames initially missed by the connecting subscriber.
+
+Build preflights preserved the required free-space floor and the coordinated
+statsd cache budget; incremental compilation was disabled. The existing large
+callback catalog dispatcher is retained as one exhaustive source mapping;
+new controller/runtime production modules remain below 200 pure lines.
+No production selection changed. At that host checkpoint, ARM/AGNOS execution, actual FIFO/core
+placement, complete normal startup/log upload and user vehicle comparison remain
+#1 integration/acceptance work. No device, vehicle, physical CAN or NAS was used.
+
+## ARM continuation (2026-10-03)
+
+Before this continuation, all 80 files in the independent host review matched
+their recorded hashes. The native production code remains unchanged; only the
+IPC checker gains an explicit underlying ELF argument for emulated execution,
+and the manager catalog records the available native candidate. Source process
+selection and the original onroad predicate remain unchanged.
+
+The retained ARM executable is
+`917bf13e83977ed9026c0585c76dd42194305482e6cf24d1ca29873a29c51b1c`.
+The bounded package build and two example builds passed with incremental
+compilation disabled and a checked disk reserve. ARM controller replay exactly
+matches all 295 retained host output records, representing 9,436 steps; the
+Ratekeeper replay matches 20,000 records. The paired original-source/host input,
+output and result hashes were verified before reuse; the original Python source
+was not rerun for these architecture comparisons.
+
+Actual ARM main execution under QEMU passes two starts/restarts, both
+nonconflated ten-input bursts, both Params refreshes and SIGINT cleanup. Real
+subscribers received 47 selfdriveState and four onroadEvents messages. Captured
+maps and command lines identify the retained ARM ELF and QEMU, with no libpython.
+All nine real-process rejection/termination scenarios also pass, including
+SIGABRT on the source fatal integer conversion and exactly 20 queued messages
+for the bounded run. Message counts depend on emulation scheduling and are not
+a target performance measurement.
+
+Nine selfdrived and seven messaging tests pass on ARM. The first Cargo test
+runner could not launch the two messaging test children: a retained execve trace
+shows ENOEXEC because nested ARM execution has no host binfmt handler. Those two
+unchanged test bodies were then launched through QEMU with the same isolated
+namespace and child environment, preserving every assertion. An initial direct
+runner used an invalid namespace prefix and failed the existing isolation guard;
+correcting that fixture prefix passed. The earlier five passing pure messaging
+tests were hash-checked and reused.
+
+The native catalog probe also passes all four onroad/offroad and car/not-car
+combinations, with outcomes false, false, true, true. Its initial host build
+encountered a stale shared-cache msgq build script from a different worktree.
+The rejected artifact is retained; invalidating only that script's compilation
+fingerprints and rebuilding resolves the absent-file failure without changing
+any source transport behavior.
+
+The actual AGNOS 19.8-carrot-bt1 loader resolves the ARM executable and its
+five-library closure offline. All required symbol versions and 562 strong
+references resolve against the previously hash-verified image libraries. This
+reuses those extracted files without another image download or expansion; it
+does not establish execution on AGNOS or physical scheduling behavior.
+
+Commands, rejected runs, exact executable copies, raw captures and reports are
+under the parent continuation directory
+`.analysis/scratch/2026-10-02-port-resume/selfdrived-arm/`. Host gates remain
+sealed in the earlier receipt. Full-runtime startup/log upload, retained
+project-owned C++ IPC conversion and later user device comparison remain open.

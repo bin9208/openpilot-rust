@@ -110,8 +110,15 @@ impl Events {
         }
     }
 
+    pub fn catalog(&self) -> &Catalog {
+        &self.catalog
+    }
+
     pub fn names(&self) -> &[EventName] {
         &self.events
+    }
+    pub fn static_names(&self) -> &[EventName] {
+        &self.static_events
     }
 
     pub fn counters(&self) -> &BTreeMap<u16, u64> {
@@ -181,7 +188,7 @@ impl Events {
                     } => callback(definition).map_err(CreateAlertError::Callback)?,
                 };
                 alert.alert_text_1 = translate(&alert.alert_text_1);
-                alert.alert_text_2 = translate(&alert.alert_text_2);
+                alert.alert_text_2 = alert.alert_text_2.as_deref().map(&mut translate);
                 if 0.01 * (self.counters[&u16::from(*event)] + 1) as f64 >= alert.creation_delay {
                     alert.alert_type = format!("{}/{}", definition.name, category.as_str());
                     alert.event_type = Some(*category);

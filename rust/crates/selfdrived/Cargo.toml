@@ -6,11 +6,19 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
-[lints]
-workspace = true
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
 
 [dependencies]
 capnp = "=0.27.2"
+openpilot-messaging = { path = "../messaging" }
+openpilot-msgq = { path = "../msgq" }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-runtime-version = { path = "../runtime-version" }
+openpilot-hardware-info = { path = "../hardware-info" }
+rustix = { version = "1", features = ["thread", "time"] }
+signal-hook = "0.3"
+libc = "0.2"
 openpilot-beepd = { path = "../beepd" }
 openpilot-calibrationd = { path = "../calibrationd", default-features = false }
 openpilot-cereal = { path = "../cereal" }

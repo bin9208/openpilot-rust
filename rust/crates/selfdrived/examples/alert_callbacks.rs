@@ -21,6 +21,8 @@ struct Request {
     replay: bool,
     mici: bool,
     nonfinite: Option<NonFinite>,
+    #[serde(default)]
+    wire_check: bool,
 }
 
 #[derive(Deserialize)]
@@ -165,7 +167,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             mici: request.mici,
         };
         let result = match context.resolve(&request.callback) {
-            Ok(alert) => json!({"alert":alert,"reads":params.reads}),
+            Ok(alert) => {
+                if request.wire_check {
+                    let mut message = capnp::message::Builder::new_default();
+                    let event: openpilot_cereal::log_capnp::event::Builder<'_> =
+                        message.init_root();
+                    match alert.wire_text_2() {
+                        Ok(text) => {
+                            event.init_selfdrive_state().set_alert_text2(text);
+                            json!({"alert":alert,"reads":params.reads})
+                        }
+                        Err(error) => json!({"error":error.to_string(),"reads":params.reads}),
+                    }
+                } else {
+                    json!({"alert":alert,"reads":params.reads})
+                }
+            }
             Err(error) => json!({"error":error.to_string(),"reads":params.reads}),
         };
         serde_json::to_writer(&mut output, &result)?;

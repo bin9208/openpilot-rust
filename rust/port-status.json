@@ -390,7 +390,11 @@
       "name": "selfdrived",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.selfdrived.selfdrived",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "implementation": "rust/crates/selfdrived; continuous native carState loop, engagement/events/alerts, complete car policy, calibrated pose/actuation checks, Params worker and cereal publications",
+      "native_dependencies": ["original msgq/VisionIPC through CXX", "libzmq native logging", "Linux clocks/signals/scheduling/filesystem", "Git executable for source build metadata"],
+      "runtime_scope": "source state/event/alert/callback/controller parity; ARM matches retained source-verified host controller/clock captures and passes native IPC restart/refresh plus nine failure cases under QEMU; offline linkage against the pinned AGNOS image passes. Runtime Python absent; core6/FIFO53 policy preserved in code. Actual AGNOS scheduling, complete manager startup/log upload and user device comparison remain pending under #1",
+      "evidence": "docs/naver/rust-selfdrived-168.md",
       "production_replaced": false
     },
     {

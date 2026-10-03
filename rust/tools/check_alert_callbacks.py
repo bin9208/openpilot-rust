@@ -133,9 +133,9 @@ def original(row, source):
       try:
         state.alertText2 = source['tr'](alert.alert_text_2)
       except capnp.KjException as error:
-        return {'error': 'missing alert text parameter NNFFModelName', 'reads': params.reads,
+        return {'error': 'null alertText2 rejected at cereal encoding', 'reads': params.reads,
                 'source_exception': {'class': type(error).__name__, 'message': str(error),
-                                     'phase': 'original wire construction; native callback resolution'}}
+                                     'phase': 'original/native wire construction'}}
       raise AssertionError('source unexpectedly accepted absent alert text')
     return {'alert': serialize_alert(alert), 'reads': params.reads}
   finally:
@@ -212,6 +212,7 @@ def rows():
       row.update(callback={'name': 'torque_nn_load_alert'}, language=language, mici=mici, wire_check=True)
       row['params']['NNFFModelName'] = None
       result.append(row)
+      result.append({**copy.deepcopy(row), 'wire_check': False})
   return result
 
 
