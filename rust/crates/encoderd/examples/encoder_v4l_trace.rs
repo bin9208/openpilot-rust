@@ -102,6 +102,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 timestamp_eof: 1_020_000_000 + u64::from(frame_id) * 50_000_000,
                 valid: true,
                 received: true,
+                index: 0,
+                fd: -1,
             };
             if encoder.encode(mapping, length, &metadata)? != i32::try_from(frame)? {
                 return Err("V4L frame counter".into());

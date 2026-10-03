@@ -3,7 +3,8 @@
 use openpilot_msgq::{VisionClient, VisionStream};
 use std::{
     env,
-    io::{BufRead, BufReader, Read, Write},
+    io::{BufRead, BufReader, Write},
+    os::unix::fs::FileExt,
     process::{Child, Command, Stdio},
     time::{Duration, Instant},
 };
@@ -217,7 +218,7 @@ fn original_server_camera_transport() {
     drop(client);
     let mut old_payload = vec![0; 96];
     std::fs::File::from(owned_fd)
-        .read_exact(&mut old_payload)
+        .read_exact_at(&mut old_payload, 0)
         .unwrap();
     assert_eq!(old_payload, retained);
     assert_eq!(retained[0], 7);

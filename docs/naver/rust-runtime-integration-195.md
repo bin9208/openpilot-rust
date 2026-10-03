@@ -1,7 +1,7 @@
 # Runtime composition validation (#195)
 
 [PR #195](https://github.com/bin9208/openpilot-rust/pull/195) composes the
-isolated Card, Selfdrived, Panda, camera and application UI candidates toward
+isolated Card, Selfdrived, Panda, camera, application UI and encoder candidates toward
 the complete runtime gate in [#1](https://github.com/bin9208/openpilot-rust/issues/1).
 It does not select the candidate for normal vehicle startup or establish device
 acceptance. Required inherited checks and separate Rust/ARM gates remain active.
@@ -65,7 +65,47 @@ The SPI investigation's 61-artifact receipt is
 The parent independently checked all recorded hashes. Its native probe is a
 retained earlier ELF; a fresh current-source build remains part of hosted CI.
 
-The repaired head still requires new exact-head Actions results. The complete
+## Encoder composition and repeatable gates
+
+The isolated encoder implementation was committed as `571a62cd` and merged with
+the camera/UI transport additions in `51797878`. All 81 workspace members remain
+present. Both synthetic encoder probes initialize the added VisionIPC metadata
+fields; publication still uses its separately owned mapping/descriptor.
+
+Composition exposed a test-only file-offset dependency: the UI-side descriptor
+test had already read a payload through a duplicated descriptor, so the later
+encoder ownership test started at the shared end position and observed EOF.
+The test now reads the retained descriptor explicitly at offset zero. Original
+descriptor sharing and runtime behavior are unchanged; the failure, syscall
+trace, corrected CXX baseline and frozen binaries are preserved in the IPC
+worktree's `.omo/evidence/native-ipc-194/baseline-*` records.
+
+`check_encoder_ci.py` selects the JPEG and ZeroMQ native build outputs from the
+current successful Cargo JSON stream, rejects missing or ambiguous selections,
+checks original Python binding origins and records source/binary identities.
+The new required `rust encoder runtime` job runs the complete original/native
+host matrix and uploads failed as well as successful evidence. The existing
+`rust aarch64 build` separately stages the exact reviewed FFmpeg/libyuv wheels,
+checks their locked source identity and archive hashes, and builds the daemon
+and both probes with static codecs and ION. It retains ELF headers, dependency
+versions and hashes; this hosted cross-build is not a new AGNOS device result.
+
+The parent exercised the complete new CI runner locally against fresh merged
+executables: five codec cases/112 exact packets, 28 scripted V4L cases and ten
+actual runtime cases/1,207 publications per implementation passed. Receipt:
+`.omo/evidence/runtime-195/encoder-ci-host/receipt.json`, SHA-256
+`186b3f8d4b9c7d0cd4b5e69105f4fbfb2dda23a163a0874deeced836c301b98a`.
+The merged daemon SHA-256 is
+`4e7a6f5ba6f8057bd1a853bd25888e55da4ebe57e4a0b882108c95b748b52794`.
+Original wheel staging also passed locally with all 164 native files checked;
+the Python package launchers are not installed. Eighteen focused staging,
+current-build-selection and failure-detection checks passed. The first local
+merge build encountered a CMake cache tied to the prior worktree; that cache was
+preserved with its hashes before reconfiguration, separately from the compile
+failure that exposed the two probe metadata initializers.
+
+Shared transport/encoder/catalog tests, Rust Clippy and pinned formatting remain
+required alongside the source comparisons. The complete
 normal-startup/log-upload candidate, remaining process conversion and removal of
 the project-owned C++ IPC implementation remain open. No C3X or other vehicle
 was connected or tested.
