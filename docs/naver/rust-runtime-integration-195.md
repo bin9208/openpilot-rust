@@ -118,3 +118,73 @@ missing-result propagation, and checks the actual encoder binding environment
 and pinned ARM job. The original hosted failure and matching local failure are
 retained; all 26 CI routing tests and eight inherited integration-policy tests
 pass after the test correction. A new final-head hosted run is still required.
+
+## Second exact-head run and repairs
+
+The complete [PR run for `9b692a5c`](https://github.com/bin9208/openpilot-rust/actions/runs/37134532321)
+passed the encoder, UI, Selfdrived and the other unchanged runtime jobs. Five
+jobs failed and blocked the aggregate. Card and workspace both encountered a
+second strict dependency-list assertion missing `encoder-runtime`; the assertion
+now includes it, preserving exact required-job checking.
+
+Panda reached its spidev comparison after the SPI repair, but its builder and
+checker both used `oracles/spidev`. The checker deliberately requires a fresh
+output directory and rejected the builder's existing directory. The builder now
+owns `spidev-src`, while comparison evidence retains `spidev`. A regression
+creates both directories through the real runner's dispatch and reproduces the
+old collision before the repair.
+
+Camera completed its comparisons and all eight runtime cases, then artifact
+upload rejected colon-bearing failure-case directory names such as
+`error-1-camera:271`. Both camera and sensor lifecycle checkers now percent-encode
+only the evidence directory name. Original scenario names, failure selectors and
+comparison rules are unchanged. Tests exercise the actual output-writing paths,
+including a percent-bearing name that must not collide. They stub external
+process execution and do not establish new camera runtime validation. The prior
+hosted camera artifact was not uploaded; only its job log is retained.
+
+The pinned encoder ARM release step failed with unresolved x264, zlib and VA
+symbols. The local compiler wrapper had caused Rust to select LLD, whereas the
+hosted cross-compiler name selected GNU BFD. A local BFD run reproduced the exact
+missing symbols. Dependencies bundled into `openpilot-encoderd`'s rlib appeared
+before `ffmpeg-sys-next`; BFD did not revisit them when FFmpeg introduced the
+references. Merely disabling bundling did not change that order. The final
+encoder link now passes the explicit static dependency archives after the Rust
+rlibs, with a group for their mutual references and the GCC atomic support used
+by pinned x264. The production codec sources, packages and runtime behavior are
+unchanged.
+
+All three encoder executables then built with GNU BFD in the pinned release
+profile. The fresh codec executable, SHA-256
+`c7c17061890c247e04dbd35fee485cf16365b8753173543048f806dc93ebc1fc`,
+passed five source comparisons and 112 exact packets under the extracted AGNOS
+loader. The parent verified every one of the 748 captured artifact hashes.
+Receipt: `.omo/evidence/runtime-195/encoder-release-bfd-codecs/receipt.json`,
+SHA-256 `2f1120bb1f95aa5619cbd8d47ffdfecf2535326a503ee453132a61ceca92424e`.
+The initial local LLD success, failed BFD attempts, complete BFD build and all
+three frozen executables remain separately identifiable in the evidence root.
+
+The path/routing repair passes 15 focused tests, 26 CI routing checks and eight
+inherited policy tests. Pinned workspace formatting also passes. These results
+authorize a new exact-head CI run; they do not replace its required result or
+the later full-startup/device acceptance gate.
+
+## Static musl scheduler initialization
+
+The [next PR run for `9fcf24de`](https://github.com/bin9208/openpilot-rust/actions/runs/37137697986)
+passed every host runtime job, including the repaired Card, Panda and camera
+jobs. The ARM job passed the encoder GNU BFD build and subsequent native daemon
+builds, then failed in the final static musl workspace build: libc's musl
+`sched_param` contains additional reserved fields, so the priority-only literal
+did not compile. The raw failing job is `111245482634`.
+
+Selfdrived now zero-initializes the complete libc structure before assigning
+priority 53. The `/TICI` guard, FIFO scheduling, core 6 placement and syscall
+error propagation are unchanged. A callback regression observes the actual
+production initializer's PID, policy and priority without changing host
+scheduling. An isolated proof crate includes the production module and retains
+the exact old module as a separate failing control. With libc 0.2.189, the old
+module reproduces the musl error and the new module passes the same target
+check. The callback test passes natively and under pinned Miri's default,
+strict-provenance and Tree Borrows configurations. These checks cover the
+initializer; hosted CI still supplies the full static workspace build gate.

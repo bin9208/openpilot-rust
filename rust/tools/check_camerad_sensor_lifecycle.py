@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+from urllib.parse import quote
 
 from check_camerad_kernel import digest, disable_core
 
@@ -45,7 +46,7 @@ def main() -> None:
   for name, port, enabled, overrides in cases:
     compared = []
     for lane, binary in [("source", args.source), ("native", args.native)]:
-      folder = args.output / name / lane
+      folder = args.output / quote(name, safe='-_.') / lane
       folder.mkdir(parents=True, exist_ok=True)
       trace = folder / "trace.jsonl"
       trace.unlink(missing_ok=True)
