@@ -91,6 +91,20 @@ impl VisionClient {
             metadata,
         }))
     }
+
+    /// Encoder opt-in matching the original receive-only loop after disconnection.
+    /// Validated imported buffers must exist. This method never reconnects automatically.
+    pub fn receive_retained(
+        &mut self,
+        timeout: Duration,
+    ) -> Result<Option<VisionFrame<'_>>, Error> {
+        let milliseconds = i32::try_from(timeout.as_millis()).map_err(|_| Error::TimeoutRange)?;
+        let metadata = self.connection.pin_mut().receive_retained(milliseconds)?;
+        Ok(metadata.received.then_some(VisionFrame {
+            client: self,
+            metadata,
+        }))
+    }
 }
 
 /// Keeps the imported mapping alive and excludes another receive/reconnect.
@@ -103,6 +117,12 @@ pub struct VisionFrame<'a> {
 impl VisionFrame<'_> {
     pub fn metadata(&self) -> &VisionMetadata {
         &self.metadata
+    }
+
+    /// Borrowed FD/scalars, without a camera-memory slice or producer lease.
+    /// Duplicate the FD before retaining it beyond this frame's lifetime.
+    pub fn descriptor(&self) -> Result<crate::VisionBufferDescriptor<'_>, Error> {
+        crate::vision_buffer::descriptor(&self.client.connection)
     }
 
     /// Copies the original mapped bytes into exactly `metadata().len` bytes.

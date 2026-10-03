@@ -27,6 +27,16 @@ pub(crate) mod ffi {
         fd: i32,
     }
 
+    #[derive(Debug, Clone, Copy)]
+    struct BufferDescriptor {
+        fd: i32,
+        mmap_len: usize,
+        data_len: usize,
+        index: usize,
+        server_id: u64,
+        buffer_frame_id: u64,
+    }
+
     // SAFETY: C++ owns the original client and mapped buffers in UniquePtr.
     // It copies only into a checked exclusive destination, retains no Rust
     // borrow and returns metadata by value. No shared camera slice crosses FFI.
@@ -43,6 +53,11 @@ pub(crate) mod ffi {
         fn connected(self: &VisionConnection) -> bool;
         fn layout(self: &VisionConnection) -> ConnectionLayout;
         fn receive(self: Pin<&mut VisionConnection>, timeout_ms: i32) -> Result<VisionMetadata>;
+        fn receive_retained(
+            self: Pin<&mut VisionConnection>,
+            timeout_ms: i32,
+        ) -> Result<VisionMetadata>;
+        fn frame_descriptor(self: &VisionConnection) -> Result<BufferDescriptor>;
         fn copy_frame(self: &VisionConnection, destination: &mut [u8]) -> Result<()>;
     }
 
