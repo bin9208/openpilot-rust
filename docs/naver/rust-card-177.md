@@ -208,6 +208,44 @@ verified the frozen source/ELF identities and closed with no findings. Its
 `2afe9179eda7f9b26cab195ffe9b44aa5cba8d71571db8100c59848fa28e578e`.
 Exact-head hosted checks remain required after this repair.
 
+Head `540612257ce27775d13fc81802371408da4e074a` then passed the push Rust run
+[37123213229](https://github.com/bin9208/openpilot-rust/actions/runs/37123213229),
+but PR run [37123214759](https://github.com/bin9208/openpilot-rust/actions/runs/37123214759)
+failed the Nissan X-Trail exact comparison. Its preserved raw artifact SHA256 is
+`5fa1aa6e355bc33eeda61137293259dbf056850fb2db01acd203c4693a8354b1`.
+After consuming the last startup CAN, the original process continued through
+two normal empty-CAN waits at 20.796 and 41.680 ms while the unfenced fixture
+observed startup completion. This left counter 2 in every setup/measured state;
+the native lane retained 0. Both lanes' 320 setup and 80 measured packets were
+otherwise ordered and complete. The observed pause is a fixture boundary;
+its host scheduling cause is not established. No error count is subtracted or
+discarded to make the comparison pass.
+
+The Python harness now arms the existing frame-0 fence before process launch,
+observes its actual completed-step stop, and pauses the startup pump while the
+receiver is already stopped. It resumes only to consume already queued startup
+packets, one fenced step at a time, until the last sent timestamp is observed.
+Every initial CP/CS/CO and nonempty CAN step must be present, with counter 0.
+The original constructor, production Rust, native ELF and runtime timeouts are
+unchanged. The setup fence is still removed before the independent stream.
+
+The exact old helpers reproduce five startup empty-CAN steps in both lanes
+under deliberate 100 ms observer delays before/after pause acknowledgment.
+With the repaired helpers, both Nissan lanes retain two nonempty startup steps,
+including the queued tail, and counter 0 under the same delays. A fresh full
+matrix passes all 19 profiles, 1,520 measured steps and 12,160 setup steps across
+both lanes; post-stream timeout increments, SIGINT and Params drain pass.
+Seven focused tooling tests and Ruff pass. Evidence is retained under
+`.omo/evidence/card-startup-fence/`; its receipt SHA256 is
+`e8e927db02a8b6d232d6accfe6fe6ff23eabaf4e0b3016aa779740364abf4071`.
+The two-helper source archive is bound to both successful captures; 454 prior
+source files and the executed native ELF are unchanged. The single final
+independent review passes with no actionable findings after recomputing all
+19 pairs, controlled RED/GREEN, source/ELF mappings and shutdown outcomes.
+Its 564-artifact receipt SHA256 is
+`c1322172e398d7248294038342644a369d35bbcd7d008ac5249298b7321ba6db`.
+New exact-head hosted checks remain required before merge.
+
 A separate ARM replay passes 17 full vehicle traces / 7,700 frames across the
 six added brands, with exact raw JSON equality to the retained source-equivalent
 host results. Original Python oracles were reused without rerunning unchanged

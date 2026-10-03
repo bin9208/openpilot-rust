@@ -9,7 +9,7 @@ import subprocess
 import time
 
 from card_qa.runtime_pump import WARMUP_FRAMES
-from card_qa.runtime_pumped_types import Publications, RuntimePeer
+from card_qa.runtime_pumped_types import Publications, RuntimePeer, Subscriber
 
 
 def arm(output: Path, frame: int) -> None:
@@ -18,8 +18,8 @@ def arm(output: Path, frame: int) -> None:
   pending.replace(output / 'phase-fence')
 
 
-def wait_stopped(process: subprocess.Popen, collect: Callable[[], None]) -> None:
-  deadline = time.monotonic() + 30
+def wait_stopped(process: subprocess.Popen, collect: Callable[[], None], timeout: float = 30) -> None:
+  deadline = time.monotonic() + timeout
   while True:
     collect()
     pid, status = os.waitpid(process.pid, os.WUNTRACED | os.WNOHANG)
@@ -28,6 +28,47 @@ def wait_stopped(process: subprocess.Popen, collect: Callable[[], None]) -> None
       return
     assert time.monotonic() < deadline, 'completed-step fixture fence not observed'
     time.sleep(.001)
+
+
+def startup(process: subprocess.Popen, pump: subprocess.Popen, subscribers: dict[str, Subscriber], output: Path) -> Publications:
+  from card_qa.runtime_pumped_capture import OUTPUTS, drain, pause_pump
+  rows = {name: [] for name in OUTPUTS}
+  deadline = time.monotonic() + 60
+
+  def collect() -> None:
+    assert time.monotonic() < deadline, 'fenced startup setup timed out'
+    assert pump.poll() is None, pump.returncode
+    for name, values in drain(subscribers).items():
+      rows[name].extend(values)
+
+  wait_stopped(process, collect, timeout=60)
+  pause_pump(output)
+  collect()
+  sends = [json.loads(line) for line in (output / 'pump/sends.jsonl').read_text().splitlines()]
+  timestamps = [row['timestamp'] for row in sends if row['mode'] == 'startup']
+  assert timestamps, 'no startup CAN sends'
+  completed = []
+  while True:
+    trace = [json.loads(line) for line in (output / 'frequency.jsonl').read_text().splitlines()]
+    assert trace[-1]['frame'] == len(completed)
+    completed.append(trace[-1]['frame'])
+    collect()
+    assert len(rows['carState']) == len(rows['carOutput']) == len(completed), 'startup publication missing'
+    assert rows['carParams'], 'startup CarParams publication missing'
+    row = rows['carState'][-1]['carState']
+    (output / 'initial-raw.json').write_text(json.dumps(rows) + '\n')
+    assert row['canErrorCounter'] == 0 and row['radarInput']['canPacketCount'] > 0, row
+    if row['radarInput']['lastCanMonoTime'] == timestamps[-1]:
+      break
+    assert row['radarInput']['lastCanMonoTime'] in timestamps
+    arm(output, len(completed))
+    process.send_signal(signal.SIGCONT)
+    wait_stopped(process, collect)
+  (output / 'startup-fence.json').write_text(json.dumps({'mode': 'completed_step_fixture_setup',
+    'completed_frames': completed, 'startup_sends': len(timestamps),
+    'last_send_monotonic_ns': timestamps[-1], 'observed_stop_monotonic_ns': time.monotonic_ns(),
+    'startup_states': len(rows['carState'])}) + '\n')
+  return rows
 
 
 def warmup(context: RuntimePeer) -> Publications:
