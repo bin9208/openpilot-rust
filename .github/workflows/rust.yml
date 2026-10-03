@@ -355,7 +355,7 @@ jobs:
           python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
           python tools/check_card_hyundai_state.py "$HYUNDAI_FIXTURE_DIR"
           python tools/check_card_hyundai_controller.py "$HYUNDAI_FIXTURE_DIR"
-          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests/test_card_ci.py -q
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests/test_card_ci.py tools/tests/test_card_phase_fence.py -q
       - name: Require source and native Card and CAN functional gates
         run: |
           python rust/tools/check_card_ci.py --phase reference --binaries "$GITHUB_WORKSPACE/rust/target/debug/examples" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-card" --numerics "$RUNNER_TEMP/card-native/numerics" --binding "$CARD_PARAMS_BINDING" --dbc "$HYUNDAI_DBC_DIR" --corpus "$RUNNER_TEMP/card-native/corpus" --evidence "$RUNNER_TEMP/card-native/reference"
