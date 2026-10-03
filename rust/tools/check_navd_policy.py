@@ -97,6 +97,7 @@ def main() -> None:
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--binding', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
+  parser.add_argument("--runner", nargs=argparse.REMAINDER, default=[])
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=False)
   load(args.binding.resolve(), 'ipc://' + str((args.output / 'source-log').resolve()), args.output / 'logs')
@@ -108,7 +109,7 @@ def main() -> None:
   payload = ''.join(json.dumps(row) + '\n' for row in inputs)
   (args.output / 'inputs.jsonl').write_text(payload)
   (args.output / 'source.json').write_text(json.dumps(source, indent=2) + '\n')
-  command = [str(args.binary.resolve())]
+  command = [*args.runner, str(args.binary.resolve())]
   process = subprocess.run(command, input=payload, capture_output=True, text=True, check=False, timeout=20)
   (args.output / 'native.jsonl').write_text(process.stdout)
   (args.output / 'native.stderr').write_text(process.stderr)

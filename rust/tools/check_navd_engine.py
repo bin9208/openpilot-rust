@@ -29,6 +29,7 @@ def main() -> None:
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--binding', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
+  parser.add_argument("--runner", nargs=argparse.REMAINDER, default=[])
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=False)
   load(args.binding.resolve(), 'ipc://' + str((args.output / 'source-log').resolve()), args.output / 'logs')
@@ -44,7 +45,7 @@ def main() -> None:
     payload = json.dumps(case) + '\n'
     (output / 'input.json').write_text(payload)
     (output / 'source.json').write_text(json.dumps(source, indent=2) + '\n')
-    process = subprocess.run([str(args.binary.resolve())], input=payload, text=True, capture_output=True, check=False, timeout=30)
+    process = subprocess.run([*args.runner, str(args.binary.resolve())], input=payload, text=True, capture_output=True, check=False, timeout=30)
     (output / 'native.json').write_text(process.stdout)
     (output / 'native.stderr').write_text(process.stderr)
     if process.returncode:

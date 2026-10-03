@@ -110,7 +110,7 @@ def source(url):
     return {'ok': False, 'error': repr(error)}
 
 
-def compare(case, binary, output):
+def compare(case, binary, output, runner):
   name, responses = case
   path = output / name
   path.mkdir()
@@ -122,7 +122,7 @@ def compare(case, binary, output):
       if implementation == 'source':
         result = source(server.url)
       else:
-        process = subprocess.run([str(binary)], input=json.dumps(server.url) + '\n', text=True,
+        process = subprocess.run([*runner, str(binary)], input=json.dumps(server.url) + '\n', text=True,
                                  capture_output=True, check=False, timeout=25)
         (path / 'native.stdout').write_text(process.stdout)
         (path / 'native.stderr').write_text(process.stderr)
@@ -152,6 +152,7 @@ def main():
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--timeouts', action='store_true')
+  parser.add_argument("--runner", nargs=argparse.REMAINDER, default=[])
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=False)
   corpus = cases()
@@ -159,7 +160,7 @@ def main():
     corpus.extend([('header_timeout', [{'header_delay': 11}]), ('body_timeout', [{'body_delay': 11}]),
                    ('progress_beyond_total_timeout', [{'drip': 5.5}])])
   with ThreadPoolExecutor(max_workers=4) as executor:
-    results = list(executor.map(lambda case: compare(case, args.binary.resolve(), args.output), corpus))
+    results = list(executor.map(lambda case: compare(case, args.binary.resolve(), args.output, args.runner), corpus))
   root = Path(__file__).resolve().parents[2]
   files = [Path(__file__), args.binary, root / 'openpilot/selfdrive/navd/navd.py',
            root / 'rust/crates/http-transport/src/lib.rs', *sorted((root / 'rust/crates/navd').rglob('*.rs'))]

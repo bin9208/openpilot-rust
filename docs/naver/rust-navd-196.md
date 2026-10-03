@@ -1,8 +1,9 @@
 # Native navigation runtime: issue 196
 
 The navigation daemon and destination command have a native Rust implementation
-with host source comparisons. ARM, composed IPC, exact-head CI and full startup
-remain integration gates. This is one stage of [issue 1](https://github.com/bin9208/openpilot-rust/issues/1),
+with host and ARM source comparisons, including native Rust IPC and the extracted
+AGNOS loader. Exact-head CI and full startup remain integration gates. This is one
+stage of [issue 1](https://github.com/bin9208/openpilot-rust/issues/1),
 tracked in [issue 196](https://github.com/bin9208/openpilot-rust/issues/196).
 Production process selection is unchanged. No vehicle was connected or tested.
 
@@ -90,11 +91,36 @@ used two build jobs and disabled incremental compilation.
 
 ## Remaining integration
 
+After merging native IPC commit `f148b6b6`, the composed source is
+`340cc0b42ff7b214842b460289a013eda6fbcb70`. The host daemon in `native-v5/`,
+SHA-256 `f09e736d3b976eb439990a9a26988d8a0226f97496ada15aa6320bda2bc23a54`,
+passes all five continuous IPC scenarios in `native-ipc-host/report.json`.
+Historical `native-v4/` host comparisons above retain their CXX dependency
+boundary; they are not relabeled as native IPC results.
+
+All six commands/probes were built in the release profile for GNU aarch64 with
+GNU BFD and frozen in `arm-v1/frozen/`. `arm-v1/receipt.json` records their
+source revision, current Cargo artifact selection and hashes. Under QEMU and
+the GNU sysroot, the same complete comparison suites pass: 527 policy cases,
+15 engine scenarios/76 steps, 36 HTTP cases including actual timeout behavior,
+26 authentication cases, 75 destination executions and five IPC scenarios.
+No floating-point tolerance was introduced for ARM. Checkers accept an explicit
+runner prefix while retaining the same comparison rules and native executable
+identity checks through the process mapping.
+
+The frozen ARM daemon, SHA-256
+`804c8b9fccae56e05c95e4bf27f673858216547478f261b4a62dc40eb7433201`,
+also starts through the loader and libraries extracted from the pinned
+AGNOS 19.8-carrot-bt1 image and passes all five actual IPC scenarios.
+`arm-v1/agnos-help.json` and `agnos-ipc/report.json` retain those results.
+These are emulated user-space/loader checks, not an execution on vehicle
+hardware. Runtime diagnostics still depend on external ZeroMQ and its C++
+standard library; the project-owned msgq implementation is Rust.
+
 The required `rust navigation runtime` job runs the host source and actual
 transport checks; `rust aarch64 build` includes both native commands and probes.
-Their final revision results are still required. The current host receipts used
-the prior CXX-backed transport; native IPC issue 194 composition must revalidate
-its consumers. Historical receipts will retain their actual dependency boundary.
+Their final revision results are still required. Other native IPC consumers
+continue through their separate composition checks.
 Linux facilities, ZeroMQ diagnostics, routing servers and TLS roots remain
 external dependencies. Complete manager startup, existing log upload and the
 user's first device comparison remain outstanding under issue 1. No CPU savings

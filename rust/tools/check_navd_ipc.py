@@ -49,7 +49,7 @@ class Peer:
       command = [sys.executable, str(ROOT / 'rust/tools/navd_runtime_source.py'), '--binding', str(args.binding.resolve()),
                  '--host', host, '--output', str(output)]
     else:
-      command = [str(args.binary.resolve()), '--mapbox-host', host]
+      command = [*args.runner, str(args.binary.resolve()), '--mapbox-host', host]
     self.command = command
     self.stdout = (output / 'stdout.log').open('w')
     self.stderr = (output / 'stderr.log').open('w')
@@ -129,7 +129,11 @@ def run(implementation, scenario, args):
     identity = {'command': peer.command, 'exe': os.readlink(f'/proc/{peer.process.pid}/exe'),
                 'maps': Path(f'/proc/{peer.process.pid}/maps').read_text()}
     if implementation == 'native':
-      assert identity['exe'] == str(args.binary.resolve()) and 'libpython' not in identity['maps']
+      assert 'libpython' not in identity['maps']
+      if args.runner:
+        assert str(args.binary.resolve()) in identity['maps'], identity
+      else:
+        assert identity['exe'] == str(args.binary.resolve())
     (output / 'identity.json').write_text(json.dumps(identity, indent=2) + '\n')
     if scenario in ('interrupt_http', 'terminate'):
       if scenario == 'interrupt_http':
@@ -196,6 +200,7 @@ def main():
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--binding', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
+  parser.add_argument("--runner", nargs=argparse.REMAINDER, default=[])
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=False)
   comparisons = []

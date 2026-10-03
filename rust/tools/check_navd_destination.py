@@ -30,6 +30,7 @@ def main():
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--binding', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
+  parser.add_argument("--runner", nargs=argparse.REMAINDER, default=[])
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=False)
   source = Path(__file__).with_name('navd_destination_source.py')
@@ -51,7 +52,7 @@ def main():
       env = dict(os.environ, PARAMS_ROOT=str(params.parent.resolve()))
       env.pop('OPENPILOT_PREFIX', None)
       command = ([sys.executable, str(source), '--binding', str(args.binding.resolve()), '--output', str(output.resolve())]
-                 if implementation == 'source' else [str(args.binary.resolve())])
+                 if implementation == 'source' else [*args.runner, str(args.binary.resolve())])
       if implementation == 'native':
         command.extend(case['arguments'])
       process = subprocess.run(command, input=json.dumps(case['arguments']).encode(), env=env,
