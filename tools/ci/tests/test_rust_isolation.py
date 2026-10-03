@@ -226,7 +226,7 @@ class RustIsolationTests(unittest.TestCase):
             'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
-            'card-runtime', 'selfdrive-runtime', 'camera-runtime', 'panda-runtime', 'ui-runtime', 'encoder-runtime',
+            'card-runtime', 'selfdrive-runtime', 'camera-runtime', 'panda-runtime', 'ui-runtime', 'encoder-runtime', 'navd-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -250,7 +250,8 @@ class RustIsolationTests(unittest.TestCase):
                                             'CAMERA': '${{ needs.camera-runtime.result }}',
                                             'PANDA': '${{ needs.panda-runtime.result }}',
                                             'UI_RUNTIME': '${{ needs.ui-runtime.result }}',
-                                            'ENCODER': '${{ needs.encoder-runtime.result }}'})
+                                            'ENCODER': '${{ needs.encoder-runtime.result }}',
+                                            'NAVD': '${{ needs.navd-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
@@ -263,6 +264,23 @@ class RustIsolationTests(unittest.TestCase):
                                                   capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
+
+    def test_navigation_requires_original_transport_auth_and_timer_evidence(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['navd-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('build_params_python.py', 'build_msgq_python.py', 'NAVD_PARAMS_BINDING',
+                         'requests==2.34.2', 'urllib3==2.7.0', 'PyJWT==2.14.0',
+                         '-p openpilot-navd --features native --bins --examples --locked',
+                         'check_navd_policy.py', 'check_navd_engine.py', 'check_navd_http.py', '--timeouts',
+                         'check_navd_config.py', 'check_navd_destination.py', 'check_navd_ipc.py'):
+            self.assertIn(required, commands)
+        self.assertTrue(any(step.get('if') == 'always()' and
+                            'navd-native/' in step.get('with', {}).get('path', '') for step in job['steps']))
+        arm = '\n'.join(step.get('run', '') for step in data['jobs']['arm64']['steps'])
+        self.assertIn('cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu', arm)
+        self.assertIn('release/openpilot-set-destination', arm)
 
     def test_encoder_requires_source_runtime_and_pinned_arm_artifacts(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)

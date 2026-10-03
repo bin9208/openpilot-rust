@@ -2608,6 +2608,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-navd"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "brotli-decompressor",
+ "capnp",
+ "charset-norm",
+ "cookie_store",
+ "crossbeam-channel",
+ "flate2",
+ "num-traits",
+ "openpilot-beepd",
+ "openpilot-cereal",
+ "openpilot-hardware-info",
+ "openpilot-http-transport",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-registration",
+ "openpilot-runtime-core",
+ "openpilot-uploader",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+ "ureq",
+ "url",
+]
+
+[[package]]
 name = "openpilot-panda-spi"
 version = "0.1.0"
 dependencies = [
