@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime, camera-runtime, panda-runtime, ui-runtime, encoder-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime, camera-runtime, panda-runtime, ui-runtime, encoder-runtime, navd-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -45,6 +45,7 @@ jobs:
           PANDA: ${{ needs.panda-runtime.result }}
           UI_RUNTIME: ${{ needs.ui-runtime.result }}
           ENCODER: ${{ needs.encoder-runtime.result }}
+          NAVD: ${{ needs.navd-runtime.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -69,6 +70,7 @@ jobs:
           test "$PANDA" = success
           test "$UI_RUNTIME" = success
           test "$ENCODER" = success
+          test "$NAVD" = success
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
@@ -541,6 +543,69 @@ jobs:
         with:
           name: rust-camera-runtime-evidence
           path: ${{ runner.temp }}/camera-native/
+          if-no-files-found: warn
+  navd-runtime:
+    name: rust navigation runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original navigation IPC imports
+        run: printf 'PYTHONPATH=%s/navd-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity and install navigation prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 urllib3==2.7.0 charset-normalizer==3.5.1 brotli==1.2.0 PyJWT==2.14.0 cryptography==50.0.1
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build original navigation Params and IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/navd-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/navd-native/msgq"
+          python -P -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"navd-native/params/provenance.json"; print("NAVD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+      - name: Build and test native navigation and its source probes
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-navd --features native --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-navd --features native --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-navd --features native --all-targets --locked -- -D warnings
+      - name: Compare navigation source policy, HTTP, authentication and destination CLI
+        run: |
+          python rust/tools/check_navd_policy.py --binary rust/target/debug/examples/navd_policy --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/policy"
+          python rust/tools/check_navd_engine.py --binary rust/target/debug/examples/navd_engine --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/engine"
+          python rust/tools/check_navd_http.py --binary rust/target/debug/examples/navd_http --output "$RUNNER_TEMP/navd-native/http" --timeouts
+          python rust/tools/check_navd_config.py --binary rust/target/debug/examples/navd_config --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/config"
+          python rust/tools/check_navd_destination.py --binary rust/target/debug/openpilot-set-destination --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/destination"
+      - name: Compare actual navigation IPC, restart timers and signal lifecycle
+        run: python rust/tools/check_navd_ipc.py --binary rust/target/debug/openpilot-navd --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/ipc"
+      - name: Preserve navigation source, wire and executable evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-navd-host-evidence
+          path: |
+            ${{ runner.temp }}/navd-native/
+            rust/target/debug/openpilot-navd
+            rust/target/debug/openpilot-set-destination
+            rust/target/debug/examples/navd_*
           if-no-files-found: warn
   selfdrive-runtime:
     name: rust selfdrived runtime
@@ -1769,6 +1834,30 @@ jobs:
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived
             rust/target/aarch64-unknown-linux-gnu/release/examples/controller
             rust/target/aarch64-unknown-linux-gnu/release/examples/ratekeeper
+          if-no-files-found: warn
+      - name: Build and inspect native navigation for generic Linux aarch64
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          mkdir -p "$RUNNER_TEMP/navd-arm"
+          git rev-parse HEAD > "$RUNNER_TEMP/navd-arm/SOURCE_COMMIT"
+          printf '%s\n' 'cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu' > "$RUNNER_TEMP/navd-arm/command.txt"
+          set -o pipefail
+          cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/navd-arm/build.log"
+          file target/aarch64-unknown-linux-gnu/release/openpilot-navd target/aarch64-unknown-linux-gnu/release/openpilot-set-destination > "$RUNNER_TEMP/navd-arm/file.txt"
+          sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-navd target/aarch64-unknown-linux-gnu/release/openpilot-set-destination target/aarch64-unknown-linux-gnu/release/examples/navd_* > "$RUNNER_TEMP/navd-arm/SHA256SUMS"
+      - name: Preserve navigation generic ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-navd-arm-evidence
+          path: |
+            ${{ runner.temp }}/navd-arm/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-navd
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-set-destination
+            rust/target/aarch64-unknown-linux-gnu/release/examples/navd_*
           if-no-files-found: warn
       - name: Build generic and ION camera aarch64 artifacts
         working-directory: rust
