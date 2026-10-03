@@ -109,3 +109,12 @@ required alongside the source comparisons. The complete
 normal-startup/log-upload candidate, remaining process conversion and removal of
 the project-owned C++ IPC implementation remain open. No C3X or other vehicle
 was connected or tested.
+
+The first push of the composed encoder head `9b692a5c` exposed an omitted update
+to the CI routing test's strict expected dependency list. The production workflow
+already required the encoder, but its guard still expected the prior list.
+The guard now requires the encoder result too, exercises failure/cancel/skip/
+missing-result propagation, and checks the actual encoder binding environment
+and pinned ARM job. The original hosted failure and matching local failure are
+retained; all 26 CI routing tests and eight inherited integration-policy tests
+pass after the test correction. A new final-head hosted run is still required.
