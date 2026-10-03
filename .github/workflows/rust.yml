@@ -70,7 +70,7 @@ jobs:
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
