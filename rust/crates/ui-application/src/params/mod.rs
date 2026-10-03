@@ -13,6 +13,10 @@ pub trait Read {
         numeric::integer(self.bytes(key)?.as_deref().unwrap_or_default())
             .ok_or_else(|| Error::Parameter(key.into()))
     }
+    fn float(&self, key: &str) -> Result<f64, Error> {
+        numeric::float(self.bytes(key)?.as_deref().unwrap_or_default())
+            .ok_or_else(|| Error::Parameter(key.into()))
+    }
     fn string(&self, key: &str) -> Result<String, Error> {
         let bytes = self.bytes(key)?.unwrap_or_default();
         // Params STRING conversion returns None on invalid UTF-8; callers use an empty fallback.

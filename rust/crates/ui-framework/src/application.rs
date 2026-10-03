@@ -129,6 +129,10 @@ impl Application {
     pub fn request_close(&self) {
         self.interrupt.store(true, Ordering::Relaxed);
     }
+    pub fn clear_widgets(&mut self) {
+        while self.navigation.pop().is_some() {}
+        self.stack.widgets.clear();
+    }
     pub fn push(&self, widget: WidgetHandle) {
         self.navigation.push(NavigationRequest::Push(widget));
     }
@@ -159,6 +163,27 @@ impl Application {
     pub fn render(
         &mut self,
         mut paint: impl FnMut(&Frame<'_>, &mut Canvas) -> Result<(), Error>,
+    ) -> Result<bool, Error> {
+        self.render_cycle(
+            |_, _, _| Ok(()),
+            |frame, canvas, _, _, rendered| {
+                if rendered {
+                    paint(frame, canvas)?;
+                }
+                Ok(())
+            },
+        )
+    }
+    pub fn render_cycle(
+        &mut self,
+        mut before: impl FnMut(&Frame<'_>, &mut NavigationStack, &mut Canvas) -> Result<(), Error>,
+        mut after: impl FnMut(
+            &Frame<'_>,
+            &mut Canvas,
+            &mut Diagnostics,
+            &mut NavigationStack,
+            bool,
+        ) -> Result<(), Error>,
     ) -> Result<bool, Error> {
         if self.is_closed() {
             return Ok(false);
@@ -210,11 +235,21 @@ impl Application {
                 self.canvas.renderer.poll_input();
             }
             std::thread::sleep(Duration::from_secs_f64(1.0 / f64::from(self.target_fps)));
+            after(
+                &frame,
+                &mut self.canvas,
+                &mut self.diagnostics,
+                &mut self.stack,
+                false,
+            )?;
+            self.stack.process(&frame)?;
             return Ok(false);
         }
         let started = Instant::now();
         self.canvas.renderer.begin();
         self.ticks.run()?;
+        before(&frame, &mut self.stack, &mut self.canvas)?;
+        self.stack.process(&frame)?;
         let rect = Rect {
             x: 0.0,
             y: 0.0,
@@ -222,7 +257,13 @@ impl Application {
             height: self.canvas.renderer.dimensions().1,
         };
         self.stack.render(&frame, rect, &mut self.canvas)?;
-        paint(&frame, &mut self.canvas)?;
+        after(
+            &frame,
+            &mut self.canvas,
+            &mut self.diagnostics,
+            &mut self.stack,
+            true,
+        )?;
         self.stack.process(&frame)?;
         if self
             .diagnostics
@@ -242,6 +283,7 @@ impl Application {
 impl Drop for Application {
     fn drop(&mut self) {
         self.board_input.take();
+        self.clear_widgets();
         signal_hook::low_level::unregister(self.signal);
     }
 }

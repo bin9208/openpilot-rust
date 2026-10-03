@@ -308,6 +308,18 @@ pub fn attention(
         .add(Box::new(Pill::new(canvas, "next", continue_callback)?))?;
     Ok(cards)
 }
+pub fn review_terms(context: Context, canvas: &mut Canvas) -> Result<NavWidget, Error> {
+    let mut cards = terms(context, canvas, Rc::new(|| {}), Rc::new(|| {}))?;
+    for index in [0, 3, 4, 5] {
+        cards
+            .scroller
+            .item_mut(index)
+            .ok_or(Error::Contract("review terms item missing"))?
+            .state_mut()
+            .visible = false.into();
+    }
+    Ok(cards.navigation())
+}
 pub fn pre_dm(
     context: Context,
     canvas: &mut Canvas,

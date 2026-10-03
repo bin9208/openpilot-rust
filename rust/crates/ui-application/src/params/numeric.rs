@@ -1,4 +1,15 @@
 //! common/params.h decimal-prefix std::stoi contract, also used by beepd.
+#[expect(
+    unsafe_code,
+    reason = "CXX borrowed byte slice parser; no retained memory"
+)]
+mod bridge;
+
+pub fn float(bytes: &[u8]) -> Option<f64> {
+    let result = bridge::ffi::params_float(bytes);
+    result.valid.then(|| f64::from(result.value))
+}
+
 pub fn integer(bytes: &[u8]) -> Option<i32> {
     if bytes.is_empty() {
         return Some(0);

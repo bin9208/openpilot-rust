@@ -17,16 +17,30 @@ mod product_driver;
 mod product_effects;
 #[path = "support/product_egpu.rs"]
 mod product_egpu;
+#[path = "support/product_exp.rs"]
+mod product_exp;
+#[path = "support/product_hud.rs"]
+mod product_hud;
 #[path = "support/product_indicator.rs"]
 mod product_indicator;
 #[path = "support/product_input.rs"]
 mod product_input;
 #[path = "support/product_network.rs"]
 mod product_network;
+#[path = "support/product_plot.rs"]
+mod product_plot;
+#[path = "support/product_probe.rs"]
+mod product_probe;
+#[path = "support/product_road.rs"]
+mod product_road;
+#[path = "support/product_root.rs"]
+mod product_root;
 #[path = "support/product_scene.rs"]
 mod product_scene;
 #[path = "support/product_settings.rs"]
 mod product_settings;
+#[path = "support/product_vision.rs"]
+mod product_vision;
 #[path = "support/product_widgets.rs"]
 mod product_widgets;
 pub use product_scene::{DialogProbe, Scene};
@@ -82,7 +96,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if scene.camera.is_some() {
             product_camera::before(&context, &widget, &scene, index)?;
         }
-        let now = f64::from(index) / 20.0;
+        let now = scene
+            .plot
+            .as_ref()
+            .map(|plot| plot.step(index).map(|step| step.now))
+            .transpose()?
+            .unwrap_or(f64::from(index) / 20.0);
         clock.set(
             scene
                 .alert
@@ -91,11 +110,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         let step = scene.steps.iter().find(|step| step.frame == index);
         product_input::apply(&context, step, now)?;
+        if let Some(road) = &scene.road {
+            product_road::before(&context, &widget, road, index, scene.root.is_some())?;
+        }
         if let Some(alert) = &scene.alert {
             product_alert::before(&context, alert, index)?;
         }
         if let Some(indicator) = &scene.indicator {
-            product_indicator::before(&context, &widget, indicator, index)?;
+            product_indicator::before(&context, &widget, &scene.kind, indicator, index)?;
+        }
+        if let Some(vision) = &scene.vision {
+            product_vision::before(&context, vision, index)?;
+        }
+        if let Some(exp) = &scene.exp {
+            product_exp::before(&context, exp, index)?;
+        }
+        if let Some(hud) = &scene.hud {
+            product_hud::before(&context, &widget, hud, index)?;
+        }
+        if let Some(plot) = &scene.plot {
+            product_plot::before(&context, plot, index)?;
         }
         product_input::scroll(&widget, step)?;
         if let Some(network) = &network {
@@ -106,14 +140,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         effects.before(step)?;
         if step.is_some_and(|step| step.flush_ssh) {
-            let fetcher = product_input::ssh_fetcher(&widget, scene.config.big)?;
-            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-            while fetcher.borrow().is_fetching() {
-                if std::time::Instant::now() >= deadline {
-                    return Err("owned SSH fixture did not finish".into());
-                }
-                std::thread::sleep(std::time::Duration::from_millis(1));
+            product_probe::Probe {
+                scene: &scene,
+                context: &context,
+                widget: &widget,
             }
+            .flush_ssh()?;
         }
         let events = step.map_or(&[][..], |step| step.events.as_slice());
         if let Some(event) = events.last() {
@@ -160,7 +192,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             network.ticks.run()?;
         }
         canvas.renderer.begin();
-        let rendered = widget.borrow_mut()?.render(&frame, &mut canvas)?;
+        if let Some(color) = scene.background {
+            openpilot_ui_framework::draw::Draw::clear(&mut canvas, u32::from_le_bytes(color))?;
+        }
+        let rendered = if let Some(root) = &scene.root {
+            root.render(&context, &widget, &frame, &mut canvas)?;
+            openpilot_ui_framework::widget::RenderResult::None
+        } else {
+            widget.borrow_mut()?.render(&frame, &mut canvas)?
+        };
         if scene
             .driver
             .as_ref()
@@ -208,18 +248,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else {
             results.push(serde_json::json!({"prime":context.prime.get()}));
         }
-        if scene.camera.is_some() {
-            results.last_mut().ok_or("missing trace")?["camera"] =
-                product_camera::snapshot(&context, &widget, &scene)?;
+        product_probe::Probe {
+            scene: &scene,
+            context: &context,
+            widget: &widget,
         }
-        if scene.alert.is_some() {
-            results.last_mut().ok_or("missing alert trace")?["alert"] =
-                product_alert::snapshot(&widget, scene.config.big, rendered)?;
-        }
-        if scene.indicator.is_some() {
-            results.last_mut().ok_or("missing indicator trace")?["indicator"] =
-                product_indicator::snapshot(&widget, &scene.kind)?;
-        }
+        .snapshot(results.last_mut().ok_or("missing trace")?, index, rendered)?;
         if scene.capture_frames.contains(&index) {
             let stem = output
                 .file_stem()

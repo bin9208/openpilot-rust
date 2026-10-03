@@ -108,6 +108,7 @@ pub mod ffi {
             tint: u32,
         ) -> Result<()>;
         fn circle(self: Pin<&mut Surface>, center: Point, radius: f32, color: u32);
+        fn circle_lines(self: Pin<&mut Surface>, x: i32, y: i32, radius: f32, color: u32);
         fn circle_gradient(
             self: Pin<&mut Surface>,
             center: Point,
@@ -125,6 +126,15 @@ pub mod ffi {
         );
         fn spline(self: Pin<&mut Surface>, points: &[Point], thick: f32, color: u32) -> Result<()>;
         fn line(self: Pin<&mut Surface>, start: Point, end: Point, thick: f32, color: u32);
+        fn integer_line(self: Pin<&mut Surface>, x1: i32, y1: i32, x2: i32, y2: i32, color: u32);
+        fn default_text(
+            self: Pin<&mut Surface>,
+            text: &str,
+            x: i32,
+            y: i32,
+            size: i32,
+            color: u32,
+        ) -> Result<()>;
         fn rounded_segments(
             self: Pin<&mut Surface>,
             rect: Rect,

@@ -42,6 +42,7 @@ pub struct CameraView {
     transition: Rc<Cell<Option<bool>>>,
     callback: Callback<()>,
     enhance_driver: bool,
+    prepared: bool,
 }
 fn error(error: openpilot_msgq::Error) -> Error {
     Error::Io(std::io::Error::other(error))
@@ -79,6 +80,7 @@ impl CameraView {
             transition,
             callback,
             enhance_driver,
+            prepared: false,
         })
     }
     pub fn stream(&self) -> VisionStream {
@@ -107,6 +109,16 @@ impl CameraView {
         self.client = None;
         self.target = None;
         self.available_streams.clear();
+        self.prepared = false;
+    }
+    pub fn prepare(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<(), Error> {
+        self.transition()?;
+        self.switch(draw)?;
+        if self.ensure_connection(frame.now, draw)? {
+            self.receive(draw)?;
+        }
+        self.prepared = true;
+        Ok(())
     }
     fn transition(&mut self) -> Result<(), Error> {
         if let Some(started) = self.transition.take() {
@@ -201,11 +213,10 @@ impl Widget for CameraView {
         &mut self.state
     }
     fn paint(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
-        self.transition()?;
-        self.switch(draw)?;
-        if self.ensure_connection(frame.now, draw)? {
-            self.receive(draw)?;
+        if !self.prepared {
+            self.prepare(frame, draw)?;
         }
+        self.prepared = false;
         let rect = self.state.rect;
         let Some(metadata) = self.frame() else {
             if let Some(color) = self.background {

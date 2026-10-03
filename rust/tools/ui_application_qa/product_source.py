@@ -77,7 +77,34 @@ gui_app.init_window('Source product widget')
 effects = Effects(scene, state_module.ui_state, gui_app, engaged_callbacks)
 effects.offroad_callbacks = offroad_callbacks
 dialog_results, network, egpu = [], None, None
-if scene.get('indicator') is not None:
+if scene.get('root') is not None:
+  from root_source import create
+
+  now = 0.0
+  time.monotonic = lambda: now
+  rl.get_time = lambda: now
+  widget, camera = create(scene,output,SimpleNamespace(ui=state_module.ui_state,gui=gui_app,params=Params,effects=effects,device=state_module.device))
+elif scene.get('road') is not None:
+  from road_source import create
+
+  widget, camera = create(scene, state_module.ui_state)
+elif scene.get('hud') is not None:
+  from hud_source import create
+
+  widget = create(scene, state_module.ui_state)
+elif scene.get('plot') is not None:
+  from plot_source import create
+
+  widget=create(scene,state_module.ui_state)
+elif scene.get('exp') is not None:
+  from exp_source import create
+
+  widget=create(scene,state_module.ui_state)
+elif scene.get('vision') is not None:
+  from vision_source import create
+
+  widget=create(scene,state_module.ui_state)
+elif scene.get('indicator') is not None:
   from indicator_source import create
 
   widget = create(scene, state_module.ui_state)
@@ -191,7 +218,8 @@ rl.get_time = lambda: now
 rl.get_frame_time = lambda: 0.05
 rect = rl.Rectangle(*(scene['rect'][key] for key in ['x', 'y', 'width', 'height']))
 widget.set_rect(rect)
-widget.show_event()
+if scene.get('root') is None:
+  widget.show_event()
 loop = gui_app.render()
 results = []
 try:
@@ -199,6 +227,10 @@ try:
     if scene.get("camera") is not None:
       camera.before(index)
     now = index / 20
+    if scene.get('plot') is not None:
+      from plot_source import step as plot_step
+
+      now=plot_step(scene,index)['now']
     if scene.get('alert') is not None:
       from alert_source import monotonic
 
@@ -208,6 +240,14 @@ try:
     if network is not None:
       network.before(next((step for step in scene.get('steps', []) if step['frame'] == index), {}))
     step = effects.before(index, widget)
+    if scene.get('root') is not None:
+      from root_source import before
+
+      before(scene,state_module.ui_state,widget,index)
+    elif scene.get('road') is not None:
+      from road_source import before
+
+      before(scene,state_module.ui_state,widget,index)
     if scene.get('alert') is not None:
       from alert_source import before
 
@@ -216,6 +256,22 @@ try:
       from indicator_source import before
 
       before(scene, state_module.ui_state, widget, index)
+    if scene.get('vision') is not None:
+      from vision_source import before
+
+      before(scene,state_module.ui_state,widget,index)
+    if scene.get('exp') is not None:
+      from exp_source import before
+
+      before(scene,state_module.ui_state,index)
+    if scene.get('hud') is not None:
+      from hud_source import before
+
+      before(scene, state_module.ui_state, widget, index)
+    if scene.get('plot') is not None:
+      from plot_source import before
+
+      before(scene,state_module.ui_state,widget,index)
     if scene.get("driver") and not scene["config"]["big"] and not scene['driver'].get('navigation') and index == 20:
       widget.hide_event()
     if scene.get("driver") and not scene["config"]["big"] and not scene['driver'].get('navigation') and index == 21:
@@ -223,18 +279,27 @@ try:
     if step.get("show_again"):
       widget.hide_event()
       widget.show_event()
-    next(loop)
-    gui_app._mouse_events = [
+    scripted_events = [
       MouseEvent(MousePos(event['pos']['x'], event['pos']['y']), event['slot'], event['pressed'], event['released'], event['down'], event['time'])
       for event in step.get('events', [])
     ]
-    if gui_app._mouse_events:
-      gui_app._last_mouse_event = gui_app._mouse_events[-1]
+    if scene.get('root') is not None:
+      gui_app._mouse._handle_mouse_event = lambda: None
+      gui_app._mouse.get_events = lambda: scripted_events
+      rl.get_mouse_position = lambda: rl.Vector2(*gui_app.last_mouse_event.pos)
+      rl.is_mouse_button_down = lambda button: gui_app.last_mouse_event.left_down
+    next(loop)
+    if scene.get('root') is None:
+      gui_app._mouse_events = scripted_events
+      if scripted_events:
+        gui_app._last_mouse_event = scripted_events[-1]
+    if scene.get('background') is not None and scene.get('root') is None:
+      rl.clear_background(rl.Color(*scene['background']))
     rl.get_mouse_position = lambda: rl.Vector2(*gui_app.last_mouse_event.pos)
     if scene['kind'] == 'settings-root':
       rl.is_mouse_button_down = lambda button: gui_app.last_mouse_event.left_down
     rl.get_mouse_wheel_move = lambda step=step: step.get('wheel', 0.0)
-    rendered = widget.render()
+    rendered = widget.render() if scene.get('root') is None else None
     if scene.get("driver") and (scene["config"]["big"] or scene['driver'].get('navigation')) and index + 1 == scene["frames"]:
       widget.hide_event()
     results.append(
@@ -253,7 +318,11 @@ try:
       results[-1]['network'] = network.state(widget)
     if scene['kind'] == 'settings-root':
       results[-1]['settings'] = widget._current_panel.name.title() if scene['config']['big'] else None
-    if scene.get('camera') is not None:
+    if scene.get('root') is not None:
+      from root_source import snapshot
+
+      results[-1]['root'] = snapshot(widget,scene['config']['big'])
+    elif scene.get('camera') is not None:
       results[-1]['camera'] = camera.snapshot()
     if scene.get('alert') is not None:
       from alert_source import snapshot
@@ -263,6 +332,22 @@ try:
       from indicator_source import snapshot
 
       results[-1]['indicator']=snapshot(scene, widget)
+    if scene.get('vision') is not None:
+      from vision_source import snapshot
+
+      results[-1]['vision']=snapshot(state_module.ui_state,widget)
+    if scene.get('exp') is not None:
+      from exp_source import snapshot
+
+      results[-1]['exp']=snapshot(widget)
+    if scene.get('hud') is not None:
+      from hud_source import snapshot
+
+      results[-1]['hud'] = snapshot(widget)
+    if scene.get('plot') is not None:
+      from plot_source import snapshot
+
+      results[-1]['plot']=snapshot(scene,state_module.ui_state,widget,index)
     if index in scene.get('capture_frames', []):
       rl.rl_draw_render_batch_active()
       capture = rl.load_image_from_screen()

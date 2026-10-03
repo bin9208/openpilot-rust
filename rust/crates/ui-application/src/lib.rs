@@ -10,10 +10,14 @@ pub mod paint;
 pub mod params;
 pub mod qr;
 pub mod render_diagnostics;
+#[path = "main/mod.rs"]
+pub mod root_layout;
+pub mod runtime;
 pub mod scheduling;
 pub mod services;
 pub mod settings;
 pub mod state;
+pub mod vision_status;
 pub mod widgets;
 
 #[derive(Debug, thiserror::Error)]
@@ -28,6 +32,8 @@ pub enum Error {
     Cereal(#[from] capnp::Error),
     #[error(transparent)]
     Schema(#[from] capnp::NotInSchema),
+    #[error(transparent)]
+    Text(#[from] std::str::Utf8Error),
     #[error(transparent)]
     Messaging(#[from] openpilot_messaging::state::Error),
     #[error(transparent)]

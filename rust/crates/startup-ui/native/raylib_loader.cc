@@ -23,7 +23,7 @@ void *library() {
       throw std::runtime_error(
           "native startup raylib plugin contract mismatch");
     }
-    const char *required[] = {"LoadImage", "ImageFormat", "DrawRing", "UpdateTexture", "SetShaderValueTexture",
+    const char *required[] = {"LoadImage", "ImageFormat", "DrawRing", "DrawCircleLines", "UpdateTexture", "SetShaderValueTexture",
                               "UnloadImage",
                               "ImageAlphaPremultiply",
                               "ImageResize",
@@ -40,7 +40,7 @@ void *library() {
                               "LoadFontEx",
                               "GenTextureMipmaps",
                               "MeasureTextEx", "MeasureText",
-                              "DrawTextEx",
+                              "DrawTextEx", "DrawText", "DrawLine",
                               "DrawTexturePro",
                               "DrawRectangleRoundedLinesEx",
                               "DrawRectangleRounded",
@@ -127,6 +127,7 @@ FORWARD(void, DrawTextEx,
         (Font font, const char *text, Vector2 pos, float size, float spacing,
          Color color),
         (font, text, pos, size, spacing, color))
+FORWARD(void, DrawText, (const char *text, int x, int y, int size, Color color), (text,x,y,size,color))
 FORWARD(void, DrawTexturePro,
         (Texture2D texture, Rectangle source, Rectangle dest, Vector2 origin,
          float rotation, Color color),
@@ -169,6 +170,7 @@ FORWARD(int, GetMonitorHeight, (int monitor), (monitor))
 FORWARD(void, DrawCircleV, (Vector2 center, float radius, Color color), (center,radius,color))
 FORWARD(void, DrawRectangleGradientEx, (Rectangle rect, Color top_left, Color bottom_left, Color top_right, Color bottom_right), (rect,top_left,bottom_left,top_right,bottom_right))
 FORWARD(void, DrawLineEx, (Vector2 start, Vector2 end, float thick, Color color), (start,end,thick,color))
+FORWARD(void, DrawLine, (int x1, int y1, int x2, int y2, Color color), (x1,y1,x2,y2,color))
 FORWARD(void, ImageFlipHorizontal, (Image *image), (image))
 
 FORWARD(void, DrawCircleGradient, (Vector2 center, float radius, Color inner, Color outer), (center, radius, inner, outer))
@@ -196,4 +198,5 @@ FORWARD(void, SetTraceLogLevel, (int level), (level))
 FORWARD(void, SetTraceLogCallback, (TraceLogCallback callback), (callback))
 FORWARD(void, DrawRectangleLines, (int x, int y, int width, int height, Color color), (x,y,width,height,color))
 FORWARD(void, DrawSplineLinear, (const Vector2 *points, int count, float thick, Color color), (points, count, thick, color))
+FORWARD(void, DrawCircleLines, (int x, int y, float radius, Color color), (x, y, radius, color))
 #undef FORWARD

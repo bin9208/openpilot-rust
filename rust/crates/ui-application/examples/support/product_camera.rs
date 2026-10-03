@@ -1,5 +1,6 @@
 use super::Scene;
 use openpilot_msgq::VisionStream;
+use openpilot_ui_application::params::Read;
 use openpilot_ui_application::{
     context::Context,
     onroad::camera::{CameraView, Config, Transform},
@@ -123,6 +124,13 @@ pub fn snapshot(
             widget,
             scene.config.big,
             driver.navigation,
+        );
+    }
+    if scene.road.is_some() {
+        let widget = widget.get::<openpilot_ui_application::onroad::augmented::Road>()?;
+        let camera = &widget.camera;
+        return Ok(
+            serde_json::json!({"frame":camera.frame().map(|frame|frame.frame_id),"stream":camera.stream() as u8,"streams":camera.available_streams.iter().map(|stream|*stream as u8).collect::<Vec<_>>(),"mode":widget.road_view_mode()?,"position":context.params.string("DevicePosition")?}),
         );
     }
     let widget = widget.get::<CameraView>()?;

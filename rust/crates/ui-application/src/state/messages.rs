@@ -97,6 +97,12 @@ reader!(
     openpilot_cereal::log_capnp::selfdrive_state::Reader<'_>
 );
 reader!(
+    manager_state,
+    "managerState",
+    ManagerState,
+    openpilot_cereal::log_capnp::manager_state::Reader<'_>
+);
+reader!(
     device_state,
     "deviceState",
     DeviceState,
@@ -151,4 +157,82 @@ reader!(
     "longitudinalPlan",
     LongitudinalPlan,
     openpilot_cereal::log_capnp::longitudinal_plan::Reader<'_>
+);
+reader!(
+    controls_state,
+    "controlsState",
+    ControlsState,
+    openpilot_cereal::log_capnp::controls_state::Reader<'_>
+);
+reader!(
+    car_output,
+    "carOutput",
+    CarOutput,
+    openpilot_cereal::car_capnp::car_output::Reader<'_>
+);
+reader!(
+    live_parameters,
+    "liveParameters",
+    LiveParameters,
+    openpilot_cereal::log_capnp::live_parameters_data::Reader<'_>
+);
+reader!(
+    vision_data,
+    "customReservedRawData0",
+    CustomReservedRawData0,
+    capnp::data::Reader<'_>
+);
+reader!(
+    radar_state,
+    "radarState",
+    RadarState,
+    openpilot_cereal::log_capnp::radar_state::Reader<'_>
+);
+reader!(
+    onroad_events,
+    "onroadEvents",
+    OnroadEvents,
+    capnp::struct_list::Reader<'_, openpilot_cereal::log_capnp::onroad_event::Owned>
+);
+reader!(
+    carrot_man,
+    "carrotMan",
+    CarrotMan,
+    openpilot_cereal::custom_capnp::carrot_man::Reader<'_>
+);
+reader!(
+    carrot_navi,
+    "carrotNavi",
+    CarrotNavi,
+    openpilot_cereal::custom_capnp::carrot_navi_state::Reader<'_>
+);
+reader!(
+    peripheral_state,
+    "peripheralState",
+    PeripheralState,
+    openpilot_cereal::log_capnp::peripheral_state::Reader<'_>
+);
+reader!(
+    gps_location,
+    "gpsLocationExternal",
+    GpsLocationExternal,
+    openpilot_cereal::log_capnp::gps_location_data::Reader<'_>
+);
+reader!(
+    live_delay,
+    "liveDelay",
+    LiveDelay,
+    openpilot_cereal::log_capnp::live_delay_data::Reader<'_>
+);
+reader!(
+    live_torque,
+    "liveTorqueParameters",
+    LiveTorqueParameters,
+    openpilot_cereal::log_capnp::live_torque_parameters_data::Reader<'_>
+);
+reader!(
+    lateral_plan,
+    "lateralPlan",
+    LateralPlan,
+    openpilot_cereal::log_capnp::lateral_plan::Reader<'_>
 );

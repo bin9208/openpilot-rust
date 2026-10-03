@@ -66,8 +66,12 @@ int main(int argc, char **argv) {
     surface->circle_gradient({80,80},25,0xff0000ff,0);
     surface->text(font, "ABC", {12, 12}, 30, 0, 0xffffffff);
     surface->circle({40, 180}, 20, 0xff00ff00);
+    surface->circle_lines(40, 180, 21, 0xffffffff);
     surface->gradient({90, 160, 80, 40}, 0xff000000, 0xff000000, 0xffffffff, 0xffffffff);
     surface->line({180, 180}, {220, 210}, 3, 0xffffffff);
+    surface->integer_line(180,180,220,210,0xffffffff);
+    surface->default_text("default 123.45",10,220,16,0xffffffff);
+    surface->default_text("",0,0,16,0xffffffff);
     surface->tinted_texture(pixels, {0, 0, 4, 4}, {400, 160, 40, 40}, {0, 0}, 0, 0xffffffff);
     const auto luma=surface->plane_texture(4,4,false);
     const auto chroma=surface->plane_texture(2,2,true);

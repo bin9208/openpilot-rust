@@ -59,6 +59,31 @@ pub struct Ring {
     pub color: u32,
 }
 pub trait Draw: Measure {
+    fn circle_lines(
+        &mut self,
+        _center: (i32, i32),
+        _radius: f32,
+        _color: u32,
+    ) -> Result<(), Error> {
+        Err(Error::Contract("circle outline drawing unavailable"))
+    }
+    fn integer_line(
+        &mut self,
+        _start: (i32, i32),
+        _end: (i32, i32),
+        _color: u32,
+    ) -> Result<(), Error> {
+        Err(Error::Contract("integer line drawing unavailable"))
+    }
+    fn default_text(
+        &mut self,
+        _text: &str,
+        _position: (i32, i32),
+        _size: i32,
+        _color: u32,
+    ) -> Result<(), Error> {
+        Err(Error::Contract("default-font drawing unavailable"))
+    }
     fn spline(&mut self, _points: &[Point], _thick: f32, _color: u32) -> Result<(), Error> {
         Err(Error::Contract("spline drawing unavailable"))
     }

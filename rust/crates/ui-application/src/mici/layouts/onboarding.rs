@@ -108,6 +108,73 @@ fn forward(target: WidgetHandle) -> (Pushes, Rc<dyn Fn()>) {
 fn navigation(content: impl Widget) -> WidgetHandle {
     WidgetHandle::new(NavWidget::new(Box::new(content), 20.0, 240.0))
 }
+struct ReviewTraining {
+    context: Context,
+    content: QueuedCards,
+}
+impl Widget for ReviewTraining {
+    fn state(&self) -> &WidgetState {
+        self.content.state()
+    }
+    fn state_mut(&mut self) -> &mut WidgetState {
+        self.content.state_mut()
+    }
+    fn show(&mut self, frame: &Frame<'_>) {
+        self.content.show(frame);
+        self.context
+            .actions
+            .push(Action::SetInteractiveTimeout(Some(300)));
+    }
+    fn hide(&mut self, frame: &Frame<'_>) {
+        self.content.hide(frame);
+        self.context
+            .actions
+            .push(Action::SetInteractiveTimeout(None));
+        if let Err(error) = self
+            .context
+            .params
+            .put_bool_nonblocking("IsDriverViewEnabled", false)
+        {
+            self.context.actions.push(Action::Failure(error));
+        }
+    }
+    fn paint(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
+        self.content.paint(frame, draw)
+    }
+}
+pub fn review_training(
+    context: Context,
+    canvas: &mut Canvas,
+    completed: Rc<dyn Fn()>,
+    camera: &str,
+) -> Result<NavWidget, Error> {
+    let record_front = navigation(cards::record_front(context.clone(), canvas, completed)?);
+    let (pushes, next) = forward(record_front);
+    let preview = crate::mici::onroad::driver_camera::Preview::with_camera(
+        context.clone(),
+        canvas,
+        camera,
+        20.0,
+        true,
+    )?;
+    let tutorial = navigation(QueuedTutorial {
+        state: WidgetState::default(),
+        tutorial: Tutorial::with_preview(context.clone(), canvas, preview, next)?,
+        pushes,
+    });
+    let (pushes, next) = forward(tutorial);
+    let pre_dm = navigation(QueuedCards::new(
+        cards::pre_dm(context.clone(), canvas, next)?,
+        pushes,
+    ));
+    let (pushes, next) = forward(pre_dm);
+    let content = QueuedCards::new(cards::attention(context.clone(), canvas, next)?, pushes);
+    Ok(NavWidget::new(
+        Box::new(ReviewTraining { context, content }),
+        20.0,
+        240.0,
+    ))
+}
 pub struct Onboarding {
     pub state: WidgetState,
     context: Context,

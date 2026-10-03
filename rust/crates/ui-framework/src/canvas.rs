@@ -62,6 +62,24 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn integer_line(
+        &mut self,
+        start: (i32, i32),
+        end: (i32, i32),
+        color: u32,
+    ) -> Result<(), Error> {
+        self.renderer.integer_line(start, end, color);
+        Ok(())
+    }
+    fn default_text(
+        &mut self,
+        text: &str,
+        position: (i32, i32),
+        size: i32,
+        color: u32,
+    ) -> Result<(), Error> {
+        self.renderer.default_text(text, position, size, color)
+    }
     fn spline(&mut self, points: &[Point], thick: f32, color: u32) -> Result<(), Error> {
         self.renderer.spline(points, thick, color)
     }
@@ -173,6 +191,10 @@ impl Draw for Canvas {
     }
     fn circle(&mut self, center: Point, radius: f32, color: u32) -> Result<(), Error> {
         self.renderer.circle(center, radius, color);
+        Ok(())
+    }
+    fn circle_lines(&mut self, center: (i32, i32), radius: f32, color: u32) -> Result<(), Error> {
+        self.renderer.circle_lines(center, radius, color);
         Ok(())
     }
     fn circle_gradient(

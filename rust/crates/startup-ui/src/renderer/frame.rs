@@ -1,5 +1,27 @@
 use super::*;
 impl Renderer {
+    pub fn circle_lines(&mut self, center: (i32, i32), radius: f32, color: u32) {
+        self.surface
+            .pin_mut()
+            .circle_lines(center.0, center.1, radius, color);
+    }
+    pub fn integer_line(&mut self, start: (i32, i32), end: (i32, i32), color: u32) {
+        self.surface
+            .pin_mut()
+            .integer_line(start.0, start.1, end.0, end.1, color);
+    }
+    pub fn default_text(
+        &mut self,
+        text: &str,
+        position: (i32, i32),
+        size: i32,
+        color: u32,
+    ) -> Result<(), Error> {
+        Ok(self
+            .surface
+            .pin_mut()
+            .default_text(text, position.0, position.1, size, color)?)
+    }
     pub fn measure_default(&self, text: &str, size: i32) -> Result<i32, Error> {
         Ok(self.surface.measure_default(text, size)?)
     }

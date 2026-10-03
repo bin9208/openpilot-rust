@@ -20,6 +20,9 @@ pub fn create(
     if scene.kind == "settings-root" {
         return super::product_settings::create(context, canvas, scene);
     }
+    if let Some(root) = &scene.root {
+        return root.create(context, canvas, scene);
+    }
     let dialog_results = Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
     if ["network-mici", "wifi-mici"].contains(&scene.kind.as_str()) {
         let (widget, network) = super::product_network::Fixture::create(context, canvas, scene)?;
@@ -39,7 +42,24 @@ pub fn create(
             egpu: Some(egpu),
         });
     }
-    let widget = if let Some(indicator) = &scene.indicator {
+    let widget = if scene.road.is_some() {
+        WidgetHandle::new(
+            openpilot_ui_application::onroad::augmented::Road::with_camera(
+                context.clone(),
+                canvas,
+                Rc::new(std::cell::Cell::new(false)),
+                "rustvision",
+            )?,
+        )
+    } else if let Some(hud) = &scene.hud {
+        super::product_hud::create(context, canvas, hud)?
+    } else if scene.plot.is_some() {
+        super::product_plot::create(context, scene.rect)
+    } else if let Some(options) = &scene.exp {
+        super::product_exp::create(context, canvas, options)?
+    } else if let Some(options) = &scene.vision {
+        super::product_vision::create(context, options)
+    } else if let Some(indicator) = &scene.indicator {
         super::product_indicator::create(context, canvas, &scene.kind, indicator)?
     } else if let Some(alert) = &scene.alert {
         super::product_alert::create(context, canvas, scene.config.big, alert)?

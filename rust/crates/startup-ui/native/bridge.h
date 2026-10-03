@@ -43,10 +43,13 @@ public:
   void draw_texture(uint32_t texture, Rect rect, Point origin, float rotation);
   void tinted_texture(uint32_t texture, Rect source, Rect destination, Point origin, float rotation, uint32_t tint);
   void circle(Point center, float radius, uint32_t color);
+  void circle_lines(int32_t x, int32_t y, float radius, uint32_t color);
   void circle_gradient(Point center, float radius, uint32_t inner, uint32_t outer);
   void gradient(Rect rect, uint32_t top_left, uint32_t bottom_left, uint32_t top_right, uint32_t bottom_right);
   void spline(rust::Slice<const Point> points, float thick, uint32_t color);
   void line(Point start, Point end, float thick, uint32_t color);
+  void integer_line(int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint32_t color);
+  void default_text(rust::Str text, int32_t x, int32_t y, int32_t size, uint32_t color);
   void rounded_segments(Rect rect, float roundness, int32_t segments, uint32_t color, bool border);
   int32_t measure_default(rust::Str text, int32_t size) const;
   void rounded_outline(Rect rect, float roundness, int32_t segments, float thickness, uint32_t color);

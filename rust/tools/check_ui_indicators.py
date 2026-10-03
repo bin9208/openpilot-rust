@@ -15,8 +15,9 @@ import numpy as np
 from PIL import Image
 
 
-def step(frame, status='engaged', traffic=0, brake=None, steer=None, value=None):
-  return {'frame':frame,'status':status,'traffic':traffic,'brake':brake or [],'steer':steer or [],'value':value}
+def step(frame, status='engaged', traffic=0, brake=None, steer=None, value=None, **torque):
+  return {'frame':frame,'status':status,'traffic':traffic,'brake':brake or [],'steer':steer or [],'value':value,
+          'angle':False,'lat_active':False,'speed':0.0,'curvature':0.0,'desired':0.0,'roll':0.0,'torque':0.0,**torque}
 
 
 def main() -> None:
@@ -25,6 +26,8 @@ def main() -> None:
   parser.add_argument('--output',type=Path,required=True)
   parser.add_argument('--display',required=True)
   parser.add_argument('--filter',default='')
+  parser.add_argument('--torque',action='store_true')
+  parser.add_argument('--rect',type=float,nargs=4,default=[32.3,4.7,486.4,227.3])
   args=parser.parse_args()
   args.output.mkdir(parents=True,exist_ok=True)
   root=Path(__file__).resolve().parents[2]
@@ -37,13 +40,33 @@ def main() -> None:
     ('traffic-zero-clock','traffic',False,[step(0,traffic=2),step(80,traffic=1),step(120,traffic=2)]),
     ('traffic-reentry','traffic',False,[step(0,traffic=0),step(10,traffic=2),step(65,traffic=-7),step(80,traffic=2),step(140,traffic=1)]),
   ]
+  if args.torque:
+    cases=[
+      ('torque-output','torque',False,[step(0,'disengaged'),step(10,torque=-0.95),step(45,torque=1.0),
+         step(80,'override',torque=0.3),step(110,'disengaged',torque=-0.6),step(140,torque=0.0)]),
+      ('torque-angle-default','torque',False,[step(0,angle=True,lat_active=True,speed=0,roll=0.12,desired=0.03),
+         step(20,angle=True,lat_active=True,speed=5,roll=0.12,curvature=0.03,desired=0.03),
+         step(40,angle=True,lat_active=True,speed=10,roll=0.12,curvature=0.01,desired=0.03),
+         step(60,angle=True,lat_active=True,speed=15,roll=0.12,curvature=0.01,desired=-0.03),
+         step(90,angle=True,lat_active=True,speed=25,roll=-0.04,curvature=-0.01,desired=-0.005),
+         step(120,angle=True,lat_active=False,speed=20,roll=-0.04,desired=0.01)]),
+      ('torque-angle-car','torque',False,[step(0,angle=True,lat_active=True,speed=15,desired=0.005),
+         step(30,angle=True,lat_active=True,speed=20,desired=-0.009,roll=0.12),
+         step(60,'override',angle=True,lat_active=True,speed=10,desired=0.03,roll=-0.1),
+         step(90,'disengaged',angle=True,lat_active=True,speed=25,desired=0.05),
+         step(120,angle=True,lat_active=True,speed=15,desired=-0.005)]),
+      ('torque-demo','torque',True,[step(0,'disengaged',value=0.49),step(25,'override',value=0.5),
+         step(50,'disengaged',value=0.75),step(75,'override',value=1.0),step(100,value=-1.0),step(130,value=0.0)]),
+    ]
   results=[]
   for name,kind,demo,steps in cases:
     if args.filter and args.filter not in name:
       continue
     scene={'kind':kind,'config':{'big':False,'large_viewport':False,'pc':True,'scale':1.0},'language':'en',
-           'rect':{'x':32.3,'y':4.7,'width':486.4,'height':227.3},'frames':160,'prime':0,'params':{},
+           'rect':dict(zip(['x','y','width','height'],args.rect,strict=True)),'frames':160,'prime':0,'params':{},
            'capture_frames':list(range(160)),'indicator':{'demo':demo,'steps':steps}}
+    if name=='torque-angle-car':
+      scene['car']={'alpha_longitudinal_available':False,'openpilot_longitudinal_control':True,'max_lateral_accel':1.6}
     path=args.output/f'{name}.json'
     path.write_text(json.dumps(scene))
     outputs=[]
@@ -65,6 +88,7 @@ def main() -> None:
       maximum=max(maximum,error)
       assert error<=1e-12,(name,index,a,b)
       assert a.get('visible')==b.get('visible'),(name,index,a,b)
+      assert abs(a.get('opacity',0)-b.get('opacity',0))<=1e-12,(name,index,a,b)
     differences=[]
     for index in scene['capture_frames']:
       images=[np.asarray(Image.open(output.with_name(f'{output.stem}-frame-{index:04}.png'))) for output in outputs]

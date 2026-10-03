@@ -374,3 +374,94 @@ transitions, expiry, unknown state and reentry. This remains host GL evidence;
 ARM GL and the first device comparison are separate. Remaining torque, vision,
 debug/HUD/augmented-road composition and application startup/navigation/services/
 recording/shutdown work still prevent a complete UI/runtime handoff.
+
+## Stage 10: compact torque geometry and widget
+
+The standalone compact TorqueBar retains the original control-state union,
+angle-control lateral-acceleration/roll compensation, configured/default maximum,
+latActive gate and output-torque fallback. Its filters, HSV colors, opacity,
+gradient direction, circle dot and rounded arc polygons are source-preserving.
+The original current HUD does not instantiate this standalone bar; its active
+torque-dependent wheel icon remains part of the pending HUD port.
+
+Arc points use a bounded 256-entry cache on the UI thread. Keys preserve Python
+round-to-even quantization and retain the first unquantized geometry on a cache
+hit. The original LRU ordering, cap radii, segment budget, float32 points and
+triangulation rotation are preserved. The numerical fixture promotes the actual
+float32 drawing points to float64 solely for JSON observation, avoiding a false
+comparison between shortest float32 JSON decimals and Python's widened values.
+The underlying float32 bit patterns already agreed before that fixture change.
+
+Evidence under `.omo/evidence/ui-application-148/` is verified by
+`stage10-receipt.json`:
+
+| Scenario and invocation | Binary observable | Captured artifact |
+| --- | --- | --- |
+| `check_ui_indicators.py --torque`, including shifted fractional rectangle | Eight cases, 1,280 exact source/native RGBA pairs and exact torque/opacity values through angle/output/demo/status transitions | `torque-initial/results.json`, `torque-shifted/results.json` |
+| `check_ui_torque_geometry.py` | 1,603 actual-source/native arcs with exact float32 points, cache hits, round ties and eviction | `torque-geometry-final/result.json`, input/source/native JSON |
+| Interrupted `cargo +nightly-2026-09-29 miri run --example torque_geometry` | Compilation finished, but the host interruption left the output empty; this run does not establish a Miri pass | `torque-geometry-final/miri-default.json`, `miri-default.log` |
+| UI tests, all-target Clippy, formatting, Ruff and diff checks | Commands exit zero; Rust warnings denied | `stage10-torque-tests.log`, `stage10-torque-clippy.log`, `stage10-checks.json` |
+
+The existing shaded-polygon drawing adapter is reused; this slice adds no native
+drawing or unsafe call. Host visual and safe-state evidence do not establish ARM
+GL, device behavior, CPU savings or a complete application/runtime candidate.
+
+## Stage 11: native product application and runtime
+
+The product UI now has a native `openpilot-ui` entry point and owns both Main
+layouts, the28 source subscriptions, UI/device state updates, native resource
+workers, complete settings/onboarding/dialog routes, recording, bookmarks,
+scheduling and normal/error shutdown. Augmented road owns calibration and the
+actual camera/model/HUD/driver/alert/vision/traffic/confidence composition. The
+independently reviewed compact offroad-alert slice is composed in the root.
+No Python interpreter executes in the native UI process.
+
+The main-layout oracle executes unchanged original class bodies. It reproduced
+and fixed three source-order differences: sidebar settings must open before
+content rendering; large content rectangles are cached when `set_rect` changes;
+compact offroad timeout immediately pops and separately retargets home. The
+shared navigation stack's source-compatible immediate-callback behavior remains
+unchanged. Full reruns follow each production correction.
+
+Fresh evidence is under
+`.omo/evidence/ui-application-148/resume-20261002/`. `handoff.md` gives the exact
+environment and commands; `receipt.json` audits artifacts and records dirty
+source/executable hashes. Earlier failed and superseded captures are retained.
+
+| Invocation / scenario | Observable | Artifact |
+| --- | --- | --- |
+| `check_ui_root.py` |20 EN/KO home/settings/sidebar/alerts/onroad/plot/standstill/timeout cases;1440 exact source/native RGBA and state frame pairs | `root-complete/receipt.json`, scenes/traces/PNGs |
+| `check_ui_augmented.py` |16 EN/KO camera/model/HUD/alert/cluster/view-border cases;512 exact frame pairs | `augmented-complete/receipt.json` |
+| `check_ui_calibration.py` |490 original-method/native cases, exact render float32 matrices and DevicePosition; f64 differences within64 epsilon | `calibration/result.json`, input/source/native matrices |
+| `check_ui_runtime_pages.py` |Actual XTest input reaches13 settings pages,13 overlays, dialog callbacks, training steps and interactive timeout | `pages-complete2/pages-result.json`, native logs and captured PNGs |
+| `check_ui_product_runtime.py` |Actual IPC/VisionIPC, bookmark/uiDebug publications, skipped-render updates, onroad/offroad transitions, encoded recording, normal and injected-error cleanup; no Python library mapped | `runtime-complete/result.json`, per-case process/trace/video/ffprobe artifacts |
+| `check_ui_camera.py` |12 lifecycle/stream/projection cases,288 exact frame pairs after camera preparation split | `camera-complete/results.json` |
+| `check_ui_hud.py --large --filter plot-modes` |All8 plot modes observed in both source/native lanes,320 exact frame pairs per EN/KO language,640 total | Parent amendment `ui-parent-hud-eight-modes/results.json` |
+| `check_ui_hud.py --filter traffic-numeric` |Arbitrary integers, Unicode digits/underscores, NaN/Inf/range/invalid conversions,240 exact frame pairs | `hud-traffic-complete/results.json` |
+| Params namespace and stored-float tests |Absent/empty/named/invalid prefixes in subprocesses; source float32 prefix/range/NUL boundaries | `tests-final.log`, `tests-ui-complete.log` |
+| Native torque corpus and bounded Miri |1603 exact native cases including LRU eviction;8 completed default-isolation Miri arc/cache cases | `torque-native-final/result.json`, `miri-bounded-argv/result.json` |
+| Native bridge/parser ASAN+UBSAN |3 draw/resource cycles,1000 borrowed parser cycles and1MiB input; external libraries uninstrumented | `native-asan-checked/result.json`, build/run logs |
+| Bounded tests, all-target Clippy and static checks |Rust warnings denied; inherited msgq C++ warnings recorded;81 owned changed Rust files formatted and focused Python checks pass | `tests-ui-complete.log`, `clippy-complete.log`, `static-complete.json` |
+
+The source-required shared APIs are `Params::for_runtime_at` for memory Params
+and `hardware_info::parse_float` exposing the existing numeric parser. Their
+tests and hashes are included in the receipt. Original settings behavior is
+preserved, so user-guide changes are not needed.
+
+The parent integration amendment supersedes only the earlier 120-frame-per-language
+plot capture, which did not observe all eight modes. It records unchanged product
+and executable hashes, all eight modes in each lane/language, and zero state or
+pixel differences over the replacement 640 frame pairs. Four independent host
+implementation/visual reviews accepted the component. A separate integration
+review checked all 40 formatting changes against Rust 1.94 rustfmt output from
+the archived originals; the remaining 399 crate files were unchanged. The
+original receipt is retained with these amendments, not rewritten.
+
+Parent still owns native manager selection of `openpilot-ui`, sibling
+`openpilot-process-child`/`openpilot-updated` packaging, full-candidate normal
+startup/upload integration and ARM graphics validation. Desktop fixtures use
+synthetic camera buffers and substitute external
+hardware/Wi-Fi/eGPU data boundaries. These results do not establish AGNOS/C3X
+behavior, CPU savings or the complete project runtime delivery gate. No device
+test is requested. The old interrupted Miri output remains empty and is not a
+pass; only the explicitly bounded replacement is claimed.

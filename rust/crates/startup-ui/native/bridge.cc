@@ -160,11 +160,17 @@ void Surface::tinted_texture(uint32_t texture, Rect source, Rect destination, Po
   DrawTexturePro(textures.at(texture), rectangle(source), rectangle(destination), {origin.x,origin.y}, rotation, color(tint));
 }
 void Surface::circle(Point center, float radius, uint32_t tint) { DrawCircleV({center.x,center.y},radius,color(tint)); }
+void Surface::circle_lines(int32_t x, int32_t y, float radius, uint32_t tint) { DrawCircleLines(x,y,radius,color(tint)); }
 void Surface::circle_gradient(Point center, float radius, uint32_t inner, uint32_t outer) { DrawCircleGradient({center.x,center.y},radius,color(inner),color(outer)); }
 void Surface::gradient(Rect rect, uint32_t top_left, uint32_t bottom_left, uint32_t top_right, uint32_t bottom_right) {
   DrawRectangleGradientEx(rectangle(rect), color(top_left), color(bottom_left), color(top_right), color(bottom_right));
 }
 void Surface::line(Point start, Point end, float thick, uint32_t tint) { DrawLineEx({start.x,start.y},{end.x,end.y},thick,color(tint)); }
+void Surface::integer_line(int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint32_t tint) { DrawLine(x1,y1,x2,y2,color(tint)); }
+void Surface::default_text(rust::Str text, int32_t x, int32_t y, int32_t size, uint32_t tint) {
+  const std::string owned(text);
+  DrawText(owned.c_str(),x,y,size,color(tint));
+}
 void Surface::rounded_segments(Rect rect, float roundness, int32_t segments, uint32_t tint, bool border) {
   if (border) DrawRectangleRoundedLinesEx(rectangle(rect), roundness, segments, 2, color(tint));
   else DrawRectangleRounded(rectangle(rect), roundness, segments, color(tint));

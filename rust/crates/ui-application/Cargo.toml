@@ -6,6 +6,10 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
+[[bin]]
+name = "openpilot-ui"
+path = "src/bin/ui.rs"
+
 [lints.rust]
 unsafe_code = "deny"
 
