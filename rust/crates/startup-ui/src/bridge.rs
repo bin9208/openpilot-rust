@@ -23,6 +23,16 @@ pub mod ffi {
         y: f32,
         down: bool,
     }
+    #[derive(Clone, Copy, Debug)]
+    struct Ring {
+        center: Point,
+        inner: f32,
+        outer: f32,
+        start: f32,
+        end: f32,
+        segments: i32,
+        color: u32,
+    }
     unsafe extern "C++" {
         include!("bridge.h");
         include!("egl.h");
@@ -42,6 +52,7 @@ pub mod ffi {
         fn image(path: &str) -> Result<UniquePtr<Image>>;
         fn width(self: &Image) -> i32;
         fn height(self: &Image) -> i32;
+        fn rgba(self: Pin<&mut Image>) -> Result<Vec<u8>>;
         fn premultiply(self: Pin<&mut Image>);
         fn flip_horizontal(self: Pin<&mut Image>);
         fn resize(self: Pin<&mut Image>, width: i32, height: i32);
@@ -51,12 +62,16 @@ pub mod ffi {
             logical_width: i32,
             logical_height: i32,
         ) -> Result<u32>;
+        fn clear(self: Pin<&mut Surface>, color: u32);
+        fn texture_release(self: Pin<&mut Surface>, texture: u32);
         fn pixel_texture(
             self: Pin<&mut Surface>,
             width: i32,
             height: i32,
             rgba: &[u8],
         ) -> Result<u32>;
+        fn smooth_texture(self: Pin<&mut Surface>, texture: u32) -> Result<()>;
+        fn ring(self: Pin<&mut Surface>, ring: Ring);
         fn font(
             self: Pin<&mut Surface>,
             path: &str,
@@ -93,6 +108,7 @@ pub mod ffi {
             tint: u32,
         ) -> Result<()>;
         fn circle(self: Pin<&mut Surface>, center: Point, radius: f32, color: u32);
+        fn circle_lines(self: Pin<&mut Surface>, x: i32, y: i32, radius: f32, color: u32);
         fn circle_gradient(
             self: Pin<&mut Surface>,
             center: Point,
@@ -108,7 +124,17 @@ pub mod ffi {
             top_right: u32,
             bottom_right: u32,
         );
+        fn spline(self: Pin<&mut Surface>, points: &[Point], thick: f32, color: u32) -> Result<()>;
         fn line(self: Pin<&mut Surface>, start: Point, end: Point, thick: f32, color: u32);
+        fn integer_line(self: Pin<&mut Surface>, x1: i32, y1: i32, x2: i32, y2: i32, color: u32);
+        fn default_text(
+            self: Pin<&mut Surface>,
+            text: &str,
+            x: i32,
+            y: i32,
+            size: i32,
+            color: u32,
+        ) -> Result<()>;
         fn rounded_segments(
             self: Pin<&mut Surface>,
             rect: Rect,
@@ -116,6 +142,15 @@ pub mod ffi {
             segments: i32,
             color: u32,
             border: bool,
+        );
+        fn measure_default(self: &Surface, text: &str, size: i32) -> Result<i32>;
+        fn rounded_outline(
+            self: Pin<&mut Surface>,
+            rect: Rect,
+            roundness: f32,
+            segments: i32,
+            thickness: f32,
+            color: u32,
         );
         fn rounded(self: Pin<&mut Surface>, rect: Rect, roundness: f32, color: u32, border: bool);
         fn scissor(self: Pin<&mut Surface>, rect: Rect, enabled: bool);

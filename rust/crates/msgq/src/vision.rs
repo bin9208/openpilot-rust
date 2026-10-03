@@ -10,7 +10,7 @@ pub enum VisionStream {
 }
 
 impl VisionStream {
-    fn native(self) -> i32 {
+    pub(crate) fn native(self) -> i32 {
         match self {
             Self::Road => 0,
             Self::Driver => 1,
@@ -109,5 +109,13 @@ impl VisionFrame<'_> {
     /// Like the source API, copying does not make producer updates atomic.
     pub fn copy_into(&self, destination: &mut [u8]) -> Result<(), Error> {
         Ok(self.client.connection.copy_frame(destination)?)
+    }
+}
+
+impl std::os::fd::AsFd for VisionFrame<'_> {
+    fn as_fd(&self) -> std::os::fd::BorrowedFd<'_> {
+        // SAFETY: receive returns a validated imported buffer descriptor, and this
+        // frame exclusively borrows the client that owns it for the entire borrow.
+        unsafe { std::os::fd::BorrowedFd::borrow_raw(self.metadata.fd) }
     }
 }

@@ -45,4 +45,11 @@ void Surface::triangle_strip(rust::Slice<const Point> points, uint32_t tint, uin
   DrawTriangleStrip(vertices.data(),int(vertices.size()),{uint8_t(tint),uint8_t(tint>>8),uint8_t(tint>>16),uint8_t(tint>>24)});
   if (shaded) EndShaderMode();
 }
+void Surface::spline(rust::Slice<const Point> points, float thick, uint32_t color) {
+  if (points.size() > std::numeric_limits<int>::max()) throw std::runtime_error("spline too large");
+  std::vector<Vector2> vertices;
+  vertices.reserve(points.size());
+  for (const auto &point : points) vertices.push_back({point.x,point.y});
+  DrawSplineLinear(vertices.data(),int(vertices.size()),thick,{uint8_t(color),uint8_t(color>>8),uint8_t(color>>16),uint8_t(color>>24)});
+}
 } // namespace startup_ui

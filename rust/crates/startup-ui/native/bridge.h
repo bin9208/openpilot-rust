@@ -7,12 +7,15 @@ namespace startup_ui {
 struct Point;
 struct Rect;
 struct Sample;
+struct Ring;
+struct CameraRect;
 class Image {
 public:
   explicit Image(const char *path);
   ~Image();
   int32_t width() const;
   int32_t height() const;
+  rust::Vec<uint8_t> rgba();
   void premultiply();
   void flip_horizontal();
   void resize(int32_t width, int32_t height);
@@ -23,7 +26,15 @@ public:
   Surface(int32_t width, int32_t height, rust::Str title, uint32_t flags);
   ~Surface();
   uint32_t texture(Image &image, int32_t logical_width, int32_t logical_height);
+  void clear(uint32_t color) noexcept;
+  void texture_release(uint32_t texture) noexcept;
   uint32_t pixel_texture(int32_t width, int32_t height, rust::Slice<const uint8_t> rgba);
+  void smooth_texture(uint32_t texture);
+  void ring(Ring ring);
+  uint32_t plane_texture(int32_t width, int32_t height, bool chroma);
+  void plane_update(uint32_t texture, rust::Slice<const uint8_t> bytes);
+  uint32_t texture_native(uint32_t texture) const;
+  void camera_texture(uint32_t shader, uint32_t luma, uint32_t chroma, bool external, CameraRect source, CameraRect destination);
   uint32_t font(rust::Str path, int32_t size, rust::Slice<const int32_t> points,
                 bool atlas, bool mipmaps);
   Point measure(uint32_t font, rust::Str text, float size, float spacing) const;
@@ -32,10 +43,16 @@ public:
   void draw_texture(uint32_t texture, Rect rect, Point origin, float rotation);
   void tinted_texture(uint32_t texture, Rect source, Rect destination, Point origin, float rotation, uint32_t tint);
   void circle(Point center, float radius, uint32_t color);
+  void circle_lines(int32_t x, int32_t y, float radius, uint32_t color);
   void circle_gradient(Point center, float radius, uint32_t inner, uint32_t outer);
   void gradient(Rect rect, uint32_t top_left, uint32_t bottom_left, uint32_t top_right, uint32_t bottom_right);
+  void spline(rust::Slice<const Point> points, float thick, uint32_t color);
   void line(Point start, Point end, float thick, uint32_t color);
+  void integer_line(int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint32_t color);
+  void default_text(rust::Str text, int32_t x, int32_t y, int32_t size, uint32_t color);
   void rounded_segments(Rect rect, float roundness, int32_t segments, uint32_t color, bool border);
+  int32_t measure_default(rust::Str text, int32_t size) const;
+  void rounded_outline(Rect rect, float roundness, int32_t segments, float thickness, uint32_t color);
   void rounded(Rect rect, float roundness, uint32_t color, bool border);
   void scissor(Rect rect, bool enabled);
   void render_target(int32_t width, int32_t height);

@@ -1,0 +1,26 @@
+[package]
+name = "openpilot-panda-usb"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = ["dep:libloading"]
+
+[dependencies]
+libloading = { version = "0.8", optional = true }
+thiserror = "2"
+
+[dev-dependencies]
+serde_json = "1"
+
+[[example]]
+name = "usb_fixture"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "raw_fixture"
+required-features = ["native-skip-miri"]

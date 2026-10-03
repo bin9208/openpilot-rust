@@ -88,6 +88,9 @@ pub struct Recorder {
     pub dropped: u64,
 }
 impl Recorder {
+    pub fn child_pid(&self) -> u32 {
+        self.child.id()
+    }
     pub fn start(encoding: &Encoding, output: &Path) -> Result<Self, Error> {
         let args = encoding.arguments(output)?;
         let mut child = Command::new("ffmpeg")
@@ -169,7 +172,7 @@ impl Recorder {
             Ok(()) => self.accepted = self.accepted.saturating_add(1),
             Err(TrySendError::Full(_)) => self.dropped = self.dropped.saturating_add(1),
             Err(TrySendError::Disconnected(_)) => {
-                return Err(Error::Contract("ffmpeg writer disconnected"))
+                return Err(Error::Contract("ffmpeg writer disconnected"));
             }
         }
         Ok(())
@@ -203,10 +206,10 @@ impl Recorder {
         match writer {
             Ok(result) => result?,
             Err(mpsc::RecvTimeoutError::Timeout) => {
-                return Err(Error::Contract("ffmpeg writer timed out"))
+                return Err(Error::Contract("ffmpeg writer timed out"));
             }
             Err(mpsc::RecvTimeoutError::Disconnected) => {
-                return Err(Error::Contract("ffmpeg completion lost"))
+                return Err(Error::Contract("ffmpeg completion lost"));
             }
         }
         if !status.success() {

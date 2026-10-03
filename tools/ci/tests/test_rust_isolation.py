@@ -192,13 +192,20 @@ class RustIsolationTests(unittest.TestCase):
             for value in job.get('env', {}).values():
                 with self.subTest(job=name):
                     self.assertNotRegex(value, r'\$\{\{\s*runner[.\[]')
-        support = data['jobs']['support-runtime']
-        setup = next(step for step in support['steps'] if step.get('name') == 'Configure original support IPC imports')
-        with tempfile.TemporaryDirectory(prefix='support env ') as temporary:
-            output = Path(temporary) / 'environment'
-            environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
-            subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
-            self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/support-msgq-python:/fixture/repository:/fixture/tools\n')
+        for name, step_name, binding in (
+            ('support-runtime', 'Configure original support IPC imports', 'support-msgq-python'),
+            ('card-runtime', 'Configure original Card IPC imports', 'card-native/msgq'),
+            ('selfdrive-runtime', 'Configure original selfdrived IPC imports', 'selfdrived-native/msgq'),
+            ('camera-runtime', 'Configure original camera IPC imports', 'camera-native/python'),
+            ('panda-runtime', 'Configure original Panda IPC imports', 'panda-native/msgq'),
+            ('ui-runtime', 'Configure original UI IPC imports', 'ui-native/python'),
+        ):
+            setup = next(step for step in data['jobs'][name]['steps'] if step.get('name') == step_name)
+            with self.subTest(job=name), tempfile.TemporaryDirectory(prefix='IPC env ') as temporary:
+                output = Path(temporary) / 'environment'
+                environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
+                subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
+                self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/{binding}:/fixture/repository:/fixture/tools\n')
 
     def test_inherited_side_effects_are_source_repository_only(self):
         for file, job in [('sync.yml', 'sync'), ('naver-upstream-sync.yml', 'sync'), ('wiki-settings-publish.yaml', 'synchronize'), ('carrot-route-vault-publish.yaml', 'publish')]:
@@ -219,6 +226,7 @@ class RustIsolationTests(unittest.TestCase):
             'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
+            'card-runtime', 'selfdrive-runtime', 'camera-runtime', 'panda-runtime', 'ui-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -236,7 +244,12 @@ class RustIsolationTests(unittest.TestCase):
                                             'UI_CONNECTIVITY': '${{ needs.ui-connectivity.result }}',
                                             'ATHENA': '${{ needs.athena-runtime.result }}',
                                             'CONTROLS': '${{ needs.controls-runtime.result }}',
-                                            'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
+                                            'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}',
+                                            'CARD': '${{ needs.card-runtime.result }}',
+                                            'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}',
+                                            'CAMERA': '${{ needs.camera-runtime.result }}',
+                                            'PANDA': '${{ needs.panda-runtime.result }}',
+                                            'UI_RUNTIME': '${{ needs.ui-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
@@ -249,6 +262,55 @@ class RustIsolationTests(unittest.TestCase):
                                                   capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
+
+    def test_selfdrived_requires_source_loop_native_ipc_and_failure_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['selfdrive-runtime']
+        self.assertNotIn('if', job)
+        for checker in ('check_selfdrived_controller.py', 'check_selfdrived_ipc.py', 'check_selfdrived_failures.py'):
+            step = next(step for step in job['steps'] if checker in step.get('run', ''))
+            self.assertNotIn('if', step)
+            self.assertNotIn('continue-on-error', step)
+        steps = '\n'.join(step.get('run', '') for step in job['steps'])
+        self.assertIn('-p openpilot-selfdrived -p openpilot-messaging --locked', steps)
+        self.assertIn('build_params_python.py', steps)
+        self.assertIn('build_msgq_python.py', steps)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+
+    def test_camera_requires_source_driver_fixture_and_visionipc_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['camera-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_camerad_ci.py', 'build_visionipc_python.py', 'libclang-rt-18-dev',
+                         'openpilot-camerad-runtime --features native-skip-miri', '--test vision --test vision_server'):
+            self.assertIn(required, commands)
+        step = next(step for step in job['steps'] if 'check_camerad_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', step)
+        self.assertNotIn('continue-on-error', step)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+        arm = next(step['run'] for step in data['jobs']['arm64']['steps'] if step.get('name') == 'Build generic and ION camera aarch64 artifacts')
+        self.assertLess(arm.index('cp target/'), arm.index('--features visionipc-ion'))
+        self.assertIn('--features native-skip-miri', arm)
+        self.assertIn('sha256sum', arm)
+
+    def test_panda_requires_native_transports_and_source_composition(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['panda-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_pandad_ci.py', 'build_msgq_python.py', 'libusb1==3.4.0',
+                         '-p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux',
+                         '--message-format=json', '--build-messages'):
+            self.assertIn(required, commands)
+        step = next(step for step in job['steps'] if 'check_pandad_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', step)
+        self.assertNotIn('continue-on-error', step)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+
 
 if __name__ == '__main__':
     unittest.main()

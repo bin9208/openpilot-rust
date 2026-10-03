@@ -230,7 +230,7 @@ def adapter_asan(ctx: Context) -> None:
       ctx.cxx,
       '-std=c++17',
       '-g',
-      '-fsanitize=address',
+      '-fsanitize=address,undefined',
       '-fno-omit-frame-pointer',
       f'-I{header}',
       f'-I{ctx.root / "rust/crates/startup-ui/native"}',
@@ -240,6 +240,7 @@ def adapter_asan(ctx: Context) -> None:
       str(ctx.root / 'rust/crates/startup-ui/native/raylib_loader.cc'),
       str(ctx.root / 'rust/crates/startup-ui/native/graphics.cc'),
       str(ctx.root / 'rust/crates/startup-ui/native/egl.cc'),
+      str(ctx.root / 'rust/crates/startup-ui/native/camera.cc'),
       str(runtime),
       '-ldl',
       '-lpthread',
@@ -250,7 +251,7 @@ def adapter_asan(ctx: Context) -> None:
   ctx.run(
     'asan',
     [str(executable), str(ctx.root / 'openpilot/selfdrive/assets/img_spinner_track.png'), str(ctx.output / 'asan.png')],
-    {'ASAN_OPTIONS': 'detect_leaks=0:halt_on_error=1'},
+    {'ASAN_OPTIONS': 'detect_leaks=0:halt_on_error=1', 'UBSAN_OPTIONS': 'halt_on_error=1'},
   )
 
 

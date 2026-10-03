@@ -19,7 +19,7 @@ mod hardware;
 mod identity;
 pub use hardware::NativeHardware;
 pub mod utf7;
-pub use api::{api_get, Response};
+pub use api::{api_get, response_text, Response};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

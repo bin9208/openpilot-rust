@@ -38,7 +38,12 @@ pub(crate) mod ffi {
             conflate: bool,
             capacity: usize,
         ) -> Result<UniquePtr<Queue>>;
+        fn open_transient_runtime_publisher(
+            endpoint: &str,
+            capacity: usize,
+        ) -> Result<UniquePtr<Queue>>;
         fn send(self: Pin<&mut Queue>, bytes: &[u8]) -> Result<()>;
+        fn send_if_current(self: Pin<&mut Queue>, bytes: &[u8]) -> Result<bool>;
         fn readers_caught_up(self: Pin<&mut Queue>) -> bool;
         fn receive(self: Pin<&mut Queue>, timeout_ms: i32) -> Result<Vec<u8>>;
     }

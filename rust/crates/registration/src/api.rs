@@ -111,7 +111,7 @@ pub fn api_get(
     Err(Error::Contract("redirect limit"))
 }
 
-fn response_text(bytes: &[u8], content_type: &str) -> Result<String, Error> {
+pub fn response_text(bytes: &[u8], content_type: &str) -> Result<String, Error> {
     let charset = content_type.split(';').skip(1).find_map(|item| {
         let (name, value) = item.trim().split_once('=')?;
         name.eq_ignore_ascii_case("charset")

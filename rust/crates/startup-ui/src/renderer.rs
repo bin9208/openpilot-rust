@@ -39,10 +39,12 @@ pub struct Window {
     pub language: String,
 }
 pub struct Renderer {
+    texture_releases: Rc<std::cell::RefCell<Vec<u32>>>,
     pub(crate) surface: cxx::UniquePtr<ffi::Surface>,
     pub config: Config,
     pub(crate) dimensions: (f32, f32),
     pub(crate) polygon_shader: Option<u32>,
+    camera_shaders: [Option<u32>; 4],
     normal: u32,
     medium: u32,
     pretendard: u32,
@@ -170,6 +172,8 @@ impl Renderer {
             .ok_or(Error::Contract("Pretendard font missing"))?;
         let display = fonts.get("KaiGenGothicKR-Bold").copied();
         let mut renderer = Self {
+            texture_releases: Rc::default(),
+            camera_shaders: [None; 4],
             surface,
             config,
             dimensions,
@@ -203,3 +207,7 @@ mod frame;
 mod paint;
 use fonts::{font_points, resolve_font};
 use paint::convert;
+
+mod camera;
+mod dynamic;
+pub use dynamic::{DecodedImage, DynamicTexture};

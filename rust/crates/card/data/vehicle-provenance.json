@@ -1,0 +1,12 @@
+{
+  "source_commit": "31d7306882218e9fecc44aba0d5c034f0d1ca188",
+  "runtime_python": false,
+  "source_sha256": {
+    "opendbc_repo/opendbc/car/interfaces.py": "c6ac888f2c2a85413f98413e5f603cbf4daf3749ed6e3d9c122328656952ca10",
+    "opendbc_repo/opendbc/car/__init__.py": "f56a23742d37395f5869f9c63a367375e038e2b47966efaed7a9679307c01e5e",
+    "opendbc_repo/opendbc/car/common/simple_kalman.py": "47339fee13c85ded47eaf1bb44fbb1f72f667e6f3ccf5d00ef6ced777d6c860b",
+    "opendbc_repo/opendbc/car/torque_data/override.toml": "2e5f71c2cd89541504730090fafa318b3517026e42643f0bd4207029c2a815b3",
+    "opendbc_repo/opendbc/car/torque_data/params.toml": "3676b91d1d2f5c54816de5f004c4cc9edd944dbc90c9739793aa1ba7f2b067d6",
+    "opendbc_repo/opendbc/car/torque_data/substitute.toml": "3ab402d36592de79af700c018beea69e0c6105d8aed8329021468c80cbf20968"
+  }
+}

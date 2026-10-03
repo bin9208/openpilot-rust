@@ -1,0 +1,21 @@
+[package]
+name = "openpilot-panda-spi-linux"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = ["dep:cxx"]
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dependencies]
+openpilot-panda-spi = { path = "../panda-spi" }
+cxx = { version = "1.0", optional = true }
+
+[build-dependencies]
+cxx-build = "1.0"

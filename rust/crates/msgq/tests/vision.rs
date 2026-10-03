@@ -138,6 +138,13 @@ fn original_server_camera_transport() {
     let mut retained = vec![0; meta.len];
     assert!(frame.copy_into(&mut retained[..95]).is_err());
     frame.copy_into(&mut retained).unwrap();
+    let descriptor = std::os::fd::AsFd::as_fd(&frame)
+        .try_clone_to_owned()
+        .unwrap();
+    let mut imported_file = std::fs::File::from(descriptor);
+    let mut imported_bytes = vec![0; meta.len];
+    std::io::Read::read_exact(&mut imported_file, &mut imported_bytes).unwrap();
+    assert_eq!(imported_bytes, retained);
     assert_eq!(
         retained,
         (0_u8..96)

@@ -9,7 +9,11 @@
       "name": "_pandad",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/selfdrive/pandad",
-      "status": "not_ported",
+      "status": "native_core_host_and_arm_simulated",
+      "implementation": "rust/crates/pandad; native CAN codec, USB/SPI communication, state/safety/peripheral workers and cereal publications",
+      "native_dependencies": ["external libusb", "Linux USB/SPI drivers and Panda firmware", "temporary project-owned C++ msgq through CXX", "Linux clocks/signals/scheduling"],
+      "evidence": "docs/naver/rust-pandad-175.md",
+      "runtime_scope": "original-source component comparisons and actual supervised core IPC on host and ARM/QEMU with owned transport fixtures; source descriptor stays disabled because the supervisor launches the child. Full manager startup/upload, retained project-owned IPC conversion, actual hardware/AGNOS and user device acceptance remain pending",
       "production_replaced": false
     },
     {
@@ -45,15 +49,24 @@
       "name": "camerad",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/camerad",
-      "status": "not_ported",
+      "status": "native_daemon_host_and_arm_simulated",
+      "implementation": "rust/crates/camerad, camera-kernel and camerad-runtime; three-camera sensor/ISP/PHY lifecycle, exposure, request/fence handling, VisionIPC and camera-state publications, native diagnostics and normal main loop",
+      "native_dependencies": ["original msgq/VisionIPC allocation and transport through CXX", "ION allocator for the target build", "Linux Qualcomm camera/ISP/BPS/sync driver APIs and firmware", "libc strtod/rand and BOOTTIME clock", "native libzmq log transport"],
+      "runtime_scope": "host and generic ARM actual-main simulation passed 16 scenarios and 212 paired state/Vision frames; exact retained original frame-state/exposure oracle, publication barrier, cleanup and stress gates; separate ION build passed offline linkage against the exact published AGNOS 19.8-carrot-bt1 libraries",
+      "unported_scope": ["full manager startup and active log-upload integration", "project-owned C++ msgq/VisionIPC implementation remains a tracked runtime boundary"],
+      "validation_limits": ["ION/sensor/ISP operation and target scheduling are not validated on hardware", "full NV12 copy for exposure sampling is an added unmeasured cost", "LOG_RAW_FRAMES with road IFE retains a fatal missing-raw boundary"],
+      "evidence": "docs/naver/rust-camerad-187.md",
       "production_replaced": false
     },
     {
       "name": "card",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.car.card",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "production_replaced": false,
+      "implementation": "rust/crates/{can,card}; native CAN codecs/parser, VIN/firmware/fingerprint startup, continuous card core, CruiseCarrot and fourteen registered vehicle interfaces (Body, Mock, Hyundai, Tesla, Mazda, Nissan, Chrysler, Rivian, Ford, Subaru, Toyota, GM, Honda, Volkswagen); PSA has typed source-failure boundaries only; 23 VW MQB identities preserve the inherited first-update failure (#189)",
+      "evidence": "docs/naver/rust-card-177.md",
+      "runtime_scope": "Owned original msgq/Cereal/Params full-Car comparison: latest six-brand batch passes 17 scenarios/1360 measured steps per architecture, normal host nominal100Hz and separately paced ARM/QEMU under unchanged SIMULATION=1 policy; earlier14 scenarios/1120 steps per architecture are retained on their separately hashed builds. Registered278/279 identities,273 parameterizable; five source missing-torque failures, GM pedal missing-message failures and23 VW MQB first-update failures remain explicit, and PSA is separately blocked. Source-equivalent SecOC warning/order correction passes354 cases; offline linkage against exact published AGNOS19.8 libraries passes. Fresh-runner CI, full-runtime startup/upload, production selection and device/performance acceptance remain pending; project-owned C++ msgq transport is still an explicit temporary dependency"
     },
     {
       "name": "carrot_bluetooth",
@@ -338,7 +351,11 @@
       "name": "pandad",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.pandad.pandad",
-      "status": "not_ported",
+      "status": "native_supervisor_host_and_arm_simulated",
+      "implementation": "rust/crates/pandad; native firmware/client policies, USB/SPI discovery and recovery, child launch/restart and source signal handling",
+      "native_dependencies": ["external libusb", "Linux USB/SPI drivers and Panda firmware", "temporary project-owned C++ msgq through CXX", "native process launcher and hardware control"],
+      "evidence": "docs/naver/rust-pandad-175.md",
+      "runtime_scope": "reviewed source comparisons, 12 actual supervisor/core/IPC executions across host and ARM/QEMU, and native USB DFU composition including progress output. SPI DFU environment composition retains constituent protocol/ABI evidence. Full manager startup/upload, retained project-owned IPC conversion, actual hardware/AGNOS and user device acceptance remain pending",
       "production_replaced": false
     },
     {
@@ -407,7 +424,11 @@
       "name": "selfdrived",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.selfdrived.selfdrived",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "implementation": "rust/crates/selfdrived; continuous native carState loop, engagement/events/alerts, complete car policy, calibrated pose/actuation checks, Params worker and cereal publications",
+      "native_dependencies": ["original msgq/VisionIPC through CXX", "libzmq native logging", "Linux clocks/signals/scheduling/filesystem", "Git executable for source build metadata"],
+      "runtime_scope": "source state/event/alert/callback/controller parity; ARM matches retained source-verified host controller/clock captures and passes native IPC restart/refresh plus nine failure cases under QEMU; offline linkage against the pinned AGNOS image passes. Runtime Python absent; core6/FIFO53 policy preserved in code. Actual AGNOS scheduling, complete manager startup/log upload and user device comparison remain pending under #1",
+      "evidence": "docs/naver/rust-selfdrived-168.md",
       "production_replaced": false
     },
     {
@@ -494,7 +515,13 @@
       "name": "ui",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.ui.ui",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_validated",
+      "implementation": "rust/crates/ui-application with ui-framework and startup-ui; native openpilot-ui, both main layouts, road and compact rendering, settings/onboarding/dialog routes, IPC, recording, resource workers and cleanup",
+      "native_dependencies": ["pinned comma-deps-raylib 6.0.0.1.post103 graphics plugin and native graphics adapters", "OpenGL or target EGL/GLES/DRM/GBM driver stack", "temporary original msgq/VisionIPC through CXX", "external ffmpeg executable for recording", "NetworkManager/D-Bus and Linux hardware/scheduling APIs", "native process-child and updated siblings"],
+      "runtime_scope": "original-source host pixel/state comparisons, actual IPC/VisionIPC and XTest input, recording/ffprobe, normal and injected-error cleanup, bounded Miri and native adapter sanitizers; four independent host reviews and separate complete eight-plot-mode amendment accepted",
+      "unported_scope": ["complete manager normal startup and existing log upload integration", "project-owned msgq/VisionIPC C++ transport remains a tracked runtime boundary"],
+      "validation_limits": ["fresh hosted application CI pending", "generic ARM and ION UI builds, AGNOS graphics closure and target rendering pending", "synthetic camera/input and owned hardware/network seams do not establish device behavior or performance"],
+      "evidence": "docs/naver/rust_ui_application_148.md",
       "production_replaced": false
     },
     {
