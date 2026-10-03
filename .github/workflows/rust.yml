@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -39,6 +39,7 @@ jobs:
           ATHENA: ${{ needs.athena-runtime.result }}
           CONTROLS: ${{ needs.controls-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
+          CARD: ${{ needs.card-runtime.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -57,17 +58,21 @@ jobs:
           test "$ATHENA" = success
           test "$CONTROLS" = success
           test "$UPLOAD_TIMEOUTS" = success
+          test "$CARD" = success
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
       CPU_COUNT: '2'
       DEV: CPU:LLVM
       JIT: '2'
       LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
-      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
       MODEL_RUN_BINARY: ${{ github.workspace }}/rust/target/debug/model-run
     defaults:
       run:
@@ -80,8 +85,14 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Reserve capacity for workspace validation
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 12288
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev cmake
-      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
       - name: Stage pinned native startup UI headers
         run: |
           python tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host"
@@ -91,13 +102,33 @@ jobs:
         run: |
           python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
           python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
-      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Stage pinned numerical dependency before required workspace tests
         run: |
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
           python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-numerics"
           printf 'CONTROLS_NUMERICS=%s/torque-numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - run: cargo test --workspace --locked
+      - name: Generate runner-local Hyundai source fixtures
+        run: |
+          python tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-workspace/fixtures" --dbc "$RUNNER_TEMP/card-workspace/dbc"
+          printf 'HYUNDAI_FIXTURE_DIR=%s/card-workspace/fixtures\nHYUNDAI_DBC_DIR=%s/card-workspace/dbc\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          cargo test --workspace --locked
+      - name: Require complete Hyundai schemas after workspace tests
+        run: |
+          python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
+          python tools/check_card_hyundai_state.py "$HYUNDAI_FIXTURE_DIR"
+          python tools/check_card_hyundai_controller.py "$HYUNDAI_FIXTURE_DIR"
+      - name: Preserve generated workspace fixtures and schema results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-card-workspace-fixtures
+          path: ${{ runner.temp }}/card-workspace/
+          if-no-files-found: warn
       - name: Compare QCOM fixtures with the original argument and packet encoder
         run: python tools/qcom_fixtures.py --verify crates/model-runtime/tests/fixtures/qcom
       - name: Compare captured graphs and original camera warps with Rust
@@ -258,6 +289,95 @@ jobs:
             ${{ runner.temp }}/communication-snapshot/report.json
             ${{ runner.temp }}/logging-producer/**/report.json
             ${{ runner.temp }}/logging-producer/**/*.log
+  card-runtime:
+    name: rust Card and CAN runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original Card IPC imports
+        run: printf 'PYTHONPATH=%s/card-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity before dependency installation
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+      - name: Install pinned Card oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+      - name: Install pinned Rust compiler
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build unchanged source Params and msgq bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/card-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/card-native/msgq"
+          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"card-native/params/provenance.json"; print("CARD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+      - name: Stage pinned numerical dependency
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/card-native/wheels"
+          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/card-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/card-native/numerics"
+      - name: Generate all required Hyundai fixtures
+        run: |
+          python rust/tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-native/fixtures" --dbc "$RUNNER_TEMP/card-native/dbc"
+          printf 'HYUNDAI_FIXTURE_DIR=%s/card-native/fixtures\nHYUNDAI_DBC_DIR=%s/card-native/dbc\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Build CAN and native Card executables and examples
+        working-directory: rust
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-can --examples --locked
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build -p openpilot-card --features native --bins --examples --locked
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy -p openpilot-can -p openpilot-card --features openpilot-card/native --all-targets --locked -- -D warnings
+      - name: Require Card and CAN tests with complete Hyundai postchecks
+        working-directory: rust
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test -p openpilot-can -p openpilot-card --features openpilot-card/native --locked
+          python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
+          python tools/check_card_hyundai_state.py "$HYUNDAI_FIXTURE_DIR"
+          python tools/check_card_hyundai_controller.py "$HYUNDAI_FIXTURE_DIR"
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests/test_card_ci.py tools/tests/test_card_phase_fence.py -q
+      - name: Require source and native Card and CAN functional gates
+        run: |
+          python rust/tools/check_card_ci.py --phase reference --binaries "$GITHUB_WORKSPACE/rust/target/debug/examples" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-card" --numerics "$RUNNER_TEMP/card-native/numerics" --binding "$CARD_PARAMS_BINDING" --dbc "$HYUNDAI_DBC_DIR" --corpus "$RUNNER_TEMP/card-native/corpus" --evidence "$RUNNER_TEMP/card-native/reference"
+      - name: Stage declared synthetic IPC inputs
+        run: |
+          python rust/tools/stage_card_corpus.py --output "$RUNNER_TEMP/card-native/corpus" --fixtures "$HYUNDAI_FIXTURE_DIR" --dbc "$HYUNDAI_DBC_DIR" \
+            --retained "tesla=$RUNNER_TEMP/card-native/reference/tesla/input.json" --retained "mazda=$RUNNER_TEMP/card-native/reference/mazda/input.json" \
+            --retained "nissan=$RUNNER_TEMP/card-native/reference/nissan/input.json" --retained "chrysler=$RUNNER_TEMP/card-native/reference/chrysler/input.json" \
+            --retained "rivian=$RUNNER_TEMP/card-native/reference/rivian/input.json" --retained "ford=$RUNNER_TEMP/card-native/reference/ford/input.json" \
+            --retained "subaru=$RUNNER_TEMP/card-native/reference/subaru/input.json" --retained "toyota=$RUNNER_TEMP/card-native/reference/toyota/input.json" \
+            --retained "gm=$RUNNER_TEMP/card-native/reference/gm/input.json" --retained "honda=$RUNNER_TEMP/card-native/reference/honda/input.json" \
+            --retained "volkswagen=$RUNNER_TEMP/card-native/reference/volkswagen/input.json"
+      - name: Require actual host Card IPC and shutdown
+        run: |
+          python rust/tools/check_card_ci.py --phase ipc --binaries "$GITHUB_WORKSPACE/rust/target/debug/examples" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-card" --numerics "$RUNNER_TEMP/card-native/numerics" --binding "$CARD_PARAMS_BINDING" --dbc "$HYUNDAI_DBC_DIR" --corpus "$RUNNER_TEMP/card-native/corpus" --evidence "$RUNNER_TEMP/card-native/ipc"
+      - name: Preserve Card and CAN invocations, source identities, failures and generated inputs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-card-can-host-evidence
+          path: ${{ runner.temp }}/card-native/
+          if-no-files-found: warn
   support-runtime:
     name: rust support runtime
     runs-on: ubuntu-24.04
@@ -1189,6 +1309,9 @@ jobs:
     if: github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1196,7 +1319,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
+      - name: Reserve capacity for generic ARM build dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 12288
+          sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
       - name: Stage native GNU aarch64 startup renderer and portable loader headers
         run: |
           sudo dpkg --add-architecture arm64
@@ -1220,6 +1347,31 @@ jobs:
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
           cargo build --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-gnu
           file target/aarch64-unknown-linux-gnu/release/cpu-sample
+      - name: Build and inspect native Card for generic Linux aarch64
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          mkdir -p "$RUNNER_TEMP/card-arm"
+          printf '%s\n' 'cargo build -p openpilot-card --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu' > "$RUNNER_TEMP/card-arm/command.txt"
+          git rev-parse HEAD > "$RUNNER_TEMP/card-arm/SOURCE_COMMIT"
+          set -o pipefail
+          cargo build -p openpilot-card --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/card-arm/build.log"
+          file target/aarch64-unknown-linux-gnu/release/openpilot-card > "$RUNNER_TEMP/card-arm/file.txt"
+          aarch64-linux-gnu-readelf -h target/aarch64-unknown-linux-gnu/release/openpilot-card > "$RUNNER_TEMP/card-arm/elf-header.txt"
+          test "$(aarch64-linux-gnu-readelf -h target/aarch64-unknown-linux-gnu/release/openpilot-card | sed -n 's/.*Machine: *//p')" = AArch64
+          sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-card target/aarch64-unknown-linux-gnu/release/examples/*_trace > "$RUNNER_TEMP/card-arm/SHA256SUMS"
+      - name: Preserve native Card ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-card-linux-aarch64-not-device-validated
+          path: |
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-card
+            rust/target/aarch64-unknown-linux-gnu/release/examples/*_trace
+            ${{ runner.temp }}/card-arm/
+          if-no-files-found: warn
       - name: Stage native GNU aarch64 torque dependency (not AGNOS validation)
         working-directory: rust
         run: |
@@ -1279,6 +1431,9 @@ jobs:
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-torqued
             ${{ runner.temp }}/torque-arm-numerics/
             rust/target/aarch64-unknown-linux-gnu/release/jetlinkd-rs
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-card
+            rust/target/aarch64-unknown-linux-gnu/release/examples/*_trace
+            ${{ runner.temp }}/card-arm/
 
   athena-runtime:
     name: rust Athena runtime

@@ -1,0 +1,21 @@
+{
+  "source_commit": "31d7306882218e9fecc44aba0d5c034f0d1ca188",
+  "runtime_python": false,
+  "source_sha256": {
+    "opendbc_repo/opendbc/can/packer.py": "f4a8b674ba3b6bc95cb22970aeec95622548a08b01d797e39684409644867e6b",
+    "opendbc_repo/opendbc/can/__init__.py": "12b5637232dc8c199b131e169004b27825c021c2e1f741e391ba9f480f0d41a2",
+    "opendbc_repo/opendbc/can/parser.py": "676169d5d41b026a280aa4aa99d076127b986984710015436115107466a3ff22",
+    "opendbc_repo/opendbc/can/dbc.py": "07a586ae153665f2a1f7a19ecda33db6480652f143d98ef03fd9e0dcd9d19da8",
+    "opendbc_repo/opendbc/car/crc.py": "8ce101a881579f844bb8cf6c961f72de159c9eda90da535f13b4cafb4b065951",
+    "opendbc_repo/opendbc/car/honda/hondacan.py": "7ed40fb9863ea42cae46bc56830c4b99e125664bbf1c6690b27efb630b2f42cf",
+    "opendbc_repo/opendbc/car/toyota/toyotacan.py": "b35d2da892a041f39327771cb61c80eeded753fc8b83bd249975f67d71502627",
+    "opendbc_repo/opendbc/car/subaru/subarucan.py": "722b389afff64a1dce7e147db888c57079c561f4eea776d4c3b3dce18bb0dee0",
+    "opendbc_repo/opendbc/car/chrysler/chryslercan.py": "f09b91044a3c37cef07f7467f15f8b316a9fed5d5d90f1f74374a6ada7ac8378",
+    "opendbc_repo/opendbc/car/hyundai/hyundaicanfd.py": "f670ecd22bc5e76c94da61ac88c9ed7b3777a7ade1cfc66e046a576e59b38758",
+    "opendbc_repo/opendbc/car/volkswagen/mqbcan.py": "1acb35e589f8fd9c4e1a203e540554ce2dbaf2daaca3097d8794f8de8aed854d",
+    "opendbc_repo/opendbc/car/volkswagen/mlbcan.py": "af59ce8605827eb8bdd8a1a4ef3b7e1c858b0604cb663d82807206b5bd847990",
+    "opendbc_repo/opendbc/car/tesla/teslacan.py": "a8e03bbf7eeb1a743150d787047eee2d5c343311d6c4f75ec7c30c14c7a7f776",
+    "opendbc_repo/opendbc/car/body/bodycan.py": "f5729bfa1ccc9a56244e4310d57e38e5e29c1ee77f1fd8bb64baead9a33db080",
+    "opendbc_repo/opendbc/car/psa/psacan.py": "9444f96733592244db0a9eaf54e4d040a7bbf4a87b62b1e4d716fa1f5af876f5"
+  }
+}

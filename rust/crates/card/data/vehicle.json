@@ -1,0 +1,5404 @@
+{
+  "platforms": [
+    {
+      "candidate": "COMMA_BODY",
+      "brand": "body",
+      "mass": 9,
+      "wheelbase": 0.406,
+      "steer_ratio": 0.5,
+      "center_front_ratio": 0.44,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "comma_body",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1000,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "CHRYSLER_PACIFICA_2018_HYBRID",
+      "brand": "chrysler",
+      "mass": 2242.0,
+      "wheelbase": 3.089,
+      "steer_ratio": 16.2,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 3.8,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "chrysler_pacifica_2017_hybrid_generated",
+      "dbc_radar": "chrysler_pacifica_2017_hybrid_private_fusion",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.08887,
+        "MAX_LAT_ACCEL_MEASURED": 1.2943025830995154,
+        "FRICTION": 0.114818
+      }
+    },
+    {
+      "candidate": "CHRYSLER_PACIFICA_2019_HYBRID",
+      "brand": "chrysler",
+      "mass": 2242.0,
+      "wheelbase": 3.089,
+      "steer_ratio": 16.2,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 3.8,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "chrysler_pacifica_2017_hybrid_generated",
+      "dbc_radar": "chrysler_pacifica_2017_hybrid_private_fusion",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.9012,
+        "MAX_LAT_ACCEL_MEASURED": 1.1958788168371808,
+        "FRICTION": 0.13152
+      }
+    },
+    {
+      "candidate": "CHRYSLER_PACIFICA_2018",
+      "brand": "chrysler",
+      "mass": 2242.0,
+      "wheelbase": 3.089,
+      "steer_ratio": 16.2,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 3.8,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "chrysler_pacifica_2017_hybrid_generated",
+      "dbc_radar": "chrysler_pacifica_2017_hybrid_private_fusion",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0714,
+        "MAX_LAT_ACCEL_MEASURED": 1.3366521181047952,
+        "FRICTION": 0.13776367250652022
+      }
+    },
+    {
+      "candidate": "CHRYSLER_PACIFICA_2020",
+      "brand": "chrysler",
+      "mass": 2242.0,
+      "wheelbase": 3.089,
+      "steer_ratio": 16.2,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 3.8,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "chrysler_pacifica_2017_hybrid_generated",
+      "dbc_radar": "chrysler_pacifica_2017_hybrid_private_fusion",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.86206,
+        "MAX_LAT_ACCEL_MEASURED": 1.509076559398423,
+        "FRICTION": 0.14328246159386085
+      }
+    },
+    {
+      "candidate": "DODGE_DURANGO",
+      "brand": "chrysler",
+      "mass": 2242.0,
+      "wheelbase": 3.089,
+      "steer_ratio": 16.2,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 3.8,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "chrysler_pacifica_2017_hybrid_generated",
+      "dbc_radar": "chrysler_pacifica_2017_hybrid_private_fusion",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.86206,
+        "MAX_LAT_ACCEL_MEASURED": 1.509076559398423,
+        "FRICTION": 0.14328246159386085
+      }
+    },
+    {
+      "candidate": "JEEP_GRAND_CHEROKEE",
+      "brand": "chrysler",
+      "mass": 1778.0,
+      "wheelbase": 2.71,
+      "steer_ratio": 16.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 3.8,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "chrysler_pacifica_2017_hybrid_generated",
+      "dbc_radar": "chrysler_pacifica_2017_hybrid_private_fusion",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.27116,
+        "MAX_LAT_ACCEL_MEASURED": 1.4057367824262523,
+        "FRICTION": 0.11725947414922003
+      }
+    },
+    {
+      "candidate": "JEEP_GRAND_CHEROKEE_2019",
+      "brand": "chrysler",
+      "mass": 1778.0,
+      "wheelbase": 2.71,
+      "steer_ratio": 16.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 3.8,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "chrysler_pacifica_2017_hybrid_generated",
+      "dbc_radar": "chrysler_pacifica_2017_hybrid_private_fusion",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.30972,
+        "MAX_LAT_ACCEL_MEASURED": 1.289689569171081,
+        "FRICTION": 0.117048
+      }
+    },
+    {
+      "candidate": "RAM_1500_5TH_GEN",
+      "brand": "chrysler",
+      "mass": 2493.0,
+      "wheelbase": 3.88,
+      "steer_ratio": 16.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 14.5,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "chrysler_ram_dt_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.05
+      }
+    },
+    {
+      "candidate": "RAM_HD_5TH_GEN",
+      "brand": "chrysler",
+      "mass": 3405.0,
+      "wheelbase": 3.785,
+      "steer_ratio": 15.61,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 16.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "chrysler_ram_hd_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.4,
+        "MAX_LAT_ACCEL_MEASURED": 1.4,
+        "FRICTION": 0.05
+      }
+    },
+    {
+      "candidate": "FORD_BRONCO_SPORT_MK1",
+      "brand": "ford",
+      "mass": 1625,
+      "wheelbase": 2.67,
+      "steer_ratio": 17.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": "FORD_CADS",
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "FORD_ESCAPE_MK4",
+      "brand": "ford",
+      "mass": 1750,
+      "wheelbase": 2.71,
+      "steer_ratio": 16.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": "FORD_CADS",
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "FORD_ESCAPE_MK4_5",
+      "brand": "ford",
+      "mass": 1750,
+      "wheelbase": 2.71,
+      "steer_ratio": 16.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 1,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": null,
+      "torque": null
+    },
+    {
+      "candidate": "FORD_EXPLORER_MK6",
+      "brand": "ford",
+      "mass": 2050,
+      "wheelbase": 3.025,
+      "steer_ratio": 16.8,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": "FORD_CADS",
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "FORD_EXPEDITION_MK4",
+      "brand": "ford",
+      "mass": 2000,
+      "wheelbase": 3.69,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 1,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": null,
+      "torque": null
+    },
+    {
+      "candidate": "FORD_F_150_MK14",
+      "brand": "ford",
+      "mass": 2000,
+      "wheelbase": 3.69,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 1,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "FORD_F_150_LIGHTNING_MK1",
+      "brand": "ford",
+      "mass": 2948,
+      "wheelbase": 3.7,
+      "steer_ratio": 16.9,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 1,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "FORD_FOCUS_MK4",
+      "brand": "ford",
+      "mass": 1350,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": "FORD_CADS",
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "FORD_MAVERICK_MK1",
+      "brand": "ford",
+      "mass": 1650,
+      "wheelbase": 3.076,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": "FORD_CADS",
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "FORD_MUSTANG_MACH_E_MK1",
+      "brand": "ford",
+      "mass": 2200,
+      "wheelbase": 2.984,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 1,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "FORD_RANGER_MK2",
+      "brand": "ford",
+      "mass": 2000,
+      "wheelbase": 3.27,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 1,
+      "dbc_pt": "ford_lincoln_base_pt",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "HOLDEN_ASTRA",
+      "brand": "gm",
+      "mass": 1363,
+      "wheelbase": 2.662,
+      "steer_ratio": 15.7,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "CHEVROLET_VOLT",
+      "brand": "gm",
+      "mass": 1607,
+      "wheelbase": 2.69,
+      "steer_ratio": 17.7,
+      "center_front_ratio": 0.55,
+      "min_enable_speed": -1,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.469,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "CADILLAC_ATS",
+      "brand": "gm",
+      "mass": 1601,
+      "wheelbase": 2.78,
+      "steer_ratio": 15.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "CHEVROLET_MALIBU",
+      "brand": "gm",
+      "mass": 1496,
+      "wheelbase": 2.83,
+      "steer_ratio": 15.8,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "GMC_ACADIA",
+      "brand": "gm",
+      "mass": 1975,
+      "wheelbase": 2.86,
+      "steer_ratio": 14.4,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.6,
+        "MAX_LAT_ACCEL_MEASURED": 1.6,
+        "FRICTION": 0.2
+      }
+    },
+    {
+      "candidate": "BUICK_LACROSSE",
+      "brand": "gm",
+      "mass": 1712,
+      "wheelbase": 2.91,
+      "steer_ratio": 15.8,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "BUICK_REGAL",
+      "brand": "gm",
+      "mass": 1714,
+      "wheelbase": 2.83,
+      "steer_ratio": 14.4,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "CADILLAC_ESCALADE",
+      "brand": "gm",
+      "mass": 2564,
+      "wheelbase": 2.95,
+      "steer_ratio": 17.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.899999976158142,
+        "MAX_LAT_ACCEL_MEASURED": 1.842270016670227,
+        "FRICTION": 0.1120000034570694
+      }
+    },
+    {
+      "candidate": "CADILLAC_ESCALADE_ESV",
+      "brand": "gm",
+      "mass": 2739,
+      "wheelbase": 3.302,
+      "steer_ratio": 17.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "CADILLAC_ESCALADE_ESV_2019",
+      "brand": "gm",
+      "mass": 2739,
+      "wheelbase": 3.302,
+      "steer_ratio": 17.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.15,
+        "MAX_LAT_ACCEL_MEASURED": 1.3,
+        "FRICTION": 0.2
+      }
+    },
+    {
+      "candidate": "CHEVROLET_BOLT_EUV",
+      "brand": "gm",
+      "mass": 1669,
+      "wheelbase": 2.63779,
+      "steer_ratio": 16.8,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.05
+      }
+    },
+    {
+      "candidate": "CHEVROLET_SILVERADO",
+      "brand": "gm",
+      "mass": 2450,
+      "wheelbase": 3.75,
+      "steer_ratio": 16.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.9,
+        "MAX_LAT_ACCEL_MEASURED": 1.9,
+        "FRICTION": 0.112
+      }
+    },
+    {
+      "candidate": "CHEVROLET_EQUINOX",
+      "brand": "gm",
+      "mass": 1588,
+      "wheelbase": 2.72,
+      "steer_ratio": 14.4,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.05
+      }
+    },
+    {
+      "candidate": "CHEVROLET_TRAILBLAZER",
+      "brand": "gm",
+      "mass": 1345,
+      "wheelbase": 2.64,
+      "steer_ratio": 16.8,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.33,
+        "MAX_LAT_ACCEL_MEASURED": 1.9,
+        "FRICTION": 0.16
+      }
+    },
+    {
+      "candidate": "CADILLAC_XT4",
+      "brand": "gm",
+      "mass": 1660,
+      "wheelbase": 2.78,
+      "steer_ratio": 14.4,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.45,
+        "MAX_LAT_ACCEL_MEASURED": 1.6,
+        "FRICTION": 0.2
+      }
+    },
+    {
+      "candidate": "CHEVROLET_VOLT_2019",
+      "brand": "gm",
+      "mass": 1607,
+      "wheelbase": 2.69,
+      "steer_ratio": 15.7,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.4,
+        "MAX_LAT_ACCEL_MEASURED": 1.4,
+        "FRICTION": 0.16
+      }
+    },
+    {
+      "candidate": "CHEVROLET_TRAVERSE",
+      "brand": "gm",
+      "mass": 1955,
+      "wheelbase": 3.07,
+      "steer_ratio": 17.9,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.33,
+        "MAX_LAT_ACCEL_MEASURED": 1.33,
+        "FRICTION": 0.18
+      }
+    },
+    {
+      "candidate": "CHEVROLET_VOLT_CC",
+      "brand": "gm",
+      "mass": 1607,
+      "wheelbase": 2.69,
+      "steer_ratio": 17.7,
+      "center_front_ratio": 0.55,
+      "min_enable_speed": -1,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.469,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "CHEVROLET_BOLT_CC",
+      "brand": "gm",
+      "mass": 1669,
+      "wheelbase": 2.63779,
+      "steer_ratio": 16.8,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.05
+      }
+    },
+    {
+      "candidate": "CHEVROLET_EQUINOX_CC",
+      "brand": "gm",
+      "mass": 1588,
+      "wheelbase": 2.72,
+      "steer_ratio": 14.4,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.05
+      }
+    },
+    {
+      "candidate": "CHEVROLET_SUBURBAN",
+      "brand": "gm",
+      "mass": 2731,
+      "wheelbase": 3.302,
+      "steer_ratio": 17.3,
+      "center_front_ratio": 0.49,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.9,
+        "MAX_LAT_ACCEL_MEASURED": 1.9,
+        "FRICTION": 0.112
+      }
+    },
+    {
+      "candidate": "CHEVROLET_SUBURBAN_CC",
+      "brand": "gm",
+      "mass": 2731,
+      "wheelbase": 3.302,
+      "steer_ratio": 17.3,
+      "center_front_ratio": 0.49,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.9,
+        "MAX_LAT_ACCEL_MEASURED": 1.9,
+        "FRICTION": 0.112
+      }
+    },
+    {
+      "candidate": "GMC_YUKON_CC",
+      "brand": "gm",
+      "mass": 2541,
+      "wheelbase": 2.95,
+      "steer_ratio": 16.3,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": null
+    },
+    {
+      "candidate": "CADILLAC_CT6_CC",
+      "brand": "gm",
+      "mass": 2358,
+      "wheelbase": 3.11,
+      "steer_ratio": 17.7,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "CHEVROLET_TRAILBLAZER_CC",
+      "brand": "gm",
+      "mass": 1345,
+      "wheelbase": 2.64,
+      "steer_ratio": 16.8,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.33,
+        "MAX_LAT_ACCEL_MEASURED": 1.9,
+        "FRICTION": 0.16
+      }
+    },
+    {
+      "candidate": "CHEVROLET_MALIBU_CC",
+      "brand": "gm",
+      "mass": 1450,
+      "wheelbase": 2.8,
+      "steer_ratio": 15.8,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.85,
+        "MAX_LAT_ACCEL_MEASURED": 1.85,
+        "FRICTION": 0.075
+      }
+    },
+    {
+      "candidate": "CADILLAC_XT5_CC",
+      "brand": "gm",
+      "mass": 1810,
+      "wheelbase": 2.86,
+      "steer_ratio": 16.34,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.6,
+        "MAX_LAT_ACCEL_MEASURED": 1.6,
+        "FRICTION": 0.2
+      }
+    },
+    {
+      "candidate": "BUICK_BABYENCLAVE",
+      "brand": "gm",
+      "mass": 2050,
+      "wheelbase": 2.86,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.45,
+        "MAX_LAT_ACCEL_MEASURED": 1.6,
+        "FRICTION": 0.2
+      }
+    },
+    {
+      "candidate": "CHEVROLET_TRAX",
+      "brand": "gm",
+      "mass": 1365,
+      "wheelbase": 2.7,
+      "steer_ratio": 16.1,
+      "center_front_ratio": 0.7,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.33,
+        "MAX_LAT_ACCEL_MEASURED": 1.9,
+        "FRICTION": 0.16
+      }
+    },
+    {
+      "candidate": "CADILLAC_CT6_ACC",
+      "brand": "gm",
+      "mass": 1736,
+      "wheelbase": 3.11,
+      "steer_ratio": 17.7,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5961527626411784,
+        "MAX_LAT_ACCEL_MEASURED": 1.8422651988094612,
+        "FRICTION": 0.1572393918005158
+      }
+    },
+    {
+      "candidate": "GMC_YUKON",
+      "brand": "gm",
+      "mass": 2490,
+      "wheelbase": 2.94,
+      "steer_ratio": 17.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "gm_global_a_powertrain_volt",
+      "dbc_radar": "gm_global_a_object",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.2,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.26
+      }
+    },
+    {
+      "candidate": "HONDA_ACCORD",
+      "brand": "honda",
+      "mass": 1487.328168,
+      "wheelbase": 2.83,
+      "steer_ratio": 16.33,
+      "center_front_ratio": 0.39,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.8467,
+      "flags": 4,
+      "dbc_pt": "honda_accord_2018_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.6893333799149202,
+        "MAX_LAT_ACCEL_MEASURED": 0.3246749081720698,
+        "FRICTION": 0.2120497022936265
+      }
+    },
+    {
+      "candidate": "HONDA_CIVIC_BOSCH",
+      "brand": "honda",
+      "mass": 1326,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.38,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 4,
+      "dbc_pt": "honda_civic_hatchback_ex_2017_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.691708637466905,
+        "MAX_LAT_ACCEL_MEASURED": 0.40132900729454185,
+        "FRICTION": 0.25460295304024094
+      }
+    },
+    {
+      "candidate": "HONDA_CIVIC_BOSCH_DIESEL",
+      "brand": "honda",
+      "mass": 1326,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.38,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 4,
+      "dbc_pt": "honda_accord_2018_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.691708637466905,
+        "MAX_LAT_ACCEL_MEASURED": 0.40132900729454185,
+        "FRICTION": 0.25460295304024094
+      }
+    },
+    {
+      "candidate": "HONDA_CIVIC_2022",
+      "brand": "honda",
+      "mass": 1326,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.38,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 12,
+      "dbc_pt": "honda_civic_ex_2022_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 1.2,
+        "FRICTION": 0.15
+      }
+    },
+    {
+      "candidate": "HONDA_CRV_5G",
+      "brand": "honda",
+      "mass": 1546.74872,
+      "wheelbase": 2.66,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.677,
+      "flags": 6,
+      "dbc_pt": "honda_crv_ex_2017_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.01323205142022,
+        "MAX_LAT_ACCEL_MEASURED": 0.2700612209345081,
+        "FRICTION": 0.2238412881331528
+      }
+    },
+    {
+      "candidate": "HONDA_CRV_HYBRID",
+      "brand": "honda",
+      "mass": 1667,
+      "wheelbase": 2.66,
+      "steer_ratio": 16,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.677,
+      "flags": 4,
+      "dbc_pt": "honda_accord_2018_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.072034634644233,
+        "MAX_LAT_ACCEL_MEASURED": 0.7152085160516978,
+        "FRICTION": 0.20237105008376083
+      }
+    },
+    {
+      "candidate": "HONDA_HRV_3G",
+      "brand": "honda",
+      "mass": 1417.475,
+      "wheelbase": 2.61,
+      "steer_ratio": 15.2,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 12,
+      "dbc_pt": "honda_civic_ex_2022_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 1.2,
+        "FRICTION": 0.2
+      }
+    },
+    {
+      "candidate": "ACURA_RDX_3G",
+      "brand": "honda",
+      "mass": 1845.212256,
+      "wheelbase": 2.75,
+      "steer_ratio": 11.95,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.677,
+      "flags": 6,
+      "dbc_pt": "acura_rdx_2020_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.4314459806646749,
+        "MAX_LAT_ACCEL_MEASURED": 0.33874701282109954,
+        "FRICTION": 0.18048847083897598
+      }
+    },
+    {
+      "candidate": "HONDA_INSIGHT",
+      "brand": "honda",
+      "mass": 1354.879304,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.0,
+      "center_front_ratio": 0.39,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 4,
+      "dbc_pt": "honda_insight_ex_2019_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5201671214069354,
+        "MAX_LAT_ACCEL_MEASURED": 0.5660229120683284,
+        "FRICTION": 0.25808042580281876
+      }
+    },
+    {
+      "candidate": "HONDA_E",
+      "brand": "honda",
+      "mass": 1514.4529696,
+      "wheelbase": 2.5,
+      "steer_ratio": 16.71,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 4,
+      "dbc_pt": "acura_rdx_2020_can_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.691708637466905,
+        "MAX_LAT_ACCEL_MEASURED": 0.40132900729454185,
+        "FRICTION": 0.25460295304024094
+      }
+    },
+    {
+      "candidate": "ACURA_ILX",
+      "brand": "honda",
+      "mass": 1403.86724,
+      "wheelbase": 2.67,
+      "steer_ratio": 18.61,
+      "center_front_ratio": 0.37,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.72,
+      "flags": 80,
+      "dbc_pt": "acura_ilx_2016_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.524988973896102,
+        "MAX_LAT_ACCEL_MEASURED": 0.519011053086259,
+        "FRICTION": 0.34236219253028
+      }
+    },
+    {
+      "candidate": "HONDA_CRV",
+      "brand": "honda",
+      "mass": 1620.230624,
+      "wheelbase": 2.62,
+      "steer_ratio": 16.89,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 80,
+      "dbc_pt": "honda_crv_touring_2016_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.7667141440182675,
+        "MAX_LAT_ACCEL_MEASURED": 0.5927571534745969,
+        "FRICTION": 0.40909087636157127
+      }
+    },
+    {
+      "candidate": "HONDA_CRV_EU",
+      "brand": "honda",
+      "mass": 1620.230624,
+      "wheelbase": 2.62,
+      "steer_ratio": 16.89,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 80,
+      "dbc_pt": "honda_crv_executive_2016_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.7667141440182675,
+        "MAX_LAT_ACCEL_MEASURED": 0.5927571534745969,
+        "FRICTION": 0.40909087636157127
+      }
+    },
+    {
+      "candidate": "HONDA_FIT",
+      "brand": "honda",
+      "mass": 1199.297248,
+      "wheelbase": 2.53,
+      "steer_ratio": 13.06,
+      "center_front_ratio": 0.39,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.75,
+      "flags": 80,
+      "dbc_pt": "honda_fit_ex_2018_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5719981427109775,
+        "MAX_LAT_ACCEL_MEASURED": 0.5712761407108976,
+        "FRICTION": 0.110773383324281
+      }
+    },
+    {
+      "candidate": "HONDA_FREED",
+      "brand": "honda",
+      "mass": 1399.784912,
+      "wheelbase": 2.74,
+      "steer_ratio": 13.06,
+      "center_front_ratio": 0.39,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.75,
+      "flags": 80,
+      "dbc_pt": "honda_fit_ex_2018_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8774809275211801,
+        "MAX_LAT_ACCEL_MEASURED": 0.8394431662987996,
+        "FRICTION": 0.2096978613792822
+      }
+    },
+    {
+      "candidate": "HONDA_HRV",
+      "brand": "honda",
+      "mass": 1417.475,
+      "wheelbase": 2.61,
+      "steer_ratio": 15.2,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 80,
+      "dbc_pt": "honda_fit_ex_2018_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0661212805710205,
+        "MAX_LAT_ACCEL_MEASURED": 0.7521343418694775,
+        "FRICTION": 0.17760375789242094
+      }
+    },
+    {
+      "candidate": "HONDA_ODYSSEY",
+      "brand": "honda",
+      "mass": 1900,
+      "wheelbase": 3.0,
+      "steer_ratio": 14.35,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 48,
+      "dbc_pt": "honda_odyssey_exl_2018_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8774809275211801,
+        "MAX_LAT_ACCEL_MEASURED": 0.8394431662987996,
+        "FRICTION": 0.2096978613792822
+      }
+    },
+    {
+      "candidate": "HONDA_ODYSSEY_CHN",
+      "brand": "honda",
+      "mass": 1900,
+      "wheelbase": 3.0,
+      "steer_ratio": 14.35,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 80,
+      "dbc_pt": "honda_odyssey_extreme_edition_2018_china_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8774809275211801,
+        "MAX_LAT_ACCEL_MEASURED": 0.8394431662987996,
+        "FRICTION": 0.2096978613792822
+      }
+    },
+    {
+      "candidate": "ACURA_RDX",
+      "brand": "honda",
+      "mass": 1780.3486,
+      "wheelbase": 2.68,
+      "steer_ratio": 15.0,
+      "center_front_ratio": 0.38,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 80,
+      "dbc_pt": "acura_rdx_2018_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.9987728568686902,
+        "MAX_LAT_ACCEL_MEASURED": 0.5323765166196301,
+        "FRICTION": 0.303218805715844
+      }
+    },
+    {
+      "candidate": "HONDA_PILOT",
+      "brand": "honda",
+      "mass": 1940.466576,
+      "wheelbase": 2.86,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.428,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 80,
+      "dbc_pt": "acura_ilx_2016_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7262026201812795,
+        "MAX_LAT_ACCEL_MEASURED": 0.9470005614967523,
+        "FRICTION": 0.21351430733218763
+      }
+    },
+    {
+      "candidate": "HONDA_RIDGELINE",
+      "brand": "honda",
+      "mass": 2047.96788,
+      "wheelbase": 3.18,
+      "steer_ratio": 15.59,
+      "center_front_ratio": 0.41,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 80,
+      "dbc_pt": "acura_ilx_2016_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.4146525028237624,
+        "MAX_LAT_ACCEL_MEASURED": 0.7356572861629564,
+        "FRICTION": 0.23307177552211328
+      }
+    },
+    {
+      "candidate": "HONDA_CIVIC",
+      "brand": "honda",
+      "mass": 1326,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.38,
+      "center_front_ratio": 0.4,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 16,
+      "dbc_pt": "honda_civic_touring_2016_can_generated",
+      "dbc_radar": "acura_ilx_2016_nidec",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.6528895627785531,
+        "MAX_LAT_ACCEL_MEASURED": 0.4018518740819229,
+        "FRICTION": 0.25458812851328544
+      }
+    },
+    {
+      "candidate": "HYUNDAI_AZERA_7TH_GEN",
+      "brand": "hyundai",
+      "mass": 1700,
+      "wheelbase": 2.895,
+      "steer_ratio": 16.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8,
+        "MAX_LAT_ACCEL_MEASURED": 1.8,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_AZERA_6TH_GEN",
+      "brand": "hyundai",
+      "mass": 1600,
+      "wheelbase": 2.885,
+      "steer_ratio": 14.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8,
+        "MAX_LAT_ACCEL_MEASURED": 1.8,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_AZERA_HEV_6TH_GEN",
+      "brand": "hyundai",
+      "mass": 1675,
+      "wheelbase": 2.885,
+      "steer_ratio": 14.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 1024,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8,
+        "MAX_LAT_ACCEL_MEASURED": 1.8,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_ELANTRA",
+      "brand": "hyundai",
+      "mass": 1275,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.4,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 14.305280000000002,
+      "tire_stiffness_factor": 0.385,
+      "flags": 10747904,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.2200457811703953,
+        "MAX_LAT_ACCEL_MEASURED": 1.2967330275895228,
+        "FRICTION": 0.14039920986586393
+      }
+    },
+    {
+      "candidate": "HYUNDAI_ELANTRA_GT_I30",
+      "brand": "hyundai",
+      "mass": 1275,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.4,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 14.305280000000002,
+      "tire_stiffness_factor": 0.385,
+      "flags": 10747904,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.2200457811703953,
+        "MAX_LAT_ACCEL_MEASURED": 1.2967330275895228,
+        "FRICTION": 0.14039920986586393
+      }
+    },
+    {
+      "candidate": "HYUNDAI_ELANTRA_2021",
+      "brand": "hyundai",
+      "mass": 1270.0576,
+      "wheelbase": 2.72,
+      "steer_ratio": 12.9,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 65536,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.169,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.0819
+      }
+    },
+    {
+      "candidate": "HYUNDAI_ELANTRA_HEV_2021",
+      "brand": "hyundai",
+      "mass": 1368.487064,
+      "wheelbase": 2.72,
+      "steer_ratio": 12.9,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 66560,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "HYUNDAI_GENESIS",
+      "brand": "hyundai",
+      "mass": 2060,
+      "wheelbase": 3.01,
+      "steer_ratio": 16.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 16.666666666666668,
+      "tire_stiffness_factor": 1.0,
+      "flags": 393216,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.7807965280270794,
+        "MAX_LAT_ACCEL_MEASURED": 2.325,
+        "FRICTION": 0.0984484465421171
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ",
+      "brand": "hyundai",
+      "mass": 1490,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.73,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 14.305280000000002,
+      "tire_stiffness_factor": 0.385,
+      "flags": 8389632,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.970807902012267,
+        "MAX_LAT_ACCEL_MEASURED": 1.6312321830002083,
+        "FRICTION": 0.1088964990357482
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_HEV_2022",
+      "brand": "hyundai",
+      "mass": 1490,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.73,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 263168,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.970807902012267,
+        "MAX_LAT_ACCEL_MEASURED": 1.6312321830002083,
+        "FRICTION": 0.1088964990357482
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_EV_LTD",
+      "brand": "hyundai",
+      "mass": 1490,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.73,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 14.305280000000002,
+      "tire_stiffness_factor": 0.385,
+      "flags": 8656896,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7662975472852054,
+        "MAX_LAT_ACCEL_MEASURED": 1.613755614526594,
+        "FRICTION": 0.17087579756306276
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_EV_2020",
+      "brand": "hyundai",
+      "mass": 1490,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.73,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 2048,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.970807902012267,
+        "MAX_LAT_ACCEL_MEASURED": 1.6312321830002083,
+        "FRICTION": 0.1088964990357482
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_PHEV_2019",
+      "brand": "hyundai",
+      "mass": 1490,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.73,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 14.305280000000002,
+      "tire_stiffness_factor": 0.385,
+      "flags": 8389632,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.970807902012267,
+        "MAX_LAT_ACCEL_MEASURED": 1.6312321830002083,
+        "FRICTION": 0.1088964990357482
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_PHEV",
+      "brand": "hyundai",
+      "mass": 1490,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.73,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 1024,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.2928700076638537,
+        "MAX_LAT_ACCEL_MEASURED": 2.1193482926455656,
+        "FRICTION": 0.12463700961468778
+      }
+    },
+    {
+      "candidate": "HYUNDAI_KONA",
+      "brand": "hyundai",
+      "mass": 1275,
+      "wheelbase": 2.6,
+      "steer_ratio": 13.42,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 2097168,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.078814714619148,
+        "MAX_LAT_ACCEL_MEASURED": 2.307336938253934,
+        "FRICTION": 0.12359762054065548
+      }
+    },
+    {
+      "candidate": "HYUNDAI_KONA_2022",
+      "brand": "hyundai",
+      "mass": 1491,
+      "wheelbase": 2.6,
+      "steer_ratio": 13.42,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 8,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.078814714619148,
+        "MAX_LAT_ACCEL_MEASURED": 2.307336938253934,
+        "FRICTION": 0.12359762054065548
+      }
+    },
+    {
+      "candidate": "HYUNDAI_KONA_EV",
+      "brand": "hyundai",
+      "mass": 1685,
+      "wheelbase": 2.6,
+      "steer_ratio": 13.42,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 2064,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.078814714619148,
+        "MAX_LAT_ACCEL_MEASURED": 2.307336938253934,
+        "FRICTION": 0.12359762054065548
+      }
+    },
+    {
+      "candidate": "HYUNDAI_KONA_EV_2022",
+      "brand": "hyundai",
+      "mass": 1743,
+      "wheelbase": 2.6,
+      "steer_ratio": 13.42,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 2072,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.078814714619148,
+        "MAX_LAT_ACCEL_MEASURED": 2.307336938253934,
+        "FRICTION": 0.12359762054065548
+      }
+    },
+    {
+      "candidate": "HYUNDAI_KONA_EV_2ND_GEN",
+      "brand": "hyundai",
+      "mass": 1740,
+      "wheelbase": 2.66,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 1058816,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_KONA_HEV",
+      "brand": "hyundai",
+      "mass": 1425,
+      "wheelbase": 2.6,
+      "steer_ratio": 13.42,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 1040,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.078814714619148,
+        "MAX_LAT_ACCEL_MEASURED": 2.307336938253934,
+        "FRICTION": 0.12359762054065548
+      }
+    },
+    {
+      "candidate": "HYUNDAI_KONA_HEV_2ND_GEN",
+      "brand": "hyundai",
+      "mass": 1590,
+      "wheelbase": 2.66,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 9216,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_NEXO_1ST_GEN",
+      "brand": "hyundai",
+      "mass": 1809.83208,
+      "wheelbase": 2.79,
+      "steer_ratio": 14.19,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 33554432,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SANTA_FE",
+      "brand": "hyundai",
+      "mass": 1806.203344,
+      "wheelbase": 2.766,
+      "steer_ratio": 16.55,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 69632,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.0787027729757632,
+        "MAX_LAT_ACCEL_MEASURED": 2.6173437483495565,
+        "FRICTION": 0.1207019341823945
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SANTA_FE_2022",
+      "brand": "hyundai",
+      "mass": 1806.203344,
+      "wheelbase": 2.766,
+      "steer_ratio": 16.55,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 65536,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.501877602644835,
+        "MAX_LAT_ACCEL_MEASURED": 2.729064118456137,
+        "FRICTION": 0.10384068104538963
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SANTA_FE_HEV_2022",
+      "brand": "hyundai",
+      "mass": 1806.203344,
+      "wheelbase": 2.766,
+      "steer_ratio": 16.55,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 66560,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.501877602644835,
+        "MAX_LAT_ACCEL_MEASURED": 2.729064118456137,
+        "FRICTION": 0.10384068104538963
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SANTA_FE_PHEV_2022",
+      "brand": "hyundai",
+      "mass": 1806.203344,
+      "wheelbase": 2.766,
+      "steer_ratio": 16.55,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 66560,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.6953050513611045,
+        "MAX_LAT_ACCEL_MEASURED": 1.5837614296206861,
+        "FRICTION": 0.12672855941458458
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SONATA",
+      "brand": "hyundai",
+      "mass": 1513,
+      "wheelbase": 2.84,
+      "steer_ratio": 15.260499999999999,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 69632,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SONATA_LF",
+      "brand": "hyundai",
+      "mass": 1536,
+      "wheelbase": 2.804,
+      "steer_ratio": 15.260499999999999,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 4718592,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.2200457811703953,
+        "MAX_LAT_ACCEL_MEASURED": 1.2967330275895228,
+        "FRICTION": 0.14039920986586393
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SONATA_2024",
+      "brand": "hyundai",
+      "mass": 1556,
+      "wheelbase": 2.84,
+      "steer_ratio": 12.81,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 8200,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "HYUNDAI_STARIA_4TH_GEN",
+      "brand": "hyundai",
+      "mass": 2205,
+      "wheelbase": 3.273,
+      "steer_ratio": 11.94,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.15
+      }
+    },
+    {
+      "candidate": "HYUNDAI_STARIA_EV",
+      "brand": "hyundai",
+      "mass": 2590,
+      "wheelbase": 3.275,
+      "steer_ratio": 11.94,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.15
+      }
+    },
+    {
+      "candidate": "HYUNDAI_TUCSON",
+      "brand": "hyundai",
+      "mass": 1596.64384,
+      "wheelbase": 2.67,
+      "steer_ratio": 16.1,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 4194304,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.0787027729757632,
+        "MAX_LAT_ACCEL_MEASURED": 2.6173437483495565,
+        "FRICTION": 0.1207019341823945
+      }
+    },
+    {
+      "candidate": "HYUNDAI_PALISADE",
+      "brand": "hyundai",
+      "mass": 1999,
+      "wheelbase": 2.9,
+      "steer_ratio": 17.939999999999998,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.63,
+      "flags": 69632,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.544642494803999,
+        "MAX_LAT_ACCEL_MEASURED": 1.8721703683337008,
+        "FRICTION": 0.1301424599248651
+      }
+    },
+    {
+      "candidate": "HYUNDAI_VELOSTER",
+      "brand": "hyundai",
+      "mass": 1323.127864,
+      "wheelbase": 2.8,
+      "steer_ratio": 15.812499999999998,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 4456448,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.2200457811703953,
+        "MAX_LAT_ACCEL_MEASURED": 1.2967330275895228,
+        "FRICTION": 0.14039920986586393
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SONATA_HYBRID",
+      "brand": "hyundai",
+      "mass": 1513,
+      "wheelbase": 2.84,
+      "steer_ratio": 15.260499999999999,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 70656,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.8990264092395734,
+        "MAX_LAT_ACCEL_MEASURED": 2.061410192222139,
+        "FRICTION": 0.0899805488717382
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_5",
+      "brand": "hyundai",
+      "mass": 1948,
+      "wheelbase": 2.97,
+      "steer_ratio": 14.26,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.172929,
+        "MAX_LAT_ACCEL_MEASURED": 2.71305,
+        "FRICTION": 0.096019
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_5_PE",
+      "brand": "hyundai",
+      "mass": 2012,
+      "wheelbase": 3.0,
+      "steer_ratio": 14.26,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 16787456,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.75,
+        "MAX_LAT_ACCEL_MEASURED": 1.75,
+        "FRICTION": 0.15
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_5_N",
+      "brand": "hyundai",
+      "mass": 2200,
+      "wheelbase": 3.0,
+      "steer_ratio": 12.54,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.17,
+        "MAX_LAT_ACCEL_MEASURED": 2.71,
+        "FRICTION": 0.097
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_6",
+      "brand": "hyundai",
+      "mass": 1948,
+      "wheelbase": 2.97,
+      "steer_ratio": 14.26,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 1058816,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.005
+      }
+    },
+    {
+      "candidate": "HYUNDAI_IONIQ_9",
+      "brand": "hyundai",
+      "mass": 2505,
+      "wheelbase": 3.13,
+      "steer_ratio": 16.02,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 16787456,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.75,
+        "MAX_LAT_ACCEL_MEASURED": 1.75,
+        "FRICTION": 0.15
+      }
+    },
+    {
+      "candidate": "HYUNDAI_TUCSON_4TH_GEN",
+      "brand": "hyundai",
+      "mass": 1630,
+      "wheelbase": 2.756,
+      "steer_ratio": 13.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.960174,
+        "MAX_LAT_ACCEL_MEASURED": 2.860284,
+        "FRICTION": 0.108745
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SANTA_CRUZ_1ST_GEN",
+      "brand": "hyundai",
+      "mass": 1870,
+      "wheelbase": 3,
+      "steer_ratio": 14.2,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.7,
+        "MAX_LAT_ACCEL_MEASURED": 2.7,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_CUSTIN_1ST_GEN",
+      "brand": "hyundai",
+      "mass": 1690,
+      "wheelbase": 3.055,
+      "steer_ratio": 17,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 65536,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_CASPER",
+      "brand": "hyundai",
+      "mass": 1060,
+      "wheelbase": 2.4,
+      "steer_ratio": 14.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 65544,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_CASPER_EV",
+      "brand": "hyundai",
+      "mass": 1355,
+      "wheelbase": 2.58,
+      "steer_ratio": 14.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 67592,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_PORTER_II_EV",
+      "brand": "hyundai",
+      "mass": 1970,
+      "wheelbase": 2.64,
+      "steer_ratio": 14.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 2147485696,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.15
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SANTAFE_MX5",
+      "brand": "hyundai",
+      "mass": 1910,
+      "wheelbase": 2.76,
+      "steer_ratio": 15.8,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 16785408,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.2,
+        "MAX_LAT_ACCEL_MEASURED": 3.0,
+        "FRICTION": 0.05
+      }
+    },
+    {
+      "candidate": "HYUNDAI_SANTAFE_MX5_HEV",
+      "brand": "hyundai",
+      "mass": 1910,
+      "wheelbase": 2.76,
+      "steer_ratio": 15.8,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.82,
+      "flags": 16785408,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.2,
+        "MAX_LAT_ACCEL_MEASURED": 3.0,
+        "FRICTION": 0.05
+      }
+    },
+    {
+      "candidate": "KIA_FORTE",
+      "brand": "hyundai",
+      "mass": 1305.437776,
+      "wheelbase": 2.8,
+      "steer_ratio": 13.75,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 0,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "KIA_K5_2021",
+      "brand": "hyundai",
+      "mass": 1533.594552,
+      "wheelbase": 2.85,
+      "steer_ratio": 13.27,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 65536,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.405339728085138,
+        "MAX_LAT_ACCEL_MEASURED": 1.460032270828705,
+        "FRICTION": 0.11650989850813716
+      }
+    },
+    {
+      "candidate": "KIA_K5_HEV_2020",
+      "brand": "hyundai",
+      "mass": 1533.594552,
+      "wheelbase": 2.85,
+      "steer_ratio": 13.27,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 70656,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.405339728085138,
+        "MAX_LAT_ACCEL_MEASURED": 1.460032270828705,
+        "FRICTION": 0.11650989850813716
+      }
+    },
+    {
+      "candidate": "KIA_K5_DL3_24",
+      "brand": "hyundai",
+      "mass": 1553,
+      "wheelbase": 2.85,
+      "steer_ratio": 13.27,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_K5_DL3_24_HEV",
+      "brand": "hyundai",
+      "mass": 1553,
+      "wheelbase": 2.85,
+      "steer_ratio": 13.27,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": null
+    },
+    {
+      "candidate": "KIA_K8_HEV_1ST_GEN",
+      "brand": "hyundai",
+      "mass": 1630,
+      "wheelbase": 2.895,
+      "steer_ratio": 13.27,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_NIRO_EV",
+      "brand": "hyundai",
+      "mass": 1607.076456,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 6144,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9215954981365337,
+        "MAX_LAT_ACCEL_MEASURED": 2.1500583840260044,
+        "FRICTION": 0.09236802474810267
+      }
+    },
+    {
+      "candidate": "KIA_NIRO_EV_2ND_GEN",
+      "brand": "hyundai",
+      "mass": 1607.076456,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.05,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.14
+      }
+    },
+    {
+      "candidate": "KIA_NIRO_PHEV",
+      "brand": "hyundai",
+      "mass": 1607.076456,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 14.305280000000002,
+      "tire_stiffness_factor": 0.385,
+      "flags": 8918016,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9215954981365337,
+        "MAX_LAT_ACCEL_MEASURED": 2.1500583840260044,
+        "FRICTION": 0.09236802474810267
+      }
+    },
+    {
+      "candidate": "KIA_NIRO_PHEV_2022",
+      "brand": "hyundai",
+      "mass": 1607.076456,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 5120,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9215954981365337,
+        "MAX_LAT_ACCEL_MEASURED": 2.1500583840260044,
+        "FRICTION": 0.09236802474810267
+      }
+    },
+    {
+      "candidate": "KIA_NIRO_HEV_2021",
+      "brand": "hyundai",
+      "mass": 1607.076456,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 1024,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9215954981365337,
+        "MAX_LAT_ACCEL_MEASURED": 2.1500583840260044,
+        "FRICTION": 0.09236802474810267
+      }
+    },
+    {
+      "candidate": "KIA_NIRO_HEV_2ND_GEN",
+      "brand": "hyundai",
+      "mass": 1607.076456,
+      "wheelbase": 2.7,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.42,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.12
+      }
+    },
+    {
+      "candidate": "KIA_OPTIMA_G4",
+      "brand": "hyundai",
+      "mass": 1613.880336,
+      "wheelbase": 2.8,
+      "steer_ratio": 13.75,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 14.305280000000002,
+      "tire_stiffness_factor": 0.5,
+      "flags": 12845056,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "KIA_OPTIMA_G4_FL",
+      "brand": "hyundai",
+      "mass": 1613.880336,
+      "wheelbase": 2.8,
+      "steer_ratio": 13.75,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 4718592,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "KIA_OPTIMA_H",
+      "brand": "hyundai",
+      "mass": 1704.598736,
+      "wheelbase": 2.8,
+      "steer_ratio": 13.75,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 263168,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "KIA_OPTIMA_H_G4_FL",
+      "brand": "hyundai",
+      "mass": 1613.880336,
+      "wheelbase": 2.8,
+      "steer_ratio": 13.75,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 525312,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "KIA_SELTOS",
+      "brand": "hyundai",
+      "mass": 1337,
+      "wheelbase": 2.63,
+      "steer_ratio": 14.56,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 65536,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "KIA_SPORTAGE_5TH_GEN",
+      "brand": "hyundai",
+      "mass": 1725,
+      "wheelbase": 2.756,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.6,
+        "MAX_LAT_ACCEL_MEASURED": 2.6,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_SORENTO",
+      "brand": "hyundai",
+      "mass": 1985,
+      "wheelbase": 2.78,
+      "steer_ratio": 15.840000000000002,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 655360,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_denso_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.464854685101844,
+        "MAX_LAT_ACCEL_MEASURED": 1.5335274218367956,
+        "FRICTION": 0.12056170567599558
+      }
+    },
+    {
+      "candidate": "KIA_SORENTO_4TH_GEN",
+      "brand": "hyundai",
+      "mass": 1794.863544,
+      "wheelbase": 2.81,
+      "steer_ratio": 13.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 24576,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_SORENTO_HEV_4TH_GEN",
+      "brand": "hyundai",
+      "mass": 1993.53684,
+      "wheelbase": 2.81,
+      "steer_ratio": 13.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 24576,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_STINGER",
+      "brand": "hyundai",
+      "mass": 1825,
+      "wheelbase": 2.78,
+      "steer_ratio": 16.56,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.7499043387418967,
+        "MAX_LAT_ACCEL_MEASURED": 1.849652021986449,
+        "FRICTION": 0.12048334239559202
+      }
+    },
+    {
+      "candidate": "KIA_STINGER_2022",
+      "brand": "hyundai",
+      "mass": 1825,
+      "wheelbase": 2.78,
+      "steer_ratio": 16.56,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.7499043387418967,
+        "MAX_LAT_ACCEL_MEASURED": 1.849652021986449,
+        "FRICTION": 0.12048334239559202
+      }
+    },
+    {
+      "candidate": "KIA_CEED",
+      "brand": "hyundai",
+      "mass": 1450,
+      "wheelbase": 2.65,
+      "steer_ratio": 13.75,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5,
+      "flags": 262144,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "KIA_EV4",
+      "brand": "hyundai",
+      "mass": 1710,
+      "wheelbase": 2.83,
+      "steer_ratio": 14.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.2,
+        "MAX_LAT_ACCEL_MEASURED": 2.093457,
+        "FRICTION": 0.005
+      }
+    },
+    {
+      "candidate": "KIA_EV6",
+      "brand": "hyundai",
+      "mass": 2055,
+      "wheelbase": 2.9,
+      "steer_ratio": 16,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.2,
+        "MAX_LAT_ACCEL_MEASURED": 2.093457,
+        "FRICTION": 0.005
+      }
+    },
+    {
+      "candidate": "KIA_EV6_PE",
+      "brand": "hyundai",
+      "mass": 2055,
+      "wheelbase": 2.9,
+      "steer_ratio": 16,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 16787456,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.2,
+        "MAX_LAT_ACCEL_MEASURED": 2.093457,
+        "FRICTION": 0.005
+      }
+    },
+    {
+      "candidate": "KIA_EV5",
+      "brand": "hyundai",
+      "mass": 2095,
+      "wheelbase": 2.75,
+      "steer_ratio": 16,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 16787456,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.2,
+        "MAX_LAT_ACCEL_MEASURED": 2.093457,
+        "FRICTION": 0.005
+      }
+    },
+    {
+      "candidate": "KIA_CARNIVAL_4TH_GEN",
+      "brand": "hyundai",
+      "mass": 2087,
+      "wheelbase": 3.09,
+      "steer_ratio": 14.23,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 24576,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.75,
+        "MAX_LAT_ACCEL_MEASURED": 1.75,
+        "FRICTION": 0.15
+      }
+    },
+    {
+      "candidate": "GENESIS_GV60_EV_1ST_GEN",
+      "brand": "hyundai",
+      "mass": 2205,
+      "wheelbase": 2.9,
+      "steer_ratio": 17.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "GENESIS_G70",
+      "brand": "hyundai",
+      "mass": 1640,
+      "wheelbase": 2.84,
+      "steer_ratio": 13.56,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 262144,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.8520195946707947,
+        "MAX_LAT_ACCEL_MEASURED": 2.354697063349854,
+        "FRICTION": 0.06830285485626221
+      }
+    },
+    {
+      "candidate": "GENESIS_G70_2020",
+      "brand": "hyundai",
+      "mass": 1640,
+      "wheelbase": 2.84,
+      "steer_ratio": 13.56,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 4096,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": "hyundai_kia_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.9638737459977467,
+        "MAX_LAT_ACCEL_MEASURED": 2.1259108157250735,
+        "FRICTION": 0.07813665616927593
+      }
+    },
+    {
+      "candidate": "GENESIS_GV70_1ST_GEN",
+      "brand": "hyundai",
+      "mass": 1950,
+      "wheelbase": 2.87,
+      "steer_ratio": 14.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 24576,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.42,
+        "MAX_LAT_ACCEL_MEASURED": 2.42,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "GENESIS_GV70_ELECTRIFIED_1ST_GEN",
+      "brand": "hyundai",
+      "mass": 2260,
+      "wheelbase": 2.87,
+      "steer_ratio": 17.1,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.9,
+        "MAX_LAT_ACCEL_MEASURED": 1.9,
+        "FRICTION": 0.09
+      }
+    },
+    {
+      "candidate": "GENESIS_G80",
+      "brand": "hyundai",
+      "mass": 2060,
+      "wheelbase": 3.01,
+      "steer_ratio": 16.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 262144,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.8520195946707947,
+        "MAX_LAT_ACCEL_MEASURED": 2.354697063349854,
+        "FRICTION": 0.06830285485626221
+      }
+    },
+    {
+      "candidate": "GENESIS_G80_2ND_GEN_FL",
+      "brand": "hyundai",
+      "mass": 2060,
+      "wheelbase": 3.0,
+      "steer_ratio": 14.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 8192,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5819356441497803,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.11244568973779678
+      }
+    },
+    {
+      "candidate": "GENESIS_G90",
+      "brand": "hyundai",
+      "mass": 2200,
+      "wheelbase": 3.15,
+      "steer_ratio": 12.069,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.8520195946707947,
+        "MAX_LAT_ACCEL_MEASURED": 2.354697063349854,
+        "FRICTION": 0.06830285485626221
+      }
+    },
+    {
+      "candidate": "GENESIS_GV80",
+      "brand": "hyundai",
+      "mass": 2258,
+      "wheelbase": 2.95,
+      "steer_ratio": 14.14,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 24576,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "GENESIS_GV70_EV_1ST_GEN",
+      "brand": "hyundai",
+      "mass": 2230,
+      "wheelbase": 2.87,
+      "steer_ratio": 14.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 26624,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.42,
+        "MAX_LAT_ACCEL_MEASURED": 2.42,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_GRANDEUR_IG",
+      "brand": "hyundai",
+      "mass": 1570,
+      "wheelbase": 2.845,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 2359296,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_GRANDEUR_IG_HEV",
+      "brand": "hyundai",
+      "mass": 1570,
+      "wheelbase": 2.845,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 263168,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "GENESIS_EQ900",
+      "brand": "hyundai",
+      "mass": 2200,
+      "wheelbase": 3.15,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 262144,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "GENESIS_EQ900_L",
+      "brand": "hyundai",
+      "mass": 2290,
+      "wheelbase": 3.45,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 262144,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "GENESIS_G90_2019",
+      "brand": "hyundai",
+      "mass": 2150,
+      "wheelbase": 3.16,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 262144,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "HYUNDAI_NEXO",
+      "brand": "hyundai",
+      "mass": 1885,
+      "wheelbase": 2.79,
+      "steer_ratio": 15.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.385,
+      "flags": 2048,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.7,
+        "MAX_LAT_ACCEL_MEASURED": 2.7,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_MOHAVE",
+      "brand": "hyundai",
+      "mass": 2285,
+      "wheelbase": 2.895,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 262144,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_K5",
+      "brand": "hyundai",
+      "mass": 1515,
+      "wheelbase": 2.8,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 4456448,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_K5_HEV",
+      "brand": "hyundai",
+      "mass": 1705,
+      "wheelbase": 2.8,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 263168,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_K5_HEV_2022",
+      "brand": "hyundai",
+      "mass": 1515,
+      "wheelbase": 2.85,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 263168,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_K7",
+      "brand": "hyundai",
+      "mass": 1850,
+      "wheelbase": 2.855,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 2359296,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_K7_HEV",
+      "brand": "hyundai",
+      "mass": 1515,
+      "wheelbase": 2.855,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 263168,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_K7_PE",
+      "brand": "hyundai",
+      "mass": 1850,
+      "wheelbase": 2.855,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 0,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_K7_HEV_PE",
+      "brand": "hyundai",
+      "mass": 1515,
+      "wheelbase": 2.855,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 1024,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_K9",
+      "brand": "hyundai",
+      "mass": 2075,
+      "wheelbase": 3.15,
+      "steer_ratio": 14.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 262144,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3,
+        "MAX_LAT_ACCEL_MEASURED": 2.3,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_EV_SK3",
+      "brand": "hyundai",
+      "mass": 1695,
+      "wheelbase": 2.6,
+      "steer_ratio": 13.75,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 67584,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "KIA_EV9",
+      "brand": "hyundai",
+      "mass": 2625,
+      "wheelbase": 3.1,
+      "steer_ratio": 16.02,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 16787456,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.75,
+        "MAX_LAT_ACCEL_MEASURED": 1.75,
+        "FRICTION": 0.15
+      }
+    },
+    {
+      "candidate": "KIA_EV3",
+      "brand": "hyundai",
+      "mass": 2055,
+      "wheelbase": 2.9,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.2,
+        "MAX_LAT_ACCEL_MEASURED": 2.093457,
+        "FRICTION": 0.005
+      }
+    },
+    {
+      "candidate": "KIA_PV5",
+      "brand": "hyundai",
+      "mass": 2600,
+      "wheelbase": 2.995,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.65,
+      "flags": 10240,
+      "dbc_pt": "hyundai_canfd_generated",
+      "dbc_radar": "hyundai_canfd_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.2,
+        "MAX_LAT_ACCEL_MEASURED": 2.093457,
+        "FRICTION": 0.005
+      }
+    },
+    {
+      "candidate": "KIA_RAY_EV",
+      "brand": "hyundai",
+      "mass": 1295,
+      "wheelbase": 2.52,
+      "steer_ratio": 14.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 2147551232,
+      "dbc_pt": "hyundai_kia_generic",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.15
+      }
+    },
+    {
+      "candidate": "MAZDA_CX5",
+      "brand": "mazda",
+      "mass": 1657.87876,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 1,
+      "dbc_pt": "mazda_2017",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7601682915983443,
+        "MAX_LAT_ACCEL_MEASURED": 1.0889677335154337,
+        "FRICTION": 0.17713792194297195
+      }
+    },
+    {
+      "candidate": "MAZDA_CX9",
+      "brand": "mazda",
+      "mass": 1912.797464,
+      "wheelbase": 3.1,
+      "steer_ratio": 17.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 1,
+      "dbc_pt": "mazda_2017",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7601682915983443,
+        "MAX_LAT_ACCEL_MEASURED": 1.0889677335154337,
+        "FRICTION": 0.17713792194297195
+      }
+    },
+    {
+      "candidate": "MAZDA_3",
+      "brand": "mazda",
+      "mass": 1304.077,
+      "wheelbase": 2.7,
+      "steer_ratio": 14.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 1,
+      "dbc_pt": "mazda_2017",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7601682915983443,
+        "MAX_LAT_ACCEL_MEASURED": 1.0889677335154337,
+        "FRICTION": 0.17713792194297195
+      }
+    },
+    {
+      "candidate": "MAZDA_6",
+      "brand": "mazda",
+      "mass": 1561.717256,
+      "wheelbase": 2.83,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 1,
+      "dbc_pt": "mazda_2017",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7601682915983443,
+        "MAX_LAT_ACCEL_MEASURED": 1.0889677335154337,
+        "FRICTION": 0.17713792194297195
+      }
+    },
+    {
+      "candidate": "MAZDA_CX9_2021",
+      "brand": "mazda",
+      "mass": 1912.797464,
+      "wheelbase": 3.1,
+      "steer_ratio": 17.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 1,
+      "dbc_pt": "mazda_2017",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7601682915983443,
+        "MAX_LAT_ACCEL_MEASURED": 1.0889677335154337,
+        "FRICTION": 0.17713792194297195
+      }
+    },
+    {
+      "candidate": "MAZDA_CX5_2022",
+      "brand": "mazda",
+      "mass": 1657.87876,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7,
+      "flags": 1,
+      "dbc_pt": "mazda_2017",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7601682915983443,
+        "MAX_LAT_ACCEL_MEASURED": 1.0889677335154337,
+        "FRICTION": 0.17713792194297195
+      }
+    },
+    {
+      "candidate": "MOCK",
+      "brand": "mock",
+      "mass": 1700,
+      "wheelbase": 2.7,
+      "steer_ratio": 13,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": null,
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 10.0,
+        "MAX_LAT_ACCEL_MEASURED": 10,
+        "FRICTION": 0.0
+      }
+    },
+    {
+      "candidate": "NISSAN_XTRAIL",
+      "brand": "nissan",
+      "mass": 1610,
+      "wheelbase": 2.705,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.44,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "nissan_x_trail_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "NISSAN_LEAF",
+      "brand": "nissan",
+      "mass": 1610,
+      "wheelbase": 2.705,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.44,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "nissan_leaf_2018_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "NISSAN_LEAF_IC",
+      "brand": "nissan",
+      "mass": 1610,
+      "wheelbase": 2.705,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.44,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "nissan_leaf_2018_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "NISSAN_ROGUE",
+      "brand": "nissan",
+      "mass": 1610,
+      "wheelbase": 2.705,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.44,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "nissan_x_trail_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "NISSAN_ALTIMA",
+      "brand": "nissan",
+      "mass": 1492,
+      "wheelbase": 2.824,
+      "steer_ratio": 17.0,
+      "center_front_ratio": 0.44,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "nissan_x_trail_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "PSA_PEUGEOT_208",
+      "brand": "psa",
+      "mass": 1530,
+      "wheelbase": 2.54,
+      "steer_ratio": 17.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "psa_aee2010_r3",
+      "dbc_radar": null,
+      "torque": null
+    },
+    {
+      "candidate": "RIVIAN_R1_GEN1",
+      "brand": "rivian",
+      "mass": 3206.0,
+      "wheelbase": 3.08,
+      "steer_ratio": 15.2,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "rivian_primary_actuator",
+      "dbc_radar": "rivian_mando_front_radar_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.8,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.07
+      }
+    },
+    {
+      "candidate": "SUBARU_ASCENT",
+      "brand": "subaru",
+      "mass": 2031,
+      "wheelbase": 2.89,
+      "steer_ratio": 13.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "subaru_global_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.6617001649776793,
+        "MAX_LAT_ACCEL_MEASURED": 2.342197172531713,
+        "FRICTION": 0.11075960785398745
+      }
+    },
+    {
+      "candidate": "SUBARU_OUTBACK",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 17,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 12,
+      "dbc_pt": "subaru_global_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": 0.2
+      }
+    },
+    {
+      "candidate": "SUBARU_LEGACY",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 17,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 12,
+      "dbc_pt": "subaru_global_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0,
+        "MAX_LAT_ACCEL_MEASURED": 1.5,
+        "FRICTION": 0.2
+      }
+    },
+    {
+      "candidate": "SUBARU_IMPREZA",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 15,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "subaru_global_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.0670704910352047,
+        "MAX_LAT_ACCEL_MEASURED": 0.8234374840709592,
+        "FRICTION": 0.20986563268614938
+      }
+    },
+    {
+      "candidate": "SUBARU_IMPREZA_2020",
+      "brand": "subaru",
+      "mass": 1480,
+      "wheelbase": 2.67,
+      "steer_ratio": 17,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 8,
+      "dbc_pt": "subaru_global_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.6068223389108303,
+        "MAX_LAT_ACCEL_MEASURED": 2.134872342760203,
+        "FRICTION": 0.15261513193561627
+      }
+    },
+    {
+      "candidate": "SUBARU_CROSSTREK_HYBRID",
+      "brand": "subaru",
+      "mass": 1668,
+      "wheelbase": 2.67,
+      "steer_ratio": 17,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 32,
+      "dbc_pt": "subaru_global_2020_hybrid_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.6068223389108303,
+        "MAX_LAT_ACCEL_MEASURED": 2.134872342760203,
+        "FRICTION": 0.15261513193561627
+      }
+    },
+    {
+      "candidate": "SUBARU_FORESTER",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 17,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 8,
+      "dbc_pt": "subaru_global_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.6617001649776793,
+        "MAX_LAT_ACCEL_MEASURED": 2.342197172531713,
+        "FRICTION": 0.11075960785398745
+      }
+    },
+    {
+      "candidate": "SUBARU_FORESTER_HYBRID",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 17,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 32,
+      "dbc_pt": "subaru_global_2020_hybrid_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.6068223389108303,
+        "MAX_LAT_ACCEL_MEASURED": 2.134872342760203,
+        "FRICTION": 0.15261513193561627
+      }
+    },
+    {
+      "candidate": "SUBARU_FORESTER_PREGLOBAL",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 20,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 16,
+      "dbc_pt": "subaru_forester_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.0670704910352047,
+        "MAX_LAT_ACCEL_MEASURED": 0.8234374840709592,
+        "FRICTION": 0.20986563268614938
+      }
+    },
+    {
+      "candidate": "SUBARU_LEGACY_PREGLOBAL",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 12.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 16,
+      "dbc_pt": "subaru_outback_2015_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.0670704910352047,
+        "MAX_LAT_ACCEL_MEASURED": 0.8234374840709592,
+        "FRICTION": 0.20986563268614938
+      }
+    },
+    {
+      "candidate": "SUBARU_OUTBACK_PREGLOBAL",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 20,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 16,
+      "dbc_pt": "subaru_outback_2015_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.0670704910352047,
+        "MAX_LAT_ACCEL_MEASURED": 0.8234374840709592,
+        "FRICTION": 0.20986563268614938
+      }
+    },
+    {
+      "candidate": "SUBARU_OUTBACK_PREGLOBAL_2018",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 20,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 16,
+      "dbc_pt": "subaru_outback_2019_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.0670704910352047,
+        "MAX_LAT_ACCEL_MEASURED": 0.8234374840709592,
+        "FRICTION": 0.20986563268614938
+      }
+    },
+    {
+      "candidate": "SUBARU_FORESTER_2022",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 17,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 64,
+      "dbc_pt": "subaru_global_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 3.0,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "SUBARU_OUTBACK_2023",
+      "brand": "subaru",
+      "mass": 1568,
+      "wheelbase": 2.67,
+      "steer_ratio": 17,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 68,
+      "dbc_pt": "subaru_global_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 3.0,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "SUBARU_ASCENT_2023",
+      "brand": "subaru",
+      "mass": 2031,
+      "wheelbase": 2.89,
+      "steer_ratio": 13.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 68,
+      "dbc_pt": "subaru_global_2017_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 3.0,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "TESLA_MODEL_3",
+      "brand": "tesla",
+      "mass": 1899.0,
+      "wheelbase": 2.875,
+      "steer_ratio": 12.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": null,
+      "dbc_radar": "tesla_radar_continental_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "TESLA_MODEL_Y",
+      "brand": "tesla",
+      "mass": 2072.0,
+      "wheelbase": 2.89,
+      "steer_ratio": 12.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": null,
+      "dbc_radar": "tesla_radar_continental_generated",
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "TESLA_MODEL_X",
+      "brand": "tesla",
+      "mass": 2495.0,
+      "wheelbase": 2.96,
+      "steer_ratio": 12.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": null,
+      "dbc_radar": null,
+      "torque": null
+    },
+    {
+      "candidate": "TOYOTA_ALPHARD_TSS2",
+      "brand": "toyota",
+      "mass": 1952.71356,
+      "wheelbase": 3.0,
+      "steer_ratio": 14.2,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.689726,
+        "MAX_LAT_ACCEL_MEASURED": 1.3208264576110418,
+        "FRICTION": 0.140456
+      }
+    },
+    {
+      "candidate": "TOYOTA_AVALON",
+      "brand": "toyota",
+      "mass": 1589.83996,
+      "wheelbase": 2.82,
+      "steer_ratio": 14.8,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7983,
+      "flags": 0,
+      "dbc_pt": "toyota_tnga_k_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5185770183845646,
+        "MAX_LAT_ACCEL_MEASURED": 1.7153346784214922,
+        "FRICTION": 0.10603968787111022
+      }
+    },
+    {
+      "candidate": "TOYOTA_AVALON_2019",
+      "brand": "toyota",
+      "mass": 1589.83996,
+      "wheelbase": 2.82,
+      "steer_ratio": 14.8,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7983,
+      "flags": 0,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7036141952825095,
+        "MAX_LAT_ACCEL_MEASURED": 1.239619084240008,
+        "FRICTION": 0.08459830394899492
+      }
+    },
+    {
+      "candidate": "TOYOTA_AVALON_TSS2",
+      "brand": "toyota",
+      "mass": 1589.83996,
+      "wheelbase": 2.82,
+      "steer_ratio": 14.8,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7983,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3154403649717357,
+        "MAX_LAT_ACCEL_MEASURED": 2.7777922854327124,
+        "FRICTION": 0.11453999639164605
+      }
+    },
+    {
+      "candidate": "TOYOTA_CAMRY",
+      "brand": "toyota",
+      "mass": 1542.2128,
+      "wheelbase": 2.82448,
+      "steer_ratio": 13.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7933,
+      "flags": 16,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0568162685952505,
+        "MAX_LAT_ACCEL_MEASURED": 1.7576185169559122,
+        "FRICTION": 0.108878753
+      }
+    },
+    {
+      "candidate": "TOYOTA_CAMRY_TSS2",
+      "brand": "toyota",
+      "mass": 1542.2128,
+      "wheelbase": 2.82448,
+      "steer_ratio": 13.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7933,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3548324999999997,
+        "MAX_LAT_ACCEL_MEASURED": 2.368900128946771,
+        "FRICTION": 0.118436
+      }
+    },
+    {
+      "candidate": "TOYOTA_CHR",
+      "brand": "toyota",
+      "mass": 1496.8536,
+      "wheelbase": 2.63906,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7933,
+      "flags": 16,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5591084333664578,
+        "MAX_LAT_ACCEL_MEASURED": 1.271271459066948,
+        "FRICTION": 0.20259087058453193
+      }
+    },
+    {
+      "candidate": "TOYOTA_CHR_TSS2",
+      "brand": "toyota",
+      "mass": 1496.8536,
+      "wheelbase": 2.63906,
+      "steer_ratio": 13.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7933,
+      "flags": 344,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.7678810166088303,
+        "MAX_LAT_ACCEL_MEASURED": 1.3742176337919942,
+        "FRICTION": 0.2319674583741509
+      }
+    },
+    {
+      "candidate": "TOYOTA_COROLLA",
+      "brand": "toyota",
+      "mass": 1297.27312,
+      "wheelbase": 2.7,
+      "steer_ratio": 18.27,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "toyota_new_mc_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 3.117154369115421,
+        "MAX_LAT_ACCEL_MEASURED": 1.8438132575043773,
+        "FRICTION": 0.12289685869250652
+      }
+    },
+    {
+      "candidate": "TOYOTA_COROLLA_TSS2",
+      "brand": "toyota",
+      "mass": 1387.99152,
+      "wheelbase": 2.67,
+      "steer_ratio": 13.9,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.991132339206426,
+        "MAX_LAT_ACCEL_MEASURED": 1.868866242720403,
+        "FRICTION": 0.19570063298031432
+      }
+    },
+    {
+      "candidate": "TOYOTA_HIGHLANDER",
+      "brand": "toyota",
+      "mass": 2048.421472,
+      "wheelbase": 2.8194,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.8,
+      "flags": 768,
+      "dbc_pt": "toyota_tnga_k_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.8108348718624456,
+        "MAX_LAT_ACCEL_MEASURED": 1.6348421600679828,
+        "FRICTION": 0.15972686105120398
+      }
+    },
+    {
+      "candidate": "TOYOTA_HIGHLANDER_TSS2",
+      "brand": "toyota",
+      "mass": 2048.421472,
+      "wheelbase": 2.8194,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.8,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.9617570834136164,
+        "MAX_LAT_ACCEL_MEASURED": 1.8611643317268927,
+        "FRICTION": 0.14519673256119725
+      }
+    },
+    {
+      "candidate": "TOYOTA_PRIUS",
+      "brand": "toyota",
+      "mass": 1381.1876399999999,
+      "wheelbase": 2.7,
+      "steer_ratio": 15.74,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.6371,
+      "flags": 0,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.6,
+        "MAX_LAT_ACCEL_MEASURED": 1.5023147650693636,
+        "FRICTION": 0.151515
+      }
+    },
+    {
+      "candidate": "TOYOTA_PRIUS_V",
+      "brand": "toyota",
+      "mass": 1514.99728,
+      "wheelbase": 2.78,
+      "steer_ratio": 17.4,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5533,
+      "flags": 768,
+      "dbc_pt": "toyota_new_mc_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.6,
+        "MAX_LAT_ACCEL_MEASURED": 1.5023147650693636,
+        "FRICTION": 0.151515
+      }
+    },
+    {
+      "candidate": "TOYOTA_PRIUS_TSS2",
+      "brand": "toyota",
+      "mass": 1412.9390799999999,
+      "wheelbase": 2.70002,
+      "steer_ratio": 13.4,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.6371,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.9726,
+        "MAX_LAT_ACCEL_MEASURED": 1.9104337425537743,
+        "FRICTION": 0.170968
+      }
+    },
+    {
+      "candidate": "TOYOTA_RAV4",
+      "brand": "toyota",
+      "mass": 1655.6108,
+      "wheelbase": 2.65,
+      "steer_ratio": 16.88,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5533,
+      "flags": 0,
+      "dbc_pt": "toyota_new_mc_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.085695074355425,
+        "MAX_LAT_ACCEL_MEASURED": 2.2142832316984733,
+        "FRICTION": 0.13339165270103975
+      }
+    },
+    {
+      "candidate": "TOYOTA_RAV4H",
+      "brand": "toyota",
+      "mass": 1655.6108,
+      "wheelbase": 2.65,
+      "steer_ratio": 16.88,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5533,
+      "flags": 768,
+      "dbc_pt": "toyota_tnga_k_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.9796257271652042,
+        "MAX_LAT_ACCEL_MEASURED": 1.7503987331707576,
+        "FRICTION": 0.14628860048885406
+      }
+    },
+    {
+      "candidate": "TOYOTA_RAV4_TSS2",
+      "brand": "toyota",
+      "mass": 1626.12732,
+      "wheelbase": 2.68986,
+      "steer_ratio": 14.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7933,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.279239424615458,
+        "MAX_LAT_ACCEL_MEASURED": 2.087101966779332,
+        "FRICTION": 0.13682208413446817
+      }
+    },
+    {
+      "candidate": "TOYOTA_RAV4_TSS2_2022",
+      "brand": "toyota",
+      "mass": 1626.12732,
+      "wheelbase": 2.68986,
+      "steer_ratio": 14.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7933,
+      "flags": 344,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.241883248393209,
+        "MAX_LAT_ACCEL_MEASURED": 1.9304407208090029,
+        "FRICTION": 0.112174
+      }
+    },
+    {
+      "candidate": "TOYOTA_RAV4_TSS2_2023",
+      "brand": "toyota",
+      "mass": 1626.12732,
+      "wheelbase": 2.68986,
+      "steer_ratio": 14.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.7933,
+      "flags": 472,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": null,
+        "MAX_LAT_ACCEL_MEASURED": 3.0,
+        "FRICTION": null
+      }
+    },
+    {
+      "candidate": "TOYOTA_RAV4_PRIME",
+      "brand": "toyota",
+      "mass": 1983.104224,
+      "wheelbase": 2.68,
+      "steer_ratio": 16.88,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5533,
+      "flags": 2328,
+      "dbc_pt": "toyota_secoc_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.279239424615458,
+        "MAX_LAT_ACCEL_MEASURED": 2.087101966779332,
+        "FRICTION": 0.13682208413446817
+      }
+    },
+    {
+      "candidate": "TOYOTA_YARIS",
+      "brand": "toyota",
+      "mass": 1170,
+      "wheelbase": 2.55,
+      "steer_ratio": 14.8,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5533,
+      "flags": 2392,
+      "dbc_pt": "toyota_secoc_pt_generated",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.22984,
+        "MAX_LAT_ACCEL_MEASURED": 1.86145,
+        "FRICTION": 0.168189
+      }
+    },
+    {
+      "candidate": "TOYOTA_MIRAI",
+      "brand": "toyota",
+      "mass": 1950.4456,
+      "wheelbase": 2.91,
+      "steer_ratio": 14.8,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.8,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.506899832157829,
+        "MAX_LAT_ACCEL_MEASURED": 1.7417213930750164,
+        "FRICTION": 0.20182618449440565
+      }
+    },
+    {
+      "candidate": "TOYOTA_SIENNA",
+      "brand": "toyota",
+      "mass": 2081.98728,
+      "wheelbase": 3.03,
+      "steer_ratio": 15.5,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 256,
+      "dbc_pt": "toyota_tnga_k_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.689726,
+        "MAX_LAT_ACCEL_MEASURED": 1.3208264576110418,
+        "FRICTION": 0.140456
+      }
+    },
+    {
+      "candidate": "TOYOTA_SIENNA_4TH_GEN",
+      "brand": "toyota",
+      "mass": 2097.863,
+      "wheelbase": 3.06,
+      "steer_ratio": 17.8,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 2328,
+      "dbc_pt": "toyota_secoc_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.279239424615458,
+        "MAX_LAT_ACCEL_MEASURED": 2.087101966779332,
+        "FRICTION": 0.13682208413446817
+      }
+    },
+    {
+      "candidate": "LEXUS_CTH",
+      "brand": "toyota",
+      "mass": 1409.763936,
+      "wheelbase": 2.6,
+      "steer_ratio": 18.6,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.517,
+      "flags": 0,
+      "dbc_pt": "toyota_new_mc_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3525924753753613,
+        "MAX_LAT_ACCEL_MEASURED": 1.9731412277641067,
+        "FRICTION": 0.15168101064205927
+      }
+    },
+    {
+      "candidate": "LEXUS_ES",
+      "brand": "toyota",
+      "mass": 1667.857784,
+      "wheelbase": 2.8702,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "toyota_new_mc_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0568162685952505,
+        "MAX_LAT_ACCEL_MEASURED": 1.7576185169559122,
+        "FRICTION": 0.108878753
+      }
+    },
+    {
+      "candidate": "LEXUS_ES_TSS2",
+      "brand": "toyota",
+      "mass": 1667.857784,
+      "wheelbase": 2.8702,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0357564999999997,
+        "MAX_LAT_ACCEL_MEASURED": 1.999082295195227,
+        "FRICTION": 0.101533
+      }
+    },
+    {
+      "candidate": "LEXUS_IS",
+      "brand": "toyota",
+      "mass": 1694.9825856,
+      "wheelbase": 2.79908,
+      "steer_ratio": 13.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 32,
+      "dbc_pt": "toyota_tnga_k_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3525924753753613,
+        "MAX_LAT_ACCEL_MEASURED": 1.9731412277641067,
+        "FRICTION": 0.15168101064205927
+      }
+    },
+    {
+      "candidate": "LEXUS_IS_TSS2",
+      "brand": "toyota",
+      "mass": 1694.9825856,
+      "wheelbase": 2.79908,
+      "steer_ratio": 13.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "LEXUS_NX",
+      "brand": "toyota",
+      "mass": 1846.11944,
+      "wheelbase": 2.66,
+      "steer_ratio": 14.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 0,
+      "dbc_pt": "toyota_tnga_k_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.3525924753753613,
+        "MAX_LAT_ACCEL_MEASURED": 1.9731412277641067,
+        "FRICTION": 0.15168101064205927
+      }
+    },
+    {
+      "candidate": "LEXUS_NX_TSS2",
+      "brand": "toyota",
+      "mass": 1846.11944,
+      "wheelbase": 2.66,
+      "steer_ratio": 14.7,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.4331999786982936,
+        "MAX_LAT_ACCEL_MEASURED": 2.1045680431705414,
+        "FRICTION": 0.14099899317761067
+      }
+    },
+    {
+      "candidate": "LEXUS_LC_TSS2",
+      "brand": "toyota",
+      "mass": 2041.164,
+      "wheelbase": 2.87,
+      "steer_ratio": 13.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.4331999786982936,
+        "MAX_LAT_ACCEL_MEASURED": 2.1045680431705414,
+        "FRICTION": 0.14099899317761067
+      }
+    },
+    {
+      "candidate": "LEXUS_RC",
+      "brand": "toyota",
+      "mass": 1694.9825856,
+      "wheelbase": 2.79908,
+      "steer_ratio": 13.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 32,
+      "dbc_pt": "toyota_tnga_k_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.4331999786982936,
+        "MAX_LAT_ACCEL_MEASURED": 2.1045680431705414,
+        "FRICTION": 0.14099899317761067
+      }
+    },
+    {
+      "candidate": "LEXUS_RX",
+      "brand": "toyota",
+      "mass": 2032.545752,
+      "wheelbase": 2.79,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5533,
+      "flags": 0,
+      "dbc_pt": "toyota_tnga_k_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.6430539050086406,
+        "MAX_LAT_ACCEL_MEASURED": 1.181960058934143,
+        "FRICTION": 0.19768806040843034
+      }
+    },
+    {
+      "candidate": "LEXUS_RX_TSS2",
+      "brand": "toyota",
+      "mass": 2032.545752,
+      "wheelbase": 2.79,
+      "steer_ratio": 16.0,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.5533,
+      "flags": 280,
+      "dbc_pt": "toyota_nodsu_pt_generated",
+      "dbc_radar": "toyota_tss2_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5375561442049257,
+        "MAX_LAT_ACCEL_MEASURED": 1.343166476215164,
+        "FRICTION": 0.1931062001527557
+      }
+    },
+    {
+      "candidate": "LEXUS_GS_F",
+      "brand": "toyota",
+      "mass": 1829.7901279999999,
+      "wheelbase": 2.84988,
+      "steer_ratio": 13.3,
+      "center_front_ratio": 0.5,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.0,
+      "tire_stiffness_factor": 0.444,
+      "flags": 32,
+      "dbc_pt": "toyota_new_mc_pt_generated",
+      "dbc_radar": "toyota_adas",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.08
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_ARTEON_MK1",
+      "brand": "volkswagen",
+      "mass": 1733,
+      "wheelbase": 2.84,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.45136518053819,
+        "MAX_LAT_ACCEL_MEASURED": 1.3639364049316804,
+        "FRICTION": 0.23806361745695032
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_ATLAS_MK1",
+      "brand": "volkswagen",
+      "mass": 2011,
+      "wheelbase": 2.98,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.4677006726964945,
+        "MAX_LAT_ACCEL_MEASURED": 1.6733266634075656,
+        "FRICTION": 0.12959584092073367
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_CADDY_MK3",
+      "brand": "volkswagen",
+      "mass": 1613,
+      "wheelbase": 2.6,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 5.833333333333334,
+      "tire_stiffness_factor": 1.0,
+      "flags": 2,
+      "dbc_pt": "vw_pq",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.2,
+        "MAX_LAT_ACCEL_MEASURED": 1.2,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_CRAFTER_MK2",
+      "brand": "volkswagen",
+      "mass": 2100,
+      "wheelbase": 3.64,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 13.88888888888889,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.9711965500094828,
+        "MAX_LAT_ACCEL_MEASURED": 1.0001565939459098,
+        "FRICTION": 0.1465626137072916
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_GOLF_MK7",
+      "brand": "volkswagen",
+      "mass": 1397,
+      "wheelbase": 2.62,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.3750394140491293,
+        "MAX_LAT_ACCEL_MEASURED": 1.5814743077200641,
+        "FRICTION": 0.2018321939386586
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_JETTA_MK6",
+      "brand": "volkswagen",
+      "mass": 1518,
+      "wheelbase": 2.65,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": 5.555555555555555,
+      "min_steer_speed": 13.88888888888889,
+      "tire_stiffness_factor": 1.0,
+      "flags": 2,
+      "dbc_pt": "vw_pq",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_JETTA_MK7",
+      "brand": "volkswagen",
+      "mass": 1328,
+      "wheelbase": 2.71,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.2271623034089392,
+        "MAX_LAT_ACCEL_MEASURED": 1.216955117387,
+        "FRICTION": 0.19437384688370712
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_PASSAT_MK8",
+      "brand": "volkswagen",
+      "mass": 1551,
+      "wheelbase": 2.79,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.3432120736752917,
+        "MAX_LAT_ACCEL_MEASURED": 1.7087275587362314,
+        "FRICTION": 0.19444383787326647
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_PASSAT_NMS",
+      "brand": "volkswagen",
+      "mass": 1503,
+      "wheelbase": 2.8,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": 5.555555555555555,
+      "min_steer_speed": 13.88888888888889,
+      "tire_stiffness_factor": 1.0,
+      "flags": 2,
+      "dbc_pt": "vw_pq",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_POLO_MK6",
+      "brand": "volkswagen",
+      "mass": 1230,
+      "wheelbase": 2.55,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.3750394140491293,
+        "MAX_LAT_ACCEL_MEASURED": 1.5814743077200641,
+        "FRICTION": 0.2018321939386586
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_SHARAN_MK2",
+      "brand": "volkswagen",
+      "mass": 1639,
+      "wheelbase": 2.92,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 13.88888888888889,
+      "tire_stiffness_factor": 1.0,
+      "flags": 2,
+      "dbc_pt": "vw_pq",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.5,
+        "MAX_LAT_ACCEL_MEASURED": 2.5,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_TAOS_MK1",
+      "brand": "volkswagen",
+      "mass": 1498,
+      "wheelbase": 2.69,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.9711965500094828,
+        "MAX_LAT_ACCEL_MEASURED": 1.0001565939459098,
+        "FRICTION": 0.1465626137072916
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_TCROSS_MK1",
+      "brand": "volkswagen",
+      "mass": 1150,
+      "wheelbase": 2.6,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.9711965500094828,
+        "MAX_LAT_ACCEL_MEASURED": 1.0001565939459098,
+        "FRICTION": 0.1465626137072916
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_TIGUAN_MK2",
+      "brand": "volkswagen",
+      "mass": 1715,
+      "wheelbase": 2.74,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.9711965500094828,
+        "MAX_LAT_ACCEL_MEASURED": 1.0001565939459098,
+        "FRICTION": 0.1465626137072916
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_TOURAN_MK2",
+      "brand": "volkswagen",
+      "mass": 1516,
+      "wheelbase": 2.79,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.9711965500094828,
+        "MAX_LAT_ACCEL_MEASURED": 1.0001565939459098,
+        "FRICTION": 0.1465626137072916
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_TRANSPORTER_T61",
+      "brand": "volkswagen",
+      "mass": 1926,
+      "wheelbase": 3.0,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 14.0,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.9711965500094828,
+        "MAX_LAT_ACCEL_MEASURED": 1.0001565939459098,
+        "FRICTION": 0.1465626137072916
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_TROC_MK1",
+      "brand": "volkswagen",
+      "mass": 1413,
+      "wheelbase": 2.63,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.9711965500094828,
+        "MAX_LAT_ACCEL_MEASURED": 1.0001565939459098,
+        "FRICTION": 0.1465626137072916
+      }
+    },
+    {
+      "candidate": "AUDI_A3_MK3",
+      "brand": "volkswagen",
+      "mass": 1335,
+      "wheelbase": 2.61,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.5122414863077502,
+        "MAX_LAT_ACCEL_MEASURED": 1.7443517531719404,
+        "FRICTION": 0.15194151892450905
+      }
+    },
+    {
+      "candidate": "AUDI_Q2_MK1",
+      "brand": "volkswagen",
+      "mass": 1205,
+      "wheelbase": 2.61,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 0.9711965500094828,
+        "MAX_LAT_ACCEL_MEASURED": 1.0001565939459098,
+        "FRICTION": 0.1465626137072916
+      }
+    },
+    {
+      "candidate": "AUDI_Q3_MK2",
+      "brand": "volkswagen",
+      "mass": 1623,
+      "wheelbase": 2.68,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.4439223359448605,
+        "MAX_LAT_ACCEL_MEASURED": 1.2254955789112076,
+        "FRICTION": 0.1413798895978097
+      }
+    },
+    {
+      "candidate": "SEAT_ATECA_MK1",
+      "brand": "volkswagen",
+      "mass": 1300,
+      "wheelbase": 2.64,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.3750394140491293,
+        "MAX_LAT_ACCEL_MEASURED": 1.5814743077200641,
+        "FRICTION": 0.2018321939386586
+      }
+    },
+    {
+      "candidate": "SKODA_FABIA_MK4",
+      "brand": "volkswagen",
+      "mass": 1266,
+      "wheelbase": 2.56,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.3750394140491293,
+        "MAX_LAT_ACCEL_MEASURED": 1.5814743077200641,
+        "FRICTION": 0.2018321939386586
+      }
+    },
+    {
+      "candidate": "SKODA_KAMIQ_MK1",
+      "brand": "volkswagen",
+      "mass": 1230,
+      "wheelbase": 2.66,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.166437404652981,
+        "MAX_LAT_ACCEL_MEASURED": 1.1686163012668165,
+        "FRICTION": 0.12194533036948708
+      }
+    },
+    {
+      "candidate": "SKODA_KAROQ_MK1",
+      "brand": "volkswagen",
+      "mass": 1278,
+      "wheelbase": 2.66,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.166437404652981,
+        "MAX_LAT_ACCEL_MEASURED": 1.1686163012668165,
+        "FRICTION": 0.12194533036948708
+      }
+    },
+    {
+      "candidate": "SKODA_KODIAQ_MK1",
+      "brand": "volkswagen",
+      "mass": 1569,
+      "wheelbase": 2.79,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.166437404652981,
+        "MAX_LAT_ACCEL_MEASURED": 1.1686163012668165,
+        "FRICTION": 0.12194533036948708
+      }
+    },
+    {
+      "candidate": "SKODA_OCTAVIA_MK3",
+      "brand": "volkswagen",
+      "mass": 1388,
+      "wheelbase": 2.68,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.166437404652981,
+        "MAX_LAT_ACCEL_MEASURED": 1.1686163012668165,
+        "FRICTION": 0.12194533036948708
+      }
+    },
+    {
+      "candidate": "SKODA_SUPERB_MK3",
+      "brand": "volkswagen",
+      "mass": 1505,
+      "wheelbase": 2.84,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 0,
+      "dbc_pt": "vw_mqb",
+      "dbc_radar": null,
+      "torque": {
+        "LAT_ACCEL_FACTOR": 1.166437404652981,
+        "MAX_LAT_ACCEL_MEASURED": 1.1686163012668165,
+        "FRICTION": 0.12194533036948708
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_ID4_MK1",
+      "brand": "volkswagen",
+      "mass": 2224,
+      "wheelbase": 2.77,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 16,
+      "dbc_pt": "vw_meb",
+      "dbc_radar": "vw_meb",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.1
+      }
+    },
+    {
+      "candidate": "VOLKSWAGEN_ID4_MK2",
+      "brand": "volkswagen",
+      "mass": 2224,
+      "wheelbase": 2.77,
+      "steer_ratio": 15.6,
+      "center_front_ratio": 0.45,
+      "min_enable_speed": -1.0,
+      "min_steer_speed": 0.4,
+      "tire_stiffness_factor": 1.0,
+      "flags": 144,
+      "dbc_pt": "vw_meb_2024",
+      "dbc_radar": "vw_meb_2024",
+      "torque": {
+        "LAT_ACCEL_FACTOR": 2.0,
+        "MAX_LAT_ACCEL_MEASURED": 2.0,
+        "FRICTION": 0.1
+      }
+    }
+  ],
+  "ff_files": [
+    "HYUNDAI_PALISADE.json",
+    "KIA_OPTIMA_G4_FL.json",
+    "KIA_K5_2021.json",
+    "SKODA_KAROQ_MK1.json",
+    "MAZDA_3.json",
+    "HONDA_CIVIC_BOSCH.json",
+    "HYUNDAI_KONA_EV_2022.json",
+    "MAZDA_CX9.json",
+    "HYUNDAI_IONIQ_PHEV.json",
+    "MAZDA_CX9 2021.json",
+    "TOYOTA_AVALON.json",
+    "HONDA_CRV_5G.json",
+    "HYUNDAI_ELANTRA_2021.json",
+    "HYUNDAI_SONATA.json",
+    "HYUNDAI_KONA_HEV.json",
+    "TOYOTA_AVALON_2019.json",
+    "SUBARU_LEGACY_PREGLOBAL.json",
+    "SKODA_SUPERB_MK3.json",
+    "LEXUS_NX_TSS2.json",
+    "HONDA_CRV_HYBRID.json",
+    "SUBARU_ASCENT.json",
+    "HONDA_PILOT.json",
+    "TOYOTA_MIRAI.json",
+    "CHRYSLER_PACIFICA_2017_HYBRID.json",
+    "CHEVROLET_EQUINOX.json",
+    "SKODA_OCTAVIA_MK3.json",
+    "MAZDA_CX5_2022.json",
+    "AUDI_A3_MK3.json",
+    "GENESIS_GV70_1ST_GEN.json",
+    "KIA_CEED.json",
+    "HYUNDAI_SANTA_FE_PHEV_2022.json",
+    "CHEVROLET_SILVERADO.json",
+    "VOLKSWAGEN_JETTA_MK7.json",
+    "HONDA_ODYSSEY.json",
+    "HONDA_RIDGELINE.json",
+    "TOYOTA_AVALON_TSS2.json",
+    "TOYOTA_RAV4H.json",
+    "CHEVROLET_SUBURBAN_CC.json",
+    "TOYOTA_CAMRY_TSS2.json",
+    "VOLKSWAGEN_PASSAT_MK8.json",
+    "KIA_NIRO_HEV_2021.json",
+    "HONDA_CIVIC_2022.json",
+    "SUBARU_IMPREZA.json",
+    "HONDA_CIVIC.json",
+    "HONDA_HRV.json",
+    "HYUNDAI_GENESIS.json",
+    "TOYOTA_PRIUS_TSS2.json",
+    "CHRYSLER_PACIFICA_2018_HYBRID.json",
+    "TOYOTA_CHR_TSS2.json",
+    "GMC_ACADIA.json",
+    "KIA_SORENTO_4TH_GEN.json",
+    "HYUNDAI_SONATA_HYBRID.json",
+    "HYUNDAI_ELANTRA_HEV_2021.json",
+    "LEXUS_NX.json",
+    "GENESIS_GV60_EV_1ST_GEN.json",
+    "KIA_SELTOS.json",
+    "HYUNDAI_SONATA_LF.json",
+    "TOYOTA_HIGHLANDER_TSS2.json",
+    "SUBARU_OUTBACK.json",
+    "BUICK_LACROSSE.json",
+    "VOLKSWAGEN_ATLAS_MK1.json",
+    "RAM_1500_5TH_GEN.json",
+    "HONDA_INSIGHT.json",
+    "TOYOTA_RAV4.json",
+    "CHEVROLET_SUBURBAN.json",
+    "SUBARU_OUTBACK_PREGLOBAL.json",
+    "HONDA_CLARITY.json",
+    "HYUNDAI_TUCSON_4TH_GEN.json",
+    "TOYOTA_COROLLA.json",
+    "CHEVROLET_VOLT.json",
+    "HYUNDAI_SANTA_FE_HEV_2022.json",
+    "KIA_NIRO_EV.json",
+    "CHEVROLET_TRAILBLAZER.json",
+    "TOYOTA_CAMRY.json",
+    "KIA_STINGER_2022.json",
+    "KIA_STINGER.json",
+    "SUBARU_IMPREZA_2020.json",
+    "TOYOTA_CHR.json",
+    "SKODA_KODIAQ_MK1.json",
+    "KIA_SORENTO.json",
+    "LEXUS_RX_TSS2.json",
+    "SUBARU_FORESTER.json",
+    "JEEP_GRAND_CHEROKEE_2019.json",
+    "TOYOTA_SIENNA.json",
+    "LEXUS_RX.json",
+    "AUDI_Q3_MK2.json",
+    "VOLKSWAGEN_PASSAT_NMS.json",
+    "CHEVROLET_EQUINOX_CC.json",
+    "TOYOTA_COROLLA_TSS2.json",
+    "TOYOTA_PRIUS.json",
+    "ACURA_RDX_3G.json",
+    "VOLKSWAGEN_GOLF_MK7.json",
+    "LEXUS_ES_TSS2.json",
+    "TOYOTA_RAV4_TSS2_2022.json",
+    "GENESIS_G70.json",
+    "LEXUS_IS.json",
+    "HYUNDAI_SANTA_FE.json",
+    "SUBARU_LEGACY.json",
+    "HYUNDAI_KONA_EV.json",
+    "HYUNDAI_SANTA_FE_2022.json",
+    "VOLKSWAGEN_TIGUAN_MK2.json",
+    "TOYOTA_PRIUS_2017_b'8965B47070x00x00x00x00x00x00'.json",
+    "JEEP_GRAND_CHEROKEE.json",
+    "TOYOTA_RAV4_TSS2.json",
+    "HONDA_ACCORD.json",
+    "TOYOTA_PRIUS_V.json",
+    "VOLKSWAGEN_ARTEON_MK1.json",
+    "HYUNDAI_IONIQ_5.json",
+    "HYUNDAI_IONIQ_EV_LTD.json",
+    "CHRYSLER_PACIFICA_2020.json",
+    "TOYOTA_HIGHLANDER.json",
+    "KIA_NIRO_HEV_2ND_GEN.json",
+    "CHRYSLER_PACIFICA_2019_HYBRID.json",
+    "KIA_SORENTO_HEV_4TH_GEN.json",
+    "KIA_EV6.json",
+    "KIA_SPORTAGE_5TH_GEN.json",
+    "RAM_HD_5TH_GEN.json"
+  ],
+  "speed_gain": [
+    0.17406038913518396,
+    1.6592563982783999
+  ]
+}

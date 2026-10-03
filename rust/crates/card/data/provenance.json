@@ -1,0 +1,23 @@
+{
+  "source_commit": "31d7306882218e9fecc44aba0d5c034f0d1ca188",
+  "legacy_count": 36,
+  "source_sha256": {
+    "opendbc_repo/opendbc/car/fingerprints.py": "8a96dfae8a7d50dcd6180fab478dc17fff32bc069ade70c524817416ad7afeab",
+    "opendbc_repo/opendbc/car/car_helpers.py": "3b98668708d2026ca53ed18026defb8ba6afb46bc317b086bfe599993f43a049",
+    "openpilot/selfdrive/car/openpilot_toggle.py": "b59d7409efd08a94336e7f3f5085930492fabff7b3fbbf31b5b930482c7cf798",
+    "opendbc_repo/opendbc/car/body/fingerprints.py": "8acf8b9fb0a26e1c5333266a9b8c3bb1480a53005b59f96f8221b02b603ad33b",
+    "opendbc_repo/opendbc/car/chrysler/fingerprints.py": "8c455068bd31d16aea18e1c86b17c5b59b284c2e1fa5101c51298f65bf9aff2a",
+    "opendbc_repo/opendbc/car/ford/fingerprints.py": "6efcfee6010f58a7affa9bb82f477598462b17691cf5567afaec4df1a3d00b87",
+    "opendbc_repo/opendbc/car/gm/fingerprints.py": "dc4540fce29e2d3bb93e4584f133400017b3337d1e1f97c4a221087f3b0b249e",
+    "opendbc_repo/opendbc/car/honda/fingerprints.py": "be765268c6ddfdfdea4d3c89c4de67eddde5e92b28a7d29fc52750e589bf2c02",
+    "opendbc_repo/opendbc/car/hyundai/fingerprints.py": "3c8bfc34f0791f54eef8f5f13cb4fd6b3bb3fcc446d3d6c4e845e385107c1bd1",
+    "opendbc_repo/opendbc/car/mazda/fingerprints.py": "81e80153c0162096de7bbcbb8823e2cf4794e48e165af4b5e804e9e926793f0a",
+    "opendbc_repo/opendbc/car/nissan/fingerprints.py": "fca223cad1e7c043b96d26ddc3577dec25c2557cb19fde6345c0228b2a42c820",
+    "opendbc_repo/opendbc/car/psa/fingerprints.py": "e9f05f0db8870b642bee62601f2847b39dfce026f5b86b60adf02fed9faaff00",
+    "opendbc_repo/opendbc/car/rivian/fingerprints.py": "4327d1c536431017cf3baea06b4a9704f8e37d49c3b94efec4fa6b9e33a17cf4",
+    "opendbc_repo/opendbc/car/subaru/fingerprints.py": "a16682ab4e1ecf0dba6a1038524f8582fd3c1977c10479b19c4b9897f384576a",
+    "opendbc_repo/opendbc/car/tesla/fingerprints.py": "231101eeee481ced4692088c582dc1b4d5030fe203f54f35952864b8e1f2a9e8",
+    "opendbc_repo/opendbc/car/toyota/fingerprints.py": "2a549cb52a2b79cbea1a634fe8f3d04a6949f281201810712d55f4ddea0c065d",
+    "opendbc_repo/opendbc/car/volkswagen/fingerprints.py": "59511a19b8c169af1f69fad2fb4b1f2395b9c557ef917f95e962a8e5c7e402aa"
+  }
+}
