@@ -195,6 +195,7 @@ class RustIsolationTests(unittest.TestCase):
         for name, step_name, binding in (
             ('support-runtime', 'Configure original support IPC imports', 'support-msgq-python'),
             ('card-runtime', 'Configure original Card IPC imports', 'card-native/msgq'),
+            ('selfdrive-runtime', 'Configure original selfdrived IPC imports', 'selfdrived-native/msgq'),
         ):
             setup = next(step for step in data['jobs'][name]['steps'] if step.get('name') == step_name)
             with self.subTest(job=name), tempfile.TemporaryDirectory(prefix='IPC env ') as temporary:
@@ -221,7 +222,7 @@ class RustIsolationTests(unittest.TestCase):
         self.assertEqual(set(gate['needs']), {
             'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
-            'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'card-runtime',
+            'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'card-runtime', 'selfdrive-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -240,7 +241,8 @@ class RustIsolationTests(unittest.TestCase):
                                             'ATHENA': '${{ needs.athena-runtime.result }}',
                                             'CONTROLS': '${{ needs.controls-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}',
-                                            'CARD': '${{ needs.card-runtime.result }}'})
+                                            'CARD': '${{ needs.card-runtime.result }}',
+                                            'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
@@ -253,6 +255,22 @@ class RustIsolationTests(unittest.TestCase):
                                                   capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
+
+    def test_selfdrived_requires_source_loop_native_ipc_and_failure_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['selfdrive-runtime']
+        self.assertNotIn('if', job)
+        for checker in ('check_selfdrived_controller.py', 'check_selfdrived_ipc.py', 'check_selfdrived_failures.py'):
+            step = next(step for step in job['steps'] if checker in step.get('run', ''))
+            self.assertNotIn('if', step)
+            self.assertNotIn('continue-on-error', step)
+        steps = '\n'.join(step.get('run', '') for step in job['steps'])
+        self.assertIn('-p openpilot-selfdrived -p openpilot-messaging --locked', steps)
+        self.assertIn('build_params_python.py', steps)
+        self.assertIn('build_msgq_python.py', steps)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+
 
 if __name__ == '__main__':
     unittest.main()

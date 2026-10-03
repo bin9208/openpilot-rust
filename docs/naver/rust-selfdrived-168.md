@@ -10,6 +10,18 @@ controller/runtime evidence and offline dynamic linkage against the pinned AGNOS
 image. Complete manager startup/log upload and user device acceptance remain
 open. The earlier sections below record the implementation stages.
 
+The component is preserved in `ca9f26f2edb43b0afb0f99b97a13a33fb075f9e5`.
+Local integration `8e50931996b15d159e7d951a1dc82ae23b40a04d` includes the Card
+candidate and its CI fixes; [Card PR #192](https://github.com/bin9208/openpilot-rust/pull/192)
+must complete before this branch is published. The new required selfdrived CI
+job builds fresh original Params/msgq bindings, checks the alert catalog and
+complete source policies, and runs the real IPC and failure-lifecycle fixtures.
+The ARM lane explicitly builds and retains the native daemon and controller/
+Ratekeeper probes. Local validation passes 23 CI-routing tests, five Card tooling
+tests and syntax checks for all 255 workflow shell steps. This is CI wiring
+validation; exact-SHA hosted execution remains pending, and accepted component
+runtime evidence is reused without another unchanged replay.
+
 The first verified stage implements the engagement state machine. All five
 source states, ten event categories, disable/pre-enable/override precedence,
 300-cycle soft-disable expiry and alert-category ordering are retained. Three

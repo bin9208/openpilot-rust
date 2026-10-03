@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -40,6 +40,7 @@ jobs:
           CONTROLS: ${{ needs.controls-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
           CARD: ${{ needs.card-runtime.result }}
+          SELFDRIVE: ${{ needs.selfdrive-runtime.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -59,6 +60,7 @@ jobs:
           test "$CONTROLS" = success
           test "$UPLOAD_TIMEOUTS" = success
           test "$CARD" = success
+          test "$SELFDRIVE" = success
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
@@ -289,6 +291,90 @@ jobs:
             ${{ runner.temp }}/communication-snapshot/report.json
             ${{ runner.temp }}/logging-producer/**/report.json
             ${{ runner.temp }}/logging-producer/**/*.log
+  selfdrive-runtime:
+    name: rust selfdrived runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original selfdrived IPC imports
+        run: printf 'PYTHONPATH=%s/selfdrived-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity and install native prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+      - name: Install pinned selfdrived oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+      - name: Install pinned Rust compiler for selfdrived
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build original selfdrived Params and IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/selfdrived-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/selfdrived-native/msgq"
+          python -P -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"selfdrived-native/params/provenance.json"; print("SELFDRIVE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+      - name: Build native selfdrived and source-comparison probes
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-selfdrived --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-selfdrived --all-targets --locked -- -D warnings
+      - name: Require selfdrived and messaging seam tests
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-selfdrived -p openpilot-messaging --locked
+      - name: Compare complete selfdrived policy and source effects
+        run: |
+          selfdrive_examples="$GITHUB_WORKSPACE/rust/target/debug/examples"
+          selfdrive_evidence="$RUNNER_TEMP/selfdrived-native/reference"
+          run_reference() {
+            python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+            python "$@"
+          }
+          run_reference rust/tools/generate_selfdrive_alerts.py --output rust/crates/selfdrived/data/alerts.json --check
+          run_reference rust/tools/check_selfdrive_state.py --binary "$selfdrive_examples/selfdrive_state" --output "$selfdrive_evidence/state"
+          run_reference rust/tools/check_alert_manager.py --binary "$selfdrive_examples/alert_manager" --output "$selfdrive_evidence/alert-manager"
+          run_reference rust/tools/check_selfdrive_events.py --binary "$selfdrive_examples/events_trace" --output "$selfdrive_evidence/events"
+          run_reference rust/tools/check_alert_callbacks.py --binary "$selfdrive_examples/alert_callbacks" --output "$selfdrive_evidence/callbacks"
+          run_reference rust/tools/check_selfdrive_params.py --native "$selfdrive_examples/alert_params" --binding "$SELFDRIVE_PARAMS_BINDING" --output "$selfdrive_evidence/params"
+          run_reference rust/tools/check_selfdrive_helpers.py --native "$selfdrive_examples/selfdrive_helpers" --output "$selfdrive_evidence/helpers"
+          run_reference rust/tools/check_car_specific.py --binary "$selfdrive_examples/car_specific" --binding "$SELFDRIVE_PARAMS_BINDING" --output "$selfdrive_evidence/car-specific"
+          run_reference rust/tools/check_cutin_alerts.py --binary "$selfdrive_examples/cutin_alerts" --output "$selfdrive_evidence/cutin"
+          run_reference rust/tools/check_selfdrived_controller.py --binary "$selfdrive_examples/controller" --binding "$SELFDRIVE_PARAMS_BINDING" --output "$selfdrive_evidence/controller"
+          run_reference rust/tools/check_selfdrived_ratekeeper.py --binary "$selfdrive_examples/ratekeeper" --output "$selfdrive_evidence/ratekeeper"
+      - name: Require actual selfdrived IPC and failure lifecycle
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/check_selfdrived_ipc.py --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-selfdrived" --output "$RUNNER_TEMP/selfdrived-native/ipc"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/check_selfdrived_failures.py --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-selfdrived" --output "$RUNNER_TEMP/selfdrived-native/failures"
+      - name: Preserve selfdrived source, wire, failure and executable evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-selfdrived-host-evidence
+          path: |
+            ${{ runner.temp }}/selfdrived-native/
+            rust/target/debug/openpilot-selfdrived
+          if-no-files-found: warn
   card-runtime:
     name: rust Card and CAN runtime
     runs-on: ubuntu-24.04
@@ -1371,6 +1457,30 @@ jobs:
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-card
             rust/target/aarch64-unknown-linux-gnu/release/examples/*_trace
             ${{ runner.temp }}/card-arm/
+          if-no-files-found: warn
+      - name: Build and inspect native selfdrived for generic Linux aarch64
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          mkdir -p "$RUNNER_TEMP/selfdrived-arm"
+          git rev-parse HEAD > "$RUNNER_TEMP/selfdrived-arm/SOURCE_COMMIT"
+          printf '%s\n' 'cargo build -p openpilot-selfdrived --bins --example controller --example ratekeeper --release --locked --target aarch64-unknown-linux-gnu' > "$RUNNER_TEMP/selfdrived-arm/command.txt"
+          set -o pipefail
+          cargo build -p openpilot-selfdrived --bins --example controller --example ratekeeper --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/selfdrived-arm/build.log"
+          file target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived > "$RUNNER_TEMP/selfdrived-arm/file.txt"
+          sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived target/aarch64-unknown-linux-gnu/release/examples/controller target/aarch64-unknown-linux-gnu/release/examples/ratekeeper > "$RUNNER_TEMP/selfdrived-arm/SHA256SUMS"
+      - name: Preserve selfdrived generic ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-selfdrived-arm-evidence
+          path: |
+            ${{ runner.temp }}/selfdrived-arm/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived
+            rust/target/aarch64-unknown-linux-gnu/release/examples/controller
+            rust/target/aarch64-unknown-linux-gnu/release/examples/ratekeeper
           if-no-files-found: warn
       - name: Stage native GNU aarch64 torque dependency (not AGNOS validation)
         working-directory: rust
