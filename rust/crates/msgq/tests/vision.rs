@@ -1,10 +1,13 @@
 #![cfg(feature = "native-skip-miri")]
 
+mod support;
+
 use openpilot_msgq::{VisionClient, VisionStream};
 use std::{
     env,
-    io::{BufRead, BufReader, Read, Write},
-    process::{Child, Command, Stdio},
+    io::{BufRead, BufReader, Write},
+    os::unix::fs::FileExt,
+    process::{Child, Stdio},
     time::{Duration, Instant},
 };
 
@@ -15,7 +18,7 @@ struct Peer {
 
 impl Peer {
     fn start() -> Self {
-        let mut process = Command::new(env!("NATIVE_VISION_PEER"))
+        let mut process = support::command(env!("NATIVE_VISION_PEER"))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
@@ -61,7 +64,7 @@ fn original_server_camera_transport() {
             .tempdir_in("/dev/shm")
             .unwrap();
         let prefix = namespace.path().file_name().unwrap().to_str().unwrap();
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args(["--exact", "original_server_camera_transport", "--nocapture"])
             .env("RUST_VISION_TEST_CHILD", "1")
             .env("OPENPILOT_PREFIX", prefix.strip_prefix("msgq_").unwrap())
@@ -217,7 +220,7 @@ fn original_server_camera_transport() {
     drop(client);
     let mut old_payload = vec![0; 96];
     std::fs::File::from(owned_fd)
-        .read_exact(&mut old_payload)
+        .read_exact_at(&mut old_payload, 0)
         .unwrap();
     assert_eq!(old_payload, retained);
     assert_eq!(retained[0], 7);
