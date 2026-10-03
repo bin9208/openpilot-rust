@@ -506,6 +506,27 @@ Display/DRM ownership, target rendering, DMA-BUF camera import and hardware
 input remain separate from the successful offline plugin boundary. An
 executable or `--help` pass cannot establish those behaviors.
 
+The original dependency shim's ARM FFmpeg release payload was separately
+downloaded and verified at SHA256
+`ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4`
+(11,743,600 bytes). Package label `7.1.0` contains native program version
+`b08d7969`, avcodec 61.19.100 and avutil 59.39.100. The CLI embeds its codec
+libraries and loads the image's libc/libm/libpthread/libdl; its native executable
+must be exposed directly in the candidate PATH, bypassing the Python console
+launcher. The wheel also supplies static development archives for native
+consumers; this does not establish their final link closure.
+
+Using the actual extracted AGNOS loader and libraries under QEMU, both native
+FFmpeg/ffprobe version commands pass. A synthetic 64x32, eight-frame RGBA input
+passes the UI recording command's pipe input, vertical flip, yuv420p conversion,
+libx264 encoding and MP4 output. ffprobe observes eight H.264/yuv420p frames;
+decoding them back verifies the frame count and top/bottom color reversal.
+Payload hashes, commands, input, video, decoded pixels and receipts are retained
+under `.analysis/scratch/2026-10-02-port-resume/ffmpeg-arm-pinned/`. This is
+offline external-codec evidence, separate from the complete UI ARM executable,
+real screen capture and device throughput. Earlier host FFmpeg 6.1.1 captures
+remain preserved with their original dependency identities.
+
 Local CI integration checks cover runner import/CLI and current-build peer
 selection, dependency resolution, workflow shell syntax and required gate
 failure propagation. The component's accepted host captures remain separate
