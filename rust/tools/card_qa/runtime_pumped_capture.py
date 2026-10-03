@@ -23,7 +23,6 @@ from card_vehicle_source import normalize
 from card_qa.runtime_inputs import Scenario
 from card_qa.runtime_pumped_types import Capture, Publications, RuntimeInvocation, RuntimePeer, Subscriber
 from card_qa.runtime_pumped_shutdown import finish
-from card_qa.runtime_pump import WARMUP_FRAMES
 from check_card_runtime import OUTPUTS, ROOT, decoded_event
 
 
@@ -60,7 +59,8 @@ def phase_capture(context: RuntimePeer, phase: str) -> Publications:
   process, pump, subscribers, output = context.process, context.pump, context.subscribers, context.output
   passive, candidate = context.passive, context.candidate
   if phase == 'warmup':
-    (output / 'warmup-start-frame').write_text(str(context.observed_frames))
+    from card_qa.runtime_phase_fence import warmup
+    return warmup(context)
   set_phase(output, phase)
   deadline = time.monotonic() + 3
   while True:
@@ -90,38 +90,11 @@ def phase_capture(context: RuntimePeer, phase: str) -> Publications:
         if ready and candidate == 'GENESIS_G70':
           ready = sample['parser']['counter'] > 200 and sample['parser']['pt_ready'] and sample['parser']['cam_ready']
         if ready and sample['frame'] >= context.observed_frames + len(rows['carState']) - 1:
-          if phase == 'warmup':
-            # Stop the producer first, then let the real receiver consume its
-            # final packet. Freezing first leaves predecessor CAN queued.
-            pause_pump(output)
-            sends = [json.loads(line) for line in (output / 'pump/sends.jsonl').read_text().splitlines()]
-            final_timestamp = max(row['timestamp'] for row in sends if row['mode'] == phase)
-            while final_timestamp not in {row['carState']['radarInput']['lastCanMonoTime'] for row in rows['carState']}:
-              assert time.monotonic() < deadline, 'final warmup CAN not observed'
-              for name, values in drain(subscribers).items():
-                rows[name].extend(values)
-              time.sleep(.001)
-            while True:
-              trace = (output / 'frequency.jsonl').read_text().split('\n')[:-1]
-              if trace and json.loads(trace[-1])['frame'] >= context.observed_frames + len(rows['carState']) - 1:
-                break
-              assert time.monotonic() < deadline, 'final warmup step not complete'
-              for name, values in drain(subscribers).items():
-                rows[name].extend(values)
-              time.sleep(.001)
           stop(process)
           pause_pump(output)
           for name, values in drain(subscribers).items():
             rows[name].extend(values)
           (output / (phase + '-raw.json')).write_text(json.dumps(rows) + '\n')
-          if phase == 'warmup':
-            assert len(rows['carState']) == WARMUP_FRAMES
-            diagnostic_count = 10 if candidate == 'HONDA_CRV_5G' else 0
-            diagnostic = [{'address': 0x18DAB0F1, 'deprecated': {'busTime': 0},
-                           'dat': [2, 0x10, 3, 0, 0, 0, 0, 0], 'src': 1}]
-            for row in rows['sendcan'][:diagnostic_count]:
-              assert row['valid'] and row['sendcan'] == diagnostic
-            assert len(rows['sendcan']) == (0 if passive else WARMUP_FRAMES + diagnostic_count)
           return rows
     time.sleep(.001)
 
@@ -161,6 +134,7 @@ def capture(arguments: RuntimeInvocation, scenario: Scenario, source: bool) -> C
         'opendbc.DBC_PATH = sys.argv[1]', 'sys.argv = sys.argv[2:]', 'runpy.run_path(sys.argv[0], run_name="__main__")'])
       command = [os.sys.executable, '-c', bootstrap, str(arguments.runtime_root / 'opendbc_repo/opendbc/dbc'), *command[1:]]
   command.extend(['--frequency-trace', str(output / 'frequency.jsonl')])
+  command.extend(['--fixture-phase-fence', str(output / 'phase-fence')])
   environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(params_root), FINGERPRINT=scenario.candidate)
   if arguments.simulation:
     environment['SIMULATION'] = '1'

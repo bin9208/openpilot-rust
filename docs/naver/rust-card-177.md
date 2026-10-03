@@ -165,6 +165,49 @@ for all 32 reference checkers pass with the fresh binding environment. The
 [failed job](https://github.com/bin9208/openpilot-rust/actions/runs/37115007935/job/111180009509)
 retains its complete evidence artifact. No native runtime policy changed.
 
+At `5023fb78`, the [PR Rust run](https://github.com/bin9208/openpilot-rust/actions/runs/37117329497)
+passed every job, including the full Card source comparisons, nineteen actual
+host IPC scenarios and ARM build. The independent
+[push run](https://github.com/bin9208/openpilot-rust/actions/runs/37117327693)
+failed the Mazda native warmup: all 320 ordered CAN packets were received, but
+the receiver entered another unchanged 20 ms wait while the controller observed
+phase completion. Its extra empty-CAN step appeared 20.804 ms after the final
+receive. The failed archive is retained at SHA256
+`b841b26d03ee06723911a1aaa794691b853116f542595756d531acb6b8c2edde`.
+The passing PR run does not override the failed same-head push run.
+
+The bounded fixture now explicitly arms a completed-step stop using
+`--fixture-phase-fence`, accepted only with `--frequency-trace` and
+`--max-steps`. Both the original-source diagnostic wrapper and Rust stop after
+the monitor and flushed trace, before entering another CAN wait. Warmup setup
+queues each next independently produced packet before resuming the receiver;
+the fence is removed before the independently paced 80-packet measured stream.
+Every one of the 320 setup steps retains its actual send/receive timestamp,
+one-packet metadata, source diagnostic prefix, readiness and CAN error count.
+No row is discarded and no runtime timeout or frequency/validity policy changes.
+
+A controlled 100 ms final-observer delay reproduced extra empty steps on both
+old source/native fixtures. A subsequent final-only-fence run exposed a distinct
+31.588 ms mid-warmup producer gap. Its cause was not established from concurrent
+host CPU activity. The completed-step setup seam was then tested with a deliberate
+100 ms producer delay near tick 310 plus the final observer delay. Both lanes
+retained exactly 320 setup and 80 measured packets, followed by the expected
+post-stream timeout, SIGINT and Params drain. The delays and initial failures
+remain in `.omo/evidence/card-phase-fence/`; stepped setup is not free-running
+runtime or performance evidence. The final local matrix passes all nineteen
+scenarios and 1,520 independently sent measured packets with native ELF SHA256
+`431a47a2f61529c11dcaa4a5da55ba7ad2cc4617e1d5455a9b2fac73fc6c5884`.
+Its `host-19/pumped/result.json`, command/exit records and per-lane audit retain
+the exact inputs, 320 setup steps, CAN timing, validity and shutdown outcomes.
+Seven affected Rust runtime tests, two Python fence tests, Clippy and formatting
+pass; unchanged broad vehicle oracles were reused. Independent final review and
+the parent's focused CI selection check also pass: the reviewer independently
+recomputed all 19 measured pairs and 12,160 setup steps from retained data,
+verified the frozen source/ELF identities and closed with no findings. Its
+504-artifact receipt is SHA256
+`2afe9179eda7f9b26cab195ffe9b44aa5cba8d71571db8100c59848fa28e578e`.
+Exact-head hosted checks remain required after this repair.
+
 A separate ARM replay passes 17 full vehicle traces / 7,700 frames across the
 six added brands, with exact raw JSON equality to the retained source-equivalent
 host results. Original Python oracles were reused without rerunning unchanged
