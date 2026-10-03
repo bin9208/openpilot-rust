@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime, camera-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -41,6 +41,7 @@ jobs:
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
           CARD: ${{ needs.card-runtime.result }}
           SELFDRIVE: ${{ needs.selfdrive-runtime.result }}
+          CAMERA: ${{ needs.camera-runtime.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -61,6 +62,7 @@ jobs:
           test "$UPLOAD_TIMEOUTS" = success
           test "$CARD" = success
           test "$SELFDRIVE" = success
+          test "$CAMERA" = success
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
@@ -291,6 +293,64 @@ jobs:
             ${{ runner.temp }}/communication-snapshot/report.json
             ${{ runner.temp }}/logging-producer/**/report.json
             ${{ runner.temp }}/logging-producer/**/*.log
+  camera-runtime:
+    name: rust camera runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original camera IPC imports
+        run: printf 'PYTHONPATH=%s/camera-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve capacity and install camera prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev
+      - name: Install pinned camera oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip install pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Build original camera IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/camera-native/python"
+          python -P -c 'import msgq.ipc_pyx, msgq.visionipc.visionipc_pyx, zmq; from openpilot.cereal import CEREAL_PATH, log; from pathlib import Path; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(msgq.visionipc.visionipc_pyx.__file__); print(Path(CEREAL_PATH)/"log.capnp"); print(zmq.__file__)' > "$RUNNER_TEMP/camera-native/python/imports.txt"
+      - name: Build and check native camera packages
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-camerad -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-camerad -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --all-targets --locked -- -D warnings
+      - name: Require camera and original VisionIPC peer tests
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-camerad --all-targets --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --all-targets --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-msgq --features native-skip-miri --test vision --test vision_server --locked
+      - name: Require original camera comparisons and continuous driver fixtures
+        run: python rust/tools/check_camerad_ci.py --binaries rust/target/debug --output "$RUNNER_TEMP/camera-native/oracles"
+      - name: Preserve camera evidence including failed cases
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-camera-runtime-evidence
+          path: ${{ runner.temp }}/camera-native/
+          if-no-files-found: warn
   selfdrive-runtime:
     name: rust selfdrived runtime
     runs-on: ubuntu-24.04
@@ -1481,6 +1541,31 @@ jobs:
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived
             rust/target/aarch64-unknown-linux-gnu/release/examples/controller
             rust/target/aarch64-unknown-linux-gnu/release/examples/ratekeeper
+          if-no-files-found: warn
+      - name: Build generic and ION camera aarch64 artifacts
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          mkdir -p "$RUNNER_TEMP/camera-arm/generic" "$RUNNER_TEMP/camera-arm/ion"
+          git rev-parse HEAD > "$RUNNER_TEMP/camera-arm/SOURCE_COMMIT"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build -p openpilot-camerad-runtime --features native-skip-miri --bin openpilot-camerad --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/camera-arm/generic/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-camerad "$RUNNER_TEMP/camera-arm/generic/"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build -p openpilot-camerad-runtime --features visionipc-ion --bin openpilot-camerad --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/camera-arm/ion/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-camerad "$RUNNER_TEMP/camera-arm/ion/"
+          file "$RUNNER_TEMP"/camera-arm/{generic,ion}/openpilot-camerad > "$RUNNER_TEMP/camera-arm/file.txt"
+          sha256sum "$RUNNER_TEMP"/camera-arm/{generic,ion}/openpilot-camerad > "$RUNNER_TEMP/camera-arm/SHA256SUMS"
+      - name: Preserve generic and ION camera ARM evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-camera-arm-evidence
+          path: ${{ runner.temp }}/camera-arm/
           if-no-files-found: warn
       - name: Stage native GNU aarch64 torque dependency (not AGNOS validation)
         working-directory: rust

@@ -196,6 +196,7 @@ class RustIsolationTests(unittest.TestCase):
             ('support-runtime', 'Configure original support IPC imports', 'support-msgq-python'),
             ('card-runtime', 'Configure original Card IPC imports', 'card-native/msgq'),
             ('selfdrive-runtime', 'Configure original selfdrived IPC imports', 'selfdrived-native/msgq'),
+            ('camera-runtime', 'Configure original camera IPC imports', 'camera-native/python'),
         ):
             setup = next(step for step in data['jobs'][name]['steps'] if step.get('name') == step_name)
             with self.subTest(job=name), tempfile.TemporaryDirectory(prefix='IPC env ') as temporary:
@@ -222,7 +223,8 @@ class RustIsolationTests(unittest.TestCase):
         self.assertEqual(set(gate['needs']), {
             'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
-            'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'card-runtime', 'selfdrive-runtime',
+            'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
+            'card-runtime', 'selfdrive-runtime', 'camera-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -242,7 +244,8 @@ class RustIsolationTests(unittest.TestCase):
                                             'CONTROLS': '${{ needs.controls-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}',
                                             'CARD': '${{ needs.card-runtime.result }}',
-                                            'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}'})
+                                            'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}',
+                                            'CAMERA': '${{ needs.camera-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
@@ -270,6 +273,24 @@ class RustIsolationTests(unittest.TestCase):
         self.assertIn('build_msgq_python.py', steps)
         self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
                             for step in job['steps']))
+
+    def test_camera_requires_source_driver_fixture_and_visionipc_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['camera-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_camerad_ci.py', 'build_visionipc_python.py', 'libclang-rt-18-dev',
+                         'openpilot-camerad-runtime --features native-skip-miri', '--test vision --test vision_server'):
+            self.assertIn(required, commands)
+        step = next(step for step in job['steps'] if 'check_camerad_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', step)
+        self.assertNotIn('continue-on-error', step)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+        arm = next(step['run'] for step in data['jobs']['arm64']['steps'] if step.get('name') == 'Build generic and ION camera aarch64 artifacts')
+        self.assertLess(arm.index('cp target/'), arm.index('--features visionipc-ion'))
+        self.assertIn('--features native-skip-miri', arm)
+        self.assertIn('sha256sum', arm)
 
 
 if __name__ == '__main__':

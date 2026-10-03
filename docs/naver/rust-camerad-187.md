@@ -284,6 +284,26 @@ LOG_RAW_FRAMES with road IFE has no raw buffer; Rust reports a typed failure
 where the original dereferences the absent buffer. This is not supported raw
 logging and is not silently accepted.
 
+## Fresh-runner validation integration (2026-10-03)
+
+The camera branch now includes the Card and Selfdrived integration through
+merge `2df46043`. The required `camera-runtime` job builds the original Python
+VisionIPC peers, generated schemas, sensor/exposure/packet references and
+driver fixtures directly from this checkout. `check_camerad_ci.py` records the
+source and executed-binary hashes, commands, output and failures. It compares
+generated sensor/BPS constants, all existing host policy/lifecycle/state/stress
+lanes, and the eight continuous runtime scenarios including publication order.
+The separate ARM build retains the generic ELF before rebuilding with ION.
+
+The initial local CI integration checks passed 17 routing tests with 179
+subtests, five Card fixture/bootstrap tests, all 263 workflow shell blocks, and
+14 original-source generator invocations. The corrected IPC/schema import
+preflight passed using the pinned Card Python environment and a retained
+original VisionIPC binding; this is an import check, not a fresh binding build
+or a new runtime comparison. The CI runner has not yet completed on a fresh
+hosted runner at this stage. Existing component receipts above remain the
+runtime evidence until exact-commit hosted results are recorded.
+
 ## Remaining camera work
 
 Complete full manager startup/log-upload integration and the remaining
