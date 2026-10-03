@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -6,10 +7,10 @@
 #include "msgq/visionipc/visionipc_server.h"
 #include "msgq/visionipc/visionipc_client.h"
 
-std::unique_ptr<VisionIpcServer> start_server(bool malformed = false) {
+std::unique_ptr<VisionIpcServer> start_server(bool malformed = false, size_t length = 96) {
   auto server = std::make_unique<VisionIpcServer>("rustvision");
   for (int stream = 0; stream < VISION_STREAM_MAX; ++stream) {
-    server->create_buffers_with_sizes(static_cast<VisionStreamType>(stream), 4, malformed ? 7 : 8, 4, 96, 16, 64);
+    server->create_buffers_with_sizes(static_cast<VisionStreamType>(stream), 4, malformed ? 7 : 8, 4, length, 16, 64);
   }
   server->start_listener();
   for (int attempt = 0; attempt < 200; ++attempt) {
@@ -30,7 +31,8 @@ int main() {
       for (int stream = 0; stream < VISION_STREAM_MAX; ++stream) {
         auto *buffer = server->get_buffer(static_cast<VisionStreamType>(stream));
         for (size_t i = 0; i < buffer->len; ++i) static_cast<uint8_t *>(buffer->addr)[i] = static_cast<uint8_t>(i + frame);
-        buffer->set_frame_id(frame);
+        uint64_t stored_frame = frame;
+        std::memcpy(static_cast<uint8_t *>(buffer->addr) + buffer->len, &stored_frame, sizeof(stored_frame));
         VisionIpcBufExtra extra{frame, uint64_t{frame} * 1000, uint64_t{frame} * 1000 + 100, frame % 2 == 0};
         server->send(buffer, &extra);
       }
@@ -40,6 +42,9 @@ int main() {
     } else if (command == "invalid-layout") {
       server.reset();
       server = start_server(true);
+    } else if (command == "unaligned-buffer") {
+      server.reset();
+      server = start_server(false, 98);
     } else if (command == "stop") {
       server.reset();
       std::cout << "OK" << std::endl;
