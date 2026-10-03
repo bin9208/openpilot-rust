@@ -155,6 +155,16 @@ including failed, cancelled, skipped and absent results. All 22 CI-routing,
 eight synchronization-guard and four Card CI tests pass locally. The failed
 hosted run and corrected checks are retained; this is not a hosted pass claim.
 
+The next hosted Card job built the native binaries, passed Clippy and its test
+and Hyundai-schema steps, then stopped at the cruise source import: Python's
+`-c` entry point put the unbuilt checkout msgq package before the runner binding.
+The source bootstrap now uses Python 3.12's `-P` option, retaining the declared
+PYTHONPATH order. A conflicting-working-directory regression fails before the
+change and passes afterward; all five tooling tests and the import/CLI preflight
+for all 32 reference checkers pass with the fresh binding environment. The
+[failed job](https://github.com/bin9208/openpilot-rust/actions/runs/37115007935/job/111180009509)
+retains its complete evidence artifact. No native runtime policy changed.
+
 A separate ARM replay passes 17 full vehicle traces / 7,700 frames across the
 six added brands, with exact raw JSON equality to the retained source-equivalent
 host results. Original Python oracles were reused without rerunning unchanged

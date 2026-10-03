@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import argparse
+import os
 from pathlib import Path
 import subprocess
 
@@ -11,6 +12,23 @@ import check_card_ci
 from card_qa import ci
 from card_qa.ci import ROOT, TOOLS, source_command
 from card_qa.runtime_inputs import frames
+
+
+def test_source_bootstrap_prefers_pinned_binding_over_unbuilt_working_copy(tmp_path: Path) -> None:
+  working = tmp_path / 'unbuilt checkout'
+  pinned = tmp_path / 'pinned bindings'
+  working.mkdir()
+  pinned.mkdir()
+  (working / 'fixture_binding.py').write_text('raise RuntimeError("unbuilt working-copy binding")\n')
+  (pinned / 'fixture_binding.py').write_text('value = "runner binding"\n')
+  script = tmp_path / 'oracle.py'
+  script.write_text('import fixture_binding\nprint(fixture_binding.value)\n')
+  environment = dict(os.environ, PWD=str(working), PYTHONPATH=os.pathsep.join(str(path) for path in
+    (pinned, ROOT, ROOT / 'opendbc_repo', TOOLS)))
+  result = subprocess.run(source_command(script, [], tmp_path / 'dbc'), cwd=working, env=environment,
+    text=True, capture_output=True, check=False)
+  assert result.returncode == 0, result.stdout + result.stderr
+  assert result.stdout.strip() == 'runner binding'
 
 
 def test_explicit_corpus_roots_do_not_share_cached_inputs(tmp_path: Path) -> None:

@@ -40,7 +40,7 @@ def run(command: list[str], evidence: Path, name: str) -> None:
 def source_command(script: Path, arguments: list[str], dbc: Path) -> list[str]:
   bootstrap = '; '.join(['import runpy, sys', 'from can_source import load', 'load()', 'import opendbc.can.dbc as dbc',
     'dbc.DBC_PATH = sys.argv[1]', 'dbc.DBC.cache_clear()', 'sys.argv = sys.argv[2:]', 'runpy.run_path(sys.argv[0], run_name="__main__")'])
-  return [sys.executable, '-c', bootstrap, str(dbc), str(script), *arguments]
+  return [sys.executable, '-P', '-c', bootstrap, str(dbc), str(script), *arguments]
 
 
 def hashes(paths: list[Path]) -> dict[str, str]:
