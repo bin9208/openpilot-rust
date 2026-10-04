@@ -1,0 +1,27 @@
+{
+  "licenses": [
+    {
+      "name": "acados",
+      "source": "https://github.com/acados/acados/blob/8af9b0ad180940ef611884574a0b27a43504311d/LICENSE",
+      "sha256": "43c978e77d8d3721cbd701539724b3460e68f9d0dddfad76902237dc706f7fcc"
+    },
+    {
+      "name": "blasfeo",
+      "source": "https://github.com/giaf/blasfeo/blob/edf92b396adddd9e548b9786f87ad290a0971329/LICENSE.txt",
+      "sha256": "03bf34700337cb892d143a84398e43319a11cab1494fd78aa047b55972129542"
+    },
+    {
+      "name": "hpipm",
+      "source": "https://github.com/giaf/hpipm/blob/7f8e8de828be86b6ae3d373e8e56f9f3b1fd45aa/LICENSE.txt",
+      "sha256": "9d35e846dd1c2f122c7edf1512cf2952c14574c3b773be76c3d1e4ad749d9d07"
+    },
+    {
+      "name": "qpoases",
+      "source": "https://github.com/acados/qpOASES/blob/77ce8944825d6857c606655ed60ced5ea30017a5/LICENSE.txt",
+      "sha256": "e5d44cfd3a10f2f0e54b262b46089845c9ef27d288ab678240d7ef6d73d58b19"
+    }
+  ],
+  "source_recipe": "https://github.com/commaai/dependencies/blob/d78ef2d42d1cfbda02eabec706839a70bc762145/acados/build.sh",
+  "acados_revision": "8af9b0ad180940ef611884574a0b27a43504311d",
+  "scope": "Upstream license texts for the pinned solver family; runtime binary identities are independently fixed by verified wheel SHA-256."
+}

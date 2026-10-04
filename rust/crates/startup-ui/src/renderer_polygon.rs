@@ -33,6 +33,14 @@ void main() {
 }
 "#;
 impl Renderer {
+    pub fn spline(&mut self, points: &[Point], thick: f32, color: u32) -> Result<(), Error> {
+        let points: Vec<_> = points
+            .iter()
+            .map(|p| ffi::Point { x: p.x, y: p.y })
+            .collect();
+        Ok(self.surface.pin_mut().spline(&points, thick, color)?)
+    }
+
     pub fn cleanup_polygon(&mut self) -> Result<(), Error> {
         if let Some(id) = self.polygon_shader.take() {
             self.surface.pin_mut().shader_unload(id)?;

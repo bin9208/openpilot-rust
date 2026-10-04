@@ -2,13 +2,32 @@
 
 Source baseline: `bin9208/openpilot` dev
 `f3a92524d87be714f6b8b5f44ecdc8319a8c53d1` (MIT; original notices retained).
-No production daemon uses this workspace yet. It contains two scalar filters,
-Linux process collection, full cereal bindings, raw Params storage and a bounded
-procLog producer. The transport still uses original C++ msgq through CXX. This
-is not a complete openpilot runtime.
+Production daemon selection has not switched to this workspace. It contains
+native candidates for the manager, hardware/startup services, logging and upload,
+model execution, vehicle interfaces, control/state management, camera, UI,
+encoding and navigation. Remaining project-owned processes and integration work
+are listed in [port-status.json](port-status.json). This is not yet a complete
+normal-startup runtime candidate.
+
+The msgq/VisionIPC implementation is now Rust, including shared queues,
+descriptor exchange, buffer ownership and generic/ION allocation. Original C++
+peers remain independent test oracles. Host, ARM, sanitizer and memory checks are
+recorded in [native IPC validation](../docs/naver/rust-native-ipc-194.md);
+individual consumers continue through composition checks. Earlier component
+receipts retain the transport boundary used when they were collected.
+
+External libraries remain explicit dependencies: codecs, graphics, numerical
+solvers/kernels, ZeroMQ, operating-system drivers and firmware are not rewritten
+by the language port. Narrow C/CXX adapters still exist around some external
+APIs. Build-time Python generators and original-source comparison programs are
+separate from native daemon execution.
 
 Use Rust 1.94.0, a C++17 compiler, Cap'n Proto 1.0.1 and its development headers.
-Python reference checks use NumPy 2.4.6 and pycapnp 2.1.0. From `rust/`:
+Native features require the pinned libraries and build environment documented
+by each component and [.github/workflows/rust.yml](../.github/workflows/rust.yml).
+Python oracle dependencies are pinned per check; use the corresponding workflow
+environment rather than an arbitrary system installation. Basic checks from
+`rust/` include:
 
 ```sh
 cargo fmt --all --check
@@ -20,6 +39,11 @@ python3 tools/check_proclog_reference.py
 python3 tools/check_params_reference.py
 cargo run --release --locked --bin cpu-sample -- 1000
 ```
+
+Check free space before every build, install or large copy: retain at least
+25 GiB plus expected growth, and recover 35 GiB before resuming if below the
+floor. Disable incremental compilation and prefer bounded package builds while
+developing. The complete required CI matrix remains the integration gate.
 
 `cpu-sample` reads Linux /proc twice, using monotonic sample timestamps and
 `getconf CLK_TCK`. It prints TSV to stdout and never publishes cereal or CAN.
@@ -43,10 +67,12 @@ procLog queue, and waits at most three seconds for an isolated subscriber.
 The default interval is 2000 ms (0.5 Hz). Rust-owned code never invokes Python.
 The self-test only opens temporary Params; it does not use vehicle settings.
 
-The separate `rust-c3x-static-probe-pending-device-test` Actions artifact is a
-checksummed, static aarch64 diagnostic candidate. Unlike the generic GNU build,
-it is intended for the user's explicitly requested first target probe. It has
-not passed C3X validation. See [C3X probe steps](../docs/rust-port/c3x-probe.md)
-and [evidence and limitations](../docs/rust-port/m1-validation.md).
+The older `rust-c3x-static-probe-pending-device-test` artifact and
+[probe document](../docs/rust-port/c3x-probe.md) are intermediate engineering
+history. The approved [delivery gate](../docs/rust-port/design.md) requires all
+project-owned runtime conversion, normal startup and the existing log-upload
+path before asking for the user's first device comparison. No component probe
+or generic cross-build satisfies that gate. Device execution, CPU/thermal
+improvement and vehicle acceptance remain unverified.
 
 Design and progress: `../docs/rust-port/`. Remaining migration: `port-status.json`.

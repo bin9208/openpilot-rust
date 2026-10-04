@@ -1,4 +1,5 @@
 //! Native startup surfaces and owning process wrappers; source MIT provenance retained.
+pub mod camera;
 pub mod config;
 mod digits;
 pub mod draw;
@@ -30,6 +31,12 @@ pub enum Error {
     reason = "audited CXX boundary to the existing external raylib"
 )]
 mod bridge;
+#[cfg(feature = "native")]
+#[expect(
+    unsafe_code,
+    reason = "checked camera-plane CXX adapter to external raylib"
+)]
+mod camera_bridge;
 #[cfg(feature = "native")]
 pub mod renderer;
 

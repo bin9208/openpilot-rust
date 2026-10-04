@@ -1,0 +1,61 @@
+[package]
+name = "openpilot-pandad"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = ["dep:openpilot-panda-usb", "dep:openpilot-panda-spi-linux", "openpilot-panda-spi-linux/native-skip-miri", "dep:openpilot-msgq", "dep:openpilot-messaging", "dep:openpilot-logging", "dep:openpilot-hardware-control", "dep:openpilot-hardware-info", "dep:openpilot-process-supervision", "dep:unicode-general-category", "dep:rustix", "dep:libc", "dep:signal-hook"]
+
+[lints]
+workspace = true
+
+[dependencies]
+capnp = "=0.27.2"
+openpilot-cereal = { path = "../cereal" }
+openpilot-params = { path = "../params" }
+openpilot-panda-usb = { path = "../panda-usb", optional = true }
+openpilot-panda-spi = { path = "../panda-spi" }
+openpilot-panda-spi-linux = { path = "../panda-spi-linux", optional = true, default-features = false }
+openpilot-msgq = { path = "../msgq", optional = true }
+openpilot-messaging = { path = "../messaging", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+openpilot-hardware-control = { path = "../hardware-control", optional = true }
+openpilot-hardware-info = { path = "../hardware-info", optional = true }
+openpilot-process-supervision = { path = "../process-supervision", optional = true }
+unicode-general-category = { version = "=0.6.0", optional = true }
+rustix = { version = "1", features = ["time", "thread", "process"], optional = true }
+libc = { version = "0.2", optional = true }
+signal-hook = { version = "0.3", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[[bin]]
+name = "openpilot-pandad"
+path = "src/main.rs"
+required-features = ["native-skip-miri"]
+
+[[bin]]
+name = "openpilot-pandad-supervisor"
+path = "src/bin/supervisor.rs"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "usb_policy"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "spi_policy"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "supervisor_native"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "dfu_recovery"
+required-features = ["native-skip-miri"]

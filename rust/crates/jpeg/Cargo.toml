@@ -5,6 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license = "MIT AND BSD-3-Clause AND IJG AND Zlib"
 publish = false
+links = "openpilot_jpeg"
 
 [features]
 default = ["native-skip-miri"]
@@ -16,3 +17,7 @@ cxx = "1.0"
 [build-dependencies]
 cxx-build = "1.0"
 cc = "1.2"
+
+[[example]]
+name = "jpeg_options"
+required-features = ["native-skip-miri"]

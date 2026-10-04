@@ -13,6 +13,12 @@ pub enum Font {
     Regular,
 }
 pub trait Measure {
+    fn measure_default(&self, _text: &str, _size: i32) -> Result<i32, crate::Error> {
+        Err(crate::Error::Contract(
+            "default-font measurement unavailable",
+        ))
+    }
+
     fn measure(&self, font: Font, text: &str, size: f32, spacing: f32) -> Point;
 }
 pub fn whitespace(character: char) -> bool {

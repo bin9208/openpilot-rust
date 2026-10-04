@@ -1,9 +1,11 @@
+mod support;
+
 use openpilot_msgq::{Publisher, Subscriber};
 use std::{
     env, fs,
     io::{BufRead, BufReader},
     path::PathBuf,
-    process::{Command, Stdio},
+    process::Stdio,
     time::Duration,
 };
 
@@ -16,7 +18,7 @@ fn isolated_child(name: &str) -> bool {
         .tempdir_in("/dev/shm")
         .unwrap();
     let prefix = namespace.path().file_name().unwrap().to_str().unwrap();
-    let status = Command::new(env::current_exe().unwrap())
+    let status = support::command(env::current_exe().unwrap())
         .args(["--exact", name, "--nocapture"])
         .env("MSGQ_CREATION_CHILD", "1")
         .env("OPENPILOT_PREFIX", prefix.strip_prefix("msgq_").unwrap())
@@ -44,7 +46,7 @@ fn empty_creation_phase_preserves_native_interoperation() {
     fs::File::create(path("rustToNative")).unwrap();
     fs::File::create(path("nativeToRust")).unwrap();
     let mut outgoing = Publisher::for_runtime("rustToNative", 1024 * 1024).unwrap();
-    let mut peer = Command::new(env!("NATIVE_MSGQ_PEER"))
+    let mut peer = support::command(env!("NATIVE_MSGQ_PEER"))
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();

@@ -192,13 +192,22 @@ class RustIsolationTests(unittest.TestCase):
             for value in job.get('env', {}).values():
                 with self.subTest(job=name):
                     self.assertNotRegex(value, r'\$\{\{\s*runner[.\[]')
-        support = data['jobs']['support-runtime']
-        setup = next(step for step in support['steps'] if step.get('name') == 'Configure original support IPC imports')
-        with tempfile.TemporaryDirectory(prefix='support env ') as temporary:
-            output = Path(temporary) / 'environment'
-            environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
-            subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
-            self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/support-msgq-python:/fixture/repository:/fixture/tools\n')
+        for name, step_name, binding in (
+            ('support-runtime', 'Configure original support IPC imports', 'support-msgq-python'),
+            ('card-runtime', 'Configure original Card IPC imports', 'card-native/msgq'),
+            ('selfdrive-runtime', 'Configure original selfdrived IPC imports', 'selfdrived-native/msgq'),
+            ('camera-runtime', 'Configure original camera IPC imports', 'camera-native/python'),
+            ('panda-runtime', 'Configure original Panda IPC imports', 'panda-native/msgq'),
+            ('ui-runtime', 'Configure original UI IPC imports', 'ui-native/python'),
+            ('radar-runtime', 'Configure original Radar IPC imports', 'radar-native/msgq'),
+            ('radar-arm', 'Configure original Radar IPC imports', 'radar-native/msgq'),
+        ):
+            setup = next(step for step in data['jobs'][name]['steps'] if step.get('name') == step_name)
+            with self.subTest(job=name), tempfile.TemporaryDirectory(prefix='IPC env ') as temporary:
+                output = Path(temporary) / 'environment'
+                environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
+                subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
+                self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/{binding}:/fixture/repository:/fixture/tools\n')
 
     def test_inherited_side_effects_are_source_repository_only(self):
         for file, job in [('sync.yml', 'sync'), ('naver-upstream-sync.yml', 'sync'), ('wiki-settings-publish.yaml', 'synchronize'), ('carrot-route-vault-publish.yaml', 'publish')]:
@@ -219,6 +228,10 @@ class RustIsolationTests(unittest.TestCase):
             'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
+            'card-runtime', 'selfdrive-runtime', 'camera-runtime', 'panda-runtime', 'ui-runtime', 'encoder-runtime', 'navd-runtime',
+            'radar-runtime', 'radar-arm', 'radar-memory',
+            'xiaoge-runtime', 'xiaoge-memory',
+            'planner-runtime', 'planner-memory',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -236,7 +249,21 @@ class RustIsolationTests(unittest.TestCase):
                                             'UI_CONNECTIVITY': '${{ needs.ui-connectivity.result }}',
                                             'ATHENA': '${{ needs.athena-runtime.result }}',
                                             'CONTROLS': '${{ needs.controls-runtime.result }}',
-                                            'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}'})
+                                            'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}',
+                                            'CARD': '${{ needs.card-runtime.result }}',
+                                            'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}',
+                                            'CAMERA': '${{ needs.camera-runtime.result }}',
+                                            'PANDA': '${{ needs.panda-runtime.result }}',
+                                            'UI_RUNTIME': '${{ needs.ui-runtime.result }}',
+                                            'ENCODER': '${{ needs.encoder-runtime.result }}',
+                                            'NAVD': '${{ needs.navd-runtime.result }}',
+                                            'RADAR': '${{ needs.radar-runtime.result }}',
+                                            'RADAR_ARM': '${{ needs.radar-arm.result }}',
+                                            'RADAR_MEMORY': '${{ needs.radar-memory.result }}',
+                                            'XIAOGE': '${{ needs.xiaoge-runtime.result }}',
+                                            'XIAOGE_MEMORY': '${{ needs.xiaoge-memory.result }}',
+                                            'PLANNER': '${{ needs.planner-runtime.result }}',
+                                            'PLANNER_MEMORY': '${{ needs.planner-memory.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
@@ -249,6 +276,159 @@ class RustIsolationTests(unittest.TestCase):
                                                   capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
+
+    def test_xiaoge_requires_both_architectures_and_instrumented_native_libraries(self):
+        jobs = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
+        self.assertEqual(jobs['xiaoge-runtime']['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        required = {
+            'xiaoge-runtime': ('build_xiaoge_opencv.py', 'build_params_python.py', 'build_visionipc_python.py',
+                              'check_xiaoge_ci.py', '--features native-skip-miri', 'test_xiaoge_ci.py'),
+            'xiaoge-memory': ('--sanitizers address,undefined', 'check_xiaoge_native_memory.py',
+                             '-Zmiri-strict-provenance', '-Zmiri-symbolic-alignment-check',
+                             '-Zmiri-preemption-rate=0.1', '-Zmiri-tree-borrows', '--no-default-features'),
+        }
+        for name, commands in required.items():
+            job = jobs[name]
+            self.assertNotIn('if', job)
+            script = '\n'.join(step.get('run', '') for step in job['steps'])
+            for command in commands:
+                self.assertIn(command, script)
+            for step in job['steps']:
+                if 'run' in step:
+                    self.assertNotIn('if', step)
+                    self.assertNotIn('continue-on-error', step)
+            artifact = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+            self.assertEqual(len(artifact), 1)
+            self.assertEqual(artifact[0]['if'], 'always()')
+
+    def test_navigation_requires_original_transport_auth_and_timer_evidence(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['navd-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('build_params_python.py', 'build_msgq_python.py', 'NAVD_PARAMS_BINDING',
+                         'requests==2.34.2', 'urllib3==2.7.0', 'PyJWT==2.14.0',
+                         '-p openpilot-navd --features native --bins --examples --locked',
+                         'check_navd_policy.py', 'check_navd_engine.py', 'check_navd_http.py', '--timeouts',
+                         'check_navd_config.py', 'check_navd_destination.py', 'check_navd_ipc.py'):
+            self.assertIn(required, commands)
+        self.assertTrue(any(step.get('if') == 'always()' and
+                            'navd-native/' in step.get('with', {}).get('path', '') for step in job['steps']))
+        arm = '\n'.join(step.get('run', '') for step in data['jobs']['arm64']['steps'])
+        self.assertIn('cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu', arm)
+        self.assertIn('release/openpilot-set-destination', arm)
+
+    def test_radar_requires_fresh_source_runtime_arm_and_memory_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        for name in ('radar-runtime', 'radar-arm', 'radar-memory'):
+            job = data['jobs'][name]
+            with self.subTest(job=name):
+                self.assertNotIn('if', job)
+                self.assertNotIn('continue-on-error', job)
+                commands = '\n'.join(step.get('run', '') for step in job['steps'])
+                self.assertIn('card_ci_space.py', commands)
+                self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
+                self.assertTrue(any(step.get('if') == 'always()' and
+                                    step.get('uses', '').startswith('actions/upload-artifact@') for step in job['steps']))
+        host = '\n'.join(step.get('run', '') for step in data['jobs']['radar-runtime']['steps'])
+        for required in ('build_params_python.py', 'build_msgq_python.py', 'RADAR_PARAMS_BINDING',
+                         'radarcan_prepare_assets.py', 'stage_torque_numerics.py', 'test_radarcan_ci.py',
+                         'check_radarcan_ci.py --phase reference', 'check_radarcan_ci.py --phase ipc',
+                         '-p openpilot-radarcan -p openpilot-can', '--all-targets --locked -- -D warnings'):
+            self.assertIn(required, host)
+        arm = '\n'.join(step.get('run', '') for step in data['jobs']['radar-arm']['steps'])
+        self.assertEqual(data['jobs']['radar-arm']['runs-on'], 'ubuntu-24.04-arm')
+        for required in ('--target aarch64-unknown-linux-gnu', '--no-run', '--message-format=json',
+                         '"$radar_test" --test-threads=1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',
+                         'check_radarcan_ci.py --phase reference', 'check_radarcan_ci.py --phase ipc',
+                         '--platform manylinux_2_27_aarch64', 'sha256sum'):
+            self.assertIn(required, arm)
+        self.assertNotIn('qemu-aarch64', arm)
+        memory = '\n'.join(step.get('run', '') for step in data['jobs']['radar-memory']['steps'])
+        for required in ('nightly-2026-09-29', 'numerics_', 'scheduler_argument_abi_preserves_source_fifo_priority',
+                         '-Zmiri-no-extra-rounding-error', '-Zmiri-strict-provenance', '-Zmiri-symbolic-alignment-check',
+                         '-Zmiri-preemption-rate=0.1', '-Zmiri-tree-borrows'):
+            self.assertIn(required, memory)
+
+    def test_encoder_requires_source_runtime_and_pinned_arm_artifacts(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['encoder-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('build_visionipc_python.py', 'check_encoder_ci.py', 'test_encoder_outcomes.py',
+                         'test_encoder_target_stage.py', '--features native --bins --examples',
+                         '--features openpilot-encoderd/native', '--message-format=json', 'zstandard==0.25.0'):
+            self.assertIn(required, commands)
+        check = next(step for step in job['steps'] if 'check_encoder_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', check)
+        self.assertNotIn('continue-on-error', check)
+        setup = next(step for step in job['steps'] if step.get('name') == 'Configure original encoder IPC imports')
+        with tempfile.TemporaryDirectory(prefix='encoder IPC env ') as temporary:
+            output = Path(temporary) / 'environment'
+            environment = {'RUNNER_TEMP': temporary, 'PYTHONPATH': '/fixture/repository:/fixture/tools', 'GITHUB_ENV': str(output)}
+            subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
+            self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/encoder-native/python:/fixture/repository:/fixture/tools\n'
+                                                f'ENCODER_MSGQ_PYTHON={temporary}/encoder-native/python\n')
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(artifacts[0]['if'], 'always()')
+        arm = next(step for step in data['jobs']['arm64']['steps']
+                   if step.get('name') == 'Build encoder daemon and probes with pinned ARM codecs and ION')
+        self.assertEqual(arm['working-directory'], 'rust')
+        self.assertIn('--features static-ffmpeg,visionipc-ion', arm['run'])
+        self.assertNotIn('if', arm)
+        self.assertNotIn('continue-on-error', arm)
+        self.assertIn('ENCODER_ARM_FFMPEG', arm['env']['FFMPEG_DIR'])
+        self.assertIn('ENCODER_ARM_LIBYUV', arm['env']['ENCODER_LIBYUV_LIB'])
+
+    def test_selfdrived_requires_source_loop_native_ipc_and_failure_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['selfdrive-runtime']
+        self.assertNotIn('if', job)
+        for checker in ('check_selfdrived_controller.py', 'check_selfdrived_ipc.py', 'check_selfdrived_failures.py'):
+            step = next(step for step in job['steps'] if checker in step.get('run', ''))
+            self.assertNotIn('if', step)
+            self.assertNotIn('continue-on-error', step)
+        steps = '\n'.join(step.get('run', '') for step in job['steps'])
+        self.assertIn('-p openpilot-selfdrived -p openpilot-messaging --locked', steps)
+        self.assertIn('build_params_python.py', steps)
+        self.assertIn('build_msgq_python.py', steps)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+
+    def test_camera_requires_source_driver_fixture_and_visionipc_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['camera-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_camerad_ci.py', 'build_visionipc_python.py', 'libclang-rt-18-dev',
+                         'openpilot-camerad-runtime --features native-skip-miri', '--test vision --test vision_server'):
+            self.assertIn(required, commands)
+        step = next(step for step in job['steps'] if 'check_camerad_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', step)
+        self.assertNotIn('continue-on-error', step)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+        arm = next(step['run'] for step in data['jobs']['arm64']['steps'] if step.get('name') == 'Build generic and ION camera aarch64 artifacts')
+        self.assertLess(arm.index('cp target/'), arm.index('--features visionipc-ion'))
+        self.assertIn('--features native-skip-miri', arm)
+        self.assertIn('sha256sum', arm)
+
+    def test_panda_requires_native_transports_and_source_composition(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['panda-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_pandad_ci.py', 'build_msgq_python.py', 'libusb1==3.4.0',
+                         '-p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux',
+                         '--message-format=json', '--build-messages'):
+            self.assertIn(required, commands)
+        step = next(step for step in job['steps'] if 'check_pandad_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', step)
+        self.assertNotIn('continue-on-error', step)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+
 
 if __name__ == '__main__':
     unittest.main()

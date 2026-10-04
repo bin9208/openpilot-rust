@@ -47,7 +47,10 @@ impl WifiSession {
         self.0.borrow().snapshot.clone()
     }
     pub fn send(&self, command: Command) -> Result<(), Error> {
-        self.0.borrow().backend.send(command)
+        let mut session = self.0.borrow_mut();
+        session.backend.send(command)?;
+        session.snapshot = session.backend.snapshot()?;
+        Ok(())
     }
     pub fn process(&self) -> Result<(), Error> {
         let mut session = self.0.borrow_mut();

@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime, camera-runtime, panda-runtime, ui-runtime, encoder-runtime, navd-runtime, radar-runtime, radar-arm, radar-memory, xiaoge-runtime, xiaoge-memory, planner-runtime, planner-memory]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -39,6 +39,20 @@ jobs:
           ATHENA: ${{ needs.athena-runtime.result }}
           CONTROLS: ${{ needs.controls-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
+          CARD: ${{ needs.card-runtime.result }}
+          SELFDRIVE: ${{ needs.selfdrive-runtime.result }}
+          CAMERA: ${{ needs.camera-runtime.result }}
+          PANDA: ${{ needs.panda-runtime.result }}
+          UI_RUNTIME: ${{ needs.ui-runtime.result }}
+          ENCODER: ${{ needs.encoder-runtime.result }}
+          NAVD: ${{ needs.navd-runtime.result }}
+          RADAR: ${{ needs.radar-runtime.result }}
+          RADAR_ARM: ${{ needs.radar-arm.result }}
+          RADAR_MEMORY: ${{ needs.radar-memory.result }}
+          XIAOGE: ${{ needs.xiaoge-runtime.result }}
+          XIAOGE_MEMORY: ${{ needs.xiaoge-memory.result }}
+          PLANNER: ${{ needs.planner-runtime.result }}
+          PLANNER_MEMORY: ${{ needs.planner-memory.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -57,17 +71,277 @@ jobs:
           test "$ATHENA" = success
           test "$CONTROLS" = success
           test "$UPLOAD_TIMEOUTS" = success
-  workspace:
-    name: rust workspace checks
-    runs-on: ubuntu-24.04
+          test "$CARD" = success
+          test "$SELFDRIVE" = success
+          test "$CAMERA" = success
+          test "$PANDA" = success
+          test "$UI_RUNTIME" = success
+          test "$ENCODER" = success
+          test "$NAVD" = success
+          test "$RADAR" = success
+          test "$RADAR_ARM" = success
+          test "$RADAR_MEMORY" = success
+          test "$XIAOGE" = success
+          test "$XIAOGE_MEMORY" = success
+          test "$PLANNER" = success
+          test "$PLANNER_MEMORY" = success
+  planner-runtime:
+    name: rust planner source comparison (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Reserve capacity and install original planner dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libzmq3-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.3.0 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip download --only-binary=:all: --no-deps comma-deps-acados==0.2.2.post103 --dest "$RUNNER_TEMP/planner-wheel"
+          python -m pip install --no-deps "$RUNNER_TEMP"/planner-wheel/*.whl
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+          python -P -c 'import acados; from pathlib import Path; print("PLANNER_GENERATOR="+str(Path(acados.__file__).parent))' >> "$GITHUB_ENV"
+      - name: Build pinned solvers and unchanged original bindings
+        run: |
+          planner_cc=gcc
+          if [ "$(uname -m)" = aarch64 ]; then planner_cc=clang-18; fi
+          python rust/tools/build_plannerd_acados.py --architecture "$(uname -m)" --cc "$planner_cc" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-artifact"
+          python rust/tools/build_plannerd_source.py --artifact "$RUNNER_TEMP/planner-artifact" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --generator-wheel "$RUNNER_TEMP"/planner-wheel/*.whl --cc "$planner_cc" --output "$RUNNER_TEMP/planner-source"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/planner-original/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/planner-original/ipc"
+          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"planner-original/params/provenance.json"; print("PLANNER_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s/planner-original/ipc:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Compile and check the complete native planner
+        run: |
+          python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_plannerd_ci.py
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-plannerd --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked -- -D warnings
+      - name: Compare exact policies, main loops, real IPC and lifecycle
+        run: |
+          python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-artifact" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --output "$RUNNER_TEMP/planner-comparison"
+      - name: Check generated C with ASan, UBSan and allocator leak detection
+        if: matrix.runner == 'ubuntu-24.04'
+        run: |
+          python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
+          python -P rust/tools/check_plannerd_native_memory.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-sanitized" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --asan-library "$(gcc -print-file-name=libasan.so)" --output "$RUNNER_TEMP/planner-native-memory"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-planner-${{ matrix.runner }}-evidence
+          path: |
+            ${{ runner.temp }}/planner-comparison/
+            ${{ runner.temp }}/planner-native-memory/
+            ${{ runner.temp }}/planner-artifact/
+            ${{ runner.temp }}/planner-source/
+            ${{ runner.temp }}/planner-sanitized/
+            ${{ runner.temp }}/planner-original/params/*.json
+            rust/target/debug/openpilot-plannerd
+            rust/target/debug/examples/plannerd_*
+  planner-memory:
+    name: rust planner pure memory contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Reserve capacity and prepare Miri
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          sudo apt-get update && sudo apt-get install -y capnproto
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install nightly-2026-09-29 --component miri --profile minimal
+          cargo +nightly-2026-09-29 miri setup
+      - name: Verify pure planner policies with four Miri modes
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/planner-memory"
+          for planner_mode in default strict preemption tree; do
+            planner_flags='-Zmiri-no-extra-rounding-error'
+            case "$planner_mode" in
+              strict) planner_flags="$planner_flags -Zmiri-strict-provenance" ;;
+              preemption) planner_flags="$planner_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1" ;;
+              tree) planner_flags="$planner_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-tree-borrows" ;;
+            esac
+            python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+            MIRIFLAGS="$planner_flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-plannerd --lib --tests --no-default-features --locked -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/planner-memory/$planner_mode.log"
+          done
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-planner-memory-evidence
+          path: ${{ runner.temp }}/planner-memory/
+  xiaoge-runtime:
+    name: rust Xiaoge source comparison (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Reserve capacity and install Xiaoge build prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ cmake ninja-build libzmq3-dev git-lfs
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2 opencv-python-headless==4.13.0.92 pillow==12.3.0 'httpx2[http2,brotli,zstd]==2.13.1'
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Retrieve the unchanged original Xiaoge models
+        run: |
+          python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_xiaoge_ci.py
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+      - name: Compile pinned OpenCV and original Python bindings
+        run: |
+          python rust/tools/build_xiaoge_opencv.py --output "$RUNNER_TEMP/xiaoge-opencv"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/xiaoge-original/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/xiaoge-original/ipc"
+          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"xiaoge-original/params/provenance.json"; print("XIAOGE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          printf 'OPENPILOT_OPENCV_ROOT=%s/xiaoge-opencv\nLD_LIBRARY_PATH=%s/xiaoge-opencv/install/lib\nPYTHONPATH=%s/xiaoge-original/ipc:%s\nOPENCV_TEST_LANE_MODEL=%s/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Compile and check all native Xiaoge targets
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked -- -D warnings
+      - name: Compare source pixels, model results, sockets, live IPC and lifecycle
+        run: |
+          python rust/tools/check_xiaoge_ci.py --bin-dir rust/target/debug --models openpilot/selfdrive/carrot/xiaoge/assets \
+            --opencv "$OPENPILOT_OPENCV_ROOT" --binding "$XIAOGE_PARAMS_BINDING" --output "$RUNNER_TEMP/xiaoge-comparison"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-xiaoge-${{ matrix.runner }}-evidence
+          path: |
+            ${{ runner.temp }}/xiaoge-comparison/
+            ${{ runner.temp }}/xiaoge-original/params/*.json
+            ${{ runner.temp }}/xiaoge-opencv/*.json
+            ${{ runner.temp }}/xiaoge-opencv/*.log
+            ${{ runner.temp }}/xiaoge-opencv/native-libraries.sha256
+            rust/target/debug/openpilot-xiaoge
+            rust/target/debug/examples/xiaoge_*
+            rust/target/debug/examples/opencv_trace
+            rust/target/debug/examples/jpeg_options
+  xiaoge-memory:
+    name: rust Xiaoge native memory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Reserve capacity and install memory-check prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y clang-18 cmake g++ git-lfs
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 opencv-python-headless==4.13.0.92 pillow==12.3.0
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          rustup toolchain install 1.94.0 --profile minimal
+          rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
+      - name: Validate pure Rust image contracts with four Miri modes
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/xiaoge-miri
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/xiaoge-memory"
+          index=0
+          for flags in '' '-Zmiri-strict-provenance' '-Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1' '-Zmiri-tree-borrows -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1'; do
+            python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+            MIRIFLAGS="$flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-opencv-runtime -p openpilot-jpeg --no-default-features --lib --tests --locked 2>&1 | tee "$RUNNER_TEMP/xiaoge-memory/miri-$index.log"
+            index=$((index + 1))
+          done
+      - name: Retrieve models and instrument the complete native OpenCV build
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+          CC=clang-18 CXX=clang++-18 python rust/tools/build_xiaoge_opencv.py --output "$RUNNER_TEMP/xiaoge-opencv-asan" --sanitizers address,undefined
+      - name: Check native ownership and exact model results under ASan and UBSan
+        run: |
+          python rust/tools/check_xiaoge_native_memory.py --opencv "$RUNNER_TEMP/xiaoge-opencv-asan" \
+            --models openpilot/selfdrive/carrot/xiaoge/assets --target-dir "$RUNNER_TEMP/xiaoge-asan-target" --output "$RUNNER_TEMP/xiaoge-native-memory"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-xiaoge-memory-evidence
+          path: |
+            ${{ runner.temp }}/xiaoge-memory/
+            ${{ runner.temp }}/xiaoge-native-memory/
+            ${{ runner.temp }}/xiaoge-opencv-asan/*.json
+            ${{ runner.temp }}/xiaoge-opencv-asan/*.log
+            ${{ runner.temp }}/xiaoge-opencv-asan/native-libraries.sha256
+  workspace:
+    name: rust workspace checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
       CPU_COUNT: '2'
       DEV: CPU:LLVM
       JIT: '2'
       LLVM_PATH: /usr/lib/x86_64-linux-gnu/libLLVM-18.so
-      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
       MODEL_RUN_BINARY: ${{ github.workspace }}/rust/target/debug/model-run
     defaults:
       run:
@@ -80,8 +354,14 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Reserve capacity for workspace validation
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 12288
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev cmake
-      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
       - name: Stage pinned native startup UI headers
         run: |
           python tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host"
@@ -91,13 +371,33 @@ jobs:
         run: |
           python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
           python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
-      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Stage pinned numerical dependency before required workspace tests
         run: |
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
           python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-numerics"
           printf 'CONTROLS_NUMERICS=%s/torque-numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-      - run: cargo test --workspace --locked
+      - name: Generate runner-local Hyundai source fixtures
+        run: |
+          python tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-workspace/fixtures" --dbc "$RUNNER_TEMP/card-workspace/dbc"
+          printf 'HYUNDAI_FIXTURE_DIR=%s/card-workspace/fixtures\nHYUNDAI_DBC_DIR=%s/card-workspace/dbc\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          cargo test --workspace --locked
+      - name: Require complete Hyundai schemas after workspace tests
+        run: |
+          python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
+          python tools/check_card_hyundai_state.py "$HYUNDAI_FIXTURE_DIR"
+          python tools/check_card_hyundai_controller.py "$HYUNDAI_FIXTURE_DIR"
+      - name: Preserve generated workspace fixtures and schema results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-card-workspace-fixtures
+          path: ${{ runner.temp }}/card-workspace/
+          if-no-files-found: warn
       - name: Compare QCOM fixtures with the original argument and packet encoder
         run: python tools/qcom_fixtures.py --verify crates/model-runtime/tests/fixtures/qcom
       - name: Compare captured graphs and original camera warps with Rust
@@ -258,6 +558,686 @@ jobs:
             ${{ runner.temp }}/communication-snapshot/report.json
             ${{ runner.temp }}/logging-producer/**/report.json
             ${{ runner.temp }}/logging-producer/**/*.log
+  ui-runtime:
+    name: rust UI application runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original UI IPC imports
+        run: printf 'PYTHONPATH=%s/ui-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve capacity and install UI prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang cmake pkg-config libgl-dev libx11-dev xvfb xauth x11-utils mesa-utils ffmpeg
+      - name: Install pinned original GUI dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pillow==12.3.0 comma-deps-raylib==6.0.0.1.post103 cffi==2.1.1 python-xlib==0.33 pyzmq==27.2.0 pycapnp==2.2.4 requests==2.34.2 qrcode==8.2 setproctitle==1.3.7 psutil==7.2.2 zstandard==0.25.0 PyJWT==2.14.0 cryptography==50.0.1 Cython==3.2.4 setuptools==82.0.1
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Stage pinned native UI graphics and original IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/ui-native/raylib" --shared
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/ui-native/raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-native/raylib/lib/libopenpilot-raylib.so\nUI_MSGQ_PYTHON=%s/ui-native/python\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/ui-native/python"
+      - name: Check native application and shared UI packages
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 5120
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked
+      - name: Build native UI and record current dependency outputs
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-application --bin openpilot-ui --example product_render --example product_runtime --example state_trace --example scheduler_trace --example qr_trace --example calibration_geometry --example torque_geometry --locked --message-format=json 2> "$RUNNER_TEMP/ui-native/native-build.log" | tee "$RUNNER_TEMP/ui-native/native-build.jsonl"
+      - name: Require original pixels and native UI runtime lifecycle
+        run: python rust/tools/check_ui_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/ui-native/native-build.jsonl" --output "$RUNNER_TEMP/ui-native/oracles"
+      - name: Preserve UI captures and runtime evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-ui-application-runtime-evidence
+          path: |
+            ${{ runner.temp }}/ui-native/
+            rust/target/debug/openpilot-ui
+            rust/target/debug/examples/product_render
+            rust/target/debug/examples/product_runtime
+            rust/target/debug/examples/state_trace
+            rust/target/debug/examples/scheduler_trace
+            rust/target/debug/examples/qr_trace
+            rust/target/debug/examples/calibration_geometry
+            rust/target/debug/examples/torque_geometry
+          if-no-files-found: warn
+  encoder-runtime:
+    name: rust encoder runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      ENCODER_LIBYUV_LIB: /usr/lib/x86_64-linux-gnu
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original encoder IPC imports
+        run: printf 'PYTHONPATH=%s/encoder-native/python:%s\nENCODER_MSGQ_PYTHON=%s/encoder-native/python\n' "$RUNNER_TEMP" "$PYTHONPATH" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Reserve capacity and install native codec prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libyuv-dev libzmq3-dev ffmpeg
+      - name: Install pinned encoder oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2 zstandard==0.25.0
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build original encoder IPC bindings and check fixture failure detection
+        run: |
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_encoder_ci.py rust/tools/tests/test_encoder_target_stage.py rust/tools/tests/test_encoder_outcomes.py -q
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/encoder-native/python"
+          python -P -c 'import msgq.ipc_pyx, msgq.visionipc.visionipc_pyx, zstandard; from openpilot.cereal import log, messaging; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(msgq.visionipc.visionipc_pyx.__file__); print(zstandard.__version__)' > "$RUNNER_TEMP/encoder-native/python/imports.txt"
+      - name: Require encoder policy and shared VisionIPC ownership checks
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-encoderd -p openpilot-msgq --features openpilot-encoderd/native --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-encoderd --features native --all-targets --locked -- -D warnings
+      - name: Build native encoder and record current JPEG and messaging outputs
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          set -o pipefail
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-encoderd --features native --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/encoder-native/build.log" | tee "$RUNNER_TEMP/encoder-native/build.jsonl"
+      - name: Require all source codec, V4L and actual encoder runtime comparisons
+        run: python rust/tools/check_encoder_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/encoder-native/build.jsonl" --output "$RUNNER_TEMP/encoder-native/oracles"
+      - name: Preserve encoder inputs, packets, diagnostics and executable evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-encoder-runtime-evidence
+          path: |
+            ${{ runner.temp }}/encoder-native/
+            rust/target/debug/openpilot-encoderd
+            rust/target/debug/examples/encoder_codec_trace
+            rust/target/debug/examples/encoder_v4l_trace
+          if-no-files-found: warn
+  panda-runtime:
+    name: rust Panda runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original Panda IPC imports
+        run: printf 'PYTHONPATH=%s/panda-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve capacity and install Panda prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake pkg-config curl
+      - name: Install pinned Panda oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 libusb1==3.4.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 setproctitle==1.3.7 pytest==9.0.2
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build original Panda IPC bindings
+        run: |
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_pandad_spi.py rust/tools/tests/test_pandad_ci.py -q
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/panda-native/msgq"
+          python -P -c 'import msgq.ipc_pyx, usb1; from openpilot.cereal import log; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(usb1.__file__)' > "$RUNNER_TEMP/panda-native/msgq/imports.txt"
+      - name: Check native Panda packages
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux --all-targets --locked -- -D warnings
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux --all-targets --locked
+      - name: Build native Panda and record resolved dependency outputs
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          set -o pipefail
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
+      - name: Require Panda source, transport and continuous supervisor comparisons
+        run: python rust/tools/check_pandad_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/panda-native/native-build.jsonl" --output "$RUNNER_TEMP/panda-native/oracles"
+      - name: Preserve Panda evidence including failed cases
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-panda-runtime-evidence
+          path: ${{ runner.temp }}/panda-native/
+          if-no-files-found: warn
+  camera-runtime:
+    name: rust camera runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original camera IPC imports
+        run: printf 'PYTHONPATH=%s/camera-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve capacity and install camera prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev
+      - name: Install pinned camera oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip install pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Build original camera IPC bindings
+        run: |
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_camerad_artifact_paths.py -q
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/camera-native/python"
+          python -P -c 'import msgq.ipc_pyx, msgq.visionipc.visionipc_pyx, zmq; from openpilot.cereal import CEREAL_PATH, log; from pathlib import Path; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(msgq.visionipc.visionipc_pyx.__file__); print(Path(CEREAL_PATH)/"log.capnp"); print(zmq.__file__)' > "$RUNNER_TEMP/camera-native/python/imports.txt"
+      - name: Build and check native camera packages
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-camerad -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-camerad -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --all-targets --locked -- -D warnings
+      - name: Require camera and original VisionIPC peer tests
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-camerad --all-targets --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --all-targets --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-msgq --features native-skip-miri --test vision --test vision_server --locked
+      - name: Require original camera comparisons and continuous driver fixtures
+        run: python rust/tools/check_camerad_ci.py --binaries rust/target/debug --output "$RUNNER_TEMP/camera-native/oracles"
+      - name: Preserve camera evidence including failed cases
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-camera-runtime-evidence
+          path: ${{ runner.temp }}/camera-native/
+          if-no-files-found: warn
+  navd-runtime:
+    name: rust navigation runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original navigation IPC imports
+        run: printf 'PYTHONPATH=%s/navd-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity and install navigation prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 urllib3==2.7.0 charset-normalizer==3.5.1 brotli==1.2.0 PyJWT==2.14.0 cryptography==50.0.1
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build original navigation Params and IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/navd-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/navd-native/msgq"
+          python -P -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"navd-native/params/provenance.json"; print("NAVD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+      - name: Build and test native navigation and its source probes
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-navd --features native --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-navd --features native --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-navd --features native --all-targets --locked -- -D warnings
+      - name: Compare navigation source policy, HTTP, authentication and destination CLI
+        run: |
+          python rust/tools/check_navd_policy.py --binary rust/target/debug/examples/navd_policy --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/policy"
+          python rust/tools/check_navd_engine.py --binary rust/target/debug/examples/navd_engine --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/engine"
+          python rust/tools/check_navd_http.py --binary rust/target/debug/examples/navd_http --output "$RUNNER_TEMP/navd-native/http" --timeouts
+          python rust/tools/check_navd_config.py --binary rust/target/debug/examples/navd_config --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/config"
+          python rust/tools/check_navd_destination.py --binary rust/target/debug/openpilot-set-destination --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/destination"
+      - name: Compare actual navigation IPC, restart timers and signal lifecycle
+        run: python rust/tools/check_navd_ipc.py --binary rust/target/debug/openpilot-navd --binding "$NAVD_PARAMS_BINDING" --output "$RUNNER_TEMP/navd-native/ipc"
+      - name: Preserve navigation source, wire and executable evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-navd-host-evidence
+          path: |
+            ${{ runner.temp }}/navd-native/
+            rust/target/debug/openpilot-navd
+            rust/target/debug/openpilot-set-destination
+            rust/target/debug/examples/navd_*
+          if-no-files-found: warn
+  selfdrive-runtime:
+    name: rust selfdrived runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original selfdrived IPC imports
+        run: printf 'PYTHONPATH=%s/selfdrived-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity and install native prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+      - name: Install pinned selfdrived oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2
+      - name: Install pinned Rust compiler for selfdrived
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build original selfdrived Params and IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/selfdrived-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/selfdrived-native/msgq"
+          python -P -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"selfdrived-native/params/provenance.json"; print("SELFDRIVE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+      - name: Build native selfdrived and source-comparison probes
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-selfdrived --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-selfdrived --all-targets --locked -- -D warnings
+      - name: Require selfdrived and messaging seam tests
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-selfdrived -p openpilot-messaging --locked
+      - name: Compare complete selfdrived policy and source effects
+        run: |
+          selfdrive_examples="$GITHUB_WORKSPACE/rust/target/debug/examples"
+          selfdrive_evidence="$RUNNER_TEMP/selfdrived-native/reference"
+          run_reference() {
+            python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+            python "$@"
+          }
+          run_reference rust/tools/generate_selfdrive_alerts.py --output rust/crates/selfdrived/data/alerts.json --check
+          run_reference rust/tools/check_selfdrive_state.py --binary "$selfdrive_examples/selfdrive_state" --output "$selfdrive_evidence/state"
+          run_reference rust/tools/check_alert_manager.py --binary "$selfdrive_examples/alert_manager" --output "$selfdrive_evidence/alert-manager"
+          run_reference rust/tools/check_selfdrive_events.py --binary "$selfdrive_examples/events_trace" --output "$selfdrive_evidence/events"
+          run_reference rust/tools/check_alert_callbacks.py --binary "$selfdrive_examples/alert_callbacks" --output "$selfdrive_evidence/callbacks"
+          run_reference rust/tools/check_selfdrive_params.py --native "$selfdrive_examples/alert_params" --binding "$SELFDRIVE_PARAMS_BINDING" --output "$selfdrive_evidence/params"
+          run_reference rust/tools/check_selfdrive_helpers.py --native "$selfdrive_examples/selfdrive_helpers" --output "$selfdrive_evidence/helpers"
+          run_reference rust/tools/check_car_specific.py --binary "$selfdrive_examples/car_specific" --binding "$SELFDRIVE_PARAMS_BINDING" --output "$selfdrive_evidence/car-specific"
+          run_reference rust/tools/check_cutin_alerts.py --binary "$selfdrive_examples/cutin_alerts" --output "$selfdrive_evidence/cutin"
+          run_reference rust/tools/check_selfdrived_controller.py --binary "$selfdrive_examples/controller" --binding "$SELFDRIVE_PARAMS_BINDING" --output "$selfdrive_evidence/controller"
+          run_reference rust/tools/check_selfdrived_ratekeeper.py --binary "$selfdrive_examples/ratekeeper" --output "$selfdrive_evidence/ratekeeper"
+      - name: Require actual selfdrived IPC and failure lifecycle
+        run: |
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_selfdrived_stderr.py -q
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/check_selfdrived_ipc.py --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-selfdrived" --output "$RUNNER_TEMP/selfdrived-native/ipc"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/check_selfdrived_failures.py --binary "$GITHUB_WORKSPACE/rust/target/debug/openpilot-selfdrived" --output "$RUNNER_TEMP/selfdrived-native/failures"
+      - name: Preserve selfdrived source, wire, failure and executable evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-selfdrived-host-evidence
+          path: |
+            ${{ runner.temp }}/selfdrived-native/
+            rust/target/debug/openpilot-selfdrived
+          if-no-files-found: warn
+  card-runtime:
+    name: rust Card and CAN runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original Card IPC imports
+        run: printf 'PYTHONPATH=%s/card-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity before dependency installation
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+      - name: Install pinned Card oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+      - name: Install pinned Rust compiler
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build unchanged source Params and msgq bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/card-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/card-native/msgq"
+          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"card-native/params/provenance.json"; print("CARD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+      - name: Stage pinned numerical dependency
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/card-native/wheels"
+          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/card-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/card-native/numerics"
+      - name: Generate all required Hyundai fixtures
+        run: |
+          python rust/tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-native/fixtures" --dbc "$RUNNER_TEMP/card-native/dbc"
+          printf 'HYUNDAI_FIXTURE_DIR=%s/card-native/fixtures\nHYUNDAI_DBC_DIR=%s/card-native/dbc\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Build CAN and native Card executables and examples
+        working-directory: rust
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-can --examples --locked
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build -p openpilot-card --features native --bins --examples --locked
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy -p openpilot-can -p openpilot-card --features openpilot-card/native --all-targets --locked -- -D warnings
+      - name: Require Card and CAN tests with complete Hyundai postchecks
+        working-directory: rust
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test -p openpilot-can -p openpilot-card --features openpilot-card/native --locked
+          python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
+          python tools/check_card_hyundai_state.py "$HYUNDAI_FIXTURE_DIR"
+          python tools/check_card_hyundai_controller.py "$HYUNDAI_FIXTURE_DIR"
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests/test_card_ci.py tools/tests/test_card_phase_fence.py -q
+      - name: Require source and native Card and CAN functional gates
+        run: |
+          python rust/tools/check_card_ci.py --phase reference --binaries "$GITHUB_WORKSPACE/rust/target/debug/examples" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-card" --numerics "$RUNNER_TEMP/card-native/numerics" --binding "$CARD_PARAMS_BINDING" --dbc "$HYUNDAI_DBC_DIR" --corpus "$RUNNER_TEMP/card-native/corpus" --evidence "$RUNNER_TEMP/card-native/reference"
+      - name: Stage declared synthetic IPC inputs
+        run: |
+          python rust/tools/stage_card_corpus.py --output "$RUNNER_TEMP/card-native/corpus" --fixtures "$HYUNDAI_FIXTURE_DIR" --dbc "$HYUNDAI_DBC_DIR" \
+            --retained "tesla=$RUNNER_TEMP/card-native/reference/tesla/input.json" --retained "mazda=$RUNNER_TEMP/card-native/reference/mazda/input.json" \
+            --retained "nissan=$RUNNER_TEMP/card-native/reference/nissan/input.json" --retained "chrysler=$RUNNER_TEMP/card-native/reference/chrysler/input.json" \
+            --retained "rivian=$RUNNER_TEMP/card-native/reference/rivian/input.json" --retained "ford=$RUNNER_TEMP/card-native/reference/ford/input.json" \
+            --retained "subaru=$RUNNER_TEMP/card-native/reference/subaru/input.json" --retained "toyota=$RUNNER_TEMP/card-native/reference/toyota/input.json" \
+            --retained "gm=$RUNNER_TEMP/card-native/reference/gm/input.json" --retained "honda=$RUNNER_TEMP/card-native/reference/honda/input.json" \
+            --retained "volkswagen=$RUNNER_TEMP/card-native/reference/volkswagen/input.json"
+      - name: Require actual host Card IPC and shutdown
+        run: |
+          python rust/tools/check_card_ci.py --phase ipc --binaries "$GITHUB_WORKSPACE/rust/target/debug/examples" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-card" --numerics "$RUNNER_TEMP/card-native/numerics" --binding "$CARD_PARAMS_BINDING" --dbc "$HYUNDAI_DBC_DIR" --corpus "$RUNNER_TEMP/card-native/corpus" --evidence "$RUNNER_TEMP/card-native/ipc"
+      - name: Preserve Card and CAN invocations, source identities, failures and generated inputs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-card-can-host-evidence
+          path: ${{ runner.temp }}/card-native/
+          if-no-files-found: warn
+  radar-runtime:
+    name: rust RadarCAN source and host runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original Radar IPC imports
+        run: printf 'PYTHONPATH=%s/radar-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity and install source binding dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build unchanged source Params and msgq bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/radar-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
+          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+      - name: Generate original DBC assets and stage pinned numerical libraries
+        run: |
+          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
+          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
+      - name: Require RadarCAN and CAN tests, native build and Clippy
+        working-directory: rust
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test -p openpilot-radarcan -p openpilot-can --locked
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-radarcan --bins --examples --locked
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy -p openpilot-radarcan -p openpilot-can --all-targets --locked -- -D warnings
+          python -m pytest -c /dev/null --noconftest -p no:cacheprovider tools/tests/test_radarcan_ci.py tools/tests/test_radarcan_exact.py -q
+      - name: Require complete original and native RadarCAN functional gates
+        run: python rust/tools/check_radarcan_ci.py --phase reference --probe "$GITHUB_WORKSPACE/rust/target/debug/examples/radarcan-policy" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-radarcan" --numerics "$RUNNER_TEMP/radar-native/numerics" --binding "$RADAR_PARAMS_BINDING" --dbc "$RUNNER_TEMP/radar-native/dbc" --evidence "$RUNNER_TEMP/radar-native/reference"
+      - name: Require independent actual RadarCAN IPC and signal lifecycle
+        run: python rust/tools/check_radarcan_ci.py --phase ipc --probe "$GITHUB_WORKSPACE/rust/target/debug/examples/radarcan-policy" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-radarcan" --numerics "$RUNNER_TEMP/radar-native/numerics" --binding "$RADAR_PARAMS_BINDING" --dbc "$RUNNER_TEMP/radar-native/dbc" --evidence "$RUNNER_TEMP/radar-native/ipc"
+      - name: Preserve Radar host invocations, inputs, failures and provenance
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-radar-host-evidence
+          path: ${{ runner.temp }}/radar-native/
+          if-no-files-found: warn
+  radar-arm:
+    name: rust RadarCAN native ARM functional validation
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_RELEASE_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original Radar IPC imports
+        run: printf 'PYTHONPATH=%s/radar-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity and install generic ARM dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal
+          rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+      - name: Build unchanged native ARM bindings and generate original radar assets
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/radar-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
+          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+      - name: Stage pinned generic ARM numerical dependency
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
+          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
+      - name: Build and execute generic ARM RadarCAN tests and artifacts
+        working-directory: rust
+        run: |
+          mkdir -p "$RUNNER_TEMP/radar-arm/tests"
+          git rev-parse HEAD > "$RUNNER_TEMP/radar-arm/SOURCE_COMMIT"
+          uname -m | tee "$RUNNER_TEMP/radar-arm/machine.txt"
+          test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          set -o pipefail
+          cargo build -p openpilot-radarcan --bins --examples --release --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/radar-arm/build.log" | tee "$RUNNER_TEMP/radar-arm/build.jsonl"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test -p openpilot-radarcan -p openpilot-can --no-run --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/radar-arm/tests-build.log" | tee "$RUNNER_TEMP/radar-arm/tests-build.jsonl"
+          python -c 'import json, sys; rows=[json.loads(line) for line in open(sys.argv[1])]; print("\n".join(row["executable"] for row in rows if row.get("reason")=="compiler-artifact" and row.get("profile",{}).get("test") and row.get("executable")))' "$RUNNER_TEMP/radar-arm/tests-build.jsonl" > "$RUNNER_TEMP/radar-arm/tests.txt"
+          test -s "$RUNNER_TEMP/radar-arm/tests.txt"
+          while IFS= read -r radar_test; do
+            python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+            cp "$radar_test" "$RUNNER_TEMP/radar-arm/tests/"
+            sha256sum "$radar_test" >> "$RUNNER_TEMP/radar-arm/tests-SHA256SUMS"
+            "$radar_test" --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-arm/tests/$(basename "$radar_test").log"
+          done < "$RUNNER_TEMP/radar-arm/tests.txt"
+          for radar_binary in target/aarch64-unknown-linux-gnu/release/openpilot-radarcan target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy; do
+            readelf -h -d -V "$radar_binary" > "$RUNNER_TEMP/radar-arm/$(basename "$radar_binary").readelf.txt"
+            test "$(readelf -h "$radar_binary" | sed -n 's/.*Machine: *//p')" = AArch64
+            sha256sum "$radar_binary" >> "$RUNNER_TEMP/radar-arm/SHA256SUMS"
+          done
+      - name: Require exact RadarCAN source comparison on native ARM
+        run: python rust/tools/check_radarcan_ci.py --phase reference --probe "$GITHUB_WORKSPACE/rust/target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy" --daemon "$GITHUB_WORKSPACE/rust/target/aarch64-unknown-linux-gnu/release/openpilot-radarcan" --numerics "$RUNNER_TEMP/radar-native/numerics" --binding "$RADAR_PARAMS_BINDING" --dbc "$RUNNER_TEMP/radar-native/dbc" --evidence "$RUNNER_TEMP/radar-native/reference"
+      - name: Require actual original and native ARM IPC and signal lifecycle
+        run: python rust/tools/check_radarcan_ci.py --phase ipc --probe "$GITHUB_WORKSPACE/rust/target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy" --daemon "$GITHUB_WORKSPACE/rust/target/aarch64-unknown-linux-gnu/release/openpilot-radarcan" --numerics "$RUNNER_TEMP/radar-native/numerics" --binding "$RADAR_PARAMS_BINDING" --dbc "$RUNNER_TEMP/radar-native/dbc" --evidence "$RUNNER_TEMP/radar-native/ipc"
+      - name: Preserve Radar generic ARM artifacts and functional evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-radar-arm-not-device-validated
+          path: |
+            ${{ runner.temp }}/radar-arm/
+            ${{ runner.temp }}/radar-native/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-radarcan
+            rust/target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy
+          if-no-files-found: warn
+  radar-memory:
+    name: rust RadarCAN buffer ownership with Miri
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Reserve capacity for pinned interpreter dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
+          printf 'CARGO_TARGET_DIR=%s/radar-miri-target\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Verify BLAS and SVD buffer calls and scheduler ABI at all four Miri levels
+        working-directory: rust
+        run: |
+          mkdir -p "$RUNNER_TEMP/radar-memory"
+          git rev-parse HEAD > "$RUNNER_TEMP/radar-memory/SOURCE_COMMIT"
+          rustc +nightly-2026-09-29 -vV > "$RUNNER_TEMP/radar-memory/rustc.txt"
+          set -o pipefail
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo +nightly-2026-09-29 miri setup --print-sysroot > "$RUNNER_TEMP/radar-memory/sysroot.txt" 2> "$RUNNER_TEMP/radar-memory/setup.log"
+          export MIRI_SYSROOT="$(cat "$RUNNER_TEMP/radar-memory/sysroot.txt")"
+          python -c 'import hashlib, json, os; from pathlib import Path; root=Path(os.environ["MIRI_SYSROOT"]); paths=sorted(root.glob("lib/rustlib/*/lib/libcore-*.rlib")); assert paths; print(json.dumps({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}, indent=2))' > "$RUNNER_TEMP/radar-memory/core-hashes.json"
+          for radar_level in default strict preemption tree; do
+            radar_flags='-Zmiri-no-extra-rounding-error'
+            if test "$radar_level" != default; then radar_flags="$radar_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-backtrace=full"; fi
+            if test "$radar_level" = preemption || test "$radar_level" = tree; then radar_flags="$radar_flags -Zmiri-preemption-rate=0.1"; fi
+            if test "$radar_level" = tree; then radar_flags="$radar_flags -Zmiri-tree-borrows"; fi
+            for radar_filter in numerics_ scheduler_argument_abi_preserves_source_fifo_priority; do
+              python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+              printf '%s\n' "MIRIFLAGS=$radar_flags cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked $radar_filter -- --test-threads=1" > "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.command"
+              MIRIFLAGS="$radar_flags" cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked "$radar_filter" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.log"
+            done
+          done
+      - name: Preserve pinned Radar memory invocations and failures
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-radar-memory-evidence
+          path: ${{ runner.temp }}/radar-memory/
+          if-no-files-found: warn
   support-runtime:
     name: rust support runtime
     runs-on: ubuntu-24.04
@@ -1188,7 +2168,10 @@ jobs:
     name: rust aarch64 build
     if: github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1196,7 +2179,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
+      - name: Reserve capacity for generic ARM build dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 12288
+          sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
       - name: Stage native GNU aarch64 startup renderer and portable loader headers
         run: |
           sudo dpkg --add-architecture arm64
@@ -1220,6 +2207,193 @@ jobs:
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
           cargo build --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-gnu
           file target/aarch64-unknown-linux-gnu/release/cpu-sample
+      - name: Stage exact source-pinned native ARM codec packages
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python rust/tools/stage_encoder_target.py --output "$RUNNER_TEMP/encoder-arm/dependencies"
+          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"encoder-arm/dependencies/receipt.json"; d=json.loads(p.read_text()); print("ENCODER_ARM_FFMPEG="+d["ffmpeg"]["install"]); print("ENCODER_ARM_LIBYUV="+d["libyuv"]["install"]+"/lib")' >> "$GITHUB_ENV"
+      - name: Build encoder daemon and probes with pinned ARM codecs and ION
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+          AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
+          BINDGEN_EXTRA_CLANG_ARGS: --target=aarch64-linux-gnu -I/usr/aarch64-linux-gnu/include
+          FFMPEG_DIR: ${{ env.ENCODER_ARM_FFMPEG }}
+          ENCODER_LIBYUV_LIB: ${{ env.ENCODER_ARM_LIBYUV }}
+          ENCODER_FFMPEG_EXTRA_LIBS: swresample,x264,z,va,va-drm,drm,gcc
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          git rev-parse HEAD > "$RUNNER_TEMP/encoder-arm/SOURCE_COMMIT"
+          set -o pipefail
+          cargo build -p openpilot-encoderd --features static-ffmpeg,visionipc-ion --bins --examples --release --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/encoder-arm/build.log" | tee "$RUNNER_TEMP/encoder-arm/build.jsonl"
+          for encoder_binary in target/aarch64-unknown-linux-gnu/release/openpilot-encoderd target/aarch64-unknown-linux-gnu/release/examples/encoder_codec_trace target/aarch64-unknown-linux-gnu/release/examples/encoder_v4l_trace; do
+            aarch64-linux-gnu-readelf -h -d -V "$encoder_binary" > "$RUNNER_TEMP/encoder-arm/$(basename "$encoder_binary").readelf.txt"
+            sha256sum "$encoder_binary" >> "$RUNNER_TEMP/encoder-arm/SHA256SUMS"
+          done
+      - name: Preserve pinned codec ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-encoder-arm-evidence
+          path: |
+            ${{ runner.temp }}/encoder-arm/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-encoderd
+            rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_codec_trace
+            rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_v4l_trace
+          if-no-files-found: warn
+      - name: Build and inspect native Card for generic Linux aarch64
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          mkdir -p "$RUNNER_TEMP/card-arm"
+          printf '%s\n' 'cargo build -p openpilot-card --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu' > "$RUNNER_TEMP/card-arm/command.txt"
+          git rev-parse HEAD > "$RUNNER_TEMP/card-arm/SOURCE_COMMIT"
+          set -o pipefail
+          cargo build -p openpilot-card --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/card-arm/build.log"
+          file target/aarch64-unknown-linux-gnu/release/openpilot-card > "$RUNNER_TEMP/card-arm/file.txt"
+          aarch64-linux-gnu-readelf -h target/aarch64-unknown-linux-gnu/release/openpilot-card > "$RUNNER_TEMP/card-arm/elf-header.txt"
+          test "$(aarch64-linux-gnu-readelf -h target/aarch64-unknown-linux-gnu/release/openpilot-card | sed -n 's/.*Machine: *//p')" = AArch64
+          sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-card target/aarch64-unknown-linux-gnu/release/examples/*_trace > "$RUNNER_TEMP/card-arm/SHA256SUMS"
+      - name: Preserve native Card ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-card-linux-aarch64-not-device-validated
+          path: |
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-card
+            rust/target/aarch64-unknown-linux-gnu/release/examples/*_trace
+            ${{ runner.temp }}/card-arm/
+          if-no-files-found: warn
+      - name: Build and inspect native selfdrived for generic Linux aarch64
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          mkdir -p "$RUNNER_TEMP/selfdrived-arm"
+          git rev-parse HEAD > "$RUNNER_TEMP/selfdrived-arm/SOURCE_COMMIT"
+          printf '%s\n' 'cargo build -p openpilot-selfdrived --bins --example controller --example ratekeeper --release --locked --target aarch64-unknown-linux-gnu' > "$RUNNER_TEMP/selfdrived-arm/command.txt"
+          set -o pipefail
+          cargo build -p openpilot-selfdrived --bins --example controller --example ratekeeper --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/selfdrived-arm/build.log"
+          file target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived > "$RUNNER_TEMP/selfdrived-arm/file.txt"
+          sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived target/aarch64-unknown-linux-gnu/release/examples/controller target/aarch64-unknown-linux-gnu/release/examples/ratekeeper > "$RUNNER_TEMP/selfdrived-arm/SHA256SUMS"
+      - name: Preserve selfdrived generic ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-selfdrived-arm-evidence
+          path: |
+            ${{ runner.temp }}/selfdrived-arm/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived
+            rust/target/aarch64-unknown-linux-gnu/release/examples/controller
+            rust/target/aarch64-unknown-linux-gnu/release/examples/ratekeeper
+          if-no-files-found: warn
+      - name: Build and inspect native navigation for generic Linux aarch64
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          mkdir -p "$RUNNER_TEMP/navd-arm"
+          git rev-parse HEAD > "$RUNNER_TEMP/navd-arm/SOURCE_COMMIT"
+          printf '%s\n' 'cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu' > "$RUNNER_TEMP/navd-arm/command.txt"
+          set -o pipefail
+          cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/navd-arm/build.log"
+          file target/aarch64-unknown-linux-gnu/release/openpilot-navd target/aarch64-unknown-linux-gnu/release/openpilot-set-destination > "$RUNNER_TEMP/navd-arm/file.txt"
+          sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-navd target/aarch64-unknown-linux-gnu/release/openpilot-set-destination target/aarch64-unknown-linux-gnu/release/examples/navd_* > "$RUNNER_TEMP/navd-arm/SHA256SUMS"
+      - name: Preserve navigation generic ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-navd-arm-evidence
+          path: |
+            ${{ runner.temp }}/navd-arm/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-navd
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-set-destination
+            rust/target/aarch64-unknown-linux-gnu/release/examples/navd_*
+          if-no-files-found: warn
+      - name: Build generic and ION camera aarch64 artifacts
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          mkdir -p "$RUNNER_TEMP/camera-arm/generic" "$RUNNER_TEMP/camera-arm/ion"
+          git rev-parse HEAD > "$RUNNER_TEMP/camera-arm/SOURCE_COMMIT"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build -p openpilot-camerad-runtime --features native-skip-miri --bin openpilot-camerad --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/camera-arm/generic/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-camerad "$RUNNER_TEMP/camera-arm/generic/"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build -p openpilot-camerad-runtime --features visionipc-ion --bin openpilot-camerad --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/camera-arm/ion/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-camerad "$RUNNER_TEMP/camera-arm/ion/"
+          file "$RUNNER_TEMP"/camera-arm/{generic,ion}/openpilot-camerad > "$RUNNER_TEMP/camera-arm/file.txt"
+          sha256sum "$RUNNER_TEMP"/camera-arm/{generic,ion}/openpilot-camerad > "$RUNNER_TEMP/camera-arm/SHA256SUMS"
+      - name: Preserve generic and ION camera ARM evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-camera-arm-evidence
+          path: ${{ runner.temp }}/camera-arm/
+          if-no-files-found: warn
+      - name: Build native Panda for generic Linux aarch64
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          mkdir -p "$RUNNER_TEMP/panda-arm"
+          git rev-parse HEAD > "$RUNNER_TEMP/panda-arm/SOURCE_COMMIT"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux --bins --examples --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/panda-arm/build.log"
+          file target/aarch64-unknown-linux-gnu/release/openpilot-pandad target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor > "$RUNNER_TEMP/panda-arm/file.txt"
+          sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-pandad target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor > "$RUNNER_TEMP/panda-arm/SHA256SUMS"
+      - name: Preserve Panda generic ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-panda-arm-evidence
+          path: |
+            ${{ runner.temp }}/panda-arm/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-pandad
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor
+          if-no-files-found: warn
+      - name: Build generic and ION UI aarch64 artifacts
+        working-directory: rust
+        env:
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          mkdir -p "$RUNNER_TEMP/ui-arm/generic" "$RUNNER_TEMP/ui-arm/ion"
+          git rev-parse HEAD > "$RUNNER_TEMP/ui-arm/SOURCE_COMMIT"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build -p openpilot-ui-application --bin openpilot-ui --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/ui-arm/generic/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-ui "$RUNNER_TEMP/ui-arm/generic/"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build -p openpilot-ui-application --features openpilot-msgq/visionipc-ion --bin openpilot-ui --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/ui-arm/ion/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-ui "$RUNNER_TEMP/ui-arm/ion/"
+          cp "$RUNNER_TEMP/startup-raylib-arm/lib/libopenpilot-raylib.so" "$RUNNER_TEMP/startup-raylib-arm/plugin-build.json" "$RUNNER_TEMP/ui-arm/"
+          for ui_artifact in "$RUNNER_TEMP"/ui-arm/{generic,ion}/openpilot-ui "$RUNNER_TEMP/ui-arm/libopenpilot-raylib.so"; do
+            aarch64-linux-gnu-readelf -h -d -V "$ui_artifact" > "$ui_artifact.readelf.txt"
+            test "$(aarch64-linux-gnu-readelf -h "$ui_artifact" | sed -n 's/.*Machine: *//p')" = AArch64
+          done
+          sha256sum "$RUNNER_TEMP"/ui-arm/{generic,ion}/openpilot-ui "$RUNNER_TEMP/ui-arm/libopenpilot-raylib.so" > "$RUNNER_TEMP/ui-arm/SHA256SUMS"
+      - name: Preserve UI generic ARM build and graphics plugin evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-ui-application-arm-not-device-validated
+          path: ${{ runner.temp }}/ui-arm/
+          if-no-files-found: warn
       - name: Stage native GNU aarch64 torque dependency (not AGNOS validation)
         working-directory: rust
         run: |
@@ -1279,6 +2453,9 @@ jobs:
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-torqued
             ${{ runner.temp }}/torque-arm-numerics/
             rust/target/aarch64-unknown-linux-gnu/release/jetlinkd-rs
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-card
+            rust/target/aarch64-unknown-linux-gnu/release/examples/*_trace
+            ${{ runner.temp }}/card-arm/
 
   athena-runtime:
     name: rust Athena runtime
