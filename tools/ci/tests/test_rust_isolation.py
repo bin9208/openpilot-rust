@@ -227,6 +227,7 @@ class RustIsolationTests(unittest.TestCase):
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
             'card-runtime', 'selfdrive-runtime', 'camera-runtime', 'panda-runtime', 'ui-runtime', 'encoder-runtime', 'navd-runtime',
+            'xiaoge-runtime', 'xiaoge-memory',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -251,7 +252,9 @@ class RustIsolationTests(unittest.TestCase):
                                             'PANDA': '${{ needs.panda-runtime.result }}',
                                             'UI_RUNTIME': '${{ needs.ui-runtime.result }}',
                                             'ENCODER': '${{ needs.encoder-runtime.result }}',
-                                            'NAVD': '${{ needs.navd-runtime.result }}'})
+                                            'NAVD': '${{ needs.navd-runtime.result }}',
+                                            'XIAOGE': '${{ needs.xiaoge-runtime.result }}',
+                                            'XIAOGE_MEMORY': '${{ needs.xiaoge-memory.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
@@ -264,6 +267,30 @@ class RustIsolationTests(unittest.TestCase):
                                                   capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
+
+    def test_xiaoge_requires_both_architectures_and_instrumented_native_libraries(self):
+        jobs = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
+        self.assertEqual(jobs['xiaoge-runtime']['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        required = {
+            'xiaoge-runtime': ('build_xiaoge_opencv.py', 'build_params_python.py', 'build_visionipc_python.py',
+                              'check_xiaoge_ci.py', '--features native-skip-miri', 'test_xiaoge_ci.py'),
+            'xiaoge-memory': ('--sanitizers address,undefined', 'check_xiaoge_native_memory.py',
+                             '-Zmiri-strict-provenance', '-Zmiri-symbolic-alignment-check',
+                             '-Zmiri-preemption-rate=0.1', '-Zmiri-tree-borrows', '--no-default-features'),
+        }
+        for name, commands in required.items():
+            job = jobs[name]
+            self.assertNotIn('if', job)
+            script = '\n'.join(step.get('run', '') for step in job['steps'])
+            for command in commands:
+                self.assertIn(command, script)
+            for step in job['steps']:
+                if 'run' in step:
+                    self.assertNotIn('if', step)
+                    self.assertNotIn('continue-on-error', step)
+            artifact = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+            self.assertEqual(len(artifact), 1)
+            self.assertEqual(artifact[0]['if'], 'always()')
 
     def test_navigation_requires_original_transport_auth_and_timer_evidence(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)

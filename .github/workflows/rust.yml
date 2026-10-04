@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime, camera-runtime, panda-runtime, ui-runtime, encoder-runtime, navd-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, card-runtime, selfdrive-runtime, camera-runtime, panda-runtime, ui-runtime, encoder-runtime, navd-runtime, xiaoge-runtime, xiaoge-memory]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -46,6 +46,8 @@ jobs:
           UI_RUNTIME: ${{ needs.ui-runtime.result }}
           ENCODER: ${{ needs.encoder-runtime.result }}
           NAVD: ${{ needs.navd-runtime.result }}
+          XIAOGE: ${{ needs.xiaoge-runtime.result }}
+          XIAOGE_MEMORY: ${{ needs.xiaoge-memory.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -71,6 +73,136 @@ jobs:
           test "$UI_RUNTIME" = success
           test "$ENCODER" = success
           test "$NAVD" = success
+          test "$XIAOGE" = success
+          test "$XIAOGE_MEMORY" = success
+  xiaoge-runtime:
+    name: rust Xiaoge source comparison (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Reserve capacity and install Xiaoge build prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ cmake ninja-build libzmq3-dev git-lfs
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2 opencv-python-headless==4.13.0.92 pillow==12.3.0 'httpx2[http2,brotli,zstd]==2.13.1'
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Retrieve the unchanged original Xiaoge models
+        run: |
+          python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_xiaoge_ci.py
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+      - name: Compile pinned OpenCV and original Python bindings
+        run: |
+          python rust/tools/build_xiaoge_opencv.py --output "$RUNNER_TEMP/xiaoge-opencv"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/xiaoge-original/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/xiaoge-original/ipc"
+          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"xiaoge-original/params/provenance.json"; print("XIAOGE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          printf 'OPENPILOT_OPENCV_ROOT=%s/xiaoge-opencv\nLD_LIBRARY_PATH=%s/xiaoge-opencv/install/lib\nPYTHONPATH=%s/xiaoge-original/ipc:%s\nOPENCV_TEST_LANE_MODEL=%s/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Compile and check all native Xiaoge targets
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked -- -D warnings
+      - name: Compare source pixels, model results, sockets, live IPC and lifecycle
+        run: |
+          python rust/tools/check_xiaoge_ci.py --bin-dir rust/target/debug --models openpilot/selfdrive/carrot/xiaoge/assets \
+            --opencv "$OPENPILOT_OPENCV_ROOT" --binding "$XIAOGE_PARAMS_BINDING" --output "$RUNNER_TEMP/xiaoge-comparison"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-xiaoge-${{ matrix.runner }}-evidence
+          path: |
+            ${{ runner.temp }}/xiaoge-comparison/
+            ${{ runner.temp }}/xiaoge-original/params/*.json
+            ${{ runner.temp }}/xiaoge-opencv/*.json
+            ${{ runner.temp }}/xiaoge-opencv/*.log
+            ${{ runner.temp }}/xiaoge-opencv/native-libraries.sha256
+            rust/target/debug/openpilot-xiaoge
+            rust/target/debug/examples/xiaoge_*
+            rust/target/debug/examples/opencv_trace
+            rust/target/debug/examples/jpeg_options
+  xiaoge-memory:
+    name: rust Xiaoge native memory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Reserve capacity and install memory-check prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y clang-18 cmake g++ git-lfs
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 opencv-python-headless==4.13.0.92 pillow==12.3.0
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          rustup toolchain install 1.94.0 --profile minimal
+          rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
+      - name: Validate pure Rust image contracts with four Miri modes
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/xiaoge-miri
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/xiaoge-memory"
+          index=0
+          for flags in '' '-Zmiri-strict-provenance' '-Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1' '-Zmiri-tree-borrows -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1'; do
+            python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+            MIRIFLAGS="$flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-opencv-runtime -p openpilot-jpeg --no-default-features --lib --tests --locked 2>&1 | tee "$RUNNER_TEMP/xiaoge-memory/miri-$index.log"
+            index=$((index + 1))
+          done
+      - name: Retrieve models and instrument the complete native OpenCV build
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+          CC=clang-18 CXX=clang++-18 python rust/tools/build_xiaoge_opencv.py --output "$RUNNER_TEMP/xiaoge-opencv-asan" --sanitizers address,undefined
+      - name: Check native ownership and exact model results under ASan and UBSan
+        run: |
+          python rust/tools/check_xiaoge_native_memory.py --opencv "$RUNNER_TEMP/xiaoge-opencv-asan" \
+            --models openpilot/selfdrive/carrot/xiaoge/assets --target-dir "$RUNNER_TEMP/xiaoge-asan-target" --output "$RUNNER_TEMP/xiaoge-native-memory"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-xiaoge-memory-evidence
+          path: |
+            ${{ runner.temp }}/xiaoge-memory/
+            ${{ runner.temp }}/xiaoge-native-memory/
+            ${{ runner.temp }}/xiaoge-opencv-asan/*.json
+            ${{ runner.temp }}/xiaoge-opencv-asan/*.log
+            ${{ runner.temp }}/xiaoge-opencv-asan/native-libraries.sha256
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
