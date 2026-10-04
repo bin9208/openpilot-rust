@@ -1,0 +1,7 @@
+Planning policies are ported from openpilot/selfdrive/controls and openpilot/selfdrive/carrot in this repository. The original MIT license and source provenance remain applicable; see the root LICENSE. Python is used only for generation and independent source comparisons.
+
+The compensated window sum follows CPython v3.12.14 Python/bltinmodule.c, as in the earlier Card, statsd and navd ports. Copyright Python Software Foundation. The full CPython license and notices are retained in CPYTHON-LICENSE.
+
+Generated acados solver C and the pinned native acados/HPIPM/BLASFEO/qpOASES libraries remain explicit native external dependencies; generated C retains its original BSD notices.
+
+The full upstream acados, BLASFEO, HPIPM and qpOASES license texts are retained in licenses/. Their revision-pinned source URLs and hashes are in licenses/sources.json. The artifact builder copies these notices into each host/target artifact and records generator-wheel, generator-file, header, generated-source and library identities separately. Binary provenance is the exact locked wheel; the upstream recipe and license revisions do not replace the wheel hash.

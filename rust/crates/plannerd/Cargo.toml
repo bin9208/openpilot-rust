@@ -1,0 +1,51 @@
+[package]
+name = "openpilot-plannerd"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = ["dep:libloading", "dep:sha2", "dep:openpilot-beepd", "dep:openpilot-calibrationd", "dep:openpilot-params", "dep:libc", "dep:rustix", "dep:signal-hook", "dep:openpilot-messaging", "dep:openpilot-logging"]
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dependencies]
+libc = { version = "0.2", optional = true }
+rustix = { version = "1", features = ["thread", "time"], optional = true }
+signal-hook = { version = "0.3", optional = true }
+openpilot-messaging = { path = "../messaging", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+openpilot-beepd = { path = "../beepd", optional = true }
+openpilot-calibrationd = { path = "../calibrationd", optional = true }
+openpilot-params = { path = "../params", optional = true }
+openpilot-cereal = { path = "../cereal" }
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-control-policy = { path = "../control-policy", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+num-traits = "0.2"
+capnp = "=0.27.2"
+libloading = { version = "0.8", optional = true }
+sha2 = { version = "0.10", optional = true }
+
+[[example]]
+name = "plannerd_solver_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "plannerd_owner_trace"
+required-features = ["native-skip-miri"]
+
+[[bin]]
+name = "openpilot-plannerd"
+path = "src/main.rs"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "plannerd_runtime_trace"
+required-features = ["native-skip-miri"]
