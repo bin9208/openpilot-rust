@@ -1,0 +1,10 @@
+The broadcaster, lane/BSD inference policy, image preprocessing, settings,
+HTTP service and diagnostic protocol are ported from
+openpilot/selfdrive/carrot/xiaoge_data.py and openpilot/selfdrive/carrot/xiaoge/
+in this repository. Their original MIT license and source provenance remain
+applicable; see the root LICENSE.
+
+OpenCV and libjpeg-turbo are external native dependencies, separately documented
+in ../opencv-runtime/PROVENANCE.md and ../jpeg/PROVENANCE.md. The original ONNX
+model assets are retained unchanged. Python is used for source comparisons and
+build tooling, and is not embedded or invoked by the native runtime.

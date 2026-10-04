@@ -11,7 +11,8 @@ static void fail(j_common_ptr info) {
   (*info->err->format_message)(info,error->message);
   longjmp(error->jump,1);
 }
-int encode_rgb(const uint8_t *rgb,unsigned int width,unsigned int height,unsigned char **output,unsigned long *size,char *message,size_t message_size) {
+int encode_pixels(const uint8_t *pixels,unsigned int width,unsigned int height,unsigned int components,unsigned int quality,
+    unsigned char **output,unsigned long *size,char *message,size_t message_size) {
   struct Encoder *state=calloc(1,sizeof(*state));
   if (!state) {
     if (message_size) { strncpy(message,"JPEG allocation failed",message_size-1); message[message_size-1]='\0'; }
@@ -29,17 +30,20 @@ int encode_rgb(const uint8_t *rgb,unsigned int width,unsigned int height,unsigne
   jpeg_create_compress(&state->info);
   jpeg_mem_dest(&state->info,output,size);
   state->info.image_width=width; state->info.image_height=height;
-  state->info.input_components=3; state->info.in_color_space=JCS_RGB;
+  state->info.input_components=(int)components; state->info.in_color_space=components==1 ? JCS_GRAYSCALE : JCS_RGB;
   jpeg_set_defaults(&state->info);
-  jpeg_set_quality(&state->info,75,TRUE);
+  jpeg_set_quality(&state->info,(int)quality,TRUE);
   state->info.dct_method=JDCT_ISLOW;
   jpeg_start_compress(&state->info,TRUE);
   while (state->info.next_scanline<state->info.image_height) {
-    JSAMPROW row=(JSAMPROW)(rgb+(size_t)state->info.next_scanline*width*3);
+    JSAMPROW row=(JSAMPROW)(pixels+(size_t)state->info.next_scanline*width*components);
     jpeg_write_scanlines(&state->info,&row,1);
   }
   jpeg_finish_compress(&state->info);
   jpeg_destroy_compress(&state->info);
   free(state);
   return 1;
+}
+int encode_rgb(const uint8_t *rgb,unsigned int width,unsigned int height,unsigned char **output,unsigned long *size,char *message,size_t message_size) {
+  return encode_pixels(rgb,width,height,3,75,output,size,message,message_size);
 }
