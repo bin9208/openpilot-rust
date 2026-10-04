@@ -110,6 +110,7 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
     with ExitStack() as stack:
       producer_command = [os.sys.executable, '-P', str(ROOT / 'rust/tools/radarcan_runtime_producer.py'),
         '--case', str(case_path), '--output', str(output / 'producer.json'), '--order', case.get('order', 'can-state'),
+        '--publishers-ready', str(output / 'publishers-ready.json'),
         '--ready', str(output / 'ready.json'), '--start', str(output / 'producer-start')]
       if case.get('prequeue', False):
         producer_command.extend(['--prequeue-complete', str(output / 'prequeued')])
@@ -127,6 +128,13 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
         environment.pop(flag, None)
       producer_log = stack.enter_context((output / 'producer.log').open('w'))
       producer = subprocess.Popen(producer_command, cwd=ROOT, env=environment, stdout=producer_log, stderr=producer_log)
+      publisher_deadline = time.monotonic() + 10
+      while not (output / 'publishers-ready.json').exists():
+        if producer.poll() is not None:
+          raise RuntimeError(f'radar publisher startup exited: {producer.returncode}')
+        if time.monotonic() >= publisher_deadline:
+          raise TimeoutError('radar input publishers did not initialize')
+        time.sleep(.001)
       launched = time.monotonic_ns()
       for prefix, mode in zip(prefixes, modes, strict=True):
         lane = output / mode
