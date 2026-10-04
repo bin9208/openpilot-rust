@@ -134,6 +134,7 @@ fn availability(name: &str) -> RustAvailability {
         "ubloxd" => ("openpilot-ublox", "openpilot-ubloxd"),
         "ui" => ("openpilot-ui-application", "openpilot-ui"),
         "updated" => ("openpilot-updated", "openpilot-updated"),
+        "xiaoge_data" => ("openpilot-xiaoge", "openpilot-xiaoge"),
         _ => return RustAvailability::NotPorted,
     };
     RustAvailability::Candidate {

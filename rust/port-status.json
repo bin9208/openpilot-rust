@@ -593,7 +593,11 @@
       "name": "xiaoge_data",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.xiaoge_data",
-      "status": "not_ported",
+      "status": "native_runtime_host_and_arm_compared",
+      "implementation": "rust/crates/xiaoge; TCP broadcaster, Tesla CAN state, gated BSD and lane inference, HTTP diagnostics/settings/snapshots, native Rust Cereal/VisionIPC",
+      "native_dependencies": ["pinned OpenCV 4.13.0 core/imgproc/dnn with recorded defined-access patches", "pinned libjpeg-turbo", "original ONNX model assets", "Linux sockets/clocks/signals; native Rust msgq/VisionIPC"],
+      "evidence": "docs/naver/rust-xiaoge-200.md",
+      "runtime_scope": "host original source/socket/IPC/lifecycle comparisons and ARM original numerical comparisons with actual AGNOS19.8 loader/library closure; hosted native ARM full-loop CI, complete manager startup/upload and device acceptance remain pending",
       "production_replaced": false
     },
     {

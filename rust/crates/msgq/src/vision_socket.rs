@@ -8,17 +8,21 @@ use std::{
 
 pub(crate) fn path(name: &str) -> Result<PathBuf, Error> {
     let prefix = queue::prefix()?;
-    if !queue::component(name, 40, false)
-        || prefix
-            .as_ref()
-            .is_some_and(|prefix| !queue::component(prefix, 40, true))
+    path_with_prefix(name, prefix.as_deref())
+}
+
+fn path_with_prefix(name: &str, prefix: Option<&str>) -> Result<PathBuf, Error> {
+    if !queue::component(name, 88, false)
+        || prefix.is_some_and(|prefix| !queue::component(prefix, 100, true))
     {
         return Err(Error::Invalid("invalid VisionIPC server name or namespace"));
     }
-    Ok(PathBuf::from(match prefix {
+    let path = PathBuf::from(match prefix {
         Some(prefix) => format!("/tmp/{prefix}_visionipc_{name}"),
         None => format!("/tmp/visionipc_{name}"),
-    }))
+    });
+    address(&path)?;
+    Ok(path)
 }
 
 fn address(path: &std::path::Path) -> Result<libc::sockaddr_un, Error> {

@@ -1,0 +1,27 @@
+[package]
+name = "openpilot-opencv-runtime"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT AND Apache-2.0 AND BSD-3-Clause AND Zlib"
+publish = false
+links = "openpilot_opencv_runtime"
+
+[features]
+default = []
+native-skip-miri = ["dep:cxx"]
+
+[dependencies]
+cxx = { version = "=1.0.202", optional = true }
+thiserror = "2"
+
+[build-dependencies]
+cxx-build = "=1.0.202"
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[[example]]
+name = "opencv_trace"
+required-features = ["native-skip-miri"]

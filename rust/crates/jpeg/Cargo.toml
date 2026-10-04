@@ -17,3 +17,7 @@ cxx = "1.0"
 [build-dependencies]
 cxx-build = "1.0"
 cc = "1.2"
+
+[[example]]
+name = "jpeg_options"
+required-features = ["native-skip-miri"]

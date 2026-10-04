@@ -92,3 +92,24 @@ fn maximum_descriptor_packet_roundtrips_without_losing_rights() {
     assert_eq!(payload, bytes);
     assert_eq!(received.len(), MAX_FDS);
 }
+#[test]
+fn long_namespace_is_valid_when_complete_socket_path_fits() {
+    let prefix = "xiaoge_live_0123456789abcdef0123456789abcdef";
+    let path = super::path_with_prefix("camerad", Some(prefix)).unwrap();
+    assert_eq!(
+        path,
+        std::path::PathBuf::from(format!("/tmp/{prefix}_visionipc_camerad"))
+    );
+    assert!(super::address(&path).is_ok());
+}
+
+#[test]
+fn complete_path_capacity_and_queue_endpoint_boundaries_are_enforced() {
+    assert!(super::path_with_prefix("camerad", Some(&"p".repeat(84))).is_ok());
+    assert!(super::path_with_prefix("camerad", Some(&"p".repeat(85))).is_err());
+    assert!(super::path_with_prefix(&"n".repeat(88), None).is_ok());
+    assert!(super::path_with_prefix(&"n".repeat(89), None).is_err());
+    for prefix in ["../namespace", "with/slash", "with\0nul"] {
+        assert!(super::path_with_prefix("camerad", Some(prefix)).is_err());
+    }
+}
