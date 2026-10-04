@@ -129,6 +129,12 @@ manager launcher and Rust exit cleanly on SIGINT. Invalid numeric conversions
 abort the C++ source binding; Rust reports a typed error and exits with status 1.
 These exit boundaries are recorded explicitly in the lifecycle receipt.
 
+The corrected ARM daemon SHA-256 is
+`f7161696baa2be17ac115f7db88a22eb40aca844b5ed14d191e80d64e522cea8`.
+Its all-target build, Params regression under the extracted AGNOS loader and
+12-file dependency/version closure pass (`params-signal-arm-build-v1`,
+`arm-params-test-v1`, `arm-daemon-loader-v1`, `arm-elf-closure-v1.json`).
+
 Whole-main deterministic comparisons exclude only the two plans'
 `solverExecutionTime`. Actual IPC compares complete semantic payloads and
 validity, excluding `processingDelay`, `solverExecutionTime`,
@@ -183,10 +189,27 @@ and `plannerd_ipc.py`. For actual IPC, put the original C++ msgq import root fir
 in `PYTHONPATH`, use Python `-P`, and supply the original Params module with
 `--binding`. Source-oracle Cython must be the lockfile's 3.3.0.
 
-The shared workflow owner must add these checks to `rust.yml` and its required
-aggregate, preserve the generated artifacts/evidence, and retain the existing
-fast, integration, mapped-doc and aarch64 requirements. Exact-SHA Actions and
-post-merge success are not claimed by this local ledger. Complete normal startup
+`rust.yml` now requires `planner-runtime` on both x86-64 and native ARM runners,
+plus `planner-memory` at all four Miri modes. The runtime job installs the locked
+native wheel, verifies its generator files, builds both original Cython solvers,
+and runs `check_plannerd_ci.py`: ABI, policy helpers, radar, lane gaps, complete
+owners/main, solver faults, VW, stock longitudinal, radar-off, actual IPC and
+lifecycle. It retains the generated native payload and original-source evidence.
+The host job also uses `check_plannerd_native_memory.py` for instrumented
+generated-C ABI, complete-owner and fault-loop checks. Existing fast,
+integration, mapped-doc and aarch64 requirements remain required.
+
+The new 12-lane CI recipe passes locally on the frozen corrected host binaries
+(`plannerd-review-197/full-ci-host-v1`), as does its three-lane generated-C
+sanitizer recipe (`native-memory-ci-v1`). A second full pass uses freshly built
+original Params and C++ IPC bindings with the CI-pinned Cython 3.3.0
+(`ci-cython-params-v2`, `ci-cython-msgq-v2`, `full-ci-host-v2`). Local first attempts
+lacked staged include paths and setuptools; those failures remain recorded and
+the successful commands reuse existing dependencies without source changes.
+CI helper regressions execute a failing
+comparison and a failing Miri command to require nonzero job results and stop
+later checks. Hosted exact-SHA Actions and post-merge success are not claimed by
+this local ledger. Complete normal startup
 and the existing log-upload path remain mandatory before the user's first
 device comparison. Public user guides are unchanged because this component
 preserves policy and adds no user setting or selected production daemon.

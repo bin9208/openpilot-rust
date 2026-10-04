@@ -305,3 +305,39 @@ comparisons using freshly frozen native-IPC executables. The separate
 `280eb31789e3e70cefb6500194dd225f02902e2fd33fe0a175080d707892d278`.
 That focused run does not select the optional log collector. Full normal
 startup/upload composition and user device acceptance remain outstanding.
+
+## RadarCAN, planning and Xiaoge composition (2026-10-04)
+
+Commits `4993bf4a`, `a081c6ee` and `cb158f14` compose the RadarCAN, planning and
+Xiaoge candidates. Workspace/lockfile and strict CI dependency conflicts retain
+all components. Required jobs now include original/native RadarCAN host and ARM
+comparisons, planner host and native ARM comparisons, Xiaoge host and native ARM
+comparisons, and each component's memory checks. Hosted exact-SHA results for
+this composition remain pending; the earlier `0697eff6` CI success covers its
+earlier component set only.
+
+The parent independently reviewed the runtime boundaries and reproduced Params
+read-error differences in the three consumers. Scoped corrections under
+[#205](https://github.com/bin9208/openpilot-rust/issues/205) preserve the shared
+Params API and original empty defaults/recovery. Planner additionally restores
+the original SIGTERM disposition after CarParams arrives. Its corrected host
+checks pass 29 package tests, 13 real source/native lifecycle scenarios and four
+IPC runs with 121 exact ordered publications each. Its ARM correction builds,
+passes the Params regression under the extracted AGNOS loader, and resolves all
+12 native dependency/version entries. These are local/emulated checks.
+
+The new planner CI recipe also passes all 12 checks locally, including complete
+owners/main, three policy variants, solver fault recovery and the real daemon.
+Generated-C ASan/UBSan ABI, owner and fault checks pass separately. Rust and the
+pinned external numerical libraries are not claimed instrumented by that run.
+Xiaoge's local CI recipe passes policy, lane postprocessing, full inference,
+OpenCV/JPEG, actual HTTP/TCP, live IPC and lifecycle; retained ARM comparisons
+use the actual original ARM Python/NumPy/OpenCV execution. External OpenCV and
+JPEG instrumentation remains separate from the pure Rust Miri checks.
+
+Detailed artifacts, source provenance and limitations are retained in
+[RadarCAN](rust-radarcan-193.md), [planning](rust-plannerd-197.md) and
+[Xiaoge](rust-xiaoge-200.md). Carrot navigation #206 and radar fusion #207 are
+still in progress. The remaining registered services, final packaging and
+complete ordinary startup/log upload remain open under #1. No device comparison
+is requested at this intermediate stage.

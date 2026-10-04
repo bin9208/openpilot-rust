@@ -121,6 +121,7 @@ fn availability(name: &str) -> RustAvailability {
         "pandad" => ("openpilot-pandad", "openpilot-pandad-supervisor"),
         "paramsd" => ("openpilot-paramsd", "openpilot-paramsd"),
         "pigeond" => ("openpilot-ublox", "openpilot-pigeond"),
+        "plannerd" => ("openpilot-plannerd", "openpilot-plannerd"),
         "proclogd" => ("openpilot-proclogd", "openpilot-proclogd-runtime"),
         "qcomgpsd" => ("openpilot-qcomgpsd", "openpilot-qcomgpsd"),
         "radarcan" => ("openpilot-radarcan", "openpilot-radarcan"),

@@ -231,6 +231,7 @@ class RustIsolationTests(unittest.TestCase):
             'card-runtime', 'selfdrive-runtime', 'camera-runtime', 'panda-runtime', 'ui-runtime', 'encoder-runtime', 'navd-runtime',
             'radar-runtime', 'radar-arm', 'radar-memory',
             'xiaoge-runtime', 'xiaoge-memory',
+            'planner-runtime', 'planner-memory',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -260,7 +261,9 @@ class RustIsolationTests(unittest.TestCase):
                                             'RADAR_ARM': '${{ needs.radar-arm.result }}',
                                             'RADAR_MEMORY': '${{ needs.radar-memory.result }}',
                                             'XIAOGE': '${{ needs.xiaoge-runtime.result }}',
-                                            'XIAOGE_MEMORY': '${{ needs.xiaoge-memory.result }}'})
+                                            'XIAOGE_MEMORY': '${{ needs.xiaoge-memory.result }}',
+                                            'PLANNER': '${{ needs.planner-runtime.result }}',
+                                            'PLANNER_MEMORY': '${{ needs.planner-memory.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)

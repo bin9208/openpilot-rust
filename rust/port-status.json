@@ -405,7 +405,11 @@
       "name": "plannerd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.plannerd",
-      "status": "not_ported",
+      "status": "native_daemon_host_and_arm_source_validated",
+      "implementation": "rust/crates/plannerd; serial Carrot, longitudinal/lateral MPC policies, lane departure, fast radar, stopping leads, Params and native IPC lifecycle",
+      "native_dependencies": ["approved native acados 0.2.2.post103 with pinned HPIPM, BLASFEO and qpOASES libraries; generated C retains original compiler and target contract", "native Rust msgq, cereal, Params and logging", "Linux clocks, signals and scheduling"],
+      "runtime_scope": "Exact original host/ARM policies and whole main loops, solver faults/recovery, actual host IPC and 13 Params/signal lifecycle cases pass. Pure Rust Miri and generated-C ASan/UBSan coverage remain distinct from uninstrumented external numerical libraries. Required hosted host/ARM CI, complete normal startup/upload, AGNOS device scheduling and user device acceptance remain pending. Original radar/NAS code is unchanged; no CPU savings claim.",
+      "evidence": "docs/naver/rust-plannerd-197.md",
       "production_replaced": false
     },
     {

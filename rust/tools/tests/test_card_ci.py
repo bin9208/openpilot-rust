@@ -69,7 +69,7 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
     'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
     'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
     'selfdrive-runtime', 'camera-runtime', 'panda-runtime', 'ui-runtime', 'encoder-runtime', 'navd-runtime',
-    'radar-runtime', 'radar-arm', 'radar-memory', 'xiaoge-runtime', 'xiaoge-memory'}
+    'radar-runtime', 'radar-arm', 'radar-memory', 'xiaoge-runtime', 'xiaoge-memory', 'planner-runtime', 'planner-memory'}
   assert set(jobs['fast']['needs']) == inherited | {'card-runtime'}
   assert 'test "$CARD" = success' in jobs['fast']['steps'][0]['run']
   for job, test_command in (('workspace', 'cargo test --workspace'), ('card-runtime', 'cargo test -p openpilot-can')):
