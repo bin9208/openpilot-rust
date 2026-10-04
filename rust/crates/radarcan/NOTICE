@@ -1,0 +1,12 @@
+RadarCAN policy and interfaces are derived from this checkout's
+openpilot/selfdrive/carrot/radar and opendbc_repo/opendbc/car sources.
+Original licensing: MIT, copyright comma.ai and original contributors.
+See openpilot/LICENSE and opendbc_repo/LICENSE for the complete license terms.
+
+The floating-point compensated-sum operation follows CPython 3.12's builtins
+sum implementation. CPython is licensed under the Python Software Foundation
+License Version 2; see https://docs.python.org/3/license.html.
+
+NumPy/OpenBLAS is an explicit separately packaged native numerical dependency.
+No original Python runtime or project-owned C++ radar policy is used by the
+Rust radar policy.

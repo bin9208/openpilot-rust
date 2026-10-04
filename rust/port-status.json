@@ -431,7 +431,11 @@
       "name": "radarcan",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.radar.radarcan",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_and_arm_math_validated",
+      "implementation": "rust/crates/radarcan; non-conflated batch association, Base and track/filter/jerk policy, all nine brand radar interfaces, copied/latching front flip and native continuous liveTracks loop",
+      "native_dependencies": ["native Rust msgq", "NumPy2.5.3 wheel's pinned external OpenBLAS0.3.34.106 ILP64 numerical libraries", "external ZeroMQ diagnostics", "Linux clocks/signals/scheduling/filesystem"],
+      "evidence": "docs/naver/rust-radarcan-193.md",
+      "runtime_scope": "Actual original/native host comparison: 23 normal and 5 joined-input profiles plus 15 signal/fatal/read-error lifecycle cases. GNU ARM 31 package assertions and 39 actual ARM CPython/NumPy source arithmetic/batch cases pass under QEMU. Constructor barrier isolates runtime semantics; ordinary cold-start discrepancy retained. Full native ARM hosted reference/IPC, exact-SHA CI, whole-runtime ordinary startup/upload, AGNOS and user device acceptance remain pending. Original Python radar and NAS replay unchanged; scoped Params read-error correction tracked in #205.",
       "production_replaced": false
     },
     {
