@@ -2735,6 +2735,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-plannerd"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "libc",
+ "libloading",
+ "num-traits",
+ "openpilot-beepd",
+ "openpilot-calibrationd",
+ "openpilot-cereal",
+ "openpilot-control-policy",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-runtime-core",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-pocketfft"
 version = "0.1.0"
 dependencies = [
