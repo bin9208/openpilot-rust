@@ -33,6 +33,9 @@ capnp = "=0.27.2"
 libloading = { version = "0.8", optional = true }
 sha2 = { version = "0.10", optional = true }
 
+[dev-dependencies]
+tempfile = "3"
+
 [[example]]
 name = "plannerd_solver_trace"
 required-features = ["native-skip-miri"]

@@ -148,7 +148,7 @@ def run(args, root, mode, epoch, prefix):
       drain()
       child.send_signal(signal.SIGTERM)
       status = child.wait(timeout=3.0)
-      assert status == (0 if mode == 'rust' else -signal.SIGTERM), status
+      assert status == -signal.SIGTERM, status
     finally:
       if child.poll() is None:
         child.kill()

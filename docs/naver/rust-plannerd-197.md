@@ -24,7 +24,9 @@ longitudinal interval, 100 ms liveTracks fallback, source validity checks, fast
 overlay followed by stopping-lead conditioning, ordered publications and
 runtimeTiming diagnostics. Navigation age is checked at the original Carrot and
 post-MPC coasting points. Thresholds, following-time rules and radar selection
-are unchanged. SIGINT/SIGTERM stop both the CarParams wait and polling loop.
+are unchanged. SIGINT stops the CarParams wait and polling loop. SIGTERM stops
+the blocking CarParams wait cleanly; after CarParams arrives, the original
+default SIGTERM disposition is restored.
 
 The Rust owner includes LanePlanner2, lane departure, traffic-stop matching,
 driving modes/follow gaps, confirmed lane-change credit, lead response/preview,
@@ -97,6 +99,8 @@ Source comparisons below use exact floating-point bits, with no numerical tolera
 | Generated-C sanitizers | ASan/UBSan: 12 ABI solves, 360 complete owner states, and the 160-poll fault/reset loop pass (`sanitizer-native-1`, `sanitizer-owner-1`, `sanitizer-fault-1`) |
 | Rejected native boundaries | Wrong manifest architecture/hash, missing library, wrong buffer size, terminal control and oversized stage reject cleanly (`boundary-rejections-2`) |
 | Startup lifecycle | SIGINT/SIGTERM exit cleanly while awaiting CarParams; invalid frame limit rejects (`startup-signals-1`) |
+| Parent lifecycle review | 13 real-source/native cases cover missing, empty and unreadable CarParams, directory recovery, four unreadable settings, both signal phases and fatal conversions. The original Rust failures are retained before the fix (`plannerd-review-197/lifecycle-red-v1`, `lifecycle-green-v1`) |
+| Parent follow-up build and IPC | 29 package tests, all targets and strict Clippy pass. Four actual IPC runs each publish 121 messages with exact policy payloads and default SIGTERM termination (`plannerd-review-197/params-signal-*`, `ipc-green-v1`) |
 | ARM build and original ABI | GNU aarch64 binary/six examples build; original ARM Cython and Rust agree on all bits in 12 solver iterations (`arm-frozen-1`, `arm-source-1`, `arm-native-1`) |
 | AGNOS loader and closure | Actual published AGNOS 19.8 loader/libraries execute the binary and native solver; all 12 ELF dependency/version closures resolve (`agnos-runtime-1`, `elf-closure-2`) |
 | Complete original ARM main loop | Original ARM Python/NumPy/pycapnp/Cython main loop versus Rust under the AGNOS loader: 712 polls/1,080 publications and the 160-poll/240-publication fault/reset case are exact (`arm-main-compare-3`, `arm-main-compare-2`) |
@@ -114,6 +118,16 @@ invalid radar, stale pose and parameter reloads. The actual IPC runs exercise
 CarParams waiting, liveTracks-only startup, model/liveTracks switching,
 experimental mode, stop/departure, restart and termination. Their longitudinal
 publications include 35 liveTracks and six model triggers per run.
+
+The parent follow-up evidence is in the integration worktree's
+`.omo/evidence/plannerd-review-197/`. Its frozen host daemon SHA-256 is
+`7335aa86781177f05c4372afe02c8dedcbf26088b3e1da2682f75312f9043c97`.
+Params filesystem read errors now use the source empty-value defaults and allow
+CarParams to recover. Unknown keys and invalid numeric values remain errors.
+The raw Python harness exits with KeyboardInterrupt, whereas the original
+manager launcher and Rust exit cleanly on SIGINT. Invalid numeric conversions
+abort the C++ source binding; Rust reports a typed error and exits with status 1.
+These exit boundaries are recorded explicitly in the lifecycle receipt.
 
 Whole-main deterministic comparisons exclude only the two plans'
 `solverExecutionTime`. Actual IPC compares complete semantic payloads and

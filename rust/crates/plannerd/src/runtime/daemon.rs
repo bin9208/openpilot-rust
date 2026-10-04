@@ -27,6 +27,11 @@ use std::{
 pub fn run(frames: Option<u64>, artifact: &Path) -> Result<(), Error> {
     platform::configure()?;
     let stop = Arc::new(AtomicBool::new(false));
+    let post_params = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register_conditional_default(
+        signal_hook::consts::SIGTERM,
+        Arc::clone(&post_params),
+    )?;
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stop))?;
     let mut parameters = RuntimeParameters(Params::for_runtime()?);
@@ -39,12 +44,13 @@ pub fn run(frames: Option<u64>, artifact: &Path) -> Result<(), Error> {
         if stop.load(Ordering::Relaxed) {
             return Ok(());
         }
-        let bytes = parameters.0.get("CarParams")?.unwrap_or_default();
+        let bytes = parameters.car_params()?;
         if !bytes.is_empty() {
             break Config::decode(&bytes)?;
         }
         thread::sleep(Duration::from_millis(100));
     };
+    post_params.store(true, Ordering::SeqCst);
     logger.emit(
         log_site!(),
         Record::text(

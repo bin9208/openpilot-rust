@@ -14,8 +14,12 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--binding', type=Path, required=True)
   parser.add_argument('--source-native', type=Path, required=True)
+  parser.add_argument('--log-root', type=Path)
   args = parser.parse_args()
   load_binding(args.binding)
+  if args.log_root:
+    from openpilot.system.hardware.hw import Paths
+    Paths.swaglog_root = staticmethod(lambda: str(args.log_root))
   events = types.ModuleType('openpilot.selfdrive.selfdrived.events')
   events.Events = load_source('tici')['Events']
   sys.modules[events.__name__] = events
