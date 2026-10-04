@@ -1,0 +1,31 @@
+[package]
+name = "openpilot-radarcan"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+openpilot-can = { path = "../can" }
+openpilot-card = { path = "../card", default-features = false }
+openpilot-beepd = { path = "../beepd" }
+openpilot-params = { path = "../params" }
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-cereal = { path = "../cereal" }
+capnp = "=0.27.2"
+openpilot-messaging = { path = "../messaging", default-features = false }
+openpilot-msgq = { path = "../msgq" }
+openpilot-logging = { path = "../logging" }
+rustix = { version = "1", features = ["thread", "time", "process"] }
+libc = "0.2"
+signal-hook = "0.3"
+indexmap = { version = "2", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+libloading = "0.8"
+sha2 = "0.10"
+
+[lints.rust]
+unsafe_code = "deny"
