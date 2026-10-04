@@ -12,6 +12,8 @@ mod mapped;
 #[cfg(any(feature = "native-skip-miri", test))]
 mod memory;
 #[cfg(feature = "native-skip-miri")]
+mod notification_wait;
+#[cfg(feature = "native-skip-miri")]
 mod queue;
 #[cfg(any(feature = "native-skip-miri", test))]
 mod queue_core;

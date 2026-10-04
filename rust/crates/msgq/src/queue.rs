@@ -297,40 +297,29 @@ impl Queue {
     }
 }
 
-pub(crate) fn poll(
-    timeout_ms: i32,
-    mut ready: impl FnMut() -> Result<bool, Error>,
-) -> Result<(), Error> {
-    if timeout_ms < -1 {
-        return Err(Error::Invalid("invalid poll timeout"));
-    }
-    if ready()? {
-        return Ok(());
-    }
-    let milliseconds = if timeout_ms == -1 { 100 } else { timeout_ms };
-    let mut remaining = libc::timespec {
-        tv_sec: (milliseconds / 1000).into(),
-        tv_nsec: libc::c_long::from(milliseconds % 1000) * 1_000_000,
-    };
-    loop {
-        let requested = remaining;
-        // SAFETY: both timespec values are initialized and live for the call;
-        // nanosleep writes remaining only on interruption, as used by original msgq.
-        let result = unsafe { libc::nanosleep(&requested, &mut remaining) };
-        let error = (result < 0).then(std::io::Error::last_os_error);
-        if ready()? || (timeout_ms != -1 && result == 0) {
-            return Ok(());
-        }
-        if let Some(error) = error {
-            if error.kind() != std::io::ErrorKind::Interrupted {
-                return Err(Error::Io("poll msgq", error));
-            }
-        }
-    }
-}
+pub(crate) use crate::notification_wait::poll;
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn notification_after_empty_check_does_not_wait_for_timeout() {
+        super::install_signal_handler().unwrap();
+        let tid = u32::try_from(super::uid().unwrap() & u64::from(u32::MAX)).unwrap();
+        let started = std::time::Instant::now();
+        let mut checks = 0;
+        super::poll(200, || {
+            checks += 1;
+            if checks == 1 {
+                super::notify_reader(tid);
+                Ok(false)
+            } else {
+                Ok(true)
+            }
+        })
+        .unwrap();
+        assert!(started.elapsed() < std::time::Duration::from_millis(100));
+    }
+
     #[test]
     fn infinite_poll_keeps_waiting_after_a_completed_sleep_interval() {
         let mut checks = 0;

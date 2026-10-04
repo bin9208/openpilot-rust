@@ -227,7 +227,7 @@ fn repeated_signal_interruptions_preserve_the_remaining_receive_timeout() {
                 .map(|number| number.parse::<libc::c_long>().unwrap())
                 .collect::<Vec<_>>()
         })
-        .unwrap_or_else(|_| vec![libc::SYS_clock_nanosleep]);
+        .unwrap_or_else(|_| vec![libc::SYS_clock_nanosleep, libc::SYS_ppoll]);
     let interrupt = std::thread::spawn(move || {
         let deadline = Instant::now() + Duration::from_secs(3);
         for expected in 1..=10 {
@@ -237,7 +237,7 @@ fn repeated_signal_interruptions_preserve_the_remaining_receive_timeout() {
                 }
                 assert!(
                     Instant::now() < deadline,
-                    "polling thread never entered nanosleep"
+                    "polling thread never entered its wait syscall"
                 );
                 let syscall =
                     std::fs::read_to_string(format!("/proc/self/task/{tid}/syscall")).unwrap();

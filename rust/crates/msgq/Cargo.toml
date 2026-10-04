@@ -8,11 +8,12 @@ publish = false
 
 [features]
 default = ["native-skip-miri"]
-native-skip-miri = ["dep:libc"]
+native-skip-miri = ["dep:libc", "dep:nix"]
 visionipc-ion = ["native-skip-miri"]
 
 [dependencies]
 libc = { version = "0.2", optional = true }
+nix = { version = "0.31.3", optional = true, features = ["poll", "signal"] }
 thiserror = "2"
 
 [build-dependencies]
