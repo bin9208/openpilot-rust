@@ -32,6 +32,7 @@ def main() -> None:
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--prefix', action='append', required=True)
   parser.add_argument('--ready', type=Path, required=True)
+  parser.add_argument('--publishers-ready', type=Path, required=True)
   parser.add_argument('--start', type=Path, required=True)
   parser.add_argument('--prequeue-complete', type=Path)
   parser.add_argument('--order', choices=('can-state', 'state-can'), default='can-state')
@@ -43,6 +44,7 @@ def main() -> None:
   for prefix in args.prefix:
     os.environ['OPENPILOT_PREFIX'] = prefix
     publishers.append(messaging.PubMaster(['can', 'carState']))
+  args.publishers_ready.write_text(json.dumps({'pid': os.getpid(), 'ready_ns': time.monotonic_ns()}) + '\n')
   deadline = time.monotonic() + 10
   while not all(publisher.all_readers_updated(topic) for publisher in publishers for topic in ('can', 'carState')):
     if time.monotonic() >= deadline:
