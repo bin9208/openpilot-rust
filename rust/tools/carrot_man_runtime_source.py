@@ -91,6 +91,8 @@ def main():
         return ast.copy_location(ast.Constant(ports[node.value]), node)
       if type(node.value) is str:
         value = node.value
+        if value == "/data":
+          return ast.copy_location(ast.Constant(str(data)), node)
         for original, owned in paths.items():
           value = value.replace(original, owned)
         value = value.replace("tcp://*:7710", f"tcp://127.0.0.1:{ports[7710]}")

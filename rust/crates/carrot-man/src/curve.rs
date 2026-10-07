@@ -185,9 +185,9 @@ impl VisionCurveSpeed {
         let Some(stamp) = model_time else {
             return self.update_frame(result, now, true);
         };
-        let fresh = !self
+        let fresh = self
             .last_model_nanos
-            .is_some_and(|previous| stamp <= previous);
+            .is_none_or(|previous| stamp > previous);
         if fresh && now.is_finite() && result.is_some_and(|r| r.approach_kph.is_finite()) {
             self.last_model_nanos = Some(stamp);
         }

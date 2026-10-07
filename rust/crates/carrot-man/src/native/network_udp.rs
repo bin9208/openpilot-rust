@@ -100,7 +100,7 @@ fn datagram(
     let now = clock::monotonic();
     let status = crate::owner::packet::status(&json::finite_value(&value), now)?;
     let session = super::legacy_http_session(peer, "udp")?;
-    handle.call(Action::Udp(status, session, now))?;
+    handle.call(Action::Udp(Box::new(status), session, now))?;
     Ok(())
 }
 

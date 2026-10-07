@@ -29,9 +29,9 @@ pub enum Action {
     ClearTcp(u64),
     PeerFallback(crate::ingress::peers::Fallback, SocketAddr),
     ClearFallback(crate::ingress::peers::Fallback),
-    Naver(crate::sources::Snapshot),
-    Legacy(packet::LegacyFrame, String, f64),
-    Udp(packet::Status, String, f64),
+    Naver(Box<crate::sources::Snapshot>),
+    Legacy(Box<packet::LegacyFrame>, String, f64),
+    Udp(Box<packet::Status>, String, f64),
     TransportLost(crate::sources::Source, String, f64),
     Route(Vec<(f64, f64)>, bool),
     Health,
@@ -184,13 +184,13 @@ fn dispatch(
             owner.peers.clear_fallback(kind);
         }
         Action::Naver(snapshot) => {
-            return Ok(Response::Accepted(owner.navigation.accept(snapshot)));
+            return Ok(Response::Accepted(owner.navigation.accept(*snapshot)));
         }
         Action::Legacy(frame, session, now) => {
-            super::dispatch::frame(owner, frame, &session, now, params, writes)?;
+            super::dispatch::frame(owner, *frame, &session, now, params, writes)?;
         }
         Action::Udp(status, session, now) => {
-            super::dispatch::status(owner, status, &session, now, params)?;
+            super::dispatch::status(owner, *status, &session, now, params)?;
         }
         Action::TransportLost(source, session, now) => {
             owner

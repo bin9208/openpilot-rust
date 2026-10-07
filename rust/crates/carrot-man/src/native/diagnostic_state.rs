@@ -63,6 +63,12 @@ fn can_error(sub: &SubMaster, params: &Params, state: &State) -> Result<bool, Er
     };
     Ok(car_error || radar_error)
 }
+pub(super) struct Policy {
+    pub automatic: bool,
+    pub onroad_delay: f64,
+    pub can_delay: f64,
+}
+
 pub(super) fn idle(
     state: &mut State,
     sub: &mut SubMaster,
@@ -70,9 +76,7 @@ pub(super) fn idle(
     writes: &Writes,
     now: f64,
     network: bool,
-    automatic: bool,
-    onroad_delay: f64,
-    can_delay: f64,
+    policy: &Policy,
 ) -> Result<(), Error> {
     sub.update(Duration::ZERO)?;
     let onroad = upload.params.get_bool("IsOnroad")?;
@@ -102,13 +106,13 @@ pub(super) fn idle(
         if state.can_at.is_none() && can_error(sub, upload.params, state)? {
             state.can_at = Some(now);
         }
-        if state.can_at.is_some_and(|at| now - at >= can_delay) {
+        if state.can_at.is_some_and(|at| now - at >= policy.can_delay) {
             state.can_requested = queue_exception(upload.params, writes, "can_error");
         }
     }
-    if automatic && !state.sent {
+    if policy.automatic && !state.sent {
         if let Some(start) = state.start {
-            if !state.captured && now - start >= onroad_delay && now >= state.next_onroad {
+            if !state.captured && now - start >= policy.onroad_delay && now >= state.next_onroad {
                 if upload.capture() {
                     state.captured = true;
                     state.next_onroad = 0.;

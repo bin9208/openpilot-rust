@@ -60,7 +60,7 @@ pub fn start(config: Config, stop: Arc<AtomicBool>, network: Arc<AtomicBool>) ->
 }
 #[path = "diagnostic_state.rs"]
 mod state;
-use state::{idle, State};
+use state::{idle, Policy, State};
 fn setup_socket(context: &zmq::Context, config: &Config) -> Result<zmq::Socket, Error> {
     let socket = context.socket(zmq::REP)?;
     socket.bind(&format!(
@@ -92,6 +92,11 @@ fn run(
     let mut socket = setup_socket(&context, &config)?;
     let mut sub = SubMaster::for_runtime(&["carState", "radarState"], Options::default())?;
     let mut state = State::default();
+    let policy = Policy {
+        automatic,
+        onroad_delay,
+        can_delay,
+    };
     while !stop.load(Ordering::Relaxed) {
         let result = (|| {
             let now = clock::monotonic();
@@ -128,9 +133,7 @@ fn run(
                     &writes,
                     now,
                     network.load(Ordering::Relaxed),
-                    automatic,
-                    onroad_delay,
-                    can_delay,
+                    &policy,
                 )?,
                 Some(value) if matches!(value.view(), openpilot_logmessaged::JsonView::Null) => {
                     idle(
@@ -140,9 +143,7 @@ fn run(
                         &writes,
                         now,
                         network.load(Ordering::Relaxed),
-                        automatic,
-                        onroad_delay,
-                        can_delay,
+                        &policy,
                     )?
                 }
                 Some(value) => {

@@ -128,7 +128,7 @@ fn serve(mut stream: TcpStream, peer: SocketAddr, token: u64, handle: &Handle) {
                 };
                 let terminal = snapshot.lifecycle.terminal();
                 association = Some((snapshot.source, snapshot.session_id.clone()));
-                if handle.call(Action::Naver(snapshot)).is_err() {
+                if handle.call(Action::Naver(Box::new(snapshot))).is_err() {
                     eprintln!("navigation ingress rejected: client_handler_error");
                     done = true;
                     break;

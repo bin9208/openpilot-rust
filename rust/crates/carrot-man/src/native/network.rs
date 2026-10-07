@@ -185,6 +185,6 @@ pub fn dispatch_legacy(
             serde_json::json!(ordered_keys.into_iter().take(10).collect::<Vec<_>>());
     }
     let _ = peer;
-    handle.call(Action::Legacy(frame, session.into(), now))?;
+    handle.call(Action::Legacy(Box::new(frame), session.into(), now))?;
     Ok(())
 }

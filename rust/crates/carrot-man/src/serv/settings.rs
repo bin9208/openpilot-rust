@@ -42,8 +42,8 @@ impl Settings {
                 .map_err(|_| crate::Error::Contract("invalid integer Params"))
         };
         let value = |key| -> Result<f64, crate::Error> {
-            Ok(num_traits::ToPrimitive::to_f64(&integer(key)?)
-                .ok_or(crate::Error::Contract("integer Params conversion"))?)
+            num_traits::ToPrimitive::to_f64(&integer(key)?)
+                .ok_or(crate::Error::Contract("integer Params conversion"))
         };
         let map_turn = params.get("MapTurnSpeedFactor")?.unwrap_or_default();
         let map_turn = openpilot_calibrationd::parameters::parse_float(&map_turn)

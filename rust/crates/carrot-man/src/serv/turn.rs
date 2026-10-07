@@ -20,7 +20,7 @@ pub fn turn_mapping(kind: i64, instruction: bool) -> (&'static str, &'static str
         140 | 141 => ("rotary", "slight left", 5),
         133 => ("rotary", "right", 5),
         134 | 135 => ("rotary", "sharp right", 5),
-        136 | 137 | 138 => ("rotary", "sharp left", 5),
+        136..=138 => ("rotary", "sharp left", 5),
         139 => ("rotary", "left", 5),
         142 => ("rotary", "straight", 5),
         14 => ("turn", "uturn", if instruction { 5 } else { 7 }),

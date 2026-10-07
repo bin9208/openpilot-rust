@@ -217,7 +217,7 @@ pub fn parse(root: &JsonValue, now: f64) -> Result<Snapshot> {
             integer(root, "sentMonotonicMs", (0, u64::MAX), "sent_monotonic_ms")?;
         }
         JsonView::Float(value)
-            if value.is_finite() && value >= 0. && value < 18_446_744_073_709_551_616. => {}
+            if value.is_finite() && (0. ..18_446_744_073_709_551_616.).contains(&value) => {}
         _ => return Err(fail("sent_monotonic_ms")),
     }
     let lifecycle = match text(root, "lifecycle", 16, "lifecycle")?.as_str() {
