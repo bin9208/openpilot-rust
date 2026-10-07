@@ -202,6 +202,12 @@ they were not repeated locally. The existing memory job now also runs the native
 IPC pure-memory cases with ARM strict provenance and Tree Borrows. Exact-head
 hosted gates and dev integration remain pending for this candidate.
 
+The first hosted Athena example build identified two newly required metadata
+fields in its synthetic image fixture. The fixture now carries `index: 0` and
+`fd: -1`, exactly as in the preserved `1dd955e1` candidate. No production image
+policy changed. The failed build is retained in PR #222's first Actions run;
+the corrected exact-head hosted gates remain required.
+
 ## Remaining external boundary
 
 Linux shared mappings, file locking, signals, Unix sockets and SCM_RIGHTS remain
