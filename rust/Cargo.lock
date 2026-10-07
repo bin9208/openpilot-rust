@@ -2609,8 +2609,9 @@ dependencies = [
 name = "openpilot-msgq"
 version = "0.1.0"
 dependencies = [
- "cxx",
- "cxx-build",
+ "cc",
+ "libc",
+ "nix 0.31.3",
  "tempfile",
  "thiserror",
 ]
