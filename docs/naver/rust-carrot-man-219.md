@@ -30,3 +30,12 @@ GEOS retains the original dependency-absent path, not full route-preview evidenc
 
 Complete manager packaging, normal startup/upload composition and the user's
 first device comparison remain open. No real recipient, NAS or vehicle was used.
+
+At `6e78f9ec`, hosted x86_64 and aarch64 owner/example builds and original IPC
+binding builds completed; the x86 policy/time comparison step passed. The first
+owned-process run exposed two source-fixture errors: an auxiliary request also
+activated legacy guidance, and the surrogate case left a pending diagnostic
+reason for the following exception case. Corrected inputs/order retain all
+assertions and deadlines. One cached source-only run then passed all 12 boundary
+cases, including surrogate recovery. Full source/Rust process comparison is
+still pending; no production policy was changed for these fixture corrections.

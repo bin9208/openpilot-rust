@@ -229,7 +229,8 @@ def run(implementation, args):
     peer.wait(lambda row: row["service"] == "carrotMan" and row["data"]["naviOwner"] == "naver_v1" and row["data"]["remote"] == "127.0.0.2")
     legacy = dict(timestamp_ms=20, rgdata=dict(nRoadLimitSpeed=60, nSdiType=1, nSdiSpeedLimit=40, nSdiDist=100),
       sinf=dict(redLightOn=True, redLightRemainTime=15, distance=70), complexCrossroad=dict(show=True, imageBase64="b3duZWQ=", imageMime="image/png", imageWidth=1, imageHeight=1))
-    assert peer.http("/api/navi/fixture", legacy)["status"] == 200
+    assert peer.http("/api/navi/fixture", {key: value for key, value in legacy.items() if key != "rgdata"})["status"] == 200
+    peer.wait(lambda row: row["service"] == "carrotMan" and row["data"]["naviOwner"] == "naver_v1")
     assert not (peer.memory / "CarrotNaviImage").exists()
     terminal = dict(naver, sequence=2, lifecycle="arrived", guidance=dict(current=dict(present=False), next=dict(present=False)),
       safety=dict(present=False), road=dict(limitValid=False, categoryValid=False), route=dict(present=False))
@@ -279,6 +280,15 @@ def run(implementation, args):
     peer.until(lambda: (peer.params / "CarrotException").exists() and (peer.params / "CarrotException").read_text() == "can_error")
     peer.put("IsOnroad", "0")
     peer.until(lambda: (peer.params / "CarrotException").read_text() == "")
+    assert len(peer.receiver.rows) == uploads
+    peer.can_error = False
+    peer.put("CarrotException", "exception")
+    for _ in range(20):
+      peer.pump()
+    peer.network = "wifi"
+    peer.until(lambda: (peer.params / "CarrotExceptionSent").exists() and (peer.params / "CarrotExceptionSent").read_text() == "1")
+    peer.until(lambda: (peer.params / "CarrotException").read_text() == "")
+    uploads = len(peer.receiver.rows)
     peer.network = "none"
     for _ in range(20):
       peer.pump()
@@ -309,13 +319,6 @@ def run(implementation, args):
     peer.wait(lambda row: row["service"] == "carrotMan" and row["data"]["naviOwner"] == "naver_v1" and row["data"]["naviSequence"] == 1 and row["data"]["szTBTMainText"] == "recovered")
     result["late_utf8"] = dict(exception="tmux_send", persisted_through_expiry=True, persisted_through_clear=True, recovered=True)
     assert len(peer.receiver.rows) == uploads
-    peer.can_error = False
-    peer.put("CarrotException", "exception")
-    for _ in range(20):
-      peer.pump()
-    peer.network = "wifi"
-    peer.until(lambda: (peer.params / "CarrotExceptionSent").exists() and (peer.params / "CarrotExceptionSent").read_text() == "1")
-    peer.until(lambda: (peer.params / "CarrotException").read_text() == "")
     result.update(selected=peer.selected, uploads=peer.receiver.rows, backup=json.loads((peer.root / "data/backup_params.json").read_text()), exception_sent=True)
     (peer.root / "selected.json").write_text(json.dumps(result, indent=2) + "\n")
     return result
