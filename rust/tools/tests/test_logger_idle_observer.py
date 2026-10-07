@@ -1,17 +1,32 @@
+import ast
+from collections.abc import Callable
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
 import textwrap
 import time
+from types import SimpleNamespace
 
 import pytest
 
-from loggerd_peer import Peer
+
+@pytest.fixture
+def await_idle_method() -> Callable[[SimpleNamespace, float], None]:
+  source = Path(__file__).resolve().parents[1] / 'loggerd_peer.py'
+  module = ast.parse(source.read_text())
+  peer = next(node for node in module.body if isinstance(node, ast.ClassDef) and node.name == 'Peer')
+  method = next(node for node in peer.body if isinstance(node, ast.FunctionDef) and node.name == 'await_idle')
+  namespace = {'os': os, 'Path': Path, 'time': time}
+  exec(compile(ast.Module(body=[method], type_ignores=[]), str(source), 'exec'), namespace)
+  return namespace['await_idle']
 
 
 @pytest.mark.parametrize('mode', ('sleep', 'zero-ppoll', 'fd-ppoll', 'pipe-read', 'futex', 'exited'))
-def test_idle_barrier_accepts_only_source_sleep_or_zero_fd_ppoll(tmp_path: Path, mode: str) -> None:
+def test_idle_barrier_accepts_only_source_sleep_or_zero_fd_ppoll(
+  tmp_path: Path, mode: str, await_idle_method: Callable[[SimpleNamespace, float], None],
+) -> None:
   script = textwrap.dedent(r'''
     import ctypes, os, sys, threading, time
     class PollFd(ctypes.Structure):
@@ -37,12 +52,11 @@ def test_idle_barrier_accepts_only_source_sleep_or_zero_fd_ppoll(tmp_path: Path,
   with (tmp_path / 'stderr.log').open('wb') as stderr, subprocess.Popen(command, stdout=subprocess.PIPE, stderr=stderr) as child:
     try:
       assert child.stdout is not None and child.stdout.readline() == b'ready\n'
-      peer = Peer.__new__(Peer)
-      peer.root, peer.process = tmp_path, child
+      peer = SimpleNamespace(root=tmp_path, process=child)
       if mode == 'exited':
         assert child.wait(timeout=2) == 0
         with pytest.raises(RuntimeError):
-          peer.await_idle(timeout=.04)
+          await_idle_method(peer, .04)
         record = {'mode': mode, 'exit': child.returncode, 'observer': 'process exit rejected'}
       else:
         proc = Path('/proc') / str(child.pid)
@@ -57,11 +71,11 @@ def test_idle_barrier_accepts_only_source_sleep_or_zero_fd_ppoll(tmp_path: Path,
         record = {'mode': mode, 'wchan': channel, 'syscall': syscall}
         print(json.dumps(record))
         if mode in ('sleep', 'zero-ppoll'):
-          peer.await_idle(timeout=.04)
+          await_idle_method(peer, .04)
           record['observer'] = 'idle accepted'
         else:
           with pytest.raises(TimeoutError):
-            peer.await_idle(timeout=.04)
+            await_idle_method(peer, .04)
           record['observer'] = 'non-idle timeout preserved'
       (tmp_path / 'observation.json').write_text(json.dumps(record, indent=2))
       print(json.dumps(record))
