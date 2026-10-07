@@ -106,6 +106,7 @@ fn availability(name: &str) -> RustAvailability {
         "loggerd" => ("openpilot-loggerd", "openpilot-loggerd"),
         "logmessaged" => ("openpilot-logmessaged", "openpilot-logmessaged"),
         "manage_athenad" => ("openpilot-athena", "openpilot-manage-athenad"),
+        "maneuversd" => ("openpilot-control-tools", "openpilot-longitudinal-maneuversd"),
         "micd" => ("openpilot-micd", "openpilot-micd"),
         "modeld" => ("openpilot-driving-modeld", "openpilot-driving-modeld"),
         "modem" => ("openpilot-modem", "openpilot-modem"),

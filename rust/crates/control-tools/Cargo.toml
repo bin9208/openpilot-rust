@@ -44,3 +44,8 @@ required-features = ["native"]
 name = "openpilot-joystick"
 path = "src/bin/joystick.rs"
 required-features = ["native"]
+
+[[bin]]
+name = "openpilot-longitudinal-maneuversd"
+path = "src/bin/longitudinal-maneuversd.rs"
+required-features = ["native"]
