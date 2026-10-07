@@ -1916,6 +1916,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-control-tools"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-cereal",
+ "openpilot-control-policy",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-controlsd"
 version = "0.1.0"
 dependencies = [

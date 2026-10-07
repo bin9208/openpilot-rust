@@ -1,0 +1,32 @@
+[package]
+name = "openpilot-control-tools"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native"]
+native = ["openpilot-messaging/native", "dep:openpilot-logging", "dep:signal-hook"]
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-control-policy = { path = "../control-policy", default-features = false }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging", default-features = false }
+openpilot-params = { path = "../params" }
+openpilot-logging = { path = "../logging", optional = true }
+capnp = "=0.27.2"
+signal-hook = { version = "0.3", optional = true }
+rustix = { version = "1", features = ["time"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+
+[[bin]]
+name = "openpilot-joystickd"
+path = "src/bin/joystickd.rs"
+required-features = ["native"]
