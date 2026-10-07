@@ -95,6 +95,8 @@ jobs:
           python rust/tools/check_joystick_input_runtime.py --binding "$JOYSTICKD_PARAMS_BINDING" --binary "$PWD/rust/target/debug/openpilot-joystick-control" --fixture "$PWD/rust/target/debug/examples/joystick_input_fixture" --output "$RUNNER_TEMP/joystickd/input-runtime"
           python rust/tools/longitudinal_maneuvers_source.py --binding "$JOYSTICKD_PARAMS_BINDING" --output "$RUNNER_TEMP/joystickd/longitudinal-source"
           python rust/tools/check_longitudinal_maneuvers.py --binding "$JOYSTICKD_PARAMS_BINDING" --trace "$PWD/rust/target/debug/examples/longitudinal_maneuvers_trace" --daemon "$PWD/rust/target/debug/openpilot-longitudinal-maneuversd" --source "$RUNNER_TEMP/joystickd/longitudinal-source" --output "$RUNNER_TEMP/joystickd/longitudinal-runtime"
+          python rust/tools/lateral_maneuvers_source.py --binding "$JOYSTICKD_PARAMS_BINDING" --output "$RUNNER_TEMP/joystickd/lateral-source"
+          python rust/tools/check_lateral_maneuvers.py --binding "$JOYSTICKD_PARAMS_BINDING" --trace "$PWD/rust/target/debug/examples/lateral_maneuvers_trace" --daemon "$PWD/rust/target/debug/openpilot-lateral-maneuversd" --source "$RUNNER_TEMP/joystickd/lateral-source" --output "$RUNNER_TEMP/joystickd/lateral-runtime"
       - uses: actions/upload-artifact@v6
         if: always()
         with:
@@ -108,6 +110,8 @@ jobs:
             ${{ runner.temp }}/joystickd/input-runtime/**
             ${{ runner.temp }}/joystickd/longitudinal-source/receipt.json
             ${{ runner.temp }}/joystickd/longitudinal-runtime/**
+            ${{ runner.temp }}/joystickd/lateral-source/receipt.json
+            ${{ runner.temp }}/joystickd/lateral-runtime/**
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04

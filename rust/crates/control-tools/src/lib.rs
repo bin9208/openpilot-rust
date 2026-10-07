@@ -5,6 +5,10 @@ pub mod joystickd;
 #[cfg(feature = "native")]
 pub mod joystickd_runtime;
 pub mod joystickd_wire;
+pub mod lateral_maneuvers;
+#[cfg(feature = "native")]
+pub mod lateral_maneuvers_runtime;
+pub mod lateral_maneuvers_wire;
 pub mod longitudinal_maneuvers;
 #[cfg(feature = "native")]
 pub mod longitudinal_maneuvers_runtime;

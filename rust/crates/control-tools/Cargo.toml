@@ -49,3 +49,8 @@ required-features = ["native"]
 name = "openpilot-longitudinal-maneuversd"
 path = "src/bin/longitudinal-maneuversd.rs"
 required-features = ["native"]
+
+[[bin]]
+name = "openpilot-lateral-maneuversd"
+path = "src/bin/lateral-maneuversd.rs"
+required-features = ["native"]

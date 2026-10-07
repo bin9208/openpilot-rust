@@ -103,6 +103,7 @@ fn availability(name: &str) -> RustAvailability {
         "joystickd" => ("openpilot-control-tools", "openpilot-joystickd"),
         "lagd" => ("openpilot-lagd", "openpilot-lagd"),
         "locationd" => ("openpilot-locationd", "openpilot-locationd"),
+        "lateral_maneuversd" => ("openpilot-control-tools", "openpilot-lateral-maneuversd"),
         "loggerd" => ("openpilot-loggerd", "openpilot-loggerd"),
         "logmessaged" => ("openpilot-logmessaged", "openpilot-logmessaged"),
         "manage_athenad" => ("openpilot-athena", "openpilot-manage-athenad"),
