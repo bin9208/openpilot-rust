@@ -255,7 +255,7 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev cmake
-      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1
+      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 PyYAML==6.0.3
       - name: Stage pinned native startup UI headers
         run: |
           python tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host"
