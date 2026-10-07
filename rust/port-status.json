@@ -217,7 +217,11 @@
       "name": "joystick",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.tools.joystick.joystick_control",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "implementation": "rust/crates/control-tools; original keyboard/gamepad policies, POSIX terminal and Linux evdev reader, 100 Hz testJoystick publisher, separate managed main and guarded CLI entries",
+      "native_dependencies": ["Linux clocks, signals and evdev", "POSIX keyboard terminal", "native cereal/msgq", "Params"],
+      "runtime_scope": "original policy and owned PTY/FIFO/native IPC validation; physical discovery/unplug, TICI/AGNOS and complete startup/upload pending; manager catalog exposes an isolated candidate",
+      "evidence": "docs/naver/rust-joystick-input-208.md",
       "production_replaced": false
     },
     {

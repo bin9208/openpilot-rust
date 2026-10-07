@@ -21,7 +21,7 @@ openpilot-params = { path = "../params" }
 openpilot-logging = { path = "../logging", optional = true }
 capnp = "=0.27.2"
 signal-hook = { version = "0.3", optional = true }
-rustix = { version = "1", features = ["time"] }
+rustix = { version = "1", features = ["time", "termios", "fs", "stdio"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 thiserror = "2"
@@ -29,4 +29,18 @@ thiserror = "2"
 [[bin]]
 name = "openpilot-joystickd"
 path = "src/bin/joystickd.rs"
+required-features = ["native"]
+
+[[bin]]
+name = "openpilot-joystick-control"
+path = "src/bin/joystick-control.rs"
+required-features = ["native"]
+
+[[example]]
+name = "joystick_input_fixture"
+required-features = ["native"]
+
+[[bin]]
+name = "openpilot-joystick"
+path = "src/bin/joystick.rs"
 required-features = ["native"]
