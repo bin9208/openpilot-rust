@@ -301,7 +301,11 @@
       "name": "maneuversd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.tools.longitudinal_maneuvers.maneuversd",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "implementation": "rust/crates/control-tools; seven source presets, readiness/repeat/selection state, model-polled owner loop, complete longitudinalPlan/alertDebug/driverAssistance publication",
+      "native_dependencies": ["Linux clocks and signals", "native cereal/msgq", "libzmq logging", "Params CarParams data"],
+      "runtime_scope": "independent original-source and private IPC comparison of all seven presets; production selection, AGNOS/device and whole startup/upload acceptance pending",
+      "evidence": "docs/naver/rust-longitudinal-maneuvers-208.md",
       "production_replaced": false
     },
     {
