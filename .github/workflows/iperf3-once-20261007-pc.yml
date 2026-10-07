@@ -1,0 +1,116 @@
+name: One-time iperf3 reverse test with PC server
+# Isolated diagnostic only. Do not merge this branch.
+# The branch creation runs this once; ordinary push CI is skipped by the commit.
+on: create
+
+permissions: {}
+
+concurrency:
+  group: iperf3-once-20261007-pc
+  cancel-in-progress: false
+
+jobs:
+  iperf3:
+    if: >-
+      github.repository == 'bin9208/openpilot-rust' &&
+      github.event.ref_type == 'branch' &&
+      github.event.ref == 'codex/fix-iperf3-once-20261007-pc' &&
+      github.run_number == 1 &&
+      github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    env:
+      IPERF_HOST: lunabox.myqnapcloud.com
+    steps:
+      - name: Install iperf3 if needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v iperf3 >/dev/null; then
+            sudo timeout 120s apt-get update -qq
+            printf 'iperf3 iperf3/start_daemon boolean false\n' | sudo debconf-set-selections
+            sudo timeout 120s env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends iperf3
+          fi
+          iperf3 --version
+          date -u
+          uname -a
+
+      - name: Measure reverse TCP with P1 then P4 then P8
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/iperf3-results"
+          for streams in 1 4 8; do
+            echo "::group::iperf3 reverse P$streams"
+            date -u
+            set +e
+            timeout --signal=TERM --kill-after=5s 35s iperf3 \
+              -c "$IPERF_HOST" -p 5201 -R -P "$streams" -t 10 \
+              --connect-timeout 5000 -J \
+              > "$RUNNER_TEMP/iperf3-results/P$streams.json" \
+              2> "$RUNNER_TEMP/iperf3-results/P$streams.stderr"
+            status=$?
+            set -e
+            printf '%s\n' "$status" > "$RUNNER_TEMP/iperf3-results/P$streams.exit"
+            cat "$RUNNER_TEMP/iperf3-results/P$streams.json"
+            cat "$RUNNER_TEMP/iperf3-results/P$streams.stderr"
+            echo "EXIT_STATUS=$status"
+            echo "::endgroup::"
+          done
+
+      - name: Summarize receiver throughput and sender retransmissions
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "iperf3-results"
+          lines = [
+              "# One-time reverse TCP test",
+              "",
+              "Direction: PC server to GitHub-hosted Ubuntu runner.",
+              "Three sequential 10-second tests, TCP port 5201. No measurement retries.",
+              "",
+              "| Streams | Receiver Mbps | Sender retransmits | Exit status | Error |",
+              "| --- | ---: | ---: | ---: | --- |",
+          ]
+          failed = False
+          for streams in (1, 4, 8):
+              path = root / f"P{streams}.json"
+              try:
+                  data = json.loads(path.read_text())
+              except (OSError, ValueError) as exc:
+                  data = {"error": str(exc)}
+              exit_path = root / f"P{streams}.exit"
+              status = exit_path.read_text().strip() if exit_path.exists() else "not run"
+              end = data.get("end", {})
+              received = end.get("sum_received", {})
+              sent = end.get("sum_sent", {})
+              bps = received.get("bits_per_second")
+              mbps = f"{bps / 1_000_000:.3f}" if bps is not None else "n/a"
+              retransmits = sent.get("retransmits", "n/a")
+              error = str(data.get("error", "")).replace("|", "/").replace("\n", " ")
+              if status != "0" or error or bps is None:
+                  failed = True
+              lines.append(f"| {streams} | {mbps} | {retransmits} | {status} | {error} |")
+              print(json.dumps({"streams": streams, "receiver_mbps": None if bps is None else bps / 1_000_000, "sender_retransmits": retransmits, "exit_status": status, "error": error}))
+          lines += ["", "This measures this specific end-to-end path, not the ISP link alone."]
+          summary = "\n".join(lines) + "\n"
+          root.mkdir(parents=True, exist_ok=True)
+          (root / "summary.md").write_text(summary)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write(summary)
+          print(summary)
+          if failed:
+              raise SystemExit("At least one measurement failed; see preserved raw results.")
+          PY
+
+      - name: Preserve raw measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iperf3-once-20261007-pc
+          path: ${{ runner.temp }}/iperf3-results
+          retention-days: 14
+          if-no-files-found: warn
