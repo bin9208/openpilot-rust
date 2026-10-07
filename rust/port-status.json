@@ -431,7 +431,11 @@
       "name": "radard",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.radar.radard_dpath",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "implementation": "rust/crates/radard; original DPath radar controller, candidate selection, trajectory caches and continuous radarState owner",
+      "native_dependencies": ["Linux clocks, signals and scheduling", "native Rust msgq", "Params", "external ZeroMQ diagnostics"],
+      "runtime_scope": "4974 source calls across 235 owners and 240 actual IPC frames validated independently; invalid numeric Params retain typed Rust exit 1 versus original abort -6. New integration build, exact-head host/ARM CI and full startup/upload remain pending; production and NAS replay unchanged.",
+      "evidence": "docs/naver/rust-radard-207.md",
       "production_replaced": false
     },
     {
