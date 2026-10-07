@@ -1,4 +1,4 @@
-use super::{
+use super::super::{
     broadcast::Broadcast,
     bus, clock,
     config::Config,

@@ -3,13 +3,10 @@ use super::{
     clock,
     config::Config,
 };
-use crate::{
-    ingress::{json, peers::Fallback},
-    Error,
-};
+use crate::{ingress::json, Error};
 use std::{
     io::Read,
-    net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket},
+    net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream},
     sync::atomic::Ordering,
     thread,
     time::Duration,

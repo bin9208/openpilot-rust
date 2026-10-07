@@ -1,7 +1,7 @@
 use super::{
     clock,
     config::Config,
-    parameters::{self, Write, Writes},
+    parameters::{self, Writes},
 };
 use crate::{
     curve::VisionCurveSpeed,

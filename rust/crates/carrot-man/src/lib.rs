@@ -37,6 +37,8 @@ pub enum Error {
     #[error(transparent)]
     Capnp(#[from] capnp::Error),
     #[error(transparent)]
+    Enum(#[from] capnp::NotInSchema),
+    #[error(transparent)]
     Messaging(#[from] openpilot_messaging::runtime::Error),
     #[error(transparent)]
     MessageState(#[from] openpilot_messaging::state::Error),

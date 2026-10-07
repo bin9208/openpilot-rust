@@ -117,6 +117,7 @@ pub fn parse_legacy(data: &Value, now: f64) -> Option<LegacyFields> {
                 distance_m: number(data, "nTBTDist", 0.),
                 road_name: road_name.clone(),
                 main_text: text(data, "szTBTMainText"),
+                original_main_text_json: None,
                 near_direction: text(data, "szNearDirName"),
                 far_direction: text(data, "szFarDirName"),
                 next_road_width: integer(data, "nTBTNextRoadWidth", 0),
