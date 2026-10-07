@@ -224,7 +224,11 @@
       "name": "joystickd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.tools.joystick.joystickd",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "implementation": "rust/crates/control-tools; source-compatible vehicle model, joystick expiry, control flags and continuous 100 Hz native publisher",
+      "native_dependencies": ["Linux clocks and signals", "native cereal/msgq", "libzmq logging", "Params CarParams data"],
+      "runtime_scope": "isolated joystickd candidate; input adapter and maneuver daemons remain separate; production selection, complete startup/upload and AGNOS/device acceptance pending",
+      "evidence": "docs/naver/rust-joystickd-208.md",
       "production_replaced": false
     },
     {
