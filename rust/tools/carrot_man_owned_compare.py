@@ -217,7 +217,8 @@ def run(implementation, args):
   peer = Peer(implementation, args)
   result = {}
   try:
-    peer.wait(lambda row: row["service"] == "carrotMan" and row["data"]["xPosLat"] > 36.)
+    peer.wait(lambda row: row["service"] == "carrotMan" and row["data"]["xPosLat"] > 36.
+      and row["data"]["carrotCmdIndex"] == 100 and row["data"]["carrotCmd"] == "DISPLAY" and row["data"]["carrotArg"] == "MAP")
     maps = Path(f"/proc/{peer.process.pid}/maps").read_text()
     identity = dict(executable=os.readlink(f"/proc/{peer.process.pid}/exe"), libpython="libpython" in maps)
     if implementation == "native":
