@@ -85,7 +85,7 @@ def measured(capture_value: Capture, sends: Path) -> Publications:
     'first_event_index': begin, 'end_event_index': end, 'raw_event_count': len(rows['carState']), 'pre_events': begin,
     'post_events': len(rows['carState']) - end}) + '\n')
   assert len(rows['carState']) == len(rows['carOutput'])
-  assert len(timestamps) == end - begin == 80, (len(timestamps), end - begin, {key: len(value) for key, value in rows.items()})
+  assert len(timestamps) == end - begin == 80, (str(sends), len(timestamps), end - begin, {key: len(value) for key, value in rows.items()})
   rows = {name: values[begin:end] for name, values in rows.items()}
   initial_timeout = capture_value['warmup']['carState'][-1]['carState']['canErrorCounter']
   for timestamp, row in zip(timestamps, rows['carState'], strict=True):
