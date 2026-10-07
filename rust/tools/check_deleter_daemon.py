@@ -1,5 +1,6 @@
 import argparse
 import json
+import locale
 import os
 from pathlib import Path
 import selectors
@@ -15,7 +16,8 @@ from check_deleter_reference import SOURCE, Source, load_definitions, snapshot
 
 def run(binary, root, extra=(), stop=None):
   environment = dict(os.environ, LOG_ROOT=str(root))
-  with subprocess.Popen([str(binary), *extra], env=environment, stderr=subprocess.PIPE, text=True) as process:
+  encoding = locale.getpreferredencoding(False)
+  with subprocess.Popen([str(binary), *extra], env=environment, stderr=subprocess.PIPE, bufsize=0) as process:
     lines, times = [], []
     with selectors.DefaultSelector() as selector:
       selector.register(process.stderr, selectors.EVENT_READ)
@@ -24,7 +26,7 @@ def run(binary, root, extra=(), stop=None):
       while process.poll() is None:
         assert time.monotonic() < deadline, "daemon timeout"
         if selector.select(.1):
-          line = process.stderr.readline()
+          line = process.stderr.readline().decode(encoding)
           lines.append(line)
           if "deleting " in line:
             times.append(time.monotonic())
@@ -34,8 +36,8 @@ def run(binary, root, extra=(), stop=None):
               time.sleep(.05)
               before = time.monotonic()
               process.send_signal(stop)
-      lines.extend(process.stderr.readlines())
-    result = {"exit": process.wait(), "stderr": "".join(lines), "ready": ready,
+      lines.extend(line.decode(encoding) for line in process.stderr.readlines())
+    result = {"exit": process.wait(), "stderr": "".join(lines).replace("\r\n", "\n").replace("\r", "\n"), "ready": ready,
               "deletion_intervals": [right - left for left, right in zip(times, times[1:], strict=False)]}
     if stop:
       result["shutdown_seconds"] = time.monotonic() - before
