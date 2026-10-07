@@ -82,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut sources = SourceStore::default();
     let mut navigation = NavigationRuntime::default();
     let mut serv = None;
-    let mut params = None;
+    let mut params: Option<openpilot_params::Params> = None;
     let mut memory = None;
     let geos = std::env::var_os("CARROT_GEOS_LIBRARY")
         .map(|p| Geos::open(std::path::Path::new(&p)))
