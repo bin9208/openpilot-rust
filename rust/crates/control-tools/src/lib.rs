@@ -1,3 +1,6 @@
+pub mod joystick;
+#[cfg(feature = "native")]
+pub mod joystick_input;
 pub mod joystickd;
 #[cfg(feature = "native")]
 pub mod joystickd_runtime;
