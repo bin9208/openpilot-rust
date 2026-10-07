@@ -1448,6 +1448,14 @@ jobs:
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-backtrace=full
         run: cargo +nightly-2026-09-29 miri test -p openpilot-model-runtime --lib --test graph --locked --no-default-features --target aarch64-unknown-linux-gnu
+      - name: Check native IPC shared-memory ownership on ARM with Miri
+        env:
+          MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-msgq --no-default-features --lib --locked --target aarch64-unknown-linux-gnu
+      - name: Check native IPC shared-memory ownership with Tree Borrows
+        env:
+          MIRIFLAGS: -Zmiri-tree-borrows -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
+        run: cargo +nightly-2026-09-29 miri test -p openpilot-msgq --no-default-features --lib --locked --target aarch64-unknown-linux-gnu
       - name: Check Rust allocation and aliasing with Tree Borrows
         env:
           MIRIFLAGS: -Zmiri-tree-borrows -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-backtrace=full

@@ -1,8 +1,10 @@
+mod support;
+
 use openpilot_msgq::{MultiSubscriber, Publisher, Subscriber, Subscription};
 use std::{
     env,
     io::{BufRead, BufReader},
-    process::{Command, Stdio},
+    process::Stdio,
     time::{Duration, Instant},
 };
 
@@ -21,7 +23,7 @@ fn isolated_transport() {
             .unwrap()
             .strip_prefix("msgq_")
             .unwrap();
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args(["--exact", "isolated_transport", "--nocapture"])
             .env("RUST_MSGQ_TEST_CHILD", "1")
             .env("OPENPILOT_PREFIX", name)
@@ -34,6 +36,14 @@ fn isolated_transport() {
     for endpoint in ["", "../procLog", "/procLog", "a/b", "a\0b"] {
         assert!(Publisher::new(endpoint).is_err());
     }
+    let mut transient = Publisher::transient_for_runtime("preview", 1024 * 1024).unwrap();
+    assert!(transient.send_if_current(b"preview").unwrap());
+    let mut daemon = Publisher::new("preview").unwrap();
+    assert!(!transient.send_if_current(b"stale preview").unwrap());
+    assert!(Publisher::transient_for_runtime("preview", 1024 * 1024).is_err());
+    assert!(daemon.send_if_current(b"daemon").unwrap());
+    drop(daemon);
+    drop(transient);
     let mut publisher = Publisher::new("procLog").unwrap();
     assert!(Publisher::new("procLog").is_err());
     assert!(Publisher::with_capacity("procLog", 2 * 1024 * 1024).is_err());
@@ -75,8 +85,11 @@ fn isolated_transport() {
         let mut temporary = Subscriber::new("procLog", true).unwrap();
         assert_eq!(temporary.receive(Duration::ZERO).unwrap(), None);
     }
+    let mut displaced = Publisher::new("nativeToRust").unwrap();
+    assert!(displaced.send_if_current(b"current").unwrap());
+    assert!(displaced.send_if_current(&[]).is_err());
     let mut outgoing = Publisher::new("rustToNative").unwrap();
-    let mut peer = Command::new(env!("NATIVE_MSGQ_PEER"))
+    let mut peer = support::command(env!("NATIVE_MSGQ_PEER"))
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
@@ -84,6 +97,8 @@ fn isolated_transport() {
     let mut peer_output = BufReader::new(peer.stdout.take().unwrap());
     peer_output.read_line(&mut ready).unwrap();
     assert_eq!(ready.trim(), "READY");
+    assert!(!displaced.send_if_current(b"stale").unwrap());
+    drop(displaced);
     let mut incoming = Subscriber::new("nativeToRust", false).unwrap();
     let payload: Vec<u8> = (0..=255).cycle().take(200_000).collect();
     outgoing.send(&payload).unwrap();
@@ -149,7 +164,7 @@ fn production_namespace_is_refused() {
         return;
     }
     for prefix in ["", "d", "../bad", "rust-probe-../bad"] {
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args(["--exact", "production_namespace_is_refused"])
             .env("RUST_MSGQ_REFUSAL_CHILD", "1")
             .env("OPENPILOT_PREFIX", prefix)
@@ -167,7 +182,7 @@ fn explicit_runtime_transport_uses_original_namespace() {
             .tempdir_in("/dev/shm")
             .unwrap();
         let name = namespace.path().file_name().unwrap().to_str().unwrap();
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args([
                 "--exact",
                 "explicit_runtime_transport_uses_original_namespace",
@@ -185,7 +200,7 @@ fn explicit_runtime_transport_uses_original_namespace() {
     assert!(Publisher::for_runtime("../invalid", 1024 * 1024).is_err());
     let mut outgoing = Publisher::for_runtime("rustToNative", 1024 * 1024).unwrap();
     assert!(Publisher::for_runtime("rustToNative", 1024 * 1024).is_err());
-    let mut peer = Command::new(env!("NATIVE_MSGQ_PEER"))
+    let mut peer = support::command(env!("NATIVE_MSGQ_PEER"))
         .arg("--delayed-reply")
         .stdout(Stdio::piped())
         .spawn()
@@ -194,6 +209,7 @@ fn explicit_runtime_transport_uses_original_namespace() {
     let mut peer_output = BufReader::new(peer.stdout.take().unwrap());
     peer_output.read_line(&mut ready).unwrap();
     assert_eq!(ready.trim(), "READY");
+
     let mut incoming = Subscriber::for_runtime("nativeToRust", false, 1024 * 1024).unwrap();
     outgoing.send(b"runtime\0payload").unwrap();
     let mut sent = String::new();
@@ -209,7 +225,7 @@ fn explicit_runtime_transport_uses_original_namespace() {
 #[test]
 fn runtime_without_prefix_matches_native_flat_path() {
     if env::var_os("RUST_MSGQ_FLAT_CHILD").is_none() {
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args(["--exact", "runtime_without_prefix_matches_native_flat_path"])
             .env("RUST_MSGQ_FLAT_CHILD", "1")
             .env_remove("OPENPILOT_PREFIX")
