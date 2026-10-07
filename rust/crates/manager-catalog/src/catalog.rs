@@ -86,6 +86,7 @@ impl Descriptor {
 
 fn availability(name: &str) -> RustAvailability {
     let (package, binary) = match name {
+        "xiaoge_data" => ("openpilot-xiaoge", "openpilot-xiaoge"),
         "_pandad" => ("openpilot-pandad", "openpilot-pandad"),
         "beep" => ("openpilot-beepd", "openpilot-beepd"),
         "bridge" => ("openpilot-bridge", "bridge"),

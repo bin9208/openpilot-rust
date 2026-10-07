@@ -39,3 +39,14 @@ sizes, deterministic owned output, and leak detection. Source JPEG comparisons
 cover padded NV12 and every UV byte pair at four Y levels; observed bytes match
 Pillow 12.3.0's libjpeg-turbo 3.1.4.1 output exactly. This does not claim all codec
 versions or all possible images produce identical compressed bytes.
+
+Xiaoge snapshot extension retains the existing `encode(rgb,width,height)` quality75
+behavior and error checks. Checked Rust `Layout`, `Color`, `Quality` and `Options`
+allow packed RGB quality85 and single-component Gray quality50 through
+`encode_with`. The narrow C helper uses the same pinned codec, default colorspace
+settings, baseline quality tables and integer slow DCT; no preprocessing or image
+policy moves into C/C++. New buffer/quality guards execute in both Rust and CXX.
+Pure contracts are available without `native-skip-miri`; actual codec calls require
+native byte/ownership/sanitizer checks. Fresh Pillow12.3.0 oracle evidence is retained
+under `.omo/evidence/xiaoge-200/opencv-jpeg-*`; its success is not inferred from the
+older quality75 comparison.
