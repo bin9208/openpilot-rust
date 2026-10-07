@@ -158,6 +158,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &[]
             };
             let frame = Frame {
+                index: 0,
                 now: index.to_f64().ok_or("frame overflow")? / 20.0,
                 monotonic: 0.0,
                 keyboard: &Default::default(),

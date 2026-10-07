@@ -110,6 +110,11 @@ impl Scroller {
             && !self.moving_items();
         self.items[index].widget.state_mut().interaction_gate = valid;
         self.items[index].widget.render(frame, draw)?;
+        if let Some(mut callback) = self.after_item.take() {
+            let result = callback(self, frame);
+            self.after_item = Some(callback);
+            result?;
+        }
         Ok(())
     }
 }

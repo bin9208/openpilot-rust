@@ -1,3 +1,4 @@
+mod ordered;
 use std::{
     collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
@@ -164,6 +165,7 @@ pub fn plural_index(language: &str, n: i64) -> usize {
 pub struct Multilang {
     root: PathBuf,
     pub languages: HashMap<String, String>,
+    pub language_order: Vec<String>,
     pub codes: HashMap<String, String>,
     language: String,
     selector_language: String,
@@ -171,8 +173,10 @@ pub struct Multilang {
 }
 impl Multilang {
     pub fn new(root: &Path, saved: Option<&str>) -> Result<Self, Error> {
-        let languages: HashMap<String, String> =
+        let ordered: ordered::Languages =
             serde_json::from_slice(&std::fs::read(root.join("languages.json"))?)?;
+        let language_order = ordered.0.iter().map(|(name, _)| name.clone()).collect();
+        let languages: HashMap<String, String> = ordered.0.into_iter().collect();
         let codes: HashMap<_, _> = languages
             .iter()
             .map(|(name, code)| (code.clone(), name.clone()))
@@ -189,6 +193,7 @@ impl Multilang {
         let mut result = Self {
             root: root.to_owned(),
             languages,
+            language_order,
             codes,
             language: language.to_owned(),
             selector_language: "en".to_owned(),

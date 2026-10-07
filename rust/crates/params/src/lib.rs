@@ -31,6 +31,7 @@ pub enum Error {
     Io(#[from] io::Error),
 }
 
+#[derive(Clone)]
 pub struct Params {
     root: PathBuf,
     directory: PathBuf,
@@ -59,6 +60,15 @@ impl Params {
             }
         };
         Self::open_namespace(&root, prefix.as_deref().unwrap_or("d"), true)
+    }
+
+    pub fn for_runtime_at(root: &Path) -> Result<Self, Error> {
+        let prefix = match std::env::var("OPENPILOT_PREFIX") {
+            Ok(value) => Some(value),
+            Err(std::env::VarError::NotPresent) => None,
+            Err(std::env::VarError::NotUnicode(_)) => return Err(Error::InvalidPrefix),
+        };
+        Self::open_namespace(root, prefix.as_deref().unwrap_or("d"), true)
     }
 
     fn open_namespace(root: &Path, prefix: &str, allow_empty: bool) -> Result<Self, Error> {

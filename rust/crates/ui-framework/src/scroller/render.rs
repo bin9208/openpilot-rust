@@ -91,10 +91,16 @@ impl Widget for Scroller {
     fn paint(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         let rect = self.state.rect;
         draw.scissor(Some(rect))?;
-        for position in (0..self.visible.len()).rev() {
-            let index = self.visible[position];
-            if !self.lifts.contains_key(&self.items[index].id) {
-                self.paint_item(index, frame, draw)?;
+        let visible_ids: Vec<_> = self
+            .visible
+            .iter()
+            .map(|index| self.items[*index].id)
+            .collect();
+        for id in visible_ids.into_iter().rev() {
+            if let Some(index) = self.items.iter().position(|item| item.id == id) {
+                if !self.lifts.contains_key(&id) {
+                    self.paint_item(index, frame, draw)?;
+                }
             }
         }
         self.overlay.update(if self.pending_move.is_empty() {

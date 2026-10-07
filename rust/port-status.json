@@ -575,7 +575,20 @@
       "name": "ui",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.ui.ui",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_validated",
+      "implementation": "rust/crates/ui-application with ui-framework and startup-ui; native openpilot-ui, both main layouts, road and compact rendering, settings/onboarding/dialog routes, IPC, recording, resource workers and cleanup",
+      "native_dependencies": [
+        "pinned comma-deps-raylib 6.0.0.1.post103 graphics plugin and native graphics adapters",
+        "OpenGL or target EGL/GLES/DRM/GBM driver stack",
+        "native Rust msgq/VisionIPC; consumer composition tracked in #195",
+        "external ffmpeg executable for recording",
+        "NetworkManager/D-Bus and Linux hardware/scheduling APIs",
+        "native process-child and updated siblings"
+      ],
+      "runtime_scope": "original-source host pixel/state comparisons, actual IPC/VisionIPC and XTest input, recording/ffprobe, normal and injected-error cleanup, bounded Miri and native adapter sanitizers; four independent host reviews and separate complete eight-plot-mode amendment accepted; separately built ARM raylib plugin passes actual offline loading and required symbol/extension-pointer resolution against exact published AGNOS libraries",
+      "unported_scope": "Complete manager-selected startup/upload and sibling packaging; native IPC/UI consumer composition on the prepared integration stack is not rerun by this transfer.",
+      "validation_limits": "Reused donor host evidence; fresh hosted UI CI and generic/ION executable builds remain pending. AGNOS display, DRM/DMA-BUF/input, hardware Wi-Fi/eGPU and vehicle acceptance remain unvalidated.",
+      "evidence": "docs/naver/rust_ui_application_148.md",
       "production_replaced": false
     },
     {

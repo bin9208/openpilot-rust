@@ -23,7 +23,7 @@ void *library() {
       throw std::runtime_error(
           "native startup raylib plugin contract mismatch");
     }
-    const char *required[] = {"LoadImage",
+    const char *required[] = {"LoadImage", "ImageFormat", "DrawRing", "DrawCircleLines", "UpdateTexture", "SetShaderValueTexture",
                               "UnloadImage",
                               "ImageAlphaPremultiply",
                               "ImageResize",
@@ -39,8 +39,8 @@ void *library() {
                               "LoadFont",
                               "LoadFontEx",
                               "GenTextureMipmaps",
-                              "MeasureTextEx",
-                              "DrawTextEx",
+                              "MeasureTextEx", "MeasureText",
+                              "DrawTextEx", "DrawText", "DrawLine",
                               "DrawTexturePro",
                               "DrawRectangleRoundedLinesEx",
                               "DrawRectangleRounded",
@@ -69,7 +69,7 @@ void *library() {
                               "GetMouseWheelMove",
                               "PollInputEvents",
                               "GetMonitorWidth",
-                              "GetMonitorHeight", "ImageFlipHorizontal", "DrawCircleV", "DrawRectangleGradientEx", "DrawLineEx", "DrawCircleGradient", "SetTextureWrap", "LoadShaderFromMemory", "UnloadShader", "BeginShaderMode", "EndShaderMode", "SetWindowTitle", "GetFPS", "DrawFPS", "GetKeyPressed", "GetCharPressed", "IsKeyDown", "IsKeyPressed", "GetMousePosition", "GetShaderLocation", "SetShaderValueV", "SetShaderValue", "SetShaderValueMatrix", "DrawTriangleStrip", "SetTraceLogLevel", "SetTraceLogCallback", "DrawRectangleLines"};
+                              "GetMonitorHeight", "ImageFlipHorizontal", "DrawCircleV", "DrawRectangleGradientEx", "DrawLineEx", "DrawCircleGradient", "SetTextureWrap", "LoadShaderFromMemory", "UnloadShader", "BeginShaderMode", "EndShaderMode", "SetWindowTitle", "GetFPS", "DrawFPS", "GetKeyPressed", "GetCharPressed", "IsKeyDown", "IsKeyPressed", "GetMousePosition", "GetShaderLocation", "SetShaderValueV", "SetShaderValue", "SetShaderValueMatrix", "DrawTriangleStrip", "DrawSplineLinear", "SetTraceLogLevel", "SetTraceLogCallback", "DrawRectangleLines"};
     for (const char *name : required) {
       if (!dlsym(loaded, name)) {
         dlclose(loaded);
@@ -95,6 +95,10 @@ template <typename Function> Function resolve(const char *name) {
     return function arguments;                                                 \
   }
 FORWARD(Image, LoadImage, (const char *path), (path))
+FORWARD(void, UpdateTexture, (Texture2D texture, const void *pixels), (texture, pixels))
+FORWARD(void, SetShaderValueTexture, (Shader shader, int location, Texture2D texture), (shader, location, texture))
+FORWARD(void, ImageFormat, (Image *image, int format), (image, format))
+FORWARD(void, DrawRing, (Vector2 center, float inner, float outer, float start, float end, int segments, Color color), (center, inner, outer, start, end, segments, color))
 FORWARD(void, UnloadImage, (Image image), (image))
 FORWARD(void, ImageAlphaPremultiply, (Image * image), (image))
 FORWARD(void, ImageResize, (Image * image, int width, int height),
@@ -115,6 +119,7 @@ FORWARD(Font, LoadFontEx,
         (const char *path, int size, const int *points, int count),
         (path, size, points, count))
 FORWARD(void, GenTextureMipmaps, (Texture2D * texture), (texture))
+FORWARD(int, MeasureText, (const char *text, int size), (text, size))
 FORWARD(Vector2, MeasureTextEx,
         (Font font, const char *text, float size, float spacing),
         (font, text, size, spacing))
@@ -122,6 +127,7 @@ FORWARD(void, DrawTextEx,
         (Font font, const char *text, Vector2 pos, float size, float spacing,
          Color color),
         (font, text, pos, size, spacing, color))
+FORWARD(void, DrawText, (const char *text, int x, int y, int size, Color color), (text,x,y,size,color))
 FORWARD(void, DrawTexturePro,
         (Texture2D texture, Rectangle source, Rectangle dest, Vector2 origin,
          float rotation, Color color),
@@ -164,6 +170,7 @@ FORWARD(int, GetMonitorHeight, (int monitor), (monitor))
 FORWARD(void, DrawCircleV, (Vector2 center, float radius, Color color), (center,radius,color))
 FORWARD(void, DrawRectangleGradientEx, (Rectangle rect, Color top_left, Color bottom_left, Color top_right, Color bottom_right), (rect,top_left,bottom_left,top_right,bottom_right))
 FORWARD(void, DrawLineEx, (Vector2 start, Vector2 end, float thick, Color color), (start,end,thick,color))
+FORWARD(void, DrawLine, (int x1, int y1, int x2, int y2, Color color), (x1,y1,x2,y2,color))
 FORWARD(void, ImageFlipHorizontal, (Image *image), (image))
 
 FORWARD(void, DrawCircleGradient, (Vector2 center, float radius, Color inner, Color outer), (center, radius, inner, outer))
@@ -190,4 +197,6 @@ FORWARD(void, DrawTriangleStrip, (const Vector2 *points, int count, Color color)
 FORWARD(void, SetTraceLogLevel, (int level), (level))
 FORWARD(void, SetTraceLogCallback, (TraceLogCallback callback), (callback))
 FORWARD(void, DrawRectangleLines, (int x, int y, int width, int height, Color color), (x,y,width,height,color))
+FORWARD(void, DrawSplineLinear, (const Vector2 *points, int count, float thick, Color color), (points, count, thick, color))
+FORWARD(void, DrawCircleLines, (int x, int y, float radius, Color color), (x, y, radius, color))
 #undef FORWARD
