@@ -117,6 +117,7 @@ fn availability(name: &str) -> RustAvailability {
         "paramsd" => ("openpilot-paramsd", "openpilot-paramsd"),
         "pigeond" => ("openpilot-ublox", "openpilot-pigeond"),
         "proclogd" => ("openpilot-proclogd", "openpilot-proclogd-runtime"),
+        "plannerd" => ("openpilot-plannerd", "openpilot-plannerd"),
         "qcomgpsd" => ("openpilot-qcomgpsd", "openpilot-qcomgpsd"),
         "sensord" => ("openpilot-sensord", "openpilot-sensord"),
         "soundd" => ("openpilot-soundd", "openpilot-soundd"),

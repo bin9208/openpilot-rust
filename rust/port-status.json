@@ -383,7 +383,11 @@
       "name": "plannerd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.plannerd",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "implementation": "rust/crates/plannerd; serial planning owner, Carrot policies, longitudinal/lateral MPC and fast/stopping radar policies",
+      "native_dependencies": ["Linux clocks and signals", "native cereal/msgq", "libzmq logging", "Params", "pinned acados/HPIPM/BLASFEO/qpOASES and generated solver libraries"],
+      "runtime_scope": "original host and ARM source comparisons, private IPC and native solver loader evidence preserved; production selection and whole startup/upload acceptance pending",
+      "evidence": "docs/naver/rust-plannerd-197.md",
       "production_replaced": false
     },
     {

@@ -6,17 +6,27 @@
 # Run via check_native_logging.py; compiles the unchanged C++ producer and locked json11.
 import hashlib
 import json
+import platform
 import subprocess
 import tomllib
 import zipfile
 from pathlib import Path
 
 
+class UnsupportedArchitecture(ValueError):
+  def __init__(self, architecture: str) -> None:
+    self.architecture = architecture
+    super().__init__(f'unsupported native json11 architecture: {architecture}')
+
+
 def stage_json11(root: Path, output: Path) -> tuple[Path, dict]:
   output.mkdir(parents=True, exist_ok=True)
   lock = tomllib.loads((root / 'uv.lock').read_text())
   package = next(p for p in lock['package'] if p['name'] == 'comma-deps-json11')
-  wheel = next(w for w in package['wheels'] if 'manylinux_2_28_x86_64' in w['url'])
+  architecture = platform.machine()
+  if architecture not in ('x86_64', 'aarch64'):
+    raise UnsupportedArchitecture(architecture)
+  wheel = next(w for w in package['wheels'] if f'manylinux_2_28_{architecture}' in w['url'])
   archive = output / wheel['url'].rsplit('/', 1)[1]
   subprocess.run(['curl', '-fsSL', wheel['url'], '-o', str(archive)], check=True)
   digest = hashlib.sha256(archive.read_bytes()).hexdigest()
@@ -24,7 +34,7 @@ def stage_json11(root: Path, output: Path) -> tuple[Path, dict]:
   with zipfile.ZipFile(archive) as wheel_file:
     wheel_file.extractall(output / 'json11')
   install = next((output / 'json11').glob('*.data/purelib/json11/install'))
-  return install, {'json11_version': package['version'], 'json11_sha256': digest}
+  return install, {'json11_version': package['version'], 'json11_sha256': digest, 'json11_architecture': architecture}
 
 
 def build(root: Path, output: Path) -> Path:

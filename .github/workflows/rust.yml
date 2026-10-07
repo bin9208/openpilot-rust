@@ -1,7 +1,7 @@
 name: Rust port
 on:
   push:
-    branches: ['**']
+    branches: [dev, main]
   pull_request:
     branches: [dev, main]
   workflow_dispatch:
@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -40,6 +40,8 @@ jobs:
           CONTROLS: ${{ needs.controls-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
           JOYSTICKD: ${{ needs.joystickd-runtime.result }}
+          PLANNER: ${{ needs.planner-runtime.result }}
+          PLANNER_MEMORY: ${{ needs.planner-memory.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -59,6 +61,123 @@ jobs:
           test "$CONTROLS" = success
           test "$UPLOAD_TIMEOUTS" = success
           test "$JOYSTICKD" = success
+          test "$PLANNER" = success
+          test "$PLANNER_MEMORY" = success
+  planner-runtime:
+    name: rust planner source comparison (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Reserve capacity and install original planner dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libzmq3-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.3.0 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip download --only-binary=:all: --no-deps comma-deps-acados==0.2.2.post103 --dest "$RUNNER_TEMP/planner-wheel"
+          python -m pip install --no-deps "$RUNNER_TEMP"/planner-wheel/*.whl
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+          python -P -c 'import acados; from pathlib import Path; print("PLANNER_GENERATOR="+str(Path(acados.__file__).parent))' >> "$GITHUB_ENV"
+      - name: Build pinned solvers and unchanged original bindings
+        run: |
+          planner_cc=gcc
+          if [ "$(uname -m)" = aarch64 ]; then planner_cc=clang-18; fi
+          python rust/tools/build_plannerd_acados.py --architecture "$(uname -m)" --cc "$planner_cc" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-artifact"
+          python rust/tools/build_plannerd_source.py --artifact "$RUNNER_TEMP/planner-artifact" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --generator-wheel "$RUNNER_TEMP"/planner-wheel/*.whl --cc "$planner_cc" --output "$RUNNER_TEMP/planner-source"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/planner-original/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/planner-original/ipc"
+          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"planner-original/params/provenance.json"; print("PLANNER_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s/planner-original/ipc:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Compile and check the complete native planner
+        run: |
+          python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_plannerd_ci.py rust/tools/tests/test_native_reference_architecture.py
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-plannerd --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked -- -D warnings
+      - name: Compare exact policies, main loops, real IPC and lifecycle
+        run: |
+          python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-artifact" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --output "$RUNNER_TEMP/planner-comparison"
+      - name: Check generated C with ASan, UBSan and allocator leak detection
+        if: matrix.runner == 'ubuntu-24.04'
+        run: |
+          python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
+          python -P rust/tools/check_plannerd_native_memory.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-sanitized" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --asan-library "$(gcc -print-file-name=libasan.so)" --output "$RUNNER_TEMP/planner-native-memory"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-planner-${{ matrix.runner }}-evidence
+          path: |
+            ${{ runner.temp }}/planner-comparison/
+            ${{ runner.temp }}/planner-native-memory/
+            ${{ runner.temp }}/planner-artifact/
+            ${{ runner.temp }}/planner-source/
+            ${{ runner.temp }}/planner-sanitized/
+            ${{ runner.temp }}/planner-original/params/*.json
+            rust/target/debug/openpilot-plannerd
+            rust/target/debug/examples/plannerd_*
+  planner-memory:
+    name: rust planner pure memory contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Reserve capacity and prepare Miri
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          sudo apt-get update && sudo apt-get install -y capnproto
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install nightly-2026-09-29 --component miri --profile minimal
+          cargo +nightly-2026-09-29 miri setup
+      - name: Verify pure planner policies with four Miri modes
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/planner-memory"
+          for planner_mode in default strict preemption tree; do
+            planner_flags='-Zmiri-no-extra-rounding-error'
+            case "$planner_mode" in
+              strict) planner_flags="$planner_flags -Zmiri-strict-provenance" ;;
+              preemption) planner_flags="$planner_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1" ;;
+              tree) planner_flags="$planner_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-tree-borrows" ;;
+            esac
+            python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+            MIRIFLAGS="$planner_flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-plannerd --lib --tests --no-default-features --locked -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/planner-memory/$planner_mode.log"
+          done
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-planner-memory-evidence
+          path: ${{ runner.temp }}/planner-memory/
   joystickd-runtime:
     name: rust control tools source and native runtimes
     runs-on: ubuntu-24.04
@@ -115,7 +234,7 @@ jobs:
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'
