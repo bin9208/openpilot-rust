@@ -1,0 +1,71 @@
+#include <capnp/message.h>
+#include <capnp/serialize.h>
+#include <algorithm>
+#include <vector>
+#include <string>
+#include "cereal/gen/cpp/log.capnp.h"
+std::vector<std::string> actions;
+std::vector<uint8_t> published;
+uint64_t log_time = 0;
+uint64_t nanos_since_boot() { return log_time; }
+bool env_log_raw_frames = false;
+class MessageBuilder : public capnp::MallocMessageBuilder {
+public:
+  @INIT_EVENT@
+};
+struct PubMaster {
+  void send(const char*, MessageBuilder& message) {
+    actions.push_back("publish");
+    auto words = capnp::messageToFlatArray(message);
+    auto bytes = words.asBytes();
+    published.assign(bytes.begin(), bytes.end());
+  }
+};
+namespace util { template <class T> @MAP_VALUE@ }
+// @MAIN@
+int main() {
+  std::cout << std::setprecision(17) << std::boolalpha;
+  const AR0231 ar; const OX03C10 ox; const OS04C10 os;
+  const std::array<const SensorInfo*, 3> sensors = {&ar, &ox, &os};
+  CameraState s;
+  std::vector<uint8_t> pixels, raw_bytes(32);
+  Yuv yuv; Raw raw;
+  std::string op;
+  while (std::cin >> op) {
+    if (op == "reset") {
+      int sensor, camera; uint32_t width, height; float focal;
+      if (!(std::cin >> sensor >> camera >> width >> height >> focal)) return 2;
+      s = CameraState{};
+      s.camera.sensor = sensors.at(sensor - 1);
+      s.camera.buf.out_img_width = width; s.camera.buf.out_img_height = height;
+      s.camera.buf.cur_yuv_buf = &yuv; s.camera.buf.cur_camera_buf = &raw;
+      s.camera.cc.camera_num = camera; s.camera.cc.focal_len = focal;
+      switch (camera) {
+        case 0: s.camera.cc.stream_type = VISION_STREAM_WIDE_ROAD; s.camera.cc.publish_name = "wideRoadCameraState"; s.camera.cc.init_camera_state = &cereal::Event::Builder::initWideRoadCameraState; break;
+        case 1: s.camera.cc.stream_type = VISION_STREAM_ROAD; s.camera.cc.publish_name = "roadCameraState"; s.camera.cc.init_camera_state = &cereal::Event::Builder::initRoadCameraState; break;
+        case 2: s.camera.cc.stream_type = VISION_STREAM_DRIVER; s.camera.cc.publish_name = "driverCameraState"; s.camera.cc.init_camera_state = &cereal::Event::Builder::initDriverCameraState; break;
+        default: return 3;
+      }
+      pixels.resize(width * height); yuv.y = pixels.data();
+      raw.addr = raw_bytes.data(); raw.len = raw_bytes.size();
+      s.initialize();
+    } else if (op == "step") {
+      auto &frame = s.camera.buf.cur_frame_data;
+      int seed, pattern, log_raw, enabled;
+      if (!(std::cin >> frame.frame_id >> frame.request_id >> frame.timestamp_sof >> frame.timestamp_eof >> frame.processing_time
+          >> log_time >> seed >> pattern >> log_raw >> enabled >> std::quoted(gain_override) >> std::quoted(time_override))) return 2;
+      for (size_t i = 0; i < pixels.size(); ++i) pixels[i] = pattern ? (i / s.camera.buf.out_img_width + i % s.camera.buf.out_img_width * 3 + seed) % 256 : seed;
+      for (size_t i = 0; i < raw_bytes.size(); ++i) raw_bytes[i] = (i + seed) % 256;
+      env_ctrl_exp_from_params = true; env_log_raw_frames = log_raw; s.camera.enabled = enabled;
+      actions.clear(); published.clear(); s.camera.writes.clear();
+      try { s.sendState(); }
+      catch (const std::invalid_argument&) { std::cout << "{\"error\":\"invalid_argument\",\"actions\":[\"vision\"]}\n"; continue; }
+      catch (const std::out_of_range&) { std::cout << "{\"error\":\"out_of_range\",\"actions\":[\"vision\"]}\n"; continue; }
+      std::cout << "{\"wire\":[";
+      for (size_t i = 0; i < published.size(); ++i) { if (i) std::cout << ','; std::cout << unsigned(published[i]); }
+      std::cout << "],\"actions\":[";
+      for (size_t i = 0; i < actions.size(); ++i) { if (i) std::cout << ','; std::cout << '"' << actions[i] << '"'; }
+      std::cout << "],\"state\":"; state(s); std::cout << "}\n";
+    } else { return 3; }
+  }
+}

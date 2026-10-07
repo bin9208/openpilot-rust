@@ -1,0 +1,51 @@
+static void dump_memory(const char* stage, int fd, const void* data, size_t offset, size_t length) {
+  const auto* bytes = static_cast<const unsigned char*>(data);
+  for (size_t index = 0; index < length; index += 4096) {
+    size_t count = std::min(size_t{4096}, length - index);
+    char encoded[8193]; hex(bytes + offset + index, count, encoded);
+    trace("{\"op\":\"memory\",\"stage\":\"%s\",\"fd\":%d,\"offset\":%zu,\"total\":%zu,\"bytes\":\"%s\"}", stage, fd, offset + index, length, encoded);
+  }
+}
+// @WRAPPER@
+static void snapshot(uint32_t handle, size_t offset, size_t count) {
+  int fd = handle >> 16;
+  if (fd < 0 || fd >= 2048 || !mappings[fd] || offset > lengths[fd]) abort();
+  if (count == SIZE_MAX) count = lengths[fd] - offset;
+  if (count > lengths[fd] - offset) abort();
+  dump_memory("snapshot", fd, mappings[fd], offset, count);
+}
+extern "C" int ioctl(int fd, unsigned long request, ...) noexcept {
+  va_list args; va_start(args, request); void* payload = va_arg(args, void*); va_end(args);
+  if (fd != 501 && fd != 503 && fd != 504 && fd != 505) { errno = ENOTTY; return -1; }
+  trace("{\"op\":\"target\",\"fd\":%d}", fd);
+  if (request == VIDIOC_CAM_CONTROL) {
+    const auto* control = static_cast<cam_control*>(payload);
+    if (control->op_code == CAM_ACQUIRE_DEV) {
+      const auto* acquire = reinterpret_cast<cam_acquire_dev_cmd*>(control->handle);
+      if (fd == 503) {
+        const auto* resource = reinterpret_cast<cam_isp_resource*>(acquire->resource_hdl);
+        uint8_t normalized[sizeof(*resource)]; memcpy(normalized, resource, sizeof(normalized));
+        memset(normalized + offsetof(cam_isp_resource, res_hdl), 0, sizeof(resource->res_hdl));
+        normalized[offsetof(cam_isp_resource, res_hdl)] = 3;
+        char bytes[265], port[265]; hex(normalized, sizeof(normalized), bytes);
+        if (resource->length != 132) abort();
+        hex(reinterpret_cast<void*>(resource->res_hdl), resource->length, port);
+        trace("{\"op\":\"resource\",\"fd\":%d,\"bytes\":\"%s\",\"port\":\"%s\"}", fd, bytes, port);
+      } else if (fd == 504) {
+        const auto* resource = reinterpret_cast<cam_icp_acquire_dev_info*>(acquire->resource_hdl);
+        char bytes[121]; hex(resource, 60, bytes);
+        trace("{\"op\":\"resource\",\"fd\":%d,\"bytes\":\"%s\"}", fd, bytes);
+        snapshot(resource->io_config_cmd_handle, 0, resource->io_config_cmd_size);
+      }
+    }
+    if (control->op_code == CAM_CONFIG_DEV) {
+      uint32_t handle = reinterpret_cast<cam_config_dev_cmd*>(control->handle)->packet_handle;
+      snapshot(handle, 0, SIZE_MAX);
+      const auto* packet = static_cast<cam_packet*>(mappings[handle >> 16]);
+      if (packet->num_cmd_buf != 2) abort();
+      const auto* descriptors = reinterpret_cast<const cam_cmd_buf_desc*>(reinterpret_cast<const uint8_t*>(&packet->payload) + packet->cmd_buf_offset);
+      for (uint32_t index = 0; index < packet->num_cmd_buf; ++index) snapshot(descriptors[index].mem_handle, descriptors[index].offset, descriptors[index].length);
+    }
+  }
+  return kernel_ioctl(501, request, payload);
+}

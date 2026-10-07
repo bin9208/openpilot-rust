@@ -1959,6 +1959,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-camera-kernel"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "openpilot-camerad",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-camerad"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-camerad-runtime"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "openpilot-camera-kernel",
+ "openpilot-camerad",
+ "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-can"
 version = "0.1.0"
 dependencies = [
