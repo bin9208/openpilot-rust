@@ -680,6 +680,27 @@
   ],
   "library_ports": [
     {
+      "name": "usbgpu_status_transport_foundation",
+      "source_entrypoint": "openpilot/system/hardware/usbgpu.py; openpilot/selfdrive/modeld/helpers.py; tinygrad runtime/support/usb.py",
+      "status": "status_transport_foundation_host_validated",
+      "implementation": "rust/crates/usbgpu; sysfs/power/status parsing, model availability, owned diagnostic child wrapper, USB BOT/UAS/custom ASM policy and libusb ownership boundary",
+      "native_dependencies": [
+        "external libusb-1.0.so.0 and Linux USB/sysfs/drivers",
+        "project-owned CXX USB adapter in rust/crates/usbgpu/native; declaration-only libusb ABI header retains LGPL-2.1-or-later terms"
+      ],
+      "runtime_scope": "historical host source/status/ASM/owned-child and native USB fixture evidence only; diagnostic wrapper requires a real probe and cannot substitute for the missing GPU runtime",
+      "unported_scope": [
+        "native GPU probe executable",
+        "complete UAS full-window and stock ASM behavior; PCIe BAR/MMU",
+        "AMD firmware initialization, queues and synchronization",
+        "model download/provisioning, compile/import and native artifact execution",
+        "C3 QCOM/C4 AMD warp and model-daemon live fallback",
+        "project-owned CXX USB ownership adapter remains native code; complete startup/upload and device acceptance pending"
+      ],
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-usbgpu-154.md"
+    },
+    {
       "name": "shared_ui_framework",
       "source_entrypoint": "openpilot.system.ui.lib and openpilot.system.ui.widgets",
       "status": "native_shared_framework_host_validated",

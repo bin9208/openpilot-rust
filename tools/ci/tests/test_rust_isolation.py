@@ -131,7 +131,8 @@ class RustIsolationTests(unittest.TestCase):
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('cargo fmt --all --check', 'cargo clippy --workspace', 'cargo test --workspace',
-                         'cargo build --workspace --release --locked'):
+                         'cargo build --workspace --release --locked', 'check_usbgpu_hardware.py',
+                         'check_usbgpu_asm.py', 'check_usbgpu_status.py'):
             self.assertIn(required, commands)
         self.assertEqual(data['jobs']['fast']['name'], 'rust checks')
         self.assertEqual(len(data['jobs']['fast']['steps']), 1)

@@ -338,6 +338,19 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
+      - name: Compare USB GPU status and transport foundation with original source
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          python tools/check_usbgpu_hardware.py target/debug "$RUNNER_TEMP/usbgpu-foundation/hardware"
+          python tools/check_usbgpu_asm.py --binary target/debug/examples/asm_trace --evidence "$RUNNER_TEMP/usbgpu-foundation/asm-traces.json"
+          python tools/check_usbgpu_status.py --binary target/debug/examples/model_status --evidence "$RUNNER_TEMP/usbgpu-foundation/status-parity.json"
+      - name: Preserve USB GPU foundation source comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-usbgpu-foundation-evidence
+          path: ${{ runner.temp }}/usbgpu-foundation/
+          if-no-files-found: warn
       - name: Compare log-space retention with the original loop and actual low-space filesystem
         run: |
           cargo build -p openpilot-deleter --bins --examples --locked
