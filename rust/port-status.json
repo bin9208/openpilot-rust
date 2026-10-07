@@ -124,8 +124,16 @@
       "name": "carrot_vision_encoderd",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_runtime_host_validated_with_arm_codec_comparison",
+      "production_replaced": false,
+      "implementation": "rust/crates/encoderd; source profile selection, frame/segment synchronization, metadata, thumbnails, FFmpeg/JPEG and V4L/ION lifecycle",
+      "native_dependencies": [
+        "pinned external FFmpeg, libyuv and vendored libjpeg",
+        "Linux clocks/signals, ION and Qualcomm VIDC drivers",
+        "native Rust msgq/VisionIPC; consumer composition tracked in #195"
+      ],
+      "evidence": "docs/naver/rust-encoderd-190.md",
+      "runtime_scope": "All seven profiles across ten actual source/native host IPC cases, five exact codec cases/112 packets and 28 scripted V4L cases; separate pinned ARM codec comparison through the extracted AGNOS loader also matches 112 packets. Inherited receive-only restart behavior (#191) retained. Complete startup/upload composition, native Rust IPC consumer composition, exact-head CI and physical V4L/ION/device acceptance remain pending"
     },
     {
       "name": "carrot_webrtcd",
@@ -187,8 +195,16 @@
       "name": "encoderd",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_runtime_host_validated_with_arm_codec_comparison",
+      "production_replaced": false,
+      "implementation": "rust/crates/encoderd; source profile selection, frame/segment synchronization, metadata, thumbnails, FFmpeg/JPEG and V4L/ION lifecycle",
+      "native_dependencies": [
+        "pinned external FFmpeg, libyuv and vendored libjpeg",
+        "Linux clocks/signals, ION and Qualcomm VIDC drivers",
+        "native Rust msgq/VisionIPC; consumer composition tracked in #195"
+      ],
+      "evidence": "docs/naver/rust-encoderd-190.md",
+      "runtime_scope": "All seven profiles across ten actual source/native host IPC cases, five exact codec cases/112 packets and 28 scripted V4L cases; separate pinned ARM codec comparison through the extracted AGNOS loader also matches 112 packets. Inherited receive-only restart behavior (#191) retained. Complete startup/upload composition, native Rust IPC consumer composition, exact-head CI and physical V4L/ION/device acceptance remain pending"
     },
     {
       "name": "feedbackd",
@@ -503,8 +519,16 @@
       "name": "stream_encoderd",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_runtime_host_validated_with_arm_codec_comparison",
+      "production_replaced": false,
+      "implementation": "rust/crates/encoderd; source profile selection, frame/segment synchronization, metadata, thumbnails, FFmpeg/JPEG and V4L/ION lifecycle",
+      "native_dependencies": [
+        "pinned external FFmpeg, libyuv and vendored libjpeg",
+        "Linux clocks/signals, ION and Qualcomm VIDC drivers",
+        "native Rust msgq/VisionIPC; consumer composition tracked in #195"
+      ],
+      "evidence": "docs/naver/rust-encoderd-190.md",
+      "runtime_scope": "All seven profiles across ten actual source/native host IPC cases, five exact codec cases/112 packets and 28 scripted V4L cases; separate pinned ARM codec comparison through the extracted AGNOS loader also matches 112 packets. Inherited receive-only restart behavior (#191) retained. Complete startup/upload composition, native Rust IPC consumer composition, exact-head CI and physical V4L/ION/device acceptance remain pending"
     },
     {
       "name": "timed",
@@ -597,29 +621,61 @@
       "name": "youtube_encoderd",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_runtime_host_validated_with_arm_codec_comparison",
+      "production_replaced": false,
+      "implementation": "rust/crates/encoderd; source profile selection, frame/segment synchronization, metadata, thumbnails, FFmpeg/JPEG and V4L/ION lifecycle",
+      "native_dependencies": [
+        "pinned external FFmpeg, libyuv and vendored libjpeg",
+        "Linux clocks/signals, ION and Qualcomm VIDC drivers",
+        "native Rust msgq/VisionIPC; consumer composition tracked in #195"
+      ],
+      "evidence": "docs/naver/rust-encoderd-190.md",
+      "runtime_scope": "All seven profiles across ten actual source/native host IPC cases, five exact codec cases/112 packets and 28 scripted V4L cases; separate pinned ARM codec comparison through the extracted AGNOS loader also matches 112 packets. Inherited receive-only restart behavior (#191) retained. Complete startup/upload composition, native Rust IPC consumer composition, exact-head CI and physical V4L/ION/device acceptance remain pending"
     },
     {
       "name": "youtube_low_encoderd",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_runtime_host_validated_with_arm_codec_comparison",
+      "production_replaced": false,
+      "implementation": "rust/crates/encoderd; source profile selection, frame/segment synchronization, metadata, thumbnails, FFmpeg/JPEG and V4L/ION lifecycle",
+      "native_dependencies": [
+        "pinned external FFmpeg, libyuv and vendored libjpeg",
+        "Linux clocks/signals, ION and Qualcomm VIDC drivers",
+        "native Rust msgq/VisionIPC; consumer composition tracked in #195"
+      ],
+      "evidence": "docs/naver/rust-encoderd-190.md",
+      "runtime_scope": "All seven profiles across ten actual source/native host IPC cases, five exact codec cases/112 packets and 28 scripted V4L cases; separate pinned ARM codec comparison through the extracted AGNOS loader also matches 112 packets. Inherited receive-only restart behavior (#191) retained. Complete startup/upload composition, native Rust IPC consumer composition, exact-head CI and physical V4L/ION/device acceptance remain pending"
     },
     {
       "name": "youtube_medium_encoderd",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_runtime_host_validated_with_arm_codec_comparison",
+      "production_replaced": false,
+      "implementation": "rust/crates/encoderd; source profile selection, frame/segment synchronization, metadata, thumbnails, FFmpeg/JPEG and V4L/ION lifecycle",
+      "native_dependencies": [
+        "pinned external FFmpeg, libyuv and vendored libjpeg",
+        "Linux clocks/signals, ION and Qualcomm VIDC drivers",
+        "native Rust msgq/VisionIPC; consumer composition tracked in #195"
+      ],
+      "evidence": "docs/naver/rust-encoderd-190.md",
+      "runtime_scope": "All seven profiles across ten actual source/native host IPC cases, five exact codec cases/112 packets and 28 scripted V4L cases; separate pinned ARM codec comparison through the extracted AGNOS loader also matches 112 packets. Inherited receive-only restart behavior (#191) retained. Complete startup/upload composition, native Rust IPC consumer composition, exact-head CI and physical V4L/ION/device acceptance remain pending"
     },
     {
       "name": "youtube_wide_encoderd",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_runtime_host_validated_with_arm_codec_comparison",
+      "production_replaced": false,
+      "implementation": "rust/crates/encoderd; source profile selection, frame/segment synchronization, metadata, thumbnails, FFmpeg/JPEG and V4L/ION lifecycle",
+      "native_dependencies": [
+        "pinned external FFmpeg, libyuv and vendored libjpeg",
+        "Linux clocks/signals, ION and Qualcomm VIDC drivers",
+        "native Rust msgq/VisionIPC; consumer composition tracked in #195"
+      ],
+      "evidence": "docs/naver/rust-encoderd-190.md",
+      "runtime_scope": "All seven profiles across ten actual source/native host IPC cases, five exact codec cases/112 packets and 28 scripted V4L cases; separate pinned ARM codec comparison through the extracted AGNOS loader also matches 112 packets. Inherited receive-only restart behavior (#191) retained. Complete startup/upload composition, native Rust IPC consumer composition, exact-head CI and physical V4L/ION/device acceptance remain pending"
     }
   ],
   "library_ports": [

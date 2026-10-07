@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -53,6 +53,7 @@ jobs:
           SELFDRIVE: ${{ needs.selfdrive-runtime.result }}
           PANDA: ${{ needs.panda-runtime.result }}
           CAMERA: ${{ needs.camera-runtime.result }}
+          ENCODER: ${{ needs.encoder-runtime.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -85,6 +86,7 @@ jobs:
           test "$SELFDRIVE" = success
           test "$PANDA" = success
           test "$CAMERA" = success
+          test "$ENCODER" = success
   planner-runtime:
     name: rust planner source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
@@ -483,6 +485,67 @@ jobs:
             ${{ runner.temp }}/communication-snapshot/report.json
             ${{ runner.temp }}/logging-producer/**/report.json
             ${{ runner.temp }}/logging-producer/**/*.log
+  encoder-runtime:
+    name: rust encoder runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      ENCODER_LIBYUV_LIB: /usr/lib/x86_64-linux-gnu
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original encoder IPC imports
+        run: printf 'PYTHONPATH=%s/encoder-native/python:%s\nENCODER_MSGQ_PYTHON=%s/encoder-native/python\n' "$RUNNER_TEMP" "$PYTHONPATH" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Reserve capacity and install native codec prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libyuv-dev libzmq3-dev ffmpeg
+      - name: Install pinned encoder oracle dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2 zstandard==0.25.0
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build original encoder IPC bindings and check fixture failure detection
+        run: |
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_encoder_ci.py rust/tools/tests/test_encoder_target_stage.py rust/tools/tests/test_encoder_outcomes.py -q
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/encoder-native/python"
+          python -P -c 'import msgq.ipc_pyx, msgq.visionipc.visionipc_pyx, zstandard; from openpilot.cereal import log, messaging; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(msgq.visionipc.visionipc_pyx.__file__); print(zstandard.__version__)' > "$RUNNER_TEMP/encoder-native/python/imports.txt"
+      - name: Require encoder policy and shared VisionIPC ownership checks
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-encoderd -p openpilot-msgq --features openpilot-encoderd/native --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-encoderd --features native --all-targets --locked -- -D warnings
+      - name: Build native encoder and record current JPEG and messaging outputs
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          set -o pipefail
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-encoderd --features native --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/encoder-native/build.log" | tee "$RUNNER_TEMP/encoder-native/build.jsonl"
+      - name: Require all source codec, V4L and actual encoder runtime comparisons
+        run: python rust/tools/check_encoder_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/encoder-native/build.jsonl" --output "$RUNNER_TEMP/encoder-native/oracles"
+      - name: Preserve encoder inputs, packets, diagnostics and executable evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-encoder-runtime-evidence
+          path: |
+            ${{ runner.temp }}/encoder-native/
+            rust/target/debug/openpilot-encoderd
+            rust/target/debug/examples/encoder_codec_trace
+            rust/target/debug/examples/encoder_v4l_trace
+          if-no-files-found: warn
   camera-runtime:
     name: rust camera runtime
     runs-on: ubuntu-24.04
@@ -2504,6 +2567,43 @@ jobs:
         with:
           name: rust-camera-arm-evidence
           path: ${{ runner.temp }}/camera-arm/
+          if-no-files-found: warn
+
+      - name: Stage exact source-pinned native ARM codec packages
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python rust/tools/stage_encoder_target.py --output "$RUNNER_TEMP/encoder-arm/dependencies"
+          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"encoder-arm/dependencies/receipt.json"; d=json.loads(p.read_text()); print("ENCODER_ARM_FFMPEG="+d["ffmpeg"]["install"]); print("ENCODER_ARM_LIBYUV="+d["libyuv"]["install"]+"/lib")' >> "$GITHUB_ENV"
+      - name: Build encoder daemon and probes with pinned ARM codecs and ION
+        working-directory: rust
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+          AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
+          BINDGEN_EXTRA_CLANG_ARGS: --target=aarch64-linux-gnu -I/usr/aarch64-linux-gnu/include
+          FFMPEG_DIR: ${{ env.ENCODER_ARM_FFMPEG }}
+          ENCODER_LIBYUV_LIB: ${{ env.ENCODER_ARM_LIBYUV }}
+          ENCODER_FFMPEG_EXTRA_LIBS: swresample,x264,z,va,va-drm,drm,gcc
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          git rev-parse HEAD > "$RUNNER_TEMP/encoder-arm/SOURCE_COMMIT"
+          set -o pipefail
+          cargo build -p openpilot-encoderd --features static-ffmpeg,visionipc-ion --bins --examples --release --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/encoder-arm/build.log" | tee "$RUNNER_TEMP/encoder-arm/build.jsonl"
+          for encoder_binary in target/aarch64-unknown-linux-gnu/release/openpilot-encoderd target/aarch64-unknown-linux-gnu/release/examples/encoder_codec_trace target/aarch64-unknown-linux-gnu/release/examples/encoder_v4l_trace; do
+            aarch64-linux-gnu-readelf -h -d -V "$encoder_binary" > "$RUNNER_TEMP/encoder-arm/$(basename "$encoder_binary").readelf.txt"
+            sha256sum "$encoder_binary" >> "$RUNNER_TEMP/encoder-arm/SHA256SUMS"
+          done
+      - name: Preserve pinned codec ARM build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-encoder-arm-evidence
+          path: |
+            ${{ runner.temp }}/encoder-arm/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-encoderd
+            rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_codec_trace
+            rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_v4l_trace
           if-no-files-found: warn
 
   athena-runtime:

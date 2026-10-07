@@ -2269,6 +2269,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-encoderd"
+version = "0.1.0"
+dependencies = [
+ "bindgen",
+ "capnp",
+ "ffmpeg-next",
+ "libc",
+ "openpilot-cereal",
+ "openpilot-jpeg",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-feedbackd"
 version = "0.1.0"
 dependencies = [
