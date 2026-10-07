@@ -208,6 +208,24 @@ fields in its synthetic image fixture. The fixture now carries `index: 0` and
 policy changed. The failed build is retained in PR #222's first Actions run;
 the corrected exact-head hosted gates remain required.
 
+The original-route-logger job in PR #222 run `37634763377`, job `112838695805`,
+then exposed a fixture boundary: its idle observer recognized only the original
+`hrtimer_nanosleep`, while #211 native notification wait uses zero-FD `ppoll`.
+The observer now also requires the architecture's actual `ppoll` syscall
+(`271` on x86_64, `73` on AArch64), `nfds == 0`, and a blocked wait channel.
+The msgq read-pointer acknowledgment, processing-completion barrier, ten-second
+deadline and process-exit failure remain unchanged; production code is untouched.
+
+A real host ctypes/pipe regression observed `poll_schedule_timeout.constprop.0`
+for both zero-FD and one-FD `ppoll`, proving that the channel name alone is not
+enough. The zero-FD case failed before the fix and all six cases then passed:
+source nanosleep and zero-FD ppoll are accepted; one-FD ppoll, pipe read and
+futex preserve timeout failure; process exit preserves failure. Private syscall
+captures and red/green output are under `.omo/evidence/logger-idle-194/`.
+The shared target's loggerd executable was absent, so the ordinary daemon case
+was not rerun and no build/install occurred. Parent-owned exact-head host/ARM
+gates remain required.
+
 ## Remaining external boundary
 
 Linux shared mappings, file locking, signals, Unix sockets and SCM_RIGHTS remain
