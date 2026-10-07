@@ -146,3 +146,9 @@ Source host/generic ARM libraries differ from the pinned AGNOS package; the
 original ARM recipe stages the locked FFmpeg/libyuv packages for its ION build.
 No install, local native build, device access or full-corpus rerun is performed.
 Complete startup/upload and device performance/driver acceptance remain separate.
+
+Dependency review also restored the donor JPEG crate's Cargo `links` declaration
+and source/configured-header metadata. Encoder bindgen consumes these three
+declarations directly; without them its native build cannot locate the JPEG
+headers. Codec implementation is unchanged. Candidate build confirmation remains
+with hosted CI while the local disk reserve prevents new builds.
