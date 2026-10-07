@@ -14,7 +14,7 @@ use std::{
         Arc, Mutex,
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 static QUEUE_LOCK: Mutex<()> = Mutex::new(());
@@ -96,7 +96,19 @@ fn run(
         let result = (|| {
             let now = clock::monotonic();
             let mut items = [socket.as_poll_item(zmq::POLLIN)];
-            zmq::poll(&mut items, 100)?;
+            let deadline = Instant::now() + Duration::from_millis(100);
+            let mut timeout = 100;
+            loop {
+                match zmq::poll(&mut items, timeout) {
+                    Ok(_) => break,
+                    Err(zmq::Error::EINTR) => {
+                        timeout = deadline
+                            .saturating_duration_since(Instant::now())
+                            .as_millis() as i64;
+                    }
+                    Err(error) => return Err(error.into()),
+                }
+            }
             let value = if items[0].is_readable() {
                 let bytes = socket.recv_bytes(zmq::DONTWAIT)?;
                 let text =
