@@ -2878,6 +2878,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-selfdrived"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "libc",
+ "openpilot-beepd",
+ "openpilot-calibrationd",
+ "openpilot-cereal",
+ "openpilot-hardware-info",
+ "openpilot-locationd",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "openpilot-params-typed",
+ "openpilot-runtime-version",
+ "openpilot-ui-framework",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-sensord"
 version = "0.1.0"
 dependencies = [
