@@ -42,7 +42,7 @@ enum Request {
         geos: bool,
     },
     Sources {
-        snapshot: Option<Snapshot>,
+        snapshot: Option<Box<Snapshot>>,
         now: f64,
         loss: Option<(Source, String)>,
         policy: SafetyPolicy,
@@ -53,9 +53,9 @@ enum Request {
         values: std::collections::BTreeMap<String, String>,
     },
     Tick {
-        input: TickInput,
-        snapshot: Option<Snapshot>,
-        v2: Option<v2::Payload>,
+        input: Box<TickInput>,
+        snapshot: Option<Box<Snapshot>>,
+        v2: Option<Box<v2::Payload>>,
         legacy: Option<serde_json::Value>,
         refresh: bool,
     },
@@ -164,7 +164,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 policy,
                 hda,
             } => {
-                let accepted = snapshot.map(|s| sources.accept(s, now));
+                let accepted = snapshot.map(|s| sources.accept(*s, now));
                 let lost = loss
                     .map(|(source, session)| sources.record_transport_loss(source, &session, now));
                 let selection = sources.select(now)?;
@@ -199,10 +199,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     serv.settings = Settings::read(p)?;
                 }
                 if let Some(snapshot) = snapshot {
-                    navigation.accept(snapshot);
+                    navigation.accept(*snapshot);
                 }
                 if let Some(v2) = v2 {
-                    navigation.accept_v2(v2, input.now);
+                    navigation.accept_v2(*v2, input.now);
                 }
                 if let Some(legacy) = legacy {
                     if let Some(fields) = parse_legacy(&legacy, input.now) {
@@ -218,7 +218,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 let timestamp =
                     num_traits::ToPrimitive::to_u64(&(input.now * 1e9)).ok_or("timestamp range")?;
-                let decision = serv.tick(input);
+                let decision = serv.tick(*input);
                 let carrot = wire::carrot(serv, &decision, "127.0.0.1", timestamp, "")?;
                 let instruction = wire::instruction(serv, &decision, None, timestamp)?;
                 let traffic = mem
