@@ -10,6 +10,7 @@ pub struct Parser {
     pub bus: u8,
     pub states: BTreeMap<u32, MessageState>,
     order: Vec<u32>,
+    successful_order: Vec<u32>,
     pub raw: BTreeMap<u32, Vec<u8>>,
     pub seen_addresses: BTreeSet<u32>,
     pub controls_ready: bool,
@@ -26,6 +27,7 @@ impl Parser {
             bus,
             states: BTreeMap::new(),
             order: Vec::new(),
+            successful_order: Vec::new(),
             raw: BTreeMap::new(),
             seen_addresses: BTreeSet::new(),
             controls_ready: false,
@@ -66,6 +68,10 @@ impl Parser {
         state.ignore_counter = ignore_counter;
         self.states.insert(address, state);
         self.order.push(address);
+        if self.successful_order.capacity() < self.states.len() {
+            self.successful_order
+                .reserve(self.states.len() - self.successful_order.len());
+        }
         Ok(())
     }
 
@@ -138,7 +144,12 @@ impl Parser {
         self.invalid_count < 5 && counters_valid
     }
 
+    pub fn successful_addresses(&self) -> &[u32] {
+        &self.successful_order
+    }
+
     pub fn update(&mut self, packets: &[Packet]) -> Result<BTreeSet<u32>, Error> {
+        self.successful_order.clear();
         for state in self.states.values_mut() {
             for values in &mut state.all_values {
                 values.clear();
@@ -171,7 +182,9 @@ impl Parser {
                     (packet.mono_time, &frame.data),
                     &mut self.diagnostics,
                 )? {
-                    updated.insert(frame.address);
+                    if updated.insert(frame.address) {
+                        self.successful_order.push(frame.address);
+                    }
                     self.raw.insert(frame.address, frame.data.clone());
                 }
             }

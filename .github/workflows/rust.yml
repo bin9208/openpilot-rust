@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -43,6 +43,9 @@ jobs:
           PLANNER: ${{ needs.planner-runtime.result }}
           PLANNER_MEMORY: ${{ needs.planner-memory.result }}
           CARD: ${{ needs.card-runtime.result }}
+          RADAR: ${{ needs.radar-runtime.result }}
+          RADAR_ARM: ${{ needs.radar-arm.result }}
+          RADAR_MEMORY: ${{ needs.radar-memory.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -65,6 +68,9 @@ jobs:
           test "$PLANNER" = success
           test "$PLANNER_MEMORY" = success
           test "$CARD" = success
+          test "$RADAR" = success
+          test "$RADAR_ARM" = success
+          test "$RADAR_MEMORY" = success
   planner-runtime:
     name: rust planner source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
@@ -551,6 +557,206 @@ jobs:
         with:
           name: rust-card-can-host-evidence
           path: ${{ runner.temp }}/card-native/
+          if-no-files-found: warn
+  radar-runtime:
+    name: rust RadarCAN source and host runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original Radar IPC imports
+        run: printf 'PYTHONPATH=%s/radar-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity and install source binding dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build unchanged source Params and msgq bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/radar-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
+          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+      - name: Generate original DBC assets and stage pinned numerical libraries
+        run: |
+          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
+          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
+      - name: Require RadarCAN and CAN tests, native build and Clippy
+        working-directory: rust
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test -p openpilot-radarcan -p openpilot-can --locked
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-radarcan --bins --examples --locked
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy -p openpilot-radarcan -p openpilot-can --all-targets --locked -- -D warnings
+          python -m pytest -c /dev/null --noconftest -p no:cacheprovider tools/tests/test_radarcan_ci.py tools/tests/test_radarcan_exact.py -q
+      - name: Require complete original and native RadarCAN functional gates
+        run: python rust/tools/check_radarcan_ci.py --phase reference --probe "$GITHUB_WORKSPACE/rust/target/debug/examples/radarcan-policy" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-radarcan" --numerics "$RUNNER_TEMP/radar-native/numerics" --binding "$RADAR_PARAMS_BINDING" --dbc "$RUNNER_TEMP/radar-native/dbc" --evidence "$RUNNER_TEMP/radar-native/reference"
+      - name: Require independent actual RadarCAN IPC and signal lifecycle
+        run: python rust/tools/check_radarcan_ci.py --phase ipc --probe "$GITHUB_WORKSPACE/rust/target/debug/examples/radarcan-policy" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-radarcan" --numerics "$RUNNER_TEMP/radar-native/numerics" --binding "$RADAR_PARAMS_BINDING" --dbc "$RUNNER_TEMP/radar-native/dbc" --evidence "$RUNNER_TEMP/radar-native/ipc"
+      - name: Preserve Radar host invocations, inputs, failures and provenance
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-radar-host-evidence
+          path: ${{ runner.temp }}/radar-native/
+          if-no-files-found: warn
+  radar-arm:
+    name: rust RadarCAN native ARM functional validation
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_RELEASE_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original Radar IPC imports
+        run: printf 'PYTHONPATH=%s/radar-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve runner capacity and install generic ARM dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal
+          rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+      - name: Build unchanged native ARM bindings and generate original radar assets
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/radar-native/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
+          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+      - name: Stage pinned generic ARM numerical dependency
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
+          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
+      - name: Build and execute generic ARM RadarCAN tests and artifacts
+        working-directory: rust
+        run: |
+          mkdir -p "$RUNNER_TEMP/radar-arm/tests"
+          git rev-parse HEAD > "$RUNNER_TEMP/radar-arm/SOURCE_COMMIT"
+          uname -m | tee "$RUNNER_TEMP/radar-arm/machine.txt"
+          test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          set -o pipefail
+          cargo build -p openpilot-radarcan --bins --examples --release --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/radar-arm/build.log" | tee "$RUNNER_TEMP/radar-arm/build.jsonl"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test -p openpilot-radarcan -p openpilot-can --no-run --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/radar-arm/tests-build.log" | tee "$RUNNER_TEMP/radar-arm/tests-build.jsonl"
+          python -c 'import json, sys; rows=[json.loads(line) for line in open(sys.argv[1])]; print("\n".join(row["executable"] for row in rows if row.get("reason")=="compiler-artifact" and row.get("profile",{}).get("test") and row.get("executable")))' "$RUNNER_TEMP/radar-arm/tests-build.jsonl" > "$RUNNER_TEMP/radar-arm/tests.txt"
+          test -s "$RUNNER_TEMP/radar-arm/tests.txt"
+          while IFS= read -r radar_test; do
+            python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+            cp "$radar_test" "$RUNNER_TEMP/radar-arm/tests/"
+            sha256sum "$radar_test" >> "$RUNNER_TEMP/radar-arm/tests-SHA256SUMS"
+            "$radar_test" --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-arm/tests/$(basename "$radar_test").log"
+          done < "$RUNNER_TEMP/radar-arm/tests.txt"
+          for radar_binary in target/aarch64-unknown-linux-gnu/release/openpilot-radarcan target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy; do
+            readelf -h -d -V "$radar_binary" > "$RUNNER_TEMP/radar-arm/$(basename "$radar_binary").readelf.txt"
+            test "$(readelf -h "$radar_binary" | sed -n 's/.*Machine: *//p')" = AArch64
+            sha256sum "$radar_binary" >> "$RUNNER_TEMP/radar-arm/SHA256SUMS"
+          done
+      - name: Require exact RadarCAN source comparison on native ARM
+        run: python rust/tools/check_radarcan_ci.py --phase reference --probe "$GITHUB_WORKSPACE/rust/target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy" --daemon "$GITHUB_WORKSPACE/rust/target/aarch64-unknown-linux-gnu/release/openpilot-radarcan" --numerics "$RUNNER_TEMP/radar-native/numerics" --binding "$RADAR_PARAMS_BINDING" --dbc "$RUNNER_TEMP/radar-native/dbc" --evidence "$RUNNER_TEMP/radar-native/reference"
+      - name: Require actual original and native ARM IPC and signal lifecycle
+        run: python rust/tools/check_radarcan_ci.py --phase ipc --probe "$GITHUB_WORKSPACE/rust/target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy" --daemon "$GITHUB_WORKSPACE/rust/target/aarch64-unknown-linux-gnu/release/openpilot-radarcan" --numerics "$RUNNER_TEMP/radar-native/numerics" --binding "$RADAR_PARAMS_BINDING" --dbc "$RUNNER_TEMP/radar-native/dbc" --evidence "$RUNNER_TEMP/radar-native/ipc"
+      - name: Preserve Radar generic ARM artifacts and functional evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-radar-arm-not-device-validated
+          path: |
+            ${{ runner.temp }}/radar-arm/
+            ${{ runner.temp }}/radar-native/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-radarcan
+            rust/target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy
+          if-no-files-found: warn
+  radar-memory:
+    name: rust RadarCAN buffer ownership with Miri
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Reserve capacity for pinned interpreter dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
+          printf 'CARGO_TARGET_DIR=%s/radar-miri-target\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Verify BLAS and SVD buffer calls and scheduler ABI at all four Miri levels
+        working-directory: rust
+        run: |
+          mkdir -p "$RUNNER_TEMP/radar-memory"
+          git rev-parse HEAD > "$RUNNER_TEMP/radar-memory/SOURCE_COMMIT"
+          rustc +nightly-2026-09-29 -vV > "$RUNNER_TEMP/radar-memory/rustc.txt"
+          set -o pipefail
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo +nightly-2026-09-29 miri setup --print-sysroot > "$RUNNER_TEMP/radar-memory/sysroot.txt" 2> "$RUNNER_TEMP/radar-memory/setup.log"
+          export MIRI_SYSROOT="$(cat "$RUNNER_TEMP/radar-memory/sysroot.txt")"
+          python -c 'import hashlib, json, os; from pathlib import Path; root=Path(os.environ["MIRI_SYSROOT"]); paths=sorted(root.glob("lib/rustlib/*/lib/libcore-*.rlib")); assert paths; print(json.dumps({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}, indent=2))' > "$RUNNER_TEMP/radar-memory/core-hashes.json"
+          for radar_level in default strict preemption tree; do
+            radar_flags='-Zmiri-no-extra-rounding-error'
+            if test "$radar_level" != default; then radar_flags="$radar_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-backtrace=full"; fi
+            if test "$radar_level" = preemption || test "$radar_level" = tree; then radar_flags="$radar_flags -Zmiri-preemption-rate=0.1"; fi
+            if test "$radar_level" = tree; then radar_flags="$radar_flags -Zmiri-tree-borrows"; fi
+            for radar_filter in numerics_ scheduler_argument_abi_preserves_source_fifo_priority; do
+              python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+              printf '%s\n' "MIRIFLAGS=$radar_flags cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked $radar_filter -- --test-threads=1" > "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.command"
+              MIRIFLAGS="$radar_flags" cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked "$radar_filter" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.log"
+            done
+          done
+      - name: Preserve pinned Radar memory invocations and failures
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-radar-memory-evidence
+          path: ${{ runner.temp }}/radar-memory/
           if-no-files-found: warn
   support-runtime:
     name: rust support runtime

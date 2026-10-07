@@ -200,6 +200,38 @@ class RustIsolationTests(unittest.TestCase):
             subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
             self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/support-msgq-python:/fixture/repository:/fixture/tools\n')
 
+    def test_radar_requires_fresh_source_runtime_arm_and_memory_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        for name in ('radar-runtime', 'radar-arm', 'radar-memory'):
+            job = data['jobs'][name]
+            with self.subTest(job=name):
+                self.assertNotIn('if', job)
+                self.assertNotIn('continue-on-error', job)
+                commands = '\n'.join(step.get('run', '') for step in job['steps'])
+                self.assertIn('card_ci_space.py', commands)
+                self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
+                self.assertTrue(any(step.get('if') == 'always()' and
+                                    step.get('uses', '').startswith('actions/upload-artifact@') for step in job['steps']))
+        host = '\n'.join(step.get('run', '') for step in data['jobs']['radar-runtime']['steps'])
+        for required in ('build_params_python.py', 'build_msgq_python.py', 'RADAR_PARAMS_BINDING',
+                         'radarcan_prepare_assets.py', 'stage_torque_numerics.py', 'test_radarcan_ci.py',
+                         'check_radarcan_ci.py --phase reference', 'check_radarcan_ci.py --phase ipc',
+                         '-p openpilot-radarcan -p openpilot-can', '--all-targets --locked -- -D warnings'):
+            self.assertIn(required, host)
+        arm = '\n'.join(step.get('run', '') for step in data['jobs']['radar-arm']['steps'])
+        self.assertEqual(data['jobs']['radar-arm']['runs-on'], 'ubuntu-24.04-arm')
+        for required in ('--target aarch64-unknown-linux-gnu', '--no-run', '--message-format=json',
+                         '"$radar_test" --test-threads=1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',
+                         'check_radarcan_ci.py --phase reference', 'check_radarcan_ci.py --phase ipc',
+                         '--platform manylinux_2_27_aarch64', 'sha256sum'):
+            self.assertIn(required, arm)
+        self.assertNotIn('qemu-aarch64', arm)
+        memory = '\n'.join(step.get('run', '') for step in data['jobs']['radar-memory']['steps'])
+        for required in ('nightly-2026-09-29', 'numerics_', 'scheduler_argument_abi_preserves_source_fifo_priority',
+                         '-Zmiri-no-extra-rounding-error', '-Zmiri-strict-provenance', '-Zmiri-symbolic-alignment-check',
+                         '-Zmiri-preemption-rate=0.1', '-Zmiri-tree-borrows'):
+            self.assertIn(required, memory)
+
     def test_inherited_side_effects_are_source_repository_only(self):
         for file, job in [('sync.yml', 'sync'), ('naver-upstream-sync.yml', 'sync'), ('wiki-settings-publish.yaml', 'synchronize'), ('carrot-route-vault-publish.yaml', 'publish')]:
             with self.subTest(file=file):
@@ -220,7 +252,7 @@ class RustIsolationTests(unittest.TestCase):
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'joystickd-runtime',
             'planner-runtime', 'planner-memory',
-            'card-runtime',
+            'card-runtime', 'radar-runtime', 'radar-arm', 'radar-memory',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -242,7 +274,10 @@ class RustIsolationTests(unittest.TestCase):
                                             'JOYSTICKD': '${{ needs.joystickd-runtime.result }}',
                                             'PLANNER': '${{ needs.planner-runtime.result }}',
                                             'PLANNER_MEMORY': '${{ needs.planner-memory.result }}',
-                                            'CARD': '${{ needs.card-runtime.result }}'})
+                                            'CARD': '${{ needs.card-runtime.result }}',
+                                            'RADAR': '${{ needs.radar-runtime.result }}',
+                                            'RADAR_ARM': '${{ needs.radar-arm.result }}',
+                                            'RADAR_MEMORY': '${{ needs.radar-memory.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)
