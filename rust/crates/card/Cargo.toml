@@ -1,0 +1,111 @@
+[package]
+name = "openpilot-card"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[example]]
+name = "ford_trace"
+required-features = ["native"]
+
+[[example]]
+name = "subaru_trace"
+required-features = ["native"]
+
+[[example]]
+name = "toyota_trace"
+required-features = ["native"]
+
+[[example]]
+name = "toyota_secoc_trace"
+
+[[example]]
+name = "gm_trace"
+required-features = ["native"]
+
+[[example]]
+name = "honda_trace"
+required-features = ["native"]
+
+[[example]]
+name = "volkswagen_trace"
+required-features = ["native"]
+
+[lints.rust]
+unsafe_code = "deny"
+
+[features]
+default = []
+native = ["openpilot-messaging/native", "openpilot-control-policy/numerics", "dep:openpilot-msgq", "dep:openpilot-logging", "dep:rustix", "dep:libc", "dep:signal-hook"]
+
+[dependencies]
+aes = "=0.8.4"
+cmac = "=0.7.2"
+capnp = "=0.27.2"
+chrono = "=0.4.45"
+num-traits = "0.2"
+num-bigint = "=0.4.8"
+openpilot-can = { path = "../can" }
+openpilot-cereal = { path = "../cereal" }
+openpilot-control-policy = { path = "../control-policy", default-features = false }
+openpilot-desire = { path = "../desire", default-features = false }
+openpilot-params = { path = "../params" }
+openpilot-messaging = { path = "../messaging", default-features = false }
+openpilot-msgq = { path = "../msgq", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+rustix = { version = "1", features = ["time", "thread"], optional = true }
+libc = { version = "0.2", optional = true }
+signal-hook = { version = "0.3", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip", "raw_value"] }
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[[example]]
+name = "native_io_trace"
+required-features = ["native"]
+
+[[example]]
+name = "common_trace"
+required-features = ["native"]
+
+[[example]]
+name = "native_startup_trace"
+required-features = ["native"]
+
+[[bin]]
+name = "openpilot-card"
+path = "src/main.rs"
+required-features = ["native"]
+
+[[example]]
+name = "tesla_trace"
+required-features = ["native"]
+
+[[example]]
+name = "mazda_trace"
+required-features = ["native"]
+
+[[example]]
+name = "nissan_trace"
+required-features = ["native"]
+
+[[example]]
+name = "chrysler_trace"
+required-features = ["native"]
+
+[[example]]
+name = "factory_trace"
+required-features = ["native"]
+
+[[example]]
+name = "carlog_trace"
+required-features = ["native"]
+
+[[example]]
+name = "rivian_trace"
+required-features = ["native"]
