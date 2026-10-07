@@ -74,7 +74,11 @@ impl Diagnostics {
     }
     pub fn startup_profile(&self, elapsed: Duration) -> bool {
         if self.options.profile_startup {
-            println!("\n=== Startup profile ===\nRust window initialization: {:.3} ms\nUI window ready in {:.1} ms",elapsed.as_secs_f64()*1000.0,elapsed.as_secs_f64()*1000.0);
+            println!(
+                "\n=== Startup profile ===\nRust window initialization: {:.3} ms\nUI window ready in {:.1} ms",
+                elapsed.as_secs_f64() * 1000.0,
+                elapsed.as_secs_f64() * 1000.0
+            );
             true
         } else {
             false
@@ -82,6 +86,9 @@ impl Diagnostics {
     }
     pub fn is_recording(&self) -> bool {
         self.dynamic_recording
+    }
+    pub fn recording_child_pid(&self) -> Option<u32> {
+        self.recorder.as_ref().map(Recorder::child_pid)
     }
     pub fn start_recording(&mut self, renderer: &mut Renderer) -> Result<(), Error> {
         if self.dynamic_recording {
@@ -212,7 +219,12 @@ impl Diagnostics {
                     .frames
                     .to_f64()
                     .ok_or(Error::Contract("frame count overflow"))?;
-            println!("\n=== Render loop profile ===\n{}\nRendered {} frames in {elapsed:.1} ms\nAverage frame time: {average:.2} ms ({:.1} FPS)",self.profile.report(self.options.profile_stats),self.frames,1000.0/average);
+            println!(
+                "\n=== Render loop profile ===\n{}\nRendered {} frames in {elapsed:.1} ms\nAverage frame time: {average:.2} ms ({:.1} FPS)",
+                self.profile.report(self.options.profile_stats),
+                self.frames,
+                1000.0 / average
+            );
             return Ok(true);
         }
         Ok(false)

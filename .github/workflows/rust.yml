@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, ui-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -54,6 +54,7 @@ jobs:
           PANDA: ${{ needs.panda-runtime.result }}
           CAMERA: ${{ needs.camera-runtime.result }}
           ENCODER: ${{ needs.encoder-runtime.result }}
+          UI_RUNTIME: ${{ needs.ui-runtime.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -87,6 +88,7 @@ jobs:
           test "$PANDA" = success
           test "$CAMERA" = success
           test "$ENCODER" = success
+          test "$UI_RUNTIME" = success
   planner-runtime:
     name: rust planner source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
@@ -1942,6 +1944,73 @@ jobs:
             ${{ runner.temp }}/estimation/
             ${{ runner.temp }}/locationd-oracle/build.log
             ${{ runner.temp }}/paramsd-oracle/build.log
+  ui-runtime:
+    name: rust UI application runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original UI IPC imports
+        run: printf 'PYTHONPATH=%s/ui-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve capacity and install UI prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang cmake pkg-config libgl-dev libx11-dev xvfb xauth x11-utils mesa-utils ffmpeg
+      - name: Install pinned original GUI dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pillow==12.3.0 comma-deps-raylib==6.0.0.1.post103 cffi==2.1.1 python-xlib==0.33 pyzmq==27.2.0 pycapnp==2.2.4 requests==2.34.2 qrcode==8.2 setproctitle==1.3.7 psutil==7.2.2 zstandard==0.25.0 PyJWT==2.14.0 cryptography==50.0.1 Cython==3.2.4 setuptools==82.0.1
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Stage pinned native UI graphics and original IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/ui-native/raylib" --shared
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/ui-native/raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-native/raylib/lib/libopenpilot-raylib.so\nUI_MSGQ_PYTHON=%s/ui-native/python\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/ui-native/python"
+      - name: Check native application and shared UI packages
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 5120
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked
+      - name: Build native UI and record current dependency outputs
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-application --bin openpilot-ui --example product_render --example product_runtime --example state_trace --example scheduler_trace --example qr_trace --example calibration_geometry --example torque_geometry --locked --message-format=json 2> "$RUNNER_TEMP/ui-native/native-build.log" | tee "$RUNNER_TEMP/ui-native/native-build.jsonl"
+      - name: Require original pixels and native UI runtime lifecycle
+        run: python rust/tools/check_ui_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/ui-native/native-build.jsonl" --output "$RUNNER_TEMP/ui-native/oracles"
+      - name: Preserve UI captures and runtime evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-ui-application-runtime-evidence
+          path: |
+            ${{ runner.temp }}/ui-native/
+            rust/target/debug/openpilot-ui
+            rust/target/debug/examples/product_render
+            rust/target/debug/examples/product_runtime
+            rust/target/debug/examples/state_trace
+            rust/target/debug/examples/scheduler_trace
+            rust/target/debug/examples/qr_trace
+            rust/target/debug/examples/calibration_geometry
+            rust/target/debug/examples/torque_geometry
+          if-no-files-found: warn
   ui-connectivity:
     name: rust UI and connectivity
     runs-on: ubuntu-24.04
@@ -2619,6 +2688,37 @@ jobs:
             rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_v4l_trace
           if-no-files-found: warn
 
+      - name: Build generic and ION UI aarch64 artifacts
+        working-directory: rust
+        env:
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          mkdir -p "$RUNNER_TEMP/ui-arm/generic" "$RUNNER_TEMP/ui-arm/ion"
+          git rev-parse HEAD > "$RUNNER_TEMP/ui-arm/SOURCE_COMMIT"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build -p openpilot-ui-application --bin openpilot-ui --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/ui-arm/generic/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-ui "$RUNNER_TEMP/ui-arm/generic/"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build -p openpilot-ui-application --features openpilot-msgq/visionipc-ion --bin openpilot-ui --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/ui-arm/ion/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-ui "$RUNNER_TEMP/ui-arm/ion/"
+          cp "$RUNNER_TEMP/startup-raylib-arm/lib/libopenpilot-raylib.so" "$RUNNER_TEMP/startup-raylib-arm/plugin-build.json" "$RUNNER_TEMP/ui-arm/"
+          for ui_artifact in "$RUNNER_TEMP"/ui-arm/{generic,ion}/openpilot-ui "$RUNNER_TEMP/ui-arm/libopenpilot-raylib.so"; do
+            aarch64-linux-gnu-readelf -h -d -V "$ui_artifact" > "$ui_artifact.readelf.txt"
+            test "$(aarch64-linux-gnu-readelf -h "$ui_artifact" | sed -n 's/.*Machine: *//p')" = AArch64
+          done
+          sha256sum "$RUNNER_TEMP"/ui-arm/{generic,ion}/openpilot-ui "$RUNNER_TEMP/ui-arm/libopenpilot-raylib.so" > "$RUNNER_TEMP/ui-arm/SHA256SUMS"
+      - name: Preserve UI generic ARM build and graphics plugin evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-ui-application-arm-not-device-validated
+          path: ${{ runner.temp }}/ui-arm/
+          if-no-files-found: warn
   athena-runtime:
     name: rust Athena runtime
     runs-on: ubuntu-24.04

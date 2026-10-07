@@ -6,10 +6,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let raylib = PathBuf::from(env::var("STARTUP_UI_RAYLIB_ROOT").map_err(|_| {
         "set STARTUP_UI_RAYLIB_ROOT to the locked comma-deps-raylib native install directory"
     })?);
-    cxx_build::bridge("src/bridge.rs")
+    cxx_build::bridges(["src/bridge.rs", "src/camera_bridge.rs"])
         .file("native/bridge.cc")
         .file("native/raylib_loader.cc")
         .file("native/graphics.cc")
+        .file("native/camera.cc")
         .file("native/egl.cc")
         .include("native")
         .include(raylib.join("include"))
@@ -19,6 +20,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rustc-link-lib=dl");
     for file in [
         "src/bridge.rs",
+        "src/camera_bridge.rs",
+        "native/camera.cc",
         "native/bridge.cc",
         "native/bridge.h",
         "native/raylib_loader.cc",

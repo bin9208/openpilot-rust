@@ -26,6 +26,10 @@ impl Measure for Renderer {
     }
 }
 impl Draw for Renderer {
+    fn clear(&mut self, color: u32) -> Result<(), Error> {
+        self.surface.pin_mut().clear(color);
+        Ok(())
+    }
     fn text(&mut self, text: TextDraw<'_>) -> Result<(), Error> {
         let font = self.font_id(text.font);
         Ok(self.surface.pin_mut().text(

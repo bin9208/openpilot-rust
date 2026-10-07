@@ -10,12 +10,15 @@ use num_traits::ToPrimitive;
 
 mod motion;
 pub use motion::NavMotion;
+pub type UpdateCallback = Box<dyn FnMut(&mut NavWidget, &Frame<'_>)>;
 pub struct NavWidget {
     pub state: WidgetState,
     pub motion: NavMotion,
     pub content: Box<dyn Widget>,
     pub back_enabled: Box<dyn Fn() -> bool>,
     on_back: Option<crate::callback::Callback<()>>,
+    pub on_update: Option<UpdateCallback>,
+    pub after_content: Option<UpdateCallback>,
     pub on_shown: Option<Box<dyn FnOnce()>>,
     dismiss_callback: Option<Box<dyn FnOnce()>>,
     pop_requested: bool,
@@ -30,6 +33,8 @@ impl NavWidget {
             back_enabled: Box::new(|| true),
             on_back: None,
             on_shown: None,
+            on_update: None,
+            after_content: None,
             dismiss_callback: None,
             pop_requested: false,
             window_height,
@@ -80,7 +85,10 @@ impl Widget for NavWidget {
         }
         self.pop_requested |= pop;
         self.set_position(self.state.rect.x, float(y));
-
+        if let Some(mut callback) = self.on_update.take() {
+            callback(self, frame);
+            self.on_update = Some(callback);
+        }
         Ok(())
     }
     fn mouse_event(
@@ -128,7 +136,12 @@ impl Widget for NavWidget {
         self.content.set_rect(self.state.rect);
         self.content.state_mut().enabled =
             (self.state.enabled.get() && !self.motion.is_dismissing()).into();
-        self.content.render(frame, draw)
+        let result = self.content.render(frame, draw)?;
+        if let Some(mut callback) = self.after_content.take() {
+            callback(self, frame);
+            self.after_content = Some(callback);
+        }
+        Ok(result)
     }
     fn render(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         let result = crate::widget::render_widget(self, frame, draw)?;

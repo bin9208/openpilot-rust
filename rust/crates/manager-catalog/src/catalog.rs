@@ -142,6 +142,7 @@ fn availability(name: &str) -> RustAvailability {
         "tombstoned" => ("openpilot-tombstoned", "openpilot-tombstoned"),
         "torqued" => ("openpilot-torqued", "openpilot-torqued"),
         "ubloxd" => ("openpilot-ublox", "openpilot-ubloxd"),
+        "ui" => ("openpilot-ui-application", "openpilot-ui"),
         "updated" => ("openpilot-updated", "openpilot-updated"),
         _ => return RustAvailability::NotPorted,
     };

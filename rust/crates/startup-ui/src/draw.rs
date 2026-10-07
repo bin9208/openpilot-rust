@@ -25,6 +25,14 @@ pub struct ImageDraw {
     pub rotation: f32,
     pub tint: u32,
 }
+pub trait TextureResource {
+    fn id(&self) -> u32;
+    fn dimensions(&self) -> (i32, i32);
+}
+pub struct PixelBuffer<'a> {
+    pub dimensions: (i32, i32),
+    pub rgba: &'a [u8],
+}
 pub enum PolygonPaint<'a> {
     Color(u32),
     Gradient {
@@ -34,7 +42,91 @@ pub enum PolygonPaint<'a> {
         stops: &'a [f32],
     },
 }
+#[derive(Clone, Copy, Debug)]
+pub struct RoundedOutline {
+    pub roundness: f32,
+    pub segments: i32,
+    pub thickness: f32,
+    pub color: u32,
+}
+pub struct Ring {
+    pub center: Point,
+    pub inner: f32,
+    pub outer: f32,
+    pub start: f32,
+    pub end: f32,
+    pub segments: i32,
+    pub color: u32,
+}
 pub trait Draw: Measure {
+    fn circle_lines(
+        &mut self,
+        _center: (i32, i32),
+        _radius: f32,
+        _color: u32,
+    ) -> Result<(), Error> {
+        Err(Error::Contract("circle outline drawing unavailable"))
+    }
+    fn integer_line(
+        &mut self,
+        _start: (i32, i32),
+        _end: (i32, i32),
+        _color: u32,
+    ) -> Result<(), Error> {
+        Err(Error::Contract("integer line drawing unavailable"))
+    }
+    fn default_text(
+        &mut self,
+        _text: &str,
+        _position: (i32, i32),
+        _size: i32,
+        _color: u32,
+    ) -> Result<(), Error> {
+        Err(Error::Contract("default-font drawing unavailable"))
+    }
+    fn spline(&mut self, _points: &[Point], _thick: f32, _color: u32) -> Result<(), Error> {
+        Err(Error::Contract("spline drawing unavailable"))
+    }
+    fn camera_plane(
+        &mut self,
+        _dimensions: (i32, i32),
+        _format: crate::camera::PlaneFormat,
+    ) -> Result<Box<dyn TextureResource>, Error> {
+        Err(Error::Contract("camera plane allocation unavailable"))
+    }
+    fn update_camera_plane(&mut self, _texture: u32, _bytes: &[u8]) -> Result<(), Error> {
+        Err(Error::Contract("camera plane upload unavailable"))
+    }
+    fn native_texture(&self, _texture: u32) -> Result<u32, Error> {
+        Err(Error::Contract("native texture unavailable"))
+    }
+    fn camera(&mut self, _camera: crate::camera::CameraDraw) -> Result<(), Error> {
+        Err(Error::Contract("camera drawing unavailable"))
+    }
+    fn ring(&mut self, _ring: Ring) -> Result<(), Error> {
+        Err(Error::Contract("ring drawing unavailable"))
+    }
+    fn upload_image(
+        &mut self,
+        _pixels: PixelBuffer<'_>,
+    ) -> Result<Box<dyn TextureResource>, Error> {
+        Err(Error::Contract("filtered image upload unavailable"))
+    }
+
+    fn rounded_outline(&mut self, _rect: Rect, _style: RoundedOutline) -> Result<(), Error> {
+        Err(Error::Contract("rounded outline drawing unavailable"))
+    }
+
+    fn clear(&mut self, _color: u32) -> Result<(), Error> {
+        Err(Error::Contract("background clear unavailable"))
+    }
+    fn upload_pixels(
+        &mut self,
+        _pixels: PixelBuffer<'_>,
+    ) -> Result<Box<dyn TextureResource>, Error> {
+        Err(Error::Contract("dynamic texture upload unavailable"))
+    }
+
     fn rectangle_lines(&mut self, rect: Rect, color: u32) -> Result<(), Error> {
         self.border(rect, 0.0, color)
     }

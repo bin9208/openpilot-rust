@@ -42,6 +42,18 @@ Image::Image(const char *path) : value(LoadImage(path)) {
 Image::~Image() { UnloadImage(value); }
 int32_t Image::width() const { return value.width; }
 int32_t Image::height() const { return value.height; }
+rust::Vec<uint8_t> Image::rgba() {
+  ImageFormat(&value, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+  if (!value.data || value.width <= 0 || value.height <= 0 || value.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8)
+    throw std::runtime_error("image RGBA conversion failed");
+  const uint64_t size = uint64_t(value.width) * uint64_t(value.height) * 4;
+  if (size > SIZE_MAX) throw std::runtime_error("image RGBA size overflow");
+  rust::Vec<uint8_t> result;
+  result.reserve(size_t(size));
+  const auto *data = static_cast<const uint8_t *>(value.data);
+  for (size_t index = 0; index < size_t(size); ++index) result.push_back(data[index]);
+  return result;
+}
 void Image::premultiply() { ImageAlphaPremultiply(&value); }
 void Image::flip_horizontal() { ImageFlipHorizontal(&value); }
 void Image::resize(int32_t width, int32_t height) {
@@ -64,7 +76,7 @@ Surface::Surface(int32_t width, int32_t height, rust::Str title,
 Surface::~Surface() {
   std::lock_guard<std::mutex> lock(window_mutex);
   for (auto &texture : textures)
-    UnloadTexture(texture);
+    if (texture.id) UnloadTexture(texture);
   for (auto &font : fonts)
     UnloadFont(font);
   for (auto &shader : shaders)
@@ -89,6 +101,13 @@ uint32_t Surface::texture(Image &image, int32_t logical_width,
   textures.push_back(value);
   return textures.size() - 1;
 }
+void Surface::clear(uint32_t tint) noexcept { ClearBackground(color(tint)); }
+void Surface::texture_release(uint32_t index) noexcept {
+  if (index < textures.size() && textures[index].id) {
+    UnloadTexture(textures[index]);
+    textures[index] = {};
+  }
+}
 uint32_t Surface::pixel_texture(int32_t width, int32_t height, rust::Slice<const uint8_t> rgba) {
   if (width <= 0 || height <= 0 || uint64_t(width)*uint64_t(height)*4 != rgba.size())
     throw std::runtime_error("invalid RGBA texture dimensions");
@@ -97,6 +116,14 @@ uint32_t Surface::pixel_texture(int32_t width, int32_t height, rust::Slice<const
   if (!value.id) throw std::runtime_error("RGBA texture upload failed");
   textures.push_back(value);
   return textures.size()-1;
+}
+void Surface::smooth_texture(uint32_t texture) {
+  const auto value = textures.at(texture);
+  SetTextureFilter(value, TEXTURE_FILTER_BILINEAR);
+  SetTextureWrap(value, TEXTURE_WRAP_CLAMP);
+}
+void Surface::ring(Ring ring) {
+  DrawRing({ring.center.x, ring.center.y}, ring.inner, ring.outer, ring.start, ring.end, ring.segments, color(ring.color));
 }
 uint32_t Surface::font(rust::Str path, int32_t size,
                        rust::Slice<const int32_t> points, bool atlas,
@@ -133,14 +160,27 @@ void Surface::tinted_texture(uint32_t texture, Rect source, Rect destination, Po
   DrawTexturePro(textures.at(texture), rectangle(source), rectangle(destination), {origin.x,origin.y}, rotation, color(tint));
 }
 void Surface::circle(Point center, float radius, uint32_t tint) { DrawCircleV({center.x,center.y},radius,color(tint)); }
+void Surface::circle_lines(int32_t x, int32_t y, float radius, uint32_t tint) { DrawCircleLines(x,y,radius,color(tint)); }
 void Surface::circle_gradient(Point center, float radius, uint32_t inner, uint32_t outer) { DrawCircleGradient({center.x,center.y},radius,color(inner),color(outer)); }
 void Surface::gradient(Rect rect, uint32_t top_left, uint32_t bottom_left, uint32_t top_right, uint32_t bottom_right) {
   DrawRectangleGradientEx(rectangle(rect), color(top_left), color(bottom_left), color(top_right), color(bottom_right));
 }
 void Surface::line(Point start, Point end, float thick, uint32_t tint) { DrawLineEx({start.x,start.y},{end.x,end.y},thick,color(tint)); }
+void Surface::integer_line(int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint32_t tint) { DrawLine(x1,y1,x2,y2,color(tint)); }
+void Surface::default_text(rust::Str text, int32_t x, int32_t y, int32_t size, uint32_t tint) {
+  const std::string owned(text);
+  DrawText(owned.c_str(),x,y,size,color(tint));
+}
 void Surface::rounded_segments(Rect rect, float roundness, int32_t segments, uint32_t tint, bool border) {
   if (border) DrawRectangleRoundedLinesEx(rectangle(rect), roundness, segments, 2, color(tint));
   else DrawRectangleRounded(rectangle(rect), roundness, segments, color(tint));
+}
+int32_t Surface::measure_default(rust::Str text, int32_t size) const {
+  const std::string owned(text);
+  return MeasureText(owned.c_str(), size);
+}
+void Surface::rounded_outline(Rect rect, float roundness, int32_t segments, float thickness, uint32_t tint) {
+  DrawRectangleRoundedLinesEx(rectangle(rect), roundness, segments, thickness, color(tint));
 }
 void Surface::rounded(Rect rect, float roundness, uint32_t tint, bool border) {
   if (border)
