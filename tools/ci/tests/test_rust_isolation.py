@@ -206,9 +206,9 @@ class RustIsolationTests(unittest.TestCase):
                 data = yaml.load((ROOT / '.github/workflows' / file).read_text(), Loader=yaml.BaseLoader)
                 self.assertIn("github.repository == 'bin9208/openpilot'", data['jobs'][job].get('if', ''))
 
-    def test_rust_checks_cover_push_and_protected_prs(self):
+    def test_rust_checks_cover_protected_pushes_and_prs(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
-        self.assertEqual(data['on']['push']['branches'], ['**'])
+        self.assertEqual(set(data['on']['push']['branches']), {'dev', 'main'})
         self.assertEqual(set(data['on']['pull_request']['branches']), {'dev', 'main'})
         for event in ['push', 'pull_request']:
             self.assertNotIn('paths', data['on'][event])
@@ -219,6 +219,8 @@ class RustIsolationTests(unittest.TestCase):
             'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'joystickd-runtime',
+            'planner-runtime', 'planner-memory',
+            'card-runtime', 'carrot-man-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -237,7 +239,11 @@ class RustIsolationTests(unittest.TestCase):
                                             'ATHENA': '${{ needs.athena-runtime.result }}',
                                             'CONTROLS': '${{ needs.controls-runtime.result }}',
                                             'UPLOAD_TIMEOUTS': '${{ needs.web-upload-timeouts.result }}',
-                                            'JOYSTICKD': '${{ needs.joystickd-runtime.result }}'})
+                                            'JOYSTICKD': '${{ needs.joystickd-runtime.result }}',
+                                            'PLANNER': '${{ needs.planner-runtime.result }}',
+                                            'PLANNER_MEMORY': '${{ needs.planner-memory.result }}',
+                                            'CARD': '${{ needs.card-runtime.result }}',
+                                            'CARROT_MAN': '${{ needs.carrot-man-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)

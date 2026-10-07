@@ -52,8 +52,11 @@
       "name": "card",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.car.card",
-      "status": "not_ported",
-      "production_replaced": false
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "production_replaced": false,
+      "implementation": "rust/crates/{can,card}; native CAN codecs/parser, VIN/firmware/fingerprint startup, continuous card core, CruiseCarrot and fourteen registered vehicle interfaces (Body, Mock, Hyundai, Tesla, Mazda, Nissan, Chrysler, Rivian, Ford, Subaru, Toyota, GM, Honda, Volkswagen); PSA has typed source-failure boundaries only; 23 VW MQB identities preserve the inherited first-update failure (#189)",
+      "evidence": "docs/naver/rust-card-177.md",
+      "runtime_scope": "Owned original msgq/Cereal/Params full-Car comparison: latest six-brand batch passes 17 scenarios/1360 measured steps per architecture, normal host nominal100Hz and separately paced ARM/QEMU under unchanged SIMULATION=1 policy; earlier14 scenarios/1120 steps per architecture are retained on their separately hashed builds. Registered278/279 identities,273 parameterizable; five source missing-torque failures, GM pedal missing-message failures and23 VW MQB first-update failures remain explicit, and PSA is separately blocked. Source-equivalent SecOC warning/order correction passes354 cases; offline linkage against exact published AGNOS19.8 libraries passes. Fresh-runner CI, full-runtime startup/upload, production selection and device/performance acceptance remain pending; project-owned C++ msgq transport is still an explicit temporary dependency"
     },
     {
       "name": "carrot_bluetooth",
@@ -383,7 +386,11 @@
       "name": "plannerd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.plannerd",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "implementation": "rust/crates/plannerd; serial planning owner, Carrot policies, longitudinal/lateral MPC and fast/stopping radar policies",
+      "native_dependencies": ["Linux clocks and signals", "native cereal/msgq", "libzmq logging", "Params", "pinned acados/HPIPM/BLASFEO/qpOASES and generated solver libraries"],
+      "runtime_scope": "original host and ARM source comparisons, private IPC and native solver loader evidence preserved; production selection and whole startup/upload acceptance pending",
+      "evidence": "docs/naver/rust-plannerd-197.md",
       "production_replaced": false
     },
     {
