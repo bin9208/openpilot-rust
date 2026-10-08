@@ -12,6 +12,7 @@ from pathlib import Path
 from carrot_server_heartbeat_driver import ROOT
 from carrot_server_heartbeat_protocol import run as protocol
 from carrot_server_heartbeat_lifecycle import run as lifecycle
+from carrot_server_heartbeat_application import run as application
 
 
 def main() -> None:
@@ -19,10 +20,12 @@ def main() -> None:
   parser.add_argument('--binary', type=Path)
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--case', action='append', default=[])
-  parser.add_argument('--group', choices=('protocol', 'lifecycle'), default='protocol')
+  parser.add_argument('--group', choices=('protocol', 'lifecycle', 'application'), default='protocol')
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=False)
-  runner = protocol if args.group == 'protocol' else lifecycle
+  runner = {'protocol': protocol, 'lifecycle': lifecycle, 'application': application}[args.group]
+  if args.group == 'application' and args.binary is None:
+    parser.error('Application group requires the native fixture binary')
   results = runner(args.binary, args.output, tuple(args.case))
   identity = dict(binary=dict(path=str(args.binary), sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest()) if args.binary else None, source={str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in (ROOT / 'openpilot/selfdrive/carrot/server/services/heartbeat.py', ROOT / 'openpilot/selfdrive/carrot/server/features/system.py', ROOT / 'openpilot/selfdrive/carrot/server/app.py')})
   (args.output / 'identity.json').write_text(json.dumps(identity, indent=2)+'\n')

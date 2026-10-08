@@ -24,6 +24,12 @@ async fn serve_local(
     app.config.validate()?;
     app.static_web.validate()?;
     app.config.migrate_legacy_state();
+    let (heartbeat_stop, heartbeat_stopped) = watch::channel(false);
+    let heartbeat = app.heartbeat_params.clone().map(|params| {
+        let service = Arc::clone(&app.heartbeat);
+        let backend = crate::params::Backend::native(params, app.config.state.clone());
+        tokio::spawn(async move { service.run_loop(backend, heartbeat_stopped).await })
+    });
     let (git_stop, git_stopped) = watch::channel(false);
     let git_status = app
         .git_status
@@ -109,6 +115,16 @@ async fn serve_local(
         while sounds.join_next().await.is_some() {}
     }
     warm.abort();
+    heartbeat_stop.send_replace(true);
+    if let Some(task) = heartbeat {
+        match task.await {
+            Ok(Ok(
+                crate::heartbeat::LoopExit::Returned | crate::heartbeat::LoopExit::Cancelled,
+            )) => {}
+            Ok(Err(error)) => eprintln!("heartbeat cleanup: {error}"),
+            Err(error) => eprintln!("heartbeat task: {error}"),
+        }
+    }
     git_stop.send_replace(true);
     if let Some(task) = git_status {
         match task.await {

@@ -29,6 +29,9 @@ pub(crate) async fn dispatch(
             None => crate::tools_git_status::unavailable(head),
         });
     }
+    if path == "/api/heartbeat_status" {
+        return Ok(crate::heartbeat::handle(&request, &app.heartbeat));
+    }
     if crate::egpu_model::matches(&path) {
         let files = Arc::clone(&app.egpu_model);
         return Ok(crate::egpu_model::handle(&request, app, files, &path).await);

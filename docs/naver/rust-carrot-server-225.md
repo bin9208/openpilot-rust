@@ -611,6 +611,28 @@ are in its `chunk-framer-seam/` sibling directory. All network recipients and
 IP probes were owned/local fixtures. Application startup/status wiring and
 complete runtime startup/upload remain pending at this checkpoint.
 
+## Heartbeat Application lifecycle (2026-10-09 KST)
+
+The production listener now owns heartbeat startup and cancellation when native
+Params are available. The status endpoint always exposes the initial snapshot;
+fixture constructors remain inactive unless supplied an owned startup provider.
+Eight saved Application observations pass: four source/native comparisons for
+unavailable Params, success, HTTP error and active-request cleanup, plus four
+native controls for constructor gating and startup/accept-failure cleanup.
+The source startup/cleanup heartbeat statements execute unchanged; unrelated
+startup families are explicitly omitted from these focused comparisons.
+
+The retained Application example SHA256 is
+`adb848805d5165cdabf75407d8e86e77d716aaff262cfe2d024e89f8ea6f80ae`.
+Cleanup completes the serve task while its active blocking heartbeat request
+survives until the owned recipient is released. Process exit was sampled after
+that release, separately from task cancellation. Exact commands, source/ELF
+bindings and limits are in `.omo/evidence/225-heartbeat/application-freeze.json`.
+The saved selected build, strict Clippy, formatting and diff checks pass and
+were verified after the reboot without rerunning the completed cases.
+The standalone 32-scenario comparison remains reused. Whole-server startup
+and the full runtime/upload gate remain unfinished.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
@@ -621,7 +643,7 @@ The request decoder has the tested expanded charset/compression coverage above;
 broader original codec aliases and provider error diagnostics remain explicit
 limits. Multipart extended names use the existing encoding_rs provider for
 supported labels.
-The other feature families, startup heartbeat/update tasks, live
+The remaining feature families, automatic-update tasks, live
 broker and camera/WebSocket transport remain outside the completed foundation.
 `/stream` also depends on the separately inventoried WebRTC conversion.
 The executable now resolves runtime assets using existing OPENPILOT_ROOT/BASEDIR

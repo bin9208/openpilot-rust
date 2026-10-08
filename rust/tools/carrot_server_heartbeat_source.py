@@ -100,6 +100,23 @@ def status_handler():
   return namespace['api_heartbeat_status']
 
 
+def app_heartbeat_hooks(module, available):
+  path = ROOT / 'openpilot/selfdrive/carrot/server/app.py'
+  tree = ast.parse(path.read_text(), filename=str(path))
+  functions = {node.name: node for node in tree.body if isinstance(node, ast.AsyncFunctionDef)}
+  startup = functions['on_startup']
+  startup.body = [node for node in startup.body if
+    (isinstance(node, ast.Assign) and any(isinstance(target, ast.Subscript) and isinstance(target.slice, ast.Constant) and target.slice.value == 'hb_last' for target in node.targets)) or
+    (isinstance(node, ast.If) and isinstance(node.test, ast.Name) and node.test.id == 'HAS_PARAMS')]
+  cleanup = functions['on_cleanup']
+  index = next(index for index, node in enumerate(cleanup.body) if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call) and node.value.args and isinstance(node.value.args[0], ast.Constant) and node.value.args[0].value == 'hb_task')
+  cleanup.body = cleanup.body[index:index+2]
+  tree.body = [startup, cleanup]
+  namespace = dict(web=web, asyncio=asyncio, HAS_PARAMS=available, heartbeat_loop=module.heartbeat_loop)
+  exec(compile(tree, str(path), 'exec'), namespace)
+  return namespace['on_startup'], namespace['on_cleanup']
+
+
 async def main():
   config = json.loads(sys.stdin.readline())
   assert ipaddress.ip_address(urlsplit(config['endpoint']).hostname).is_loopback
@@ -107,11 +124,16 @@ async def main():
   app = web.Application()
   app['hb_last'] = initial()
   app.router.add_get('/api/heartbeat_status', status_handler())
+  if config.get('composed'):
+    startup, cleanup = app_heartbeat_hooks(module, config['has_params'])
+    app.on_startup.append(startup)
+    app.on_cleanup.append(cleanup)
   runner = web.AppRunner(app)
   await runner.setup()
   site = web.TCPSite(runner, '127.0.0.1', 0)
   await site.start()
-  task = None
+  task = app.get('hb_task')
+  cleaned = False
   print(json.dumps(dict(port=site._server.sockets[0].getsockname()[1])), flush=True)
   while line := await asyncio.to_thread(sys.stdin.readline):
     command = json.loads(line)
@@ -131,6 +153,10 @@ async def main():
         task = None
       case 'status': result = app.get('hb_last')
       case 'observations': result = observations
+      case 'server_cleanup':
+        await runner.cleanup()
+        cleaned = True
+        result = dict(serve_error=None, active=app.get('hb_task') is not None)
       case 'ip': result = owned_ip(module, command)
       case 'verified_tls':
         try:
@@ -146,7 +172,8 @@ async def main():
       await task
     except asyncio.CancelledError:
       pass
-  await runner.cleanup()
+  if not cleaned:
+    await runner.cleanup()
 
 
 if __name__ == '__main__':

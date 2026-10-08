@@ -21,6 +21,12 @@ struct Fixture {
     tls: bool,
     ips: Vec<String>,
     times: Vec<f64>,
+    #[serde(default)]
+    composed: bool,
+    #[serde(default)]
+    constructor: application::Constructor,
+    #[serde(default)]
+    invalid_web: bool,
 }
 
 struct LoopTask {
@@ -52,6 +58,10 @@ fn backend(params: &Option<openpilot_params::Params>, state: &std::path::Path) -
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    tokio::task::LocalSet::new().run_until(run()).await
+}
+
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut line = String::new();
     std::io::stdin().read_line(&mut line)?;
     let fixture: Fixture = serde_json::from_str(&line)?;
@@ -71,23 +81,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let port = listener.local_addr()?.port();
     let status = service.clone();
-    let server = tokio::spawn(async move {
-        loop {
-            let Ok((socket, _)) = listener.accept().await else {
-                return;
-            };
-            let status = status.clone();
-            tokio::spawn(async move {
-                let handler = hyper::service::service_fn(move |request| {
-                    let response = openpilot_carrot_server::heartbeat::handle(&request, &status);
-                    async { Ok::<_, std::convert::Infallible>(response) }
+    let mut app = None;
+    let server = if fixture.composed {
+        app = Some(application::Running::start(
+            application::Input {
+                root: fixture
+                    .params_root
+                    .parent()
+                    .ok_or("owned fixture root absent")?
+                    .into(),
+                params: params.clone(),
+                service: service.clone(),
+                constructor: fixture.constructor,
+                invalid_web: fixture.invalid_web,
+            },
+            listener,
+        )?);
+        None
+    } else {
+        Some(tokio::spawn(async move {
+            loop {
+                let Ok((socket, _)) = listener.accept().await else {
+                    return;
+                };
+                let status = status.clone();
+                tokio::spawn(async move {
+                    let handler = hyper::service::service_fn(move |request| {
+                        let response =
+                            openpilot_carrot_server::heartbeat::handle(&request, &status);
+                        async { Ok::<_, std::convert::Infallible>(response) }
+                    });
+                    let _ = hyper::server::conn::http1::Builder::new()
+                        .serve_connection(hyper_util::rt::TokioIo::new(socket), handler)
+                        .await;
                 });
-                let _ = hyper::server::conn::http1::Builder::new()
-                    .serve_connection(hyper_util::rt::TokioIo::new(socket), handler)
-                    .await;
-            });
-        }
-    });
+            }
+        }))
+    };
     let (sender, mut commands) = tokio::sync::mpsc::channel(8);
     let reader = tokio::task::spawn_blocking(move || {
         for line in std::io::stdin().lock().lines() {
@@ -131,6 +161,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             "status" => serde_json::from_str(&service.snapshot()?.encode()?)?,
+            "server_cleanup" => {
+                let app = app.as_mut().ok_or("owned composed App absent")?;
+                json!({"serve_error": app.cleanup().await?, "active": app.active})
+            }
+            "limit_accept" => {
+                app.as_mut()
+                    .ok_or("owned composed App absent")?
+                    .limit_accept()?;
+                json!({"limited": true})
+            }
             "ip" => {
                 let peer: SocketAddr = command["route_peer"]
                     .as_str()
@@ -163,7 +203,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let _ = running.stop.send(true);
         let _ = running.task.await;
     }
-    server.abort();
+    if let Some(mut app) = app {
+        if !app.cleaned() {
+            app.cleanup().await?;
+        }
+    }
+    if let Some(server) = server {
+        server.abort();
+    }
     reader.await?;
     Ok(())
 }
+#[path = "heartbeat/application.rs"]
+mod application;

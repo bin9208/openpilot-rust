@@ -42,11 +42,13 @@ pub struct Application {
     pub dashcam_metadata: Arc<crate::dashcam::MetadataFiles>,
     pub git_status: Option<Arc<crate::git_status::Service>>,
     pub git_state: crate::git_state::Store,
+    pub heartbeat: Arc<crate::heartbeat::Service>,
+    pub heartbeat_params: Option<openpilot_params::Params>,
 }
 
 impl Application {
     pub fn new(config: Config, params: Backend) -> Arc<Self> {
-        Self::initialize(config, params, None)
+        Arc::new(Self::initialize(config, params, None))
     }
 
     pub fn with_git_status(
@@ -54,17 +56,28 @@ impl Application {
         params: Backend,
         service: Arc<crate::git_status::Service>,
     ) -> Arc<Self> {
-        Self::initialize(config, params, Some(service))
+        Arc::new(Self::initialize(config, params, Some(service)))
+    }
+
+    pub fn for_runtime(
+        config: Config,
+        params: Backend,
+        git_status: Arc<crate::git_status::Service>,
+    ) -> Arc<Self> {
+        let heartbeat_params = params.native_params().cloned();
+        let mut application = Self::initialize(config, params, Some(git_status));
+        application.heartbeat_params = heartbeat_params;
+        Arc::new(application)
     }
 
     fn initialize(
         config: Config,
         params: Backend,
         git_status: Option<Arc<crate::git_status::Service>>,
-    ) -> Arc<Self> {
+    ) -> Self {
         let dashcam = crate::dashcam::Service::original(&config);
         let dashcam_metadata = crate::dashcam::MetadataFiles::original(Arc::clone(&dashcam));
-        Arc::new(Self {
+        Self {
             static_web: StaticWeb::new(config.clone()),
             intro: crate::intro::Intro::new(config.clone()),
             cars: crate::cars::Cars::original(),
@@ -80,6 +93,8 @@ impl Application {
             dashcam_metadata,
             git_status,
             git_state: crate::git_state::Store::new(config.state.clone()),
+            heartbeat: crate::heartbeat::Service::new(),
+            heartbeat_params: None,
             history: History::new(Paths {
                 log: config.state.join("param_changes.jsonl"),
                 baseline: config.state.join("fingerprint_baseline.json"),
@@ -88,7 +103,7 @@ impl Application {
             settings: Mutex::new(SettingsCache::new(config.settings.clone())),
             config,
             params: Mutex::new(params),
-        })
+        }
     }
 
     pub(crate) fn settings_payload(&self) -> Result<Value, Error> {
