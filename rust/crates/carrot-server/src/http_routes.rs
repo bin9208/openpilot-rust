@@ -68,6 +68,13 @@ pub(crate) async fn dispatch(
             crate::dashcam::health_handle(request, Arc::clone(&app.dashcam_upload_health)).await,
         );
     }
+    if crate::dashcam::sync_upload_matches(request.uri().path()) {
+        return Ok(crate::dashcam::sync_upload_handle(
+            request,
+            Arc::clone(&app.dashcam_sync_uploads),
+        )
+        .await);
+    }
     if crate::dashcam::upload_matches(request.uri().path()) {
         return Ok(crate::dashcam::upload_handle(request, Arc::clone(&app.dashcam_uploads)).await);
     }

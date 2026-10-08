@@ -87,6 +87,8 @@ async fn serve_local(
         }
     };
     drop(listener);
+    let mut sync_changes = app.dashcam_sync_uploads.subscribe();
+    app.dashcam_sync_uploads.quiesce();
     let _ = stop.send(true);
     let _ = sound_stop.send(crate::web_sound::Shutdown::Quiescing);
     if tokio::time::timeout(Duration::from_secs(60), async {
@@ -94,12 +96,13 @@ async fn serve_local(
             while let Ok(launch) = launches.try_recv() {
                 sounds.spawn_local(crate::web_sound_http::run(launch));
             }
-            if connections.is_empty() && sounds.is_empty() {
+            if connections.is_empty() && sounds.is_empty() && app.dashcam_sync_uploads.is_idle() {
                 break;
             }
             tokio::select! {
                 _ = connections.join_next(), if !connections.is_empty() => {}
                 _ = sounds.join_next(), if !sounds.is_empty() => {}
+                _ = sync_changes.changed() => {}
                 Some(launch) = launches.recv() => {
                     sounds.spawn_local(crate::web_sound_http::run(launch));
                 }
@@ -109,11 +112,13 @@ async fn serve_local(
     .await
     .is_err()
     {
+        app.dashcam_sync_uploads.force();
         let _ = sound_stop.send(crate::web_sound::Shutdown::Force);
         connections.abort_all();
         while connections.join_next().await.is_some() {}
         while sounds.join_next().await.is_some() {}
     }
+    app.dashcam_sync_uploads.shutdown().await?;
     warm.abort();
     heartbeat_stop.send_replace(true);
     if let Some(task) = heartbeat {

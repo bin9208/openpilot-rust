@@ -19,6 +19,8 @@ mod upload_health_http;
 mod upload_http;
 mod upload_http_parse;
 mod upload_http_service;
+mod upload_sync;
+mod upload_sync_http;
 
 pub use cache::Service;
 pub use file_routes::{handle as metadata_handle, matches as metadata_matches, MetadataFiles};
@@ -29,6 +31,8 @@ pub use upload_health::UploadHealth;
 pub use upload_health_http::{handle as health_handle, matches as health_matches};
 pub use upload_http::{handle as upload_handle, matches as upload_matches};
 pub use upload_http_service::Uploads;
+pub use upload_sync::{SyncState, SyncUploads};
+pub use upload_sync_http::{handle as sync_upload_handle, matches as sync_upload_matches};
 
 use crate::Error;
 

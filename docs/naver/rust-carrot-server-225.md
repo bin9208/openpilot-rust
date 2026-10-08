@@ -827,6 +827,61 @@ example SHA256 is
 All mutations target owned fixtures. Update-attempt coordination, manager
 monitoring, reboot and complete Application startup remain pending.
 
+## Synchronous Dashcam upload checkpoint (2026-10-09 KST)
+
+The independent `POST /api/dashcam/upload` adapter uses the existing upload
+worker protocol for each call. It preserves simultaneous synchronous requests
+and coexistence with the asynchronous job API; these calls do not create or
+replace entries in `DashcamUploadJobs`. A persistent owner thread keeps each
+admitted worker alive after an HTTP client disconnects. Admission precedes body
+parsing and remains owned while a call waits for the bounded command channel.
+
+Twelve paired HTTP responses match the original: seven method/input/result
+boundaries, two simultaneous uploads, and three start/sync/cancel responses
+while an asynchronous upload is held. A separate paired status observation
+checks that the held asynchronous job remains present. Three native lifetime
+controls match the retained original captures: client disconnect, server stop
+with a connected client, and disconnect followed by stop all retain the held
+upload until release. Each completed upload delivers the selected 4096-byte
+and 1024-byte files and notifications, then closes the recipient connections.
+A separate native force control checks
+the actual worker and its owned Git descendant, including process identity,
+exit notification and worker reaping before recipient requests begin.
+
+The standalone source identities and results are retained under
+`.omo/evidence/carrot-server-225-resume/dashcam-sync/`, particularly
+`standalone-source-freeze.json` and the `standalone-{boundary,concurrency,
+lifetimes,startup-force}-v1` directories. These results reuse the existing
+engine, transport and asynchronous-job evidence. The worker environment
+correction is recorded separately in
+[`rust-dashcam-worker-environment-249.md`](rust-dashcam-worker-environment-249.md).
+
+The adapter is now connected to Application routing and the existing single
+60-second shutdown grace period. Six composed HTTP responses check successful
+upload and missing-helper isolation: unrelated Params requests remain 200
+around either a 200 upload or an explicit 500 packaging error. The existing
+`openpilot-dashcam-upload` helper must be packaged beside the server. Three
+composed disconnect/stop lifetimes match the saved original captures with no
+differences. Immediate Drop also terminates the owned worker and Git child.
+
+A focused Tokio control reproduced a shutdown wait cycle when a seventeenth
+sender already owned a pending reservation on a full 16-entry channel. Closing
+and awaiting the receiver's end could wait for that sender while the sender's
+executor was blocked joining the owner. Forced shutdown now drains only
+available commands and drops the receiver before joining workers. The old API
+sequence remained blocked until killed; the corrected sequence joined in
+1.90 ms. This is a causal channel-operation control, not a production
+saturation run.
+
+One actual grace-expiry run kept a disconnected client's held upload alive
+through 59.8587 seconds, then exited successfully at 60.1094 seconds with the
+worker reaped and recipient connection closed. There is no second grace window.
+The selected App build, strict all-target Clippy, 19 library tests, package
+formatting and diff checks passed. Final identities and reproduction paths are
+in `dashcam-sync/checkpoint/receipt.json` beneath the evidence directory above.
+Whole-server completion, branch CI, normal startup and device acceptance remain
+separate gates.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
