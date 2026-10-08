@@ -112,3 +112,12 @@ Linux facilities, ZeroMQ diagnostics, routing servers and TLS roots remain
 external dependencies. Complete manager startup, existing log upload and the
 user's first device comparison remain outstanding under issue 1. No CPU savings
 or complete Rust-runtime claim follows from this component's host tests.
+
+On 2026-10-08 the candidate was composed with dev `0e69a1c1`, retaining both
+CarrotMan and RadarCAN required checks. Navd implementation and its registration
+decoder exports already arrived as CarrotMan dependencies; this remaining
+change connects the candidate manager catalog, navigation CI and inventory.
+The preserved five-scenario IPC receipt remains applicable to unchanged Navd
+sources. Local workflow isolation (16 tests), Card/RadarCAN CI policy (10 tests),
+and locked offline workspace metadata pass. The navigation source job and ARM
+build will run at the new PR revision; production process selection is unchanged.

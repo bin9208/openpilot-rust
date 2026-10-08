@@ -1,0 +1,25 @@
+This package ports project-owned code from bin9208/openpilot-rust at the
+issue-219 development base dev1d811b2f, retaining the repository MIT license.
+
+Source units: openpilot/selfdrive/carrot/carrot_man.py, carrot_serv.py,
+curve_speed.py, carrot_navi_control.py, navigation_ingress.py,
+navigation_sources.py, navigation_runtime.py, naver_navigation_protocol.py,
+server/services/web_settings.py (required upload settings only), and
+openpilot/selfdrive/apilot.py (the reachable small Params backup).
+
+The independently registered Carrot Navi receiver is a separate owner and
+protocol. This package does not replace it. The existing Rust navd Coordinate,
+route limiter, Params, cereal/msgq, Python JSON/numeric support and upload
+transport are reused at their existing boundaries.
+
+Retained native external dependencies: GEOS C ABI and implementation when
+configured (optional original Shapely behavior; pinned artifacts and licenses
+in native-dependencies.json, LICENSE_GEOS and SHAPELY-LICENSE), ZeroMQ and msgq
+transport dependencies declared by their crates, shell/tmux for diagnostics,
+and sudo/date/system zoneinfo for the original non-PC time-setting boundary.
+No project-owned Python runtime is executed by this package.
+
+The original encoded notification URL is retained without adding decoded
+credentials. Runtime resolution and disable/override precedence follow the
+source. Validation must use owned loopback endpoints and fixture command
+boundaries; normal startup/upload and device acceptance remain separate gates.

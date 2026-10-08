@@ -44,3 +44,47 @@ pass. A local candidate rebuild is deferred under the recorded disk-space guard.
 Its candidate build, host/ARM Actions and complete
 normal startup/log-upload acceptance remain pending. No device timing, CPU
 reduction or driving acceptance is claimed.
+
+On 2026-10-08 this prepared candidate was composed with navigation integration
+`eae4ac73` and its dev base `0e69a1c1`. Existing Navd, CarrotMan and RadarCAN
+gates remain required. The independent 240-frame receipt above used the earlier
+CXX-backed msgq boundary; the new host and native ARM jobs explicitly rerun the
+actual IPC and lifecycle cases with current Rust msgq. Historical component
+evidence is not relabeled as that new execution.
+
+Local connection checks pass 16 workflow-isolation tests, 10 Card/RadarCAN
+CI-policy tests, locked offline workspace metadata and diff whitespace checks.
+The shared planner change only exposes a serialized state snapshot for the
+source comparator. No radar detection policy or NAS replay source is changed.
+This local integration preparation does not replace the pending exact-revision
+host/ARM jobs or authorize device testing.
+
+After Navd PR 227 passed every required gate, this candidate was merged with
+dev `740ade11f2790efbb3c6aabdbb6e499acf3e8818`. The same 16 isolation tests,
+10 CI-policy tests and locked offline metadata pass on the composed tree.
+The included Card investigation record keeps issue 228's host stall unresolved;
+its scoped unchanged retry passed, without changing the runtime or comparator.
+Radard's new exact-head host/ARM jobs still must run before integration.
+
+The first candidate's host Radard job passed, while native ARM run
+`37722992726`, job `113134706879`, differed only at availability frame 16's
+validity. The fixture scheduled this frame exactly 500 ms after the last
+liveTracks input, at the original strict alive deadline. Three focused local
+pairs using the retained host CI binary reproduced this difference; its direction
+reversed in the third pair. Actual sender ages straddled 500 ms, and a source
+SubMaster observation confirmed an actual receive age of 499.975436 ms with
+valid output. Native receive age was not instrumented; sender and publication
+times are retained as proxies rather than relabeled as receive timestamps.
+
+The availability fixture now adds a 25 ms phase after input loss, keeping
+subsequent 50 ms cadence and all packet data unchanged. Three complete 40-frame
+comparisons pass with samples around 475 and 525 ms. A separate deterministic
+state comparison checks receipt, deadline minus 1 microsecond, exactly the
+deadline, deadline plus 1 microsecond and recovery; both original and native
+alive values are `[true, true, false, false, true]`. Runtime policy, output
+comparison and tolerances are unchanged. The existing state-probe binary was
+reused locally after checking relevant source/schema/dependency identity;
+both hosted architectures build it for their new required boundary comparison.
+Receipts are in `.omo/evidence/229-radard-deadline/` in the integration checkout.
+The corrected hosted jobs remain pending. A separate Card validity mismatch in
+the common gate is under investigation and also prevents merging this candidate.

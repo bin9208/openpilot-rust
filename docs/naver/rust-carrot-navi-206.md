@@ -41,3 +41,56 @@ counts are normalized; raw captures remain available. No general numeric
 tolerance is added. A local integration rebuild is deferred under the disk
 guard. Exact-head hosted results, whole normal startup/log upload and device
 acceptance remain outstanding. This is not a CPU or vehicle-validation claim.
+
+## Integration preparation, 2026-10-08
+
+This candidate is composed with the pending radard integration at `2cd8a1bd`,
+which includes merged Navd dev `740ade11`. CarrotMan, RadarCAN, Navd and radard
+requirements remain enabled alongside both Carrot Navi jobs. The union merge
+preserves both CarrotMan and Carrot Navi packages in the workspace lock file.
+Local connection checks pass 16 workflow-isolation tests, 10 Card/RadarCAN
+CI-policy tests, locked offline metadata and diff whitespace checks. These
+checks do not replace the independent source receipts or the pending hosted
+host/ARM and normal-startup/upload gates. No local corpus rebuild was performed.
+
+Radard PR 229 subsequently passed all required checks at
+`de3b73dc682e0f4171c3bf849f6610d25a86bf98`, including both native Radard
+architectures, Card, workspace and aarch64. Rust run `37727864726` and
+integration run `37727864956` passed. It merged normally into dev as
+`abde77f51419d27e24dfdce58253085e11dbeaf5`, which is now composed into this
+candidate. The original Carrot Navi implementation and comparison policies
+remain unchanged. Post-merge Radard checks and this candidate's new hosted
+checks remain separate from those successful pre-merge results.
+
+The first native ARM job passed in run `37732559164`. Its host build, tests,
+Clippy and policy execution completed, but the first original process exited
+before health because the CI dependency list omitted `pyzmq`. Original Params
+loads swaglog and hardware modules, which also import NumPy, requests and
+pyserial. These four packages are now pinned to the existing successful local
+oracle versions (`27.2.0`, `2.5.3`, `2.34.2`, `3.5`), and CI imports the actual
+Params binding and receiver before the native build. That complete import
+passes locally using the cached original binding and environment; no dependency
+was installed or full source comparison repeated locally.
+
+Failed host job `113164776643` and artifact `11530763214` retain the import
+trace and executable. The same run separately encountered the managed-entry
+collector fixture hazard tracked in issue 184. Its preserved correction is
+included without changing runtime behavior or comparison timeouts; see
+`rust-managed-entry-readiness-184.md`. Required checks will run on the updated
+composition before any merge.
+
+At `799c5f6c`, the complete source import passed and both source/native socket
+and lifecycle lanes executed. Discovery then failed to locate the QA module
+inside `sudo -E unshare` (`37733656182`, job `113168772867`). The namespace
+command now passes `PYTHONPATH` explicitly through `env` after sudo. Artifact
+`11531032135` retains the raw captures and native binary.
+
+The unchanged CI comparisons applied to those retained captures pass all policy
+outputs, 56 socket observations and 21 lifecycle observations. A single focused
+source/native discovery pair with that exact hosted binary also passes locally
+inside an owned user/network namespace: occupied-port recovery, three identical
+beacons and clean SIGTERM/port release. Evidence is under
+`.analysis/scratch/2026-10-08-runtime-resume/230-navi-namespace-local/`.
+Local sudo requires a password, so this user-namespace run does not verify the
+hosted sudo/runuser environment chain; its corrected Actions execution remains
+required. Neither runtime code nor comparison assertions changed.
