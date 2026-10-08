@@ -2172,6 +2172,7 @@ dependencies = [
  "openpilot-logmessaged",
  "openpilot-messaging",
  "openpilot-params",
+ "openpilot-process-supervision",
  "openpilot-runtime-core",
  "openpilot-usbgpu",
  "openpilot-web-upload",

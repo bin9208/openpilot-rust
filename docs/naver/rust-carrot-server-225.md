@@ -329,6 +329,43 @@ workspace formatting, pass in `bluetooth/final-checks-retry/`.
 This is a shared launch prerequisite; Git status and automatic-update service
 conversion and their complete source comparisons remain in progress.
 
+## Git status service prerequisite (2026-10-08)
+
+The Git status service now runs the original tracking-resolution, fetch and
+ahead/behind commands through the shared native child launcher. It retains
+the 600-second cache, non-forced request coalescing, separately serialized forced
+refreshes, nonblocking repository lock and original eight-/twenty-five-second
+command limits. The periodic loop retains its eight-second initial delay and
+sixty-second interval.
+
+Twenty-nine bounded source/native scenarios pass against actual owned Git
+repositories and local bare remotes. They cover tracking variants, missing or
+diverged refs, cache refresh, contention, forced/non-forced callers, recovery,
+timeouts and cancellation. The final service example SHA256 is
+`0f26233099837deb64ad9743428ef2ee65efb704c2b6748a9f3d7b43730aaa4a`;
+the matching retained helper is `9b1a94be` above. Exact commands, raw outputs,
+per-case binaries, thirteen source identities and reused-proof boundaries are
+in `.omo/evidence/225-git-status/completion.json`.
+
+Two observed cleanup differences were repaired before freezing. A process wait
+started while the original leader is live also waits for its output pipes;
+Rust now retains that phase within the existing one-second TERM grace before
+KILL and reap. The live-command and fetch examples consequently finish near
+nine and twenty-six seconds on both sides, while an already-observed exited
+leader keeps the immediate-cleanup path. Cancelling a queued periodic request
+also now waits only for that request's own cleanup, so an unrelated API refresh
+does not delay cancellation. Four cleanup rows and two lifecycle rows were
+repeated after these fixes; twenty-three unaffected scenarios were reused.
+The failing candidates and actual PID-exit receipts remain retained.
+
+Strict all-target Clippy and formatting pass. The immediate-cancel fixture
+records no Git launch on either side and does not establish cancellation during
+active descriptor transfer. A matching valid launcher is required; deliberately
+stalled helpers, device timing and precise scheduler equivalence are unverified.
+The real HTTP status route and Application polling/cleanup connection await
+the original Git state persistence primitive. This service checkpoint does not
+complete the automatic updater or normal server startup.
+
 ## Bluetooth and screenrecord HTTP adapters (2026-10-08)
 
 Bluetooth setup now reuses the native BlueZ coordinator, configuration parser

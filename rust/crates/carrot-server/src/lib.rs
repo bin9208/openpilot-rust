@@ -4,6 +4,7 @@ mod bootstrap;
 pub mod cars;
 pub mod config;
 pub mod egpu_model;
+pub mod git_status;
 mod history_http;
 pub mod http;
 mod http_request;
