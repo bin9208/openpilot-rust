@@ -27,6 +27,7 @@ from carrot_man_serv_compare import setup_values
 from carrot_man_ingress_compare import envelope
 from carrot_man_compare import compare
 from carrot_man_fixture_ports import reserve_ports
+from carrot_man_fixture_inputs import InputPublisher
 from openpilot.cereal import log, messaging
 import zmq
 
@@ -133,19 +134,14 @@ class Peer:
     self.command.setsockopt(zmq.RCVTIMEO, 8000)
     self.command.setsockopt(zmq.LINGER, 0)
     self.command.connect(f"tcp://127.0.0.1:{self.ports[5]}")
+    self.inputs = InputPublisher(self.publisher, self, self.root)
   def put(self, key, value):
     temporary = self.params / (key + ".new")
     temporary.write_text(value)
     temporary.replace(self.params / key)
   def pump(self):
     assert self.process.poll() is None, ("daemon exited", self.process.returncode, self.root)
-    values = dict(deviceState=dict(networkType=self.network), carState=dict(vEgo=0., vEgoCluster=0., vCluRatio=1., canValid=not self.can_error, canTimeout=self.can_error),
-      selfdriveState=dict(active=False, distanceTraveled=0.), carControl={}, gpsLocationExternal=dict(hasFix=True, latitude=37., longitude=127., bearingDeg=45.),
-      modelV2=dict(position=dict(x=[float(i) for i in range(33)], y=[0.] * 33, z=[0.] * 33), velocity=dict(x=[10.] * 33), orientationRate=dict(z=[0.] * 33)))
-    for name, value in values.items():
-      message = messaging.new_message(name, valid=True)
-      setattr(message, name, value)
-      self.publisher.send(name, message)
+    self.inputs.check()
     for name, stream in self.subs.items():
       while (raw := stream.receive(non_blocking=True)) is not None:
         with (self.root / (name + ".bin")).open("ab") as output:
@@ -193,26 +189,29 @@ class Peer:
     with socket.create_connection(("127.0.0.1", self.ports[3]), timeout=2) as stream:
       stream.sendall(struct.pack("!I", len(payload)) + payload)
   def close(self):
-    for stream in self.connections:
-      stream.close()
-    if self.process.poll() is None:
-      self.process.send_signal(signal.SIGTERM)
-      try:
-        self.process.wait(timeout=3)
-      except subprocess.TimeoutExpired:
-        self.process.kill()
-        self.process.wait()
-    self.out.close()
-    self.err.close()
-    self.command.close()
-    self.zmq.term()
-    self.receiver.close()
-    (self.root / "publications.json").write_text(json.dumps(self.rows, indent=2) + "\n")
-    (self.root / "upload-requests.json").write_text(json.dumps(self.receiver.rows, indent=2) + "\n")
-    (self.root / "http-responses.json").write_text(json.dumps(self.http_rows, indent=2) + "\n")
-    self.subs.clear()
-    self.publisher = None
-    self.stack.close()
+    try:
+      self.inputs.close()
+    finally:
+      for stream in self.connections:
+        stream.close()
+      if self.process.poll() is None:
+        self.process.send_signal(signal.SIGTERM)
+        try:
+          self.process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+          self.process.kill()
+          self.process.wait()
+      self.out.close()
+      self.err.close()
+      self.command.close()
+      self.zmq.term()
+      self.receiver.close()
+      (self.root / "publications.json").write_text(json.dumps(self.rows, indent=2) + "\n")
+      (self.root / "upload-requests.json").write_text(json.dumps(self.receiver.rows, indent=2) + "\n")
+      (self.root / "http-responses.json").write_text(json.dumps(self.http_rows, indent=2) + "\n")
+      self.subs.clear()
+      self.publisher = None
+      self.stack.close()
 
 
 def run(implementation, args):
@@ -348,7 +347,7 @@ def main():
     compare(normalized["native"], normalized["source"], "owned source/native boundary")
   (args.evidence / "owned-summary.json").write_text(json.dumps(dict(passed=True, compared=args.implementation == "both",
     scenarios=["real-params-ipc", "tcp-nav-session-terminal", "http-aux-owner", "duplicate-client-close", "route-framing-partial-rejection", "kisa-udp", "zmq-echo", "manual-two-target-discord", "onroad-network-wait", "can-offroad-cancel", "exception-clear-and-sent", "late-utf8-expiry-clear-recovery"],
-    files={str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in (Path(__file__), ROOT / "rust/tools/carrot_man_runtime_source.py")}), indent=2) + "\n")
+    files={str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in (Path(__file__), ROOT / "rust/tools/carrot_man_runtime_source.py", ROOT / "rust/tools/carrot_man_fixture_inputs.py")}), indent=2) + "\n")
   print(f"PASS owned CarrotMan {args.implementation} boundaries")
 
 

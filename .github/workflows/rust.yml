@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, carrot-man-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -55,6 +55,9 @@ jobs:
           PANDA: ${{ needs.panda-runtime.result }}
           CAMERA: ${{ needs.camera-runtime.result }}
           ENCODER: ${{ needs.encoder-runtime.result }}
+          XIAOGE: ${{ needs.xiaoge-runtime.result }}
+          XIAOGE_MEMORY: ${{ needs.xiaoge-memory.result }}
+          UI_RUNTIME: ${{ needs.ui-runtime.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -89,6 +92,9 @@ jobs:
           test "$PANDA" = success
           test "$CAMERA" = success
           test "$ENCODER" = success
+          test "$XIAOGE" = success
+          test "$XIAOGE_MEMORY" = success
+          test "$UI_RUNTIME" = success
   planner-runtime:
     name: rust planner source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
@@ -284,7 +290,7 @@ jobs:
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2 pytest==9.0.2
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal
       - name: Stage exact optional GEOS provider
@@ -316,6 +322,7 @@ jobs:
         run: |
           export PYTHONPATH="$RUNNER_TEMP/carrot-man-msgq:$GITHUB_WORKSPACE/rust/tools:$PYTHONPATH"
           python -P -m unittest discover -s rust/tools/tests -p test_carrot_man_fixture_ports.py
+          python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider rust/tools/test_carrot_man_fixture_inputs.py -q --basetemp "$RUNNER_TEMP/carrot-man-input-tests"
           python -P rust/tools/carrot_man_owned_compare.py --binary rust/target/debug/examples/carrot_man_owned --params-binding "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-owned"
       - uses: actions/upload-artifact@v6
         if: always()
@@ -324,6 +331,7 @@ jobs:
           path: |
             ${{ runner.temp }}/carrot-man-policy/**
             ${{ runner.temp }}/carrot-man-owned/**
+            ${{ runner.temp }}/carrot-man-input-tests/**
             ${{ runner.temp }}/carrot-man-geos/**
             rust/target/debug/openpilot-carrot-man
   workspace:
@@ -409,6 +417,19 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
+      - name: Compare USB GPU status and transport foundation with original source
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          python tools/check_usbgpu_hardware.py target/debug "$RUNNER_TEMP/usbgpu-foundation/hardware"
+          python tools/check_usbgpu_asm.py --binary target/debug/examples/asm_trace --evidence "$RUNNER_TEMP/usbgpu-foundation/asm-traces.json"
+          python tools/check_usbgpu_status.py --binary target/debug/examples/model_status --evidence "$RUNNER_TEMP/usbgpu-foundation/status-parity.json"
+      - name: Preserve USB GPU foundation source comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-usbgpu-foundation-evidence
+          path: ${{ runner.temp }}/usbgpu-foundation/
+          if-no-files-found: warn
       - name: Compare log-space retention with the original loop and actual low-space filesystem
         run: |
           cargo build -p openpilot-deleter --bins --examples --locked
@@ -556,6 +577,134 @@ jobs:
             ${{ runner.temp }}/communication-snapshot/report.json
             ${{ runner.temp }}/logging-producer/**/report.json
             ${{ runner.temp }}/logging-producer/**/*.log
+  xiaoge-runtime:
+    name: rust Xiaoge source comparison (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Reserve capacity and install Xiaoge build prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ cmake ninja-build libzmq3-dev git-lfs
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2 opencv-python-headless==4.13.0.92 pillow==12.3.0 'httpx2[http2,brotli,zstd]==2.13.1'
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Retrieve the unchanged original Xiaoge models
+        run: |
+          python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_xiaoge_ci.py
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+      - name: Compile pinned OpenCV and original Python bindings
+        run: |
+          python rust/tools/build_xiaoge_opencv.py --output "$RUNNER_TEMP/xiaoge-opencv"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/xiaoge-original/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/xiaoge-original/ipc"
+          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"xiaoge-original/params/provenance.json"; print("XIAOGE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          printf 'OPENPILOT_OPENCV_ROOT=%s/xiaoge-opencv\nLD_LIBRARY_PATH=%s/xiaoge-opencv/install/lib\nPYTHONPATH=%s/xiaoge-original/ipc:%s\nOPENCV_TEST_LANE_MODEL=%s/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Compile and check all native Xiaoge targets
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked -- -D warnings
+      - name: Compare source pixels, model results, sockets, live IPC and lifecycle
+        run: |
+          python rust/tools/check_xiaoge_ci.py --bin-dir rust/target/debug --models openpilot/selfdrive/carrot/xiaoge/assets \
+            --opencv "$OPENPILOT_OPENCV_ROOT" --binding "$XIAOGE_PARAMS_BINDING" --output "$RUNNER_TEMP/xiaoge-comparison"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-xiaoge-${{ matrix.runner }}-evidence
+          path: |
+            ${{ runner.temp }}/xiaoge-comparison/
+            ${{ runner.temp }}/xiaoge-original/params/*.json
+            ${{ runner.temp }}/xiaoge-opencv/*.json
+            ${{ runner.temp }}/xiaoge-opencv/*.log
+            ${{ runner.temp }}/xiaoge-opencv/native-libraries.sha256
+            rust/target/debug/openpilot-xiaoge
+            rust/target/debug/examples/xiaoge_*
+            rust/target/debug/examples/opencv_trace
+            rust/target/debug/examples/jpeg_options
+  xiaoge-memory:
+    name: rust Xiaoge native memory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Reserve capacity and install memory-check prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y clang-18 cmake g++ git-lfs
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 opencv-python-headless==4.13.0.92 pillow==12.3.0
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          rustup toolchain install 1.94.0 --profile minimal
+          rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
+      - name: Validate pure Rust image contracts with four Miri modes
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/xiaoge-miri
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/xiaoge-memory"
+          index=0
+          for flags in '' '-Zmiri-strict-provenance' '-Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1' '-Zmiri-tree-borrows -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1'; do
+            python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+            MIRIFLAGS="$flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-opencv-runtime -p openpilot-jpeg --no-default-features --lib --tests --locked 2>&1 | tee "$RUNNER_TEMP/xiaoge-memory/miri-$index.log"
+            index=$((index + 1))
+          done
+      - name: Retrieve models and instrument the complete native OpenCV build
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+          CC=clang-18 CXX=clang++-18 python rust/tools/build_xiaoge_opencv.py --output "$RUNNER_TEMP/xiaoge-opencv-asan" --sanitizers address,undefined
+      - name: Check native ownership and exact model results under ASan and UBSan
+        run: |
+          python rust/tools/check_xiaoge_native_memory.py --opencv "$RUNNER_TEMP/xiaoge-opencv-asan" \
+            --models openpilot/selfdrive/carrot/xiaoge/assets --target-dir "$RUNNER_TEMP/xiaoge-asan-target" --output "$RUNNER_TEMP/xiaoge-native-memory"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-xiaoge-memory-evidence
+          path: |
+            ${{ runner.temp }}/xiaoge-memory/
+            ${{ runner.temp }}/xiaoge-native-memory/
+            ${{ runner.temp }}/xiaoge-opencv-asan/*.json
+            ${{ runner.temp }}/xiaoge-opencv-asan/*.log
+            ${{ runner.temp }}/xiaoge-opencv-asan/native-libraries.sha256
   encoder-runtime:
     name: rust encoder runtime
     runs-on: ubuntu-24.04
@@ -2014,6 +2163,73 @@ jobs:
             ${{ runner.temp }}/estimation/
             ${{ runner.temp }}/locationd-oracle/build.log
             ${{ runner.temp }}/paramsd-oracle/build.log
+  ui-runtime:
+    name: rust UI application runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Configure original UI IPC imports
+        run: printf 'PYTHONPATH=%s/ui-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Reserve capacity and install UI prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang cmake pkg-config libgl-dev libx11-dev xvfb xauth x11-utils mesa-utils ffmpeg
+      - name: Install pinned original GUI dependencies
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pillow==12.3.0 comma-deps-raylib==6.0.0.1.post103 cffi==2.1.1 python-xlib==0.33 pyzmq==27.2.0 pycapnp==2.2.4 requests==2.34.2 qrcode==8.2 setproctitle==1.3.7 psutil==7.2.2 zstandard==0.25.0 PyJWT==2.14.0 cryptography==50.0.1 Cython==3.2.4 setuptools==82.0.1
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Stage pinned native UI graphics and original IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/ui-native/raylib" --shared
+          printf 'STARTUP_UI_RAYLIB_ROOT=%s/ui-native/raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-native/raylib/lib/libopenpilot-raylib.so\nUI_MSGQ_PYTHON=%s/ui-native/python\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/ui-native/python"
+      - name: Check native application and shared UI packages
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 5120
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked
+      - name: Build native UI and record current dependency outputs
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-application --bin openpilot-ui --example product_render --example product_runtime --example state_trace --example scheduler_trace --example qr_trace --example calibration_geometry --example torque_geometry --locked --message-format=json 2> "$RUNNER_TEMP/ui-native/native-build.log" | tee "$RUNNER_TEMP/ui-native/native-build.jsonl"
+      - name: Require original pixels and native UI runtime lifecycle
+        run: python rust/tools/check_ui_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/ui-native/native-build.jsonl" --output "$RUNNER_TEMP/ui-native/oracles"
+      - name: Preserve UI captures and runtime evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-ui-application-runtime-evidence
+          path: |
+            ${{ runner.temp }}/ui-native/
+            rust/target/debug/openpilot-ui
+            rust/target/debug/examples/product_render
+            rust/target/debug/examples/product_runtime
+            rust/target/debug/examples/state_trace
+            rust/target/debug/examples/scheduler_trace
+            rust/target/debug/examples/qr_trace
+            rust/target/debug/examples/calibration_geometry
+            rust/target/debug/examples/torque_geometry
+          if-no-files-found: warn
   ui-connectivity:
     name: rust UI and connectivity
     runs-on: ubuntu-24.04
@@ -2691,6 +2907,37 @@ jobs:
             rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_v4l_trace
           if-no-files-found: warn
 
+      - name: Build generic and ION UI aarch64 artifacts
+        working-directory: rust
+        env:
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          mkdir -p "$RUNNER_TEMP/ui-arm/generic" "$RUNNER_TEMP/ui-arm/ion"
+          git rev-parse HEAD > "$RUNNER_TEMP/ui-arm/SOURCE_COMMIT"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          set -o pipefail
+          cargo build -p openpilot-ui-application --bin openpilot-ui --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/ui-arm/generic/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-ui "$RUNNER_TEMP/ui-arm/generic/"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build -p openpilot-ui-application --features openpilot-msgq/visionipc-ion --bin openpilot-ui --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/ui-arm/ion/build.log"
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cp target/aarch64-unknown-linux-gnu/release/openpilot-ui "$RUNNER_TEMP/ui-arm/ion/"
+          cp "$RUNNER_TEMP/startup-raylib-arm/lib/libopenpilot-raylib.so" "$RUNNER_TEMP/startup-raylib-arm/plugin-build.json" "$RUNNER_TEMP/ui-arm/"
+          for ui_artifact in "$RUNNER_TEMP"/ui-arm/{generic,ion}/openpilot-ui "$RUNNER_TEMP/ui-arm/libopenpilot-raylib.so"; do
+            aarch64-linux-gnu-readelf -h -d -V "$ui_artifact" > "$ui_artifact.readelf.txt"
+            test "$(aarch64-linux-gnu-readelf -h "$ui_artifact" | sed -n 's/.*Machine: *//p')" = AArch64
+          done
+          sha256sum "$RUNNER_TEMP"/ui-arm/{generic,ion}/openpilot-ui "$RUNNER_TEMP/ui-arm/libopenpilot-raylib.so" > "$RUNNER_TEMP/ui-arm/SHA256SUMS"
+      - name: Preserve UI generic ARM build and graphics plugin evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-ui-application-arm-not-device-validated
+          path: ${{ runner.temp }}/ui-arm/
+          if-no-files-found: warn
   athena-runtime:
     name: rust Athena runtime
     runs-on: ubuntu-24.04
@@ -2708,11 +2955,13 @@ jobs:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev strace iproute2
-      - run: python -m pip install requests==2.34.2 json-rpc==1.15.0 websocket-client==1.9.2 websockets==15.0.1 PyJWT==2.14.0 cryptography==50.0.1 numpy==2.5.3 pillow==12.3.0 pycapnp==2.1.0 zstandard==0.25.0
+      - run: python -m pip install requests==2.34.2 json-rpc==1.15.0 websocket-client==1.9.2 websockets==15.0.1 PyJWT==2.14.0 cryptography==50.0.1 numpy==2.5.3 pillow==12.3.0 pycapnp==2.1.0 zstandard==0.25.0 pyzmq==27.2.0
       - name: Check Athena camera child discovery race
         run: python rust/tools/test_athena_camera_children.py
       - name: Build native Athena and owned process child
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-athena -p openpilot-process-supervision --bins --examples --locked
+        run: |
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-athena -p openpilot-process-supervision --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-logging --example logging_probe --locked
       - name: Compare all source RPC, upload, IPC, camera and connection scenarios
         run: sudo -E env "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_athena_runtime.py --bin-dir "$PWD/rust/target/debug" --output "$RUNNER_TEMP/athena-runtime"
       - name: Instrument complete JPEG codec and ownership boundary

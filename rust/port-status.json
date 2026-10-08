@@ -579,7 +579,20 @@
       "name": "ui",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.ui.ui",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_validated",
+      "implementation": "rust/crates/ui-application with ui-framework and startup-ui; native openpilot-ui, both main layouts, road and compact rendering, settings/onboarding/dialog routes, IPC, recording, resource workers and cleanup",
+      "native_dependencies": [
+        "pinned comma-deps-raylib 6.0.0.1.post103 graphics plugin and native graphics adapters",
+        "OpenGL or target EGL/GLES/DRM/GBM driver stack",
+        "native Rust msgq/VisionIPC; consumer composition tracked in #195",
+        "external ffmpeg executable for recording",
+        "NetworkManager/D-Bus and Linux hardware/scheduling APIs",
+        "native process-child and updated siblings"
+      ],
+      "runtime_scope": "original-source host pixel/state comparisons, actual IPC/VisionIPC and XTest input, recording/ffprobe, normal and injected-error cleanup, bounded Miri and native adapter sanitizers; four independent host reviews and separate complete eight-plot-mode amendment accepted; separately built ARM raylib plugin passes actual offline loading and required symbol/extension-pointer resolution against exact published AGNOS libraries",
+      "unported_scope": "Complete manager-selected startup/upload and sibling packaging; native IPC/UI consumer composition on the prepared integration stack is not rerun by this transfer.",
+      "validation_limits": "Reused donor host evidence; fresh hosted UI CI and generic/ION executable builds remain pending. AGNOS display, DRM/DMA-BUF/input, hardware Wi-Fi/eGPU and vehicle acceptance remain unvalidated.",
+      "evidence": "docs/naver/rust_ui_application_148.md",
       "production_replaced": false
     },
     {
@@ -618,7 +631,11 @@
       "name": "xiaoge_data",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.xiaoge_data",
-      "status": "not_ported",
+      "status": "native_runtime_host_and_arm_compared",
+      "implementation": "rust/crates/xiaoge; TCP broadcaster, Tesla CAN state, gated BSD and lane inference, HTTP diagnostics/settings/snapshots, native Rust Cereal/VisionIPC",
+      "native_dependencies": ["pinned OpenCV 4.13.0 core/imgproc/dnn with recorded defined-access patches", "pinned libjpeg-turbo", "original ONNX model assets", "Linux sockets/clocks/signals; native Rust msgq/VisionIPC"],
+      "evidence": "docs/naver/rust-xiaoge-200.md",
+      "runtime_scope": "host original source/socket/IPC/lifecycle comparisons and ARM original numerical comparisons with actual AGNOS19.8 loader/library closure; hosted native ARM full-loop CI, complete manager startup/upload and device acceptance remain pending",
       "production_replaced": false
     },
     {
@@ -683,6 +700,27 @@
     }
   ],
   "library_ports": [
+    {
+      "name": "usbgpu_status_transport_foundation",
+      "source_entrypoint": "openpilot/system/hardware/usbgpu.py; openpilot/selfdrive/modeld/helpers.py; tinygrad runtime/support/usb.py",
+      "status": "status_transport_foundation_host_validated",
+      "implementation": "rust/crates/usbgpu; sysfs/power/status parsing, model availability, owned diagnostic child wrapper, USB BOT/UAS/custom ASM policy and libusb ownership boundary",
+      "native_dependencies": [
+        "external libusb-1.0.so.0 and Linux USB/sysfs/drivers",
+        "project-owned CXX USB adapter in rust/crates/usbgpu/native; declaration-only libusb ABI header retains LGPL-2.1-or-later terms"
+      ],
+      "runtime_scope": "historical host source/status/ASM/owned-child and native USB fixture evidence only; diagnostic wrapper requires a real probe and cannot substitute for the missing GPU runtime",
+      "unported_scope": [
+        "native GPU probe executable",
+        "complete UAS full-window and stock ASM behavior; PCIe BAR/MMU",
+        "AMD firmware initialization, queues and synchronization",
+        "model download/provisioning, compile/import and native artifact execution",
+        "C3 QCOM/C4 AMD warp and model-daemon live fallback",
+        "project-owned CXX USB ownership adapter remains native code; complete startup/upload and device acceptance pending"
+      ],
+      "production_replaced": false,
+      "evidence": "docs/naver/rust-usbgpu-154.md"
+    },
     {
       "name": "shared_ui_framework",
       "source_entrypoint": "openpilot.system.ui.lib and openpilot.system.ui.widgets",

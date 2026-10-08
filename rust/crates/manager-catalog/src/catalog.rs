@@ -86,6 +86,7 @@ impl Descriptor {
 
 fn availability(name: &str) -> RustAvailability {
     let (package, binary) = match name {
+        "xiaoge_data" => ("openpilot-xiaoge", "openpilot-xiaoge"),
         "_pandad" => ("openpilot-pandad", "openpilot-pandad"),
         "beep" => ("openpilot-beepd", "openpilot-beepd"),
         "bridge" => ("openpilot-bridge", "bridge"),
@@ -143,6 +144,7 @@ fn availability(name: &str) -> RustAvailability {
         "tombstoned" => ("openpilot-tombstoned", "openpilot-tombstoned"),
         "torqued" => ("openpilot-torqued", "openpilot-torqued"),
         "ubloxd" => ("openpilot-ublox", "openpilot-ubloxd"),
+        "ui" => ("openpilot-ui-application", "openpilot-ui"),
         "updated" => ("openpilot-updated", "openpilot-updated"),
         _ => return RustAvailability::NotPorted,
     };

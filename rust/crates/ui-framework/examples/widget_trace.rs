@@ -113,6 +113,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let valid = input.valid;
         probe.state.touch_valid = Some(Box::new(move || valid));
         let frame = Frame {
+            index: 0,
             now: input.now,
             monotonic: 0.0,
             keyboard: &Default::default(),

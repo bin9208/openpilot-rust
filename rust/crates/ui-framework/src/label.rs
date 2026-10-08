@@ -154,17 +154,28 @@ pub fn gui_label(
         value.to_owned()
     };
     let measured = text::measure(draw, font, &value, size, 0.0);
-    let x = rect.x
+    let x = f64::from(rect.x)
         + match alignment.0 {
             Horizontal::Left => 0.0,
-            Horizontal::Center => (rect.width - measured.x) / 2.0,
-            Horizontal::Right => rect.width - measured.x,
+            Horizontal::Center => (f64::from(rect.width) - f64::from(measured.x)) / 2.0,
+            Horizontal::Right => f64::from(rect.width) - f64::from(measured.x),
         };
-    let y = rect.y
+    let y = f64::from(rect.y)
         + match alignment.1 {
             Vertical::Top => 0.0,
-            Vertical::Middle => (rect.height - measured.y) / 2.0,
-            Vertical::Bottom => rect.height - measured.y,
+            Vertical::Middle => (f64::from(rect.height) - f64::from(measured.y)) / 2.0,
+            Vertical::Bottom => f64::from(rect.height) - f64::from(measured.y),
         };
-    text::draw_text(draw, font, &value, Point { x, y }, size, 0.0, color)
+    text::draw_text(
+        draw,
+        font,
+        &value,
+        Point {
+            x: float(x),
+            y: float(y),
+        },
+        size,
+        0.0,
+        color,
+    )
 }
