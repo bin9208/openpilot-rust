@@ -451,6 +451,25 @@ all-target Clippy, formatting and diff checks pass. HTTP pagination/read-state
 routes, replay/encoding, upload orchestration and full startup remain separate
 work; these tests use synthetic metadata files, not actual recordings or devices.
 
+## Git state prerequisite (2026-10-08)
+
+The native Git state store preserves the original compact ASCII JSON, fixed
+temporary filename, flush/fsync/replace ordering, pull-time conversion and
+20-event history. Thirty-eight source/native cases with 89 observations per
+side pass, including exact bytes, replacement failure/recovery, malformed state,
+Unicode/nonfinite values and event-field projection. A syscall trace observes
+fsync before rename on both implementations. The retained example SHA256 is
+`0b5c62f9624f97b917a46b21bfb3475e5fdac6a58824d79ac0a1b3dddda05c88`.
+
+The source duplicate `status` argument fails before filesystem access; the
+native entry point now rejects that duplicate at the same boundary. Only clock
+values are normalized in the owned filesystem comparison. Evidence, source
+hashes, build, strict Clippy and formatting logs are under
+`.omo/evidence/225-git-state/`; `verification.txt` records the exact invocation.
+Concurrent fixed-temporary-file writers and injected fsync/permission failures
+were not measured. Git status HTTP and startup/cleanup integration remain open;
+this prerequisite does not implement automatic-update policy or reboot behavior.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
