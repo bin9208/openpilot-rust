@@ -1067,7 +1067,7 @@ jobs:
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev iproute2 util-linux
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python -m pip install aiohttp==3.13.3 pycapnp==2.2.4 Cython==3.2.4 setuptools==82.0.1 psutil==7.2.2 zstandard==0.25.0
+          python -m pip install aiohttp==3.13.3 pycapnp==2.2.4 Cython==3.2.4 setuptools==82.0.1 psutil==7.2.2 zstandard==0.25.0 pyzmq==27.2.0 numpy==2.5.3 requests==2.34.2 pyserial==3.5
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
           mkdir -p "$RUNNER_TEMP/carrot-navi"
@@ -1084,6 +1084,9 @@ jobs:
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-navi/bindings/msgq"
           python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"carrot-navi/bindings/params/provenance.json"; print("CARROT_NAVI_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
           python -P -c 'import msgq.ipc_pyx,capnp,aiohttp,psutil,zstandard; from openpilot.cereal import log,messaging; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(capnp.__version__,aiohttp.__version__,psutil.__version__,zstandard.__version__)' > "$RUNNER_TEMP/carrot-navi/imports.txt"
+      - name: Verify complete original Params and receiver imports
+        run: |
+          python -P -c 'import os; from pathlib import Path; from card_runtime_source import load_binding; load_binding(Path(os.environ["CARROT_NAVI_PARAMS_BINDING"])); from openpilot.common.params import Params; from openpilot.selfdrive.carrot.carrot_navi import main; print("original Params and receiver imports passed")'
       - name: Require bounded native package checks and executable
         run: |
           set -o pipefail
