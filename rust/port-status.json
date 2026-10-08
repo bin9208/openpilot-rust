@@ -99,7 +99,11 @@
       "name": "carrot_man",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.carrot_man",
-      "status": "not_ported",
+      "status": "native_owner_host_and_arm_compared",
+      "implementation": "rust/crates/carrot-man; openpilot-carrot-man native owner, CarrotServ, navigation ingress/source arbitration, route/GEOS, diagnostic and upload boundaries; reuses native cereal/msgq/Params, Navd helpers and web-upload transport",
+      "native_dependencies": ["libzmq", "optional GEOS 3.13.1 / GEOS C 1.19.2 from pinned Shapely 2.1.2 artifacts, verified before loading", "Linux sockets/clocks/interfaces and original tmux, shell and time-setting commands"],
+      "runtime_scope": "At 31ae4fac82551e7280874379f5aec3e1b0f3e5ab both x86_64 and native aarch64 source/process comparisons passed all 12 owned Params/IPC/socket/diagnostic/upload boundaries, including full payload attachments and surrogate recovery; host helpers passed 32 policy, 24 CarrotServ, 19 ingress and 6 time-command cases. Common workspace gates were pending at recording. Normal Shapely-present packaging must supply CARROT_GEOS_LIBRARY/CARROT_GEOS_MANIFEST; production selection, complete manager startup/upload composition and device/performance acceptance remain pending",
+      "evidence": "docs/naver/rust-carrot-man-219.md",
       "production_replaced": false
     },
     {
@@ -366,9 +370,9 @@
       "source_entrypoint": "openpilot.selfdrive.navd.navd",
       "status": "native_daemon_host_compared",
       "implementation": "rust/crates/navd; original route engine, geometry, instructions, HTTP and authentication, UI restart timers and destination CLI",
-      "native_dependencies": ["Linux clocks/signals/filesystem", "native ZeroMQ diagnostics", "current msgq transport; native replacement tracked in issue 194", "Mapbox/comma routing service and TLS trust roots"],
+      "native_dependencies": ["Linux clocks/signals/filesystem", "native ZeroMQ diagnostics", "native Rust msgq transport", "Mapbox/comma routing service and TLS trust roots"],
       "evidence": "docs/naver/rust-navd-196.md",
-      "runtime_scope": "Host source, actual HTTP/Params/IPC and signal comparisons passed. ARM build/runtime, composed native IPC, exact-head CI, complete startup/upload and user device comparison remain pending.",
+      "runtime_scope": "Host source, actual HTTP/Params/IPC and signal comparisons passed; five composed native Rust IPC scenarios passed on 2026-10-07. Current integration ARM build and exact-head CI, complete startup/upload and user device comparison remain pending.",
       "production_replaced": false
     },
     {

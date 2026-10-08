@@ -93,11 +93,17 @@ class Peer:
     # interrupt that input's best-effort ZMQ diagnostic, so pace this exact oracle.
     deadline = time.monotonic() + timeout
     channel = Path(f'/proc/{self.process.pid}/wchan')
+    ppoll_number = {'x86_64': '271', 'aarch64': '73'}.get(os.uname().machine)
     while True:
       if self.process.poll() is not None:
         raise RuntimeError((self.process.returncode, (self.root / 'stderr.log').read_text()))
-      if channel.read_text().strip() == 'hrtimer_nanosleep':
+      wait_channel = channel.read_text().strip()
+      if wait_channel == 'hrtimer_nanosleep':
         return
+      if wait_channel not in ('', '0'):
+        syscall = channel.with_name('syscall').read_text().split()
+        if len(syscall) >= 3 and syscall[0] == ppoll_number and syscall[2] == '0x0':
+          return
       if time.monotonic() >= deadline:
         raise TimeoutError(f'logger did not finish processing before its next input: {self.root}')
       time.sleep(.0001)

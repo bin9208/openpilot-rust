@@ -69,7 +69,6 @@ def phase_capture(context: RuntimePeer, phase: str) -> Publications:
       break
     assert time.monotonic() < deadline, 'first phase CAN send'
     time.sleep(.001)
-  process.send_signal(signal.SIGCONT)
   rows = {name: [] for name in OUTPUTS}
   deadline = time.monotonic() + 30
   while True:
@@ -154,6 +153,7 @@ def capture(arguments: RuntimeInvocation, scenario: Scenario, source: bool) -> C
       pump_log = stack.enter_context((output / 'pump.log').open('w'))
       pump = stack.enter_context(subprocess.Popen(pump_command, cwd=ROOT, env=environment, stdout=pump_log, stderr=pump_log))
       process = stack.enter_context(subprocess.Popen(command, cwd=ROOT, env=environment, stdout=stdout, stderr=stderr))
+      (output / 'runtime-pid').write_text(str(process.pid))
       try:
         deadline = time.monotonic() + 10
         while not (output / 'pump/ready').exists():

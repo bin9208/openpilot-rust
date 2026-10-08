@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, carrot-man-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -40,6 +40,7 @@ jobs:
           CONTROLS: ${{ needs.controls-runtime.result }}
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
           JOYSTICKD: ${{ needs.joystickd-runtime.result }}
+          CARROT_MAN: ${{ needs.carrot-man-runtime.result }}
           PLANNER: ${{ needs.planner-runtime.result }}
           PLANNER_MEMORY: ${{ needs.planner-memory.result }}
           CARD: ${{ needs.card-runtime.result }}
@@ -72,6 +73,7 @@ jobs:
           test "$CONTROLS" = success
           test "$UPLOAD_TIMEOUTS" = success
           test "$JOYSTICKD" = success
+          test "$CARROT_MAN" = success
           test "$PLANNER" = success
           test "$PLANNER_MEMORY" = success
           test "$CARD" = success
@@ -253,6 +255,74 @@ jobs:
             ${{ runner.temp }}/joystickd/longitudinal-runtime/**
             ${{ runner.temp }}/joystickd/lateral-source/receipt.json
             ${{ runner.temp }}/joystickd/lateral-runtime/**
+  carrot-man-runtime:
+    name: rust CarrotMan owner (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64, runner: ubuntu-24.04 }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Reserve runner capacity and install pinned dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal
+      - name: Stage exact optional GEOS provider
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+          python -m pip download --only-binary=:all: --no-deps shapely==2.1.2 --dest "$RUNNER_TEMP/carrot-man-wheels"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+          python rust/tools/carrot_man_stage_geos.py --wheel "$RUNNER_TEMP"/carrot-man-wheels/shapely-2.1.2-*.whl --output "$RUNNER_TEMP/carrot-man-geos"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+          python -m pip install --no-deps "$RUNNER_TEMP"/carrot-man-wheels/shapely-2.1.2-*.whl
+          cat "$RUNNER_TEMP/carrot-man-geos/environment.txt" >> "$GITHUB_ENV"
+      - name: Build owner and unchanged source bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-man --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/carrot-man-params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-man-msgq"
+          python -c 'from pathlib import Path; import os; print("CARROT_PARAMS_BINDING="+str(next((Path(os.environ["RUNNER_TEMP"])/"carrot-man-params").glob("params_pyx*.so"))))' >> "$GITHUB_ENV"
+      - name: Compare affected original policy, cereal and time boundaries
+        if: matrix.arch == 'x86_64'
+        run: |
+          python rust/tools/carrot_man_compare.py --binary rust/target/debug/examples/carrot_man_trace --evidence "$RUNNER_TEMP/carrot-man-policy"
+          python rust/tools/carrot_man_serv_compare.py --binary rust/target/debug/examples/carrot_man_trace --params-binding "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-policy"
+          python rust/tools/carrot_man_ingress_compare.py --binary rust/target/debug/examples/carrot_man_trace --evidence "$RUNNER_TEMP/carrot-man-policy"
+          python rust/tools/carrot_man_time_compare.py --binary rust/target/debug/examples/carrot_man_trace --evidence "$RUNNER_TEMP/carrot-man-policy"
+      - name: Compare actual owned Params, IPC, sockets and upload recipients
+        run: |
+          export PYTHONPATH="$RUNNER_TEMP/carrot-man-msgq:$PYTHONPATH"
+          python -P rust/tools/carrot_man_owned_compare.py --binary rust/target/debug/examples/carrot_man_owned --params-binding "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-owned"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: carrot-man-owner-${{ matrix.arch }}-evidence
+          path: |
+            ${{ runner.temp }}/carrot-man-policy/**
+            ${{ runner.temp }}/carrot-man-owned/**
+            ${{ runner.temp }}/carrot-man-geos/**
+            rust/target/debug/openpilot-carrot-man
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
@@ -1111,6 +1181,8 @@ jobs:
           cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-radard --all-targets --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/tests.log"
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-radard --bins --examples --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/build.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-messaging --example state_probe --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/state-probe-build.log"
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-radard --all-targets --locked -- -D warnings 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/clippy.log"
           if [ '${{ matrix.machine }}' = aarch64 ]; then
@@ -1128,6 +1200,13 @@ jobs:
               --output "$RUNNER_TEMP/radard-native/source-$radard_phase" \
               2>&1 | tee "$RUNNER_TEMP/radard-native/logs/source-$radard_phase.log"
           done
+      - name: Compare exact availability deadline with original state
+        run: |
+          set -euo pipefail
+          python -P rust/tools/radard_availability_state.py \
+            --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/state_probe" \
+            --output "$RUNNER_TEMP/radard-native/source-availability-state" \
+            2>&1 | tee "$RUNNER_TEMP/radard-native/logs/availability-state.log"
       - name: Compare independent actual IPC and signal lifecycle
         run: |
           set -euo pipefail
@@ -1146,7 +1225,7 @@ jobs:
           set -euo pipefail
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
           mkdir -p "$RUNNER_TEMP/radard-native/bin"
-          for radard_binary in rust/target/debug/openpilot-radard rust/target/debug/examples/radard_*_trace; do
+          for radard_binary in rust/target/debug/openpilot-radard rust/target/debug/examples/radard_*_trace rust/target/debug/examples/state_probe; do
             if [ -f "$radard_binary" ]; then
               cp "$radard_binary" "$RUNNER_TEMP/radard-native/bin/"
               sha256sum "$radard_binary" >> "$RUNNER_TEMP/radard-native/SHA256SUMS"
@@ -1194,7 +1273,7 @@ jobs:
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev iproute2 util-linux
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python -m pip install aiohttp==3.13.3 pycapnp==2.2.4 Cython==3.2.4 setuptools==82.0.1 psutil==7.2.2 zstandard==0.25.0
+          python -m pip install aiohttp==3.13.3 pycapnp==2.2.4 Cython==3.2.4 setuptools==82.0.1 psutil==7.2.2 zstandard==0.25.0 pyzmq==27.2.0 numpy==2.5.3 requests==2.34.2 pyserial==3.5
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
           mkdir -p "$RUNNER_TEMP/carrot-navi"
@@ -1211,6 +1290,9 @@ jobs:
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-navi/bindings/msgq"
           python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"carrot-navi/bindings/params/provenance.json"; print("CARROT_NAVI_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
           python -P -c 'import msgq.ipc_pyx,capnp,aiohttp,psutil,zstandard; from openpilot.cereal import log,messaging; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(capnp.__version__,aiohttp.__version__,psutil.__version__,zstandard.__version__)' > "$RUNNER_TEMP/carrot-navi/imports.txt"
+      - name: Verify complete original Params and receiver imports
+        run: |
+          python -P -c 'import os; from pathlib import Path; from card_runtime_source import load_binding; load_binding(Path(os.environ["CARROT_NAVI_PARAMS_BINDING"])); from openpilot.common.params import Params; from openpilot.selfdrive.carrot.carrot_navi import main; print("original Params and receiver imports passed")'
       - name: Require bounded native package checks and executable
         run: |
           set -o pipefail
@@ -1236,7 +1318,7 @@ jobs:
           done
       - name: Run discovery and retry in an owned network namespace
         run: |
-          sudo -E unshare --net bash -euc '
+          sudo -E env PYTHONPATH="$PYTHONPATH" unshare --net bash -euc '
             ip link set lo up
             ip address add 10.206.0.1/24 broadcast 10.206.0.255 dev lo
             runuser -u "$CARROT_NAVI_USER" --preserve-environment -- "$CARROT_NAVI_PYTHON" -P -m carrot_navi_qa.startup --source-python "$CARROT_NAVI_PYTHON" --binding "$CARROT_NAVI_PARAMS_BINDING" --output "$RUNNER_TEMP/carrot-navi/startup-source"
@@ -1559,6 +1641,8 @@ jobs:
       - name: Compare managed entry and errors through actual collectors and SDK transport
         run: |
           python rust/tools/check_sdk_receiver.py "$RUNNER_TEMP/startup-runtime/sdk-receiver.json"
+          python rust/tools/check_managed_entry_readiness.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
+            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry-readiness"
           python rust/tools/check_managed_entry.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry"
       - name: Verify the exact native response detector source archive
