@@ -29,6 +29,8 @@ pub struct Application {
     pub intro: Arc<crate::intro::Intro>,
     pub cars: Arc<crate::cars::Cars>,
     pub mapbox_online: Arc<crate::mapbox_tokens::Online>,
+    pub ssh_online: Option<Arc<crate::ssh_keys::Online>>,
+    pub ssh_timestamp: Option<i64>,
 }
 
 impl Application {
@@ -38,6 +40,8 @@ impl Application {
             intro: crate::intro::Intro::new(config.clone()),
             cars: crate::cars::Cars::original(),
             mapbox_online: Arc::new(crate::mapbox_tokens::Online::default()),
+            ssh_online: Some(Arc::new(crate::ssh_keys::Online::default())),
+            ssh_timestamp: None,
             history: History::new(Paths {
                 log: config.state.join("param_changes.jsonl"),
                 baseline: config.state.join("fingerprint_baseline.json"),
@@ -107,6 +111,11 @@ pub(crate) async fn route(
         .into_owned();
     if path == "/api/cars" {
         return Ok(crate::cars::handle(&request, Arc::clone(&app.cars)).await);
+    }
+    if path == "/api/ssh_keys" {
+        let online = app.ssh_online.clone();
+        let timestamp = app.ssh_timestamp;
+        return Ok(crate::ssh_keys::handle(request, app, online, timestamp).await);
     }
     if crate::mapbox_tokens::matches(&path, request.method()) {
         let online = Arc::clone(&app.mapbox_online);

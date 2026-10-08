@@ -2143,6 +2143,7 @@ dependencies = [
 name = "openpilot-carrot-server"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "brotli-decompressor",
  "bytes",
  "capnp",

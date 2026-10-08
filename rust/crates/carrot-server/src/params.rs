@@ -43,6 +43,20 @@ impl Backend {
         self.native.is_some()
     }
 
+    pub fn remove(&mut self, name: &str) -> Result<(), Error> {
+        let Some(params) = &self.native else {
+            self.memory.remove(name);
+            return Ok(());
+        };
+        if metadata(name).is_none() {
+            return Err(crate::param_native::unknown(name));
+        }
+        match params.remove(name) {
+            Ok(()) | Err(openpilot_params::Error::Io(_)) => Ok(()),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     fn custom_value(&self, name: &str) -> Option<Value> {
         if name != "GitPullTime" {
             return None;

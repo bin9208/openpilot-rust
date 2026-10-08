@@ -41,6 +41,8 @@ not complete-server acceptance.
 | Relocated executable root and CLI ordering | 8 cases, including 4 actual owned listeners serving relocated assets and exiting on SIGTERM | `carrot-server-225-resume/runtime-root-final/result.json` |
 | Mapbox token routes and outbound validation | 85 actual source/native HTTP comparisons plus 1 encoded-path regression; response bytes, Params files and owned recipient requests match | `225-mapbox-tokens/native-fixed/result.json`, `encoded-routing-final/result.json` |
 | Multipart Params restore | 44 isolated source/native pairs and the same 44 through the actual Application route; response bytes/headers, Params/history effects and 17 MiB restore match | `carrot-server-225-resume/multipart/final-standalone/`, `final-composed/` |
+| SSH key routes and recipient boundary | 28 cases each with native Params, memory fallback and absent client; 3 further response-codec/total-timeout cases | `carrot-server-225-resume/ssh/LEDGER.md` |
+| SSH production timestamp conversion | Original float-seconds expression and native production helper agree at the retained rounding boundary after an observed failing test | `carrot-server-225-resume/ssh/clock/result.json` |
 | Intro guard, state and presets | 70 source/native HTTP/file comparisons plus 2 cases without Params; actual preset writes and original failure contracts | `carrot-server-225-resume/intro/final-wave/result.json` |
 | Isolated static HTTP | 61 source/native request pairs, 6 compressed files and graceful exit after lazy bootstrap callback integration; conditional obs-text regressions repaired | `carrot-server-225-resume/static/lazy-wave/` |
 | Optional Brotli absent | Original and native remove stale `.br` while producing valid gzip | `carrot-server-225-resume/static/absent-codec-comparison.json` |
@@ -137,6 +139,18 @@ The 17 MiB case deliberately uses multipart field reads rather than the JSON
 request-reader limit, matching the original. Exact non-UTF-8 codec aliases and
 some decode-error text remain part of the shared request-codec work below;
 these 44 cases do not establish universal Python codec equivalence.
+
+SSH requests use the source ten-second total deadline and decoded response
+bodies, independently of Mapbox's socket timeout/raw-response contract. The
+current original Params catalog does not register `GithubSshKeysUpdatedAt`:
+add/remove requests can therefore fail after changing earlier known keys.
+Actual owned Params comparisons preserve those partial writes and errors.
+No real GitHub key recipient or sshd was used. Provider User-Agent identity,
+untested TLS/redirect/cookie variants and the complete response-codec namespace
+remain explicit limits in the ledger.
+The 87 HTTP observations use recorded fixed timestamps. A separate focused
+test covers the production `int(time.time() * 1000)` rounding behavior; these
+different configurations and executable identities are retained separately.
 
 ## Remaining work
 

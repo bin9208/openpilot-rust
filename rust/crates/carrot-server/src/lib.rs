@@ -28,6 +28,7 @@ pub mod settings;
 mod settings_brand;
 mod settings_cache;
 mod settings_menu;
+pub mod ssh_keys;
 mod state;
 mod state_http;
 pub(crate) mod state_json;

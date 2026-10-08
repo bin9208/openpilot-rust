@@ -34,6 +34,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
     };
     let mut app = Application::new(config, backend);
+    if input.has("ssh_endpoint") || input.has("ssh_unavailable") {
+        let application =
+            std::sync::Arc::get_mut(&mut app).ok_or("fixture Application is already shared")?;
+        application.ssh_online = if input.get("ssh_unavailable").truth() {
+            None
+        } else {
+            Some(std::sync::Arc::new(
+                openpilot_carrot_server::ssh_keys::Online::for_test_endpoint(
+                    input.get("ssh_endpoint").string()?,
+                ),
+            ))
+        };
+        application.ssh_timestamp = Some(1700000000000);
+    }
     if input.has("cars") {
         std::sync::Arc::get_mut(&mut app)
             .ok_or("fixture Application is already shared")?
