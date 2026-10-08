@@ -123,20 +123,25 @@ async def direct_consumer(args):
     client = bluez.Bluez()
     source_snapshot = await client.snapshot()
     await client.scan()
-    await asyncio.sleep(0)
+    if not args.immediate_scan_close:
+      await asyncio.sleep(0)
     await client.cancel_pair()
     await client.close()
     source_calls = peer.calls.copy()
   async with owned_bus() as (address, peer):
     process = await asyncio.create_subprocess_exec(str(args.consumer), address, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     commands = [{'op': op} for op in ('snapshot', 'scan', 'cancel', 'close')]
-    results = []
-    for command in commands:
-      process.stdin.write((json.dumps(command) + '\n').encode())
-      await process.stdin.drain()
-      results.append(json.loads(await asyncio.wait_for(process.stdout.readline(), 5)))
-    stdout, stderr = await asyncio.wait_for(process.communicate(), 10)
-    assert not stdout, stdout
+    if args.immediate_scan_close:
+      stdout, stderr = await asyncio.wait_for(process.communicate((''.join(json.dumps(command) + '\n' for command in commands)).encode()), 10)
+      results = [json.loads(line) for line in stdout.splitlines()]
+    else:
+      results = []
+      for command in commands:
+        process.stdin.write((json.dumps(command) + '\n').encode())
+        await process.stdin.drain()
+        results.append(json.loads(await asyncio.wait_for(process.stdout.readline(), 5)))
+      stdout, stderr = await asyncio.wait_for(process.communicate(), 10)
+      assert not stdout, stdout
     result = {'source_snapshot': source_snapshot, 'source_calls': source_calls, 'native_results': results, 'native_calls': peer.calls, 'returncode': process.returncode, 'stderr': stderr.decode()}
     result['pass'] = process.returncode == 0 and results == [{'result': source_snapshot}, {'result': None}, {'result': None}, {'result': None}] and source_calls == peer.calls
     write(args.output / 'result.json', result)

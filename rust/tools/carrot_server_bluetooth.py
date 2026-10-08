@@ -195,5 +195,6 @@ if __name__ == '__main__':
   parser.add_argument('--timeouts-only', action='store_true')
   parser.add_argument('--composed-only', action='store_true')
   parser.add_argument('--consumer', type=Path)
+  parser.add_argument('--immediate-scan-close', action='store_true')
   arguments = parser.parse_args()
   sys.exit(asyncio.run(main(arguments)))
