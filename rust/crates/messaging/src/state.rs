@@ -106,6 +106,9 @@ pub struct State {
     topics: Vec<Topic>,
     indices: HashMap<&'static str, usize>,
     simulation: bool,
+    ignore_alive: Vec<String>,
+    ignore_frequency: Vec<String>,
+    ignore_valid: Vec<String>,
 }
 
 impl State {
@@ -192,7 +195,52 @@ impl State {
             topics,
             indices,
             simulation: options.simulation,
+            ignore_alive: options.ignore_alive,
+            ignore_frequency: options.ignore_frequency,
+            ignore_valid: options.ignore_valid,
         })
+    }
+
+    pub fn append_ignore_alive_valid(&mut self, name: &str) -> Result<(), Error> {
+        let index = *self
+            .indices
+            .get(name)
+            .ok_or_else(|| Error::UnknownService(name.to_owned()))?;
+        self.topics[index].ignore_alive = true;
+        self.topics[index].ignore_valid = true;
+        self.ignore_alive.push(name.to_owned());
+        self.ignore_valid.push(name.to_owned());
+        Ok(())
+    }
+
+    /// SelfdriveD supplies one Python list as all three ignore arguments. Appending
+    /// through alive and valid aliases adds two entries to each shared list.
+    pub fn append_shared_ignore_alive_valid(&mut self, name: &str) -> Result<(), Error> {
+        let index = *self
+            .indices
+            .get(name)
+            .ok_or_else(|| Error::UnknownService(name.to_owned()))?;
+        self.topics[index].ignore_alive = true;
+        self.topics[index].ignore_valid = true;
+        self.topics[index].ignore_frequency = true;
+        for names in [
+            &mut self.ignore_alive,
+            &mut self.ignore_valid,
+            &mut self.ignore_frequency,
+        ] {
+            names.extend([name.to_owned(), name.to_owned()]);
+        }
+        Ok(())
+    }
+
+    pub fn ignore_alive(&self) -> &[String] {
+        &self.ignore_alive
+    }
+    pub fn ignore_frequency(&self) -> &[String] {
+        &self.ignore_frequency
+    }
+    pub fn ignore_valid(&self) -> &[String] {
+        &self.ignore_valid
     }
 
     pub fn frame(&self) -> i64 {
