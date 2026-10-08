@@ -67,7 +67,21 @@ impl Transport for Timed {
             },
         };
         let started = Instant::now();
-        let result = self.inner.await_input(timeout);
+        let result = loop {
+            let mut remaining = timeout;
+            if !timeout.after.is_not_happening() {
+                let elapsed = started.elapsed();
+                if elapsed >= *timeout.after {
+                    break Err(ureq::Error::Timeout(timeout.reason));
+                }
+                remaining.after = timeout.after.saturating_sub(elapsed).into();
+            }
+            match self.inner.await_input(remaining) {
+                Err(ureq::Error::Io(error))
+                    if error.kind() == std::io::ErrorKind::Interrupted && !self.inner.is_tls() => {}
+                result => break result,
+            }
+        };
         completed(started, timeout, result)
     }
     fn is_open(&mut self) -> bool {

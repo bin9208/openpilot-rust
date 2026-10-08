@@ -1,0 +1,124 @@
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+#include "system/camerad/sensors/sensor.h"
+
+struct Rect { int x, y, w, h; };
+struct Frame { uint32_t frame_id = 0; };
+struct Buffer {
+  uint32_t out_img_width, out_img_height;
+  Frame cur_frame_data;
+};
+struct Config { int camera_num; float focal_len; };
+struct Camera {
+  const SensorInfo *sensor;
+  Buffer buf;
+  Config cc;
+  bool enabled = true;
+  std::vector<i2c_random_wr_payload> writes;
+  void sensors_i2c(const i2c_random_wr_payload *data, int count, int opcode, bool words) {
+    if (opcode != 4 || words != sensor->data_word) std::abort();
+    writes.assign(data, data + count);
+  }
+};
+const int CAM_SENSOR_PACKET_OPCODE_SENSOR_CONFIG = 4;
+bool env_ctrl_exp_from_params = false;
+std::string gain_override, time_override;
+struct Params {
+  std::string get(const std::string &key) {
+    if (key == "CameraDebugExpGain") return gain_override;
+    if (key == "CameraDebugExpTime") return time_override;
+    std::abort();
+  }
+};
+class CameraState {
+public:
+  Camera camera;
+  int exposure_time = 5;
+  bool dc_gain_enabled = false;
+  int dc_gain_weight = 0;
+  int gain_idx = 0;
+  float analog_gain_frac = 0;
+  float cur_ev[3] = {};
+  float best_ev_score = 0;
+  int new_exp_g = 0, new_exp_t = 0;
+  Rect ae_xywh = {};
+  float measured_grey_fraction = 0, target_grey_fraction = 0.125;
+  float fl_pix = 0;
+  void update_exposure_score(float, int, int, float);
+  void set_camera_exposure(float);
+  void set_exposure_rect();
+  void initialize() {
+    @INITIALIZE@
+  }
+  @GAIN_FACTOR@
+};
+
+@METHODS@
+
+void state(const CameraState &s) {
+  std::cout << '{';
+#define FIELD(name) std::cout << "\"" #name "\":" << s.name << ','
+  FIELD(exposure_time); FIELD(dc_gain_enabled); FIELD(dc_gain_weight); FIELD(gain_idx);
+  FIELD(analog_gain_frac); FIELD(best_ev_score); FIELD(new_exp_g); FIELD(new_exp_t);
+  FIELD(measured_grey_fraction); FIELD(target_grey_fraction);
+#undef FIELD
+  std::cout << "\"cur_ev\":[" << s.cur_ev[0] << ',' << s.cur_ev[1] << ',' << s.cur_ev[2] << "],";
+  std::cout << "\"rect\":[" << s.ae_xywh.x << ',' << s.ae_xywh.y << ',' << s.ae_xywh.w << ',' << s.ae_xywh.h << "],";
+  std::cout << "\"writes\":[";
+  bool first = true;
+  for (const auto &reg : s.camera.writes) {
+    if (!first) std::cout << ',';
+    first = false;
+    std::cout << '[' << reg.reg_addr << ',' << reg.reg_data << ']';
+  }
+  std::cout << "]}\n";
+}
+
+int main() {
+  std::cout << std::setprecision(17) << std::boolalpha;
+  const AR0231 ar;
+  const OX03C10 ox;
+  const OS04C10 os;
+  const std::array<const SensorInfo *, 3> sensors = {&ar, &ox, &os};
+  CameraState s;
+  std::string op;
+  while (std::cin >> op) {
+    if (op == "reset") {
+      int kind, camera;
+      uint32_t width, height;
+      float focal;
+      if (!(std::cin >> kind >> camera >> width >> height >> focal)) return 2;
+      s = CameraState{};
+      s.camera.sensor = sensors.at(kind - 1);
+      s.camera.buf = {width, height};
+      s.camera.cc = {camera, focal};
+      s.initialize();
+    } else if (op == "step") {
+      float grey;
+      int enabled;
+      if (!(std::cin >> s.camera.buf.cur_frame_data.frame_id >> grey >> enabled
+            >> std::quoted(gain_override) >> std::quoted(time_override))) return 2;
+      s.camera.enabled = enabled != 0;
+      s.camera.writes.clear();
+      env_ctrl_exp_from_params = true;
+      try {
+        s.set_camera_exposure(grey);
+      } catch (const std::invalid_argument &) {
+        std::cout << "{\"error\":\"invalid_argument\"}\n";
+        continue;
+      } catch (const std::out_of_range &) {
+        std::cout << "{\"error\":\"out_of_range\"}\n";
+        continue;
+      }
+    } else {
+      return 3;
+    }
+    state(s);
+  }
+}

@@ -1,0 +1,151 @@
+// Generated with unchanged project-owned helpers and marked operation fragments from spectra.cc.
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <poll.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <cassert>
+#include <cerrno>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <memory>
+#include <map>
+#include <queue>
+#include <optional>
+#include <iostream>
+#include <media/cam_defs.h>
+#include <media/cam_req_mgr.h>
+#include <media/cam_sensor.h>
+#include <media/cam_sync.h>
+#define LOG(...) ((void)0)
+#define LOGD(...) ((void)0)
+#define LOGE(...) ((void)0)
+@HELPERS@
+
+static void output(int ret) { std::cout << '[' << ret << ',' << errno << ']'; }
+static void put(void* ptr, size_t offset, uint32_t value) { memcpy((char*)ptr+offset, &value, 4); }
+int main(int argc, char** argv) {
+  assert(argc == 3);
+  std::string mode = argv[1];
+  uint32_t seed = std::strtoull(argv[2], nullptr, 10);
+  int fd = open("/dev/camera-fixture-request", O_RDWR | O_NONBLOCK);
+  assert(fd >= 0);
+  int session_handle = seed, dev_handle = seed + 17, link_handle = seed + 31;
+  uint64_t request_id = (uint64_t(seed) << 32) | (seed ^ 0xa55a);
+  if (mode == "session") {
+    struct { int video0_fd; } master{fd}; auto m = &master;
+@SESSION@
+    std::cout << '['; output(ret); std::cout << ',' << session_handle << ']';
+  } else if (mode == "destroy_session") {
+    struct cam_req_mgr_session_info info = {.session_hdl = session_handle};
+    output(do_cam_control(fd, CAM_REQ_MGR_DESTROY_SESSION, &info, sizeof(info)));
+  } else if (mode == "acquire_sensor" || mode == "acquire_phy") {
+    struct cam_csiphy_acquire_dev_info resource = {.combo_mode = 0};
+    auto acquired = device_acquire(fd, session_handle, mode == "acquire_sensor" ? nullptr : &resource);
+    std::cout << '[' << (acquired ? "true" : "false") << ',' << acquired.value_or(0) << ']';
+  } else if (mode == "configure") {
+    output(device_config(fd, session_handle, dev_handle, seed ^ 0xabcd));
+  } else if (mode == "start" || mode == "stop" || mode == "release_device") {
+    output(device_control(fd, mode == "start" ? CAM_START_DEV : mode == "stop" ? CAM_STOP_DEV : CAM_RELEASE_DEV, session_handle, dev_handle));
+  } else if (mode == "flush_device") {
+    struct cam_flush_dev_cmd cmd = {.session_handle = session_handle, .dev_handle = dev_handle, .flush_type = CAM_FLUSH_TYPE_ALL};
+    output(do_cam_control(fd, CAM_FLUSH_REQ, &cmd, sizeof(cmd)));
+  } else if (mode == "link") {
+    struct { int video0_fd; } master{fd}; auto m = &master;
+    int isp_dev_handle = dev_handle, sensor_dev_handle = seed + 19;
+@LINK@
+    std::cout << "[true," << link_handle << ']';
+  } else if (mode == "activate" || mode == "deactivate") {
+    struct cam_req_mgr_link_control info = {0};
+    info.ops = mode == "activate" ? CAM_REQ_MGR_LINK_ACTIVATE : CAM_REQ_MGR_LINK_DEACTIVATE;
+    info.session_hdl = session_handle;
+    info.num_links = 1;
+    info.link_hdls[0] = link_handle;
+    output(do_cam_control(fd, CAM_REQ_MGR_LINK_CONTROL, &info, sizeof(info)));
+  } else if (mode == "unlink") {
+    struct cam_req_mgr_unlink_info info = {0};
+    info.session_hdl = session_handle;
+    info.link_hdl = link_handle;
+    output(do_cam_control(fd, CAM_REQ_MGR_UNLINK, &info, sizeof(info)));
+  } else if (mode == "schedule") {
+    struct { int video0_fd; } master{fd}; auto m = &master;
+    int ret;
+@SCHEDULE@
+    output(ret);
+  } else if (mode == "flush_requests") {
+    struct cam_req_mgr_flush_info info = {0};
+    info.session_hdl = session_handle;
+    info.link_hdl = link_handle;
+    info.flush_type = CAM_REQ_MGR_FLUSH_TYPE_ALL;
+    output(do_cam_control(fd, CAM_REQ_MGR_FLUSH_REQ, &info, sizeof(info)));
+  } else if (mode == "probe") {
+    output(do_cam_control(fd, 0x10a, (void*)(uintptr_t)seed, 0));
+  } else if (mode == "release_buffer") {
+    struct cam_mem_mgr_release_cmd cmd = {0}; cmd.buf_handle = seed;
+    output(do_cam_control(fd, CAM_REQ_MGR_RELEASE_BUF, &cmd, sizeof(cmd)));
+  } else if (mode == "fences") {
+    struct { int cam_sync_fd; } master{fd}; auto m = &master;
+    int i = 0, sync_objs_ife[1] = {}, sync_objs_bps[1] = {}, icp_dev_handle = seed & 1;
+@FENCES@
+    int last_errno = errno;
+    std::cout << '['; errno = first_errno; output(first_ret); errno = last_errno; std::cout << ',' << sync_objs_ife[0] << ',';
+    if (icp_dev_handle) { std::cout << '['; output(ret); std::cout << ',' << sync_objs_bps[0] << ']'; }
+    else std::cout << "null";
+    std::cout << ']';
+  } else if (mode == "wait") {
+    struct cam_sync_wait info = {}; info.sync_obj = seed; info.timeout_ms = request_id;
+    output(do_sync_control(fd, CAM_SYNC_WAIT, &info, sizeof(info)));
+  } else if (mode == "destroy_fence") {
+    struct cam_sync_info info = {.sync_obj = static_cast<int32_t>(seed)};
+    output(do_sync_control(fd, CAM_SYNC_DESTROY, &info, sizeof(info)));
+  } else if (mode == "poll") {
+    struct pollfd descriptor = {.fd = fd, .events = POLLPRI};
+    int ret = poll(&descriptor, 1, 1000);
+    std::cout << '['; output(ret); std::cout << ',' << descriptor.revents << ']';
+  } else if (mode == "event") {
+    struct v4l2_event event = {};
+    int ret = HANDLE_EINTR(ioctl(fd, VIDIOC_DQEVENT, &event));
+    auto data = reinterpret_cast<const cam_req_mgr_message*>(event.u.data);
+    auto frame = data->u.frame_msg;
+    std::cout << '['; output(ret);
+    std::cout << ',' << event.type << ',' << event.id << ',' << data->session_hdl << ',' << frame.link_hdl
+              << ',' << frame.request_id << ',' << frame.frame_id << ',' << frame.timestamp << ',' << frame.sof_status << ']';
+  } else if (mode == "imports") {
+    int raw = open("/dev/camera-fixture-raw", O_RDONLY), yuv = open("/dev/camera-fixture-yuv", O_RDONLY);
+    struct { int device_iommu, icp_device_iommu, video0_fd; } master{static_cast<int>(seed), static_cast<int>(seed + 1), fd}; auto m = &master;
+    int ret = 0, icp_dev_handle = seed & 1, i = 0;
+    constexpr int ISP_IFE_PROCESSED = 0, ISP_BPS_PROCESSED = 1, ISP_RAW_OUTPUT = 2;
+    struct { int output_type; } cc{seed & 2 ? (seed & 4 ? ISP_BPS_PROCESSED : ISP_RAW_OUTPUT) : ISP_IFE_PROCESSED};
+    struct VisionBuf { int fd; } raw_buf{raw}, yuv_buf{yuv};
+    struct Server { VisionBuf* value; VisionBuf* get_buffer(int, int) { return value; } } server{&yuv_buf};
+    struct { VisionBuf* camera_bufs_raw; Server* vipc_server; int stream_type; } buf{&raw_buf, &server, 0};
+    uint32_t buf_handle_raw[1] = {}, buf_handle_yuv[1] = {};
+@IMPORTS@
+    std::cout << "[true," << buf_handle_raw[0] << ',' << buf_handle_yuv[0] << ',';
+    if (cc.output_type != ISP_RAW_OUTPUT) output(ret); else std::cout << "null";
+    std::cout << ']'; close(yuv); close(raw);
+  } else if (mode == "allocation") {
+    uint32_t handle;
+    void* p = alloc_w_mmu_hdl(fd, 257, &handle, 32, 0x859, seed & 1 ? seed : 0, seed & 2 ? -17 : 0);
+    if (!p) return 1;
+    put(p, 1, seed); put(p, 253, seed + 1);
+    munmap(p, 257); close(handle >> 16); release(fd, handle);
+    std::cout << "[true," << handle << ']';
+  } else if (mode == "pool") {
+    uint32_t h[6];
+    {
+      MemoryManager pool; pool.init(fd);
+      auto a = pool.alloc<char>(64, &h[0]), b = pool.alloc<char>(64, &h[1]), c = pool.alloc<char>(80, &h[2]);
+      put(a.get(), 0, seed); put(b.get(), 60, seed + 1); put(c.get(), 76, seed + 2);
+      a.reset(); b.reset(); c.reset();
+      auto d = pool.alloc<char>(64, &h[3]), e = pool.alloc<char>(64, &h[4]), f = pool.alloc<char>(80, &h[5]);
+      put(d.get(), 8, seed + 3); put(e.get(), 12, seed + 4);
+      e.reset(); d.reset(); f.reset();
+    }
+    std::cout << "[[" << h[0] << ',' << h[1] << ',' << h[2] << "],[" << h[3] << ',' << h[4] << ',' << h[5] << "]]";
+  } else return 2;
+  std::cout << '\n'; close(fd);
+}

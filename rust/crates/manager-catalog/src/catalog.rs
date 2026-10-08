@@ -89,6 +89,7 @@ fn availability(name: &str) -> RustAvailability {
         "_pandad" => ("openpilot-pandad", "openpilot-pandad"),
         "beep" => ("openpilot-beepd", "openpilot-beepd"),
         "bridge" => ("openpilot-bridge", "bridge"),
+        "camerad" => ("openpilot-camerad-runtime", "openpilot-camerad"),
         "calibrationd" => ("openpilot-calibrationd", "openpilot-calibrationd"),
         "carrot_navi" => ("openpilot-carrot-navi", "openpilot-carrot-navi"),
         "card" => ("openpilot-card", "openpilot-card"),

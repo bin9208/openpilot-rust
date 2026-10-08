@@ -1,0 +1,78 @@
+#include <array>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <string>
+#include <vector>
+#include "system/camerad/cameras/cdm.h"
+#include "system/camerad/cameras/camera_event_timing.h"
+#include "system/camerad/cameras/nv12_info.h"
+
+struct Rect { int x, y, w, h; };
+struct VisionBuf { const uint8_t *y; };
+struct CameraBuf { const VisionBuf *cur_yuv_buf; int out_img_width; };
+
+@LUMINANCE@
+
+void bytes(const uint8_t *data, int count, int patch) {
+  std::cout << "{\"patch\":" << patch << ",\"bytes\":[";
+  for (int i = 0; i < count; ++i) {
+    if (i) std::cout << ',';
+    std::cout << unsigned(data[i]);
+  }
+  std::cout << "]}";
+}
+
+int main() {
+  std::cout << std::setprecision(17) << std::boolalpha;
+  CameraEventTiming timing;
+  std::string operation;
+  while (std::cin >> operation) {
+    if (operation == "timing") {
+      uint64_t sof, received;
+      std::cin >> sof >> received;
+      const auto sample = timing.observe(sof, received);
+      std::cout << "{\"sof_delta_ns\":" << sample.sof_delta_ns << ",\"event_age_ns\":" << sample.event_age_ns
+                << ",\"suppressed\":" << sample.suppressed << ",\"report\":" << sample.report << '}';
+    } else if (operation == "nv12") {
+      int width, height;
+      std::cin >> width >> height;
+      const auto [stride, y, uv, size] = get_nv12_info(width, height);
+      std::cout << "{\"stride\":" << stride << ",\"y_height\":" << y << ",\"uv_height\":" << uv << ",\"size\":" << size << '}';
+    } else if (operation == "dmi") {
+      uint32_t length, address;
+      unsigned selector, opcode;
+      std::cin >> length >> address >> selector >> opcode;
+      std::array<uint32_t, 3> aligned{};
+      uint8_t *buffer = reinterpret_cast<uint8_t *>(aligned.data());
+      uint64_t patch;
+      const int size = write_dmi(buffer, &patch, length, address, selector, opcode);
+      bytes(buffer, size, reinterpret_cast<uint8_t *>(patch) - buffer);
+    } else if (operation == "cont" || operation == "random") {
+      uint32_t address;
+      size_t count;
+      std::cin >> address >> count;
+      std::vector<uint32_t> values(count), aligned(count + 2, 0xcccccccc);
+      for (auto &value : values) std::cin >> value;
+      uint8_t *buffer = reinterpret_cast<uint8_t *>(aligned.data());
+      int size = operation == "cont" ? write_cont(buffer, address, values) : write_random(buffer, values);
+      bytes(buffer, size, -1);
+    } else if (operation == "luminance") {
+      int width, xskip, yskip;
+      Rect region;
+      std::string path;
+      std::cin >> width >> region.x >> region.y >> region.w >> region.h >> xskip >> yskip >> std::quoted(path);
+      std::ifstream stream(path, std::ios::binary);
+      if (!stream) return 2;
+      const std::vector<uint8_t> pixels{std::istreambuf_iterator<char>(stream), {}};
+      const VisionBuf vision{pixels.data()};
+      const CameraBuf camera{&vision, width};
+      std::cout << calculate_exposure_value(&camera, region, xskip, yskip);
+    } else {
+      return 3;
+    }
+    if (!std::cin) return 4;
+    std::cout << '\n';
+  }
+}

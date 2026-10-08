@@ -1,0 +1,64 @@
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <sys/stat.h>
+#include "common/timing.h"
+#define LOGE(...) do { fprintf(stderr, __VA_ARGS__); fputc('\n', stderr); } while (0)
+namespace util {
+std::string getenv(const char* name, const char* fallback) { const char* value = std::getenv(name); return value ? value : fallback; }
+}
+struct SpectraCamera {
+  struct { int camera_num; } cc;
+  @METHOD@
+};
+
+int main(int argc, char** argv) {
+  if (argc == 3 && !strcmp(argv[1], "parse")) {
+    struct stat missing = {};
+    if (stat("/camera-stress-owned-missing", &missing) == 0) return 2;
+    int previous = errno, after;
+    const char* error = nullptr;
+    uint64_t bits = 0;
+    try { double value = std::stod(argv[2]); after = errno; memcpy(&bits, &value, sizeof(bits)); }
+    catch (const std::invalid_argument&) { after = errno; error = "invalid_argument"; }
+    catch (const std::out_of_range&) { after = errno; error = "out_of_range"; }
+    std::cout << "{\"previous_errno\":" << previous << ",\"after_errno\":" << after << ",\"result\":{";
+    if (error) std::cout << "\"error\":\"" << error << '"'; else std::cout << "\"bits\":" << bits;
+    std::cout << "}}\n";
+    return 0;
+  }
+  SpectraCamera cameras[] = {{{0}}, {{1}}, {{2}}};
+  const char* points[] = {"skipping SOF event", "sync sleep time", "IFE sync", "BPS sync"};
+  std::ostringstream output;
+  std::string line;
+  const char* error = nullptr;
+  int index = 0, error_step = -1;
+  while (std::getline(std::cin, line)) {
+    std::istringstream fields(line);
+    std::string action; fields >> action;
+    try {
+      if (action == "now") {
+        if (index) output << ',';
+        output << "{\"now\":" << nanos_since_boot() << '}';
+      } else if (action == "stress") {
+        int camera, point; fields >> camera >> point;
+        if (camera < 0 || camera > 2 || point < 0 || point > 3) return 2;
+        bool triggered = cameras[camera].stress_test(points[point]);
+        if (index) output << ',';
+        output << "{\"triggered\":" << (triggered ? "true" : "false") << '}';
+      } else return 2;
+    } catch (const std::invalid_argument&) { error = "invalid_argument"; error_step = index; break; }
+      catch (const std::out_of_range&) { error = "out_of_range"; error_step = index; break; }
+    index++;
+  }
+  std::cout << "{\"results\":[" << output.str() << "],\"error\":";
+  if (error) std::cout << '"' << error << '"'; else std::cout << "null";
+  std::cout << ",\"error_step\":";
+  if (error_step >= 0) std::cout << error_step; else std::cout << "null";
+  std::cout << "}\n";
+}

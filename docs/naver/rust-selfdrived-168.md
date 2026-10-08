@@ -320,3 +320,16 @@ Strict all-target Clippy then passes. The affected logs are retained in the
 primary checkout at `.analysis/scratch/2026-10-08-runtime-resume/231-messaging-recovery/`.
 No full policy corpus was repeated locally. Fresh hosted runtime/IPC/source
 comparison and all required gates remain necessary for the corrected head.
+
+### Required integration results (2026-10-08)
+
+Corrected PR #231 head `7a8d64194143d90006b54b750f32706afc558354`
+passed every required check, including the actual selfdrived source/IPC gate,
+[Rust host and ARM run 37759023342](https://github.com/bin9208/openpilot-rust/actions/runs/37759023342)
+and [Integration run 37759023690](https://github.com/bin9208/openpilot-rust/actions/runs/37759023690).
+The ordinary dev merge is `2f5e5dd6956f0abc00f2d201e7b5452ada1563d5`.
+Its separate [Rust run 37764231124](https://github.com/bin9208/openpilot-rust/actions/runs/37764231124)
+and [Integration run 37764231373](https://github.com/bin9208/openpilot-rust/actions/runs/37764231373)
+also pass, as do Fast 37764231113 and user docs 37764231121.
+Issue #168 remains open for the complete startup/upload and device acceptance
+gates; these results establish hosted composition at the recorded commits.
