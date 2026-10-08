@@ -1,6 +1,31 @@
 use crate::{Error, Value};
 use std::{fs::File, io::Write, path::Path};
 
+pub(crate) fn compact_encoded(encoded: &str) -> String {
+    let mut quoted = false;
+    let mut escaped = false;
+    encoded
+        .chars()
+        .filter(|c| {
+            if quoted {
+                if escaped {
+                    escaped = false;
+                } else if *c == '\\' {
+                    escaped = true;
+                } else if *c == '"' {
+                    quoted = false;
+                }
+                true
+            } else if *c == '"' {
+                quoted = true;
+                true
+            } else {
+                !c.is_whitespace()
+            }
+        })
+        .collect()
+}
+
 fn utf8_text(points: &[u32], prefix: &str) -> Result<String, Error> {
     let mut text = String::from(prefix);
     text.push('"');

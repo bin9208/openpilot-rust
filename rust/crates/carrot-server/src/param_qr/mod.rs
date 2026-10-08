@@ -9,6 +9,8 @@ mod schema;
 mod text;
 mod values;
 mod zlib;
+pub(crate) use digits::is_digit as is_python_digit;
+pub(crate) use text::compact as compact_utf8;
 
 use crate::{params::Backend, Error, Value};
 pub use schema::Schema;

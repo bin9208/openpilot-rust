@@ -3,6 +3,7 @@ pub mod bluetooth_http;
 mod bootstrap;
 pub mod cars;
 pub mod config;
+pub mod dashcam;
 pub mod egpu_model;
 pub mod git_status;
 mod history_http;

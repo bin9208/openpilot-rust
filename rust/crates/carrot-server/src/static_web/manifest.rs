@@ -221,28 +221,7 @@ impl ManifestLoader {
 
 pub(super) fn compact_json(value: &Value) -> Result<String, Error> {
     let encoded = json_utf8(value)?;
-    let mut quoted = false;
-    let mut escaped = false;
-    Ok(encoded
-        .chars()
-        .filter(|c| {
-            if quoted {
-                if escaped {
-                    escaped = false;
-                } else if *c == '\\' {
-                    escaped = true;
-                } else if *c == '"' {
-                    quoted = false;
-                }
-                true
-            } else if *c == '"' {
-                quoted = true;
-                true
-            } else {
-                !c.is_whitespace()
-            }
-        })
-        .collect())
+    Ok(crate::state_json::compact_encoded(&encoded))
 }
 
 pub(super) fn json_utf8(value: &Value) -> Result<String, Error> {

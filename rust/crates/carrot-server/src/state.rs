@@ -25,7 +25,7 @@ pub(crate) fn trim(points: &[u32]) -> &[u32] {
     &points[start..end]
 }
 
-fn io_error(error: std::io::Error, path: &Path) -> Error {
+pub(crate) fn io_error(error: std::io::Error, path: &Path) -> Error {
     let message = error.to_string();
     let message = message.split(" (os error").next().unwrap_or(&message);
     Error::Source(format!(

@@ -427,6 +427,30 @@ proofs are reused for this mechanical move; strict all-target Clippy, formatting
 and diff checks pass again. The Bluetooth ledger and 23-file source freeze retain
 the final binaries and focused invocations.
 
+## Dashcam catalog prerequisites (2026-10-08)
+
+The route/segment catalog, source-file selection, path helpers and recent-read
+state now have a native implementation. Ninety-two owned source/file pairs
+pass with example SHA256
+`ba203ba45764f83c481fcd9e6085bd1c593461e509176049d96be17c6e5c4402`.
+They preserve numeric modern/legacy order, lazy positive-only timestamp caching,
+invalidation and page seeds, canonical media/log preference, required-rlog
+summaries and original per-entry completeness behavior. Read-state comparisons
+retain exact state/temporary bytes, partial UTF-8 failure output, exception
+classification, rename errors and recovery. A trace records zero child-path
+filesystem access during name-only enumeration on this host filesystem.
+The full receipt and seven owned-file hashes are in
+`.omo/evidence/carrot-server-225-resume/dashcam-catalog/receipt.json`.
+
+Existing path, Unicode-digit, compact UTF-8 and I/O-error helpers are reused
+through visibility-only exports. The existing manifest whitespace compactor is
+also shared without changing its quote/escape logic or HTML escaping; one
+original/native index HTTP response matches after extraction. Its receipt is
+under `shared-primitives/` beside the catalog evidence. Bounded builds, strict
+all-target Clippy, formatting and diff checks pass. HTTP pagination/read-state
+routes, replay/encoding, upload orchestration and full startup remain separate
+work; these tests use synthetic metadata files, not actual recordings or devices.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process

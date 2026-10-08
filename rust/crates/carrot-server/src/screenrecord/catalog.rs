@@ -44,7 +44,7 @@ pub fn absolute(path: &Path) -> std::io::Result<PathBuf> {
     Ok(result)
 }
 
-pub(super) fn text(value: &OsStr) -> Value {
+pub(crate) fn text(value: &OsStr) -> Value {
     let mut bytes = value.as_bytes();
     let mut points = Vec::new();
     while !bytes.is_empty() {
@@ -65,7 +65,7 @@ pub(super) fn text(value: &OsStr) -> Value {
     Value::Text(points)
 }
 
-pub(super) fn path_text(value: &Value) -> Option<OsString> {
+pub(crate) fn path_text(value: &Value) -> Option<OsString> {
     let Value::Text(points) = value else {
         return None;
     };
