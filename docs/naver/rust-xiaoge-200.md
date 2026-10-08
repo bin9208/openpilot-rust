@@ -134,3 +134,12 @@ evidence are reused without a local native build or full-corpus replay.
 The new candidate's exact-head host, native ARM and memory Actions remain
 required before merge; full runtime startup/upload and device acceptance
 remain open.
+
+The first hosted candidate passed the Xiaoge host, native ARM and memory jobs,
+but its Athena transfer job exposed the interrupted logger connection in #246.
+The candidate now also contains that causal same-socket EINTR correction and
+the independently reproduced CarrotMan fixture correction #243. Their focused
+source/native evidence is recorded in the linked issue documents. Both branches
+merge without conflicts; Xiaoge/OpenCV/UI sources remain unchanged. Twenty-eight
+combined isolation/Athena-helper checks pass. Fresh exact-head CI is required
+for the combined candidate; the earlier Athena failure remains retained.
