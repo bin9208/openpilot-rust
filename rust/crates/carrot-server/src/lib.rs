@@ -1,4 +1,5 @@
 //! Original Carrot Web server policies from openpilot/selfdrive/carrot/server (#225).
+pub mod auto_update;
 pub mod bluetooth_http;
 mod bootstrap;
 pub mod cars;

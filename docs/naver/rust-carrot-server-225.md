@@ -696,6 +696,23 @@ The common 90-second capture deadline is reused from #242; the original
 timeout experiments. Inputs are owned synthetic media. Route-report aggregation,
 upload orchestration and complete server/runtime startup remain open.
 
+## Automatic-update conditions (2026-10-09 KST)
+
+The native pure conditions preserve the original manager-readiness interval,
+sample-gap reset, park/disengaged/offroad reboot rules, verified-target gate
+and Unicode error-detail suffix. Twenty original/native cases with 820 repeated
+inputs match, including invalid inputs and exact time boundaries. The portable
+`rust/tools/carrot_server_auto_update_policy.py` driver accepts the built
+`auto_update_policy` example and an output directory.
+
+Selected build, strict server Clippy, 19 library tests and formatting pass.
+The retained policy example SHA256 is
+`19c6ee998253d89a7e3fb4b0b2c461baa917568835396ea6246dcbb458e11eba`;
+commands and the scenario map are recorded in
+`.omo/evidence/225-auto-update-policy/checkpoint/receipt.json`.
+This checkpoint does not yet connect manager IPC, automatic Git transactions,
+notifications or the reboot request. Those remain separate integration work.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
