@@ -93,6 +93,7 @@ fn availability(name: &str) -> RustAvailability {
         "carrot_navi" => ("openpilot-carrot-navi", "openpilot-carrot-navi"),
         "card" => ("openpilot-card", "openpilot-card"),
         "carrot_bluetooth" => ("openpilot-bluetooth", "openpilot-bluetoothd"),
+        "carrot_man" => ("openpilot-carrot-man", "openpilot-carrot-man"),
         "controlsd" => ("openpilot-controlsd", "openpilot-controlsd"),
         "cweb_push" => ("openpilot-cweb-push", "openpilot-cweb-push"),
         "deleter" => ("openpilot-deleter", "openpilot-deleter"),
@@ -726,4 +727,39 @@ pub fn catalog(config: ImportConfig) -> Vec<Descriptor> {
             false,
         ),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn carrot_man_candidate_keeps_source_registration() {
+        let descriptor = catalog(ImportConfig {
+            pc: true,
+            tici: false,
+            webcam: false,
+            carrot_web_external: false,
+            darwin: false,
+            bodyteleop_available: false,
+        })
+        .into_iter()
+        .find(|descriptor| descriptor.name == "carrot_man")
+        .expect("registered CarrotMan");
+        assert_eq!(
+            descriptor.source,
+            SourceProcess::Python {
+                module: "openpilot.selfdrive.carrot.carrot_man"
+            }
+        );
+        assert!(descriptor.enabled && descriptor.restart_if_crash);
+        assert!(matches!(
+            descriptor.rust,
+            RustAvailability::Candidate {
+                package: "openpilot-carrot-man",
+                binary: "openpilot-carrot-man",
+                ..
+            }
+        ));
+    }
 }
