@@ -152,3 +152,25 @@ and source/configured-header metadata. Encoder bindgen consumes these three
 declarations directly; without them its native build cannot locate the JPEG
 headers. Codec implementation is unchanged. Candidate build confirmation remains
 with hosted CI while the local disk reserve prevents new builds.
+
+## Updated integration base (2026-10-08)
+
+Camera PR #236 passed all 57 reported checks at
+`d0dd5b724ade5ce08d7b4f0427aa5107fd477529` and merged into dev as
+`b03901c782094390ba5c9e4baa8e1f294276db2e`. Its
+[Rust run](https://github.com/bin9208/openpilot-rust/actions/runs/37787064397)
+also validates the upload EINTR correction, disappearing Athena child handling
+and expanded ARM job budget. The post-merge
+[dev Rust run](https://github.com/bin9208/openpilot-rust/actions/runs/37793526299)
+was queued when this encoder candidate was prepared; it is a separate gate.
+
+The encoder integration merges that dev base without conflicts. Encoderd and
+JPEG sources remain byte-identical to prepared candidate `8a1e256b2`; the
+historical module comparisons above remain reusable with their stated limits.
+The updated composition passes 21 repository-isolation checks, six Athena
+child checks and 23 encoder/Card CI-helper checks, plus locked offline Cargo
+metadata and diff checks. Local test collection initially used an incomplete
+Python path; the existing test environment and repository import paths were
+then reused without installing dependencies. No native rebuild or full module
+corpus was added locally. Exact-head encoder/ARM Actions remain required before
+merge; full startup/upload and physical-device acceptance remain unfinished.
