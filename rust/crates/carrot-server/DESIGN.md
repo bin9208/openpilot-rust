@@ -88,15 +88,15 @@ foundation snapshot, not the latest combined server.
 Carrot Navi web routes, stream/WebRTC, support terminal, realtime WebSockets,
 settings snapshots, QR provider lifecycle, the remaining system and terminal
 routes, dashcam media/upload orchestration, the remaining tools, YouTube live,
-vision test and vision diagnostics remain open. Dashcam catalog/read-state and
-Git status/state have independent prerequisite evidence; their HTTP/lifecycle
-integration is still being completed. Live-broker engagement and complete
+vision test and vision diagnostics remain open. Dashcam catalogue/read-state
+HTTP and Git status HTTP/startup/cleanup now have scoped Application evidence.
+Dashcam source metadata/report/media/upload routes remain open. Live-broker engagement and complete
 startup/CLI failure composition remain separate gates.
 
 Original app startup still requires broker and serialized msgq polling, raw and
 camera hubs, heartbeat, git status, auto update, popular-value upload and periodic
 trim. Static precompression shares the application asset locks and popular-value
-upload has owned startup/cancellation evidence. The other jobs remain explicit
+upload and Git status have owned startup/cancellation evidence. The other jobs remain explicit
 integration work. Full-app fixtures must remap every HTTP/OS/git/update/media
 target; binding loopback does not isolate those effects. No vehicle, NAS, LAN,
 recipient, system-date, reboot or git-update operation is authorized here.

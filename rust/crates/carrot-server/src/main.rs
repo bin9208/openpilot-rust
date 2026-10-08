@@ -97,7 +97,14 @@ async fn run() -> Result<(), Error> {
         config.state.clone(),
     );
     let listener = tokio::net::TcpListener::bind((host.as_str(), port)).await?;
-    serve(Application::new(config, backend), listener, shutdown()).await
+    let launcher = env::current_exe()?.with_file_name("openpilot-process-child");
+    let git_status = openpilot_carrot_server::git_status::Service::original(launcher);
+    serve(
+        Application::with_git_status(config, backend, git_status),
+        listener,
+        shutdown(),
+    )
+    .await
 }
 
 #[tokio::main(flavor = "current_thread")]

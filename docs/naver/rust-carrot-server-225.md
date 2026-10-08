@@ -470,6 +470,55 @@ Concurrent fixed-temporary-file writers and injected fsync/permission failures
 were not measured. Git status HTTP and startup/cleanup integration remain open;
 this prerequisite does not implement automatic-update policy or reboot behavior.
 
+## Git status HTTP and server lifecycle (2026-10-08)
+
+The production executable now creates the original Git status service using
+its sibling `openpilot-process-child`, starts the existing eight-second initial
+delay/60-second loop and cancels/awaits that work during shutdown. Listener
+accept errors now pass through cleanup before returning. The explicit fixture
+constructor keeps Git inactive unless an owned service is supplied.
+
+Forty-one independent HTTP pairs and nine final Application pairs preserve
+ordered response bytes, first-value force/refresh query parsing, cache command
+counts, normal/busy/error/fetch recovery and real Git state reads. A separate
+persistent-connection error probe verifies the original 500 response and EOF.
+The final Tools fixture SHA256 is
+`2a7e92e78c1aa45083f07dfa83e49f20398db7d711be8db7363788e934d12f76`.
+
+Original/native loop checks observe the first Git command at 8.135/8.049 seconds
+and held-job cleanup at 1.065/1.015 seconds with both child and descendant exit
+confirmed. Three additional native controls cover actual EMFILE accept failure
+cleanup, startup validation failure and an inactive fixture constructor. The
+long loop checks reuse the retained earlier binary with unchanged Git bodies;
+the final nine HTTP pairs and error EOF check run after the parallel Dashcam
+wiring. Build, strict Clippy and formatting pass. Exact invocations, source
+hashes and limitations are in `.omo/evidence/225-tools-git-status/LEDGER.md`.
+Automatic-update policy and the other startup tasks remain separate work.
+
+## Dashcam catalogue/read-state HTTP (2026-10-08)
+
+GET/HEAD route lists, segment pages and recent completed segments, plus
+GET/HEAD/POST read state, now use the actual Application router. The native
+cache retains the original directory signature and 300-second boundary,
+cached-empty distinction, positive timestamp invalidation and previous index
+after a failed rebuild. Pagination, newest-incomplete-tail hiding, query bounds
+and read-state file/error behavior retain the original semantics.
+
+Seventy-four independent pairs (65 endpoint and nine fixture phase checks),
+six Application pairs and two persistent-connection error/recovery pairs pass.
+The latter found and corrected a native 500 that left the connection open:
+both servers now send Connection: close, reach EOF and accept recovery on a
+new connection with matching file bytes. Final example SHA256 is
+`e5cd8e6afe60168f4cf6bac6d701315094297dffe15b93983c6fef1e29fe677a`.
+The unchanged 92 prerequisite comparisons are reused with checked identities.
+Receipts, the failing candidate and source hashes are under
+`.omo/evidence/carrot-server-225-resume/dashcam-http/`.
+
+These checks use owned metadata/state files and localhost sockets. They do not
+exercise real recordings, codecs, upload recipients, NAS, devices or stalled
+filesystem cancellation. Report, summary, replay-source, media and upload routes
+remain open. The complete server startup/log-upload gate is still unfinished.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
@@ -480,7 +529,7 @@ The request decoder has the tested expanded charset/compression coverage above;
 broader original codec aliases and provider error diagnostics remain explicit
 limits. Multipart extended names use the existing encoding_rs provider for
 supported labels.
-The other feature families, startup heartbeat/git/update/upload tasks, live
+The other feature families, startup heartbeat/update tasks, live
 broker and camera/WebSocket transport remain outside the completed foundation.
 `/stream` also depends on the separately inventoried WebRTC conversion.
 The executable now resolves runtime assets using existing OPENPILOT_ROOT/BASEDIR

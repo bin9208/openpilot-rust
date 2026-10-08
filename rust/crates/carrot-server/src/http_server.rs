@@ -24,6 +24,11 @@ async fn serve_local(
     app.config.validate()?;
     app.static_web.validate()?;
     app.config.migrate_legacy_state();
+    let (git_stop, git_stopped) = watch::channel(false);
+    let git_status = app
+        .git_status
+        .clone()
+        .map(|service| tokio::spawn(async move { service.run_loop(git_stopped).await }));
     let precompress = app.static_web.start_precompress();
     let popular_upload = app.popular_values.start_upload(Arc::clone(&app));
     let warm_app = Arc::clone(&app);
@@ -36,11 +41,14 @@ async fn serve_local(
     let mut connections = JoinSet::new();
     let mut sounds = JoinSet::new();
     tokio::pin!(shutdown);
-    loop {
+    let served = loop {
         tokio::select! {
-            () = &mut shutdown => break,
+            () = &mut shutdown => break Ok(()),
             accepted = listener.accept() => {
-                let (socket, _) = accepted?;
+                let (socket, _) = match accepted {
+                    Ok(socket) => socket,
+                    Err(error) => break Err(Error::Io(error)),
+                };
                 let app = Arc::clone(&app);
                 let sound = sound.clone();
                 let mut stopped = stop.subscribe();
@@ -71,7 +79,7 @@ async fn serve_local(
             }
             _ = connections.join_next(), if !connections.is_empty() => {}
         }
-    }
+    };
     drop(listener);
     let _ = stop.send(true);
     let _ = sound_stop.send(crate::web_sound::Shutdown::Quiescing);
@@ -101,6 +109,14 @@ async fn serve_local(
         while sounds.join_next().await.is_some() {}
     }
     warm.abort();
+    git_stop.send_replace(true);
+    if let Some(task) = git_status {
+        match task.await {
+            Ok(Ok(())) => {}
+            Ok(Err(error)) => eprintln!("Git status cleanup: {error}"),
+            Err(error) => eprintln!("Git status task: {error}"),
+        }
+    }
     if let Some(task) = popular_upload {
         task.abort();
         match task.await {
@@ -119,5 +135,5 @@ async fn serve_local(
         Err(error) => eprintln!("static precompression task: {error}"),
     }
     app.bluetooth_http.shutdown().await?;
-    Ok(())
+    served
 }

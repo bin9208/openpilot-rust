@@ -1,8 +1,14 @@
-//! Source: features/dashcam/{catalog,paths,read_state}.py; filesystem prerequisites only.
+//! Source: features/dashcam/{catalog,paths,read_state,routes}.py; catalogue/read-state HTTP subset.
+mod cache;
 pub mod catalog;
+mod http;
+mod pages;
 pub mod paths;
 pub mod read_state;
 mod selectors;
+
+pub use cache::Service;
+pub use http::{handle, matches};
 
 use crate::Error;
 

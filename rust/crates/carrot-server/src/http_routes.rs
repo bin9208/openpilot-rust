@@ -21,6 +21,14 @@ pub(crate) async fn dispatch(
     if path == "/api/cars" {
         return Ok(crate::cars::handle(&request, Arc::clone(&app.cars)).await);
     }
+    if path == "/api/tools/git_status" {
+        return Ok(match &app.git_status {
+            Some(service) => {
+                crate::tools_git_status::handle(&request, service, &app.git_state).await
+            }
+            None => crate::tools_git_status::unavailable(head),
+        });
+    }
     if crate::egpu_model::matches(&path) {
         let files = Arc::clone(&app.egpu_model);
         return Ok(crate::egpu_model::handle(&request, app, files, &path).await);
@@ -40,6 +48,9 @@ pub(crate) async fn dispatch(
     if crate::screenrecord::matches(request.uri().path()) {
         let service = Arc::clone(&app.screenrecord);
         return Ok(crate::screenrecord::handle(request, service).await);
+    }
+    if crate::dashcam::matches(request.uri().path()) {
+        return Ok(crate::dashcam::handle(request, Arc::clone(&app.dashcam)).await);
     }
     if path == "/api/ssh_keys" {
         let online = app.ssh_online.clone();

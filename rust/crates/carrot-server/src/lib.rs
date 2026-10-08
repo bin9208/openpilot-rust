@@ -44,6 +44,7 @@ pub(crate) mod state_json;
 mod state_preferences;
 pub mod static_assets;
 pub mod static_web;
+pub mod tools_git_status;
 #[cfg(test)]
 mod transport_test;
 pub mod web_settings;
