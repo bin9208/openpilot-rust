@@ -41,3 +41,14 @@ counts are normalized; raw captures remain available. No general numeric
 tolerance is added. A local integration rebuild is deferred under the disk
 guard. Exact-head hosted results, whole normal startup/log upload and device
 acceptance remain outstanding. This is not a CPU or vehicle-validation claim.
+
+## Integration preparation, 2026-10-08
+
+This candidate is composed with the pending radard integration at `2cd8a1bd`,
+which includes merged Navd dev `740ade11`. CarrotMan, RadarCAN, Navd and radard
+requirements remain enabled alongside both Carrot Navi jobs. The union merge
+preserves both CarrotMan and Carrot Navi packages in the workspace lock file.
+Local connection checks pass 16 workflow-isolation tests, 10 Card/RadarCAN
+CI-policy tests, locked offline metadata and diff whitespace checks. These
+checks do not replace the independent source receipts or the pending hosted
+host/ARM and normal-startup/upload gates. No local corpus rebuild was performed.
