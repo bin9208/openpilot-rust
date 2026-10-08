@@ -61,3 +61,20 @@ integration run `37727864956` passed. It merged normally into dev as
 candidate. The original Carrot Navi implementation and comparison policies
 remain unchanged. Post-merge Radard checks and this candidate's new hosted
 checks remain separate from those successful pre-merge results.
+
+The first native ARM job passed in run `37732559164`. Its host build, tests,
+Clippy and policy execution completed, but the first original process exited
+before health because the CI dependency list omitted `pyzmq`. Original Params
+loads swaglog and hardware modules, which also import NumPy, requests and
+pyserial. These four packages are now pinned to the existing successful local
+oracle versions (`27.2.0`, `2.5.3`, `2.34.2`, `3.5`), and CI imports the actual
+Params binding and receiver before the native build. That complete import
+passes locally using the cached original binding and environment; no dependency
+was installed or full source comparison repeated locally.
+
+Failed host job `113164776643` and artifact `11530763214` retain the import
+trace and executable. The same run separately encountered the managed-entry
+collector fixture hazard tracked in issue 184. Its preserved correction is
+included without changing runtime behavior or comparison timeouts; see
+`rust-managed-entry-readiness-184.md`. Required checks will run on the updated
+composition before any merge.
