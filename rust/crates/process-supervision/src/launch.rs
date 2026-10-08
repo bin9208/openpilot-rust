@@ -101,6 +101,28 @@ impl CapturedCommand {
         self.spawn_with_stdio(StreamMode::Captured, &[], false)
     }
 
+    /// Capture separate byte streams under one post-spawn child/EOF deadline.
+    pub fn capture(
+        &self,
+        timeout: Duration,
+        lock: Option<BorrowedFd<'_>>,
+    ) -> Result<std::process::Output, crate::CaptureError> {
+        let mut child = match lock {
+            Some(lock) => self.spawn_captured_with_lock(&[], lock)?,
+            None => self.spawn()?,
+        };
+        crate::capture_output(&mut child.process, timeout)
+    }
+
+    /// Pass one borrowed lock into a child with separate pipes and no new session.
+    pub fn spawn_captured_with_lock(
+        &self,
+        environment: &[(OsString, OsString)],
+        lock: BorrowedFd<'_>,
+    ) -> Result<CapturedChild, Error> {
+        self.spawn_controlled(StreamMode::Captured, environment, false, Some(lock))
+    }
+
     pub fn spawn_stdout(&self) -> Result<CapturedChild, Error> {
         self.spawn_with_stdio(StreamMode::Stdout, &[], false)
     }
@@ -214,7 +236,7 @@ impl CapturedCommand {
         };
         let mut child = command.spawn()?;
         if let Err(error) = wait_for_exec(&listener, &mut child, lock) {
-            if lock.is_some() {
+            if lock.is_some() && new_session {
                 let group = i32::try_from(child.id())
                     .ok()
                     .and_then(rustix::process::Pid::from_raw)

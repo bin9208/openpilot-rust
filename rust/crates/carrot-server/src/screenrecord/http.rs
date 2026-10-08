@@ -46,11 +46,20 @@ fn failure(error: Failure, head: bool) -> Response<Body> {
             &message,
             head,
         ),
-        Failure::Internal => text(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "500 Internal Server Error\n\nServer got itself in trouble",
-            head,
-        ),
+        Failure::Internal => {
+            let mut response = text(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "500 Internal Server Error\n\nServer got itself in trouble",
+                head,
+            );
+            response
+                .headers_mut()
+                .insert(header::CONNECTION, HeaderValue::from_static("close"));
+            response
+                .extensions_mut()
+                .insert(hyper::ext::CloseAfterResponse);
+            response
+        }
     }
 }
 fn query(request: &Request<RequestBody>, name: &str) -> Option<String> {

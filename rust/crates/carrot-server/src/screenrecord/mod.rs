@@ -1,6 +1,6 @@
 //! Original screenrecord feature; FFmpeg is an external runtime provider.
 pub mod catalog;
-mod ffmpeg;
+pub(crate) mod ffmpeg;
 mod http;
 use crate::{config::Config, Value};
 pub use http::{handle, matches};

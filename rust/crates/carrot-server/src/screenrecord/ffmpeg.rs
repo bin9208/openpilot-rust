@@ -1,11 +1,10 @@
 use super::{catalog, Failure};
 use std::{
+    ffi::OsString,
     fs,
-    io::Read,
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    thread,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 fn executable(path: &Path) -> bool {
@@ -29,6 +28,35 @@ fn output_text(bytes: Vec<u8>) -> Result<String, Failure> {
         .map_err(|_| Failure::Internal)
 }
 
+pub(crate) struct Completed {
+    pub(crate) status: std::process::ExitStatus,
+    pub(crate) stdout: String,
+    pub(crate) stderr: String,
+}
+pub(crate) fn run(
+    program: &Path,
+    args: &[OsString],
+    timeout: Duration,
+) -> Result<Completed, Failure> {
+    let program = locate(program).ok_or_else(|| Failure::http(503, "ffmpeg not available"))?;
+    let mut child = Command::new(program)
+        .args(["-hide_banner", "-loglevel", "error", "-y"])
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|_| Failure::Internal)?;
+    let captured = openpilot_process_supervision::capture_output(&mut child, timeout)
+        .map_err(|_| Failure::Internal)?;
+    let stdout = output_text(captured.stdout)?;
+    let stderr = output_text(captured.stderr)?;
+    Ok(Completed {
+        status: captured.status,
+        stdout,
+        stderr,
+    })
+}
+
 pub fn thumbnail(
     directories: &[PathBuf],
     cache: &Path,
@@ -43,61 +71,28 @@ pub fn thumbnail(
     if output.is_file() && fs::metadata(&output).is_ok_and(|metadata| metadata.len() > 0) {
         return Ok(output);
     }
-    let program = locate(program).ok_or_else(|| Failure::http(503, "ffmpeg not available"))?;
-    let mut child = Command::new(program)
-        .args(["-hide_banner", "-loglevel", "error", "-y", "-ss", "1", "-i"])
-        .arg(&path)
-        .args(["-vframes", "1", "-vf", "scale=320:-1"])
-        .arg(&output)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|_| Failure::Internal)?;
-    let mut stdout = child.stdout.take().ok_or(Failure::Internal)?;
-    let mut stderr = child.stderr.take().ok_or(Failure::Internal)?;
-    let stdout = thread::spawn(move || {
-        let mut bytes = Vec::new();
-        stdout.read_to_end(&mut bytes).map(|_| bytes)
-    });
-    let stderr = thread::spawn(move || {
-        let mut bytes = Vec::new();
-        stderr.read_to_end(&mut bytes).map(|_| bytes)
-    });
-    let start = Instant::now();
-    let status = loop {
-        match child.try_wait() {
-            Ok(Some(status)) => break Ok(status),
-            Ok(None) if start.elapsed() < Duration::from_secs(90) => {
-                thread::sleep(Duration::from_millis(5))
-            }
-            Ok(None) | Err(_) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                break Err(Failure::Internal);
-            }
-        }
-    };
-    let stdout = stdout
-        .join()
-        .map_err(|_| Failure::Internal)?
-        .map_err(|_| Failure::Internal)?;
-    let stderr = stderr
-        .join()
-        .map_err(|_| Failure::Internal)?
-        .map_err(|_| Failure::Internal)?;
-    let status = status?;
-    let stderr = output_text(stderr)?;
-    let stdout = output_text(stdout)?;
-    if !status.success()
+    let args = [
+        OsString::from("-ss"),
+        OsString::from("1"),
+        OsString::from("-i"),
+        path.into_os_string(),
+        OsString::from("-vframes"),
+        OsString::from("1"),
+        OsString::from("-vf"),
+        OsString::from("scale=320:-1"),
+        output.clone().into_os_string(),
+    ];
+    let result = run(program, &args, Duration::from_secs(90))?;
+    if !result.status.success()
         || !output.is_file()
         || !fs::metadata(&output).is_ok_and(|metadata| metadata.len() > 0)
     {
         return Err(Failure::http(
             500,
-            if !stderr.is_empty() {
-                &stderr
-            } else if !stdout.is_empty() {
-                &stdout
+            if !result.stderr.is_empty() {
+                &result.stderr
+            } else if !result.stdout.is_empty() {
+                &result.stdout
             } else {
                 "screenrecord thumbnail generation failed"
             },
