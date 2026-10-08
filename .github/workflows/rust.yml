@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, carrot-man-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-man-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -48,6 +48,7 @@ jobs:
           RADAR_ARM: ${{ needs.radar-arm.result }}
           RADAR_MEMORY: ${{ needs.radar-memory.result }}
           NAVD: ${{ needs.navd-runtime.result }}
+          RADARD: ${{ needs.radard-runtime.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -75,6 +76,7 @@ jobs:
           test "$RADAR_ARM" = success
           test "$RADAR_MEMORY" = success
           test "$NAVD" = success
+          test "$RADARD" = success
   planner-runtime:
     name: rust planner source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
@@ -892,6 +894,149 @@ jobs:
             rust/target/debug/openpilot-navd
             rust/target/debug/openpilot-set-destination
             rust/target/debug/examples/navd_*
+          if-no-files-found: warn
+  radard-runtime:
+    name: rust radard source and native runtime (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            machine: x86_64
+          - runner: ubuntu-24.04-arm
+            machine: aarch64
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Reserve capacity and install original oracle dependencies
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/radard-native/logs"
+          git rev-parse HEAD > "$RUNNER_TEMP/radard-native/SOURCE_COMMIT"
+          uname -m | tee "$RUNNER_TEMP/radard-native/machine.txt"
+          test "$(uname -m)" = '${{ matrix.machine }}'
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.3.0 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1
+          python -m pip freeze > "$RUNNER_TEMP/radard-native/python-packages.txt"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+      - name: Build unchanged native Params and msgq bindings
+        run: |
+          set -euo pipefail
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -P rust/tools/build_params_python.py --output "$RUNNER_TEMP/radard-native/params" 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/params-build.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -P rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radard-native/msgq" 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/msgq-build.log"
+          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radard-native/params/provenance.json"; print("RADARD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s/radard-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+          printf 'RADARD_BINARY=%s/rust/target/debug/openpilot-radard\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Require actual native imports and declared source helper imports
+        run: |
+          set -euo pipefail
+          python -P - <<'PY' 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/imports.log"
+          import importlib
+          import os
+          from pathlib import Path
+          from card_runtime_source import load_binding
+          load_binding(Path(os.environ['RADARD_PARAMS_BINDING']))
+          for name in ('msgq.ipc_pyx', 'openpilot.common.params_pyx',
+                       'radard_geometry_source', 'radard_selection_source', 'radard_primary_source',
+                       'radard_trajectory_source', 'radard_cutout_predictor_source',
+                       'radard_controller_source', 'radard_ipc', 'radard_lifecycle'):
+              module = importlib.import_module(name)
+              print(name, module.__file__)
+          PY
+      - name: Require Rust types, tests, complete build and Clippy
+        run: |
+          set -euo pipefail
+          cargo +1.94.0 fmt --manifest-path rust/Cargo.toml --package openpilot-radard -- --check 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/fmt.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-radard --all-targets --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/tests.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-radard --bins --examples --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/build.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-messaging --example state_probe --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/state-probe-build.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-radard --all-targets --locked -- -D warnings 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/clippy.log"
+          if [ '${{ matrix.machine }}' = aarch64 ]; then
+            readelf -h -d -V "$RADARD_BINARY" > "$RUNNER_TEMP/radard-native/daemon.readelf.txt"
+            test "$(readelf -h "$RADARD_BINARY" | sed -n 's/.*Machine: *//p')" = AArch64
+          fi
+      - name: Compare existing source recordings and all Rust policy snapshots
+        run: |
+          set -euo pipefail
+          set -x
+          for radard_phase in geometry selection primary trajectory cutout_predictor controller; do
+            python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+            python -P "rust/tools/radard_${radard_phase}_source.py" \
+              --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/radard_${radard_phase}_trace" \
+              --output "$RUNNER_TEMP/radard-native/source-$radard_phase" \
+              2>&1 | tee "$RUNNER_TEMP/radard-native/logs/source-$radard_phase.log"
+          done
+      - name: Compare exact availability deadline with original state
+        run: |
+          set -euo pipefail
+          python -P rust/tools/radard_availability_state.py \
+            --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/state_probe" \
+            --output "$RUNNER_TEMP/radard-native/source-availability-state" \
+            2>&1 | tee "$RUNNER_TEMP/radard-native/logs/availability-state.log"
+      - name: Compare independent actual IPC and signal lifecycle
+        run: |
+          set -euo pipefail
+          set -x
+          python -P rust/tools/radard_ipc.py --python "$(command -v python)" \
+            --binary "$RADARD_BINARY" --binding "$RADARD_PARAMS_BINDING" \
+            --output "$RUNNER_TEMP/radard-native/ipc" \
+            2>&1 | tee "$RUNNER_TEMP/radard-native/logs/ipc.log"
+          python -P rust/tools/radard_lifecycle.py --python "$(command -v python)" \
+            --binary "$RADARD_BINARY" --binding "$RADARD_PARAMS_BINDING" \
+            --output "$RUNNER_TEMP/radard-native/lifecycle" \
+            2>&1 | tee "$RUNNER_TEMP/radard-native/logs/lifecycle.log"
+      - name: Preserve bounded final binaries and their identities
+        if: always()
+        run: |
+          set -euo pipefail
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
+          mkdir -p "$RUNNER_TEMP/radard-native/bin"
+          for radard_binary in rust/target/debug/openpilot-radard rust/target/debug/examples/radard_*_trace rust/target/debug/examples/state_probe; do
+            if [ -f "$radard_binary" ]; then
+              cp "$radard_binary" "$RUNNER_TEMP/radard-native/bin/"
+              sha256sum "$radard_binary" >> "$RUNNER_TEMP/radard-native/SHA256SUMS"
+            fi
+          done
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-radard-${{ matrix.runner }}-not-device-validated
+          path: |
+            ${{ runner.temp }}/radard-native/logs/
+            ${{ runner.temp }}/radard-native/source-*/
+            ${{ runner.temp }}/radard-native/ipc/
+            ${{ runner.temp }}/radard-native/lifecycle/
+            ${{ runner.temp }}/radard-native/bin/
+            ${{ runner.temp }}/radard-native/*.txt
+            ${{ runner.temp }}/radard-native/SOURCE_COMMIT
+            ${{ runner.temp }}/radard-native/SHA256SUMS
+            ${{ runner.temp }}/radard-native/params/*.json
+            ${{ runner.temp }}/radard-native/params/*.so
+            ${{ runner.temp }}/radard-native/msgq/msgq/*.so
           if-no-files-found: warn
   support-runtime:
     name: rust support runtime

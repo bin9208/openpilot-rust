@@ -185,3 +185,13 @@ enabled. The connection-only checks pass: 16 isolation tests, 10 Card/RadarCAN
 CI-policy tests, locked offline Cargo metadata and diff checks. Existing
 independent process/numerical evidence above is reused; fresh hosted host/ARM
 and required integration gates must pass before this candidate is merged.
+
+PR 226 passed the required gates at `d0bc97ae7f8551cc3b5239e64277eda651c31183`
+and merged normally as `0e69a1c1f10bff3ddfb57f92d4cc9b1428710046`.
+Post-merge Rust run [37713043450](https://github.com/bin9208/openpilot-rust/actions/runs/37713043450)
+attempt 1 passed the RadarCAN jobs but did not finish the UI/connectivity job:
+apt downloaded 141 MB in 27 minutes 47 seconds, consuming the job's 35-minute
+budget before Bluetooth validation. The recorded cancellation is not a passing
+post-merge gate. The job-specific rerun with the same SHA passed the full
+UI/connectivity job and aggregate in attempt 2; the complete Rust run is now
+successful. No test, dependency or timeout policy was weakened.

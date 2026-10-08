@@ -1,0 +1,12 @@
+This crate ports project-owned radar policy from:
+  openpilot/selfdrive/carrot/radar/radard_dpath.py
+  openpilot/selfdrive/carrot/radar_motion/
+at integration revision a081c6ee995ab33e9cc512578d47f049349e4476.
+The repository retains the original source, copyright and MIT license.
+
+src/math.rs norm translates vector_norm/dl_mul/dl_fast_sum from CPython
+3.12.14 Modules/mathmodule.c. CPython is distributed under the Python
+Software Foundation License Version 2 and the additional historical
+licenses reproduced in licenses/CPython-LICENSE. The translation uses
+Rust-owned slices and scalar operations, and executes no Python runtime.
+Source: https://github.com/python/cpython/blob/v3.12.14/Modules/mathmodule.c

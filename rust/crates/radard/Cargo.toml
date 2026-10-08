@@ -1,0 +1,42 @@
+[package]
+name = "openpilot-radard"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = ["dep:libc", "dep:rustix", "dep:signal-hook", "dep:openpilot-params", "dep:openpilot-logging", "dep:openpilot-beepd"]
+
+[dependencies]
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging", default-features = false }
+capnp = "=0.27.2"
+libc = { version = "0.2", optional = true }
+rustix = { version = "1", features = ["thread", "time"], optional = true }
+signal-hook = { version = "0.3", optional = true }
+openpilot-params = { path = "../params", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+openpilot-beepd = { path = "../beepd", optional = true }
+openpilot-plannerd = { path = "../plannerd", default-features = false }
+openpilot-radarcan = { path = "../radarcan" }
+openpilot-control-policy = { path = "../control-policy", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+num-traits = "0.2"
+libm = "0.2"
+indexmap = { version = "2", features = ["serde"] }
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dev-dependencies]
+sha2 = "0.10"
+
+[[bin]]
+name = "openpilot-radard"
+path = "src/main.rs"
+required-features = ["native-skip-miri"]

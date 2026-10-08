@@ -1,5 +1,5 @@
 use openpilot_control_policy::math::{maximum, minimum};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -18,7 +18,27 @@ pub struct LeadAccelTau {
     sample_time: Option<f64>,
 }
 
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct LeadAccelTauSnapshot {
+    pub tau: f64,
+    #[serde(rename = "_ordinary_tau")]
+    pub ordinary_tau: f64,
+    #[serde(rename = "_previous_strength")]
+    pub previous_strength: f64,
+    #[serde(rename = "_sample_time_s")]
+    pub sample_time: Option<f64>,
+}
+
 impl LeadAccelTau {
+    pub fn snapshot(&self) -> LeadAccelTauSnapshot {
+        LeadAccelTauSnapshot {
+            tau: self.tau,
+            ordinary_tau: self.ordinary_tau,
+            previous_strength: self.previous_strength,
+            sample_time: self.sample_time,
+        }
+    }
+
     pub fn new(initial: f64) -> Self {
         let tau = if initial.is_finite() && (0. ..=1.5).contains(&initial) {
             initial
