@@ -2073,6 +2073,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-carrot-server"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "capnp",
+ "flate2",
+ "http-body-util",
+ "httpdate",
+ "hyper",
+ "hyper-util",
+ "libc",
+ "nix 0.31.3",
+ "num-bigint",
+ "num-traits",
+ "openpilot-beepd",
+ "openpilot-calibrationd",
+ "openpilot-carrot-navi",
+ "openpilot-cereal",
+ "openpilot-params",
+ "openpilot-runtime-core",
+ "percent-encoding",
+ "sha2",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "openpilot-cereal"
 version = "0.1.0"
 dependencies = [
@@ -3322,22 +3351,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "openpilot-web-upload"
-version = "0.1.0"
-dependencies = [
- "encoding_rs",
- "openpilot-logging",
- "openpilot-runtime-core",
- "rand 0.9.5",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "ureq",
- "url",
-]
-
-[[package]]
 name = "openpilot-usbgpu"
 version = "0.1.0"
 dependencies = [
@@ -3350,6 +3363,22 @@ dependencies = [
  "signal-hook",
  "tempfile",
  "thiserror",
+ "url",
+]
+
+[[package]]
+name = "openpilot-web-upload"
+version = "0.1.0"
+dependencies = [
+ "encoding_rs",
+ "openpilot-logging",
+ "openpilot-runtime-core",
+ "rand 0.9.5",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "ureq",
  "url",
 ]
 

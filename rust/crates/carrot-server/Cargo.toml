@@ -1,0 +1,47 @@
+[package]
+name = "openpilot-carrot-server"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints.rust]
+unsafe_code = "deny"
+
+[dependencies]
+openpilot-params = { path = "../params" }
+openpilot-cereal = { path = "../cereal" }
+capnp = "=0.27.2"
+openpilot-carrot-navi = { path = "../carrot-navi", default-features = false }
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-beepd = { path = "../beepd" }
+openpilot-calibrationd = { path = "../calibrationd" }
+num-traits = "=0.2.19"
+num-bigint = "=0.4.8"
+thiserror = "2"
+tokio = { version = "=1.53.1", features = ["rt", "macros", "net", "time", "sync", "signal", "io-util"] }
+hyper = { version = "=1.11.1", features = ["http1", "server"] }
+hyper-util = { version = "=0.1.21", features = ["tokio"] }
+http-body-util = "=0.1.5"
+httpdate = "1"
+bytes = "=1.12.1"
+flate2 = "1"
+sha2 = "0.10"
+percent-encoding = "2"
+url = "2"
+libc = "0.2"
+nix = { version = "=0.31.3", features = ["sched", "process"], default-features = false }
+tempfile = "3"
+
+[[bin]]
+name = "openpilot-carrot-server"
+path = "src/main.rs"
+
+[[example]]
+name = "carrot-server-policy"
+path = "examples/policy.rs"
+
+[[example]]
+name = "carrot-server-http-slice"
+path = "examples/http_slice.rs"

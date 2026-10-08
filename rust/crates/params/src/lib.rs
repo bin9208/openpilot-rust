@@ -71,6 +71,10 @@ impl Params {
         Self::open_namespace(root, prefix.as_deref().unwrap_or("d"), true)
     }
 
+    pub fn directory(&self) -> &Path {
+        &self.directory
+    }
+
     fn open_namespace(root: &Path, prefix: &str, allow_empty: bool) -> Result<Self, Error> {
         if (!allow_empty && prefix.is_empty())
             || prefix.len() > 100
