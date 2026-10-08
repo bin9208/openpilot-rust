@@ -1,0 +1,64 @@
+[package]
+name = "openpilot-carrot-man"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = ["dep:libloading"]
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[dependencies]
+openpilot-navd = { path = "../navd", default-features = false }
+openpilot-params = { path = "../params" }
+openpilot-cereal = { path = "../cereal" }
+openpilot-messaging = { path = "../messaging" }
+openpilot-web-upload = { path = "../web-upload" }
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-beepd = { path = "../beepd" }
+openpilot-calibrationd = { path = "../calibrationd" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+num-traits = "=0.2.19"
+capnp = "=0.27.2"
+signal-hook = "0.3"
+libloading = { version = "0.8", optional = true }
+sha2 = "0.10"
+uuid = { version = "=1.26.1", features = ["v4"] }
+zmq = "=0.10.0"
+rustix = { version = "1", features = ["time", "thread"] }
+chrono = "0.4"
+blake2 = "0.10"
+nix = { version = "0.31", default-features = false, features = ["net", "hostname"] }
+tokio = { version = "1", features = ["rt", "net", "time", "signal", "sync", "macros"] }
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
+bytes = "1"
+base64 = "=0.22.1"
+percent-encoding = "2"
+socket2 = "0.6"
+charset-norm = { version = "=3.5.1", path = "../../vendor/charset-norm" }
+
+[dev-dependencies]
+tempfile = "3"
+
+[[bin]]
+name = "openpilot-carrot-man"
+path = "src/main.rs"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "carrot_man_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "carrot_man_owned"
+required-features = ["native-skip-miri"]

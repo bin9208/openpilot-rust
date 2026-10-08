@@ -15,6 +15,7 @@ from enum import StrEnum
 import json
 import os
 from pathlib import Path
+import signal
 import time
 from typing import Final, TypedDict, assert_never
 
@@ -110,6 +111,11 @@ def main() -> None:
         if not trace or json.loads(trace[-1])['frame'] < start + tick - 1:
           time.sleep(.001)
           continue
+      if phase == Phase.STREAM and tick == 0:
+        runtime_pid = int((args.evidence.parent / 'runtime-pid').read_text())
+        if runtime_pid <= 0:
+          raise ValueError('stream receiver must be an owned positive PID')
+        os.kill(runtime_pid, signal.SIGCONT)
       # Scheduler pauses remain in actual send-time evidence. Receiver progress
       # does not drive deadlines and missed deadlines cause no catch-up burst.
       for name, raw in row.messages:

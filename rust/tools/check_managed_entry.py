@@ -77,6 +77,7 @@ def run(binary,collector,binding,output,scenario,kind,original,runner):
  output.mkdir(parents=True);peer=Peer(collector,output/('collector-'+output.parent.name+'-'+kind),original);receiver=Receiver();process=None;root=None;body_subscriber=None
  try:
   peer.start()
+  peer.synchronize()
   body_subscriber=msgq.sub_sock('managedEntryBody',segment_size=1024*1024,timeout=5000)
   with tempfile.TemporaryDirectory(prefix='managed-entry-') as temporary:
    root=Path(temporary)
