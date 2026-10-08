@@ -114,3 +114,23 @@ required sets include Xiaoge runtime and memory. Pinned external OpenCV/JPEG,
 original ONNX LFS models and licenses remain explicit. No build, install,
 device access or source-corpus rerun occurs locally. Complete normal
 startup/upload and user device acceptance remain separate gates.
+
+## Updated integration base (2026-10-09 KST)
+
+Encoder PR #241 passed all 57 reported checks at
+`a3d00ff787ed1422ef9e27183a2675253a35db4c` and merged as dev
+`1a4f1e323ea32905c29e69d817d9a75567e01885`. Its post-merge Rust run
+[37805415245](https://github.com/bin9208/openpilot-rust/actions/runs/37805415245)
+was queued when this candidate was prepared. The earlier camera post-merge
+run's single CarrotMan expired-owner output mismatch remains tracked in #243;
+the encoder PR's passing CarrotMan checks do not resolve that investigation.
+
+The Xiaoge candidate merges this dev base without conflicts. Xiaoge,
+OpenCV-runtime and UI-application sources remain byte-identical to prepared
+candidate `faee4f4ab`. Twenty-two repository-isolation checks and 19 existing
+Xiaoge/UI/Card/encoder CI-helper checks pass, as do locked offline Cargo
+metadata, source-identity and diff checks. Existing dependencies and component
+evidence are reused without a local native build or full-corpus replay.
+The new candidate's exact-head host, native ARM and memory Actions remain
+required before merge; full runtime startup/upload and device acceptance
+remain open.
