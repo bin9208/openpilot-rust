@@ -28,6 +28,16 @@ pub(crate) async fn file_response<T>(
         .map_err(|error| Error::Source(error.to_string()))?
 }
 
+pub(crate) async fn file_response_with_headers<T>(
+    path: &Path,
+    request: &Request<T>,
+    preset: hyper::HeaderMap,
+) -> Result<Response<Body>, Error> {
+    let mut response = file_response(path, request).await?;
+    response.headers_mut().extend(preset);
+    Ok(response)
+}
+
 impl StaticWeb {
     pub fn validate(&self) -> Result<(), Error> {
         self.config.validate()?;

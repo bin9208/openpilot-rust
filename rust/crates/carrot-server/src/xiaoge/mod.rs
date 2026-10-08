@@ -1,5 +1,6 @@
 //! Port of openpilot/selfdrive/carrot/server/features/xiaoge.py; inference remains external.
 mod http;
+pub(crate) use http::origin_netloc;
 mod online;
 
 pub use http::{handle, matches};

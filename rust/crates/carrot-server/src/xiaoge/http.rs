@@ -60,7 +60,7 @@ fn internal(error: Error, head: bool) -> Response<Body> {
     })
 }
 
-fn origin_netloc(origin: &str) -> Result<String, Error> {
+pub(crate) fn origin_netloc(origin: &str) -> Result<String, Error> {
     let origin = origin
         .trim_start_matches(|point| point <= '\u{20}')
         .replace(['\t', '\r', '\n'], "");

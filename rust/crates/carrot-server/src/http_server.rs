@@ -118,5 +118,6 @@ async fn serve_local(
         Err(error) if error.is_cancelled() => {}
         Err(error) => eprintln!("static precompression task: {error}"),
     }
+    app.bluetooth_http.shutdown().await?;
     Ok(())
 }

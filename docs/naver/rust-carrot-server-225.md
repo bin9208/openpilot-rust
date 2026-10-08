@@ -329,6 +329,66 @@ workspace formatting, pass in `bluetooth/final-checks-retry/`.
 This is a shared launch prerequisite; Git status and automatic-update service
 conversion and their complete source comparisons remain in progress.
 
+## Bluetooth and screenrecord HTTP adapters (2026-10-08)
+
+Bluetooth setup now reuses the native BlueZ coordinator, configuration parser
+and atomic writes. A snapshot reader shares the existing connection so status
+requests can complete during a pending device action or radio command. The
+original same-origin, JSON, 32 KiB body and fresh stationary-state guards remain
+in the adapter, including the second guard after acquiring the mutation lock.
+Lazy body-read failures retain their original unhandled-500 phase and
+`Connection: close`; JSON and mutation failures retain their separate mapping.
+
+The retained Bluetooth example SHA256 is
+`80b950ddf775ae29537ed656915df0b0b5b45bdca772d67799658084cf6a49a5`.
+It passes 85 independent HTTP pairs, eleven Application pairs and five owned
+timeout/concurrency pairs, including pending-pair cleanup, status during a held
+radio command, the original three- and twenty-second deadlines, reaping and
+recovery. Old snapshot readers reject requests after close; the existing
+yielding BlueZ command consumer passes its four-command ordered trace.
+All D-Bus, configuration and command effects use private fixtures. The initial
+fixture with an incorrect Python bound-default path was rejected; metadata
+confirmed the original host configuration path was absent. Ledger, raw
+responses, provider calls, rejected candidates and source identities are under
+`.omo/evidence/carrot-server-225-resume/bluetooth/`.
+The pre-existing immediate-unpolled scan cancellation difference remains
+explicitly unresolved in [#235](https://github.com/bin9208/openpilot-rust/issues/235)
+and [the Bluetooth record](rust-bluetooth-155.md).
+
+Screenrecord ports the original catalog, three-second cache, pagination,
+thumbnail, video and download routes. It reuses FileResponse for conditional
+and partial responses and adds only the feature's preset headers. Actual owned
+files and FFmpeg invocations cover 28 policy pairs, 51 independent HTTP pairs,
+five Application pairs and nine provider-command pairs. Original and native
+FFmpeg produce identical 320-by-240 JPEG bytes. A year-one local-date failure
+was corrected using the original previous-day fold probe; an encoded static
+route-prefix failure was corrected without decoding the dynamic ID boundary
+early. Two final raw controls verify encoded-prefix success and encoded-slash
+rejection. Unaffected earlier comparisons are reused with source identities.
+
+The retained screenrecord routing-fix example SHA256 is
+`5ffe0693d3c303db67b0a9e8235909ec554ee0f53483defb324fad3f360e1f63`.
+Its per-gate binaries, receipts, rejected candidates and six owned-file hashes
+are in `.omo/evidence/carrot-server-225-resume/screenrecord/receipt.json`.
+FFmpeg remains an external provider; target codecs, ARM/device behavior and a
+held ninety-second timeout/cancellation scenario have not been measured here.
+The final adapter build, strict all-target Clippy and formatting pass. These
+families do not complete the server's remaining routes and background tasks.
+
+Before checkpointing, the central route dispatcher, Bluetooth status response
+and Python fixture controls were extracted into separate modules. All ten Rust
+function bodies, including the entire ordered dispatch, and all eleven Python
+function ASTs are identical across that move (`bluetooth/refactor/identity.json`).
+The final Bluetooth example
+`acbd00a5a3ff5ba56e1b5412280be05b3223d44360dda426a6b7ba9c2cc7ad13`
+passes four actual Application normal/error/recovery pairs. The final
+screenrecord example
+`48ac7c31ece8b0d9e217479788dbeb63959a8ae5bc32f802f44a2d54a6654090`
+passes five Application pairs and two provider observations. Earlier family
+proofs are reused for this mechanical move; strict all-target Clippy, formatting
+and diff checks pass again. The Bluetooth ledger and 23-file source freeze retain
+the final binaries and focused invocations.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
