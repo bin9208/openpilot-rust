@@ -19,6 +19,9 @@ pub use networks::{CellNetwork, Networks, WlanNetwork};
 pub use numeric::Number;
 pub use openpilot_logmessaged::{JsonValue, JsonView};
 pub use thermal::{ThermalConfig, ThermalZone};
+pub fn parse_float(text: &str) -> Result<f64, Error> {
+    numeric::float(text)
+}
 pub use tici::Tici;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

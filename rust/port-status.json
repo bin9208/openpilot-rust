@@ -9,7 +9,11 @@
       "name": "_pandad",
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/selfdrive/pandad",
-      "status": "not_ported",
+      "status": "native_core_host_and_arm_simulated",
+      "implementation": "rust/crates/pandad; native CAN codec, USB/SPI communication, state/safety/peripheral workers and cereal publications",
+      "native_dependencies": ["external libusb", "Linux USB/SPI drivers and Panda firmware", "native Rust msgq; consumer composition tracked in #195", "Linux clocks/signals/scheduling"],
+      "evidence": "docs/naver/rust-pandad-175.md",
+      "runtime_scope": "original-source component comparisons and actual supervised core IPC on host and ARM/QEMU with owned transport fixtures; source descriptor stays disabled because the supervisor launches the child. Full manager startup/upload, native Rust IPC consumer composition, actual hardware/AGNOS and user device acceptance remain pending",
       "production_replaced": false
     },
     {
@@ -369,7 +373,11 @@
       "name": "pandad",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.pandad.pandad",
-      "status": "not_ported",
+      "status": "native_supervisor_host_and_arm_simulated",
+      "implementation": "rust/crates/pandad; native firmware/client policies, USB/SPI discovery and recovery, child launch/restart and source signal handling",
+      "native_dependencies": ["external libusb", "Linux USB/SPI drivers and Panda firmware", "native Rust msgq; consumer composition tracked in #195", "native process launcher and hardware control"],
+      "evidence": "docs/naver/rust-pandad-175.md",
+      "runtime_scope": "reviewed source comparisons, 12 actual supervisor/core/IPC executions across host and ARM/QEMU, and native USB DFU composition including progress output. SPI DFU environment composition retains constituent protocol/ABI evidence. Full manager startup/upload, native Rust IPC consumer composition, actual hardware/AGNOS and user device acceptance remain pending",
       "production_replaced": false
     },
     {

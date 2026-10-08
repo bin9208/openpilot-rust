@@ -2689,6 +2689,58 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-panda-spi"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-panda-spi-linux"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "cxx-build",
+ "openpilot-panda-spi",
+]
+
+[[package]]
+name = "openpilot-panda-usb"
+version = "0.1.0"
+dependencies = [
+ "libloading",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openpilot-pandad"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "libc",
+ "openpilot-cereal",
+ "openpilot-hardware-control",
+ "openpilot-hardware-info",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-panda-spi",
+ "openpilot-panda-spi-linux",
+ "openpilot-panda-usb",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "rustix",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "thiserror",
+ "unicode-general-category 0.6.0",
+]
+
+[[package]]
 name = "openpilot-params"
 version = "0.1.0"
 dependencies = [

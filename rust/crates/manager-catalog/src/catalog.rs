@@ -86,6 +86,7 @@ impl Descriptor {
 
 fn availability(name: &str) -> RustAvailability {
     let (package, binary) = match name {
+        "_pandad" => ("openpilot-pandad", "openpilot-pandad"),
         "beep" => ("openpilot-beepd", "openpilot-beepd"),
         "bridge" => ("openpilot-bridge", "bridge"),
         "calibrationd" => ("openpilot-calibrationd", "openpilot-calibrationd"),
@@ -118,6 +119,7 @@ fn availability(name: &str) -> RustAvailability {
         "modeld" => ("openpilot-driving-modeld", "openpilot-driving-modeld"),
         "modem" => ("openpilot-modem", "openpilot-modem"),
         "navd" => ("openpilot-navd", "openpilot-navd"),
+        "pandad" => ("openpilot-pandad", "openpilot-pandad-supervisor"),
         "paramsd" => ("openpilot-paramsd", "openpilot-paramsd"),
         "pigeond" => ("openpilot-ublox", "openpilot-pigeond"),
         "proclogd" => ("openpilot-proclogd", "openpilot-proclogd-runtime"),
