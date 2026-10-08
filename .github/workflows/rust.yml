@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-man-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, carrot-man-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -49,6 +49,8 @@ jobs:
           RADAR_MEMORY: ${{ needs.radar-memory.result }}
           NAVD: ${{ needs.navd-runtime.result }}
           RADARD: ${{ needs.radard-runtime.result }}
+          CARROT_NAVI: ${{ needs.carrot-navi-runtime.result }}
+          CARROT_NAVI_ARM: ${{ needs.carrot-navi-arm.result }}
         run: |
           test "$WORKSPACE" = success
           test "$MEMORY" = success
@@ -77,6 +79,8 @@ jobs:
           test "$RADAR_MEMORY" = success
           test "$NAVD" = success
           test "$RADARD" = success
+          test "$CARROT_NAVI" = success
+          test "$CARROT_NAVI_ARM" = success
   planner-runtime:
     name: rust planner source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
@@ -1038,6 +1042,185 @@ jobs:
             ${{ runner.temp }}/radard-native/params/*.so
             ${{ runner.temp }}/radard-native/msgq/msgq/*.so
           if-no-files-found: warn
+  carrot-navi-runtime:
+    name: rust Carrot Navi original and host runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}/rust/tools:${{ github.workspace }}
+      CARROT_NAVI_BIN: ${{ github.workspace }}/rust/target/debug/openpilot-carrot-navi
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Reserve runner capacity and install confirmed binding dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev iproute2 util-linux
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install aiohttp==3.13.3 pycapnp==2.2.4 Cython==3.2.4 setuptools==82.0.1 psutil==7.2.2 zstandard==0.25.0 pyzmq==27.2.0 numpy==2.5.3 requests==2.34.2 pyserial==3.5
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+          mkdir -p "$RUNNER_TEMP/carrot-navi"
+          printf 'CARROT_NAVI_PYTHON=%s\nCARROT_NAVI_USER=%s\n' "$(command -v python)" "$(id -un)" >> "$GITHUB_ENV"
+          git rev-parse HEAD > "$RUNNER_TEMP/carrot-navi/source-commit.txt"
+          python -m pip freeze > "$RUNNER_TEMP/carrot-navi/python-pins.txt"
+      - name: Configure original Carrot Navi IPC imports
+        run: printf 'PYTHONPATH=%s/carrot-navi/bindings/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Build and identify unchanged original Params and msgq bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/carrot-navi/bindings/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-navi/bindings/msgq"
+          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"carrot-navi/bindings/params/provenance.json"; print("CARROT_NAVI_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          python -P -c 'import msgq.ipc_pyx,capnp,aiohttp,psutil,zstandard; from openpilot.cereal import log,messaging; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(capnp.__version__,aiohttp.__version__,psutil.__version__,zstandard.__version__)' > "$RUNNER_TEMP/carrot-navi/imports.txt"
+      - name: Verify complete original Params and receiver imports
+        run: |
+          python -P -c 'import os; from pathlib import Path; from card_runtime_source import load_binding; load_binding(Path(os.environ["CARROT_NAVI_PARAMS_BINDING"])); from openpilot.common.params import Params; from openpilot.selfdrive.carrot.carrot_navi import main; print("original Params and receiver imports passed")'
+      - name: Require bounded native package checks and executable
+        run: |
+          set -o pipefail
+          cargo fmt --manifest-path rust/Cargo.toml -p openpilot-carrot-navi -- --check 2>&1 | tee "$RUNNER_TEMP/carrot-navi/fmt.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-navi --features native --all-targets --locked 2>&1 | tee "$RUNNER_TEMP/carrot-navi/tests.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-navi --features native --bins --examples --locked 2>&1 | tee "$RUNNER_TEMP/carrot-navi/build.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-carrot-navi --features native --all-targets --locked -- -D warnings 2>&1 | tee "$RUNNER_TEMP/carrot-navi/clippy.log"
+      - name: Run existing source policy and state comparison inputs
+        run: |
+          python -P rust/tools/carrot_navi_cases.py "$RUNNER_TEMP/carrot-navi/inputs.json"
+          python -P rust/tools/carrot_navi_source.py "$RUNNER_TEMP/carrot-navi/inputs.json" "$RUNNER_TEMP/carrot-navi/policy-source.json"
+          rust/target/debug/examples/carrot-navi-policy "$RUNNER_TEMP/carrot-navi/inputs.json" > "$RUNNER_TEMP/carrot-navi/policy-native.json" 2> "$RUNNER_TEMP/carrot-navi/policy-native.stderr"
+      - name: Run original and native owned socket and publication lifecycle lanes
+        run: |
+          for lane in socket lifecycle; do
+            extra=()
+            if [ "$lane" = lifecycle ]; then extra+=(--lifecycle); fi
+            python -P rust/tools/carrot_navi_runtime.py --source-python "$CARROT_NAVI_PYTHON" --binding "$CARROT_NAVI_PARAMS_BINDING" --pythonpath "$RUNNER_TEMP/carrot-navi/bindings/msgq" --output "$RUNNER_TEMP/carrot-navi/$lane-source" --cereal "${extra[@]}"
+            python -P rust/tools/carrot_navi_runtime.py --native-bin "$CARROT_NAVI_BIN" --binding "$CARROT_NAVI_PARAMS_BINDING" --pythonpath "$RUNNER_TEMP/carrot-navi/bindings/msgq" --output "$RUNNER_TEMP/carrot-navi/$lane-native" --cereal "${extra[@]}"
+          done
+      - name: Run discovery and retry in an owned network namespace
+        run: |
+          sudo -E env PYTHONPATH="$PYTHONPATH" unshare --net bash -euc '
+            ip link set lo up
+            ip address add 10.206.0.1/24 broadcast 10.206.0.255 dev lo
+            runuser -u "$CARROT_NAVI_USER" --preserve-environment -- "$CARROT_NAVI_PYTHON" -P -m carrot_navi_qa.startup --source-python "$CARROT_NAVI_PYTHON" --binding "$CARROT_NAVI_PARAMS_BINDING" --output "$RUNNER_TEMP/carrot-navi/startup-source"
+            runuser -u "$CARROT_NAVI_USER" --preserve-environment -- "$CARROT_NAVI_PYTHON" -P -m carrot_navi_qa.startup --native-bin "$CARROT_NAVI_BIN" --output "$RUNNER_TEMP/carrot-navi/startup-native"
+          '
+          python -P -m carrot_navi_qa.startup --source-python "$CARROT_NAVI_PYTHON" --binding "$CARROT_NAVI_PARAMS_BINDING" --output "$RUNNER_TEMP/carrot-navi/exhaust-source" --exhaust
+          python -P -m carrot_navi_qa.startup --native-bin "$CARROT_NAVI_BIN" --output "$RUNNER_TEMP/carrot-navi/exhaust-native" --exhaust
+      - name: Require exact existing policy and normalized process comparisons
+        run: |
+          python -P - <<'PY'
+          import json, os
+          from pathlib import Path
+          from radarcan_exact import assert_exact
+          root = Path(os.environ['RUNNER_TEMP']) / 'carrot-navi'
+          def read(path):
+            return json.loads((root / path).read_text())
+          def normalize(rows):
+            sessions = {}
+            def walk(value, key=''):
+              if isinstance(value, dict):
+                return {k: walk(v, k) for k, v in value.items() if k != 'cereal_publish_count'}
+              if isinstance(value, list):
+                return [walk(v) for v in value]
+              if key == 'session_id' and isinstance(value, str):
+                sessions.setdefault(value, f'<session{len(sessions)}>')
+              if isinstance(value, str):
+                for token, replacement in sessions.items():
+                  value = value.replace(token, replacement)
+              if key == 'port' and value != 7714:
+                return '<bound-port>'
+              if key in ('last_received_at_ms', 'received_at_ms', 'last_cereal_publish_mono_ns') and value:
+                assert isinstance(value, int) and value > 0
+                return '<positive-clock>'
+              return value
+            return walk(rows)
+          assert_exact(read('policy-native.json'), read('policy-source.json'), 'policy')
+          for lane, count in (('socket', 56), ('lifecycle', 21)):
+            source = normalize(read(f'{lane}-source/rows.json'))
+            native = normalize(read(f'{lane}-native/rows.json'))
+            assert len(source) == len(native) == count
+            assert_exact(native, source, lane)
+            assert_exact(read(f'{lane}-native/result.json'), read(f'{lane}-source/result.json'), lane + '/result')
+            for kind, rows in (('source', source), ('native', native)):
+              (root / f'{lane}-{kind}-normalized.json').write_text(json.dumps(rows, indent=2))
+          for lane in ('startup', 'exhaust'):
+            assert_exact(read(f'{lane}-native/result.json'), read(f'{lane}-source/result.json'), lane)
+          source_packets = read('startup-source/discovery.json')
+          native_packets = read('startup-native/discovery.json')
+          assert_exact([row['wire_hex'] for row in native_packets], [row['wire_hex'] for row in source_packets], 'discovery/wire')
+          (root / 'comparison.json').write_text(json.dumps({'status': 'pass', 'policy_cases': len(read('policy-source.json')), 'socket_observations': 56, 'lifecycle_observations': 21, 'discovery_byte_equal': True}, indent=2))
+          PY
+      - name: Preserve original and native raw captures and failures
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-carrot-navi-host-evidence
+          path: |
+            ${{ runner.temp }}/carrot-navi/
+            rust/target/debug/openpilot-carrot-navi
+            rust/target/debug/examples/carrot-navi-policy
+            rust/target/debug/examples/carrot-navi-wire
+          if-no-files-found: warn
+
+  carrot-navi-arm:
+    name: rust Carrot Navi native ARM build
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_RELEASE_DEBUG: '0'
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Reserve runner capacity and install native ARM build dependencies
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update && sudo apt-get install -y capnproto g++ binutils
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal
+          rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+          mkdir -p "$RUNNER_TEMP/carrot-navi-arm"
+          git rev-parse HEAD > "$RUNNER_TEMP/carrot-navi-arm/source-commit.txt"
+      - name: Build and inspect the actual native ARM executable
+        run: |
+          test "$(uname -m)" = aarch64
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          set -o pipefail
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-navi --features native --bin openpilot-carrot-navi --target aarch64-unknown-linux-gnu --release --locked 2>&1 | tee "$RUNNER_TEMP/carrot-navi-arm/build.log"
+          readelf -h rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi | tee "$RUNNER_TEMP/carrot-navi-arm/elf.txt"
+          grep -Eq 'Machine:.*AArch64' "$RUNNER_TEMP/carrot-navi-arm/elf.txt"
+          sha256sum rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi > "$RUNNER_TEMP/carrot-navi-arm/binary.sha256"
+      - name: Preserve native ARM build receipt and executable
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-carrot-navi-native-arm
+          path: |
+            ${{ runner.temp }}/carrot-navi-arm/
+            rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi
+          if-no-files-found: warn
   support-runtime:
     name: rust support runtime
     runs-on: ubuntu-24.04
@@ -1252,6 +1435,8 @@ jobs:
       - name: Compare managed entry and errors through actual collectors and SDK transport
         run: |
           python rust/tools/check_sdk_receiver.py "$RUNNER_TEMP/startup-runtime/sdk-receiver.json"
+          python rust/tools/check_managed_entry_readiness.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
+            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry-readiness"
           python rust/tools/check_managed_entry.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry"
       - name: Verify the exact native response detector source archive

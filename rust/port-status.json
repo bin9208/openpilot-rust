@@ -100,7 +100,11 @@
       "name": "carrot_navi",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.carrot_navi",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated",
+      "implementation": "rust/crates/carrot-navi; original session policy, HTTP/WebSocket receiver, Cereal publication, discovery and lifecycle",
+      "native_dependencies": ["Linux sockets, threads and clocks", "Params", "native Rust msgq"],
+      "runtime_scope": "Independent original comparison covers 179 cases/612 steps, 56 socket observations, 21 lifecycle observations and isolated discovery/retry. Current integration build and exact-head host/ARM CI are pending; production selection and full startup/upload are unchanged.",
+      "evidence": "docs/naver/rust-carrot-navi-206.md",
       "production_replaced": false
     },
     {
