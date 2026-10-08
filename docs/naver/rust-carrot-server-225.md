@@ -304,6 +304,31 @@ the maintained native jar serializes multiple distinct cookies in a different
 order from aiohttp. Both raw headers are retained, and raw Cookie byte identity
 is not claimed. TLS/real-service and target-device conditions remain unverified.
 
+## Repository lock transfer prerequisite (2026-10-08)
+
+The existing process-child launcher can now transfer one repository lock into
+an owned session. Git status and update commands need the original lock's open
+file description to remain held when their parent closes its descriptor. The
+opt-in path passes that descriptor over the existing private Unix socket with
+SCM_RIGHTS, requires a child acknowledgement, and retains it across exec.
+The parent's descriptor flags are unchanged. Missing acknowledgements fail
+closed and clean up the owned process group; the existing zero-descriptor
+launch path remains the default.
+
+Three real-kernel unit tests and three child-process tests pass: lock ownership
+survives parent close until child exit, malformed/multiple/truncated transfers
+release their descriptors, exec failure releases the lock, and an older helper
+that ignores the new field cannot leave its descendant running. The existing
+checkout-status and updated command examples also pass with helper SHA256
+`9b1a94bed0fd3593fca823aba8d906884408cb37bec55826d6d23a207c2e6840`,
+retaining separate stdout/stderr and merged output/nonzero exit behavior.
+Receipts are in `.omo/evidence/225-git-status/direct-consumers/` and
+`.omo/evidence/carrot-server-225-resume/bluetooth/coordinated-checks/`.
+Strict all-target Clippy for the shared package and both adapter packages, and
+workspace formatting, pass in `bluetooth/final-checks-retry/`.
+This is a shared launch prerequisite; Git status and automatic-update service
+conversion and their complete source comparisons remain in progress.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process

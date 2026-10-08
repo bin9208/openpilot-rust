@@ -4,6 +4,7 @@ mod detached_child;
 mod ensure;
 mod exec;
 mod launch;
+mod lock_fd;
 mod logging;
 mod persistent;
 mod pid;
