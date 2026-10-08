@@ -1432,6 +1432,8 @@ jobs:
       - name: Compare managed entry and errors through actual collectors and SDK transport
         run: |
           python rust/tools/check_sdk_receiver.py "$RUNNER_TEMP/startup-runtime/sdk-receiver.json"
+          python rust/tools/check_managed_entry_readiness.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
+            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry-readiness"
           python rust/tools/check_managed_entry.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry"
       - name: Verify the exact native response detector source archive
