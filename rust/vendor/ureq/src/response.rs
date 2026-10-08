@@ -9,6 +9,21 @@ pub(crate) struct ResponseUri(pub http::Uri);
 #[derive(Debug, Clone)]
 pub(crate) struct RedirectHistory(pub Vec<Uri>);
 
+#[derive(Debug, Clone)]
+/// Encoding removed by transparent decompression, retained for [`Body::as_raw_reader`].
+pub struct RawContentEncoding(
+    /// Original Content-Encoding header value.
+    pub http::HeaderValue,
+);
+
+#[derive(Debug, Clone, Copy)]
+/// Native input-buffer state at header completion, only for length-delimited bodies.
+/// This does not guarantee the same network feed partitioning in another HTTP provider.
+pub struct InitialBodyFullyBuffered(
+    /// Whether all declared body bytes were already unconsumed in the input buffer.
+    pub bool,
+);
+
 /// Extension trait for [`http::Response<Body>`].
 ///
 /// Adds additional convenience methods to the `Response` that are not available

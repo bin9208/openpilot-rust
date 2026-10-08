@@ -57,7 +57,7 @@ pub(crate) fn run(
 
     call.allow_non_standard_methods(config.allow_non_standard_methods());
 
-    let (response, handler) = loop {
+    let (response, mut handler) = loop {
         let timeout = timings.next_timeout(Timeout::Global);
         let timed_out = match timeout.after {
             Duration::Exact(v) => v.is_zero(),
@@ -107,6 +107,16 @@ pub(crate) fn run(
         .map(|f| f.body_mode())
         .unwrap_or(BodyMode::NoBody);
 
+    if let (BodyMode::LengthDelimited(length), Some(connection)) =
+        (&recv_body_mode, handler.connection.as_mut())
+    {
+        let buffered = usize::try_from(*length)
+            .is_ok_and(|length| connection.buffers().input().len() >= length);
+        parts
+            .extensions
+            .insert(crate::InitialBodyFullyBuffered(buffered));
+    }
+
     let info = ResponseInfo::new(&parts.headers, recv_body_mode);
 
     // If the body will be decompressed, strip Content-Encoding and Content-Length
@@ -114,7 +124,9 @@ pub(crate) fn run(
     // decompressed body size, and Content-Encoding no longer applies since
     // the body is delivered to the caller already decompressed (RFC 9110 §8.7).
     if info.is_decompressing() {
-        parts.headers.remove(http::header::CONTENT_ENCODING);
+        if let Some(encoding) = parts.headers.remove(http::header::CONTENT_ENCODING) {
+            parts.extensions.insert(crate::RawContentEncoding(encoding));
+        }
         parts.headers.remove(http::header::CONTENT_LENGTH);
     }
 

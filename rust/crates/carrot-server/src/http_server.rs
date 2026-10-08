@@ -25,6 +25,7 @@ async fn serve_local(
     app.static_web.validate()?;
     app.config.migrate_legacy_state();
     let precompress = app.static_web.start_precompress();
+    let popular_upload = app.popular_values.start_upload(Arc::clone(&app));
     let warm_app = Arc::clone(&app);
     let warm = tokio::task::spawn_blocking(move || {
         let _ = warm_app.settings_payload();
@@ -100,6 +101,15 @@ async fn serve_local(
         while sounds.join_next().await.is_some() {}
     }
     warm.abort();
+    if let Some(task) = popular_upload {
+        task.abort();
+        match task.await {
+            Ok(()) => {}
+            Err(error) if error.is_cancelled() => {}
+            Err(error) => eprintln!("popular startup refresh: {error}"),
+        }
+    }
+    app.popular_values.shutdown().await?;
     let _ = warm.await;
     precompress.abort();
     match precompress.await {

@@ -65,19 +65,43 @@ fn raw_and_decoded_readers_diverge_only_in_content_decoding() {
             .build()
             .new_agent();
         let mut decoded = Vec::new();
-        agent
-            .get(&endpoint)
-            .call()
-            .expect("decoded response")
+        let mut decoded_response = agent.get(&endpoint).call().expect("decoded response");
+        assert!(!decoded_response.headers().contains_key("content-encoding"));
+        assert!(!decoded_response.headers().contains_key("content-length"));
+        assert!(decoded_response
+            .extensions()
+            .get::<ureq::InitialBodyFullyBuffered>()
+            .is_some());
+        assert_eq!(
+            decoded_response
+                .extensions()
+                .get::<ureq::RawContentEncoding>()
+                .map(|encoding| encoding.0.as_bytes()),
+            Some(encoding.as_bytes()),
+        );
+        decoded_response
             .body_mut()
             .as_reader()
             .read_to_end(&mut decoded)
             .expect("decode");
         let mut next = Vec::new();
-        agent
-            .get(&endpoint)
-            .call()
-            .expect("next response")
+        let mut next_response = agent.get(&endpoint).call().expect("next response");
+        assert!(next_response
+            .extensions()
+            .get::<ureq::RawContentEncoding>()
+            .is_none());
+        assert_eq!(
+            next_response
+                .headers()
+                .get("content-length")
+                .expect("ordinary length"),
+            "4"
+        );
+        assert!(next_response
+            .extensions()
+            .get::<ureq::InitialBodyFullyBuffered>()
+            .is_some());
+        next_response
             .body_mut()
             .as_reader()
             .read_to_end(&mut next)
@@ -85,10 +109,15 @@ fn raw_and_decoded_readers_diverge_only_in_content_decoding() {
         thread.join().expect("recipient");
         let (raw_endpoint, raw_thread) = recipient(body.clone(), encoding, None);
         let mut raw = Vec::new();
-        agent
-            .get(&raw_endpoint)
-            .call()
-            .expect("raw response")
+        let mut raw_response = agent.get(&raw_endpoint).call().expect("raw response");
+        assert_eq!(
+            raw_response
+                .extensions()
+                .get::<ureq::RawContentEncoding>()
+                .map(|encoding| encoding.0.as_bytes()),
+            Some(encoding.as_bytes()),
+        );
+        raw_response
             .body_mut()
             .as_raw_reader()
             .read_to_end(&mut raw)
@@ -106,6 +135,117 @@ fn raw_and_decoded_readers_diverge_only_in_content_decoding() {
         assert_eq!(decoded, source);
         assert_eq!(raw, body);
         assert_eq!(next, b"next");
+    }
+}
+
+#[test]
+fn initial_buffer_metadata_keeps_late_declared_bytes_and_other_framing_distinct() {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("owned listener");
+    let endpoint = format!("http://{}", listener.local_addr().expect("address"));
+    let (release, waiting) = std::sync::mpsc::channel();
+    let peer = std::thread::spawn(move || {
+        for index in 0..3 {
+            let (mut stream, _) = listener.accept().expect("request");
+            let mut request = Vec::new();
+            let mut byte = [0];
+            while !request.ends_with(b"\r\n\r\n") {
+                stream.read_exact(&mut byte).expect("request head");
+                request.push(byte[0]);
+            }
+            let header = match index {
+                0 => {
+                    b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\nConnection: close\r\n\r\n".as_slice()
+                }
+                1 => b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n"
+                    .as_slice(),
+                _ => b"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n".as_slice(),
+            };
+            stream.write_all(header).expect("response head");
+            if index == 0 {
+                waiting.recv().expect("release body after header receipt");
+            }
+            stream
+                .write_all(if index == 1 {
+                    b"4\r\nnext\r\n0\r\n\r\n"
+                } else {
+                    b"next"
+                })
+                .expect("response body");
+        }
+    });
+    let agent = ureq::Agent::config_builder()
+        .max_idle_connections(0)
+        .build()
+        .new_agent();
+    for index in 0..3 {
+        let mut response = agent.get(&endpoint).call().expect("response");
+        let state = response
+            .extensions()
+            .get::<ureq::InitialBodyFullyBuffered>()
+            .map(|state| state.0);
+        if index == 0 {
+            assert_eq!(state, Some(false));
+            release.send(()).expect("release declared body");
+        } else {
+            assert_eq!(state, None);
+        }
+        let mut bytes = Vec::new();
+        response
+            .body_mut()
+            .as_raw_reader()
+            .read_to_end(&mut bytes)
+            .expect("framed bytes");
+        assert_eq!(bytes, b"next");
+    }
+    peer.join().expect("recipient");
+}
+
+#[test]
+fn raw_metadata_preserves_identity_and_unknown_encoding_headers() {
+    for encoding in ["identity", "deflate", "unknown"] {
+        let (endpoint, thread) = recipient(b"plain bytes".to_vec(), encoding, None);
+        let agent = ureq::Agent::config_builder()
+            .max_idle_connections(0)
+            .build()
+            .new_agent();
+        let mut response = agent.get(&endpoint).call().expect("ordinary response");
+        assert!(response
+            .extensions()
+            .get::<ureq::RawContentEncoding>()
+            .is_none());
+        assert_eq!(
+            response
+                .headers()
+                .get("content-encoding")
+                .expect("original encoding"),
+            encoding
+        );
+        assert_eq!(
+            response
+                .headers()
+                .get("content-length")
+                .expect("original length"),
+            "11"
+        );
+        let mut body = Vec::new();
+        response
+            .body_mut()
+            .as_reader()
+            .read_to_end(&mut body)
+            .expect("ordinary bytes");
+        assert_eq!(body, b"plain bytes");
+        let mut next = agent.get(&endpoint).call().expect("next response");
+        assert!(next
+            .extensions()
+            .get::<ureq::RawContentEncoding>()
+            .is_none());
+        let mut next_bytes = Vec::new();
+        next.body_mut()
+            .as_raw_reader()
+            .read_to_end(&mut next_bytes)
+            .expect("next raw bytes");
+        assert_eq!(next_bytes, b"next");
+        thread.join().expect("recipient");
     }
 }
 

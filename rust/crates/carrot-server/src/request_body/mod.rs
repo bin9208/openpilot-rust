@@ -1,5 +1,5 @@
 //! Lazy HTTP content decoding shared by JSON read and multipart field consumers.
-mod decoder;
+pub(crate) mod decoder;
 use bytes::Bytes;
 use decoder::Decoder;
 use hyper::{

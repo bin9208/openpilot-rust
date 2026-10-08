@@ -34,6 +34,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
     };
     let mut app = Application::new(config, backend);
+    std::sync::Arc::get_mut(&mut app)
+        .ok_or("fixture Application is already shared")?
+        .popular_values = openpilot_carrot_server::popular_values::Service::new(false);
+    if input.has("model_cache") {
+        let application =
+            std::sync::Arc::get_mut(&mut app).ok_or("fixture Application is already shared")?;
+        application.egpu_model =
+            std::sync::Arc::new(openpilot_carrot_server::egpu_model::ModelFiles {
+                paths: openpilot_usbgpu::model::Paths {
+                    models: path("models")?,
+                    cache: path("model_cache")?,
+                },
+                usb_devices: path("usb_devices")?,
+                timestamp: input
+                    .has("egpu_timestamp")
+                    .then(|| input.get("egpu_timestamp").float())
+                    .transpose()?,
+            });
+        application.popular_values = openpilot_carrot_server::popular_values::Service::new(false);
+    }
     if input.has("ssh_endpoint") || input.has("ssh_unavailable") {
         let application =
             std::sync::Arc::get_mut(&mut app).ok_or("fixture Application is already shared")?;

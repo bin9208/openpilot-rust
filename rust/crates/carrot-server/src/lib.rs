@@ -2,6 +2,7 @@
 mod bootstrap;
 pub mod cars;
 pub mod config;
+pub mod egpu_model;
 mod history_http;
 pub mod http;
 mod http_request;
@@ -20,6 +21,7 @@ mod param_time;
 pub mod params;
 mod params_http;
 pub mod params_multipart;
+pub mod popular_values;
 mod profiles_http;
 pub(crate) mod request_body;
 mod request_text;
@@ -42,6 +44,7 @@ pub mod web_settings;
 mod web_settings_http;
 pub mod web_sound;
 mod web_sound_http;
+pub mod xiaoge;
 
 pub use openpilot_carrot_navi::json::Value;
 pub use request_body::DecodeFailure;

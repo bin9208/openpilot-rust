@@ -246,6 +246,64 @@ and `expect-*fully-fixed/`, and `.omo/evidence/225-web-sound/`.
 The partial unread-body EOF timing difference remains explicitly accepted as an
 external-provider cleanup limit; its raw comparison still reports that difference.
 
+## eGPU model and Xiaoge HTTP adapters (2026-10-08)
+
+The eGPU model status/restart routes reuse the existing native model manifest,
+installed-artifact and local-compiled-path helpers. A read-only parser preserves
+the original stored-state rules. Actual owned model, USB-sysfs and Params files
+cover status, guards, disappearance during a read, atomic status persistence,
+partial write failures and recovery. Independent and Application executions each
+match 79 source HTTP/effect cases and two unavailable-Params cases. The adapter
+writes the existing `DoReboot` flag after status persistence; the fixture does
+not reboot, download a model or access hardware. Commands and exact binaries are
+recorded in `.omo/evidence/carrot-server-225-resume/egpu/LEDGER.md`.
+
+The Xiaoge adapter covers the existing page and fixed-localhost diagnostic proxy,
+separately from the diagnostic/inference backend. The retained standalone ELF
+`881a7241c78203a9048ed4b92416f5c2beec5f96f9ac792923a2af5a35ef2cdb`
+passes 98 HTTP comparisons, one additional delayed empty-response deadline case,
+one refused-dependency case, and nine repeated deflate-boundary observations.
+Ten cases also pass through the Application router/listener. Comparisons retain
+status, selected headers, raw response bytes and actual outbound requests.
+They cover origin/method guards, request and response limits, compression,
+redirect refusal, request-stage retry, dependency recovery and process shutdown.
+
+The ureq response extensions retain removed Content-Encoding and expose whether
+a length-delimited body was already buffered when headers completed. They do not
+add I/O or predict another provider's feed partitioning. Xiaoge uses this limited
+observation for the captured truncated-deflate parser/consumer error order.
+Other partitions and saturated-connect timing remain unverified; response timing
+is not claimed identical. Four actual TCP provider controls and strict package
+Clippy pass. The independent and composed receipts, rejected earlier candidates
+and source identities are in `.omo/evidence/225-xiaoge/completion.json`.
+
+Popular-values uses the existing reqwest 0.13.5 async provider with a persistent
+client and cookie jar. The original startup/cleanup callbacks cancel an owned
+stalled POST in about 0.2 ms; the corrected native process exits in about 1.1 ms.
+The earlier synchronous candidate waited about 1.06 s for its configured timeout
+and remains preserved as the failing comparison. Async task cancellation now
+also cancels the in-flight request.
+
+The corrected retained example ELF is
+`b0dd8b60c484c7fbd38888483744169f8c812ece2ea7d8d2a84419e5e4742813`.
+It passes 58 source HTTP pairs, nine Application observations with three clean
+exits, eight focused cookie pairs, and the rounded-deadline control. The unchanged
+109 policy cases are reused with checked source identities. Upload retries,
+source redirect method/header rules, cookie persistence with IP-cookie rejection,
+cache refresh and failure recovery use owned loopback recipients. No real
+settings or service credentials are sent. The single total deadline retains
+the source's monotonic rounding when the configured timeout is at least five
+seconds. Existing dependency versions stay pinned; the cookie feature adds only
+publicsuffix 2.3.0 and psl-types 2.0.11 to the lockfile.
+
+Receipts are under the `popular-values` directory in
+`.omo/evidence/carrot-server-225-resume/`, including the original cancellation
+capture and `async-http`, `async-composed`, `async-cookies`, and `async-rounding`.
+Cookie comparisons verify parsed name/value pairs, persistence and rejection;
+the maintained native jar serializes multiple distinct cookies in a different
+order from aiohttp. Both raw headers are retained, and raw Cookie byte identity
+is not claimed. TLS/real-service and target-device conditions remain unverified.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process

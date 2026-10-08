@@ -6,7 +6,7 @@ use zlib_rs::{Inflate, InflateFlush, Status};
 const FEED_LIMIT: usize = 32 * 1024 * 1024;
 type Brotli = BrotliState<StandardAlloc, StandardAlloc, StandardAlloc>;
 
-pub(super) enum Decoder {
+pub(crate) enum Decoder {
     Identity,
     Zlib {
         state: Inflate,
@@ -41,7 +41,7 @@ impl Decoder {
     pub(super) const fn is_identity(&self) -> bool {
         matches!(self, Self::Identity)
     }
-    pub(super) fn new(headers: &HeaderMap) -> Self {
+    pub(crate) fn new(headers: &HeaderMap) -> Self {
         let Some(value) = headers.get(header::CONTENT_ENCODING) else {
             return Self::Identity;
         };
@@ -73,7 +73,7 @@ impl Decoder {
         }
     }
 
-    pub(super) fn feed(&mut self, input: &[u8]) -> Result<Vec<u8>, DecodeFailure> {
+    pub(crate) fn feed(&mut self, input: &[u8]) -> Result<Vec<u8>, DecodeFailure> {
         match self {
             Self::Identity => Ok(input.to_vec()),
             Self::Zlib {
@@ -158,7 +158,7 @@ impl Decoder {
         }
     }
 
-    pub(super) fn finish(&self) -> Result<(), DecodeFailure> {
+    pub(crate) fn finish(&self) -> Result<(), DecodeFailure> {
         if let Self::Zlib {
             label,
             seen: true,

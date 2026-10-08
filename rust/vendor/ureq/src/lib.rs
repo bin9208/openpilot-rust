@@ -547,7 +547,7 @@ pub use proxy::{Proxy, ProxyBuilder, ProxyProtocol};
 pub use request::RequestBuilder;
 use request::{WithBody, WithoutBody};
 pub use request_ext::RequestExt;
-pub use response::ResponseExt;
+pub use response::{InitialBodyFullyBuffered, RawContentEncoding, ResponseExt};
 pub use send_body::AsSendBody;
 
 mod agent;

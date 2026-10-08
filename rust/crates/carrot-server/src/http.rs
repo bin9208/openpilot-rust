@@ -32,6 +32,9 @@ pub struct Application {
     pub mapbox_online: Arc<crate::mapbox_tokens::Online>,
     pub ssh_online: Option<Arc<crate::ssh_keys::Online>>,
     pub ssh_timestamp: Option<i64>,
+    pub egpu_model: Arc<crate::egpu_model::ModelFiles>,
+    pub popular_values: Arc<crate::popular_values::Service>,
+    pub xiaoge_online: Arc<crate::xiaoge::Online>,
 }
 
 impl Application {
@@ -43,6 +46,9 @@ impl Application {
             mapbox_online: Arc::new(crate::mapbox_tokens::Online::default()),
             ssh_online: Some(Arc::new(crate::ssh_keys::Online::default())),
             ssh_timestamp: None,
+            egpu_model: Arc::new(crate::egpu_model::ModelFiles::original(&config.repository)),
+            popular_values: crate::popular_values::Service::new(true),
+            xiaoge_online: Arc::new(crate::xiaoge::Online::default()),
             history: History::new(Paths {
                 log: config.state.join("param_changes.jsonl"),
                 baseline: config.state.join("fingerprint_baseline.json"),
@@ -174,6 +180,18 @@ async fn dispatch(
     }
     if path == "/api/cars" {
         return Ok(crate::cars::handle(&request, Arc::clone(&app.cars)).await);
+    }
+    if crate::egpu_model::matches(&path) {
+        let files = Arc::clone(&app.egpu_model);
+        return Ok(crate::egpu_model::handle(&request, app, files, &path).await);
+    }
+    if crate::popular_values::matches(&path) {
+        let service = Arc::clone(&app.popular_values);
+        return Ok(crate::popular_values::handle(request, app, service).await);
+    }
+    if crate::xiaoge::matches(&path) {
+        let online = Arc::clone(&app.xiaoge_online);
+        return Ok(crate::xiaoge::handle(request, &app.config.repository, online).await);
     }
     if path == "/api/ssh_keys" {
         let online = app.ssh_online.clone();
