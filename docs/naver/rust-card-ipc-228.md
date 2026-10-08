@@ -68,3 +68,36 @@ behavior.
 
 Docs-Not-Needed: investigation of an isolated host comparison failure; no user
 setting or production behavior change.
+
+## Chrysler validity observation on Radard PR 229
+
+Run `37722992726`, Card job `113134706851`, retained a different failure in
+artifact `11527642353`: `CHRYSLER_PACIFICA_2018-True` differs only at
+`carOutput[33].valid` (source true, native false). The other eight captured
+scenarios match. All nine have 80 sends/states/outputs and one CAN packet per
+state, so this is distinct from the Volt backlog above.
+
+Source CAN33 delivery takes 61.609078 ms, while the producer's next-send
+interval also expands to 61.710723 ms. CAN34 follows source reception of CAN33
+by 0.101645 ms, before the source's control read. Native delivery takes
+0.078878 ms and its control read precedes CAN34 by 9.887712 ms. These clocks,
+conflated carControl reception and the validity values support source consumption
+of control34 versus native control33. That identity is inferred: the archived
+trace does not record the consumed control stamp. The data establish neither a
+receiver-only pause nor its scheduler/notification cause.
+
+A bounded current Card build at `6bf088e588d831b03abc28d05a61b11150656b87`
+produced SHA256
+`8e418a68d4b33bb4fa7a39b7b05fc13777f937f80ba3e573be7421dcc370c4dd`.
+One unchanged affected pair passes full output/Params comparison, 100 Hz input,
+80 states/packets and shutdown assertions. One source-only observer repeat maps
+all 80 consumed control stamps directly to their archived input indices;
+frame33 consumes invalid control33 and publishes false. Neither local run
+reproduces the hosted overlap. Local Python is 3.12.14 versus CI 3.12.15.
+The current binary, exact inputs, DBC reuse and receipts are retained under
+`.omo/evidence/229-card-validity/` in the integration checkout.
+
+No Card runtime or checked-in comparator change is justified or made. The
+passing local checks do not resolve the hosted pause or replace required CI.
+Dev `740ade11` separately passes all post-merge checks, including its Card job
+in run `37722579965`; the failed captures remain part of this open issue.

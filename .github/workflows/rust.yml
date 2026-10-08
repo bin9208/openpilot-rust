@@ -975,6 +975,8 @@ jobs:
           cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-radard --all-targets --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/tests.log"
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-radard --bins --examples --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/build.log"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-messaging --example state_probe --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/state-probe-build.log"
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-radard --all-targets --locked -- -D warnings 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/clippy.log"
           if [ '${{ matrix.machine }}' = aarch64 ]; then
@@ -992,6 +994,13 @@ jobs:
               --output "$RUNNER_TEMP/radard-native/source-$radard_phase" \
               2>&1 | tee "$RUNNER_TEMP/radard-native/logs/source-$radard_phase.log"
           done
+      - name: Compare exact availability deadline with original state
+        run: |
+          set -euo pipefail
+          python -P rust/tools/radard_availability_state.py \
+            --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/state_probe" \
+            --output "$RUNNER_TEMP/radard-native/source-availability-state" \
+            2>&1 | tee "$RUNNER_TEMP/radard-native/logs/availability-state.log"
       - name: Compare independent actual IPC and signal lifecycle
         run: |
           set -euo pipefail
@@ -1010,7 +1019,7 @@ jobs:
           set -euo pipefail
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
           mkdir -p "$RUNNER_TEMP/radard-native/bin"
-          for radard_binary in rust/target/debug/openpilot-radard rust/target/debug/examples/radard_*_trace; do
+          for radard_binary in rust/target/debug/openpilot-radard rust/target/debug/examples/radard_*_trace rust/target/debug/examples/state_probe; do
             if [ -f "$radard_binary" ]; then
               cp "$radard_binary" "$RUNNER_TEMP/radard-native/bin/"
               sha256sum "$radard_binary" >> "$RUNNER_TEMP/radard-native/SHA256SUMS"

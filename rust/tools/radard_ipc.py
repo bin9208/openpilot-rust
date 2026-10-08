@@ -167,7 +167,9 @@ def run(mode: Mode, paths: Paths, scenario: Scenario) -> list[Publication]:
         assert subscriber.receive(non_blocking=True) is None, 'published without model trigger'
         start = time.monotonic() + 0.05
         for index in range(40):
-          time.sleep(max(0.0, start + index * 0.05 - time.monotonic()))
+          # Keep live IPC samples 25 ms either side of the strict 0.5 s alive boundary.
+          phase = 0.025 if scenario.availability and index >= 7 else 0.0
+          time.sleep(max(0.0, start + index * 0.05 + phase - time.monotonic()))
           for topic in SERVICES[1:]:
             if scenario.availability and (topic == 'livePose' or (topic == 'liveTracks' and 7 <= index < 23) or (topic == 'carState' and 26 <= index < 32)):
               continue
