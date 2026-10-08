@@ -766,6 +766,40 @@ commands and the scenario map are recorded in
 This checkpoint does not yet connect manager IPC, automatic Git transactions,
 notifications or the reboot request. Those remain separate integration work.
 
+## Automatic-update Git transaction (2026-10-09 KST)
+
+The native `_run_git_pull` transaction now performs the original pinned reset
+and fast-forward merge through the existing captured-process runner. It retains
+the caller's repository lock across commands, alert callbacks and an awaited
+notification callback. The Git status reader and command runner are unchanged.
+
+Twenty original/native cases match results, command arguments, state transitions
+and exact stored JSON bytes. Owned repositories cover a dirty reset to the
+selected commit, divergent or unchanged heads, active index locks, state-save
+failure, failed HEAD verification, duplicate reboot protection, process errors,
+callback failures and cancellation. Independent lock contenders verify exclusion
+and release, including after an awaited callback.
+
+The cancellation fixture waits for the actual owned reset descendant to become
+ready before canceling. Its missing-readiness control fails within its two-second
+bound and performs the existing one-second process-group cleanup. A forced
+harness timeout also retains its original error while releasing children and
+locks. Nineteen unaffected cases were reused after this fixture-only correction.
+The production 10/120/180-second command limits remain unchanged; no additional
+full-duration timeout experiment is claimed.
+
+Strict all-target Clippy and 19 library tests pass for the frozen production
+sources; the final example passes its selected Clippy and formatting checks.
+The portable driver is `rust/tools/carrot_server_auto_update_pull.py`. Exact
+source identities, commands and scenario results are in
+`.omo/evidence/225-auto-update-pull/checkpoint/receipt.json`; the retained example
+SHA256 is `f62948b154a15a50a26b67d6cb905c0a5315eb9486063dfc9b4d0ecc3bf3c27b`.
+
+This independent transaction takes clock, alert and notification recipients from
+its caller. Manager monitoring, update-attempt scheduling, real notification,
+reboot and Application lifecycle integration remain open. All Git mutations in
+these comparisons target owned temporary repositories.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process

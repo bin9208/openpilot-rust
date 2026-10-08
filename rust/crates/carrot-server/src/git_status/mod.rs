@@ -47,6 +47,42 @@ pub struct Service {
     refresh: Arc<AsyncMutex<()>>,
 }
 
+pub(crate) struct LockedCommands<'a>(read::Context<'a>);
+
+impl LockedCommands<'_> {
+    pub(crate) async fn run(
+        &self,
+        args: &[&str],
+        timeout: Duration,
+    ) -> Result<(i32, String), Failure> {
+        match commands::run(&self.0, args, timeout).await {
+            Ok(output) => Ok(output),
+            Err(Failure::Cancelled) => Err(Failure::Cancelled),
+            Err(Failure::Launch(openpilot_process_supervision::Error::Io(error))) => {
+                let repository = &self.0.service.repository.directory;
+                let path: &std::path::Path = if repository.is_dir()
+                    && rustix::fs::accessat(
+                        rustix::fs::CWD,
+                        repository,
+                        rustix::fs::Access::EXEC_OK,
+                        rustix::fs::AtFlags::EACCESS,
+                    )
+                    .is_ok()
+                {
+                    std::path::Path::new("git")
+                } else {
+                    repository
+                };
+                Ok((1, crate::state::io_error(error, path).to_string()))
+            }
+            Err(Failure::Launch(openpilot_process_supervision::Error::Nul(_))) => {
+                Ok((1, "embedded null byte".into()))
+            }
+            Err(error) => Ok((1, error.to_string())),
+        }
+    }
+}
+
 struct Cancellation(watch::Sender<bool>);
 impl Drop for Cancellation {
     fn drop(&mut self) {
@@ -62,6 +98,18 @@ impl Drop for Completion {
 }
 
 impl Service {
+    pub(crate) fn locked_commands(
+        &self,
+        lock: Arc<std::fs::File>,
+        stopped: watch::Receiver<bool>,
+    ) -> LockedCommands<'_> {
+        LockedCommands(read::Context {
+            service: self,
+            lock,
+            stopped,
+        })
+    }
+
     pub fn original(launcher: PathBuf) -> Arc<Self> {
         Self::with_clock(
             Repository {
