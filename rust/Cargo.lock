@@ -1654,6 +1654,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "mime"
+version = "0.3.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
+
+[[package]]
 name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1688,6 +1694,21 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "multer"
+version = "3.1.0"
+dependencies = [
+ "bytes",
+ "encoding_rs",
+ "futures-util",
+ "http",
+ "httparse",
+ "memchr",
+ "mime",
+ "spin",
+ "version_check",
 ]
 
 [[package]]
@@ -2126,6 +2147,7 @@ dependencies = [
  "bytes",
  "capnp",
  "chrono",
+ "encoding_rs",
  "flate2",
  "http-body-util",
  "httpdate",
@@ -2133,6 +2155,7 @@ dependencies = [
  "hyper-util",
  "libc",
  "libloading",
+ "multer",
  "nix 0.31.3",
  "num-bigint",
  "num-traits",
@@ -2141,6 +2164,7 @@ dependencies = [
  "openpilot-carrot-navi",
  "openpilot-cereal",
  "openpilot-hardware-info",
+ "openpilot-http-transport",
  "openpilot-logmessaged",
  "openpilot-params",
  "openpilot-runtime-core",
@@ -2150,6 +2174,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
+ "ureq",
  "url",
  "uuid",
  "zlib-rs",
@@ -4942,8 +4967,6 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 [[package]]
 name = "ureq"
 version = "3.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a7ac20be9b7726e0bbdbf974c059676d9acb1cd414961f570a4e8231cacd7fc"
 dependencies = [
  "base64 0.23.1",
  "brotli-decompressor",

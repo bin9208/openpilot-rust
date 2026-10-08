@@ -39,6 +39,8 @@ not complete-server acceptance.
 | Vehicle selection list | 21 actual HTTP comparisons, filesystem recovery/Unicode boundaries and all 341 names in the existing seven-brand assets | `carrot-server-225-resume/cars/final-wave/` |
 | Cars, QR, JSON restore and backup download composition | 37 actual HTTP pairs plus 4 unavailable-Params guard cases, with persisted effects and graceful exit | `carrot-server-225-resume/http-restore-final/`, `http-restore-unavailable-final/` |
 | Relocated executable root and CLI ordering | 8 cases, including 4 actual owned listeners serving relocated assets and exiting on SIGTERM | `carrot-server-225-resume/runtime-root-final/result.json` |
+| Mapbox token routes and outbound validation | 85 actual source/native HTTP comparisons plus 1 encoded-path regression; response bytes, Params files and owned recipient requests match | `225-mapbox-tokens/native-fixed/result.json`, `encoded-routing-final/result.json` |
+| Multipart Params restore | 44 isolated source/native pairs and the same 44 through the actual Application route; response bytes/headers, Params/history effects and 17 MiB restore match | `carrot-server-225-resume/multipart/final-standalone/`, `final-composed/` |
 | Intro guard, state and presets | 70 source/native HTTP/file comparisons plus 2 cases without Params; actual preset writes and original failure contracts | `carrot-server-225-resume/intro/final-wave/result.json` |
 | Isolated static HTTP | 61 source/native request pairs, 6 compressed files and graceful exit after lazy bootstrap callback integration; conditional obs-text regressions repaired | `carrot-server-225-resume/static/lazy-wave/` |
 | Optional Brotli absent | Original and native remove stale `.br` while producing valid gzip | `carrot-server-225-resume/static/absent-codec-comparison.json` |
@@ -110,13 +112,42 @@ The system zlib provider is an explicit native packaging dependency.
 The focused ASan run instruments the wrapper and Rust dependencies; system
 zlib C and the prebuilt Rust standard library are not instrumented.
 
+Mapbox validation preserves the original urllib eight-second socket timeout
+and bounded raw response reading. Slow headers spanning about ten seconds and
+body chunks spanning about eight seconds still succeed when individual reads
+remain within the deadline; stalled reads fail. Unsolicited gzip/Brotli bytes
+remain raw. The existing ureq 3.4.2 provider is vendored with a seven-line raw
+body-reader accessor; ordinary decoding, framing and drop behavior remain
+upstream. Its provenance and license are retained in
+`rust/vendor/ureq/PATCH_NOTES.md`. Focused tests cover ordinary decoded access,
+raw access and dropping a partial body before another request. All outbound
+comparison recipients and token values are owned fixtures, with no live Mapbox
+validation request.
+
+Multipart restoration uses maintained multer 3.1.0 for framing and field reads.
+The bounded vendor changes retain duplicate headers in order, remove its
+32-header storage limit, and enforce the original 8,190-byte name/value limit
+before header normalization. Original trailing whitespace and header spelling
+remain available for the observed errors. A build-script declaration names the
+upstream `nightly` cfg without suppressing diagnostics. Upstream revision,
+license and patch scope are retained in `rust/vendor/multer/PATCH_NOTES.md`.
+The source's first-part behavior, raw content encodings, extended field names,
+initial `_charset_` failure behavior and closing-boundary errors are covered.
+The 17 MiB case deliberately uses multipart field reads rather than the JSON
+request-reader limit, matching the original. Exact non-UTF-8 codec aliases and
+some decode-error text remain part of the shared request-codec work below;
+these 44 cases do not establish universal Python codec equivalence.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
 evidence, and profile/history HTTP routes and real index bootstrap are connected.
-Multipart restoration and QR dependency status/repair remain in progress.
+Multipart restoration has isolated and composed HTTP evidence; QR dependency
+status/repair remains in progress.
 The request decoder currently handles UTF-8, Latin-1 and ASCII; other original
-request charsets and compressed request bodies remain transport gaps.
+request charsets and compressed request bodies remain transport gaps. Multipart
+extended names also use the existing encoding_rs provider for supported labels,
+with broader original codec aliases/error behavior still explicit gaps.
 The other feature families, startup heartbeat/git/update/upload tasks, live
 broker and camera/WebSocket transport remain outside the completed foundation.
 `/stream` also depends on the separately inventoried WebRTC conversion.

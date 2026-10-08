@@ -28,6 +28,7 @@ pub struct Application {
     pub static_web: Arc<StaticWeb>,
     pub intro: Arc<crate::intro::Intro>,
     pub cars: Arc<crate::cars::Cars>,
+    pub mapbox_online: Arc<crate::mapbox_tokens::Online>,
 }
 
 impl Application {
@@ -36,6 +37,7 @@ impl Application {
             static_web: StaticWeb::new(config.clone()),
             intro: crate::intro::Intro::new(config.clone()),
             cars: crate::cars::Cars::original(),
+            mapbox_online: Arc::new(crate::mapbox_tokens::Online::default()),
             history: History::new(Paths {
                 log: config.state.join("param_changes.jsonl"),
                 baseline: config.state.join("fingerprint_baseline.json"),
@@ -105,6 +107,10 @@ pub(crate) async fn route(
         .into_owned();
     if path == "/api/cars" {
         return Ok(crate::cars::handle(&request, Arc::clone(&app.cars)).await);
+    }
+    if crate::mapbox_tokens::matches(&path, request.method()) {
+        let online = Arc::clone(&app.mapbox_online);
+        return Ok(crate::mapbox_tokens::handle(request, app, online).await);
     }
     if path == "/download/params_backup.json" {
         return Ok(crate::restore_http::download(&request, &app.config.params_backup).await);

@@ -43,7 +43,7 @@ pub(crate) fn matches(path: &str, method: &Method) -> bool {
     path == "/api/params_qr_backup"
         || (matches!(
             path,
-            "/api/params_restore_preview" | "/api/params_restore_json"
+            "/api/params_restore_preview" | "/api/params_restore_json" | "/api/params_restore"
         ) && !matches!(method, &Method::GET | &Method::HEAD))
 }
 
@@ -64,7 +64,18 @@ fn rejected(status: StatusCode, error: &str, head: bool) -> Response<Body> {
         head,
     )
 }
-fn process(app: &Application, body: &Value, backup: bool, preview: bool) -> Result<Value, Error> {
+fn catalog(app: &Application, params: &crate::params::Backend) -> Result<Catalog, Error> {
+    app.catalog(params)
+        .or_else(|_| Catalog::from_data(Value::object([("params", Value::Array(Vec::new()))])))
+}
+
+fn process(
+    app: &Application,
+    body: &Value,
+    backup: bool,
+    preview: bool,
+    raw: bool,
+) -> Result<Value, Error> {
     let mut params = app
         .params
         .lock()
@@ -76,6 +87,16 @@ fn process(app: &Application, body: &Value, backup: bool, preview: bool) -> Resu
         {
             response.extend(payload);
         }
+        return Ok(response);
+    }
+    if raw {
+        let catalog = catalog(app, &params)?;
+        let mut restore = Restore::new(&mut params, &catalog, &app.history);
+        crate::json_fields::set(
+            &mut response,
+            "result",
+            restore.restore_values(body, &Value::text("restore"))?,
+        )?;
         return Ok(response);
     }
     fields(body)?;
@@ -91,9 +112,7 @@ fn process(app: &Application, body: &Value, backup: bool, preview: bool) -> Resu
         &Value::Null
     };
     crate::param_restore::selected_keys(keys)?;
-    let catalog = app
-        .catalog(&params)
-        .or_else(|_| Catalog::from_data(Value::object([("params", Value::Array(Vec::new()))])))?;
+    let catalog = catalog(app, &params)?;
     let mut restore = Restore::new(&mut params, &catalog, &app.history);
     if preview {
         crate::json_fields::set(&mut response, "preview", restore.preview(&values, keys)?)?;
@@ -112,6 +131,7 @@ pub(crate) async fn handle(
 ) -> Response<Body> {
     let head = request.method() == Method::HEAD;
     let backup = path == "/api/params_qr_backup";
+    let multipart = path == "/api/params_restore";
     if (backup && !matches!(request.method(), &Method::GET | &Method::HEAD))
         || (!backup && request.method() != Method::POST)
     {
@@ -133,13 +153,32 @@ pub(crate) async fn handle(
             head,
         );
     }
-    let error_status = if backup {
+    let error_status = if backup || multipart {
         StatusCode::INTERNAL_SERVER_ERROR
     } else {
         StatusCode::BAD_REQUEST
     };
     let body = if backup {
         Value::Null
+    } else if multipart {
+        let data = match crate::params_multipart::first_file(request).await {
+            Ok(crate::params_multipart::FirstFile::Data(data)) => data,
+            Ok(crate::params_multipart::FirstFile::MissingFileField) => {
+                return rejected(StatusCode::BAD_REQUEST, "missing file field", head);
+            }
+            Err(error) => return rejected(error_status, &error.to_string(), head),
+        };
+        match Value::parse(&String::from_utf8_lossy(&data)) {
+            Ok(body @ Value::Object(_)) => body,
+            Ok(_) => {
+                return rejected(
+                    StatusCode::BAD_REQUEST,
+                    "bad json format (must be object)",
+                    head,
+                )
+            }
+            Err(error) => return rejected(error_status, &error.to_string(), head),
+        }
     } else {
         match read_json_detailed(request).await {
             Ok(body) => body,
@@ -147,7 +186,9 @@ pub(crate) async fn handle(
         }
     };
     let preview = path.ends_with("_preview");
-    match tokio::task::spawn_blocking(move || process(&app, &body, backup, preview)).await {
+    match tokio::task::spawn_blocking(move || process(&app, &body, backup, preview, multipart))
+        .await
+    {
         Ok(Ok(value)) => {
             let mut response = reply(StatusCode::OK, value, head);
             if backup {
