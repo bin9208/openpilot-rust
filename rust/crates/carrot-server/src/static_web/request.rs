@@ -128,11 +128,14 @@ fn etags_match(header: &str, etag: &str, weak: bool) -> bool {
     false
 }
 
-pub(super) fn condition(
-    request: &FileRequest,
-    etag: &str,
-    modified: SystemTime,
-) -> Option<StatusCode> {
+fn timestamp(time: SystemTime) -> f64 {
+    time.duration_since(UNIX_EPOCH).map_or_else(
+        |before| -before.duration().as_secs_f64(),
+        |after| after.as_secs_f64(),
+    )
+}
+
+pub(super) fn condition(request: &FileRequest, etag: &str, modified: f64) -> Option<StatusCode> {
     let if_match = request
         .header(header::IF_MATCH)
         .filter(|value| !value.is_empty());
@@ -145,7 +148,7 @@ pub(super) fn condition(
     if if_match.is_none()
         && request
             .date(header::IF_UNMODIFIED_SINCE)
-            .is_some_and(|date| modified > date)
+            .is_some_and(|date| modified > timestamp(date))
     {
         return Some(StatusCode::PRECONDITION_FAILED);
     }
@@ -158,7 +161,7 @@ pub(super) fn condition(
         || (if_none.is_none()
             && request
                 .date(header::IF_MODIFIED_SINCE)
-                .is_some_and(|date| modified <= date))
+                .is_some_and(|date| modified <= timestamp(date)))
     {
         return Some(StatusCode::NOT_MODIFIED);
     }
@@ -168,11 +171,11 @@ pub(super) fn condition(
 pub(super) fn byte_range(
     request: &FileRequest,
     size: u64,
-    modified: SystemTime,
+    modified: f64,
 ) -> Result<Option<(u64, u64)>, ()> {
     if request
         .date(header::IF_RANGE)
-        .is_some_and(|date| modified > date)
+        .is_some_and(|date| modified > timestamp(date))
     {
         return Ok(None);
     }

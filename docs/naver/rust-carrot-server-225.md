@@ -519,6 +519,29 @@ exercise real recordings, codecs, upload recipients, NAS, devices or stalled
 filesystem cancellation. Report, summary, replay-source, media and upload routes
 remain open. The complete server startup/log-upload gate is still unfinished.
 
+## File response timestamp corrections (2026-10-08)
+
+The metadata-route comparison exposed two shared FileResponse differences.
+A file at `mtime_ns=-1750000000` returned native 500 while the original served
+200 with a signed hexadecimal ETag and a 1969 Last-Modified date. At
+`mtime_ns=1700000000000000001`, Python's floating-point `st_mtime` rounds to
+`1700000000.0`; native nanosecond comparisons instead produced a one-second
+later header, 200 instead of 304 for If-Modified-Since and 200 instead of 206
+for the tested If-Range request.
+
+The shared helper now preserves exact signed nanoseconds in ETags and uses
+the original floating-point timestamp representation for header rounding and
+date comparisons. Existing positive ETags/date formatting, parser behavior,
+condition precedence, range logic and post-open metadata refresh are retained.
+Seven focused source/native pairs pass: negative 200/304/206, the positive
+one-nanosecond boundary's header/304/206 and an ordinary positive response.
+Other static-family comparisons are reused without a full replay.
+
+The selected build, strict all-target Clippy, formatting and diff checks pass.
+Source identities and commands are in `.omo/evidence/225-file-timestamps/`;
+raw failing and corrected wire captures are in the Dashcam metadata evidence.
+The correction adds no timeout, tolerance, dependency or user option.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process

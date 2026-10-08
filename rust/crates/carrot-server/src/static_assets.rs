@@ -1,8 +1,10 @@
 use crate::Error;
+use num_traits::ToPrimitive;
 use sha2::{Digest, Sha256};
 use std::{
     collections::HashMap,
     fs,
+    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     sync::Mutex,
     time::{SystemTime, UNIX_EPOCH},
@@ -116,26 +118,44 @@ pub fn refresh_gzip(root: &Path, path: &str) -> Result<(), Error> {
 }
 
 pub fn etag(metadata: &fs::Metadata) -> Result<String, Error> {
-    let time = metadata
-        .modified()?
-        .duration_since(UNIX_EPOCH)
-        .map_err(|_| Error::Source("asset timestamp before epoch".into()))?;
-    Ok(format!("\"{:x}-{:x}\"", time.as_nanos(), metadata.len()))
+    match metadata.modified()?.duration_since(UNIX_EPOCH) {
+        Ok(time) => Ok(format!("\"{:x}-{:x}\"", time.as_nanos(), metadata.len())),
+        Err(error) => Ok(format!(
+            "\"-{:x}-{:x}\"",
+            error.duration().as_nanos(),
+            metadata.len()
+        )),
+    }
+}
+
+pub(crate) fn modified_seconds(metadata: &fs::Metadata) -> Result<f64, Error> {
+    let seconds = metadata
+        .mtime()
+        .to_f64()
+        .ok_or_else(|| Error::Source("asset timestamp overflow".into()))?;
+    let nanos = metadata
+        .mtime_nsec()
+        .to_f64()
+        .ok_or_else(|| Error::Source("asset timestamp overflow".into()))?;
+    Ok(seconds + nanos * 1e-9)
 }
 
 pub(crate) fn last_modified(metadata: &fs::Metadata) -> Result<String, Error> {
-    let modified = metadata.modified()?;
-    let seconds = modified
-        .duration_since(UNIX_EPOCH)
-        .map_err(|_| Error::Source("asset timestamp before epoch".into()))?;
-    let rounded = if seconds.subsec_nanos() == 0 {
-        modified
-    } else {
-        modified
-            .checked_add(std::time::Duration::from_secs(1))
-            .ok_or_else(|| Error::Source("asset timestamp overflow".into()))?
-    };
-    Ok(httpdate::fmt_http_date(rounded))
+    let rounded = modified_seconds(metadata)?
+        .ceil()
+        .to_i64()
+        .ok_or_else(|| Error::Source("asset timestamp overflow".into()))?;
+    if rounded >= 0 {
+        let seconds =
+            u64::try_from(rounded).map_err(|_| Error::Source("asset timestamp overflow".into()))?;
+        let time = UNIX_EPOCH
+            .checked_add(std::time::Duration::from_secs(seconds))
+            .ok_or_else(|| Error::Source("asset timestamp overflow".into()))?;
+        return Ok(httpdate::fmt_http_date(time));
+    }
+    let time = chrono::DateTime::from_timestamp(rounded, 0)
+        .ok_or_else(|| Error::Source("asset timestamp overflow".into()))?;
+    Ok(time.format("%a, %d %b %Y %H:%M:%S GMT").to_string())
 }
 
 pub fn content_type(path: &Path) -> &'static str {

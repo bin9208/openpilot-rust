@@ -72,7 +72,8 @@ pub(super) fn file_response(path: &Path, request: &FileRequest) -> Result<Respon
         return Ok(stream_error(StatusCode::FORBIDDEN, request.head));
     }
     let etag = static_assets::etag(&metadata)?;
-    if let Some(status) = condition(request, &etag, metadata.modified()?) {
+    let modified = static_assets::modified_seconds(&metadata)?;
+    if let Some(status) = condition(request, &etag, modified) {
         let mut result = response(status, Vec::new(), "application/octet-stream", request.head);
         result.headers_mut().remove(header::CONTENT_TYPE);
         if status == StatusCode::NOT_MODIFIED {
@@ -101,7 +102,11 @@ pub(super) fn file_response(path: &Path, request: &FileRequest) -> Result<Respon
         }
     };
     let metadata = file.metadata()?;
-    let range = match byte_range(request, metadata.len(), metadata.modified()?) {
+    let range = match byte_range(
+        request,
+        metadata.len(),
+        static_assets::modified_seconds(&metadata)?,
+    ) {
         Ok(range) => range,
         Err(()) => {
             let mut result = stream_error(StatusCode::RANGE_NOT_SATISFIABLE, request.head);
