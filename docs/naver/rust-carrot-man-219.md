@@ -56,3 +56,46 @@ selection. The independent Carrot Navi receiver (#206), Carrot Server, vehicle
 startup and complete runtime composition have separate integration gates.
 All upload/notification recipients were owned loopback fixtures. No real
 recipient, NAS, vehicle or host time/zone mutation was used.
+
+## Owned fixture port allocation (#232)
+
+The dev post-merge [ARM job 113237686782](https://github.com/bin9208/openpilot-rust/actions/runs/37755126660/job/113237686782)
+at `edd1ab836c6536c2c77248173e11a90d390b9ff0` failed while waiting for
+the binary-route publication. Its retained native stderr reports
+`route listener: Address already in use (os error 98)` followed by navigation
+`unterminated_frame`. That run did not record its allocated ports, so duplicate
+route/navigation ports remain an explanation, alongside an unrelated port owner.
+[Issue #232](https://github.com/bin9208/openpilot-rust/issues/232) tracks the
+fixture correction; the later unchanged CarrotMan ARM success at `7a8d6419`
+does not establish the cause of the earlier failure.
+
+A deterministic recurring-port fixture executing the old allocator produced
+seven copies of port 32797. Real navigation and route TCP binds then reproduced
+errno 98. The allocator now holds all seven TCP reservations through selection
+and fixture preparation, asserts that the set has seven distinct values, and
+releases it immediately before child launch. Each implementation retains its
+complete `fixture-configuration.json`, including the role-to-port map.
+No runtime code, retries or delays changed. External port claims after release
+and before the child binds remain possible; numeric TCP reservations also do
+not reserve UDP listeners in another process.
+
+Two focused real-socket tests passed: recurring candidates remain distinct and
+unavailable to another bind while reserved, then become bindable on release;
+preparation failure also releases every reservation. The existing actual
+source/native owned comparison passed all twelve boundaries once using host
+ELF SHA256 `34da06d71dc846666ba3cc1f733b0262a511fc5818609055d8cdf8a7cd60b9b1`,
+the cached original Params/msgq bindings, and verified Shapely 2.1.2 GEOS
+libraries. Both processes captured seven distinct ports, the expected
+two-point route publication and destination, and the existing upload and
+recovery side effects. Native process identity recorded `libpython=false`.
+
+Private local evidence is under `.omo/evidence/carrot-man-232/` in the issue
+worktree: `released-port-reproduction.json`, `allocator-{red,green}-invocation.json`,
+`owned-comparison-invocation.json`, `owned-comparison/owned-summary.json`,
+and both implementations' configuration/publication/selected-result files.
+The coordinated primary build reused unchanged CarrotMan/msgq/Cereal/web-upload
+sources; additive messaging State and Params APIs from concurrent work are
+listed in `source-dependency-readback.json`. No local ARM rerun or new exact-head
+Actions result is claimed here; those remain the parent's PR validation gates.
+Both CarrotMan CI architectures now run the two standard-library socket tests
+before the existing owned comparison, using the bindings already built by that job.

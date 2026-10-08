@@ -1,5 +1,6 @@
 import argparse
-from contextlib import ExitStack
+from collections.abc import Iterator
+from contextlib import ExitStack, contextmanager
 from email.parser import BytesParser
 from email.policy import default
 import hashlib
@@ -30,10 +31,15 @@ from openpilot.cereal import log, messaging
 import zmq
 
 
-def port(kind=socket.SOCK_STREAM):
-  with socket.socket(type=kind) as stream:
-    stream.bind(("127.0.0.1", 0))
-    return stream.getsockname()[1]
+@contextmanager
+def reserve_ports() -> Iterator[list[int]]:
+  with ExitStack() as reservations:
+    ports: list[int] = []
+    for _ in range(7):
+      stream = reservations.enter_context(socket.socket(type=socket.SOCK_STREAM))
+      stream.bind(("127.0.0.1", 0))
+      ports.append(stream.getsockname()[1])
+    yield ports
 
 
 class Receiver:
@@ -95,7 +101,8 @@ class Peer:
     self.publisher = messaging.PubMaster(["deviceState", "carState", "selfdriveState", "carControl", "gpsLocationExternal", "modelV2", "navRouteNavd", "carrotNavi"])
     self.subs = {name: messaging.sub_sock(name, conflate=False, timeout=20) for name in ("carrotMan", "navRoute", "navInstructionCarrot")}
     self.receiver = Receiver()
-    self.ports = [port() for _ in range(7)]
+    reservations = self.stack.enter_context(ExitStack())
+    self.ports = reservations.enter_context(reserve_ports())
     self.network = "none"
     self.can_error = False
     self.rows = []
@@ -123,8 +130,14 @@ class Peer:
     command = [str(args.binary.resolve())] if implementation == "native" else [sys.executable, str(ROOT / "rust/tools/carrot_man_runtime_source.py"), "--binding", str(args.params_binding.resolve())]
     self.out = (self.root / "stdout.log").open("w")
     self.err = (self.root / "stderr.log").open("w")
+    assert len(self.ports) == len(set(self.ports)) == 7
+    fixture = dict(root=str(self.root.resolve()), ports=self.ports, values=fixture_values)
+    payload = json.dumps(fixture)
+    roles = ("navigation_udp", "navigation_tcp", "navigation_http", "route_tcp", "kisa_udp", "command_zmq", "broadcast_udp")
+    (self.root / "fixture-configuration.json").write_text(json.dumps(dict(fixture, port_roles=dict(zip(roles, self.ports))), indent=2) + "\n")
+    reservations.close()
     self.process = subprocess.Popen(command, env=env, stdin=subprocess.PIPE, stdout=self.out, stderr=self.err, text=True)
-    self.process.stdin.write(json.dumps(dict(root=str(self.root.resolve()), ports=self.ports, values=fixture_values)))
+    self.process.stdin.write(payload)
     self.process.stdin.close()
     self.zmq = zmq.Context()
     self.command = self.zmq.socket(zmq.REQ)
