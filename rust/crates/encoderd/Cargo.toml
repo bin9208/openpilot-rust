@@ -1,0 +1,48 @@
+[package]
+name = "openpilot-encoderd"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = []
+native = ["dep:bindgen", "dep:capnp", "dep:ffmpeg-next", "dep:openpilot-cereal", "dep:openpilot-jpeg", "dep:openpilot-logging", "dep:openpilot-messaging", "dep:openpilot-msgq", "dep:openpilot-params", "dep:rustix", "dep:signal-hook"]
+static-ffmpeg = ["native", "ffmpeg-next/static"]
+visionipc-ion = ["native", "openpilot-msgq/visionipc-ion"]
+
+[dependencies]
+capnp = { version = "=0.27.2", optional = true }
+ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format"], optional = true }
+libc = "0.2"
+openpilot-cereal = { path = "../cereal", optional = true }
+openpilot-jpeg = { path = "../jpeg", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+openpilot-messaging = { path = "../messaging", optional = true }
+openpilot-msgq = { path = "../msgq", optional = true }
+openpilot-params = { path = "../params", optional = true }
+rustix = { version = "1", features = ["time", "fs", "process", "thread", "mm"], optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+signal-hook = { version = "0.3", optional = true }
+thiserror = "2"
+
+[lints.rust]
+unsafe_code = "deny"
+
+[build-dependencies]
+bindgen = { version = "=0.72.1", default-features = false, features = ["runtime"], optional = true }
+
+[[bin]]
+name = "openpilot-encoderd"
+path = "src/main.rs"
+required-features = ["native"]
+
+[[example]]
+name = "encoder_codec_trace"
+required-features = ["native"]
+
+[[example]]
+name = "encoder_v4l_trace"
+required-features = ["native"]
