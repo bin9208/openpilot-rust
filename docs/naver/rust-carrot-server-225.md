@@ -633,6 +633,42 @@ were verified after the reboot without rerunning the completed cases.
 The standalone 32-scenario comparison remains reused. Whole-server startup
 and the full runtime/upload gate remain unfinished.
 
+## Git configuration repair and pinned pull target (2026-10-09 KST)
+
+Native `repair_git_config` and `prepare_git_pull` now reproduce the original
+selected-remote/upstream repair and commit-pinning operations. They preserve
+intentional differently named and local upstreams, duplicate/inherited config
+errors, custom fetch mappings and the advertised-head verification. The caller
+retains the repository transaction lock; only its explicitly borrowed lock FD
+is inherited by captured child commands. Separate stdout/stderr, replacement
+UTF-8 decoding, newline/whitespace handling and negative signal return codes
+retain the source behavior.
+
+Thirty-six paired cases pass: 34 baseline comparisons and two focused
+permission-error controls. The latter corrected error attribution for a
+non-searchable working directory while preserving the `git` filename for a
+non-executable Git program. This attribution runs only after launch fails.
+The actual original 15-second timeout is reused with a native 15.0057-second
+comparison; the direct child is reaped while an owned descendant may survive,
+matching POSIX pipe-close behavior. HEAD, index, working files and the prepared
+target remain preserved across the controlled configuration operations and an
+unrelated FETCH_HEAD update.
+
+The final example SHA256 is
+`fc0e60f2a8cfd48bf60fe7bd9f95284680ada9370662a8e433bd79cc583f65b0`.
+Selected builds, strict Clippy, 19 library tests, formatting, Ruff and diff
+checks pass. Source/binary identities, exact invocations and reuse boundaries
+are in `.omo/evidence/225-git-config/checkpoint/receipt.json`.
+
+One preliminary fixture setup lacked its own Git repository and inadvertently
+fetched the current development checkout's configured remote. Its output showed
+no config repair, and branch/upstream/working-file readback remained unchanged.
+That setup failure is recorded separately and is not validation evidence. The
+actual corpus checks an independent `.git` and exact repository root before
+each source/native invocation and uses owned file remotes. Automatic-update
+orchestration, recovery CLI/reset/merge and stale-index handling remain separate
+work; the runtime candidate has not been deployed.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process

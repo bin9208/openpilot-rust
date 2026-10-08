@@ -5,6 +5,7 @@ pub mod cars;
 pub mod config;
 pub mod dashcam;
 pub mod egpu_model;
+pub mod git_config;
 pub mod git_state;
 pub mod git_status;
 pub mod heartbeat;
