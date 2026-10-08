@@ -232,6 +232,38 @@ class RustIsolationTests(unittest.TestCase):
                          '-Zmiri-preemption-rate=0.1', '-Zmiri-tree-borrows'):
             self.assertIn(required, memory)
 
+    def test_selfdrived_requires_source_loop_native_ipc_and_failure_checks(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['selfdrive-runtime']
+        self.assertNotIn('if', job)
+        for checker in ('check_selfdrived_controller.py', 'check_selfdrived_ipc.py', 'check_selfdrived_failures.py'):
+            step = next(step for step in job['steps'] if checker in step.get('run', ''))
+            self.assertNotIn('if', step)
+            self.assertNotIn('continue-on-error', step)
+        steps = '\n'.join(step.get('run', '') for step in job['steps'])
+        self.assertIn('-p openpilot-selfdrived -p openpilot-messaging --locked', steps)
+        self.assertIn('build_params_python.py', steps)
+        self.assertIn('build_msgq_python.py', steps)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
+
+    def test_navigation_requires_original_transport_auth_and_timer_evidence(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['navd-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('build_params_python.py', 'build_msgq_python.py', 'NAVD_PARAMS_BINDING',
+                         'requests==2.34.2', 'urllib3==2.7.0', 'PyJWT==2.14.0',
+                         '-p openpilot-navd --features native --bins --examples --locked',
+                         'check_navd_policy.py', 'check_navd_engine.py', 'check_navd_http.py', '--timeouts',
+                         'check_navd_config.py', 'check_navd_destination.py', 'check_navd_ipc.py'):
+            self.assertIn(required, commands)
+        self.assertTrue(any(step.get('if') == 'always()' and
+                            'navd-native/' in step.get('with', {}).get('path', '') for step in job['steps']))
+        arm = '\n'.join(step.get('run', '') for step in data['jobs']['arm64']['steps'])
+        self.assertIn('cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu', arm)
+        self.assertIn('release/openpilot-set-destination', arm)
+
     def test_inherited_side_effects_are_source_repository_only(self):
         for file, job in [('sync.yml', 'sync'), ('naver-upstream-sync.yml', 'sync'), ('wiki-settings-publish.yaml', 'synchronize'), ('carrot-route-vault-publish.yaml', 'publish')]:
             with self.subTest(file=file):
@@ -252,7 +284,7 @@ class RustIsolationTests(unittest.TestCase):
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'joystickd-runtime',
             'planner-runtime', 'planner-memory',
-            'card-runtime', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime', 'carrot-navi-runtime', 'carrot-navi-arm', 'carrot-man-runtime',
+            'card-runtime', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime', 'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'carrot-man-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -282,6 +314,7 @@ class RustIsolationTests(unittest.TestCase):
                                             'RADARD': '${{ needs.radard-runtime.result }}',
                                             'CARROT_NAVI': '${{ needs.carrot-navi-runtime.result }}',
                                             'CARROT_NAVI_ARM': '${{ needs.carrot-navi-arm.result }}',
+                                            'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}',
                                             'CARROT_MAN': '${{ needs.carrot-man-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]

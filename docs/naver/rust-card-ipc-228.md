@@ -101,3 +101,33 @@ No Card runtime or checked-in comparator change is justified or made. The
 passing local checks do not resolve the hosted pause or replace required CI.
 Dev `740ade11` separately passes all post-merge checks, including its Card job
 in run `37722579965`; the failed captures remain part of this open issue.
+
+## Nissan native backlog on Carrot Navi PR 230
+
+Head `9bd7c07f` passes the Carrot Navi, workspace and ARM jobs, but Card job
+`113172735907` in run `37734997519` rejects `NISSAN_XTRAIL-True-native`:
+80 independent sends produce 78 state/output/sendcan publications. Artifact
+`11532004580` accounts for every input: 77 single-packet states and one
+three-packet state spanning ticks 73..75. The measured window is exactly
+events 0..77. Source has 80 single-packet states and a later empty-CAN state.
+
+The native carControl receive interval is 39.782841 ms at frame 395, while
+the pump's intervals remain 10.107603..10.247304 ms. Both peers pass readiness,
+empty-CAN counter, expected signal exit and Params persistence checks. This
+establishes a native receive backlog, not its scheduler/notification cause;
+the archive has neither scheduler traces nor syscalls from that boundary.
+
+One unchanged affected source/native pair passes locally in 15.24 s using the
+retained `8e418a68` executable above and exact archived input SHA256
+`4a3abdb22e67be371aedfc53e6e46a0d995e97740e4addfa3255c8eb013e99e8`.
+All 80-send/state, one-packet, exact output/validity and shutdown assertions
+remain enabled. The reused Nissan DBC is byte-identical to the hosted DBC.
+Card, shared runtime and checked-in comparison sources are unchanged between
+that executable's build and the failed head; it is not the hosted job's ELF.
+No build, installation, production edit or comparator change was performed.
+
+The failed archive, selected raw captures, journal, bounded replay invocation
+and passing local pair are retained in the primary checkout at
+`.analysis/scratch/2026-10-08-runtime-resume/230-card-failure/`.
+The hosted pause remains unresolved. A single scoped retry of the failed Card
+job at the unchanged head is the next gate; local success does not replace it.
