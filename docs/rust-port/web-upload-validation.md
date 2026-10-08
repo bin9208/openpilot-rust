@@ -77,5 +77,34 @@ remain necessary before a complete runtime candidate can be handed to the user.
 The evidence index is `.omo/evidence/web-upload/evidence.json` in the issue worktree;
 exact-SHA cloud validation belongs to the integration handoff.
 
+## Interrupted TCP receive comparison (2026-10-08, issue 237)
+
+The CarrotMan ARM comparison on dev `1afdcc2a6` recorded an interrupted upload
+read and missed its final onroad web upload. A controlled local socket test
+reproduces the error with the unchanged transport: stopping and resuming its
+owned child during `recvfrom` yields `EINTR`, while the original synchronous
+session helper receives the response. The CI signal source remains unknown;
+this reproduction establishes the error path, not that signal's origin.
+
+The transport now retries only an interrupted non-TLS input operation on the
+same connection, using the remaining original monotonic deadline. It sends no
+second HTTP request and retains the existing late-completion check. Four source
+and native controls pass with retained example SHA256
+`6976360cab56fcda5dfe1a93e379b544f90b72fd702b712a563e1d1e4305ca6c`:
+an available response succeeds after interruption, and a held response still
+times out after two interruptions. The latter takes 12.025 seconds in the
+source and 12.339 seconds in native on this host; identical wakeup timing is
+not claimed. Each receiver observes exactly one request with the same body.
+Traces retain both interruptions, the same socket descriptor and decreasing
+receive timeouts. TLS retry behavior is outside this change.
+
+Evidence is under `.omo/evidence/carrot-man-237/` in the issue checkout;
+`green-both-restart-gate/result.json` records the passing observations and
+earlier failing receipts remain retained. The selected build, two library
+tests, strict all-target Clippy, formatting and 19 isolation checks pass.
+The existing required upload-timeout job now also runs
+`rust/tools/web_upload_eintr_compare.py` and retains its socket traces.
+Exact-head CI, full startup/upload and device acceptance remain separate.
+
 Docs-Not-Needed: internal library port preserving existing settings and behavior,
 with no active runtime selection change.
