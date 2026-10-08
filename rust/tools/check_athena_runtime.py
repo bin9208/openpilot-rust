@@ -29,6 +29,8 @@ def main():
     ('daemon', ['check_athena_daemon.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(output / 'daemon')]),
     ('interrupted-connect', ['check_athena_connect.py', '--binary', str(binary / 'examples/athena_upload'),
                              '--output', str(output / 'interrupted-connect')]),
+    ('interrupted-log-connect', ['check_logging_connect.py', '--binary', str(binary / 'examples/logging_probe'),
+                                 '--output', str(output / 'interrupted-log-connect')]),
     ('transfers', ['check_athena_transfers.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(output / 'transfers')]),
     ('upload-edges', ['check_athena_upload_edges.py', str(binary / 'openpilot-athenad'), str(output / 'upload-edges')]),
     ('metered-abort', ['check_athena_metered_abort.py', str(binary / 'openpilot-athenad'), str(binary / 'examples/athena_ipc'), str(output / 'metered-abort')]),
