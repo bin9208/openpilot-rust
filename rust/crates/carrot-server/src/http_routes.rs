@@ -60,6 +60,9 @@ pub(crate) async fn dispatch(
             crate::dashcam::metadata_handle(request, Arc::clone(&app.dashcam_metadata)).await,
         );
     }
+    if crate::dashcam::media_matches(request.uri().path()) {
+        return Ok(crate::dashcam::media_handle(request, Arc::clone(&app.dashcam_media)).await);
+    }
     if path == "/api/ssh_keys" {
         let online = app.ssh_online.clone();
         let timestamp = app.ssh_timestamp;

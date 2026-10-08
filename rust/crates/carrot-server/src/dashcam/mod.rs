@@ -3,6 +3,10 @@ mod cache;
 pub mod catalog;
 mod file_routes;
 mod http;
+mod media;
+mod media_http;
+mod media_images;
+mod media_video;
 mod metadata;
 mod mime;
 mod pages;
@@ -14,6 +18,8 @@ mod selectors;
 pub use cache::Service;
 pub use file_routes::{handle as metadata_handle, matches as metadata_matches, MetadataFiles};
 pub use http::{handle, matches};
+pub use media::Media;
+pub use media_http::{handle as media_handle, matches as media_matches};
 
 use crate::Error;
 

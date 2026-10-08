@@ -669,6 +669,33 @@ each source/native invocation and uses owned file remotes. Automatic-update
 orchestration, recovery CLI/reset/merge and stale-index handling remain separate
 work; the runtime candidate has not been deployed.
 
+## Dashcam thumbnail, preview and browser video (2026-10-09 KST)
+
+The active thumbnail/preview/video routes now use the Application router and
+the shared source-compatible FFmpeg capture boundary. The implementation keeps
+positive-cache reuse, raw segment cache tokens and attachment names, thumbnail
+seek fallback and the exact placeholder SVG, preview-to-thumbnail fallback,
+MP4 passthrough and TS remux behavior. Audio is copied first; an incompatible
+audio stream falls back to video-only MP4, then to the original TS if necessary.
+
+Forty-seven HTTP pairs, 40 command-argument pairs and two persistent-socket
+cases match the original. Actual external FFmpeg comparisons retain identical
+JPEG/GIF/remux bytes and ffprobe observations for AAC preservation and the PCM
+fallback. The Application checks cover eight route cases, Internal500 close/EOF
+and normal MP4 keepalive. The retained final example SHA256 is
+`f8d255ff0253bc14a7cb2d393310e19390fe8c3d4f6fbe940c43f5f224698cc2`.
+The portable `rust/tools/carrot_server_dashcam_media.py` entrypoint has a
+two-case relocation smoke check; its unchanged scenario bodies reuse the
+completed family evidence. Selected build/strict Rust gates pass.
+
+The scenario-to-artifact map, exact commands, source identities and captured
+codec outputs are in
+`.omo/evidence/carrot-server-225-resume/dashcam-media/media-checkpoint/receipt.json`.
+The common 90-second capture deadline is reused from #242; the original
+120/180-second parameters are retained without claiming additional wall-clock
+timeout experiments. Inputs are owned synthetic media. Route-report aggregation,
+upload orchestration and complete server/runtime startup remain open.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
