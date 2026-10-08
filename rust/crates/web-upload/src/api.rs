@@ -26,6 +26,21 @@ fn json_request(
 pub fn post_json_total(url: &str, payload: &Fields) -> Result<Response, Error> {
     json_request(&Client::total(), url, "", payload)
 }
+pub fn post_bytes_socket(
+    url: &str,
+    content_type: &str,
+    bytes: Vec<u8>,
+    timeout_seconds: u64,
+) -> Result<Response, Error> {
+    Client::socket(timeout_seconds).request(
+        Request {
+            url,
+            method: ureq::http::Method::POST,
+            headers: [("Content-Type".into(), content_type.into())].into(),
+        },
+        Body::Bytes(Cursor::new(bytes)),
+    )
+}
 pub fn create_session(base: &str, metadata: &Fields, mode: SessionMode) -> Result<String, Error> {
     create_session_with_purpose(
         base,
