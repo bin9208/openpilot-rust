@@ -7,6 +7,7 @@ pub mod dashcam;
 pub mod egpu_model;
 pub mod git_state;
 pub mod git_status;
+pub mod heartbeat;
 mod history_http;
 pub mod http;
 mod http_request;
@@ -47,6 +48,8 @@ pub mod static_web;
 pub mod tools_git_status;
 #[cfg(test)]
 mod transport_test;
+#[cfg(test)]
+mod ureq_raw_test;
 pub mod web_settings;
 mod web_settings_http;
 pub mod web_sound;

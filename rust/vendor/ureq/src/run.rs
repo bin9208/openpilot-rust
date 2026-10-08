@@ -636,9 +636,42 @@ pub(crate) struct BodyHandler {
     timings: CallTimings,
     remote_closed: bool,
     redirect: Option<Box<Call<Redirect>>>,
+    raw_chunks: Option<RawChunks>,
+}
+
+#[derive(Default)]
+struct RawChunks {
+    received: u64,
+    completed: u64,
+}
+
+fn track_chunk_output(progress: &mut Option<RawChunks>, call: &Call<RecvBody>, count: usize) {
+    if let Some(progress) = progress {
+        progress.received = progress
+            .received
+            .saturating_add(u64::try_from(count).unwrap_or(u64::MAX));
+        if call.is_at_chunk_data_end() {
+            progress.completed = progress.received;
+        }
+    }
 }
 
 impl BodyHandler {
+    pub(crate) fn track_raw_chunks(&mut self) -> bool {
+        if let Some(call) = self.call.as_mut() {
+            if call.body_mode() == BodyMode::Chunked {
+                call.stop_on_chunk_boundary(true);
+                self.raw_chunks = Some(RawChunks::default());
+                return true;
+            }
+        }
+        false
+    }
+
+    pub(crate) fn completed_raw_chunk_bytes(&self) -> Option<u64> {
+        self.raw_chunks.as_ref().map(|progress| progress.completed)
+    }
+
     fn do_read(&mut self, buf: &mut [u8]) -> Result<usize, Error> {
         let (Some(call), Some(connection), timings) =
             (&mut self.call, &mut self.connection, &mut self.timings)
@@ -667,6 +700,7 @@ impl BodyHandler {
             if has_buffered_input {
                 let input = connection.buffers().input();
                 let (input_used, output_used) = call.read(input, buf)?;
+                track_chunk_output(&mut self.raw_chunks, call, output_used);
                 connection.consume_input(input_used);
 
                 if output_used > 0 {
@@ -705,6 +739,7 @@ impl BodyHandler {
             let input_ended = input.is_empty();
 
             let (input_used, output_used) = call.read(input, buf)?;
+            track_chunk_output(&mut self.raw_chunks, call, output_used);
             connection.consume_input(input_used);
 
             if output_used > 0 {

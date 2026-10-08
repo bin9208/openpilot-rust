@@ -41,7 +41,7 @@ impl Online {
     }
 }
 
-fn transport_error(error: ureq::Error) -> String {
+pub(crate) fn transport_error(error: ureq::Error) -> String {
     match error {
         ureq::Error::Timeout(ureq::Timeout::Connect | ureq::Timeout::Resolve) => {
             "<urlopen error timed out>".into()
@@ -64,7 +64,7 @@ fn transport_error(error: ureq::Error) -> String {
     }
 }
 
-fn body_error(error: std::io::Error) -> String {
+pub(crate) fn body_error(error: std::io::Error) -> String {
     if matches!(
         error.kind(),
         std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock

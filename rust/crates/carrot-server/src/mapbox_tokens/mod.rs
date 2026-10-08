@@ -8,6 +8,7 @@ mod response;
 mod text;
 pub use http::{handle, matches};
 pub use online::Online;
+pub(crate) use online::{body_error, transport_error};
 
 use crate::{params::Backend, Error, Value};
 pub use policy::{format_result, mask_token};

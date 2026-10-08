@@ -202,6 +202,15 @@ impl Body {
         self.info.content_length()
     }
 
+    /// The parsed wire length before content decoding, if length-delimited.
+    /// Chunked, close-delimited and bodyless responses have no wire length.
+    pub fn raw_content_length(&self) -> Option<u64> {
+        match self.info.body_mode {
+            BodyMode::LengthDelimited(length) => Some(length),
+            BodyMode::NoBody | BodyMode::Chunked | BodyMode::CloseDelimited => None,
+        }
+    }
+
     /// Handle this body as a shared `impl Read` of the body.
     ///
     /// This is the regular API which goes via [`http::Response::body_mut()`] to get a
@@ -236,6 +245,23 @@ impl Body {
     /// shared with the existing body source. Use `Read::take` for a byte cap.
     pub fn as_raw_reader(&mut self) -> impl io::Read + '_ {
         BodySourceRef::from(&mut self.source)
+    }
+
+    /// Track fully received chunks for subsequent raw reads of a fresh body.
+    /// Enables the existing chunk-boundary stopping; returns false for other bodies.
+    pub fn track_raw_chunks(&mut self) -> bool {
+        match &mut self.source {
+            BodyDataSource::Handler(handler) => handler.track_raw_chunks(),
+            BodyDataSource::Reader(_) => false,
+        }
+    }
+
+    /// Bytes from completed raw chunks, excluding a partially received chunk.
+    pub fn completed_raw_chunk_bytes(&self) -> Option<u64> {
+        match &self.source {
+            BodyDataSource::Handler(handler) => handler.completed_raw_chunk_bytes(),
+            BodyDataSource::Reader(_) => None,
+        }
     }
 
     /// Turn this response into an owned `impl Read` of the body.

@@ -579,6 +579,38 @@ The active summary/replay-source file routes, media, report and upload routes
 remain part of the runtime conversion. Browser assets retain their original
 implementation under the approved runtime design.
 
+## Standalone heartbeat service (2026-10-08)
+
+The native heartbeat service now reproduces the original payload, status
+snapshot, 30-second loop, 3.5-second socket timeout and cancellation behavior.
+Thirty-two source/native scenarios pass: 23 protocol and five lifecycle cases
+reuse the unchanged earlier implementation evidence, and four corrected short
+response cases run on the final example SHA256
+`05ca171f88056ce3fbbb5a5ba79628837cf5f480bb4615c253fed5dcfcc30679`.
+The cases include owned HTTP/TLS redirects, raw compressed and replacement-
+decoded bodies, errors, missing/invalid Params, 800-character truncation,
+second-IP lookup, initial/unavailable status and real 30-second cadence.
+An advancing response lasting about five seconds succeeds despite the
+3.5-second socket timeout, matching the original absence of a total deadline.
+Cancelling the loop leaves its active blocking request to finish, while the
+heartbeat snapshot remains unchanged.
+
+Initial comparisons exposed three short-body diagnostic mismatches; a fourth
+case confirmed the distinction between completed chunk data and its trailing
+CRLF. The HTTP provider now exposes its already-parsed raw length and an
+opt-in completed-chunk counter. The locked `ureq-proto` 0.6.4 source is vendored
+with its licenses and provenance solely to expose existing decoder state.
+No package version, parser or default read policy changes. Two real TCP tests
+cover eight default/opt-in observations, including the default decoded gzip
+body and raw wire length. Selected builds, strict all-target Clippy, formatting
+and diff checks pass.
+
+The scenario reuse map and source/binary identities are in
+`.omo/evidence/225-heartbeat/standalone-freeze.json`; provider changes and checks
+are in its `chunk-framer-seam/` sibling directory. All network recipients and
+IP probes were owned/local fixtures. Application startup/status wiring and
+complete runtime startup/upload remain pending at this checkpoint.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
