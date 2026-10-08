@@ -77,21 +77,27 @@ comparisons and all 341 bundled brand names. Python/native zlib and Brotli
 provider versions differ; tested payload bytes agree. The QR provider status
 and installer routes are not represented as Python module installation.
 
-The complete 27-family server remains unfinished. Remaining families include
-bluetooth, carrot_navi, stream, support_terminal, ws, settings snapshots,
-Params multipart restore and QR provider lifecycle,
-setting_popular_values, ssh_keys, system,
-terminal, dashcam, egpu_model, screenrecord, tools, xiaoge, mapbox_tokens,
-youtube_live, vision_test, vision_diag and web_sound. Full malformed catalog iteration,
-non-UTF-8/Latin-1/ASCII request codecs, request compression, real live-broker
-engagement and complete CLI failure cases
-remain explicit gaps.
+The complete 27-family server remains unfinished. Subsequent committed
+comparisons cover multipart restore, SSH keys, Mapbox tokens, eGPU model,
+Xiaoge proxy, popular values, Bluetooth and screenrecord HTTP adapters, plus
+expanded request framing/charset/compression and Web Sound transport. Their
+exact coverage, identities and provider limits are recorded in
+`docs/naver/rust-carrot-server-225.md`; the earlier counts above describe the
+foundation snapshot, not the latest combined server.
+
+Carrot Navi web routes, stream/WebRTC, support terminal, realtime WebSockets,
+settings snapshots, QR provider lifecycle, the remaining system and terminal
+routes, dashcam media/upload orchestration, the remaining tools, YouTube live,
+vision test and vision diagnostics remain open. Dashcam catalog/read-state and
+Git status/state have independent prerequisite evidence; their HTTP/lifecycle
+integration is still being completed. Live-broker engagement and complete
+startup/CLI failure composition remain separate gates.
 
 Original app startup still requires broker and serialized msgq polling, raw and
-camera hubs, heartbeat, git status, auto update, popular-value upload, periodic
-trim. Static precompression now shares the application asset locks; the other
-jobs are not replaced by fake success
-state in this slice. Full-app fixtures must remap every HTTP/OS/git/update/media
+camera hubs, heartbeat, git status, auto update, popular-value upload and periodic
+trim. Static precompression shares the application asset locks and popular-value
+upload has owned startup/cancellation evidence. The other jobs remain explicit
+integration work. Full-app fixtures must remap every HTTP/OS/git/update/media
 target; binding loopback does not isolate those effects. No vehicle, NAS, LAN,
 recipient, system-date, reboot or git-update operation is authorized here.
 
