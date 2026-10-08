@@ -335,9 +335,20 @@ Production process selection is unchanged.
 
 The prepared candidate now includes the validated Panda dev merge `1afdcc2a6`
 and the CarrotMan fixture correction from PR #234 at `334700646`.
-Publishing this candidate waits for #234's required checks and ordinary dev
-merge. The camera crates are byte-identical to `6c408cfe6`; twenty isolation
+PR #234 passed all required checks at `334700646`, including
+[Rust and aarch64](https://github.com/bin9208/openpilot-rust/actions/runs/37771938995)
+and [integration](https://github.com/bin9208/openpilot-rust/actions/runs/37771939467),
+and merged as `e0c8fed2ea0734d3d7e66ec9f48fbdd1141cfe16`.
+This candidate includes that dev merge. The camera crates are byte-identical to
+`6c408cfe6`; twenty isolation
 tests, two standard-library socket tests, thirteen Card/Panda/SPI/camera tooling
 tests, locked offline metadata and diff checks pass for this composition.
 No camera corpus or native build was repeated locally for these dependency
 merges. Required hosted camera and aarch64 validation remains pending.
+
+The earlier Panda dev commit `1afdcc2a6` passed integration, fast checks and
+mapped-doc checks, but its
+[CarrotMan ARM job](https://github.com/bin9208/openpilot-rust/actions/runs/37771833124/job/113293042188)
+failed while waiting for native upload side effects. That failure is under
+investigation and is distinct from the passing #234 comparison; no original
+deadline or runtime behavior has been relaxed.
