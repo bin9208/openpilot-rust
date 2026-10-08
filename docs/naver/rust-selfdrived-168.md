@@ -302,3 +302,21 @@ After including dev, 18 workflow-isolation and 10 Card/RadarCAN CI policy tests
 pass, with no selfdrived crate or IPC-checker changes from `ffc77c3f`. Publishing
 this candidate starts the required fresh hosted selfdrived composition checks;
 the retained historical tests do not replace them.
+
+### Recovered shared dependency after first hosted build
+
+Run `37755639411` rejects head `2b1075403` in both the selfdrived job
+`113239368414` and workspace job `113239368791`: the candidate transfer omitted
+`State::append_shared_ignore_alive_valid`. The original 48-line State addition
+from `ca9f26f2e`/`1dd955e1` is restored unchanged, including the ignore-list
+getters used by the controller comparison. It preserves the source's shared
+Python-list alias behavior rather than altering validity policy.
+
+The direct binary/examples build and existing selfdrived/messaging package
+tests pass. The first strict Clippy run also exposed two rendering-only numeric
+helpers compiled in the portable startup-ui dependency; the same native/test
+feature guards already present in the primary candidate are restored here.
+Strict all-target Clippy then passes. The affected logs are retained in the
+primary checkout at `.analysis/scratch/2026-10-08-runtime-resume/231-messaging-recovery/`.
+No full policy corpus was repeated locally. Fresh hosted runtime/IPC/source
+comparison and all required gates remain necessary for the corrected head.

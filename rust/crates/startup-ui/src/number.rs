@@ -7,6 +7,7 @@ use num_traits::ToPrimitive;
 pub fn float(value: impl ToPrimitive) -> f32 {
     value.to_f32().expect("layout value fits f32")
 }
+#[cfg(any(feature = "native", test))]
 pub fn integer(value: f32) -> Result<i32, crate::Error> {
     value
         .to_i32()
@@ -17,6 +18,7 @@ pub fn integer(value: f32) -> Result<i32, crate::Error> {
 }
 
 // Coordinates may be zero or negative; unlike allocated dimensions they need no positive bound.
+#[cfg(any(feature = "native", test))]
 pub fn coordinate(value: f32) -> Result<i32, crate::Error> {
     value.to_i32().ok_or(crate::Error::Contract(
         "render coordinate is outside i32 range",
