@@ -2790,6 +2790,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-radarcan"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "indexmap",
+ "libc",
+ "libloading",
+ "openpilot-beepd",
+ "openpilot-can",
+ "openpilot-card",
+ "openpilot-cereal",
+ "openpilot-logging",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "openpilot-params",
+ "openpilot-runtime-core",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2",
+ "signal-hook",
+ "thiserror",
+]
+
+[[package]]
 name = "openpilot-registration"
 version = "0.1.0"
 dependencies = [
