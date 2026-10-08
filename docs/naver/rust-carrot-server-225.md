@@ -696,6 +696,36 @@ The common 90-second capture deadline is reused from #242; the original
 timeout experiments. Inputs are owned synthetic media. Route-report aggregation,
 upload orchestration and complete server/runtime startup remain open.
 
+## Dashcam upload HTTP jobs (2026-10-09 KST)
+
+The Application now serves upload summary, start, job polling and cancellation
+through the existing native upload library. A persistent owner thread keeps the
+worker alive across requests and releases it when the server closes. The upload
+library's catalog, state, transport and worker bodies are unchanged.
+
+Fifty-two original/native HTTP response pairs match: 32 request boundaries,
+11 cancellation/shutdown lifecycle responses, seven composed Application
+responses and two normal-completion responses. Normal upload sends the owned
+4,096-byte video and 1,024-byte log with matching hashes and authorization;
+the terminal result, error, progress and byte counters agree. Cancellation and
+server shutdown observe recipient disconnects and actual worker exit. A partial
+fixture-start failure also cleans up both peers and receiver threads.
+
+Packaging must include the sibling `openpilot-dashcam-upload` executable.
+Four native-only requests verify that its absence produces an explicit upload
+500 while the Application, unrelated Params API and upload summary continue.
+This packaging error is separate from the original asynchronous transfer-error
+path. All recipients are owned loopback servers; no NAS or vehicle was used.
+
+Selected build, strict Clippy, library tests and formatting pass. The retained
+example SHA256 is
+`e6610ff19fd13309b70b9f8f90a924ca82d06f73b0e67d589ee41589f203e372`.
+The portable driver is `rust/tools/carrot_server_dashcam_upload.py`;
+commands, source identities, normalization limits and scenario artifacts are in
+`.omo/evidence/carrot-server-225-resume/dashcam-upload-http/checkpoint/receipt.json`.
+Upload health/session checking, synchronous upload and driving-route report
+aggregation remain separate work.
+
 ## Automatic-update conditions (2026-10-09 KST)
 
 The native pure conditions preserve the original manager-readiness interval,

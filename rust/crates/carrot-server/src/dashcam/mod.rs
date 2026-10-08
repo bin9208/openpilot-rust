@@ -14,12 +14,17 @@ pub mod paths;
 mod raw_files;
 pub mod read_state;
 mod selectors;
+mod upload_http;
+mod upload_http_parse;
+mod upload_http_service;
 
 pub use cache::Service;
 pub use file_routes::{handle as metadata_handle, matches as metadata_matches, MetadataFiles};
 pub use http::{handle, matches};
 pub use media::Media;
 pub use media_http::{handle as media_handle, matches as media_matches};
+pub use upload_http::{handle as upload_handle, matches as upload_matches};
+pub use upload_http_service::Uploads;
 
 use crate::Error;
 
