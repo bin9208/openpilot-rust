@@ -31,7 +31,25 @@ impl Settings {
     pub fn for_runtime(logger: &mut openpilot_logging::producer::Logger) -> Result<Self, Error> {
         let params = openpilot_params::Params::for_runtime()
             .map_err(|error| Error::Runtime(error.to_string()))?;
-        let environment = env::vars().collect::<BTreeMap<_, _>>();
+        let environment = [
+            "CARROT_DEVICE_SERIAL",
+            "DEVICE_SERIAL",
+            "SERIAL",
+            "CARROT_DISCORD_WEBHOOK_URL",
+            "DISCORD_WEBHOOK_URL",
+            "CARROT_DISCORD_WEBHOOK_DISABLE",
+            "CARROT_WEB_UPLOAD_CONCURRENCY",
+        ]
+        .into_iter()
+        .map(|key| {
+            let value = match env::var(key) {
+                Ok(value) => value,
+                Err(env::VarError::NotPresent) => String::new(),
+                Err(error) => return Err(Error::Runtime(error.to_string())),
+            };
+            Ok((key.to_owned(), value))
+        })
+        .collect::<Result<BTreeMap<_, _>, Error>>()?;
         let upload_environment = openpilot_web_upload::Environment::for_runtime()
             .map_err(|error| Error::Runtime(error.to_string()))?;
         let (repo, settings) = metadata::runtime_paths();
