@@ -291,3 +291,14 @@ continuous IPC, rejection and shutdown jobs must validate this composition.
 Carrot Navi's required checks must pass and its dev merge must be included
 before this candidate is published. Full manager startup/log-upload and device
 acceptance remain separate, outstanding gates.
+
+Carrot Navi PR 230 has now passed its required checks at `9bd7c07f` and merged
+normally as dev `edd1ab83`. This candidate includes that merge. The original
+Card comparison's native Nissan backlog remains open under #228; its one scoped
+same-head retry passes without a runtime or assertion change. The associated
+evidence record is included in this candidate.
+
+After including dev, 18 workflow-isolation and 10 Card/RadarCAN CI policy tests
+pass, with no selfdrived crate or IPC-checker changes from `ffc77c3f`. Publishing
+this candidate starts the required fresh hosted selfdrived composition checks;
+the retained historical tests do not replace them.
