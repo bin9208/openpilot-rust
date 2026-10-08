@@ -2122,6 +2122,7 @@ dependencies = [
 name = "openpilot-carrot-server"
 version = "0.1.0"
 dependencies = [
+ "brotli-decompressor",
  "bytes",
  "capnp",
  "chrono",
@@ -2151,6 +2152,7 @@ dependencies = [
  "tokio",
  "url",
  "uuid",
+ "zlib-rs",
 ]
 
 [[package]]

@@ -34,6 +34,11 @@ not complete-server acceptance.
 | Original malformed numeric Params termination | 6 source/native SIGABRT cases with core dumps disabled | `carrot-server-225-resume/params-fatal/` |
 | Web-settings normalization/catalog/capabilities/persistence | 702 source/native cases plus 2 focused Unicode/legacy-host regressions | `225-web-settings/README.md` |
 | Profiles, restoration and change history | 73 service-process comparisons with real Params/file effects, drift representation, 1,000-record trimming and Git output/timeout boundaries | `225-profiles/native-fixture-fixed/result.json` |
+| QR backup/restore codec | 173 exact payload/metadata, binary tag, decoded-object and error comparisons, including the real 208-key backup; repeated after response-order correction | `225-qr/native-order-fixed/result.json` |
+| QR zlib encoder ownership | 2 focused ASan tests, including exact compression of the source 208-key golden input; standalone target about 12.2 MiB | `225-qr/asan-result.json` |
+| Vehicle selection list | 21 actual HTTP comparisons, filesystem recovery/Unicode boundaries and all 341 names in the existing seven-brand assets | `carrot-server-225-resume/cars/final-wave/` |
+| Cars, QR, JSON restore and backup download composition | 37 actual HTTP pairs plus 4 unavailable-Params guard cases, with persisted effects and graceful exit | `carrot-server-225-resume/http-restore-final/`, `http-restore-unavailable-final/` |
+| Relocated executable root and CLI ordering | 8 cases, including 4 actual owned listeners serving relocated assets and exiting on SIGTERM | `carrot-server-225-resume/runtime-root-final/result.json` |
 | Intro guard, state and presets | 70 source/native HTTP/file comparisons plus 2 cases without Params; actual preset writes and original failure contracts | `carrot-server-225-resume/intro/final-wave/result.json` |
 | Isolated static HTTP | 61 source/native request pairs, 6 compressed files and graceful exit after lazy bootstrap callback integration; conditional obs-text regressions repaired | `carrot-server-225-resume/static/lazy-wave/` |
 | Optional Brotli absent | Original and native remove stale `.br` while producing valid gzip | `carrot-server-225-resume/static/absent-codec-comparison.json` |
@@ -96,19 +101,29 @@ The bounded ASan run instruments the Rust wrapper and its Rust dependencies;
 the distro C libraries and prebuilt Rust standard library were not instrumented.
 The full static handoff is recorded in `carrot-server-225-resume/static/LEDGER.md`.
 
+The QR implementation uses the existing Brotli encoder, safe Rust Brotli/zlib
+decoders, and a narrow system `libz.so.1` encoder boundary for original zlib
+compression bytes. Its codec process passed the 173-case comparison; the
+37-case HTTP composition also covers QR backup and JSON restore preview/apply.
+Dependency status/repair behavior remains a separate gate.
+The system zlib provider is an explicit native packaging dependency.
+The focused ASan run instruments the wrapper and Rust dependencies; system
+zlib C and the prebuilt Rust standard library are not instrumented.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
 evidence, and profile/history HTTP routes and real index bootstrap are connected.
-QR codecs and complete backup/restore HTTP flows remain in progress.
+Multipart restoration and QR dependency status/repair remain in progress.
 The request decoder currently handles UTF-8, Latin-1 and ASCII; other original
 request charsets and compressed request bodies remain transport gaps.
 The other feature families, startup heartbeat/git/update/upload tasks, live
 broker and camera/WebSocket transport remain outside the completed foundation.
 `/stream` also depends on the separately inventoried WebRTC conversion.
-The executable still derives its repository path from the build checkout;
-runtime asset-root discovery and a relocated-executable startup check remain
-entrypoint gates before deployment readiness.
+The executable now resolves runtime assets using existing OPENPILOT_ROOT/BASEDIR
+environment conventions or executable/working-directory ancestors, without a
+build-checkout fallback. Eight relocated CLI cases pass; this exercises the
+partial listener, not the unfinished whole-app startup/background services.
 
 Complete original server behavior, required branch CI, the small dev connection
 check and full manager startup with the existing log-upload path remain gates.

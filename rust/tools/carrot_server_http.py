@@ -15,6 +15,7 @@ from original_params_binding import load
 from carrot_server_params_http_cases import cases as param_cases, prepare as prepare_params
 from carrot_server_bootstrap_http_cases import cases as bootstrap_cases, prepare as prepare_bootstrap, register as register_bootstrap
 import carrot_server_profiles_http_cases as profiles_http
+import carrot_server_restore_http_cases as restore_http
 
 
 def preference_cases():
@@ -55,7 +56,7 @@ def preference_cases():
   }
 
 
-async def compare(binary: Path, output: Path, binding: Path):
+async def compare(binary: Path, output: Path, binding: Path, family: str):
   output.mkdir(parents=True, exist_ok=True)
   with tempfile.TemporaryDirectory(prefix='carrot-server-owned-') as temporary:
     root = Path(temporary)
@@ -78,6 +79,8 @@ async def compare(binary: Path, output: Path, binding: Path):
     from openpilot.selfdrive.carrot.server.services import web_settings as source_web
     if not source_params.HAS_PARAMS:
       raise RuntimeError('original native Params binding is required for this owned HTTP comparison')
+    if family == 'restore-unavailable':
+      params_feature.HAS_PARAMS = False
     settings_file = root / 'settings.json'
     definition = {'apilot': 'owned', 'params': [
       {'name': 'CruiseGapLevels', 'group': 'Gap', 'min': 2, 'max': 4, 'default': 4,
@@ -115,6 +118,7 @@ async def compare(binary: Path, output: Path, binding: Path):
     app.router.add_post('/api/param_set', params_feature.api_param_set)
     register_bootstrap(app, root, original_params)
     profiles_http.register(app, root)
+    restore_http.register(app, root)
     app.router.add_static('/', str(root / 'web'), show_index=True)
     runner = web.AppRunner(app)
     await runner.setup()
@@ -127,6 +131,9 @@ async def compare(binary: Path, output: Path, binding: Path):
     fixture.update(repository=str(root), settings=str(settings_file), params=str(root / 'native_params'))
     fixture['data'] = str(root / 'native_data')
     fixture['timestamp'] = 1700000000
+    fixture['cars'] = str(root / 'cars')
+    fixture['params_backup'] = str(root / 'params_backup.json')
+    fixture['unavailable'] = family == 'restore-unavailable'
     child.stdin.write(json.dumps(fixture) + '\n')
     child.stdin.flush()
     try:
@@ -141,10 +148,12 @@ async def compare(binary: Path, output: Path, binding: Path):
         preferences.update(param_cases())
         preferences.update(bootstrap_cases())
         preferences.update(profiles_http.cases())
+        scenarios, preferences = restore_http.select(family, scenarios, preferences)
         for index, scenario in enumerate((*scenarios, *preferences)):
           prepare_params(scenario, root, (original_params, native_params), definition)
           prepare_bootstrap(scenario, root, (original_params, native_params))
           profiles_http.prepare(scenario, root)
+          restore_http.prepare(scenario, root, (original_params, native_params), definition)
           if scenario in ('gap-invalid', 'gap-four'):
             for params in (original_params, native_params):
               params.put_int('LongitudinalPersonalityMax', 5 if scenario == 'gap-invalid' else 4)
@@ -190,15 +199,17 @@ async def compare(binary: Path, output: Path, binding: Path):
               request_body = payload if isinstance(payload, bytes) else json.dumps(profiles_http.payload(side, payload)).encode()
             git_before = profiles_http.marker_count()
             headers = {'Accept-Encoding': coding}
+            headers.update(restore_http.headers(scenario, root))
             if scenario.endswith('latin1'):
               headers['Content-Type'] = 'application/json; charset=latin-1'
             async with session.request(method, URL(f'http://127.0.0.1:{port}{path}', encoded=True), headers=headers, data=request_body) as response:
               body = await response.read()
               (output / f'{index}-{side}.body').write_bytes(body)
               (output / f'{index}-{side}.headers.json').write_text(json.dumps(list(response.headers.items())))
-              headers = {key: response.headers.get(key) for key in ('Content-Type', 'Content-Length', 'Cache-Control', 'Allow', 'Content-Encoding', 'Last-Modified', 'ETag', 'Accept-Ranges', 'Vary')}
+              headers = {key: response.headers.get(key) for key in ('Content-Type', 'Content-Length', 'Cache-Control', 'Allow', 'Content-Encoding', 'Last-Modified', 'ETag', 'Accept-Ranges', 'Vary', 'Content-Disposition', 'Content-Range')}
               rows[side].append({'scenario': scenario, 'status': response.status, 'headers': headers, 'body_hex': body.hex()})
               profiles_http.capture(scenario, side, rows[side][-1], git_before, output)
+              restore_http.capture(scenario, original_params if side == 'original' else native_params, rows[side][-1], output, index, side)
             if scenario in preferences:
               directory = root / ('data' if side == 'original' else 'native_data') / 'state'
               saved = {name: (directory / name).read_bytes().hex() if (directory / name).is_file() else None
@@ -240,8 +251,9 @@ def main():
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--binding', type=Path, required=True)
+  parser.add_argument('--family', choices=('checkpoint', 'restore', 'restore-unavailable'), default='checkpoint')
   args = parser.parse_args()
-  asyncio.run(compare(args.binary, args.output, args.binding))
+  asyncio.run(compare(args.binary, args.output, args.binding, args.family))
 
 
 if __name__ == '__main__':

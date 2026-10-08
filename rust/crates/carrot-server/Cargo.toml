@@ -37,6 +37,8 @@ percent-encoding = "2"
 url = "2"
 libc = "0.2"
 libloading = "=0.8.9"
+brotli-decompressor = "=5.0.3"
+zlib-rs = "=0.6.8"
 nix = { version = "=0.31.3", features = ["sched", "process"], default-features = false }
 tempfile = "3"
 

@@ -1,5 +1,6 @@
 //! Original Carrot Web server policies from openpilot/selfdrive/carrot/server (#225).
 mod bootstrap;
+pub mod cars;
 pub mod config;
 mod history_http;
 pub mod http;
@@ -12,12 +13,14 @@ mod native;
 pub mod param_changes;
 mod param_coercion;
 mod param_native;
+pub mod param_qr;
 pub mod param_restore;
 mod param_time;
 pub mod params;
 mod params_http;
 mod profiles_http;
 mod request_text;
+mod restore_http;
 pub mod setting_profiles;
 pub mod settings;
 mod settings_brand;

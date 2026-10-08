@@ -9,12 +9,23 @@ mod request;
 
 use crate::{config::Config, http::Body, http_response::text, static_assets::Assets, Error, Value};
 use hyper::{header, Request, Response, StatusCode};
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 pub struct StaticWeb {
     config: Config,
     assets: Assets,
     manifest: manifest::ManifestLoader,
+}
+
+pub(crate) async fn file_response<T>(
+    path: &Path,
+    request: &Request<T>,
+) -> Result<Response<Body>, Error> {
+    let path = path.to_path_buf();
+    let request = request::FileRequest::from_request(request);
+    tokio::task::spawn_blocking(move || files::file_response(&path, &request))
+        .await
+        .map_err(|error| Error::Source(error.to_string()))?
 }
 
 impl StaticWeb {

@@ -27,6 +27,29 @@ pub fn read_setting_value(backend: &Backend, name: &str, default: &Value) -> Val
     })
 }
 
+pub fn selected_keys(selected: &Value) -> Result<&[Value], Error> {
+    let selected = match selected {
+        Value::Null => &[][..],
+        Value::Array(items) => items.as_slice(),
+        _ => {
+            return Err(Error::Source(format!(
+                "'{}' object is not iterable",
+                selected.type_name()
+            )));
+        }
+    };
+    if let Some(value) = selected
+        .iter()
+        .find(|value| matches!(value, Value::Array(_) | Value::Object(_)))
+    {
+        return Err(Error::Source(format!(
+            "unhashable type: '{}'",
+            value.type_name()
+        )));
+    }
+    Ok(selected)
+}
+
 pub struct Restore<'a> {
     backend: &'a mut Backend,
     catalog: &'a Catalog,
@@ -69,20 +92,11 @@ impl<'a> Restore<'a> {
         if !self.backend.has_params() {
             return Err(Error::Source("Params/ParamKeyType not available".into()));
         }
+        let selected = selected_keys(selected)?;
         let mut fields = crate::json_fields::fields(values)?
             .iter()
             .collect::<Vec<_>>();
         fields.sort_by(|left, right| left.0.cmp(&right.0));
-        let selected = match selected {
-            Value::Null => &[][..],
-            Value::Array(items) => items.as_slice(),
-            _ => {
-                return Err(Error::Source(format!(
-                    "'{}' object is not iterable",
-                    selected.type_name()
-                )));
-            }
-        };
         let mut counts = [0usize; 4];
         let mut selected_count = 0;
         let mut entries = Vec::new();

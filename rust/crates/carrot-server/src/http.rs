@@ -27,6 +27,7 @@ pub struct Application {
     settings: Mutex<SettingsCache>,
     pub static_web: Arc<StaticWeb>,
     pub intro: Arc<crate::intro::Intro>,
+    pub cars: Arc<crate::cars::Cars>,
 }
 
 impl Application {
@@ -34,6 +35,7 @@ impl Application {
         Arc::new(Self {
             static_web: StaticWeb::new(config.clone()),
             intro: crate::intro::Intro::new(config.clone()),
+            cars: crate::cars::Cars::original(),
             history: History::new(Paths {
                 log: config.state.join("param_changes.jsonl"),
                 baseline: config.state.join("fingerprint_baseline.json"),
@@ -101,6 +103,15 @@ pub(crate) async fn route(
     let path = percent_encoding::percent_decode_str(request.uri().path())
         .decode_utf8_lossy()
         .into_owned();
+    if path == "/api/cars" {
+        return Ok(crate::cars::handle(&request, Arc::clone(&app.cars)).await);
+    }
+    if path == "/download/params_backup.json" {
+        return Ok(crate::restore_http::download(&request, &app.config.params_backup).await);
+    }
+    if crate::restore_http::matches(&path, request.method()) {
+        return Ok(crate::restore_http::handle(request, app, &path).await);
+    }
     if crate::history_http::matches(&path, request.method()) {
         return Ok(crate::history_http::handle(request, app, &path).await);
     }

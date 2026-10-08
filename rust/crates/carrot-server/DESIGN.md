@@ -11,6 +11,10 @@ and brand/gap views, integer-mtime cache, native Params and unregistered-key
 fallback, unit-index/favorites/web-settings persistence, bulk/set/history/
 fingerprint and profile preview/apply routes, intro state/presets, shared static
 assets/manifest/precompression and actual index bootstrap composition. The
+current continuation adds cars, QR codecs/backup, JSON restore preview/apply and
+backup download routes. The executable discovers the runtime repository through
+existing OPENPILOT_ROOT/BASEDIR or executable/working-directory ancestors, with
+help and argument rejection preceding repository I/O. The
 listener and shutdown are exercised through owned host fixtures. JSON/numeric/text behavior reuses the public pure
 Carrot Navi JSON value (native feature disabled), logmessaged/runtime-core,
 beepd's std::stoi equivalent and calibrationd's std::stof equivalent. Float32
@@ -64,15 +68,23 @@ two jobs and debug info disabled. Native bindings and the existing Python
 oracle environment were reused; no dependency installation was performed.
 Space was checked before each build, after recovery to at least 35 GiB.
 
+Post-checkpoint receipts add 37 actual cars/QR/JSON restore/download HTTP pairs
+and four Params-unavailable guards, plus eight CLI runtime-root/ordering cases.
+Download reuses the existing static file response implementation and includes
+directory/FIFO rejection. QR has 173 exact codec comparisons and two narrowly
+instrumented system-zlib encoder ASan checks; Cars has 21 independent HTTP
+comparisons and all 341 bundled brand names. Python/native zlib and Brotli
+provider versions differ; tested payload bytes agree. The QR provider status
+and installer routes are not represented as Python module installation.
+
 The complete 27-family server remains unfinished. Remaining families include
 bluetooth, carrot_navi, stream, support_terminal, ws, settings snapshots,
-Params backup download/multipart/JSON/QR restore and QR provider lifecycle,
-setting_popular_values, ssh_keys, cars, system,
+Params multipart restore and QR provider lifecycle,
+setting_popular_values, ssh_keys, system,
 terminal, dashcam, egpu_model, screenrecord, tools, xiaoge, mapbox_tokens,
-youtube_live, vision_test, vision_diag and web_sound. Unexported next-wave QR
-and cars sources are outside this checkpoint. Full malformed catalog iteration,
+youtube_live, vision_test, vision_diag and web_sound. Full malformed catalog iteration,
 non-UTF-8/Latin-1/ASCII request codecs, request compression, real live-broker
-engagement, executable runtime-root discovery and complete CLI failure cases
+engagement and complete CLI failure cases
 remain explicit gaps.
 
 Original app startup still requires broker and serialized msgq polling, raw and

@@ -22,9 +22,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     config.shared_assets = path("shared_assets")?;
     config.training_assets = path("training_assets")?;
     config.legacy_state = path("legacy_state")?;
-    let params = openpilot_params::Params::for_runtime_at(&path("params")?)?;
-    let backend = Backend::native(params, config.state.clone());
+    if input.has("params_backup") {
+        config.params_backup = path("params_backup")?;
+    }
+    let backend = if input.get("unavailable").truth() {
+        Backend::memory(config.state.clone())
+    } else {
+        Backend::native(
+            openpilot_params::Params::for_runtime_at(&path("params")?)?,
+            config.state.clone(),
+        )
+    };
     let mut app = Application::new(config, backend);
+    if input.has("cars") {
+        std::sync::Arc::get_mut(&mut app)
+            .ok_or("fixture Application is already shared")?
+            .cars = openpilot_carrot_server::cars::Cars::at(path("cars")?);
+    }
     if input.has("timestamp") {
         let application =
             std::sync::Arc::get_mut(&mut app).ok_or("fixture Application is already shared")?;

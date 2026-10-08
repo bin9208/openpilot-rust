@@ -1,5 +1,5 @@
 use openpilot_carrot_server::{
-    config::Config,
+    config::{runtime_repository, Config},
     http::{serve, Application},
     params::Backend,
     Error,
@@ -43,11 +43,9 @@ fn affinity() {
 
 async fn run() -> Result<(), Error> {
     affinity();
-    let repository =
-        std::fs::canonicalize(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."))?;
-    let mut config = Config::from_environment(&repository);
     let mut host = "0.0.0.0".to_owned();
     let mut port = 7000_u16;
+    let mut settings = None;
     let mut arguments = env::args().skip(1);
     while let Some(argument) = arguments.next() {
         let (name, inline) = argument
@@ -68,13 +66,18 @@ async fn run() -> Result<(), Error> {
                     .parse()
                     .map_err(|_| Error::Source("argument --port: invalid int value".into()))?
             }
-            "--settings" => config.settings = value()?.into(),
+            "--settings" => settings = Some(PathBuf::from(value()?)),
             "-h" | "--help" => {
                 println!("usage: openpilot-carrot-server [-h] [--host HOST] [--port PORT] [--settings SETTINGS]");
                 return Ok(());
             }
             _ => return Err(Error::Source(format!("unrecognized arguments: {argument}"))),
         }
+    }
+    let repository = runtime_repository()?;
+    let mut config = Config::from_environment(&repository);
+    if let Some(settings) = settings {
+        config.settings = settings;
     }
     config.validate()?;
     openpilot_carrot_server::static_web::StaticWeb::new(config.clone()).validate()?;

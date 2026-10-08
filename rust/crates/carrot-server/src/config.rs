@@ -16,6 +16,29 @@ pub const LEGACY_STATE_FILES: [&str; 7] = [
     "tool_jobs.json",
 ];
 
+pub fn runtime_repository() -> Result<PathBuf, crate::Error> {
+    for name in ["OPENPILOT_ROOT", "BASEDIR"] {
+        if let Some(path) = env::var_os(name) {
+            return Ok(fs::canonicalize(path)?);
+        }
+    }
+    let executable = env::current_exe()?;
+    let current = env::current_dir()?;
+    for base in [executable.parent(), Some(current.as_path())]
+        .into_iter()
+        .flatten()
+    {
+        for root in base.ancestors() {
+            if root.join("openpilot/selfdrive/carrot").is_dir() {
+                return Ok(fs::canonicalize(root)?);
+            }
+        }
+    }
+    Err(crate::Error::Source(
+        "cannot locate runtime repository from OPENPILOT_ROOT, BASEDIR, executable or working directory".into(),
+    ))
+}
+
 #[derive(Clone, Debug)]
 pub struct Config {
     pub repository: PathBuf,
@@ -25,6 +48,7 @@ pub struct Config {
     pub settings: PathBuf,
     pub state: PathBuf,
     pub legacy_state: PathBuf,
+    pub params_backup: PathBuf,
 }
 
 impl Config {
@@ -38,6 +62,7 @@ impl Config {
             settings: settings.into(),
             state: data.join("state"),
             legacy_state: PathBuf::from("/data/openpilot/openpilot/selfdrive/carrot/data/state"),
+            params_backup: PathBuf::from("/data/media/params_backup.json"),
         }
     }
 
