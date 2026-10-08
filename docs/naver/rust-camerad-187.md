@@ -332,3 +332,12 @@ and exact-SHA Actions results are pending. No local build, install or device
 access occurs while disk recovery is pending. Full startup/upload integration,
 physical camera/ION operation and user device acceptance remain separate.
 Production process selection is unchanged.
+
+The prepared candidate now includes the validated Panda dev merge `1afdcc2a6`
+and the CarrotMan fixture correction from PR #234 at `334700646`.
+Publishing this candidate waits for #234's required checks and ordinary dev
+merge. The camera crates are byte-identical to `6c408cfe6`; twenty isolation
+tests, two standard-library socket tests, thirteen Card/Panda/SPI/camera tooling
+tests, locked offline metadata and diff checks pass for this composition.
+No camera corpus or native build was repeated locally for these dependency
+merges. Required hosted camera and aarch64 validation remains pending.

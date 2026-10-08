@@ -481,3 +481,35 @@ user device acceptance remain separate work; no production selection changed.
 
 Docs-Not-Needed: isolated native runtime and host validation only; no user setting
 or production process behavior change.
+
+### Updated dev dependencies (2026-10-08)
+
+The candidate now includes dev `2f5e5dd6956f0abc00f2d201e7b5452ada1563d5`,
+after Carrot Navi PR #230 and Selfdrived PR #231 passed their required gates and
+merged. The shared Selfdrived messaging API restoration is included. The four
+Panda crates remain byte-identical to the prepared component at `87f9cea4c`.
+
+The local integration checks passed 19 CI-routing tests, the focused Card/Panda
+tooling checks, locked offline Cargo metadata and diff checks. The final dev
+merge at `85c798959a42d6f0051360767133b22d814846b0` changes no tree content
+from the already checked `466c4fc30`, so those checks are reused. No new local
+Panda build or repeat of its complete source corpus was performed. The required
+Panda host/source and aarch64 execution will run on this PR's exact head.
+Normal manager startup/upload and device acceptance remain open.
+
+### Required hosted validation and merge (2026-10-08)
+
+PR #233 head `853c012d3fc50440c0c44f4a3f0a21e202d1bd9d` passes all
+required checks, including [Rust run 37764450887](https://github.com/bin9208/openpilot-rust/actions/runs/37764450887)
+and [Integration run 37764451185](https://github.com/bin9208/openpilot-rust/actions/runs/37764451185).
+The actual Panda gate and aarch64 build pass. The first model-memory job
+`113268532287` exceeded its fifteen-minute limit during apt package installation;
+no Miri or sanitizer step had started. Its log and timeout annotation are retained
+in `.analysis/scratch/2026-10-08-runtime-resume/233-memory-install-timeout/`.
+One same-head job-only retry passes, as does the dependent aggregate. No runtime,
+assertion or time limit changed for that retry.
+
+The ordinary merge is dev `1afdcc2a6b23b2e52eedd7d83c95a156366f632f`.
+Separate dev Rust run 37771833124 and Integration run 37771833711 are pending
+at this checkpoint; their results do not follow automatically from PR success.
+Issue #175 remains open for complete startup/upload and hardware/device gates.
