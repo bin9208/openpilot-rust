@@ -542,6 +542,43 @@ Source identities and commands are in `.omo/evidence/225-file-timestamps/`;
 raw failing and corrected wire captures are in the Dashcam metadata evidence.
 The correction adds no timeout, tolerance, dependency or user option.
 
+## Dashcam metadata and raw-file HTTP (2026-10-08)
+
+GET/HEAD summary-source, replay-source metadata, replay-source files and
+download routes now use the Application router. The original qlog/rlog/video
+selection, skipped segments, numeric segment order, no-follow metadata,
+signed millisecond floor, URL quoting, cache headers and download disposition
+are retained. Download MIME lookup reads the original system MIME file list
+for the permitted artifact suffixes, with lazy initialization and retry after
+read failure; it does not hard-code this workstation's MIME database.
+
+Sixty-three independent source/native pairs and 14 Application/phase pairs
+pass. Owned files cover empty and missing artifacts, source preferences,
+negative and rounded-positive timestamps, GET/HEAD, range/conditional
+responses, permission recovery, MIME defaults/overrides and an unhandled
+MIME error that closes the connection before fresh-connection recovery.
+The shared timestamp repair's seven focused comparisons and unchanged
+catalogue/read-state proofs are reused. Final Application example SHA256 is
+`35c1377ec7eed54a7f16730b164fccd90026bd528bf5e9d1b90fc8ab7e5fec67`.
+Commands, comparison rows and source identities are recorded in
+`.omo/evidence/carrot-server-225-resume/dashcam-metadata/receipt.json`.
+
+These routes stream untouched files. Codec generation, report parsing,
+upload orchestration and complete server startup remain separate work.
+No device, NAS or external upload recipient was used.
+
+## Active Dashcam source boundary (2026-10-08)
+
+`openpilot/selfdrive/carrot/server/features/dashcam/__init__.py` registers only
+`routes.py` and explicitly leaves the legacy replay scan/query/cache handlers
+off. Replay computation belongs to the existing browser assets. The legacy
+`replay.py`, `replay_events.py`, `replay_index.py`, `replay_query.py`,
+`replay_schema.py`, `replay_stats.py` and their private dependencies remain
+inactive and unported; the Rust server must not activate their old endpoints.
+The active summary/replay-source file routes, media, report and upload routes
+remain part of the runtime conversion. Browser assets retain their original
+implementation under the approved runtime design.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process

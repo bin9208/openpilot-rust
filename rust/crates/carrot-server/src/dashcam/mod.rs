@@ -1,13 +1,18 @@
 //! Source: features/dashcam/{catalog,paths,read_state,routes}.py; catalogue/read-state HTTP subset.
 mod cache;
 pub mod catalog;
+mod file_routes;
 mod http;
+mod metadata;
+mod mime;
 mod pages;
 pub mod paths;
+mod raw_files;
 pub mod read_state;
 mod selectors;
 
 pub use cache::Service;
+pub use file_routes::{handle as metadata_handle, matches as metadata_matches, MetadataFiles};
 pub use http::{handle, matches};
 
 use crate::Error;

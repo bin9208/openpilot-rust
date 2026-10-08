@@ -39,6 +39,7 @@ pub struct Application {
     pub bluetooth_http: Arc<crate::bluetooth_http::Service>,
     pub screenrecord: Arc<crate::screenrecord::Screenrecord>,
     pub dashcam: Arc<crate::dashcam::Service>,
+    pub dashcam_metadata: Arc<crate::dashcam::MetadataFiles>,
     pub git_status: Option<Arc<crate::git_status::Service>>,
     pub git_state: crate::git_state::Store,
 }
@@ -61,6 +62,8 @@ impl Application {
         params: Backend,
         git_status: Option<Arc<crate::git_status::Service>>,
     ) -> Arc<Self> {
+        let dashcam = crate::dashcam::Service::original(&config);
+        let dashcam_metadata = crate::dashcam::MetadataFiles::original(Arc::clone(&dashcam));
         Arc::new(Self {
             static_web: StaticWeb::new(config.clone()),
             intro: crate::intro::Intro::new(config.clone()),
@@ -73,7 +76,8 @@ impl Application {
             xiaoge_online: Arc::new(crate::xiaoge::Online::default()),
             bluetooth_http: crate::bluetooth_http::Service::original(),
             screenrecord: crate::screenrecord::Screenrecord::original(&config),
-            dashcam: crate::dashcam::Service::original(&config),
+            dashcam,
+            dashcam_metadata,
             git_status,
             git_state: crate::git_state::Store::new(config.state.clone()),
             history: History::new(Paths {
