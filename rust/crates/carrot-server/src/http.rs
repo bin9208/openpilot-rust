@@ -42,6 +42,7 @@ pub struct Application {
     pub dashcam_metadata: Arc<crate::dashcam::MetadataFiles>,
     pub dashcam_media: Arc<crate::dashcam::Media>,
     pub dashcam_uploads: Arc<crate::dashcam::Uploads>,
+    pub dashcam_upload_health: Arc<crate::dashcam::UploadHealth>,
     pub git_status: Option<Arc<crate::git_status::Service>>,
     pub git_state: crate::git_state::Store,
     pub heartbeat: Arc<crate::heartbeat::Service>,
@@ -81,6 +82,8 @@ impl Application {
         let dashcam_metadata = crate::dashcam::MetadataFiles::original(Arc::clone(&dashcam));
         let dashcam_media = crate::dashcam::Media::original(&dashcam, &config);
         let dashcam_uploads = crate::dashcam::Uploads::original(&dashcam);
+        let dashcam_upload_health =
+            crate::dashcam::UploadHealth::original(&config, params.native_params().cloned());
         Self {
             static_web: StaticWeb::new(config.clone()),
             intro: crate::intro::Intro::new(config.clone()),
@@ -97,6 +100,7 @@ impl Application {
             dashcam_metadata,
             dashcam_media,
             dashcam_uploads,
+            dashcam_upload_health,
             git_status,
             git_state: crate::git_state::Store::new(config.state.clone()),
             heartbeat: crate::heartbeat::Service::new(),

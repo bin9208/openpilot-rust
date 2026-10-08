@@ -16,6 +16,7 @@ capnp = "=0.27.2"
 openpilot-carrot-navi = { path = "../carrot-navi", default-features = false }
 openpilot-runtime-core = { path = "../runtime-core" }
 openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-logging = { path = "../logging" }
 openpilot-web-upload = { path = "../web-upload" }
 openpilot-dashcam-upload = { path = "../dashcam-upload" }
 openpilot-hardware-info = { path = "../hardware-info" }

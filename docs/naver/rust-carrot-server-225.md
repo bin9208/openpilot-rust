@@ -723,8 +723,31 @@ example SHA256 is
 The portable driver is `rust/tools/carrot_server_dashcam_upload.py`;
 commands, source identities, normalization limits and scenario artifacts are in
 `.omo/evidence/carrot-server-225-resume/dashcam-upload-http/checkpoint/receipt.json`.
-Upload health/session checking, synchronous upload and driving-route report
-aggregation remain separate work.
+Synchronous upload and driving-route report aggregation remain separate work.
+
+## Dashcam upload connection check (2026-10-09 KST)
+
+The Application now serves `POST /api/dashcam/upload/test` through the existing
+native upload health and automatic-session helpers. Metadata lookup is deferred
+until a healthy target needs a session. It uses the resolved runtime repository
+and only the relevant environment keys; unrelated non-UTF-8 environment data
+does not break the request.
+
+Seventeen original/native paired executions match: 12 standalone request and
+helper cases, three composed Application cases and two held-recipient shutdown
+cases. Healthy, unhealthy and invalid-target responses match while an unrelated
+Params route remains available. During shutdown, both original and native
+servers wait for the held health/session request; releasing the owned recipient
+produces the matching response, recipient EOF and server exit zero.
+
+The original non-UTF-8 environment failure and corrected result are retained.
+The 12 standalone cases are reused for Application integration; no full upload
+corpus was repeated. Existing transport timeout/TLS evidence remains separate.
+The portable driver is `rust/tools/carrot_server_dashcam_health.py`; the scenario
+map, exact build and source identities are recorded in
+`.omo/evidence/carrot-server-225-resume/dashcam-health/checkpoint/receipt.json`.
+All HTTP recipients and repositories are owned local fixtures. This establishes
+neither NAS access nor device/runtime acceptance.
 
 ## Automatic-update conditions (2026-10-09 KST)
 

@@ -14,6 +14,8 @@ pub mod paths;
 mod raw_files;
 pub mod read_state;
 mod selectors;
+mod upload_health;
+mod upload_health_http;
 mod upload_http;
 mod upload_http_parse;
 mod upload_http_service;
@@ -23,6 +25,8 @@ pub use file_routes::{handle as metadata_handle, matches as metadata_matches, Me
 pub use http::{handle, matches};
 pub use media::Media;
 pub use media_http::{handle as media_handle, matches as media_matches};
+pub use upload_health::UploadHealth;
+pub use upload_health_http::{handle as health_handle, matches as health_matches};
 pub use upload_http::{handle as upload_handle, matches as upload_matches};
 pub use upload_http_service::Uploads;
 

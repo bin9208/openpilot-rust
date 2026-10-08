@@ -2170,6 +2170,7 @@ dependencies = [
  "openpilot-dashcam-upload",
  "openpilot-hardware-info",
  "openpilot-http-transport",
+ "openpilot-logging",
  "openpilot-logmessaged",
  "openpilot-messaging",
  "openpilot-params",
