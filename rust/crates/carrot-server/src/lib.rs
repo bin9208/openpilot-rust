@@ -21,6 +21,7 @@ pub mod params;
 mod params_http;
 pub mod params_multipart;
 mod profiles_http;
+pub(crate) mod request_body;
 mod request_text;
 mod restore_http;
 pub mod setting_profiles;
@@ -37,13 +38,20 @@ pub mod static_assets;
 pub mod static_web;
 pub mod web_settings;
 mod web_settings_http;
+pub mod web_sound;
+mod web_sound_http;
 
 pub use openpilot_carrot_navi::json::Value;
+pub use request_body::DecodeFailure;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("{0}")]
     Source(String),
+    #[error("unknown encoding: {0}")]
+    UnknownCharset(String),
+    #[error(transparent)]
+    Request(#[from] DecodeFailure),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]

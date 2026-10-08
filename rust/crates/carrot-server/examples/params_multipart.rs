@@ -43,63 +43,66 @@ async fn handle(
     request: Request<Incoming>,
     service: Arc<Service>,
 ) -> Result<Response<Full<Bytes>>, Error> {
-    let (status, value) = match params_multipart::first_file(request).await {
-        Ok(FirstFile::MissingFileField) => (
-            StatusCode::BAD_REQUEST,
-            Value::object([
-                ("ok", Value::Bool(false)),
-                ("error", Value::text("missing file field")),
-            ]),
-        ),
-        Ok(FirstFile::Data(bytes)) => {
-            let parsed = Value::parse(&String::from_utf8_lossy(&bytes));
-            match parsed {
-                Ok(value @ Value::Object(_)) => {
-                    let catalog = service.catalog.with_gap_limits(3)?;
-                    let mut backend = service
-                        .backend
-                        .lock()
-                        .map_err(|error| Error::Source(error.to_string()))?;
-                    let restored = Restore::new(&mut backend, &catalog, &service.history)
-                        .restore_values(&value, &Value::text("restore"));
-                    match restored {
-                        Ok(result) => (
-                            StatusCode::OK,
-                            Value::object([("ok", Value::Bool(true)), ("result", result)]),
-                        ),
-                        Err(error) => (
-                            StatusCode::INTERNAL_SERVER_ERROR,
-                            Value::object([
-                                ("ok", Value::Bool(false)),
-                                ("error", Value::text(&error.to_string())),
-                            ]),
-                        ),
+    let (status, value) =
+        match params_multipart::first_file(openpilot_carrot_server::http::decode_request(request))
+            .await
+        {
+            Ok(FirstFile::MissingFileField) => (
+                StatusCode::BAD_REQUEST,
+                Value::object([
+                    ("ok", Value::Bool(false)),
+                    ("error", Value::text("missing file field")),
+                ]),
+            ),
+            Ok(FirstFile::Data(bytes)) => {
+                let parsed = Value::parse(&String::from_utf8_lossy(&bytes));
+                match parsed {
+                    Ok(value @ Value::Object(_)) => {
+                        let catalog = service.catalog.with_gap_limits(3)?;
+                        let mut backend = service
+                            .backend
+                            .lock()
+                            .map_err(|error| Error::Source(error.to_string()))?;
+                        let restored = Restore::new(&mut backend, &catalog, &service.history)
+                            .restore_values(&value, &Value::text("restore"));
+                        match restored {
+                            Ok(result) => (
+                                StatusCode::OK,
+                                Value::object([("ok", Value::Bool(true)), ("result", result)]),
+                            ),
+                            Err(error) => (
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                Value::object([
+                                    ("ok", Value::Bool(false)),
+                                    ("error", Value::text(&error.to_string())),
+                                ]),
+                            ),
+                        }
                     }
+                    Ok(_) => (
+                        StatusCode::BAD_REQUEST,
+                        Value::object([
+                            ("ok", Value::Bool(false)),
+                            ("error", Value::text("bad json format (must be object)")),
+                        ]),
+                    ),
+                    Err(error) => (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Value::object([
+                            ("ok", Value::Bool(false)),
+                            ("error", Value::text(&error.to_string())),
+                        ]),
+                    ),
                 }
-                Ok(_) => (
-                    StatusCode::BAD_REQUEST,
-                    Value::object([
-                        ("ok", Value::Bool(false)),
-                        ("error", Value::text("bad json format (must be object)")),
-                    ]),
-                ),
-                Err(error) => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Value::object([
-                        ("ok", Value::Bool(false)),
-                        ("error", Value::text(&error.to_string())),
-                    ]),
-                ),
             }
-        }
-        Err(error) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Value::object([
-                ("ok", Value::Bool(false)),
-                ("error", Value::text(&error.to_string())),
-            ]),
-        ),
-    };
+            Err(error) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Value::object([
+                    ("ok", Value::Bool(false)),
+                    ("error", Value::text(&error.to_string())),
+                ]),
+            ),
+        };
     response(status, value)
 }
 

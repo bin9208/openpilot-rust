@@ -11,6 +11,16 @@ pub async fn serve(
     listener: TcpListener,
     shutdown: impl Future<Output = ()>,
 ) -> Result<(), Error> {
+    tokio::task::LocalSet::new()
+        .run_until(serve_local(app, listener, shutdown))
+        .await
+}
+
+async fn serve_local(
+    app: Arc<Application>,
+    listener: TcpListener,
+    shutdown: impl Future<Output = ()>,
+) -> Result<(), Error> {
     app.config.validate()?;
     app.static_web.validate()?;
     app.config.migrate_legacy_state();
@@ -20,7 +30,9 @@ pub async fn serve(
         let _ = warm_app.settings_payload();
     });
     let (stop, _) = watch::channel(false);
+    let (sound, mut launches) = crate::web_sound_http::Sessions::channel(stop.subscribe());
     let mut connections = JoinSet::new();
+    let mut sounds = JoinSet::new();
     tokio::pin!(shutdown);
     loop {
         tokio::select! {
@@ -28,12 +40,16 @@ pub async fn serve(
             accepted = listener.accept() => {
                 let (socket, _) = accepted?;
                 let app = Arc::clone(&app);
+                let sound = sound.clone();
                 let mut stopped = stop.subscribe();
                 connections.spawn(async move {
-                    let service = hyper::service::service_fn(move |request| route(request, Arc::clone(&app)));
+                    let service = hyper::service::service_fn(move |request| route(request, Arc::clone(&app), sound.clone()));
                     let connection = hyper::server::conn::http1::Builder::new()
                         .preserve_raw_conditional_headers(true)
-                        .serve_connection(TokioIo::new(socket), service);
+                        .close_after_response(true)
+                        .read_buf_exact_size(256 * 1024)
+                        .serve_connection(TokioIo::new(socket), service)
+                        .with_upgrades();
                     tokio::pin!(connection);
                     tokio::select! {
                         result = &mut connection => result,
@@ -41,19 +57,43 @@ pub async fn serve(
                     }
                 });
             }
+            Some(launch) = launches.recv() => {
+                sounds.spawn_local(crate::web_sound_http::run(launch));
+            }
+            joined = sounds.join_next(), if !sounds.is_empty() => {
+                if let Some(Ok(Err(error))) = joined {
+                    eprintln!("Web Sound session: {error}");
+                }
+            }
             _ = connections.join_next(), if !connections.is_empty() => {}
         }
     }
     drop(listener);
     let _ = stop.send(true);
     if tokio::time::timeout(Duration::from_secs(60), async {
-        while connections.join_next().await.is_some() {}
+        loop {
+            while let Ok(launch) = launches.try_recv() {
+                sounds.spawn_local(crate::web_sound_http::run(launch));
+            }
+            if connections.is_empty() && sounds.is_empty() {
+                break;
+            }
+            tokio::select! {
+                _ = connections.join_next(), if !connections.is_empty() => {}
+                _ = sounds.join_next(), if !sounds.is_empty() => {}
+                Some(launch) = launches.recv() => {
+                    sounds.spawn_local(crate::web_sound_http::run(launch));
+                }
+            }
+        }
     })
     .await
     .is_err()
     {
         connections.abort_all();
+        sounds.abort_all();
         while connections.join_next().await.is_some() {}
+        while sounds.join_next().await.is_some() {}
     }
     warm.abort();
     let _ = warm.await;

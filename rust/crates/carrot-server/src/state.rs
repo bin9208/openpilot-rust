@@ -48,7 +48,11 @@ pub(crate) fn write(path: &Path, value: &Value) -> Result<(), Error> {
     ));
     crate::state_json::write_json(&temporary, value).map_err(|error| match error {
         Error::Io(error) => io_error(error, &temporary),
-        Error::Source(_) | Error::Json(_) | Error::Params(_) => error,
+        Error::Source(_)
+        | Error::UnknownCharset(_)
+        | Error::Request(_)
+        | Error::Json(_)
+        | Error::Params(_) => error,
     })?;
     fs::rename(&temporary, path).map_err(|error| io_error(error, &temporary))?;
     Ok(())

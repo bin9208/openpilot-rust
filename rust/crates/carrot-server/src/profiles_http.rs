@@ -8,7 +8,7 @@ use crate::{
     settings::Catalog,
     Error, Value,
 };
-use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
+use hyper::{header, Method, Request, Response, StatusCode};
 use std::sync::Arc;
 
 pub(crate) fn matches(path: &str, method: &Method) -> bool {
@@ -133,7 +133,7 @@ fn process(app: &Application, path: &str, get: bool, body: &Value) -> Result<Val
 }
 
 pub(crate) async fn handle(
-    request: Request<Incoming>,
+    request: Request<crate::http::RequestBody>,
     app: Arc<Application>,
     path: &str,
 ) -> Response<Body> {
@@ -154,9 +154,15 @@ pub(crate) async fn handle(
     let body = if get {
         Value::Object(Vec::new())
     } else {
-        read_json(request)
-            .await
-            .unwrap_or_else(|_| Value::Object(Vec::new()))
+        match read_json(request).await {
+            Ok(body) => body,
+            Err(error) => {
+                if let Some(response) = crate::http_response::parser_response(&error, head) {
+                    return response;
+                }
+                Value::Object(Vec::new())
+            }
+        }
     };
     let create = path == "/api/setting_profiles" && !get;
     if !get && !create && !matches!(body, Value::Object(_)) {

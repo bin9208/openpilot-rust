@@ -92,7 +92,7 @@ where
         self.write_buf.max_buf_size = max;
     }
 
-    #[cfg(feature = "client")]
+    #[cfg(any(feature = "client", feature = "server"))]
     pub(crate) fn set_read_buf_exact_size(&mut self, sz: usize) {
         self.read_buf_strategy = ReadStrategy::Exact(sz);
     }
@@ -371,7 +371,7 @@ enum ReadStrategy {
         next: usize,
         max: usize,
     },
-    #[cfg(feature = "client")]
+    #[cfg(any(feature = "client", feature = "server"))]
     Exact(usize),
 }
 
@@ -387,7 +387,7 @@ impl ReadStrategy {
     fn next(&self) -> usize {
         match *self {
             ReadStrategy::Adaptive { next, .. } => next,
-            #[cfg(feature = "client")]
+            #[cfg(any(feature = "client", feature = "server"))]
             ReadStrategy::Exact(exact) => exact,
         }
     }
@@ -395,7 +395,7 @@ impl ReadStrategy {
     fn max(&self) -> usize {
         match *self {
             ReadStrategy::Adaptive { max, .. } => max,
-            #[cfg(feature = "client")]
+            #[cfg(any(feature = "client", feature = "server"))]
             ReadStrategy::Exact(exact) => exact,
         }
     }
@@ -429,7 +429,7 @@ impl ReadStrategy {
                     }
                 }
             }
-            #[cfg(feature = "client")]
+            #[cfg(any(feature = "client", feature = "server"))]
             ReadStrategy::Exact(_) => (),
         }
     }

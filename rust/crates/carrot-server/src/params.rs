@@ -43,6 +43,10 @@ impl Backend {
         self.native.is_some()
     }
 
+    pub fn native_params(&self) -> Option<&Params> {
+        self.native.as_ref()
+    }
+
     pub fn remove(&mut self, name: &str) -> Result<(), Error> {
         let Some(params) = &self.native else {
             self.memory.remove(name);

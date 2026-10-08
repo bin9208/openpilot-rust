@@ -8,7 +8,7 @@ use crate::{
     settings::Catalog,
     Error, Value,
 };
-use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
+use hyper::{header, Method, Request, Response, StatusCode};
 use std::sync::Arc;
 
 pub(crate) async fn download<T>(request: &Request<T>, path: &std::path::Path) -> Response<Body> {
@@ -125,7 +125,7 @@ fn process(
 }
 
 pub(crate) async fn handle(
-    request: Request<Incoming>,
+    request: Request<crate::http::RequestBody>,
     app: Arc<Application>,
     path: &str,
 ) -> Response<Body> {
@@ -166,7 +166,12 @@ pub(crate) async fn handle(
             Ok(crate::params_multipart::FirstFile::MissingFileField) => {
                 return rejected(StatusCode::BAD_REQUEST, "missing file field", head);
             }
-            Err(error) => return rejected(error_status, &error.to_string(), head),
+            Err(error) => {
+                if let Some(response) = crate::http_response::parser_response(&error, head) {
+                    return response;
+                }
+                return rejected(error_status, &error.to_string(), head);
+            }
         };
         match Value::parse(&String::from_utf8_lossy(&data)) {
             Ok(body @ Value::Object(_)) => body,
@@ -182,7 +187,12 @@ pub(crate) async fn handle(
     } else {
         match read_json_detailed(request).await {
             Ok(body) => body,
-            Err(error) => return rejected(error_status, &error.to_string(), head),
+            Err(error) => {
+                if let Some(response) = crate::http_response::parser_response(&error, head) {
+                    return response;
+                }
+                return rejected(error_status, &error.to_string(), head);
+            }
         }
     };
     let preview = path.ends_with("_preview");

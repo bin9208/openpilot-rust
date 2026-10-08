@@ -100,6 +100,38 @@ const WANT_PENDING: usize = 1;
 const WANT_READY: usize = 2;
 
 impl Incoming {
+    /// Poll only already-framed HTTP/1 data without signaling body demand.
+    #[cfg(all(feature = "http1", feature = "server"))]
+    pub fn poll_buffered_frame(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<Frame<Bytes>, crate::Error>>> {
+        match &mut self.kind {
+            Kind::Empty => Poll::Ready(None),
+            Kind::Chan {
+                content_length: len,
+                data_rx,
+                trailers_rx,
+                ..
+            } => {
+                if !data_rx.is_terminated() {
+                    if let Some(chunk) = ready!(Pin::new(data_rx).poll_next(cx)?) {
+                        len.sub_if(chunk.len() as u64);
+                        return Poll::Ready(Some(Ok(Frame::data(chunk))));
+                    }
+                }
+                match ready!(Pin::new(trailers_rx).poll(cx)) {
+                    Ok(trailers) => Poll::Ready(Some(Ok(Frame::trailers(trailers)))),
+                    Err(_) => Poll::Ready(None),
+                }
+            }
+            #[cfg(all(feature = "http2", any(feature = "client", feature = "server")))]
+            Kind::H2 { .. } => Poll::Pending,
+            #[cfg(feature = "ffi")]
+            Kind::Ffi(_) => Poll::Pending,
+        }
+    }
+
     /// Create a `Body` stream with an associated sender half.
     ///
     /// Useful when wanting to stream chunks from another thread.

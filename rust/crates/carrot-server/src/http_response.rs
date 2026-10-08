@@ -40,6 +40,17 @@ pub(crate) fn text(status: StatusCode, text: &str, head: bool) -> Response<Body>
     )
 }
 
+pub(crate) fn parser_response(error: &Error, head: bool) -> Option<Response<Body>> {
+    match error {
+        Error::Request(error) if error.is_parser() => {
+            let mut response = text(StatusCode::BAD_REQUEST, &error.to_string(), head);
+            *response.version_mut() = hyper::Version::HTTP_10;
+            Some(response)
+        }
+        _ => None,
+    }
+}
+
 pub(crate) fn json_response(
     status: StatusCode,
     payload: Value,

@@ -6,7 +6,7 @@ use crate::{
     param_restore::read_setting_value,
     Error, Value,
 };
-use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
+use hyper::{header, Method, Request, Response, StatusCode};
 use num_traits::ToPrimitive;
 use std::sync::Arc;
 
@@ -98,7 +98,7 @@ fn failed(error: &str, plain: bool, head: bool) -> Response<Body> {
 }
 
 pub(crate) async fn handle(
-    request: Request<Incoming>,
+    request: Request<crate::http::RequestBody>,
     app: Arc<Application>,
     path: &str,
 ) -> Response<Body> {

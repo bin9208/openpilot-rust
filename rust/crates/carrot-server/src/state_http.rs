@@ -4,11 +4,11 @@ use crate::{
     state_preferences::Preference,
     Error, Value,
 };
-use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
+use hyper::{header, Method, Request, Response, StatusCode};
 use std::sync::Arc;
 
 pub(crate) async fn handle(
-    request: Request<Incoming>,
+    request: Request<crate::http::RequestBody>,
     app: Arc<Application>,
     kind: Preference,
 ) -> Response<Body> {
@@ -32,10 +32,17 @@ pub(crate) async fn handle(
     let payload = if post {
         match read_json(request).await {
             Ok(body) => body,
-            Err(_) => match kind {
-                Preference::Units => return reject(StatusCode::BAD_REQUEST, "invalid json", head),
-                Preference::Favorites => Value::Object(Vec::new()),
-            },
+            Err(error) => {
+                if let Some(response) = crate::http_response::parser_response(&error, head) {
+                    return response;
+                }
+                match kind {
+                    Preference::Units => {
+                        return reject(StatusCode::BAD_REQUEST, "invalid json", head);
+                    }
+                    Preference::Favorites => Value::Object(Vec::new()),
+                }
+            }
         }
     } else {
         Value::Object(Vec::new())

@@ -54,7 +54,7 @@ fn decode_extended(value: &str) -> Result<String, Error> {
     let bytes = percent_encoding::percent_decode_str(text).collect::<Vec<_>>();
     match crate::request_text::decode(&bytes, encoding) {
         Ok(value) => Ok(value.into_owned()),
-        Err(Error::Source(message)) if message.starts_with("unsupported request charset:") => {
+        Err(Error::UnknownCharset(_)) => {
             let decoder = encoding_rs::Encoding::for_label(encoding.as_bytes())
                 .ok_or_else(|| Error::Source(format!("unknown encoding: {encoding}")))?;
             decoder

@@ -76,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let intro = Arc::clone(&intro);
                         async move {
                             let response = if let Some(route) = Route::from_path(request.uri().path()) {
-                                intro::handle(request, app, intro, route).await
+                                intro::handle(openpilot_carrot_server::http::decode_request(request), app, intro, route).await
                             } else {
                                 let mut response = Response::new(Full::new(Bytes::from_static(b"404: Not Found")));
                                 *response.status_mut() = StatusCode::NOT_FOUND;

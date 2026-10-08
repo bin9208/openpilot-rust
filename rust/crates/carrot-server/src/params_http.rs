@@ -7,7 +7,7 @@ use crate::{
     param_restore::read_setting_value,
     Error, Value,
 };
-use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
+use hyper::{header, Method, Request, Response, StatusCode};
 use openpilot_hardware_info::HardwareInfo;
 use std::sync::Arc;
 
@@ -154,7 +154,7 @@ fn set_value(app: &Application, body: &Value) -> Result<(StatusCode, Value), Err
 }
 
 pub(crate) async fn handle(
-    request: Request<Incoming>,
+    request: Request<crate::http::RequestBody>,
     app: Arc<Application>,
     path: &str,
 ) -> Response<Body> {
@@ -191,7 +191,12 @@ pub(crate) async fn handle(
     } else {
         let body = match read_json(request).await {
             Ok(body) => body,
-            Err(_) => return reject(StatusCode::BAD_REQUEST, "invalid json", head),
+            Err(error) => {
+                if let Some(response) = crate::http_response::parser_response(&error, head) {
+                    return response;
+                }
+                return reject(StatusCode::BAD_REQUEST, "invalid json", head);
+            }
         };
         tokio::task::spawn_blocking(move || set_value(&app, &body)).await
     };

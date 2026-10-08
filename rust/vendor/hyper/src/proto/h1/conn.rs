@@ -71,6 +71,8 @@ where
                 preserve_header_case: false,
                 #[cfg(feature = "server")]
                 preserve_raw_conditional_headers: false,
+                #[cfg(feature = "server")]
+                close_after_response: false,
                 #[cfg(feature = "ffi")]
                 preserve_header_order: false,
                 title_case_headers: false,
@@ -108,7 +110,7 @@ where
         self.io.set_max_buf_size(max);
     }
 
-    #[cfg(feature = "client")]
+    #[cfg(any(feature = "client", feature = "server"))]
     pub(crate) fn set_read_buf_exact_size(&mut self, sz: usize) {
         self.io.set_read_buf_exact_size(sz);
     }
@@ -132,6 +134,11 @@ where
     #[cfg(feature = "server")]
     pub(crate) fn set_preserve_raw_conditional_headers(&mut self) {
         self.state.preserve_raw_conditional_headers = true;
+    }
+
+    #[cfg(feature = "server")]
+    pub(crate) fn set_close_after_response(&mut self) {
+        self.state.close_after_response = true;
     }
 
     #[cfg(feature = "ffi")]
@@ -634,7 +641,16 @@ where
             }
         }
 
-        self.enforce_version(&mut head);
+        #[cfg(feature = "server")]
+        let close_after_response = self.state.close_after_response
+            && T::should_read_first()
+            && head
+                .extensions
+                .get::<crate::ext::CloseAfterResponse>()
+                .is_some();
+        #[cfg(not(feature = "server"))]
+        let close_after_response = false;
+        self.enforce_version(&mut head, close_after_response);
 
         let buf = self.io.headers_buf();
         match super::role::encode_headers::<T>(
@@ -654,6 +670,14 @@ where
                 debug_assert!(self.state.cached_headers.is_none());
                 debug_assert!(head.headers.is_empty());
                 self.state.cached_headers = Some(head.headers);
+
+                #[cfg(feature = "server")]
+                let encoder = if close_after_response {
+                    self.state.disable_keep_alive();
+                    encoder.set_last(true)
+                } else {
+                    encoder
+                };
 
                 #[cfg(feature = "client")]
                 {
@@ -698,7 +722,7 @@ where
 
     // If we know the remote speaks an older version, we try to fix up any messages
     // to work with our older peer.
-    fn enforce_version(&mut self, head: &mut MessageHead<T::Outgoing>) {
+    fn enforce_version(&mut self, head: &mut MessageHead<T::Outgoing>, close_after_response: bool) {
         match self.state.version {
             Version::HTTP_10 => {
                 // Fixes response or connection when keep-alive header is not present
@@ -709,8 +733,10 @@ where
             }
             Version::HTTP_11 => {
                 if let KA::Disabled = self.state.keep_alive.status() {
-                    head.headers
-                        .insert(CONNECTION, HeaderValue::from_static("close"));
+                    if !(close_after_response && head.version == Version::HTTP_10) {
+                        head.headers
+                            .insert(CONNECTION, HeaderValue::from_static("close"));
+                    }
                 }
             }
             _ => (),
@@ -957,6 +983,8 @@ struct State {
     preserve_header_case: bool,
     #[cfg(feature = "server")]
     preserve_raw_conditional_headers: bool,
+    #[cfg(feature = "server")]
+    close_after_response: bool,
     #[cfg(feature = "ffi")]
     preserve_header_order: bool,
     title_case_headers: bool,

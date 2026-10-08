@@ -5,7 +5,7 @@ use crate::{
     http::{read_json, Application, Body},
     http_response::{json_response, text},
 };
-use hyper::{body::Incoming, header, Method, Request, Response};
+use hyper::{header, Method, Request, Response};
 use std::sync::Arc;
 
 pub fn matches(path: &str, method: &Method) -> bool {
@@ -29,7 +29,7 @@ fn reply(reply: Reply, head: bool) -> Response<Body> {
 }
 
 pub async fn handle(
-    request: Request<Incoming>,
+    request: Request<crate::http::RequestBody>,
     app: Arc<Application>,
     online: Arc<Online>,
 ) -> Response<Body> {
@@ -98,7 +98,12 @@ pub async fn handle(
         } else {
             match read_json(request).await {
                 Ok(body) => body,
-                Err(_) => return reply(reject(400, "invalid json"), head),
+                Err(error) => {
+                    if let Some(response) = crate::http_response::parser_response(&error, head) {
+                        return response;
+                    }
+                    return reply(reject(400, "invalid json"), head);
+                }
             }
         };
         if validate {

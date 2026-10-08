@@ -4,7 +4,7 @@ use crate::{
     http_response::{json_response, text},
     Error, Value,
 };
-use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
+use hyper::{header, Method, Request, Response, StatusCode};
 use std::sync::Arc;
 
 fn failure(head: bool) -> Response<Body> {
@@ -34,7 +34,7 @@ fn successful(value: Value, head: bool) -> Response<Body> {
 }
 
 pub async fn handle(
-    request: Request<Incoming>,
+    request: Request<crate::http::RequestBody>,
     app: Arc<Application>,
     online: Option<Arc<Online>>,
     timestamp: Option<i64>,
@@ -65,7 +65,12 @@ pub async fn handle(
     }
     let body = match read_json(request).await {
         Ok(body) => body,
-        Err(_) => return rejected(400, "invalid json", head),
+        Err(error) => {
+            if let Some(response) = crate::http_response::parser_response(&error, head) {
+                return response;
+            }
+            return rejected(400, "invalid json", head);
+        }
     };
     if crate::json_fields::fields(&body).is_err() {
         return failure(head);

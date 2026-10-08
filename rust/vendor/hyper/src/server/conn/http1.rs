@@ -77,10 +77,12 @@ pub struct Builder {
     h1_title_case_headers: bool,
     h1_preserve_header_case: bool,
     h1_preserve_raw_conditional_headers: bool,
+    h1_close_after_response: bool,
     h1_max_headers: Option<usize>,
     h1_header_read_timeout: Dur,
     h1_writev: Option<bool>,
     max_buf_size: Option<usize>,
+    read_buf_exact_size: Option<usize>,
     pipeline_flush: bool,
     date_header: bool,
 }
@@ -248,10 +250,12 @@ impl Builder {
             h1_title_case_headers: false,
             h1_preserve_header_case: false,
             h1_preserve_raw_conditional_headers: false,
+            h1_close_after_response: false,
             h1_max_headers: None,
             h1_header_read_timeout: Dur::Default(Some(Duration::from_secs(30))),
             h1_writev: None,
             max_buf_size: None,
+            read_buf_exact_size: None,
             pipeline_flush: false,
             date_header: true,
         }
@@ -329,6 +333,19 @@ impl Builder {
     /// The regular headers and request framing remain unchanged. Default is false.
     pub fn preserve_raw_conditional_headers(&mut self, enabled: bool) -> &mut Self {
         self.h1_preserve_raw_conditional_headers = enabled;
+        self
+    }
+
+    /// Honor `CloseAfterResponse` after encoding headers, without inserting a close header.
+    pub fn close_after_response(&mut self, enabled: bool) -> &mut Self {
+        self.h1_close_after_response = enabled;
+        self
+    }
+
+    /// Select the existing exact read-buffer strategy. The default remains adaptive.
+    pub fn read_buf_exact_size(&mut self, size: usize) -> &mut Self {
+        assert!(size > 0, "read buffer size must be positive");
+        self.read_buf_exact_size = Some(size);
         self
     }
 
@@ -485,6 +502,9 @@ impl Builder {
         if self.h1_preserve_raw_conditional_headers {
             conn.set_preserve_raw_conditional_headers();
         }
+        if self.h1_close_after_response {
+            conn.set_close_after_response();
+        }
         if let Some(max_headers) = self.h1_max_headers {
             conn.set_http1_max_headers(max_headers);
         }
@@ -504,6 +524,9 @@ impl Builder {
         conn.set_flush_pipeline(self.pipeline_flush);
         if let Some(max) = self.max_buf_size {
             conn.set_max_buf_size(max);
+        }
+        if let Some(size) = self.read_buf_exact_size {
+            conn.set_read_buf_exact_size(size);
         }
         if !self.date_header {
             conn.disable_date_header();

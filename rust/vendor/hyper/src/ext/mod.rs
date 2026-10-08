@@ -66,6 +66,10 @@ pub use informational::on_informational;
 #[derive(Clone, Debug, Default)]
 pub struct RawConditionalHeaders(pub(crate) HeaderMap);
 
+/// Complete this response and close HTTP/1 when the server builder opts in.
+#[derive(Clone, Copy, Debug)]
+pub struct CloseAfterResponse;
+
 #[cfg(all(feature = "http1", feature = "server"))]
 impl RawConditionalHeaders {
     /// Returns the first original value for a captured header name.

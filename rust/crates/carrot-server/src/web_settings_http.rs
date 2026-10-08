@@ -4,10 +4,13 @@ use crate::{
     web_settings::{resolve_capabilities, WebSettings},
     Value,
 };
-use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
+use hyper::{header, Method, Request, Response, StatusCode};
 use std::sync::Arc;
 
-pub(crate) async fn handle(request: Request<Incoming>, app: Arc<Application>) -> Response<Body> {
+pub(crate) async fn handle(
+    request: Request<crate::http::RequestBody>,
+    app: Arc<Application>,
+) -> Response<Body> {
     let head = request.method() == Method::HEAD;
     let post = request.method() == Method::POST;
     if !matches!(
@@ -26,9 +29,15 @@ pub(crate) async fn handle(request: Request<Incoming>, app: Arc<Application>) ->
         return response;
     }
     let body = if post {
-        read_json(request)
-            .await
-            .unwrap_or_else(|_| Value::Object(Vec::new()))
+        match read_json(request).await {
+            Ok(body) => body,
+            Err(error) => {
+                if let Some(response) = crate::http_response::parser_response(&error, head) {
+                    return response;
+                }
+                Value::Object(Vec::new())
+            }
+        }
     } else {
         Value::Object(Vec::new())
     };

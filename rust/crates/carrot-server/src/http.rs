@@ -1,6 +1,7 @@
 pub use crate::http_request::read_json;
 use crate::http_response::{error_response, json_response, text};
 pub use crate::http_server::serve;
+pub use crate::request_body::{decode_request, DecodedBody as RequestBody};
 use crate::{
     config::Config,
     param_changes::{History, Paths},
@@ -102,13 +103,44 @@ impl Application {
 }
 
 pub(crate) async fn route(
-    request: Request<Incoming>,
+    mut request: Request<Incoming>,
     app: Arc<Application>,
+    sound: crate::web_sound_http::Sessions,
+) -> Result<Response<Body>, Infallible> {
+    let context = crate::request_body::DecodeContext::default();
+    request.extensions_mut().insert(context.clone());
+    let head = request.method() == hyper::Method::HEAD;
+    let mut request = decode_request(request);
+    let prefetched =
+        std::future::poll_fn(|cx| std::task::Poll::Ready(request.body_mut().prefetch(cx))).await;
+    let mut response = match prefetched {
+        Ok(()) => dispatch(request, app, sound).await?,
+        Err(failure) => {
+            let error = Error::Request(failure);
+            crate::http_response::parser_response(&error, head)
+                .unwrap_or_else(|| error_response(error.to_string(), head))
+        }
+    };
+    if context.requires_close() {
+        response
+            .extensions_mut()
+            .insert(hyper::ext::CloseAfterResponse);
+    }
+    Ok(response)
+}
+
+async fn dispatch(
+    request: Request<RequestBody>,
+    app: Arc<Application>,
+    sound: crate::web_sound_http::Sessions,
 ) -> Result<Response<Body>, Infallible> {
     let head = request.method() == hyper::Method::HEAD;
     let path = percent_encoding::percent_decode_str(request.uri().path())
         .decode_utf8_lossy()
         .into_owned();
+    if path == "/ws/web_sound" {
+        return Ok(crate::web_sound_http::handle(request, &app, &sound));
+    }
     if path == "/api/cars" {
         return Ok(crate::cars::handle(&request, Arc::clone(&app.cars)).await);
     }

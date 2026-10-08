@@ -4,7 +4,7 @@ use crate::{
     http_response::{json_response, text},
     Error, Value,
 };
-use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
+use hyper::{header, Method, Request, Response, StatusCode};
 use std::sync::Arc;
 
 #[derive(Clone, Copy)]
@@ -57,7 +57,7 @@ fn field(body: &Value, name: &str) -> Result<Value, Error> {
 }
 
 pub async fn handle(
-    request: Request<Incoming>,
+    request: Request<crate::http::RequestBody>,
     app: Arc<Application>,
     intro: Arc<Intro>,
     route: Route,
@@ -93,12 +93,23 @@ pub async fn handle(
     }
     let body = match route {
         Route::State | Route::Reset => Value::Null,
-        Route::Complete => read_json(request)
-            .await
-            .unwrap_or_else(|_| Value::Object(Vec::new())),
+        Route::Complete => match read_json(request).await {
+            Ok(body) => body,
+            Err(error) => {
+                if let Some(response) = crate::http_response::parser_response(&error, head) {
+                    return response;
+                }
+                Value::Object(Vec::new())
+            }
+        },
         Route::ApplyPreset => match read_json(request).await {
             Ok(body) => body,
-            Err(_) => return rejected(StatusCode::BAD_REQUEST, "invalid json", head),
+            Err(error) => {
+                if let Some(response) = crate::http_response::parser_response(&error, head) {
+                    return response;
+                }
+                return rejected(StatusCode::BAD_REQUEST, "invalid json", head);
+            }
         },
     };
     let result = tokio::task::spawn_blocking(move || -> Result<(StatusCode, Value), Error> {

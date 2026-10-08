@@ -83,9 +83,7 @@ impl Online {
         let charset = crate::request_text::encoding(&headers);
         let text = match crate::request_text::decode(&bytes, &charset) {
             Ok(text) => text.into_owned(),
-            Err(crate::Error::Source(message))
-                if message.starts_with("unsupported request charset:") =>
-            {
+            Err(crate::Error::UnknownCharset(_)) => {
                 if let Some(encoding) = encoding_rs::Encoding::for_label(charset.as_bytes()) {
                     encoding
                         .decode_without_bom_handling_and_without_replacement(&bytes)

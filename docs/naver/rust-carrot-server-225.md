@@ -152,16 +152,65 @@ The 87 HTTP observations use recorded fixed timestamps. A separate focused
 test covers the production `int(time.time() * 1000)` rounding behavior; these
 different configurations and executable identities are retained separately.
 
+## Request transport and Web Sound checkpoint (2026-10-08)
+
+The shared request reader now owns one content decoder and prefetched frame
+queue across JSON and multipart consumers. Supported compressed bodies and
+additional charset/error cases have actual source comparisons. Parser errors
+observed before dispatch take precedence over feature availability; payload
+errors remain available to the feature's first read. A per-request context
+retains connection-close intent even when a feature catches the payload error.
+
+The retained application ELF is
+`7b22124f929f4980a8f328ea00959c1b329d3f9dffb344c23ea0cda4cc14ee5c`.
+Its focused comparison passes 44 HTTP pairs, checking status/version, headers
+except Date/Server, raw body and stored effects. Complete response bytes and
+EOF match for the tested parser-error connections and a caught-payload 200
+response. Healthy chunked data/trailers followed by a second request also match.
+The build, strict all-target Clippy, formatting and three WebSocket library
+boundary tests pass. These results and rejected probes are retained under
+`.omo/evidence/carrot-server-225-resume/request-decoding/transport-fixed*`
+and `transport-sound-fixed/`.
+
+The same ELF also matches six actual WebSocket protocol observations, including
+custom and empty peer Close, compression refusal and message-size boundaries.
+With an invalid actual Params root, both implementations complete the 101
+upgrade, publish no state, answer Ping and exit cleanly after peer teardown.
+These comparisons are in `.omo/evidence/225-web-sound/native-protocol-fixed/`
+and `native-params-init-failure-fixed/`. Stateful live IPC and full heartbeat
+comparisons remain separate pending checks.
+
+The Hyper fork adds opt-in response-close handling, a server receive-buffer
+size option, and inspection of already-framed Incoming data without requesting
+another read. Close intent is captured before header serialization, then applied
+only after successful encoding. The ordinary provider behavior stays default-off;
+an actual default-off TCP control remains outstanding at this checkpoint.
+The tungstenite 0.29.0 fork adds an opt-in server reply of code 1000 with an empty
+reason to a valid peer Close. Tests cover default/client behavior, invalid codes,
+and ordering after a partially written application frame. Provenance and licenses
+are retained in both vendor directories. The shared Carrot Navi handshake helper
+was extracted without changing its function body; its native-feature test passes.
+
+Three observed transport gaps remain open: a fully buffered chunked deflate EOF
+can still reach an unavailable feature before its parser error; Expect handling
+omits the source's early 100 response and unknown-value 417; and active Web Sound
+sessions currently exit immediately on server shutdown. The original retains
+the active connection while discarding newly received data until peer EOF or
+its existing cleanup deadline. A separate partial-body probe returns the same
+immediate 500 response and effects but closes at about 0.5 ms instead of the
+source's 10.23 s. This cleanup timing difference is retained explicitly and does
+not authorize adding another transport timer.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
 evidence, and profile/history HTTP routes and real index bootstrap are connected.
 Multipart restoration has isolated and composed HTTP evidence; QR dependency
 status/repair remains in progress.
-The request decoder currently handles UTF-8, Latin-1 and ASCII; other original
-request charsets and compressed request bodies remain transport gaps. Multipart
-extended names also use the existing encoding_rs provider for supported labels,
-with broader original codec aliases/error behavior still explicit gaps.
+The request decoder has the tested expanded charset/compression coverage above;
+the listed parser-order/Expect gaps and broader original codec aliases/error
+behavior remain explicit limits. Multipart extended names use the existing
+encoding_rs provider for supported labels.
 The other feature families, startup heartbeat/git/update/upload tasks, live
 broker and camera/WebSocket transport remain outside the completed foundation.
 `/stream` also depends on the separately inventoried WebRTC conversion.

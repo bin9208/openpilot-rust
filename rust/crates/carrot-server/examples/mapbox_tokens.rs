@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let (stream,_)=accepted?;
                 let app=app.clone();let online=online.clone();
                 tokio::spawn(async move {
-                    let service=service_fn(move |request| { let app=app.clone();let online=online.clone();async move { Ok::<_,std::convert::Infallible>(mapbox_tokens::handle(request,app,online).await) } });
+                    let service=service_fn(move |request| { let app=app.clone();let online=online.clone();async move { Ok::<_,std::convert::Infallible>(mapbox_tokens::handle(openpilot_carrot_server::http::decode_request(request),app,online).await) } });
                     if let Err(error)=hyper::server::conn::http1::Builder::new().serve_connection(TokioIo::new(stream),service).await { eprintln!("fixture connection: {error}"); }
                 });
             }

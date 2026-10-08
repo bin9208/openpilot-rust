@@ -1,9 +1,9 @@
 //! Original params_restore first-part boundary; raw multipart data is never decoded here.
 mod disposition;
 
-use crate::{Error, Value};
+use crate::{http::RequestBody, Error, Value};
 use http_body_util::BodyExt;
-use hyper::{body::Incoming, header, Request};
+use hyper::{header, Request};
 use multer::{Field, Multipart};
 
 pub enum FirstFile {
@@ -69,13 +69,19 @@ fn nested(field: &Field<'_>) -> Result<bool, Error> {
 
 fn field_error(error: &multer::Error) -> Error {
     match error {
+        multer::Error::StreamReadFailed(error) => {
+            if let Some(failure) = error.downcast_ref::<crate::DecodeFailure>() {
+                return Error::Request(failure.clone());
+            }
+            Error::Source("failed to read stream".into())
+        }
         multer::Error::IncompleteFieldData { .. } => Error::Source("Reading after EOF".into()),
         multer::Error::HeaderTooLong { .. } => Error::Source(format!("400, message:\n  {error}")),
         _ => Error::Source(error.to_string()),
     }
 }
 
-pub async fn first_file(request: Request<Incoming>) -> Result<FirstFile, Error> {
+pub async fn first_file(request: Request<RequestBody>) -> Result<FirstFile, Error> {
     let content_type = request
         .headers()
         .get(header::CONTENT_TYPE)
@@ -83,7 +89,8 @@ pub async fn first_file(request: Request<Incoming>) -> Result<FirstFile, Error> 
     let content_type = String::from_utf8_lossy(content_type.as_bytes()).into_owned();
     let mime = Mime::parse(&content_type);
     let boundary = mime.boundary(&content_type)?;
-    let mut reader = Multipart::new(request.into_body().into_data_stream(), boundary);
+    let body = request.into_body();
+    let mut reader = Multipart::new(body.into_data_stream(), boundary);
     let mut field = match reader.next_field().await {
         Ok(Some(field)) => field,
         Ok(None) => return Ok(FirstFile::MissingFileField),
