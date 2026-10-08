@@ -32,6 +32,7 @@ mod params_http;
 pub mod params_multipart;
 pub mod popular_values;
 mod profiles_http;
+pub mod repo_update;
 pub(crate) mod request_body;
 mod request_text;
 mod restore_http;

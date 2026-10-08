@@ -800,6 +800,33 @@ its caller. Manager monitoring, update-attempt scheduling, real notification,
 reboot and Application lifecycle integration remain open. All Git mutations in
 these comparisons target owned temporary repositories.
 
+## Conservative repository preparation (2026-10-09 KST)
+
+The native repository preparation helper preserves the original index-lock
+recovery rules: a regular file at least 60 seconds old, no observed Git process,
+and an unchanged device/inode/mtime/size after the 100 ms recheck. Unavailable
+process inspection defers recovery. Git path lookup retains its ten-second
+deadline and strict, separate text decoding before interpreting the result.
+The caller's existing repository lock stays held until blocking inspection
+finishes, including when cancellation is requested.
+
+Twenty-seven original/native cases match results, file state, messages and Git
+arguments. They cover the age boundary, file type, process visibility, changed
+or removed locks, malformed command output, actual Git process observation,
+the real lookup timeout and cancellation. Protected cooperative/ref/config
+locks remain unchanged; child cleanup and lock exclusion/release are observed.
+
+The selected build and strict Clippy, formatting, diff and Ruff checks pass.
+The source runner retains asyncio for the original cancellation/shield behavior;
+that optional skill-audit exception is recorded explicitly. The portable driver
+is `rust/tools/carrot_server_repo_recovery.py`. Commands and source identities
+are in `.omo/evidence/225-repo-recovery/checkpoint/receipt.json`; the retained
+example SHA256 is
+`66979e10cbe710b185a42551cf352940db99fcea3f9645b040dff5541611b211`.
+
+All mutations target owned fixtures. Update-attempt coordination, manager
+monitoring, reboot and complete Application startup remain pending.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
