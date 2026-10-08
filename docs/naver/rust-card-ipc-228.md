@@ -58,8 +58,11 @@ available evidence. Independent 100 Hz sending, 80 timestamps, 80 states,
 one packet per state, source/native equality, and shutdown assertions remain
 unchanged. Inputs are not acknowledged per frame and batches are not hidden.
 The issue remains unresolved. A single scoped hosted Card job rerun with these
-strict checks was requested at the unchanged failed head; attempt 2 is pending.
-The local passing pair does not
+strict checks was requested at the unchanged failed head. Attempt 2 passed the
+Card job and aggregate at `eae4ac73fa60a733a131739dd328c63271861201`, allowing
+Navd PR 227 to merge normally as `740ade11f2790efbb3c6aabdbb6e499acf3e8818`.
+The passing retry does not resolve the origin of the hosted stall; issue 228
+remains open. The local passing pair does not
 replace the failed exact-head required Actions gate or establish device/CPU
 behavior.
 

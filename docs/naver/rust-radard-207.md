@@ -58,3 +58,10 @@ The shared planner change only exposes a serialized state snapshot for the
 source comparator. No radar detection policy or NAS replay source is changed.
 This local integration preparation does not replace the pending exact-revision
 host/ARM jobs or authorize device testing.
+
+After Navd PR 227 passed every required gate, this candidate was merged with
+dev `740ade11f2790efbb3c6aabdbb6e499acf3e8818`. The same 16 isolation tests,
+10 CI-policy tests and locked offline metadata pass on the composed tree.
+The included Card investigation record keeps issue 228's host stall unresolved;
+its scoped unchanged retry passed, without changing the runtime or comparator.
+Radard's new exact-head host/ARM jobs still must run before integration.
