@@ -52,3 +52,12 @@ Local connection checks pass 16 workflow-isolation tests, 10 Card/RadarCAN
 CI-policy tests, locked offline metadata and diff whitespace checks. These
 checks do not replace the independent source receipts or the pending hosted
 host/ARM and normal-startup/upload gates. No local corpus rebuild was performed.
+
+Radard PR 229 subsequently passed all required checks at
+`de3b73dc682e0f4171c3bf849f6610d25a86bf98`, including both native Radard
+architectures, Card, workspace and aarch64. Rust run `37727864726` and
+integration run `37727864956` passed. It merged normally into dev as
+`abde77f51419d27e24dfdce58253085e11dbeaf5`, which is now composed into this
+candidate. The original Carrot Navi implementation and comparison policies
+remain unchanged. Post-merge Radard checks and this candidate's new hosted
+checks remain separate from those successful pre-merge results.
