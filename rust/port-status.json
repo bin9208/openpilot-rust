@@ -354,7 +354,11 @@
       "name": "navd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.navd.navd",
-      "status": "not_ported",
+      "status": "native_daemon_host_compared",
+      "implementation": "rust/crates/navd; original route engine, geometry, instructions, HTTP and authentication, UI restart timers and destination CLI",
+      "native_dependencies": ["Linux clocks/signals/filesystem", "native ZeroMQ diagnostics", "native Rust msgq transport", "Mapbox/comma routing service and TLS trust roots"],
+      "evidence": "docs/naver/rust-navd-196.md",
+      "runtime_scope": "Host source, actual HTTP/Params/IPC and signal comparisons passed; five composed native Rust IPC scenarios passed on 2026-10-07. Current integration ARM build and exact-head CI, complete startup/upload and user device comparison remain pending.",
       "production_replaced": false
     },
     {

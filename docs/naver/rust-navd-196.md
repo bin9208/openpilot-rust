@@ -90,12 +90,34 @@ used two build jobs and disabled incremental compilation.
 
 ## Remaining integration
 
+The 2026-10-07 dev integration candidate reuses the completed module on the
+native Rust IPC transport. All five existing real loopback HTTP/IPC scenarios
+pass again: route lifecycle, latest-route timer, cleared-route timer, HTTP
+interruption and termination. Build, formatting and CI policy checks pass
+(21 tests, 225 subtests). The first build identified two missing public export
+lines for the existing registration `response_text` decoder; those lines now
+match the preserved integration candidate without changing decoding behavior.
+The executed navd SHA-256 is
+`680f2e651b86123e2188bdec51954783286562a1e02181d22f6603258fcdc4d0`.
+The executable and receipt are retained under
+`.analysis/archive/2026-10-07-navd/`. Prior full policy/HTTP/authentication and
+destination results are reused; they were not rerun locally.
+
 The required `rust navigation runtime` job runs the host source and actual
 transport checks; `rust aarch64 build` includes both native commands and probes.
-Their final revision results are still required. The current host receipts used
-the prior CXX-backed transport; native IPC issue 194 composition must revalidate
-its consumers. Historical receipts will retain their actual dependency boundary.
+Their final revision results are still required. The earlier independent host
+receipts used the CXX transport; the five new composition scenarios above use
+native Rust IPC. Historical receipts retain their actual dependency boundary.
 Linux facilities, ZeroMQ diagnostics, routing servers and TLS roots remain
 external dependencies. Complete manager startup, existing log upload and the
 user's first device comparison remain outstanding under issue 1. No CPU savings
 or complete Rust-runtime claim follows from this component's host tests.
+
+On 2026-10-08 the candidate was composed with dev `0e69a1c1`, retaining both
+CarrotMan and RadarCAN required checks. Navd implementation and its registration
+decoder exports already arrived as CarrotMan dependencies; this remaining
+change connects the candidate manager catalog, navigation CI and inventory.
+The preserved five-scenario IPC receipt remains applicable to unchanged Navd
+sources. Local workflow isolation (16 tests), Card/RadarCAN CI policy (10 tests),
+and locked offline workspace metadata pass. The navigation source job and ARM
+build will run at the new PR revision; production process selection is unchanged.
