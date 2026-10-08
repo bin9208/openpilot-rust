@@ -310,7 +310,8 @@ jobs:
           python rust/tools/carrot_man_time_compare.py --binary rust/target/debug/examples/carrot_man_trace --evidence "$RUNNER_TEMP/carrot-man-policy"
       - name: Compare actual owned Params, IPC, sockets and upload recipients
         run: |
-          export PYTHONPATH="$RUNNER_TEMP/carrot-man-msgq:$PYTHONPATH"
+          export PYTHONPATH="$RUNNER_TEMP/carrot-man-msgq:$GITHUB_WORKSPACE/rust/tools:$PYTHONPATH"
+          python -P -m unittest discover -s rust/tools/tests -p test_carrot_man_fixture_ports.py
           python -P rust/tools/carrot_man_owned_compare.py --binary rust/target/debug/examples/carrot_man_owned --params-binding "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-owned"
       - uses: actions/upload-artifact@v6
         if: always()
