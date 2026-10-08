@@ -1,3 +1,5 @@
+#[cfg(all(feature = "http1", feature = "server"))]
+use std::collections::VecDeque;
 use std::fmt;
 #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
 use std::future::Future;
@@ -51,6 +53,8 @@ type TrailersSender = oneshot::Sender<HeaderMap>;
 #[must_use = "streams do nothing unless polled"]
 pub struct Incoming {
     kind: Kind,
+    #[cfg(all(feature = "http1", feature = "server"))]
+    buffered_frames: VecDeque<Result<Frame<Bytes>, crate::Error>>,
 }
 
 enum Kind {
@@ -106,6 +110,9 @@ impl Incoming {
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
     ) -> Poll<Option<Result<Frame<Bytes>, crate::Error>>> {
+        if let Some(frame) = self.take_buffered_frame() {
+            return Poll::Ready(Some(frame));
+        }
         match &mut self.kind {
             Kind::Empty => Poll::Ready(None),
             Kind::Chan {
@@ -130,6 +137,22 @@ impl Incoming {
             #[cfg(feature = "ffi")]
             Kind::Ffi(_) => Poll::Pending,
         }
+    }
+
+    #[cfg(all(feature = "http1", feature = "server"))]
+    pub(crate) fn push_buffered_frame(&mut self, frame: Result<Frame<Bytes>, crate::Error>) {
+        self.buffered_frames.push_back(frame);
+    }
+
+    #[cfg(all(feature = "http1", feature = "server"))]
+    fn take_buffered_frame(&mut self) -> Option<Result<Frame<Bytes>, crate::Error>> {
+        let frame = self.buffered_frames.pop_front()?;
+        if let (Kind::Chan { content_length, .. }, Ok(frame)) = (&mut self.kind, &frame) {
+            if let Some(data) = frame.data_ref() {
+                content_length.sub_if(data.len() as u64);
+            }
+        }
+        Some(frame)
     }
 
     /// Create a `Body` stream with an associated sender half.
@@ -169,7 +192,11 @@ impl Incoming {
     }
 
     fn new(kind: Kind) -> Incoming {
-        Incoming { kind }
+        Incoming {
+            kind,
+            #[cfg(all(feature = "http1", feature = "server"))]
+            buffered_frames: VecDeque::new(),
+        }
     }
 
     #[allow(dead_code)]
@@ -237,6 +264,13 @@ impl Body for Incoming {
         )]
         cx: &mut Context<'_>,
     ) -> Poll<Option<Result<Frame<Self::Data>, Self::Error>>> {
+        #[cfg(all(feature = "http1", feature = "server"))]
+        if !self.buffered_frames.is_empty() {
+            if let Kind::Chan { want_tx, .. } = &mut self.kind {
+                want_tx.send(WANT_READY);
+            }
+            return Poll::Ready(self.take_buffered_frame());
+        }
         match &mut self.kind {
             Kind::Empty => Poll::Ready(None),
             #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
@@ -318,6 +352,10 @@ impl Body for Incoming {
     }
 
     fn is_end_stream(&self) -> bool {
+        #[cfg(all(feature = "http1", feature = "server"))]
+        if !self.buffered_frames.is_empty() {
+            return false;
+        }
         match &self.kind {
             Kind::Empty => true,
             #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]

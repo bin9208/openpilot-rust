@@ -73,6 +73,10 @@ where
                 preserve_raw_conditional_headers: false,
                 #[cfg(feature = "server")]
                 close_after_response: false,
+                #[cfg(feature = "server")]
+                prefetch_buffered_body: false,
+                #[cfg(feature = "server")]
+                application_continue: false,
                 #[cfg(feature = "ffi")]
                 preserve_header_order: false,
                 title_case_headers: false,
@@ -139,6 +143,41 @@ where
     #[cfg(feature = "server")]
     pub(crate) fn set_close_after_response(&mut self) {
         self.state.close_after_response = true;
+    }
+
+    #[cfg(feature = "server")]
+    pub(crate) fn set_prefetch_buffered_body(&mut self) {
+        self.state.prefetch_buffered_body = true;
+    }
+
+    #[cfg(feature = "server")]
+    pub(crate) fn prefetch_buffered_body(&self) -> bool {
+        T::is_server() && self.state.prefetch_buffered_body
+    }
+
+    #[cfg(feature = "server")]
+    pub(crate) fn set_application_continue(&mut self) {
+        self.state.application_continue = true;
+    }
+
+    #[cfg(feature = "server")]
+    pub(crate) fn application_continue(&self) -> bool {
+        T::is_server() && self.state.application_continue
+    }
+
+    #[cfg(feature = "server")]
+    pub(crate) fn send_application_continue(&mut self) {
+        if self.application_continue()
+            && self.state.version == Version::HTTP_11
+            && matches!(self.state.writing, Writing::Init)
+        {
+            self.io
+                .headers_buf()
+                .extend_from_slice(b"HTTP/1.1 100 Continue\r\n\r\n");
+            if let Reading::Continue(decoder) = &self.state.reading {
+                self.state.reading = Reading::Body(decoder.clone());
+            }
+        }
     }
 
     #[cfg(feature = "ffi")]
@@ -376,11 +415,55 @@ where
         &mut self,
         cx: &mut Context<'_>,
     ) -> Poll<Option<io::Result<Frame<Bytes>>>> {
+        self.poll_read_body_mode(cx, false)
+    }
+
+    #[cfg(feature = "server")]
+    pub(crate) fn poll_read_buffered_body(
+        &mut self,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<io::Result<Frame<Bytes>>>> {
+        self.poll_read_body_mode(cx, true)
+    }
+
+    fn poll_read_body_mode(
+        &mut self,
+        cx: &mut Context<'_>,
+        buffered_only: bool,
+    ) -> Poll<Option<io::Result<Frame<Bytes>>>> {
         debug_assert!(self.can_read_body());
 
+        let read_body = buffered_only || matches!(self.state.reading, Reading::Body(_));
         let (reading, ret) = match &mut self.state.reading {
-            Reading::Body(decoder) => {
-                match ready!(decoder.decode(cx, &mut self.io)) {
+            Reading::Body(decoder) | Reading::Continue(decoder) if read_body => {
+                #[cfg(feature = "server")]
+                let decoded = if buffered_only {
+                    let mut memory = self.io.buffered_mem();
+                    match decoder.decode(cx, &mut memory) {
+                        Poll::Ready(Err(error))
+                            if decoder.is_chunk_start()
+                                && error.kind() == io::ErrorKind::InvalidInput
+                                && error.to_string()
+                                    == "Invalid chunk size line: missing size digit" =>
+                        {
+                            let error = if let Some(line) = memory.failed_chunk_line() {
+                                io::Error::new(
+                                    error.kind(),
+                                    crate::ext::BufferedChunkStartError::new(line, error),
+                                )
+                            } else {
+                                error
+                            };
+                            Poll::Ready(Err(error))
+                        }
+                        decoded => decoded,
+                    }
+                } else {
+                    decoder.decode(cx, &mut self.io)
+                };
+                #[cfg(not(feature = "server"))]
+                let decoded = decoder.decode(cx, &mut self.io);
+                match ready!(decoded) {
                     Ok(frame) => {
                         if frame.is_data() {
                             let slice = frame.data_ref().unwrap_or_else(|| unreachable!());
@@ -420,7 +503,11 @@ where
             }
             Reading::Continue(decoder) => {
                 // Write the 100 Continue if not already responded...
-                if let Writing::Init = self.state.writing {
+                #[cfg(feature = "server")]
+                let automatic_continue = !(T::is_server() && self.state.application_continue);
+                #[cfg(not(feature = "server"))]
+                let automatic_continue = true;
+                if automatic_continue && matches!(self.state.writing, Writing::Init) {
                     trace!("automatically sending 100 Continue");
                     let cont = b"HTTP/1.1 100 Continue\r\n\r\n";
                     self.io.headers_buf().extend_from_slice(cont);
@@ -428,7 +515,7 @@ where
 
                 // And now recurse once in the Reading::Body state...
                 self.state.reading = Reading::Body(decoder.clone());
-                return self.poll_read_body(cx);
+                return self.poll_read_body_mode(cx, buffered_only);
             }
             _ => unreachable!("poll_read_body invalid state: {:?}", self.state.reading),
         };
@@ -985,6 +1072,10 @@ struct State {
     preserve_raw_conditional_headers: bool,
     #[cfg(feature = "server")]
     close_after_response: bool,
+    #[cfg(feature = "server")]
+    prefetch_buffered_body: bool,
+    #[cfg(feature = "server")]
+    application_continue: bool,
     #[cfg(feature = "ffi")]
     preserve_header_order: bool,
     title_case_headers: bool,

@@ -114,7 +114,38 @@ pub(crate) async fn route(
     let prefetched =
         std::future::poll_fn(|cx| std::task::Poll::Ready(request.body_mut().prefetch(cx))).await;
     let mut response = match prefetched {
-        Ok(()) => dispatch(request, app, sound).await?,
+        Ok(()) => {
+            if let Some(expectation) = request
+                .extensions()
+                .get::<hyper::ext::RawConditionalHeaders>()
+                .and_then(|headers| headers.get(&header::EXPECT))
+                .or_else(|| request.headers().get(header::EXPECT))
+                .filter(|value| {
+                    request.version() == hyper::Version::HTTP_11 && !value.as_bytes().is_empty()
+                })
+            {
+                if expectation.as_bytes().eq_ignore_ascii_case(b"100-continue") {
+                    match request
+                        .extensions()
+                        .get::<hyper::ext::ContinueSignal>()
+                        .map(hyper::ext::ContinueSignal::send)
+                        .transpose()
+                    {
+                        Ok(_) => dispatch(request, app, sound).await?,
+                        Err(error) => error_response(error.to_string(), head),
+                    }
+                } else {
+                    let expectation = String::from_utf8_lossy(expectation.as_bytes());
+                    text(
+                        StatusCode::EXPECTATION_FAILED,
+                        &format!("Unknown Expect: {expectation}"),
+                        head,
+                    )
+                }
+            } else {
+                dispatch(request, app, sound).await?
+            }
+        }
         Err(failure) => {
             let error = Error::Request(failure);
             crate::http_response::parser_response(&error, head)

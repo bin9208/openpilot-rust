@@ -36,6 +36,8 @@ pub(crate) mod state_json;
 mod state_preferences;
 pub mod static_assets;
 pub mod static_web;
+#[cfg(test)]
+mod transport_test;
 pub mod web_settings;
 mod web_settings_http;
 pub mod web_sound;

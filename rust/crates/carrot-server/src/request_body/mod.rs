@@ -141,6 +141,35 @@ impl DecodedBody {
                     Err(failure) => return self.fail(failure),
                 },
                 Poll::Ready(Some(Err(failure))) => {
+                    let mut cause: Option<&(dyn std::error::Error + 'static)> = Some(&failure);
+                    while let Some(error) = cause {
+                        let chunk_error = error
+                            .downcast_ref::<hyper::ext::BufferedChunkStartError>()
+                            .or_else(|| {
+                                error
+                                    .downcast_ref::<std::io::Error>()
+                                    .and_then(std::io::Error::get_ref)
+                                    .and_then(|error| {
+                                        error.downcast_ref::<hyper::ext::BufferedChunkStartError>()
+                                    })
+                            });
+                        if let Some(error) = chunk_error {
+                            let line = match crate::params_multipart::bytes_repr(error.line()) {
+                                Ok(line) => line,
+                                Err(error) => {
+                                    return self.fail(DecodeFailure::Parser {
+                                        message: error.to_string(),
+                                    })
+                                }
+                            };
+                            return self.fail(DecodeFailure::Parser {
+                                message: format!(
+                                    "Invalid character in chunk size:\n\n  {line}\n    ^"
+                                ),
+                            });
+                        }
+                        cause = error.source();
+                    }
                     return self.fail(DecodeFailure::Payload {
                         message: failure.to_string(),
                     });

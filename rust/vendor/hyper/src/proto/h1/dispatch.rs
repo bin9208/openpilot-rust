@@ -25,6 +25,8 @@ pub(crate) struct Dispatcher<D, Bs: Body, I, T> {
     body_tx: SenderDropGuard,
     body_rx: Pin<Box<Option<Bs>>>,
     is_closing: bool,
+    #[cfg(feature = "server")]
+    continue_signal: Option<crate::ext::continue_signal::Receiver>,
 }
 
 pub(crate) trait Dispatch {
@@ -84,6 +86,8 @@ where
             body_tx: SenderDropGuard::none(),
             body_rx: Box::pin(None),
             is_closing: false,
+            #[cfg(feature = "server")]
+            continue_signal: None,
         }
     }
 
@@ -319,6 +323,22 @@ where
                         rx
                     }
                 };
+                #[cfg(feature = "server")]
+                let mut body = body;
+                #[cfg(feature = "server")]
+                if self.conn.prefetch_buffered_body() {
+                    while self.conn.can_read_body() {
+                        match self.conn.poll_read_buffered_body(cx) {
+                            Poll::Ready(Some(frame)) => {
+                                body.push_buffered_frame(frame.map_err(crate::Error::new_body));
+                            }
+                            Poll::Ready(None) | Poll::Pending => break,
+                        }
+                    }
+                    if !self.conn.can_read_body() {
+                        self.body_tx.take();
+                    }
+                }
                 if wants.contains(Wants::UPGRADE) {
                     let upgrade = self.conn.on_upgrade();
                     debug_assert!(!upgrade.is_none(), "empty upgrade");
@@ -327,6 +347,12 @@ where
                         "OnUpgrade already set"
                     );
                     head.extensions.insert(upgrade);
+                }
+                #[cfg(feature = "server")]
+                if self.conn.application_continue() {
+                    let (signal, receiver) = crate::ext::ContinueSignal::channel();
+                    head.extensions.insert(signal);
+                    self.continue_signal = Some(receiver);
                 }
                 self.dispatch.recv_msg(Ok((head, body)))?;
                 Poll::Ready(Ok(()))
@@ -355,13 +381,18 @@ where
 
     fn poll_write(&mut self, cx: &mut Context<'_>) -> Poll<crate::Result<()>> {
         loop {
+            #[cfg(feature = "server")]
+            self.poll_continue_signal(cx);
             if self.is_closing {
                 return Poll::Ready(Ok(()));
             } else if self.body_rx.is_none()
                 && self.conn.can_write_head()
                 && self.dispatch.should_poll()
             {
-                if let Some(msg) = ready!(Pin::new(&mut self.dispatch).poll_msg(cx)) {
+                let message = Pin::new(&mut self.dispatch).poll_msg(cx);
+                #[cfg(feature = "server")]
+                self.poll_continue_signal(cx);
+                if let Some(msg) = ready!(message) {
                     let (head, body) = msg.map_err(crate::Error::new_user_service)?;
 
                     let body_type = if body.is_end_stream() {
@@ -444,6 +475,18 @@ where
                     }
                 }
             }
+        }
+    }
+
+    #[cfg(feature = "server")]
+    fn poll_continue_signal(&mut self, cx: &mut Context<'_>) {
+        if self
+            .continue_signal
+            .as_mut()
+            .is_some_and(|signal| signal.requested(cx))
+        {
+            self.continue_signal.take();
+            self.conn.send_application_continue();
         }
     }
 

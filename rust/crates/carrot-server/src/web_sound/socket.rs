@@ -1,10 +1,10 @@
 use super::clock::{self, Heartbeat};
+use super::{transport::Transport, Shutdown};
 use crate::Error;
 use futures_util::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
 };
-use hyper_util::rt::TokioIo;
 use std::{sync::Arc, time::Duration};
 use tokio::{
     sync::{watch, Mutex},
@@ -18,7 +18,7 @@ use tokio_tungstenite::{
     WebSocketStream,
 };
 
-type Socket = WebSocketStream<TokioIo<hyper::upgrade::Upgraded>>;
+type Socket = WebSocketStream<Transport>;
 pub(super) type Sink = Arc<Mutex<SplitSink<Socket, Message>>>;
 
 pub(super) enum Exit {
@@ -30,7 +30,7 @@ pub(super) enum Exit {
 pub(super) async fn receive(
     sink: Sink,
     mut stream: SplitStream<Socket>,
-    mut shutdown: watch::Receiver<bool>,
+    mut shutdown: watch::Receiver<Shutdown>,
 ) -> Exit {
     let Ok(started) = clock::now() else {
         return Exit::Drop;
@@ -40,7 +40,7 @@ pub(super) async fn receive(
     let mut flush = false;
     let mut ping = false;
     let result = loop {
-        if *shutdown.borrow() {
+        if *shutdown.borrow() == Shutdown::Force {
             break Exit::Drop;
         }
         if controls.is_empty() && (flush || ping) {
@@ -62,7 +62,11 @@ pub(super) async fn receive(
         };
         let delay = Duration::from_secs_f64((heartbeat.deadline() - now).max(0.));
         tokio::select! {
-            _ = shutdown.changed() => break Exit::Drop,
+            changed = shutdown.changed() => {
+                if changed.is_err() || *shutdown.borrow() == Shutdown::Force {
+                    break Exit::Drop;
+                }
+            }
             joined = controls.join_next(), if !controls.is_empty() => {
                 match joined {
                     Some(Ok(Ok(()))) => {}
@@ -100,19 +104,39 @@ pub(super) async fn receive(
     result
 }
 
-pub(super) async fn finish(sink: Sink, result: Exit) -> Result<(), Error> {
-    let result = match result {
-        Exit::PeerClosed => sink.lock().await.flush().await,
-        Exit::Protocol(code) => {
-            sink.lock()
-                .await
-                .send(Message::Close(Some(CloseFrame {
-                    code,
-                    reason: "".into(),
-                })))
-                .await
+pub(super) async fn finish(
+    sink: Sink,
+    result: Exit,
+    mut shutdown: watch::Receiver<Shutdown>,
+) -> Result<(), Error> {
+    if *shutdown.borrow() == Shutdown::Force {
+        return Ok(());
+    }
+    let operation = async {
+        match result {
+            Exit::PeerClosed => sink.lock().await.flush().await,
+            Exit::Protocol(code) => {
+                sink.lock()
+                    .await
+                    .send(Message::Close(Some(CloseFrame {
+                        code,
+                        reason: "".into(),
+                    })))
+                    .await
+            }
+            Exit::Drop => Ok(()),
         }
-        Exit::Drop => return Ok(()),
+    };
+    tokio::pin!(operation);
+    let result = loop {
+        tokio::select! {
+            result = &mut operation => break result,
+            changed = shutdown.changed() => {
+                if changed.is_err() || *shutdown.borrow() == Shutdown::Force {
+                    return Ok(());
+                }
+            }
+        }
     };
     match result {
         Ok(()) | Err(WsError::ConnectionClosed | WsError::AlreadyClosed) => Ok(()),

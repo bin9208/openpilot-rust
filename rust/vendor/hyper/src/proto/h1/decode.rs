@@ -141,6 +141,17 @@ impl Decoder {
         )
     }
 
+    #[cfg(feature = "server")]
+    pub(crate) fn is_chunk_start(&self) -> bool {
+        matches!(
+            self.kind,
+            Chunked {
+                state: ChunkedState::Start,
+                ..
+            }
+        )
+    }
+
     pub(crate) fn decode<R: MemRead>(
         &mut self,
         cx: &mut Context<'_>,

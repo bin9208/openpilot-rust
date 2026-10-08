@@ -1,7 +1,7 @@
 use crate::{
     http::{Application, Body},
     http_response::text,
-    web_sound::Context,
+    web_sound::{Context, Shutdown},
     Error, Value,
 };
 use bytes::Bytes;
@@ -22,12 +22,12 @@ pub(crate) struct Launch {
 #[derive(Clone)]
 pub(crate) struct Sessions {
     sender: mpsc::UnboundedSender<Launch>,
-    shutdown: watch::Receiver<bool>,
+    shutdown: watch::Receiver<Shutdown>,
 }
 
 impl Sessions {
     pub(crate) fn channel(
-        shutdown: watch::Receiver<bool>,
+        shutdown: watch::Receiver<Shutdown>,
     ) -> (Self, mpsc::UnboundedReceiver<Launch>) {
         let (sender, receiver) = mpsc::unbounded_channel();
         (Self { sender, shutdown }, receiver)
@@ -35,7 +35,7 @@ impl Sessions {
 }
 
 pub(crate) async fn run(mut launch: Launch) -> Result<(), Error> {
-    if *launch.context.shutdown.borrow() {
+    if *launch.context.shutdown.borrow() != Shutdown::Running {
         return Ok(());
     }
     let upgraded = tokio::select! {

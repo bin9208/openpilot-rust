@@ -178,7 +178,7 @@ With an invalid actual Params root, both implementations complete the 101
 upgrade, publish no state, answer Ping and exit cleanly after peer teardown.
 These comparisons are in `.omo/evidence/225-web-sound/native-protocol-fixed/`
 and `native-params-init-failure-fixed/`. Stateful live IPC and full heartbeat
-comparisons remain separate pending checks.
+comparisons were separate pending checks at this checkpoint.
 
 The Hyper fork adds opt-in response-close handling, a server receive-buffer
 size option, and inspection of already-framed Incoming data without requesting
@@ -191,7 +191,7 @@ and ordering after a partially written application frame. Provenance and license
 are retained in both vendor directories. The shared Carrot Navi handshake helper
 was extracted without changing its function body; its native-feature test passes.
 
-Three observed transport gaps remain open: a fully buffered chunked deflate EOF
+Three observed transport gaps were open at this checkpoint: a fully buffered chunked deflate EOF
 can still reach an unavailable feature before its parser error; Expect handling
 omits the source's early 100 response and unknown-value 417; and active Web Sound
 sessions currently exit immediately on server shutdown. The original retains
@@ -201,6 +201,51 @@ immediate 500 response and effects but closes at about 0.5 ms instead of the
 source's 10.23 s. This cleanup timing difference is retained explicitly and does
 not authorize adding another transport timer.
 
+### Framing, Expect and active-session follow-up
+
+The subsequent retained application is
+`24f855658c266e29299d64336828fc3b295ca82a5d3bf7bbd22349eeceadcc47`.
+It passes the same 44 strict HTTP comparisons and all 11 captured Expect cases.
+Already-buffered body bytes are framed by the existing Hyper decoder before
+dispatch, without another socket read or a separate parser. Full chunked deflate
+EOF now reports the original parser error before an unavailable-feature guard;
+a terminal chunk arriving only after the guard response does not change it.
+Healthy chunk/trailer framing and a second request on the same connection pass.
+
+A typed cause retains the raw line only for the existing buffered first-digit
+chunk-size rejection. The captured `zz` case now returns the source's exact
+47-byte HTTP/1.0 400 response. An earlier payload decoder failure still takes
+precedence over this later framing error, as the original does. This narrow
+diagnostic adaptation does not establish equivalence for every provider error.
+
+Application-controlled Continue uses Hyper's existing notification and header
+buffer paths. It follows parser inspection, supports empty bodies and pending
+body reads, survives request destruction, and emits at most one 100 response.
+Unknown expectations return 417 before feature effects. Empty Expect is ignored;
+trailing whitespace is retained through the existing raw-header collector, now
+including Expect alongside the six original conditional names. Four actual TCP
+controls verify default-off behavior, unmarked keepalive, a complete marked
+1 MiB response followed by EOF, and repeated Continue requests. The focused
+six-header/default-off/static framing smoke also passes.
+
+Web Sound's unchanged production runtime is independently verified on retained
+application `a61be06b33f52de40fccfcf6d9058ab6be773b49a610f8d56d7e75868dedb316`:
+six protocol observations, 14 exact live IPC state texts, three real heartbeat
+cases, unavailable-Params and sender-failure boundaries, and two active shutdown
+comparisons pass. During graceful shutdown new inbound bytes are discarded,
+while state output and heartbeat continue until peer EOF or the existing server
+cleanup deadline. A separate real IPC/TCP test verifies explicit forced cleanup
+and sender cancellation. The current test executable repeats that assertion in
+an isolated child when no owned namespace is supplied; default and unowned
+environment invocations both pass without mutating the test process environment.
+
+Strict package Clippy, formatting, client-only Hyper compilation, four TCP
+transport tests and four Sound boundary tests pass. Commands and retained
+identities are under `framing-expect-edges/`, request-decoding `framing-final*`
+and `expect-*fully-fixed/`, and `.omo/evidence/225-web-sound/`.
+The partial unread-body EOF timing difference remains explicitly accepted as an
+external-provider cleanup limit; its raw comparison still reports that difference.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
@@ -208,9 +253,9 @@ evidence, and profile/history HTTP routes and real index bootstrap are connected
 Multipart restoration has isolated and composed HTTP evidence; QR dependency
 status/repair remains in progress.
 The request decoder has the tested expanded charset/compression coverage above;
-the listed parser-order/Expect gaps and broader original codec aliases/error
-behavior remain explicit limits. Multipart extended names use the existing
-encoding_rs provider for supported labels.
+broader original codec aliases and provider error diagnostics remain explicit
+limits. Multipart extended names use the existing encoding_rs provider for
+supported labels.
 The other feature families, startup heartbeat/git/update/upload tasks, live
 broker and camera/WebSocket transport remain outside the completed foundation.
 `/stream` also depends on the separately inventoried WebRTC conversion.

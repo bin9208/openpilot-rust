@@ -1,5 +1,6 @@
 //! Original params_restore first-part boundary; raw multipart data is never decoded here.
 mod disposition;
+pub(crate) use disposition::bytes_repr;
 
 use crate::{http::RequestBody, Error, Value};
 use http_body_util::BodyExt;

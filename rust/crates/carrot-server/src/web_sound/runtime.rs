@@ -1,8 +1,7 @@
-use super::{socket, wire, Input, Policy, Settings};
+use super::{socket, transport::Transport, wire, Input, Policy, Settings};
 use crate::{Error, Value};
 use futures_util::{SinkExt, StreamExt};
 use hyper::upgrade::Upgraded;
-use hyper_util::rt::TokioIo;
 use openpilot_messaging::{runtime::SubMaster, state::Options};
 use openpilot_params::Params;
 use std::{sync::Arc, time::Duration};
@@ -15,7 +14,14 @@ use tokio_tungstenite::{
 pub struct Context {
     pub params: Option<Params>,
     pub tizi: bool,
-    pub shutdown: tokio::sync::watch::Receiver<bool>,
+    pub shutdown: tokio::sync::watch::Receiver<Shutdown>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Shutdown {
+    Running,
+    Quiescing,
+    Force,
 }
 
 fn text(value: &Value) -> Result<String, Error> {
@@ -90,15 +96,15 @@ pub async fn run(upgraded: Upgraded, context: Context) -> Result<(), Error> {
         .max_message_size(Some(65535))
         .max_frame_size(None)
         .reply_with_normal_close(true);
-    let socket =
-        WebSocketStream::from_raw_socket(TokioIo::new(upgraded), Role::Server, Some(config)).await;
+    let transport = Transport::new(upgraded, context.shutdown.clone());
+    let socket = WebSocketStream::from_raw_socket(transport, Role::Server, Some(config)).await;
     let (sink, stream) = socket.split();
     let sink = Arc::new(Mutex::new(sink));
     let mut tasks = JoinSet::new();
     tasks.spawn_local(sender(Arc::clone(&sink), context.params, context.tizi));
-    let result = socket::receive(Arc::clone(&sink), stream, context.shutdown).await;
+    let result = socket::receive(Arc::clone(&sink), stream, context.shutdown.clone()).await;
     tasks.abort_all();
     // Source sender errors are observed only in finally and do not close the receiver.
     while tasks.join_next().await.is_some() {}
-    socket::finish(sink, result).await
+    socket::finish(sink, result, context.shutdown).await
 }

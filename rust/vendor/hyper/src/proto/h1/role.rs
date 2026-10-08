@@ -272,9 +272,16 @@ impl Http1Transaction for Server {
             let value = header_value!(slice.slice(header.value.0..header.value.1));
 
             if let Some(raw) = &mut raw_conditional_headers {
-                if matches!(name, header::RANGE | header::IF_RANGE | header::IF_MATCH
-                    | header::IF_NONE_MATCH | header::IF_MODIFIED_SINCE | header::IF_UNMODIFIED_SINCE)
-                {
+                if matches!(
+                    name,
+                    header::EXPECT
+                        | header::RANGE
+                        | header::IF_RANGE
+                        | header::IF_MATCH
+                        | header::IF_NONE_MATCH
+                        | header::IF_MODIFIED_SINCE
+                        | header::IF_UNMODIFIED_SINCE
+                ) {
                     let mut end = header.value.1;
                     while matches!(slice.get(end), Some(b' ' | b'\t')) {
                         end += 1;

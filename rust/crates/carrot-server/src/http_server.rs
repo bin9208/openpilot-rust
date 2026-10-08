@@ -30,7 +30,8 @@ async fn serve_local(
         let _ = warm_app.settings_payload();
     });
     let (stop, _) = watch::channel(false);
-    let (sound, mut launches) = crate::web_sound_http::Sessions::channel(stop.subscribe());
+    let (sound_stop, _) = watch::channel(crate::web_sound::Shutdown::Running);
+    let (sound, mut launches) = crate::web_sound_http::Sessions::channel(sound_stop.subscribe());
     let mut connections = JoinSet::new();
     let mut sounds = JoinSet::new();
     tokio::pin!(shutdown);
@@ -47,6 +48,8 @@ async fn serve_local(
                     let connection = hyper::server::conn::http1::Builder::new()
                         .preserve_raw_conditional_headers(true)
                         .close_after_response(true)
+                        .prefetch_buffered_body(true)
+                        .application_continue(true)
                         .read_buf_exact_size(256 * 1024)
                         .serve_connection(TokioIo::new(socket), service)
                         .with_upgrades();
@@ -70,6 +73,7 @@ async fn serve_local(
     }
     drop(listener);
     let _ = stop.send(true);
+    let _ = sound_stop.send(crate::web_sound::Shutdown::Quiescing);
     if tokio::time::timeout(Duration::from_secs(60), async {
         loop {
             while let Ok(launch) = launches.try_recv() {
@@ -90,8 +94,8 @@ async fn serve_local(
     .await
     .is_err()
     {
+        let _ = sound_stop.send(crate::web_sound::Shutdown::Force);
         connections.abort_all();
-        sounds.abort_all();
         while connections.join_next().await.is_some() {}
         while sounds.join_next().await.is_some() {}
     }

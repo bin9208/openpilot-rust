@@ -115,6 +115,14 @@ where
         self.read_buf.as_ref()
     }
 
+    #[cfg(feature = "server")]
+    pub(super) fn buffered_mem(&mut self) -> BufferedMem<'_> {
+        BufferedMem {
+            buffer: &mut self.read_buf,
+            last_byte: None,
+        }
+    }
+
     #[cfg(test)]
     #[cfg(feature = "nightly")]
     pub(super) fn read_buf_mut(&mut self) -> &mut BytesMut {
@@ -346,6 +354,42 @@ impl<T: Unpin, B> Unpin for Buffered<T, B> {}
 // TODO: This trait is old... at least rename to PollBytes or something...
 pub(crate) trait MemRead {
     fn read_mem(&mut self, cx: &mut Context<'_>, len: usize) -> Poll<io::Result<Bytes>>;
+}
+
+#[cfg(feature = "server")]
+pub(super) struct BufferedMem<'a> {
+    buffer: &'a mut BytesMut,
+    last_byte: Option<u8>,
+}
+
+#[cfg(feature = "server")]
+impl BufferedMem<'_> {
+    pub(super) fn failed_chunk_line(&self) -> Option<Bytes> {
+        let byte = self.last_byte?;
+        let mut line = BytesMut::with_capacity(self.buffer.len() + 1);
+        line.extend_from_slice(&[byte]);
+        line.extend_from_slice(self.buffer);
+        if let Some(end) = line.windows(2).position(|pair| pair == b"\r\n") {
+            line.truncate(end);
+        }
+        Some(line.freeze())
+    }
+}
+
+#[cfg(feature = "server")]
+impl MemRead for BufferedMem<'_> {
+    fn read_mem(&mut self, _: &mut Context<'_>, len: usize) -> Poll<io::Result<Bytes>> {
+        if self.buffer.is_empty() {
+            Poll::Pending
+        } else {
+            let bytes = self
+                .buffer
+                .split_to(cmp::min(len, self.buffer.len()))
+                .freeze();
+            self.last_byte = bytes.last().copied();
+            Poll::Ready(Ok(bytes))
+        }
+    }
 }
 
 impl<T, B> MemRead for Buffered<T, B>

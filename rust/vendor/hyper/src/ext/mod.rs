@@ -35,6 +35,15 @@
 //!
 //! See the documentation on each item for details about its usage and requirements.
 
+#[cfg(all(feature = "server", feature = "http1"))]
+pub(crate) mod continue_signal;
+#[cfg(all(feature = "server", feature = "http1"))]
+pub use continue_signal::ContinueSignal;
+#[cfg(all(feature = "server", feature = "http1"))]
+mod buffered_chunk_error;
+#[cfg(all(feature = "server", feature = "http1"))]
+pub use buffered_chunk_error::BufferedChunkStartError;
+
 #[cfg(all(any(feature = "client", feature = "server"), feature = "http1"))]
 use bytes::Bytes;
 #[cfg(any(
@@ -60,7 +69,7 @@ mod informational;
 pub use informational::on_informational;
 
 #[cfg(all(feature = "http1", feature = "server"))]
-/// Original Range and conditional header values captured by the HTTP/1 server
+/// Original Range, If-* and Expect header values captured by the HTTP/1 server
 /// when `preserve_raw_conditional_headers` is enabled. Leading optional
 /// whitespace is removed; trailing spaces and tabs are retained.
 #[derive(Clone, Debug, Default)]

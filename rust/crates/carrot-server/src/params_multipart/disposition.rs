@@ -159,7 +159,7 @@ pub(super) fn name(header: Option<&[u8]>) -> Result<Option<String>, Error> {
     }
 }
 
-pub(super) fn bytes_repr(bytes: &[u8]) -> Result<String, Error> {
+pub(crate) fn bytes_repr(bytes: &[u8]) -> Result<String, Error> {
     let quote = if bytes.contains(&b'\'') && !bytes.contains(&b'"') {
         b'"'
     } else {
