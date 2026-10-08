@@ -351,9 +351,10 @@ fixture with an incorrect Python bound-default path was rejected; metadata
 confirmed the original host configuration path was absent. Ledger, raw
 responses, provider calls, rejected candidates and source identities are under
 `.omo/evidence/carrot-server-225-resume/bluetooth/`.
-The pre-existing immediate-unpolled scan cancellation difference remains
-explicitly unresolved in [#235](https://github.com/bin9208/openpilot-rust/issues/235)
-and [the Bluetooth record](rust-bluetooth-155.md).
+The pre-existing immediate-unpolled scan cancellation difference is tracked in
+[#235](https://github.com/bin9208/openpilot-rust/issues/235); its bounded
+first-poll fix and actual immediate/yielded comparisons are recorded in
+[the Bluetooth record](rust-bluetooth-155.md).
 
 Screenrecord ports the original catalog, three-second cache, pagination,
 thumbnail, video and download routes. It reuses FileResponse for conditional

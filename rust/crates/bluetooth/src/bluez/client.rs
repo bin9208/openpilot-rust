@@ -167,6 +167,9 @@ impl Bluez {
         let (stop, mut stopping) = watch::channel(false);
         self.scan_stop = Some(stop);
         self.scan.spawn(async move {
+            if *stopping.borrow() {
+                return Ok(());
+            }
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_secs(30)) => {},
                 _ = stopping.wait_for(|stop| *stop) => {},
