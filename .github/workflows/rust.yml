@@ -1112,7 +1112,7 @@ jobs:
           done
       - name: Run discovery and retry in an owned network namespace
         run: |
-          sudo -E unshare --net bash -euc '
+          sudo -E env PYTHONPATH="$PYTHONPATH" unshare --net bash -euc '
             ip link set lo up
             ip address add 10.206.0.1/24 broadcast 10.206.0.255 dev lo
             runuser -u "$CARROT_NAVI_USER" --preserve-environment -- "$CARROT_NAVI_PYTHON" -P -m carrot_navi_qa.startup --source-python "$CARROT_NAVI_PYTHON" --binding "$CARROT_NAVI_PARAMS_BINDING" --output "$RUNNER_TEMP/carrot-navi/startup-source"

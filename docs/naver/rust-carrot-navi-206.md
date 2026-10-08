@@ -78,3 +78,19 @@ collector fixture hazard tracked in issue 184. Its preserved correction is
 included without changing runtime behavior or comparison timeouts; see
 `rust-managed-entry-readiness-184.md`. Required checks will run on the updated
 composition before any merge.
+
+At `799c5f6c`, the complete source import passed and both source/native socket
+and lifecycle lanes executed. Discovery then failed to locate the QA module
+inside `sudo -E unshare` (`37733656182`, job `113168772867`). The namespace
+command now passes `PYTHONPATH` explicitly through `env` after sudo. Artifact
+`11531032135` retains the raw captures and native binary.
+
+The unchanged CI comparisons applied to those retained captures pass all policy
+outputs, 56 socket observations and 21 lifecycle observations. A single focused
+source/native discovery pair with that exact hosted binary also passes locally
+inside an owned user/network namespace: occupied-port recovery, three identical
+beacons and clean SIGTERM/port release. Evidence is under
+`.analysis/scratch/2026-10-08-runtime-resume/230-navi-namespace-local/`.
+Local sudo requires a password, so this user-namespace run does not verify the
+hosted sudo/runuser environment chain; its corrected Actions execution remains
+required. Neither runtime code nor comparison assertions changed.
