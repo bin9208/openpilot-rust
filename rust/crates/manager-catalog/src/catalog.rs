@@ -125,6 +125,7 @@ fn availability(name: &str) -> RustAvailability {
         "qcomgpsd" => ("openpilot-qcomgpsd", "openpilot-qcomgpsd"),
         "radarcan" => ("openpilot-radarcan", "openpilot-radarcan"),
         "radard" => ("openpilot-radard", "openpilot-radard"),
+        "selfdrived" => ("openpilot-selfdrived", "openpilot-selfdrived"),
         "sensord" => ("openpilot-sensord", "openpilot-sensord"),
         "soundd" => ("openpilot-soundd", "openpilot-soundd"),
         "statsd" => ("openpilot-statsd", "statsd-rs"),

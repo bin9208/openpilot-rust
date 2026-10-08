@@ -450,7 +450,11 @@
       "name": "selfdrived",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.selfdrived.selfdrived",
-      "status": "not_ported",
+      "status": "native_continuous_runtime_host_and_arm_simulated",
+      "implementation": "rust/crates/selfdrived; original carState owner, engagement/events/alerts, car-specific policies, calibrated pose/actuation checks, Params and cereal publications",
+      "native_dependencies": ["native Rust msgq", "libzmq diagnostics", "Linux clocks/signals/scheduling/filesystem", "Git executable for source metadata"],
+      "runtime_scope": "Independent source policy/controller checks and ARM QEMU IPC/restart/failure evidence retained. Current integration build/Actions, physical scheduling and complete startup/upload remain pending. Production selection unchanged.",
+      "evidence": "docs/naver/rust-selfdrived-168.md",
       "production_replaced": false
     },
     {

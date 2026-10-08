@@ -1,0 +1,32 @@
+[package]
+name = "openpilot-selfdrived"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[dependencies]
+capnp = "=0.27.2"
+openpilot-messaging = { path = "../messaging" }
+openpilot-msgq = { path = "../msgq" }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-runtime-version = { path = "../runtime-version" }
+openpilot-hardware-info = { path = "../hardware-info" }
+rustix = { version = "1", features = ["thread", "time"] }
+signal-hook = "0.3"
+libc = "0.2"
+openpilot-beepd = { path = "../beepd" }
+openpilot-calibrationd = { path = "../calibrationd", default-features = false }
+openpilot-cereal = { path = "../cereal" }
+openpilot-logging = { path = "../logging" }
+openpilot-locationd = { path = "../locationd", default-features = false }
+openpilot-params = { path = "../params" }
+openpilot-params-typed = { path = "../params-typed" }
+openpilot-ui-framework = { path = "../ui-framework", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
