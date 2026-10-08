@@ -1,4 +1,4 @@
-use openpilot_carrot_server::{Error, git_status::Repository, repo_update};
+use openpilot_carrot_server::{git_status::Repository, repo_update, Error};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{

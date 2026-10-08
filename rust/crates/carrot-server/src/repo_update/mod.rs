@@ -2,7 +2,7 @@
 mod lookup;
 mod processes;
 
-use crate::{Error, git_status::Repository};
+use crate::{git_status::Repository, Error};
 use num_traits::ToPrimitive;
 use std::{
     fs::{self, File, Metadata},

@@ -1,5 +1,5 @@
 use super::Failure;
-use crate::{Error, git_status::Repository};
+use crate::{git_status::Repository, Error};
 use openpilot_process_supervision::{CaptureError, CapturedCommand};
 use std::{fs::File, os::fd::AsFd, path::PathBuf, time::Duration};
 
