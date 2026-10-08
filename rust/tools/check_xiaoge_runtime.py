@@ -20,6 +20,7 @@ import uuid
 import httpx2
 
 from xiaoge_qa.http_cases import cases
+from xiaoge_qa.settings_phase import observed_settings, requested_settings, wait_settings_reload
 from xiaoge_qa.sockets import available_port, client, raw_http, telemetry, wait_ready
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -53,6 +54,11 @@ def run_peer(kind: str, arguments: argparse.Namespace):
         wait_ready(connection, process)
         result["tcp"] = telemetry(tcp_port)
         for case in cases():
+          if case.name == "settings-valid":
+            prime = connection.request(case.method, case.path, content=case.body)
+            (output / "settings-prime.json").write_text(json.dumps({"status": prime.status_code, "body": prime.text}, indent=2) + "\n")
+            prime.raise_for_status()
+            wait_settings_reload(connection, case.body, output / "settings-prime-reload.json")
           start = time.monotonic()
           try:
             response = (raw_http(http_port, case.raw) if case.raw is not None else
@@ -75,6 +81,9 @@ def run_peer(kind: str, arguments: argparse.Namespace):
           with (output / "timings.jsonl").open("a") as timings:
             timings.write(json.dumps({"name": case.name, "seconds": elapsed}) + "\n")
           print(kind, case.name, record.get("status", "closed"), flush=True)
+          if case.name == "settings-valid":
+            assert observed_settings(body) == requested_settings(case.body), (kind, case.name, record)
+            wait_settings_reload(connection, case.body, output / "settings-compared-reload.json")
       assert process.poll() is None, process.returncode
       process.send_signal(signal.SIGINT)
       result["exit"] = process.wait(timeout=5)
