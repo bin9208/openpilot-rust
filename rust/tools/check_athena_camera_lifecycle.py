@@ -13,6 +13,18 @@ def children(pid):
   return [int(value) for value in Path(f'/proc/{pid}/task/{pid}/children').read_text().split()]
 
 
+def camera_children(pid: int, vision: Path) -> list[int]:
+  matches = []
+  for child in children(pid):
+    try:
+      executable = Path(f'/proc/{child}/exe').resolve()
+    except FileNotFoundError:
+      continue
+    if executable == vision.resolve():
+      matches.append(child)
+  return matches
+
+
 def main():
   parser = argparse.ArgumentParser()
   for name in ['snapshot', 'launcher', 'ipc', 'vision', 'output']:
@@ -31,7 +43,7 @@ def main():
       with (args.output / 'owned.log').open('w') as output:
         process = subprocess.Popen([args.snapshot, args.launcher], env=dict(env.env, ATHENA_VISION_FIXTURE_AUTO='1'), stdout=output, stderr=subprocess.STDOUT)
         try:
-          child = wait_for(lambda: [pid for pid in children(process.pid) if Path(f'/proc/{pid}/exe').resolve() == args.vision.resolve()], 6)[0]
+          child = wait_for(lambda: camera_children(process.pid, args.vision), 6)[0]
           assert (env.params / 'IsTakingSnapshot').read_text() == '1'
           packets[0] = camera(80)
           assert process.wait(timeout=7) == 0
