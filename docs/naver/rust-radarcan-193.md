@@ -175,3 +175,13 @@ current source Ford catalog uses MRR or no radar; any ESR metadata-seeded proof
 must be labeled separately from catalog runtime support. Hyundai corner430 remains disabled by
 the source's hard-coded policy. No missing assets or source algorithms are repaired
 as part of this conversion.
+
+## Integration resume, 2026-10-08
+
+The preserved RadarCAN candidate is rebased by merge onto dev
+`8482172a3b4e44d36de2bcdcb9508733d90be88e`, which contains native IPC and
+CarrotMan. Both modules' workspace members and required CI dependencies remain
+enabled. The connection-only checks pass: 16 isolation tests, 10 Card/RadarCAN
+CI-policy tests, locked offline Cargo metadata and diff checks. Existing
+independent process/numerical evidence above is reused; fresh hosted host/ARM
+and required integration gates must pass before this candidate is merged.
