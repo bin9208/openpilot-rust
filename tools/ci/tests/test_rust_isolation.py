@@ -284,7 +284,7 @@ class RustIsolationTests(unittest.TestCase):
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'joystickd-runtime',
             'planner-runtime', 'planner-memory',
-            'card-runtime', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime', 'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'carrot-man-runtime',
+            'card-runtime', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime', 'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'carrot-man-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -315,6 +315,7 @@ class RustIsolationTests(unittest.TestCase):
                                             'CARROT_NAVI': '${{ needs.carrot-navi-runtime.result }}',
                                             'CARROT_NAVI_ARM': '${{ needs.carrot-navi-arm.result }}',
                                             'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}',
+                                            'PANDA': '${{ needs.panda-runtime.result }}',
                                             'CARROT_MAN': '${{ needs.carrot-man-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
@@ -328,6 +329,21 @@ class RustIsolationTests(unittest.TestCase):
                                                   capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
+
+    def test_panda_requires_native_transports_and_source_composition(self):
+        data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = data['jobs']['panda-runtime']
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('check_pandad_ci.py', 'build_msgq_python.py', 'libusb1==3.4.0',
+                         '-p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux',
+                         '--message-format=json', '--build-messages'):
+            self.assertIn(required, commands)
+        step = next(step for step in job['steps'] if 'check_pandad_ci.py' in step.get('run', ''))
+        self.assertNotIn('if', step)
+        self.assertNotIn('continue-on-error', step)
+        self.assertTrue(any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+                            for step in job['steps']))
 
 if __name__ == '__main__':
     unittest.main()
