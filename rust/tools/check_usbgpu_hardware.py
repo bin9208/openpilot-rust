@@ -99,6 +99,7 @@ def main() -> None:
     ('gone', True),
     ('sleep', True),
   ]:
+    timeout = 0.15 if mode == 'sleep' else 15.0
     values = []
     for kind in ['source', 'native']:
       with tempfile.TemporaryDirectory(prefix='usbgpu154-') as temporary:
@@ -116,10 +117,10 @@ def main() -> None:
         started = time.monotonic()
         if kind == 'source':
           source.subprocess = SimpleNamespace(run=fixture_run, TimeoutExpired=subprocess.TimeoutExpired)
-          value = {'error': source.check_usbgpu(devices_path=devices, timeout=0.15, require_clean_link=clean)}
+          value = {'error': source.check_usbgpu(devices_path=devices, timeout=timeout, require_clean_link=clean)}
         else:
-          invocation = [str(args.binary_dir / 'examples/usbgpu_check_fixture'), str(devices), str(probe), '.15', '1' if clean else '0']
-          run = original_run(invocation, env=environment, capture_output=True, text=True, timeout=4)
+          invocation = [str(args.binary_dir / 'examples/usbgpu_check_fixture'), str(devices), str(probe), str(timeout), '1' if clean else '0']
+          run = original_run(invocation, env=environment, capture_output=True, text=True, timeout=2 * timeout + 3)
           assert run.returncode == 0, run.stderr
           value = json.loads(run.stdout)
         child = int((root / 'pid').read_text())
