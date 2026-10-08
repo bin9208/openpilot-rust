@@ -61,9 +61,19 @@ The focused wire tests can be run after the original msgq binding is staged:
 ```sh
 PYTHONPATH="$CARROT_MSGQ_BINDING:$PWD/rust/tools:$PWD:$PYTHONPATH" \
   python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider \
-  rust/tools/tests/test_carrot_man_fixture_inputs.py -q \
+  rust/tools/test_carrot_man_fixture_inputs.py -q \
   --basetemp "$RUNNER_TEMP/carrot-man-input-tests"
 ```
+
+PR #245 head `53fbb4df` passed both actual CarrotMan jobs, but its
+[workspace job](https://github.com/bin9208/openpilot-rust/actions/runs/37812693529/job/113433537528)
+also collected this native-only test from the generic `tools/tests` directory
+and failed because `msgq.ipc_pyx` is unavailable there. The unchanged test now
+lives beside the other native runtime checks in `rust/tools`; both CarrotMan
+jobs still invoke it explicitly. Generic collection without the native binding
+collects 99 tests successfully; the relocated two actual-msgq tests and 22
+CI-policy checks pass. No dependency, runtime behavior or assertion was removed.
+The corrected candidate requires fresh exact-head CI.
 
 The existing `carrot-man-runtime` Actions job runs these tests before the owned
 comparison and preserves their JSON artifacts. Exact-head branch and post-merge

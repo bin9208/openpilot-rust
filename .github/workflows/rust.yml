@@ -322,7 +322,7 @@ jobs:
         run: |
           export PYTHONPATH="$RUNNER_TEMP/carrot-man-msgq:$GITHUB_WORKSPACE/rust/tools:$PYTHONPATH"
           python -P -m unittest discover -s rust/tools/tests -p test_carrot_man_fixture_ports.py
-          python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider rust/tools/tests/test_carrot_man_fixture_inputs.py -q --basetemp "$RUNNER_TEMP/carrot-man-input-tests"
+          python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider rust/tools/test_carrot_man_fixture_inputs.py -q --basetemp "$RUNNER_TEMP/carrot-man-input-tests"
           python -P rust/tools/carrot_man_owned_compare.py --binary rust/target/debug/examples/carrot_man_owned --params-binding "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-owned"
       - uses: actions/upload-artifact@v6
         if: always()
