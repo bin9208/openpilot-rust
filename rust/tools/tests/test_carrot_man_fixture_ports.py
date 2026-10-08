@@ -6,7 +6,7 @@ import socket
 import unittest
 from unittest.mock import patch
 
-import carrot_man_owned_compare as subject
+import carrot_man_fixture_ports as subject
 
 
 REAL_SOCKET = socket.socket

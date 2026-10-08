@@ -99,3 +99,15 @@ listed in `source-dependency-readback.json`. No local ARM rerun or new exact-hea
 Actions result is claimed here; those remain the parent's PR validation gates.
 Both CarrotMan CI architectures now run the two standard-library socket tests
 before the existing owned comparison, using the bindings already built by that job.
+
+PR #234 at `b0a5234eb11fc9937c6bfa64e55c656824f53041` passed both
+CarrotMan architectures, but the general [workspace job](https://github.com/bin9208/openpilot-rust/actions/runs/37764599286/job/113269028435)
+failed while collecting the new test: importing the complete owned-comparison
+driver required `msgq.ipc_pyx`, which that workspace step does not build.
+The unchanged reservation function now lives in the standard-library-only
+`carrot_man_fixture_ports.py`, imported by both the driver and its tests.
+An isolated Python invocation failed before this extraction and passes both
+socket tests afterwards; AST comparison confirms the function is unchanged.
+The same two tests pass under pytest, and all eighteen isolation-policy tests
+pass. No runtime build or twelve-boundary comparison was repeated for this
+import-only repair. Updated exact-head Actions remain required.

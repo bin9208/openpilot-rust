@@ -1,6 +1,5 @@
 import argparse
-from collections.abc import Iterator
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack
 from email.parser import BytesParser
 from email.policy import default
 import hashlib
@@ -27,19 +26,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 from carrot_man_serv_compare import setup_values
 from carrot_man_ingress_compare import envelope
 from carrot_man_compare import compare
+from carrot_man_fixture_ports import reserve_ports
 from openpilot.cereal import log, messaging
 import zmq
-
-
-@contextmanager
-def reserve_ports() -> Iterator[list[int]]:
-  with ExitStack() as reservations:
-    ports: list[int] = []
-    for _ in range(7):
-      stream = reservations.enter_context(socket.socket(type=socket.SOCK_STREAM))
-      stream.bind(("127.0.0.1", 0))
-      ports.append(stream.getsockname()[1])
-    yield ports
 
 
 class Receiver:
