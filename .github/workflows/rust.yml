@@ -290,7 +290,7 @@ jobs:
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2 pytest==9.0.2
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal
       - name: Stage exact optional GEOS provider
@@ -322,6 +322,7 @@ jobs:
         run: |
           export PYTHONPATH="$RUNNER_TEMP/carrot-man-msgq:$GITHUB_WORKSPACE/rust/tools:$PYTHONPATH"
           python -P -m unittest discover -s rust/tools/tests -p test_carrot_man_fixture_ports.py
+          python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider rust/tools/tests/test_carrot_man_fixture_inputs.py -q --basetemp "$RUNNER_TEMP/carrot-man-input-tests"
           python -P rust/tools/carrot_man_owned_compare.py --binary rust/target/debug/examples/carrot_man_owned --params-binding "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-owned"
       - uses: actions/upload-artifact@v6
         if: always()
@@ -330,6 +331,7 @@ jobs:
           path: |
             ${{ runner.temp }}/carrot-man-policy/**
             ${{ runner.temp }}/carrot-man-owned/**
+            ${{ runner.temp }}/carrot-man-input-tests/**
             ${{ runner.temp }}/carrot-man-geos/**
             rust/target/debug/openpilot-carrot-man
   workspace:
