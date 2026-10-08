@@ -1,41 +1,64 @@
 use crate::Error;
-use flate2::{Compression, GzBuilder};
 use sha2::{Digest, Sha256};
 use std::{
     collections::HashMap,
     fs,
-    io::Write,
     path::{Path, PathBuf},
     sync::Mutex,
     time::{SystemTime, UNIX_EPOCH},
 };
 
-#[derive(Default)]
 pub struct Assets {
     hashes: Mutex<HashMap<(PathBuf, SystemTime, u64), String>>,
+    codec: Option<crate::static_web::brotli::Brotli>,
+}
+
+impl Default for Assets {
+    fn default() -> Self {
+        Self {
+            hashes: Mutex::default(),
+            codec: crate::static_web::brotli::Brotli::load(),
+        }
+    }
 }
 
 pub fn resolve(root: &Path, asset: &str) -> Option<PathBuf> {
     let root = fs::canonicalize(root).ok()?;
-    let relative = asset.trim_start_matches('/');
+    let relative = asset.strip_prefix('/').unwrap_or(asset);
     let requested = root.join(relative);
     let resolved = fs::canonicalize(requested).ok()?;
     (resolved.starts_with(&root) && resolved.is_file()).then_some(resolved)
 }
 
-pub(crate) fn missing_inside(root: &Path, asset: &str) -> bool {
-    let Ok(root) = fs::canonicalize(root) else {
-        return false;
-    };
-    let requested = root.join(asset.trim_start_matches('/'));
-    !requested.exists()
-        && requested
-            .ancestors()
-            .find_map(|path| fs::canonicalize(path).ok())
-            .is_some_and(|path| path.starts_with(&root))
-}
-
 impl Assets {
+    pub fn refresh(&self, root: &Path, path: &str) -> Result<(), Error> {
+        crate::static_web::compression::refresh_asset(root, path, self.codec.as_ref())
+    }
+
+    pub fn precompress(&self, root: &Path) -> Result<(), Error> {
+        for directory in ["js", "css"] {
+            let directory = root.join(directory);
+            if directory.is_dir() {
+                self.precompress_directory(root, &directory)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn precompress_directory(&self, root: &Path, directory: &Path) -> Result<(), Error> {
+        for entry in fs::read_dir(directory)? {
+            let entry = entry?;
+            if entry.file_type()?.is_dir() {
+                self.precompress_directory(root, &entry.path())?;
+            } else if let Ok(relative) = entry.path().strip_prefix(root) {
+                if let Err(error) = self.refresh(root, &relative.to_string_lossy()) {
+                    eprintln!("static precompression: {error}");
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub fn fingerprint(&self, root: &Path, asset: &str) -> Option<String> {
         if (!asset.ends_with(".js") && !asset.ends_with(".css"))
             || asset.starts_with("//")
@@ -85,55 +108,11 @@ impl Assets {
 }
 
 pub fn refresh_gzip(root: &Path, path: &str) -> Result<(), Error> {
-    if !path.ends_with(".js") && !path.ends_with(".css") {
-        return Ok(());
-    }
-    let Some(source) = resolve(root, path) else {
-        return Ok(());
-    };
-    for _ in 0..3 {
-        let before = fs::metadata(&source)?;
-        let bytes = fs::read(&source)?;
-        let after = fs::metadata(&source)?;
-        if before.modified()? != after.modified()? || before.len() != after.len() {
-            continue;
-        }
-        let destination = PathBuf::from(format!("{}.gz", source.display()));
-        if let Ok(file) = fs::File::open(&destination) {
-            let mut decoded = flate2::read::GzDecoder::new(file);
-            let mut old = Vec::new();
-            if std::io::Read::read_to_end(&mut decoded, &mut old).is_ok() && old == bytes {
-                return Ok(());
-            }
-        }
-        let mtime = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs() as u32;
-        let mut compressor = GzBuilder::new()
-            .mtime(mtime)
-            .write(Vec::new(), Compression::best());
-        compressor.write_all(&bytes)?;
-        let encoded = compressor.finish()?;
-        let parent = source
-            .parent()
-            .ok_or_else(|| Error::Source("invalid static asset directory".into()))?;
-        let mut temporary = tempfile::Builder::new()
-            .prefix(".carrot_asset_")
-            .tempfile_in(parent)?;
-        temporary.write_all(&encoded)?;
-        temporary
-            .persist(&destination)
-            .map_err(|error| Error::Io(error.error))?;
-        let current = fs::metadata(&source)?;
-        if current.modified()? == before.modified()? && current.len() == before.len() {
-            return Ok(());
-        }
-        let _ = fs::remove_file(destination);
-    }
-    let _ = fs::remove_file(format!("{}.gz", source.display()));
-    let _ = fs::remove_file(format!("{}.br", source.display()));
-    Ok(())
+    crate::static_web::compression::refresh_asset(
+        root,
+        path,
+        crate::static_web::brotli::Brotli::load().as_ref(),
+    )
 }
 
 pub fn etag(metadata: &fs::Metadata) -> Result<String, Error> {
@@ -160,27 +139,5 @@ pub(crate) fn last_modified(metadata: &fs::Metadata) -> Result<String, Error> {
 }
 
 pub fn content_type(path: &Path) -> &'static str {
-    match path
-        .extension()
-        .and_then(|extension| extension.to_str())
-        .unwrap_or("")
-    {
-        "js" | "mjs" => "text/javascript",
-        "css" => "text/css",
-        "html" => "text/html",
-        "json" | "map" => "application/json",
-        "png" => "image/png",
-        "jpg" | "jpeg" => "image/jpeg",
-        "svg" => "image/svg+xml",
-        "webp" => "image/webp",
-        "gif" => "image/gif",
-        "ico" => "image/vnd.microsoft.icon",
-        "woff" => "font/woff",
-        "woff2" => "font/woff2",
-        "ttf" => "font/ttf",
-        "mp3" => "audio/mpeg",
-        "wav" => "audio/x-wav",
-        "mp4" => "video/mp4",
-        _ => "application/octet-stream",
-    }
+    crate::static_web::mime::content_type(path)
 }

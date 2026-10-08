@@ -77,6 +77,7 @@ async fn run() -> Result<(), Error> {
         }
     }
     config.validate()?;
+    openpilot_carrot_server::static_web::StaticWeb::new(config.clone()).validate()?;
     if !config.settings.exists() {
         println!(
             "[WARN] settings file not found: {}",

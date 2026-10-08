@@ -1,8 +1,13 @@
 pub use crate::http_request::read_json;
-use crate::http_response::{error_response, json_response, response, text};
+use crate::http_response::{error_response, json_response, text};
 pub use crate::http_server::serve;
 use crate::{
-    config::Config, params::Backend, settings::SettingsCache, static_assets, Error, Value,
+    config::Config,
+    param_changes::{History, Paths},
+    params::Backend,
+    settings::SettingsCache,
+    static_web::StaticWeb,
+    Error, Value,
 };
 use bytes::Bytes;
 use http_body_util::Full;
@@ -17,17 +22,26 @@ pub type Body = Full<Bytes>;
 pub struct Application {
     pub config: Config,
     pub params: Mutex<Backend>,
+    pub history: History,
+    live_snapshot: Mutex<Option<Value>>,
     settings: Mutex<SettingsCache>,
-    assets: static_assets::Assets,
+    pub static_web: Arc<StaticWeb>,
+    pub intro: Arc<crate::intro::Intro>,
 }
 
 impl Application {
     pub fn new(config: Config, params: Backend) -> Arc<Self> {
         Arc::new(Self {
+            static_web: StaticWeb::new(config.clone()),
+            intro: crate::intro::Intro::new(config.clone()),
+            history: History::new(Paths {
+                log: config.state.join("param_changes.jsonl"),
+                baseline: config.state.join("fingerprint_baseline.json"),
+            }),
+            live_snapshot: Mutex::new(None),
             settings: Mutex::new(SettingsCache::new(config.settings.clone())),
             config,
             params: Mutex::new(params),
-            assets: static_assets::Assets::default(),
         })
     }
 
@@ -36,14 +50,8 @@ impl Application {
             .params
             .lock()
             .map_err(|_| Error::Source("Params lock poisoned".into()))?;
-        let mut cache = self
-            .settings
-            .lock()
-            .map_err(|_| Error::Source("settings lock poisoned".into()))?;
-        let catalog = cache
-            .load(params.maximum_gap_levels())?
-            .for_brand(&params.vehicle_brand())?;
-        let payload = catalog.payload(&cache.path, params.has_params());
+        let catalog = self.catalog(&params)?.for_brand(&params.vehicle_brand())?;
+        let payload = catalog.payload(&self.config.settings, params.has_params());
         let mut response = Value::object([("ok", Value::Bool(true))]);
         if let Value::Object(items) = payload {
             if let Value::Object(fields) = &mut response {
@@ -51,6 +59,37 @@ impl Application {
             }
         }
         Ok(response)
+    }
+
+    pub(crate) fn catalog(&self, params: &Backend) -> Result<crate::settings::Catalog, Error> {
+        let mut cache = self
+            .settings
+            .lock()
+            .map_err(|_| Error::Source("settings lock poisoned".into()))?;
+        cache.load(params.maximum_gap_levels())
+    }
+
+    pub fn update_live_snapshot(&self, snapshot: Value) -> Result<(), Error> {
+        *self
+            .live_snapshot
+            .lock()
+            .map_err(|_| Error::Source("live snapshot lock poisoned".into()))? = Some(snapshot);
+        Ok(())
+    }
+
+    pub fn drive_engaged(&self) -> bool {
+        self.live_snapshot
+            .lock()
+            .ok()
+            .and_then(|snapshot| {
+                snapshot.as_ref().map(|snapshot| {
+                    let services = snapshot.get("services");
+                    ["selfdriveState", "controlsState"]
+                        .into_iter()
+                        .any(|name| services.get(name).get("enabled").truth())
+                })
+            })
+            .unwrap_or(false)
     }
 }
 
@@ -62,6 +101,47 @@ pub(crate) async fn route(
     let path = percent_encoding::percent_decode_str(request.uri().path())
         .decode_utf8_lossy()
         .into_owned();
+    if crate::history_http::matches(&path, request.method()) {
+        return Ok(crate::history_http::handle(request, app, &path).await);
+    }
+    if crate::profiles_http::matches(&path, request.method()) {
+        return Ok(crate::profiles_http::handle(request, app, &path).await);
+    }
+    if let Some(route) = crate::intro::Route::from_path(&path) {
+        if matches!(route, crate::intro::Route::State) || request.method() == hyper::Method::POST {
+            return Ok(crate::intro::handle(
+                request,
+                Arc::clone(&app),
+                Arc::clone(&app.intro),
+                route,
+            )
+            .await);
+        }
+        if !matches!(request.method(), &hyper::Method::GET | &hyper::Method::HEAD) {
+            let mut response = text(
+                StatusCode::METHOD_NOT_ALLOWED,
+                "405: Method Not Allowed",
+                head,
+            );
+            response.headers_mut().insert(
+                header::ALLOW,
+                header::HeaderValue::from_static("GET,HEAD,POST"),
+            );
+            return Ok(response);
+        }
+    }
+    if path == "/api/params_bulk"
+        || (path == "/api/param_set"
+            && !matches!(request.method(), &hyper::Method::GET | &hyper::Method::HEAD))
+    {
+        return Ok(crate::params_http::handle(request, app, &path).await);
+    }
+    if let Some(kind) = crate::state_preferences::Preference::from_path(&path) {
+        return Ok(crate::state_http::handle(request, app, kind).await);
+    }
+    if path == "/api/web_settings" {
+        return Ok(crate::web_settings_http::handle(request, app).await);
+    }
     if path == "/api/settings" {
         if request.method() != hyper::Method::GET && !head {
             let mut result = text(
@@ -116,128 +196,9 @@ pub(crate) async fn route(
             },
         );
     }
-    if request.method() != hyper::Method::GET && !head {
-        let mut result = text(
-            StatusCode::METHOD_NOT_ALLOWED,
-            "405: Method Not Allowed",
-            head,
-        );
-        result
-            .headers_mut()
-            .insert(header::ALLOW, header::HeaderValue::from_static("GET,HEAD"));
-        return Ok(result);
-    }
-    let (root, asset) = if let Some(path) = path.strip_prefix("/shared-assets/") {
-        (&app.config.shared_assets, path)
-    } else if let Some(path) = path.strip_prefix("/training/") {
-        (&app.config.training_assets, path)
-    } else if let Some(path) = path.strip_prefix("/sound-assets/") {
-        (&app.config.shared_assets, path)
-    } else {
-        (&app.config.web, path.as_str())
-    };
-    let Some(file) = static_assets::resolve(root, asset) else {
-        if static_assets::missing_inside(root, asset) {
-            let mut result = response(
-                StatusCode::NOT_FOUND,
-                Vec::new(),
-                "application/octet-stream",
-                head,
-            );
-            result.headers_mut().remove(header::CONTENT_LENGTH);
-            result.headers_mut().insert(
-                header::TRANSFER_ENCODING,
-                header::HeaderValue::from_static("chunked"),
-            );
-            return Ok(result);
-        }
-        return Ok(text(StatusCode::NOT_FOUND, "404: Not Found", head));
-    };
-    let immutable = app
-        .assets
-        .immutable(&app.config.web, &path, request.uri().query());
-    if root == &app.config.web
-        && ["/js/", "/css/", "/assets/"]
-            .iter()
-            .any(|prefix| path.starts_with(prefix))
-    {
-        let _ = static_assets::refresh_gzip(root, asset);
-    }
-    let selected = if request
-        .headers()
-        .get(header::ACCEPT_ENCODING)
-        .and_then(|header| header.to_str().ok())
-        .is_some_and(|header| header.to_lowercase().contains("gzip"))
-    {
-        let gzip = std::path::PathBuf::from(format!("{}.gz", file.display()));
-        if gzip.is_file() {
-            gzip
-        } else {
-            file.clone()
-        }
-    } else {
-        file.clone()
-    };
-    let result = (|| -> Result<Response<Body>, Error> {
-        let metadata = std::fs::metadata(&selected)?;
-        let etag = static_assets::etag(&metadata)?;
-        let mut result = if request
-            .headers()
-            .get(header::IF_NONE_MATCH)
-            .and_then(|header| header.to_str().ok())
-            .is_some_and(|header| {
-                header.split(',').any(|value| {
-                    value.trim().trim_start_matches("W/") == etag || value.trim() == "*"
-                })
-            }) {
-            let mut result = response(
-                StatusCode::NOT_MODIFIED,
-                Vec::new(),
-                static_assets::content_type(&file),
-                head,
-            );
-            result.headers_mut().remove(header::CONTENT_LENGTH);
-            result
-        } else {
-            response(
-                StatusCode::OK,
-                std::fs::read(&selected)?,
-                static_assets::content_type(&file),
-                head,
-            )
-        };
-        result.headers_mut().insert(
-            header::ETAG,
-            etag.parse()
-                .map_err(|_| Error::Source("invalid asset ETag".into()))?,
-        );
-        result.headers_mut().insert(
-            header::LAST_MODIFIED,
-            static_assets::last_modified(&metadata)?
-                .parse()
-                .map_err(|_| Error::Source("invalid asset timestamp".into()))?,
-        );
-        result.headers_mut().insert(
-            header::ACCEPT_RANGES,
-            header::HeaderValue::from_static("bytes"),
-        );
-        if selected != file {
-            result.headers_mut().insert(
-                header::CONTENT_ENCODING,
-                header::HeaderValue::from_static("gzip"),
-            );
-            result.headers_mut().insert(
-                header::VARY,
-                header::HeaderValue::from_static("Accept-Encoding"),
-            );
-        }
-        if immutable {
-            result.headers_mut().insert(
-                header::CACHE_CONTROL,
-                header::HeaderValue::from_static("public, max-age=31536000, immutable"),
-            );
-        }
-        Ok(result)
-    })();
-    Ok(result.unwrap_or_else(|_| text(StatusCode::NOT_FOUND, "404: Not Found", head)))
+    let application = Arc::clone(&app);
+    Ok(app
+        .static_web
+        .handle_with_bootstrap(&request, move || crate::bootstrap::payload(&application))
+        .await)
 }

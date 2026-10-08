@@ -15,10 +15,15 @@ openpilot-cereal = { path = "../cereal" }
 capnp = "=0.27.2"
 openpilot-carrot-navi = { path = "../carrot-navi", default-features = false }
 openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-web-upload = { path = "../web-upload" }
+openpilot-hardware-info = { path = "../hardware-info" }
 openpilot-beepd = { path = "../beepd" }
 openpilot-calibrationd = { path = "../calibrationd" }
 num-traits = "=0.2.19"
 num-bigint = "=0.4.8"
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+uuid = { version = "=1.26.1", features = ["v4"] }
 thiserror = "2"
 tokio = { version = "=1.53.1", features = ["rt", "macros", "net", "time", "sync", "signal", "io-util"] }
 hyper = { version = "=1.11.1", features = ["http1", "server"] }
@@ -31,6 +36,7 @@ sha2 = "0.10"
 percent-encoding = "2"
 url = "2"
 libc = "0.2"
+libloading = "=0.8.9"
 nix = { version = "=0.31.3", features = ["sched", "process"], default-features = false }
 tempfile = "3"
 

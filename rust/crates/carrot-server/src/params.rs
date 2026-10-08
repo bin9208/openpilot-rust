@@ -4,6 +4,9 @@ use crate::{native, Error, Value};
 use num_traits::ToPrimitive;
 use openpilot_params::{metadata, Params};
 use std::{collections::HashMap, fs, io::Write, path::PathBuf};
+#[path = "param_read.rs"]
+mod read;
+pub use read::BackupSchema;
 
 pub struct Backend {
     native: Option<Params>,
@@ -79,13 +82,15 @@ impl Backend {
                 return Value::Bool(bytes == b"1");
             }
             if info.kind == 2 {
-                if let Ok(value) = openpilot_beepd::integer(&bytes) {
-                    return Value::integer(value);
+                match openpilot_beepd::integer(&bytes) {
+                    Ok(value) => return Value::integer(value),
+                    Err(error) => crate::param_native::fatal(name, &error),
                 }
             }
             if info.kind == 3 {
-                if let Ok(value) = openpilot_calibrationd::parameters::parse_float(&bytes) {
-                    return Value::Float(value);
+                match openpilot_calibrationd::parameters::parse_float(&bytes) {
+                    Ok(value) => return Value::Float(value),
+                    Err(error) => crate::param_native::fatal(name, &error),
                 }
             }
             if bytes.is_empty() {
@@ -97,6 +102,9 @@ impl Backend {
             let Ok(text) = String::from_utf8(bytes) else {
                 return default_value(default);
             };
+            if info.kind == 4 {
+                return crate::param_time::read(&text).unwrap_or_else(|| default_value(default));
+            }
             let value = match info.kind {
                 2 => Value::text(&text).int().map(Value::Integer),
                 3 => Value::text(&text).float().map(Value::Float),
@@ -104,7 +112,13 @@ impl Backend {
                 _ => return Value::text(&text),
             };
             return value
-                .and_then(|value| value.py_string())
+                .and_then(|value| {
+                    if matches!(value, Value::Null) {
+                        Ok(default_value(default))
+                    } else {
+                        value.py_string()
+                    }
+                })
                 .unwrap_or_else(|_| default_value(default));
         }
         let value = Self::raw_unknown(params, name).and_then(|path| Ok(fs::read(path)?));
@@ -181,19 +195,38 @@ impl Backend {
         let raw = match kind {
             Some(1) => if bool_value(value)? { "1" } else { "0" }.into(),
             Some(2) => {
-                let number = rounded(value)?
-                    .to_i32()
-                    .ok_or_else(|| Error::Source("value too large to convert to int".into()))?;
+                let number = rounded(value)?.to_i64().ok_or_else(|| {
+                    Error::Source("Python int too large to convert to C long".into())
+                })?;
+                let number = i32::try_from(number)
+                    .map_err(|_| Error::Source("value too large to convert to int".into()))?;
                 number.to_string()
             }
             Some(3) => native::float_text(python_float(value)? as f32)?,
+            Some(4) => {
+                return Err(crate::param_native::mismatch(
+                    name,
+                    ("TIME", 4),
+                    &value.py_string()?,
+                ))
+            }
             Some(5) => {
                 let value = if matches!(value, Value::Text(_)) {
                     Value::parse(&value.string()?)?
                 } else {
                     value.clone()
                 };
+                if !matches!(value, Value::Array(_) | Value::Object(_)) {
+                    return Err(crate::param_native::mismatch(name, ("JSON", 5), &value));
+                }
                 value.encode()?
+            }
+            Some(6) => {
+                return Err(crate::param_native::mismatch(
+                    name,
+                    ("BYTES", 6),
+                    &value.py_string()?,
+                ))
             }
             Some(_) => value.string()?,
             None => match inferred {
@@ -204,10 +237,14 @@ impl Backend {
             },
         };
         if kind.is_some() {
-            return Ok(params.put(name, raw.as_bytes())?);
+            // Original Cython registered puts discard the C++ filesystem status.
+            return match params.put(name, raw.as_bytes()) {
+                Ok(()) | Err(openpilot_params::Error::Io(_)) => Ok(()),
+                Err(error) => Err(error.into()),
+            };
         }
         if setting.is_none() {
-            return Err(openpilot_params::Error::UnknownKey(name.into()).into());
+            return Err(crate::param_native::unknown(name));
         }
         let destination = Self::raw_unknown(params, name)?;
         let parent = params

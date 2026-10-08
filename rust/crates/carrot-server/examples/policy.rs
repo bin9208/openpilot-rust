@@ -29,6 +29,22 @@ fn apply(request: &Value) -> Result<Value, Error> {
                 ("coerced", coerced),
             ]))
         }
+        "get_param" | "put_param" | "get_backup" => {
+            let root = std::path::PathBuf::from(request.get("root").string()?);
+            let native = openpilot_params::Params::for_runtime_at(&root)?;
+            let mut backend = params::Backend::native(native, root.join("state"));
+            let name = request.get("name").string()?;
+            if request.get("action").text_eq("get_backup") {
+                backend.backup_values()
+            } else if request.get("action").text_eq("get_param") {
+                Ok(backend.get(&name, request.get("default")))
+            } else {
+                let setting = (!matches!(request.get("setting"), Value::Null))
+                    .then(|| request.get("setting"));
+                backend.put(&name, request.get("value"), setting)?;
+                Ok(Value::Null)
+            }
+        }
         _ => Err(Error::Source("unknown policy operation".into())),
     }
 }

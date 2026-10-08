@@ -12,7 +12,9 @@ pub async fn serve(
     shutdown: impl Future<Output = ()>,
 ) -> Result<(), Error> {
     app.config.validate()?;
+    app.static_web.validate()?;
     app.config.migrate_legacy_state();
+    let precompress = app.static_web.start_precompress();
     let warm_app = Arc::clone(&app);
     let warm = tokio::task::spawn_blocking(move || {
         let _ = warm_app.settings_payload();
@@ -29,7 +31,9 @@ pub async fn serve(
                 let mut stopped = stop.subscribe();
                 connections.spawn(async move {
                     let service = hyper::service::service_fn(move |request| route(request, Arc::clone(&app)));
-                    let connection = hyper::server::conn::http1::Builder::new().serve_connection(TokioIo::new(socket), service);
+                    let connection = hyper::server::conn::http1::Builder::new()
+                        .preserve_raw_conditional_headers(true)
+                        .serve_connection(TokioIo::new(socket), service);
                     tokio::pin!(connection);
                     tokio::select! {
                         result = &mut connection => result,
@@ -53,5 +57,12 @@ pub async fn serve(
     }
     warm.abort();
     let _ = warm.await;
+    precompress.abort();
+    match precompress.await {
+        Ok(Ok(())) => {}
+        Ok(Err(error)) => eprintln!("static precompression: {error}"),
+        Err(error) if error.is_cancelled() => {}
+        Err(error) => eprintln!("static precompression task: {error}"),
+    }
     Ok(())
 }

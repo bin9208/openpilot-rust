@@ -12,6 +12,47 @@ from types import ModuleType
 from aiohttp import ClientSession, web
 from yarl import URL
 from original_params_binding import load
+from carrot_server_params_http_cases import cases as param_cases, prepare as prepare_params
+from carrot_server_bootstrap_http_cases import cases as bootstrap_cases, prepare as prepare_bootstrap, register as register_bootstrap
+import carrot_server_profiles_http_cases as profiles_http
+
+
+def preference_cases():
+  units, favorites = '/api/setting_unit_index', '/api/setting_favorites'
+  return {
+    'units-empty': ('GET', units, None),
+    'units-put': ('POST', units, {'units': {' B ': 2, 'A': '3', 'empty': 0, 'invalid': 'x'}}),
+    'units-merge': ('POST', units, {'units': {'C': 1, 'A': 0, 'B': 'invalid', 'D': 99}}),
+    'units-head': ('HEAD', units, None),
+    'units-non-object': ('POST', units, ['ignored']),
+    'units-invalid-members': ('POST', units, {'units': ['not a mapping']}),
+    'units-overflow': ('POST', units, {'units': {'A': float('inf')}}),
+    'units-malformed': ('POST', units, b'{bad'),
+    'units-limit': ('POST', units, {'units': {f'P{index}': 1 for index in range(405)}}),
+    'units-method': ('PUT', units, {}),
+    'units-surrogate': ('POST', units, {'units': {'x\ud800y': 1}}),
+    'units-corrupt': ('GET', units, None),
+    'units-recovered': ('POST', units, {'units': {'복구': 5, '\x1c trimmed \x1f': 1}}),
+    'favorites-empty': ('GET', favorites, None),
+    'favorites-put': ('POST', favorites, {'favorites': [' A ', 'A', '', None, False, 0, True, ['nested'], '한글']}),
+    'favorites-ignore': ('POST', favorites, {'ignored': True}),
+    'favorites-non-object': ('POST', favorites, None),
+    'favorites-malformed': ('POST', favorites, b'{bad'),
+    'favorites-limit': ('POST', favorites, {'favorites': [f'P{index}' for index in range(205)]}),
+    'favorites-head': ('HEAD', favorites, None),
+    'favorites-surrogate': ('POST', favorites, {'favorites': ['x\ud800y']}),
+    'favorites-corrupt': ('GET', favorites, None),
+    'favorites-recovered': ('POST', favorites, {'favorites': ['복구', '\x1c trimmed \x1f']}),
+    'favorites-latin1': ('POST', favorites, b'{"favorites": ["caf\xe9\x80"]}'),
+    'web-empty': ('GET', '/api/web_settings', None),
+    'web-malformed': ('POST', '/api/web_settings', b'{bad'),
+    'web-non-object': ('POST', '/api/web_settings', []),
+    'web-legacy': ('GET', '/api/web_settings', None),
+    'web-update': ('POST', '/api/web_settings', {'web_lab_enabled': True, 'vision_ar_enabled': True, 'web_language': 'MAIN_ZH-Chs', 'carrot_navi_horizontal_area_2': 'vision', 'carrot_navi_split_ratio': 0.501, 'unknown': True}),
+    'web-head': ('HEAD', '/api/web_settings', None),
+    'web-surrogate': ('POST', '/api/web_settings', {'kmap_url': 'x\ud800y'}),
+    'web-recovered': ('POST', '/api/web_settings', {'kmap_url': 'https://restored.example/'}),
+  }
 
 
 async def compare(binary: Path, output: Path, binding: Path):
@@ -26,9 +67,15 @@ async def compare(binary: Path, output: Path, binding: Path):
     sys.modules[package.__name__] = package
     from openpilot.common.params import Params
     from openpilot.selfdrive.carrot.server.features import settings as feature
+    from openpilot.selfdrive.carrot.server.features import setting_favorites as favorites_feature
+    from openpilot.selfdrive.carrot.server.features import web_settings as web_feature
+    from openpilot.selfdrive.carrot.server.features import params as params_feature
+    from openpilot.selfdrive.carrot.server.services import param_changes as changes
+    changes.time.time = lambda: 1700000000
     from openpilot.selfdrive.carrot.server.services import params as source_params
     from openpilot.selfdrive.carrot.server.services import settings as source_settings
     from openpilot.selfdrive.carrot.server.services import static_assets as source_assets
+    from openpilot.selfdrive.carrot.server.services import web_settings as source_web
     if not source_params.HAS_PARAMS:
       raise RuntimeError('original native Params binding is required for this owned HTTP comparison')
     settings_file = root / 'settings.json'
@@ -39,9 +86,13 @@ async def compare(binary: Path, output: Path, binding: Path):
       {'name': 'hidden', 'group': 'Z', 'hidden_brands': ['hyundai']},
     ]}
     settings_file.write_text(json.dumps(definition))
-    for name in ('web', 'shared_assets', 'training_assets', 'legacy_state', 'data'):
+    for name in ('web', 'shared_assets', 'training_assets', 'legacy_state', 'data', 'native_data'):
       (root / name).mkdir()
     (root / 'web/js').mkdir()
+    catalog = root / 'web/src/features/drive/core/content_catalog.json'
+    catalog.parent.mkdir(parents=True)
+    catalog.write_bytes((Path(__file__).resolve().parents[2] / 'openpilot/selfdrive/carrot/web/src/features/drive/core/content_catalog.json').read_bytes())
+    source_web.DRIVE_CONTENT_CATALOG_PATH = str(catalog)
     asset = root / 'web/js/app.js'
     asset.write_bytes(b'export const fixture = 1;\n')
     os.utime(asset, (1700000123, 1700000123))
@@ -56,6 +107,14 @@ async def compare(binary: Path, output: Path, binding: Path):
     app = web.Application(client_max_size=16 * 1024 * 1024,
                           middlewares=[source_assets.create_static_cache_middleware(str(root / 'web'))])
     app.router.add_get('/api/settings', feature.api_settings)
+    app.router.add_get('/api/setting_unit_index', feature.api_setting_unit_index)
+    app.router.add_post('/api/setting_unit_index', feature.api_setting_unit_index_update)
+    favorites_feature.register(app)
+    web_feature.register(app)
+    app.router.add_get('/api/params_bulk', params_feature.api_params_bulk)
+    app.router.add_post('/api/param_set', params_feature.api_param_set)
+    register_bootstrap(app, root, original_params)
+    profiles_http.register(app, root)
     app.router.add_static('/', str(root / 'web'), show_index=True)
     runner = web.AppRunner(app)
     await runner.setup()
@@ -66,6 +125,8 @@ async def compare(binary: Path, output: Path, binding: Path):
     assert child.stdin is not None and child.stdout is not None and child.stderr is not None
     fixture = {name: str(root / name) for name in ('web', 'shared_assets', 'training_assets', 'legacy_state', 'data')}
     fixture.update(repository=str(root), settings=str(settings_file), params=str(root / 'native_params'))
+    fixture['data'] = str(root / 'native_data')
+    fixture['timestamp'] = 1700000000
     child.stdin.write(json.dumps(fixture) + '\n')
     child.stdin.flush()
     try:
@@ -76,7 +137,14 @@ async def compare(binary: Path, output: Path, binding: Path):
         scenarios = ('catalog', 'gap-invalid', 'gap-four', 'brand-change', 'head', 'method', 'asset', 'asset-head', 'asset-cache',
                      'asset-stale', 'asset-double-version', 'asset-gzip', 'asset-missing',
                      'asset-outside', 'missing', 'malformed', 'recovered')
-        for index, scenario in enumerate(scenarios):
+        preferences = preference_cases()
+        preferences.update(param_cases())
+        preferences.update(bootstrap_cases())
+        preferences.update(profiles_http.cases())
+        for index, scenario in enumerate((*scenarios, *preferences)):
+          prepare_params(scenario, root, (original_params, native_params), definition)
+          prepare_bootstrap(scenario, root, (original_params, native_params))
+          profiles_http.prepare(scenario, root)
           if scenario in ('gap-invalid', 'gap-four'):
             for params in (original_params, native_params):
               params.put_int('LongitudinalPersonalityMax', 5 if scenario == 'gap-invalid' else 4)
@@ -106,13 +174,46 @@ async def compare(binary: Path, output: Path, binding: Path):
           elif scenario == 'asset-outside':
             path = '/%2e%2e/outside.js'
           coding = 'gzip' if scenario == 'asset-gzip' else 'identity'
+          request_body = None
+          if scenario in preferences:
+            method, path, payload = preferences[scenario]
+            request_body = payload if isinstance(payload, bytes) else json.dumps(payload).encode() if method not in ('GET', 'HEAD') else None
+          if scenario in ('units-corrupt', 'favorites-corrupt'):
+            name = 'setting_unit_index.json' if scenario == 'units-corrupt' else 'setting_favorites.json'
+            for directory in ('data', 'native_data'):
+              (root / directory / 'state' / name).write_text('{bad')
+          if scenario == 'web-legacy':
+            for directory in ('data', 'native_data'):
+              (root / directory / 'state/web_settings.json').write_text(json.dumps({'toss_upload_url': 'https://shind0.synology.me', 'web_language': 'main_en'}))
           for side, port in (('original', source_port), ('native', native_port)):
-            async with session.request(method, URL(f'http://127.0.0.1:{port}{path}', encoded=True), headers={'Accept-Encoding': coding}) as response:
+            if scenario.startswith('profiles-') and method not in ('GET', 'HEAD'):
+              request_body = payload if isinstance(payload, bytes) else json.dumps(profiles_http.payload(side, payload)).encode()
+            git_before = profiles_http.marker_count()
+            headers = {'Accept-Encoding': coding}
+            if scenario.endswith('latin1'):
+              headers['Content-Type'] = 'application/json; charset=latin-1'
+            async with session.request(method, URL(f'http://127.0.0.1:{port}{path}', encoded=True), headers=headers, data=request_body) as response:
               body = await response.read()
               (output / f'{index}-{side}.body').write_bytes(body)
               (output / f'{index}-{side}.headers.json').write_text(json.dumps(list(response.headers.items())))
               headers = {key: response.headers.get(key) for key in ('Content-Type', 'Content-Length', 'Cache-Control', 'Allow', 'Content-Encoding', 'Last-Modified', 'ETag', 'Accept-Ranges', 'Vary')}
               rows[side].append({'scenario': scenario, 'status': response.status, 'headers': headers, 'body_hex': body.hex()})
+              profiles_http.capture(scenario, side, rows[side][-1], git_before, output)
+            if scenario in preferences:
+              directory = root / ('data' if side == 'original' else 'native_data') / 'state'
+              saved = {name: (directory / name).read_bytes().hex() if (directory / name).is_file() else None
+                       for name in ('setting_unit_index.json', 'setting_favorites.json', 'web_settings.json', 'setting_unit_index.json.tmp', 'setting_favorites.json.tmp', 'web_settings.json.tmp', 'param_changes.jsonl', 'intro.json', 'setting_profiles.json', 'setting_profiles.json.tmp', 'fingerprint_baseline.json')}
+              (output / f'{index}-{side}.state.json').write_text(json.dumps(saved))
+              rows[side][-1]['state'] = saved
+            if scenario.startswith(('bulk-', 'set-')):
+              store = original_params if side == 'original' else native_params
+              saved = {name: Path(store.get_param_path(name)).read_bytes().hex()
+                       if Path(store.get_param_path(name)).is_file() else None
+                       for name in ('IsMetric', 'CruiseGapLevels', 'FutureSetting', 'UptimeOnroad', 'InstallDate', 'DisableDM')}
+              saved['DisableDM-kind'] = 'directory' if Path(store.get_param_path('DisableDM')).is_dir() else 'file' if Path(store.get_param_path('DisableDM')).is_file() else 'absent'
+              (output / f'{index}-{side}.params.json').write_text(json.dumps(saved))
+              rows[side][-1]['params'] = saved
+            rows[side][-1] = profiles_http.normalize(side, rows[side][-1])
       for side in rows:
         (output / f'{side}.json').write_text(json.dumps(rows[side], indent=2) + '\n')
       assert rows['original'] == rows['native'], 'original/native owned HTTP responses differ'

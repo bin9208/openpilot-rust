@@ -24,7 +24,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     config.legacy_state = path("legacy_state")?;
     let params = openpilot_params::Params::for_runtime_at(&path("params")?)?;
     let backend = Backend::native(params, config.state.clone());
-    let app = Application::new(config, backend);
+    let mut app = Application::new(config, backend);
+    if input.has("timestamp") {
+        let application =
+            std::sync::Arc::get_mut(&mut app).ok_or("fixture Application is already shared")?;
+        application.history = openpilot_carrot_server::param_changes::History::new(
+            openpilot_carrot_server::param_changes::Paths {
+                log: application.config.state.join("param_changes.jsonl"),
+                baseline: application.config.state.join("fingerprint_baseline.json"),
+            },
+        )
+        .with_timestamp(input.get("timestamp").clone());
+        application.intro = openpilot_carrot_server::intro::Intro::with_timestamp(
+            application.config.clone(),
+            1700000000,
+        );
+    }
     let listener = tokio::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).await?;
     println!(
         "{}",
