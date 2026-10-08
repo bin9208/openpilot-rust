@@ -352,3 +352,29 @@ mapped-doc checks, but its
 failed while waiting for native upload side effects. That failure is under
 investigation and is distinct from the passing #234 comparison; no original
 deadline or runtime behavior has been relaxed.
+
+### First exact-head run and focused integration repairs
+
+PR [236](https://github.com/bin9208/openpilot-rust/pull/236) at `094a4fafe`
+passed the new [camera runtime job](https://github.com/bin9208/openpilot-rust/actions/runs/37779176489/job/113317615144)
+and both CarrotMan architecture jobs. The required run still failed: Athena's
+camera fixture lost an enumerated `/proc/<child>/exe` before resolution, and
+the generic ARM job exhausted its 45-minute budget. Those outcomes are not
+successful full-PR validation.
+
+The next candidate includes three separately reviewed issue commits:
+
+- `1167be646` (#237) retries only interrupted plain-TCP input with the remaining
+  original deadline. Four real socket/source controls pass; one request is
+  retained and repeated interruptions do not reset the timeout. The actual CI
+  signal origin remains unknown. See `docs/rust-port/web-upload-validation.md`.
+- `4934a7e95` (#238) tolerates only a disappearing child during fixture executable
+  inspection. Six focused controls pass; original camera/JPEG/reaping/Params
+  assertions and deadlines remain. The corrected full lifecycle awaits hosted
+  validation. See `docs/naver/rust-athena-child-race-238.md`.
+- `bdaffd17c` (#239) allows 60 minutes for the expanded generic ARM gate while
+  retaining every command and required check. It changes no runtime timeout.
+  See `docs/naver/rust-arm-ci-budget-239.md`.
+
+All three camera crates remain unchanged from `6c408cfe6`. New full exact-head
+CI and subsequent dev validation remain required; no device test is authorized.
