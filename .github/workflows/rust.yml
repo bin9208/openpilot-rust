@@ -2939,6 +2939,8 @@ jobs:
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev strace iproute2
       - run: python -m pip install requests==2.34.2 json-rpc==1.15.0 websocket-client==1.9.2 websockets==15.0.1 PyJWT==2.14.0 cryptography==50.0.1 numpy==2.5.3 pillow==12.3.0 pycapnp==2.1.0 zstandard==0.25.0
+      - name: Check Athena camera child discovery race
+        run: python rust/tools/test_athena_camera_children.py
       - name: Build native Athena and owned process child
         run: cargo build --manifest-path rust/Cargo.toml -p openpilot-athena -p openpilot-process-supervision --bins --examples --locked
       - name: Compare all source RPC, upload, IPC, camera and connection scenarios
