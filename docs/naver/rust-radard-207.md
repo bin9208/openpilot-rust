@@ -44,3 +44,17 @@ pass. A local candidate rebuild is deferred under the recorded disk-space guard.
 Its candidate build, host/ARM Actions and complete
 normal startup/log-upload acceptance remain pending. No device timing, CPU
 reduction or driving acceptance is claimed.
+
+On 2026-10-08 this prepared candidate was composed with navigation integration
+`eae4ac73` and its dev base `0e69a1c1`. Existing Navd, CarrotMan and RadarCAN
+gates remain required. The independent 240-frame receipt above used the earlier
+CXX-backed msgq boundary; the new host and native ARM jobs explicitly rerun the
+actual IPC and lifecycle cases with current Rust msgq. Historical component
+evidence is not relabeled as that new execution.
+
+Local connection checks pass 16 workflow-isolation tests, 10 Card/RadarCAN
+CI-policy tests, locked offline workspace metadata and diff whitespace checks.
+The shared planner change only exposes a serialized state snapshot for the
+source comparator. No radar detection policy or NAS replay source is changed.
+This local integration preparation does not replace the pending exact-revision
+host/ARM jobs or authorize device testing.
