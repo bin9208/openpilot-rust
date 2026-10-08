@@ -22,6 +22,8 @@ fn main() -> Result<(), Error> {
             timestamp_eof: 0,
             valid: true,
             received: true,
+            index: 0,
+            fd: -1,
         };
         let rgb = image::extract(&data, &metadata)?;
         let jpeg = image::jpeg(&rgb, metadata.width, metadata.height)?;

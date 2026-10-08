@@ -220,7 +220,7 @@ class RustIsolationTests(unittest.TestCase):
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'joystickd-runtime',
             'planner-runtime', 'planner-memory',
-            'card-runtime',
+            'card-runtime', 'carrot-man-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -242,7 +242,8 @@ class RustIsolationTests(unittest.TestCase):
                                             'JOYSTICKD': '${{ needs.joystickd-runtime.result }}',
                                             'PLANNER': '${{ needs.planner-runtime.result }}',
                                             'PLANNER_MEMORY': '${{ needs.planner-memory.result }}',
-                                            'CARD': '${{ needs.card-runtime.result }}'})
+                                            'CARD': '${{ needs.card-runtime.result }}',
+                                            'CARROT_MAN': '${{ needs.carrot-man-runtime.result }}'})
         results = dict.fromkeys(validation['env'], 'success')
         command = ['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', validation['run']]
         self.assertEqual(subprocess.run(command, env=results, capture_output=True).returncode, 0)

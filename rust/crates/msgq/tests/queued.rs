@@ -1,5 +1,7 @@
+mod support;
+
 use openpilot_msgq::{MultiSubscriber, Publisher, Subscription};
-use std::{env, process::Command, time::Duration};
+use std::{env, time::Duration};
 
 #[test]
 fn queued_poll_retains_every_packet_until_explicit_receive() {
@@ -16,7 +18,7 @@ fn queued_poll_retains_every_packet_until_explicit_receive() {
             .unwrap()
             .strip_prefix("msgq_")
             .unwrap();
-        let status = Command::new(env::current_exe().unwrap())
+        let status = support::command(env::current_exe().unwrap())
             .args([
                 "--exact",
                 "queued_poll_retains_every_packet_until_explicit_receive",

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "owner": "carrot_man.py LineString interpolation",
+  "optional": true,
+  "provider": "Shapely 2.1.2 cached wheel",
+  "geosVersion": "3.13.1-CAPI-1.19.2",
+  "architecture": "x86_64",
+  "sourceLicense": "LGPL-2.1-or-later",
+  "wrapperLicense": "BSD-3-Clause",
+  "libraries": [
+    {
+      "name": "libgeos-3ef06f11.so.3.13.1",
+      "sha256": "59e0139d1ccea9a331b932c60b399974bafdff5c0e07b554c6a5df80edacf150"
+    },
+    {
+      "name": "libgeos_c-abcdd5fa.so.1.19.2",
+      "sha256": "91589f52067072ab661524cf181caf856097fc901c1ecc4a98585d03f5452c02"
+    }
+  ]
+}

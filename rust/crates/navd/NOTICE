@@ -1,0 +1,8 @@
+The navigation geometry, banner instructions and route engine are ported from
+openpilot/selfdrive/navd/helpers.py, navd.py and set_destination.py in this repository. Their
+original MIT license and source provenance remain applicable; see the root
+LICENSE. Python is used only for the independent source comparison.
+
+The compensated float sum follows CPython v3.12.14 Python/bltinmodule.c, as in
+the repository's earlier statsd and Card ports. Copyright Python Software
+Foundation. The full CPython license and notices are retained in CPYTHON-LICENSE.
