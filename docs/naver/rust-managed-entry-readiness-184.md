@@ -56,3 +56,22 @@ establish full-runtime startup, device behavior or measured CPU savings.
 
 Docs-Not-Needed: this fixes CI fixture synchronization without changing settings
 or user-visible runtime behavior.
+
+## Integration recovery, 2026-10-08
+
+Carrot Navi PR 230 at `298d9019f04e2d5086c7415b951ba42c8c2239a8`
+encountered a missing `errorLogMessage` in the original collector's
+`params-open-error/native` case. Its child response and crash on `logMessage`
+were retained, while the error-topic receive timed out. Run `37732559164`, job
+`113164776523`, preserves artifact `11530732966`; local extraction is under
+`.analysis/scratch/2026-10-08-runtime-resume/230-startup-failure/`.
+
+The prepared correction had not been committed or integrated. All four files
+identified by the deterministic regression receipt still match their recorded
+hashes, and all authoritative source files in the 44-case receipt also match.
+The original failing and corrected runs are reused; no full local replay or
+blind CI retry was added. The preserved correction is committed as `d0cef79b`
+and included in PR 230. The new hosted gate will exercise it with the current
+composition. The hosted failure lacks the queue-state capture needed to prove
+its exact interleaving independently; the deterministic reproduction establishes
+the fixture hazard, rather than identifying that missing hosted observation.
