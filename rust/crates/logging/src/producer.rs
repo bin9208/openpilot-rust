@@ -135,7 +135,13 @@ impl Logger {
             let context = zmq::Context::new();
             let socket = context.socket(zmq::PUSH)?;
             socket.set_linger(10)?;
-            socket.connect(&self.factory.endpoint)?;
+            loop {
+                match socket.connect(&self.factory.endpoint) {
+                    Ok(()) => break,
+                    Err(zmq::Error::EINTR) => continue,
+                    Err(error) => return Err(error.into()),
+                }
+            }
             // zmq::Socket retains a Context clone, so its last drop closes the socket before ctx_term.
             self.state = Connection::Connected(Transport { socket, pid });
         }
