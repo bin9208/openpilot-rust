@@ -481,3 +481,18 @@ user device acceptance remain separate work; no production selection changed.
 
 Docs-Not-Needed: isolated native runtime and host validation only; no user setting
 or production process behavior change.
+
+### Updated dev dependencies (2026-10-08)
+
+The candidate now includes dev `2f5e5dd6956f0abc00f2d201e7b5452ada1563d5`,
+after Carrot Navi PR #230 and Selfdrived PR #231 passed their required gates and
+merged. The shared Selfdrived messaging API restoration is included. The four
+Panda crates remain byte-identical to the prepared component at `87f9cea4c`.
+
+The local integration checks passed 19 CI-routing tests, the focused Card/Panda
+tooling checks, locked offline Cargo metadata and diff checks. The final dev
+merge at `85c798959a42d6f0051360767133b22d814846b0` changes no tree content
+from the already checked `466c4fc30`, so those checks are reused. No new local
+Panda build or repeat of its complete source corpus was performed. The required
+Panda host/source and aarch64 execution will run on this PR's exact head.
+Normal manager startup/upload and device acceptance remain open.
