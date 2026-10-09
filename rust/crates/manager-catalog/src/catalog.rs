@@ -146,6 +146,7 @@ fn availability(name: &str) -> RustAvailability {
         "ubloxd" => ("openpilot-ublox", "openpilot-ubloxd"),
         "ui" => ("openpilot-ui-application", "openpilot-ui"),
         "updated" => ("openpilot-updated", "openpilot-updated"),
+        "webcamerad" => ("openpilot-webcam", "openpilot-webcam"),
         _ => return RustAvailability::NotPorted,
     };
     RustAvailability::Candidate { package, binary, limitation: "Isolated host candidate; native external dependencies remain; manager selection, complete startup/upload and AGNOS/device acceptance pending. See rust/port-status.json for component-specific limits." }

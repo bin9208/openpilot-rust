@@ -3644,6 +3644,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-webcam"
+version = "0.1.0"
+dependencies = [
+ "capnp",
+ "cxx",
+ "cxx-build",
+ "ffmpeg-next",
+ "num-traits",
+ "openpilot-cereal",
+ "openpilot-messaging",
+ "openpilot-msgq",
+ "rustix",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "openpilot-webrtc"
 version = "0.1.0"
 dependencies = [
