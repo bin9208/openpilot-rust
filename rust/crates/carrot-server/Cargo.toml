@@ -22,6 +22,7 @@ openpilot-dashcam-upload = { path = "../dashcam-upload" }
 openpilot-hardware-info = { path = "../hardware-info" }
 openpilot-http-transport = { path = "../http-transport" }
 openpilot-messaging = { path = "../messaging" }
+openpilot-msgq = { path = "../msgq" }
 openpilot-beepd = { path = "../beepd" }
 openpilot-bluetooth = { path = "../bluetooth" }
 openpilot-process-supervision = { path = "../process-supervision" }

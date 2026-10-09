@@ -18,6 +18,11 @@ pub(crate) async fn dispatch(
     if path == "/ws/web_sound" {
         return Ok(crate::web_sound_http::handle(request, &app, &sound));
     }
+    if crate::live::http::matches(&path) {
+        return Ok(
+            crate::live::http::handle(request, app.live.clone(), app.live_error.as_deref()).await,
+        );
+    }
     if path == "/api/cars" {
         return Ok(crate::cars::handle(&request, Arc::clone(&app.cars)).await);
     }

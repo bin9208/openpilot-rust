@@ -49,6 +49,8 @@ pub struct Application {
     pub heartbeat: Arc<crate::heartbeat::Service>,
     pub heartbeat_params: Option<openpilot_params::Params>,
     pub auto_update: Option<Arc<crate::auto_update_runtime::Runtime>>,
+    pub live: Option<Arc<crate::live::Service>>,
+    pub live_error: Option<String>,
 }
 
 impl Application {
@@ -93,6 +95,11 @@ impl Application {
         let dashcam_sync_uploads = crate::dashcam::SyncUploads::original(&dashcam);
         let dashcam_upload_health =
             crate::dashcam::UploadHealth::original(&config, params.native_params().cloned());
+        let (live, live_error) = match crate::live::Service::start(params.native_params().cloned())
+        {
+            Ok(service) => (Some(service), None),
+            Err(error) => (None, Some(error.to_string())),
+        };
         Self {
             static_web: StaticWeb::new(config.clone()),
             intro: crate::intro::Intro::new(config.clone()),
@@ -116,6 +123,8 @@ impl Application {
             heartbeat: crate::heartbeat::Service::new(),
             heartbeat_params: None,
             auto_update: None,
+            live,
+            live_error,
             history: History::new(Paths {
                 log: config.state.join("param_changes.jsonl"),
                 baseline: config.state.join("fingerprint_baseline.json"),
@@ -160,18 +169,20 @@ impl Application {
     }
 
     pub fn drive_engaged(&self) -> bool {
-        self.live_snapshot
-            .lock()
-            .ok()
-            .and_then(|snapshot| {
-                snapshot.as_ref().map(|snapshot| {
-                    let services = snapshot.get("services");
-                    ["selfdriveState", "controlsState"]
-                        .into_iter()
-                        .any(|name| services.get(name).get("enabled").truth())
+        self.live.as_ref().is_some_and(|service| service.engaged())
+            || self
+                .live_snapshot
+                .lock()
+                .ok()
+                .and_then(|snapshot| {
+                    snapshot.as_ref().map(|snapshot| {
+                        let services = snapshot.get("services");
+                        ["selfdriveState", "controlsState"]
+                            .into_iter()
+                            .any(|name| services.get(name).get("enabled").truth())
+                    })
                 })
-            })
-            .unwrap_or(false)
+                .unwrap_or(false)
     }
 }
 

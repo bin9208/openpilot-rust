@@ -19,15 +19,15 @@ use tokio_tungstenite::{
 };
 
 type Socket = WebSocketStream<Transport>;
-pub(super) type Sink = Arc<Mutex<SplitSink<Socket, Message>>>;
+pub(crate) type Sink = Arc<Mutex<SplitSink<Socket, Message>>>;
 
-pub(super) enum Exit {
+pub(crate) enum Exit {
     PeerClosed,
     Protocol(CloseCode),
     Drop,
 }
 
-pub(super) async fn receive(
+pub(crate) async fn receive(
     sink: Sink,
     mut stream: SplitStream<Socket>,
     mut shutdown: watch::Receiver<Shutdown>,
@@ -104,7 +104,7 @@ pub(super) async fn receive(
     result
 }
 
-pub(super) async fn finish(
+pub(crate) async fn finish(
     sink: Sink,
     result: Exit,
     mut shutdown: watch::Receiver<Shutdown>,

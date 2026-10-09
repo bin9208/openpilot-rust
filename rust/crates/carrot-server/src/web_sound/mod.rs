@@ -7,10 +7,10 @@ mod force_tests;
 mod policy;
 mod runtime;
 mod settings;
-mod socket;
+pub(crate) mod socket;
 #[path = "../../../card/src/toggle.rs"]
 mod toggle;
-mod transport;
+pub(crate) mod transport;
 mod wire;
 
 pub use policy::{Input, Policy};

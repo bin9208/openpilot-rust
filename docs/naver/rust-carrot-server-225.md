@@ -998,6 +998,55 @@ The differing external-provider response to that malformed framing remains an
 explicit limit in `http10-provider-limit.json`; no provider patch or claimed
 matching result was added for it. These owned checks contact no CWP deployment.
 
+## Live broker and WebSocket runtime (2026-10-09 KST)
+
+The active `/api/live_runtime`, raw/multiplex/compact WebSockets and road-camera
+H.264 relay are connected to the Application. A single local owner thread keeps
+the original non-thread-safe messaging subscriptions together. The broker retains
+its three services, fifteen Params, lazy cache/force thresholds and cached
+engagement signal. Raw subscribers retain the latest frame per service; camera
+delivery retains the bounded queue, readiness and existing encoding selection.
+
+Twenty-one unchanged compact-service encoding comparisons are reused. The live
+source/native fixture covers a first WebSocket before any API request, raw and
+multiplex bytes, compact payloads, H.264 payload and metadata, broker cache/HEAD,
+Params errors, seven validation and five unavailable-route pairs, idle release
+and first reconnect. Both processes release the hub's IPC mappings after five
+idle seconds; six owned peers exit successfully. Only generated timestamps and
+snapshot age are normalized. The inherited navigation null mapping remains #254.
+
+The first-connection failure was reproduced before two narrow corrections:
+registration must wake the owner, and the first nonblocking poll must create the
+subscription without an initial thirty-millisecond delay. The regression sends
+one frame immediately after hello; it adds no retry publication to hide the race.
+
+The composed App comparison exercises unrelated Params before/after the live
+route, cached engagement, outgoing raw bytes during shutdown grace, incoming
+Close handling, TCP EOF and owner cleanup. Actual original AppRunner shutdown
+ignores incoming WebSocket Close during grace. The initial native early reply was
+captured, then corrected by propagating the existing Quiescing state without
+downgrading Force. Both peers subsequently reached the controlled three-second
+client close deadline with code 1006, then exited successfully after client EOF.
+The server keeps the existing single sixty-second grace; prior deadline evidence
+is reused, and the new test does not claim to wait for that full deadline.
+
+Actual original Cython Params comparisons verify integer canonicalization,
+invalid numeric values becoming null, and unreadable IsMetric becoming false.
+The broker reuses the existing safe generic Params conversion, distinct from the
+server's get_int/get_float helpers. Earlier raw FileParams broker/Params/cache/HEAD
+assertions are superseded; only their independent WebSocket, codec, idle-release
+and navigation-field observations are reused.
+
+Current results are in
+`.omo/evidence/carrot-server-225-resume/live-runtime/checkpoint/receipt.json`.
+The corrected broker, cache and HEAD checks are in `typed-params-green/`, and
+the actual-Cython App check is in `application-typed-v5/`. All-target strict
+Clippy, nineteen library tests, formatting, Ruff and Python syntax checks pass.
+The only dependency change is a direct edge to the existing
+native msgq crate. Existing Web Sound and handshake code is reused through
+crate visibility, with no protocol-body change. No live camera, vehicle, NAS or
+upload recipient is used by these owned fixtures.
+
 ## Remaining work
 
 The live-family source comparison also reproduced an inherited navigation
@@ -1018,8 +1067,8 @@ The request decoder has the tested expanded charset/compression coverage above;
 broader original codec aliases and provider error diagnostics remain explicit
 limits. Multipart extended names use the existing encoding_rs provider for
 supported labels.
-The live broker plus raw/compact/camera WebSocket transport are in progress. The remaining active
-families include system actions, network/calibration/time-sync services, tool
+The remaining active families include system actions,
+network/calibration/time-sync services, tool
 jobs, terminal/support terminal, Carrot Navi's web bridge, YouTube Live and
 vision diagnostics/test services. The web bridge is distinct from the converted
 Carrot Navi daemon. `/stream` also depends on the separately inventoried WebRTC

@@ -11,7 +11,7 @@ use tokio::{
     sync::watch,
 };
 
-pub(super) struct Transport {
+pub(crate) struct Transport {
     io: TokioIo<Upgraded>,
     shutdown: watch::Receiver<Shutdown>,
 }

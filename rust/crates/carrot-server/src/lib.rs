@@ -20,6 +20,7 @@ mod http_routes;
 mod http_server;
 pub mod intro;
 mod json_fields;
+pub mod live;
 pub mod mapbox_tokens;
 mod native;
 pub mod param_changes;

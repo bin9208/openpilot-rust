@@ -93,7 +93,11 @@ async fn serve_local(
     };
     drop(listener);
     let mut sync_changes = app.dashcam_sync_uploads.subscribe();
+    let mut live_changes = app.live.as_ref().map(|service| service.subscribe());
     app.dashcam_sync_uploads.quiesce();
+    if let Some(service) = &app.live {
+        service.quiesce();
+    }
     let _ = stop.send(true);
     let _ = sound_stop.send(crate::web_sound::Shutdown::Quiescing);
     if tokio::time::timeout(Duration::from_secs(60), async {
@@ -101,13 +105,15 @@ async fn serve_local(
             while let Ok(launch) = launches.try_recv() {
                 sounds.spawn_local(crate::web_sound_http::run(launch));
             }
-            if connections.is_empty() && sounds.is_empty() && app.dashcam_sync_uploads.is_idle() {
+            if connections.is_empty() && sounds.is_empty() && app.dashcam_sync_uploads.is_idle()
+                && app.live.as_ref().is_none_or(|service| service.is_idle()) {
                 break;
             }
             tokio::select! {
                 _ = connections.join_next(), if !connections.is_empty() => {}
                 _ = sounds.join_next(), if !sounds.is_empty() => {}
                 _ = sync_changes.changed() => {}
+                _ = async { if let Some(changes) = &mut live_changes { let _ = changes.changed().await; } }, if live_changes.is_some() => {}
                 Some(launch) = launches.recv() => {
                     sounds.spawn_local(crate::web_sound_http::run(launch));
                 }
@@ -118,12 +124,16 @@ async fn serve_local(
     .is_err()
     {
         app.dashcam_sync_uploads.force();
+        if let Some(service) = &app.live { service.force(); }
         let _ = sound_stop.send(crate::web_sound::Shutdown::Force);
         connections.abort_all();
         while connections.join_next().await.is_some() {}
         while sounds.join_next().await.is_some() {}
     }
     app.dashcam_sync_uploads.shutdown().await?;
+    if let Some(service) = &app.live {
+        service.shutdown().await?;
+    }
     warm.abort();
     heartbeat_stop.send_replace(true);
     if let Some(task) = heartbeat {

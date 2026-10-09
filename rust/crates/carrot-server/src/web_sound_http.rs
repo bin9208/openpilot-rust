@@ -12,7 +12,7 @@ use tokio::sync::{mpsc, watch};
 use tokio_tungstenite::tungstenite::handshake::derive_accept_key;
 
 #[path = "../../carrot-navi/src/native/handshake.rs"]
-mod handshake;
+pub(crate) mod handshake;
 
 pub(crate) struct Launch {
     upgrade: OnUpgrade,
