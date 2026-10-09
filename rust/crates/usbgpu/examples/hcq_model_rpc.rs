@@ -87,6 +87,12 @@ fn run() -> Result<Value, Error> {
             "expected firmware, descriptor, model and output path",
         ));
     }
+    if (std::env::var_os("USBGPU_INSPECT_KERNELS").is_some()
+        || std::env::var_os("USBGPU_SOURCE_ORACLE").is_some())
+        && !cfg!(feature = "fixture-inspection")
+    {
+        return Err(Error::Contract("fixture-inspection feature is required"));
+    }
     let mut firmware = Source(PathBuf::from(&args[0]));
     let bus = Rpc {
         input: io::BufReader::new(io::stdin()),
@@ -146,6 +152,9 @@ fn run() -> Result<Value, Error> {
         io::stdout().flush()?;
         let mut response = String::new();
         io::stdin().read_line(&mut response)?;
+        if serde_json::from_str::<Value>(&response)?["value"] != true {
+            return Err(Error::Contract("fixture inspection handshake failed"));
+        }
     }
     model.run()?;
     let mut output = vec![0; model.output_size("outputs")?];

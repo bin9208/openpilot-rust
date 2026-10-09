@@ -16,25 +16,44 @@ from tinygrad.helpers import DEV
 from usbgpu_model_oracle import compare
 
 
+class FixtureContractError(ValueError):
+  pass
+
+
+class FixtureProtocolError(RuntimeError):
+  pass
+
+
 class Boundary(ComputeBoundary):
-  def __init__(self):
+  def __init__(self, store_mode, evidence):
     DEV.value = 'AMD::gfx1200;CPU:LLVM'
     amgpu.VRAM_SIZE = 4 << 30
     super().__init__()
     self.pending = None
     self.kernels = 0
+    self.phase, self.store_checked = 'native', False
     original_dispatch = PM4Executor._exec_dispatch_direct
 
     def dispatch(queue, words):
+      if store_mode == 'byte-addressed' and not self.store_checked:
+        from usbgpu_alignment import configured_mode
+        from usbgpu_global_store import install
+
+        install(configured_mode(self.trace, evidence))
+        self.store_checked = True
       self.kernels += 1
       print(f'owned GPU kernel {self.kernels}', file=sys.stderr, flush=True)
-      return original_dispatch(queue, words)
+      started = time.monotonic()
+      result = original_dispatch(queue, words)
+      with (evidence / 'kernel-times.jsonl').open('a') as stream:
+        stream.write(json.dumps({'kernel': self.kernels, 'phase': self.phase, 'seconds': time.monotonic() - started}) + '\n')
+      return result
 
     PM4Executor._exec_dispatch_direct = dispatch
 
   def pci_read(self, address, size):
     if not 0x1_0000_0000 <= address <= 0x2_0000_0000 - size:
-      raise ValueError(f'owned PCI read out of bounds: {address:#x}/{size}')
+      raise FixtureContractError(f'owned PCI read out of bounds: {address:#x}/{size}')
     return bytes(self.gpu.vram[address - 0x1_0000_0000 : address - 0x1_0000_0000 + size])
 
   def pci_write(self, address, data):
@@ -43,7 +62,7 @@ class Boundary(ComputeBoundary):
         super().call({'op': 'doorbell_write', 'index': (address - 0xCAFE0000) // 8, 'value': int.from_bytes(data, 'little')})
       return
     if not 0x1_0000_0000 <= address <= 0x2_0000_0000 - len(data):
-      raise ValueError(f'owned PCI write out of bounds: {address:#x}/{len(data)}')
+      raise FixtureContractError(f'owned PCI write out of bounds: {address:#x}/{len(data)}')
     self.gpu.vram[address - 0x1_0000_0000 : address - 0x1_0000_0000 + len(data)] = data
 
   def call(self, request):
@@ -52,7 +71,7 @@ class Boundary(ComputeBoundary):
     data = bytes(request['data'])
     if request['op'] == 'usb_control':
       if request['type'] != 0x40 or request['request'] != 0xF0 or len(data) != 12:
-        raise ValueError('unsupported owned HCQ USB control')
+        raise FixtureContractError('unsupported owned HCQ USB control')
       address, word = struct.unpack('<QI', data)
       mode = request['index']
       if mode == 0:
@@ -60,21 +79,21 @@ class Boundary(ComputeBoundary):
       elif mode in (1, 2):
         self.pending = address, word * 4, mode
       else:
-        raise ValueError('unsupported F0 mode')
+        raise FixtureContractError('unsupported F0 mode')
       response = {'code': len(data)}
     else:
       if self.pending is None:
-        raise ValueError('bulk without preceding F0 command')
+        raise FixtureContractError('bulk without preceding F0 command')
       address, size, mode = self.pending
       if size != len(data):
-        raise ValueError('F0/bulk size mismatch')
+        raise FixtureContractError('F0/bulk size mismatch')
       if request['endpoint'] == 0x81 and mode == 2:
         response = {'code': 0, 'actual': size, 'data': list(self.pci_read(address, size))}
       elif request['endpoint'] == 0x02 and mode == 1:
         self.pci_write(address, data)
         response = {'code': 0, 'actual': size}
       else:
-        raise ValueError('F0/bulk direction mismatch')
+        raise FixtureContractError('F0/bulk direction mismatch')
       self.pending = None
     record = {**request, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
     del record['data']
@@ -98,12 +117,13 @@ def main():
   parser.add_argument('--inspect-kernels', action='store_true')
   parser.add_argument('--inspect-fp', action='store_true')
   parser.add_argument('--capture-kernels')
+  parser.add_argument('--global-store', choices=['original', 'byte-addressed'], default='original')
   args = parser.parse_args()
   args.evidence.mkdir(parents=True, exist_ok=True)
   with Path(args.binary).open('rb') as binary:
     binary_hash = hashlib.file_digest(binary, 'sha256').hexdigest()
   command = [args.binary, str(args.firmware), str(args.bundle), str(args.model), str(args.evidence / 'outputs.bin')]
-  boundary, done, started = Boundary(), None, time.monotonic()
+  boundary, done, started = Boundary(args.global_store, args.evidence), None, time.monotonic()
   fp = None
   if args.inspect_fp:
     from usbgpu_fp_inspect import Inspector as FpInspector
@@ -128,6 +148,9 @@ def main():
             done = request['done']
             break
           if request['op'] == 'inspect_bindings':
+            (args.evidence / 'inspection-handshake.json').write_text(
+              json.dumps({'binary_sha256': binary_hash, 'op': 'inspect_bindings', 'snapshot': request['snapshot']}) + '\n'
+            )
             if args.capture_kernels:
               from usbgpu_kernel_capture import Capture
 
@@ -142,7 +165,8 @@ def main():
             response = True
           elif request['op'] == 'source_oracle':
             if args.source_library is None:
-              raise ValueError('inspection fixture requires --source-library')
+              raise FixtureContractError('inspection fixture requires --source-library')
+            boundary.phase = 'source'
             response = compare(boundary, request['snapshot'], args.source_library, args.evidence)
           else:
             response = boundary.call(request)
@@ -150,6 +174,8 @@ def main():
           process.stdin.flush()
         process.stdin.close()
         code = process.wait(timeout=10)
+        if args.source_library is not None and not (args.evidence / 'source-comparison.json').is_file():
+          raise FixtureProtocolError('required source comparison handshake was not received')
       finally:
         if process.poll() is None:
           process.kill()
@@ -166,6 +192,7 @@ def main():
     'binary_sha256': binary_hash,
     'fixture_sdma_copy': os.environ.get('USBGPU_FIXTURE_SDMA_COPY', 'page-aware'),
     'fixture_wmma_inline': os.environ.get('USBGPU_FIXTURE_WMMA_INLINE', 'owned-adapter'),
+    'fixture_global_store': args.global_store,
     'finite_output': done is not None and done['finite_f32'] * 4 == done['output_bytes'],
   }
   (args.evidence / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
