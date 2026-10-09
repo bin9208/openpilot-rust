@@ -117,6 +117,7 @@ pub(super) fn validate(
     config: &Config,
     model: &Path,
     cameras: &[[u32; 2]],
+    binding: &crate::worker_artifact::Binding,
     cancelled: &AtomicBool,
 ) -> Result<Option<Failed>, Error> {
     let mut log = tempfile::tempfile()?;
@@ -126,7 +127,11 @@ pub(super) fn validate(
         .arg("--smoke")
         .arg(model)
         .arg("--worker")
-        .arg(&config.worker);
+        .arg(&config.worker)
+        .arg("--assets")
+        .arg(binding.root())
+        .arg("--expect-assets-manifest")
+        .arg(binding.manifest_sha256());
     for camera in cameras {
         command
             .arg("--camera")

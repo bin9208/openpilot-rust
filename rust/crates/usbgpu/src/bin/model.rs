@@ -43,6 +43,7 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let mut worker = std::env::current_exe()?.with_file_name("openpilot-usbgpu-worker");
     let mut devices = PathBuf::from(hardware::SYSFS);
     let mut identity_root = PathBuf::from("/");
+    let mut expected_assets = None;
     let model_path = if mode == "--smoke" {
         Some(PathBuf::from(argument(&mut args)?))
     } else {
@@ -56,6 +57,7 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
             "--worker" => worker = argument(&mut args)?.into(),
             "--devices" => devices = argument(&mut args)?.into(),
             "--identity-root" => identity_root = argument(&mut args)?.into(),
+            "--expect-assets-manifest" => expected_assets = Some(argument(&mut args)?),
             "--camera" => cameras.push(match argument(&mut args)?.as_str() {
                 "1928x1208" => [1928, 1208],
                 "1344x760" => [1344, 760],
@@ -72,7 +74,14 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
         "--smoke" => {
             let model = model_path.ok_or(Error::Contract("missing smoke model"))?;
             if cameras.is_empty() {cameras = model_delivery::validation::cameras("");}
-            let reports = smoke::run(&worker, &model, &cameras, &cancelled)?;
+            let binding = openpilot_usbgpu::worker_artifact::bind(&model, &paths.assets)?;
+            if expected_assets
+                .as_deref()
+                .is_some_and(|expected| expected != binding.manifest_sha256())
+            {
+                return Err(Error::Contract("native asset binding changed before smoke").into());
+            }
+            let reports = smoke::run_with_assets(&worker, &model, &cameras, &cancelled, &binding)?;
             emit(serde_json::to_string_pretty(&reports)?)?;
         }
         "--boot" => {

@@ -43,6 +43,7 @@ fn installed_attempt(
     cancelled: &AtomicBool,
 ) -> Result<Option<Failed>, Error> {
     if presence::present(&config.devices) {
+        let binding = crate::worker_artifact::bind(path, &config.paths.assets)?;
         let device = validation::Device::read(&config.identity_root);
         let cameras = device.as_ref().map_or_else(
             |_| validation::cameras(""),
@@ -55,7 +56,7 @@ fn installed_attempt(
                 &validation::Provider {
                     worker: &config.worker,
                     runner: &config.runner,
-                    assets: &config.paths.assets,
+                    manifest_sha256: binding.manifest_sha256(),
                 },
             )
         });
@@ -72,7 +73,7 @@ fn installed_attempt(
                 "Reusing successful precompiled eGPU validation for this device/runtime"
             )?;
         } else {
-            if let Some(failed) = runner::validate(config, path, &cameras, cancelled)? {
+            if let Some(failed) = runner::validate(config, path, &cameras, &binding, cancelled)? {
                 return Ok(Some(failed));
             }
             match validation::save(path, key.as_deref()) {

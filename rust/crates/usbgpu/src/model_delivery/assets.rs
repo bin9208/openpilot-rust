@@ -5,6 +5,7 @@ use crate::{
     worker::{Info, Metadata},
 };
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     fs,
@@ -29,6 +30,7 @@ pub struct Package {
     pub descriptor: PathBuf,
     pub metadata: PathBuf,
     pub checkpoint: String,
+    pub manifest_sha256: String,
 }
 
 fn regular(root: &Path, relative: &str) -> Result<PathBuf, Error> {
@@ -65,7 +67,9 @@ pub fn validate(root: &Path, digest: &str, model_size: u64) -> Result<Package, E
     if manifest_file.metadata()?.len() > 1024 * 1024 {
         return Err(Error::Invalid("native asset manifest too large".into()));
     }
-    let manifest: PackageManifest = serde_json::from_slice(&fs::read(manifest_file)?)?;
+    let manifest_bytes = fs::read(manifest_file)?;
+    let manifest_sha256 = format!("{:x}", Sha256::digest(&manifest_bytes));
+    let manifest: PackageManifest = serde_json::from_slice(&manifest_bytes)?;
     if manifest.version != 1 || manifest.model_sha256 != digest || manifest.files.len() > 512 {
         return Err(Error::Invalid(
             "native asset package identity mismatch".into(),
@@ -173,5 +177,6 @@ pub fn validate(root: &Path, digest: &str, model_size: u64) -> Result<Package, E
         descriptor,
         metadata,
         checkpoint,
+        manifest_sha256,
     })
 }

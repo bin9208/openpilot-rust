@@ -46,7 +46,7 @@ pub fn cameras(device: &str) -> Vec<[u32; 2]> {
 pub struct Provider<'a> {
     pub worker: &'a Path,
     pub runner: &'a Path,
-    pub assets: &'a Path,
+    pub manifest_sha256: &'a str,
 }
 
 /// Unknown device/OS identity disables reuse, preserving the source fallback.
@@ -71,7 +71,7 @@ pub fn key(
         serde_json::from_slice(&fs::read(root.join("installed.json"))?)?;
     let identity = serde_json::json!({"schema":2,"catalog":catalog,"device":device,"camera_sizes":cameras(&device.device),
         "provider":{"kind":"native-usbgpu","worker_sha256":sha256(provider.worker)?,"runner_sha256":sha256(provider.runner)?,
-            "assets_manifest_sha256":sha256(&provider.assets.join("manifest.json"))?}});
+            "assets_manifest_sha256":provider.manifest_sha256}});
     Ok(Some(format!(
         "{:x}",
         Sha256::digest(serde_json::to_vec(&identity)?)

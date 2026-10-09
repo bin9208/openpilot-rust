@@ -99,6 +99,7 @@ pub mod probe;
 pub mod runtime_bus;
 pub mod warp;
 pub mod worker;
+pub mod worker_artifact;
 pub mod worker_native;
 
 pub mod gpu_memory;

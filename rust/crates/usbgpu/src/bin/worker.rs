@@ -2,7 +2,8 @@ use openpilot_usbgpu::{
     hcq_gpu::HcqGpu,
     hcq_model::Model,
     native_runtime::{self, FirmwareDirectory},
-    worker::{self, Info, Metadata},
+    worker::{self},
+    worker_artifact,
     worker_native::NativeRuntime,
     Error,
 };
@@ -15,79 +16,71 @@ use std::{
 };
 
 fn run() -> Result<(), Error> {
-    let args = std::env::args().skip(1).collect::<Vec<_>>();
+    let mut args = std::env::args().skip(1).collect::<Vec<_>>();
     if args == ["--help"] {
         println!("openpilot-usbgpu-worker MODEL.pkl SHARED_FILE WIDTH HEIGHT");
         return Ok(());
     }
-    if args.len() != 4 {
+    let structural = args
+        .first()
+        .is_some_and(|value| value == "--check-artifacts");
+    if structural {
+        args.remove(0);
+    }
+    if args.len() != if structural { 3 } else { 4 } {
         return Err(Error::Contract(
             "expected model, shared file, camera width and height",
         ));
     }
-    if !worker::watch_parent() {
+    if !structural && !worker::watch_parent() {
         return Ok(());
     }
+    let width = if structural { 1 } else { 2 };
     let camera = [
-        args[2]
+        args[width]
             .parse()
             .map_err(|_| Error::Contract("invalid camera width"))?,
-        args[3]
+        args[width + 1]
             .parse()
             .map_err(|_| Error::Contract("invalid camera height"))?,
     ];
     let path = PathBuf::from(&args[0]);
-    let directory = path
-        .parent()
-        .ok_or(Error::Contract("model has no directory"))?;
-    let installed: serde_json::Value =
-        serde_json::from_slice(&fs::read(directory.join("installed.json"))?)?;
-    let packaged = std::env::current_exe()?.with_file_name("usbgpu-assets");
-    let digest = installed["pickle"]["sha256"]
-        .as_str()
-        .ok_or(Error::Contract("missing installed model hash"))?;
-    if digest.len() != 64
-        || !digest
-            .bytes()
-            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-    {
-        return Err(Error::Contract("invalid installed model hash"));
+    let assets = std::env::var_os("USBGPU_ASSETS_ROOT")
+        .map(PathBuf::from)
+        .map_or_else(
+            || std::env::current_exe().map(|path| path.with_file_name("usbgpu-assets")),
+            Ok,
+        )?;
+    let expected = match std::env::var("USBGPU_ASSETS_MANIFEST_SHA256") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(std::env::VarError::NotUnicode(_)) => {
+            return Err(Error::Contract("invalid native asset manifest identity"))
+        }
+    };
+    let artifact = worker_artifact::prepare(&path, &assets, camera, expected.as_deref())
+        .map_err(|error| Error::Protocol(format!("native model assets: {error}")))?;
+    if structural {
+        use sha2::{Digest, Sha256};
+        serde_json::to_writer(
+            io::stdout().lock(),
+            &serde_json::json!({
+            "assets":artifact.assets,"manifest_sha256":artifact.manifest_sha256,
+            "descriptor_sha256":format!("{:x}",Sha256::digest(&artifact.descriptor)),
+            "warp_sha256":format!("{:x}",Sha256::digest(&artifact.warp)),
+            "camera":camera,"checkpoint":artifact.info.checkpoint,
+            "frame_size":artifact.info.frame_size,"output_count":artifact.info.output_count,
+            "scope":"native artifact preparation; no GPU open or execution"}),
+        )?;
+        return Ok(());
     }
-    let companions = if path.with_extension("hcq.json").is_file() {
-        directory.to_path_buf()
-    } else {
-        packaged.join("models").join(digest)
-    };
-    let descriptor_path = if companions == directory {
-        path.with_extension("hcq.json")
-    } else {
-        companions.join("model.hcq.json")
-    };
-    let metadata_path = if companions == directory {
-        path.with_extension("hcq-meta.json")
-    } else {
-        companions.join("model.hcq-meta.json")
-    };
-    let metadata: Metadata = serde_json::from_slice(&fs::read(metadata_path)?)?;
-    let descriptor = fs::read(descriptor_path)?;
-    let descriptor_header: serde_json::Value = serde_json::from_slice(&descriptor)?;
-    if installed["format"] != "comma-generic-onnx"
-        || installed["gpu_arch"] != "gfx1200"
-        || installed["model_checkpoint"] != metadata.checkpoint
-        || installed["pickle"]["sha256"] != metadata.model_sha256
-        || descriptor_header["model_sha256"] != metadata.model_sha256
-    {
-        return Err(Error::Contract(
-            "precompiled worker artifact metadata mismatch",
-        ));
-    }
-    let info = Info::new(metadata, camera)?;
-    let assets = if directory.join("firmware").is_dir() {
-        directory.to_path_buf()
-    } else {
-        packaged
-    };
-    let warp = fs::read(assets.join(format!("warp-gfx1200-{}x{}.json", camera[0], camera[1])))?;
+    let worker_artifact::Artifact {
+        assets,
+        descriptor,
+        warp,
+        info,
+        ..
+    } = artifact;
     let mut firmware = FirmwareDirectory(assets.join("firmware"));
     let cancelled = Arc::new(AtomicBool::new(false));
     let gpu = HcqGpu::new(native_runtime::open(&mut firmware)?, cancelled)?;

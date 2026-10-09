@@ -84,6 +84,16 @@ impl Client {
         let command = Command::new(launch.worker);
         Self::from_command(command, launch)
     }
+    pub fn launch_with_assets(
+        launch: Launch<'_>,
+        binding: &crate::worker_artifact::Binding,
+    ) -> Result<Self, Error> {
+        let mut command = Command::new(launch.worker);
+        command
+            .env("USBGPU_ASSETS_ROOT", binding.root())
+            .env("USBGPU_ASSETS_MANIFEST_SHA256", binding.manifest_sha256());
+        Self::from_command(command, launch)
+    }
     pub fn load_command(command: Command, model: &Path, camera: [u32; 2]) -> Result<Self, Error> {
         Self::from_command(
             command,

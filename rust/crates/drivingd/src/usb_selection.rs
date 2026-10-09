@@ -45,7 +45,9 @@ impl Configuration {
         })
     }
     pub fn present(&self) -> Result<bool, Error> {
-        Ok(!hardware::devices(&self.devices)?.is_empty())
+        Ok(openpilot_usbgpu::model_delivery::presence::present(
+            &self.devices,
+        ))
     }
 }
 
@@ -92,19 +94,31 @@ pub fn start(
         return Ok(None);
     }
     let path = path.ok_or(Error::Contract("compiled USB model disappeared"))?;
+    let binding = match openpilot_usbgpu::worker_artifact::bind(&path, &config.paths.assets) {
+        Ok(binding) => binding,
+        Err(error) => {
+            fail(params)?;
+            return Err(
+                openpilot_usbgpu::Error::Protocol(format!("native model assets: {error}")).into(),
+            );
+        }
+    };
     let started = Instant::now();
     for attempt in 0..6 {
         let remaining = Duration::from_secs(120).saturating_sub(started.elapsed());
         if remaining.is_zero() {
             break;
         }
-        match UsbModel::launch(Launch {
-            worker: &config.worker,
-            model: &path,
-            camera,
-            timeout: remaining.min(Duration::from_secs(110)),
-            cancelled: Arc::clone(&config.cancelled),
-        }) {
+        match UsbModel::launch_with_assets(
+            Launch {
+                worker: &config.worker,
+                model: &path,
+                camera,
+                timeout: remaining.min(Duration::from_secs(110)),
+                cancelled: Arc::clone(&config.cancelled),
+            },
+            &binding,
+        ) {
             Ok(model) => {
                 params.put_bool("UsbGpuActive", true)?;
                 return Ok(Some(model));

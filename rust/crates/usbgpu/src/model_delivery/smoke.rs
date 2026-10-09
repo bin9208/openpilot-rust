@@ -65,16 +65,41 @@ pub fn run(
     cameras: &[[u32; 2]],
     cancelled: &Arc<AtomicBool>,
 ) -> Result<Vec<Report>, Error> {
+    run_inner(worker, model, cameras, cancelled, None)
+}
+
+pub fn run_with_assets(
+    worker: &Path,
+    model: &Path,
+    cameras: &[[u32; 2]],
+    cancelled: &Arc<AtomicBool>,
+    binding: &crate::worker_artifact::Binding,
+) -> Result<Vec<Report>, Error> {
+    run_inner(worker, model, cameras, cancelled, Some(binding))
+}
+
+fn run_inner(
+    worker: &Path,
+    model: &Path,
+    cameras: &[[u32; 2]],
+    cancelled: &Arc<AtomicBool>,
+    binding: Option<&crate::worker_artifact::Binding>,
+) -> Result<Vec<Report>, Error> {
     let mut reports = Vec::new();
     for &camera in cameras {
         let started = Instant::now();
-        let mut client = match Client::launch(Launch {
+        let launch = Launch {
             worker,
             model,
             camera,
             timeout: Duration::from_secs(110),
             cancelled: Arc::clone(cancelled),
-        }) {
+        };
+        let client = match binding {
+            Some(binding) => Client::launch_with_assets(launch, binding),
+            None => Client::launch(launch),
+        };
+        let mut client = match client {
             Ok(client) => client,
             Err(error) => return Err(failed(model, error, "load")?),
         };

@@ -35,6 +35,12 @@ impl UsbModel {
     pub fn launch(launch: Launch<'_>) -> Result<Self, Error> {
         Self::from_client(Client::launch(launch)?)
     }
+    pub fn launch_with_assets(
+        launch: Launch<'_>,
+        binding: &openpilot_usbgpu::worker_artifact::Binding,
+    ) -> Result<Self, Error> {
+        Self::from_client(Client::launch_with_assets(launch, binding)?)
+    }
     pub fn from_client(client: Client) -> Result<Self, Error> {
         let mut slices = BTreeMap::new();
         for (name, section) in &client.info.output_slices {
