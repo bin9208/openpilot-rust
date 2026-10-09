@@ -15,6 +15,7 @@ from check_locationd_daemon import read_line, readers_ready
 from check_paramsd import compare
 from paramsd_fixture import car_params, event, pose
 from paramsd_loop_source import trace
+from paramsd_startup_gate import StartupGate, build_library
 
 
 def frames(gps, count):
@@ -32,6 +33,7 @@ def frames(gps, count):
 def phase(target, oracle, paths, restart):
   root, output = paths
   output.mkdir(parents=True, exist_ok=True)
+  library = build_library(root, output)
   gps = 'gpsLocation' if restart else 'gpsLocationExternal'
   prefix = 'rust-probe-params-' + uuid.uuid4().hex
   shm = Path('/dev/shm/msgq_' + prefix)
@@ -51,6 +53,7 @@ def phase(target, oracle, paths, restart):
           'replay': True, 'simulation': True, 'gps': gps, 'frames': frames(gps, 8 if restart else 1202)}
   case['frames'].insert(0, {'time': 99.95, 'messages': []})
   expected = trace(oracle, case)
+  gate = StartupGate(memory / 'LastGPSPosition', shm / 'livePose', output)
   environment = os.environ | {'OPENPILOT_PREFIX': prefix, 'PARAMS_ROOT': str(root / 'params'), 'DEBUG': '1',
                              'REPLAY': '1', 'SIMULATION': '1', 'PATH': str(root / 'no-programs')}
   for name in ('ZMQ', 'CEREAL_FAKE'):
@@ -59,7 +62,9 @@ def phase(target, oracle, paths, restart):
   actual, packets = [], []
   try:
     with (output / 'stdout.log').open('w') as stdout, (output / 'stderr.log').open('w') as stderr, (output / 'peer.log').open('w') as peer_log:
-      daemon = subprocess.Popen([target / 'debug/openpilot-paramsd', '--memory-root', root / 'memory'], env=environment, stdout=stdout, stderr=stderr)
+      daemon = subprocess.Popen([target / 'debug/openpilot-paramsd', '--memory-root', root / 'memory'],
+        env=environment | gate.environment(library), stdout=stdout, stderr=stderr, pass_fds=gate.inherited)
+      gate.spawned()
       names = ('carState', 'liveCalibration', gps, 'livePose')
       deadline = time.monotonic() + 10
       while not all((shm / name).exists() for name in (*names, 'liveParameters')):
@@ -81,10 +86,14 @@ def phase(target, oracle, paths, restart):
         assert daemon.poll() is None, (output / 'stderr.log').read_text()
         assert time.monotonic() < deadline
         time.sleep(.001)
-      for frame in case['frames'][1:]:
+      gate.wait()
+      previous = gate.pointer()
+      for index, frame in enumerate(case['frames'][1:]):
         before = time.monotonic_ns()
         peer.stdin.write(json.dumps({'packets': frame['messages']}) + '\n')
         peer.stdin.flush()
+        if index == 0:
+          gate.release(previous)
         packet = read_line(peer)['packet']
         after = time.monotonic_ns()
         with log.Event.from_bytes(bytes(packet)) as message:
@@ -116,18 +125,25 @@ def phase(target, oracle, paths, restart):
       result = {'pass': True, 'publications': len(actual), 'native_executable': executable, 'source_equal': True,
                 'restart': restart, 'persisted_packet_index': None if restart else packets.index(list(saved)), 'gps_service': gps,
                 'signal': int(signum), 'exit': daemon.returncode, 'shutdown_seconds': stop_time, 'no_python_runtime': True}
+      result['startup_poll'] = gate.report
       (output / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
       print(json.dumps(result))
   finally:
-    for process in (peer, daemon):
-      if process is not None and process.poll() is None:
-        process.kill()
-        process.wait(timeout=5)
-    (output / 'source.json').write_text(json.dumps(expected, indent=2) + '\n')
-    (output / 'native.json').write_text(json.dumps(actual, indent=2) + '\n')
-    (output / 'packets.json').write_text(json.dumps(packets) + '\n')
-    (output / 'input.json').write_text(json.dumps(case) + '\n')
-    shutil.rmtree(shm)
+    try:
+      for process in (peer, daemon):
+        if process is not None and process.poll() is None:
+          process.kill()
+          process.wait(timeout=5)
+      if peer is not None:
+        peer.stdin.close()
+        peer.stdout.close()
+      (output / 'source.json').write_text(json.dumps(expected, indent=2) + '\n')
+      (output / 'native.json').write_text(json.dumps(actual, indent=2) + '\n')
+      (output / 'packets.json').write_text(json.dumps(packets) + '\n')
+      (output / 'input.json').write_text(json.dumps(case) + '\n')
+    finally:
+      gate.close()
+      shutil.rmtree(shm)
 
 
 def main():
