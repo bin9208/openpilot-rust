@@ -27,6 +27,11 @@ signal-hook = "0.3"
 parking_lot = "0.12"
 url = "=2.5.8"
 sha2 = "0.10"
+ureq = { version = "=3.4.2", features = ["rustls"] }
+openpilot-http-transport = { path = "../http-transport" }
+tar = { version = "=0.4.46", default-features = false }
+flate2 = "=1.1.10"
+rustls-native-certs = "=0.8.4"
 
 [[bin]]
 name = "openpilot-usbgpu-check"

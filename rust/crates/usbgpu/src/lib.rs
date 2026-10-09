@@ -53,6 +53,7 @@ pub mod usb3;
 pub mod custom_asm;
 
 pub mod model;
+pub mod model_delivery;
 #[cfg(feature = "native-skip-miri")]
 pub mod qcom_warp;
 pub mod warp_validation;

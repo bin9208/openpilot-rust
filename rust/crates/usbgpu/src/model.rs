@@ -1,5 +1,5 @@
 use crate::Error;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
     fs,
@@ -9,19 +9,43 @@ use std::{
 pub struct Paths {
     pub models: PathBuf,
     pub cache: PathBuf,
+    pub assets: PathBuf,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct ModelStatus {
     pub compiled: bool,
     pub compile_pending: bool,
 }
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Manifest {
     pub model_id: String,
     pub filename: String,
     pub size: u64,
     pub sha256: String,
     pub url: String,
+}
+pub const DEFAULT_MANIFEST_URL: &str =
+    "https://upload.shind0.synology.me/models/comma4-big-cinque-v3/manifest.json";
+
+pub(crate) fn authority(value: &str) -> Option<&str> {
+    let rest = value
+        .split_once("://")
+        .map(|(_, rest)| rest)
+        .or_else(|| value.strip_prefix("//"))?;
+    Some(rest.split(['/', '?', '#']).next().unwrap_or(""))
+}
+
+pub(crate) fn resolve(base: &str, relative: &str) -> Result<String, url::ParseError> {
+    let resolved = url::Url::parse(base)?.join(relative)?;
+    let Some(raw) = authority(relative).or_else(|| authority(base)) else {
+        return Ok(resolved.to_string());
+    };
+    Ok(format!(
+        "{}://{}{}",
+        resolved.scheme(),
+        raw,
+        &resolved[url::Position::BeforePath..]
+    ))
 }
 fn name(value: &str) -> bool {
     !value.is_empty()
@@ -46,11 +70,26 @@ impl Manifest {
             && url::Url::parse(&self.url).is_ok_and(|u| u.scheme() == "https")
     }
     pub fn cache_filename(&self) -> String {
-        let (stem, suffix) = self
-            .filename
-            .rsplit_once('.')
-            .expect("validated manifest suffix");
-        format!("{stem}-{}.{}", &self.sha256[..16], suffix)
+        let path = Path::new(&self.filename);
+        let stem = path
+            .file_stem()
+            .and_then(|value| value.to_str())
+            .unwrap_or(&self.filename);
+        let suffix = path
+            .extension()
+            .and_then(|value| value.to_str())
+            .map_or_else(String::new, |value| format!(".{value}"));
+        format!("{stem}-{}{suffix}", &self.sha256[..16])
+    }
+    pub fn resolve_url(&mut self, base: &str) -> bool {
+        if self.url.is_empty() {
+            return false;
+        }
+        let Ok(url) = resolve(base, &self.url) else {
+            return false;
+        };
+        self.url = url;
+        self.validate()
     }
     pub fn precompiled_only(&self) -> bool {
         self.filename.ends_with(".pkl")
@@ -62,8 +101,9 @@ fn json(path: &Path) -> Option<Value> {
         .and_then(|bytes| serde_json::from_slice(&bytes).ok())
 }
 fn manifest(value: &Value) -> Option<Manifest> {
-    let result: Manifest = serde_json::from_value(value.clone()).ok()?;
-    result.validate().then_some(result)
+    value.as_object()?;
+    let mut result: Manifest = serde_json::from_value(value.clone()).ok()?;
+    result.resolve_url(DEFAULT_MANIFEST_URL).then_some(result)
 }
 pub fn active_manifest(paths: &Paths) -> Option<Manifest> {
     let state = json(&paths.cache.join("state.json"))?;
@@ -86,74 +126,9 @@ pub fn local_compiled_path(paths: &Paths, model: &Manifest) -> PathBuf {
         .models
         .join(format!("big_driving_{}_tinygrad.pkl", &model.sha256[..16]))
 }
-fn chunk_manifest_exists(path: &Path) -> bool {
-    let mut name = path.as_os_str().to_os_string();
-    name.push(".chunkmanifest");
-    Path::new(&name).is_file()
-}
 pub fn installed(paths: &Paths, model: &Manifest) -> Option<PathBuf> {
-    let root = paths.cache.join("precompiled").join(&model.sha256);
-    let value = json(&root.join("installed.json"))?;
-    if value["protocol"] != 1
-        || value["gpu_arch"] != "gfx1200"
-        || value["frame_skip"] != 4
-        || value["camera_resolutions"] != serde_json::json!([[1928, 1208], [1344, 760]])
-    {
-        return None;
-    }
-    let generic = match value["format"].as_str()? {
-        "comma-generic-onnx" => true,
-        "comma-run-model" => false,
-        _ => return None,
-    };
-    if value[if generic {
-        "model_sha256"
-    } else {
-        "onnx_sha256"
-    }] != model.sha256
-    {
-        return None;
-    }
-    let catalog = url::Url::parse(value["catalog_url"].as_str()?).ok()?;
-    for (key, limit) in [
-        ("pickle", 4 * 1024 * 1024 * 1024u64),
-        ("runtime", 128 * 1024 * 1024),
-    ] {
-        if !sha(value[key]["sha256"].as_str()?)
-            || !(1..=limit).contains(&value[key]["size"].as_u64()?)
-        {
-            return None;
-        }
-        let url = catalog.join(value[key]["url"].as_str()?).ok()?;
-        if url.scheme() != "https"
-            || url[url::Position::BeforeUsername..url::Position::AfterPort]
-                != catalog[url::Position::BeforeUsername..url::Position::AfterPort]
-        {
-            return None;
-        }
-    }
-    if generic && value["pickle"]["sha256"] != model.sha256 {
-        return None;
-    }
-    if root.join("rejected").exists()
-        || root.join("model.pkl").metadata().ok()?.len() != value["pickle"]["size"].as_u64()?
-    {
-        return None;
-    }
-    let runtime_name = format!("runtime-{}", &value["runtime"]["sha256"].as_str()?[..16]);
-    if value["runtime_directory"] != runtime_name {
-        return None;
-    }
-    let runtime = root.join(runtime_name);
-    let entry = if generic {
-        "examples/openpilot/compile_warp.py"
-    } else {
-        "model_runtime.py"
-    };
-    if !runtime.join(entry).is_file() || !runtime.join("tinygrad/__init__.py").is_file() {
-        return None;
-    }
-    Some(root.join("model.pkl"))
+    crate::model_delivery::precompiled::installed(model, &paths.cache, &paths.assets)
+        .unwrap_or_default()
 }
 pub fn status(paths: &Paths) -> Result<ModelStatus, Error> {
     let Some(model) = active_manifest(paths) else {
@@ -163,10 +138,9 @@ pub fn status(paths: &Paths) -> Result<ModelStatus, Error> {
         });
     };
     let installed = installed(paths, &model).is_some();
-    let local = chunk_manifest_exists(&local_compiled_path(paths, &model));
     Ok(ModelStatus {
-        compiled: installed || (!model.precompiled_only() && local),
-        compile_pending: !installed && !local,
+        compiled: installed,
+        compile_pending: !installed,
     })
 }
 
@@ -175,16 +149,19 @@ pub fn active_compiled_path(paths: &Paths) -> Option<PathBuf> {
     if let Some(path) = installed(paths, &model) {
         return Some(path);
     }
-    if model.precompiled_only() {
-        return None;
-    }
-    let path = local_compiled_path(paths, &model);
-    chunk_manifest_exists(&path).then_some(path)
+    // A build-time Python chunk manifest is not a native execution companion.
+    // Local run_policy/comma-run-model adapters must issue native readiness first.
+    None
 }
 
 pub fn remove_active_chunk_manifest(paths: &Paths) -> Result<bool, Error> {
-    let Some(path) = active_compiled_path(paths) else {
+    let Some(model) = active_manifest(paths) else {
         return Ok(false);
+    };
+    let path = match installed(paths, &model) {
+        Some(path) => path,
+        None if model.precompiled_only() => return Ok(false),
+        None => local_compiled_path(paths, &model),
     };
     let mut manifest = path.into_os_string();
     manifest.push(".chunkmanifest");

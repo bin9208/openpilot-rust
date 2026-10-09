@@ -40,9 +40,11 @@ impl Runtime {
                         .join(".comma/models")
                 }
             });
+        let assets = std::env::current_exe()?.with_file_name("usbgpu-assets");
         let paths = || openpilot_usbgpu::model::Paths {
             models: root.join("openpilot/selfdrive/modeld/models"),
             cache: cache.clone(),
+            assets: assets.clone(),
         };
         let models = Arc::new(paths());
         let model_status = Rc::new(move || {

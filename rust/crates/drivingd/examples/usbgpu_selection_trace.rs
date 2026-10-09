@@ -63,6 +63,7 @@ fn main() -> Result<(), Error> {
             paths: Paths {
                 cache: cache.clone(),
                 models: models.clone(),
+                assets: directory.join("usbgpu-assets"),
             },
             devices: devices.clone(),
             worker: args[0].clone().into(),

@@ -16,7 +16,8 @@ This header describes the native ABI; it does not bundle a libusb implementation
 Each native handle owns its library, context, device handle, claimed interface
 and allocated streams. A batch retains all transfer records and buffers until
 submitted transfers deliver terminal callbacks, including cancellation after
-submission/event errors. No native call retains Rust storage after returning.
+submission/event errors. Public synchronous and batch operations return only
+after the native library no longer retains their Rust buffers or callback state.
 The current sanitizer control instruments the Rust owner and an owned libusb
 ABI fixture with ASan. The obsolete `USBGPU_SANITIZE` CXX build hook is removed.
 The fixture never opens actual USB hardware, and its results do not establish

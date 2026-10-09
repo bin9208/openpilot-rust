@@ -37,6 +37,7 @@ impl Configuration {
             paths: Paths {
                 cache,
                 models: std::env::current_dir()?.join("openpilot/selfdrive/modeld/models"),
+                assets: std::env::current_exe()?.with_file_name("usbgpu-assets"),
             },
             devices: hardware::SYSFS.into(),
             worker: std::env::current_exe()?.with_file_name("openpilot-usbgpu-worker"),

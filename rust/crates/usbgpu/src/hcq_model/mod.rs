@@ -10,6 +10,15 @@ use manifest::Manifest;
 use sha2::Digest;
 use storage::Bound;
 
+pub(crate) fn validate_descriptor(bytes: &[u8], sha: &str, size: u64) -> Result<(), Error> {
+    let manifest = Manifest::parse(bytes)?;
+    if manifest.model_sha256 != sha || manifest.model_bytes != size {
+        return Err(Error::Contract("native descriptor model identity mismatch"));
+    }
+    crate::hcq_vm::Program::parse(&serde_json::to_vec(&manifest.dispatcher)?)?;
+    Ok(())
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Allocation {
     pub key: u64,

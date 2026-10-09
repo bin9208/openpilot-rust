@@ -28,8 +28,11 @@ was `120ee5f63f391316ba10486f01a770c7704108c4013c8340d1f8125276e943ba`.
 The scoped comparison shares native-loaded buffers and the configured host
 emulator; original replay resets aliased recurrent inputs to zero. It does not
 independently validate the loader, physical GPU behavior, performance or devices.
-Native provisioning/boot policy and the ONNX graph-lowering/JIT/compiler/serialization
-path remain implementation work. Earlier failures remain recorded.
+Native provisioning/boot policy, companion exporters and native queue/runtime
+adapters for `comma-run-model` and local `run_policy` artifacts remain implementation
+work. The approved design permits explicit build-time Python ONNX/Tinygrad conversion;
+it does not permit downloaded Python execution or warp compilation in the native
+model worker. Earlier failures remain recorded.
 
 Current ignored evidence under `.omo/evidence/154-runtime-resume/`:
 

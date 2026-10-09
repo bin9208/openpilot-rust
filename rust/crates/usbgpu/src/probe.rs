@@ -26,17 +26,13 @@ pub fn architecture<B: RuntimeBus>(gpu: &Gpu<B>) -> String {
     format!("gfx{major}{minor}{step}")
 }
 
-pub fn run<B: RuntimeBus>(
-    gpu: &mut Gpu<B>,
-    descriptor: &[u8],
-    seed: u32,
-) -> Result<Vec<u8>, Error> {
+fn parse(descriptor: &[u8], arch: &str) -> Result<Manifest, Error> {
     if descriptor.len() > 4 << 20 {
         return Err(Error::Contract("GPU probe descriptor size limit"));
     }
-    let mut manifest: Manifest = serde_json::from_slice(descriptor)?;
+    let manifest: Manifest = serde_json::from_slice(descriptor)?;
     if manifest.version != 1
-        || manifest.arch != architecture(gpu)
+        || manifest.arch != arch
         || manifest.seed != 42
         || manifest.buffers != [8, 8, 1 << 22]
         || manifest.calls.len() != 2
@@ -50,12 +46,31 @@ pub fn run<B: RuntimeBus>(
     }
     let key = manifest
         .copies
-        .iter_mut()
+        .iter()
         .find(|copy| copy.buffer == 1 && copy.offset == 0)
         .ok_or(Error::Contract("GPU probe random key missing"))?;
     if key.data != [25, 17, 184, 20, 42, 0, 0, 0] {
         return Err(Error::Contract("GPU probe random key mismatch"));
     }
+    Ok(manifest)
+}
+
+pub(crate) fn validate_descriptor(descriptor: &[u8], arch: &str) -> Result<(), Error> {
+    parse(descriptor, arch)?;
+    Ok(())
+}
+
+pub fn run<B: RuntimeBus>(
+    gpu: &mut Gpu<B>,
+    descriptor: &[u8],
+    seed: u32,
+) -> Result<Vec<u8>, Error> {
+    let mut manifest = parse(descriptor, &architecture(gpu))?;
+    let key = manifest
+        .copies
+        .iter_mut()
+        .find(|copy| copy.buffer == 1 && copy.offset == 0)
+        .ok_or(Error::Contract("GPU probe random key missing"))?;
     key.data[4..8].copy_from_slice(&seed.to_le_bytes());
     let graph = Graph::load(
         gpu,
