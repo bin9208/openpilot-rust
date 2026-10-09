@@ -1,0 +1,76 @@
+[package]
+name = "openpilot-webrtc"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = []
+native = ["openpilot-msgq/native-skip-miri", "openpilot-messaging/native", "dep:rtc", "dep:aws-lc-rs", "dep:tokio", "dep:hyper", "dep:hyper-util", "dep:http-body-util", "dep:nix", "dep:uuid", "dep:ffmpeg-next", "dep:charset-norm"]
+
+[dependencies]
+openpilot-cereal = { path = "../cereal" }
+openpilot-carrot-state = { path = "../carrot-state" }
+openpilot-msgq = { path = "../msgq", default-features = false }
+openpilot-messaging = { path = "../messaging", default-features = false }
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-runtime-version = { path = "../runtime-version" }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-logging = { path = "../logging" }
+openpilot-params = { path = "../params" }
+capnp = "=0.27.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "=1.0.151", features = ["float_roundtrip"] }
+thiserror = "2"
+num-traits = "=0.2.19"
+rustix = { version = "=1.1.5", features = ["time"] }
+percent-encoding = "=2.3.2"
+md-5 = "=0.10.6"
+bytes = "=1.12.1"
+rtc = { path = "../../vendor/rtc-0.21.0", version = "=0.21.0", default-features = false, features = ["crypto-aws-lc-rs"], optional = true }
+aws-lc-rs = { version = "=1.18.1", default-features = false, features = ["aws-lc-sys"], optional = true }
+tokio = { version = "=1.53.1", features = ["rt", "macros", "net", "time", "sync", "signal", "io-util"], optional = true }
+hyper = { version = "=1.11.1", features = ["http1", "server"], optional = true }
+hyper-util = { version = "=0.1.21", features = ["tokio"], optional = true }
+http-body-util = { version = "=0.1.5", optional = true }
+nix = { version = "=0.31.3", default-features = false, features = ["net", "sched"], optional = true }
+uuid = { version = "=1.26.1", features = ["v4"], optional = true }
+ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format"], optional = true }
+charset-norm = { path = "../../vendor/charset-norm", version = "=3.5.1", optional = true }
+
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+todo = "deny"
+unimplemented = "deny"
+let_underscore_must_use = "deny"
+
+[[example]]
+name = "webrtc_ipc"
+required-features = ["native"]
+
+[[example]]
+name = "webrtc_owned_http"
+required-features = ["native"]
+
+[[example]]
+name = "webrtc_stun_checks"
+required-features = ["native"]
+
+[[bin]]
+name = "openpilot-webrtcd"
+path = "src/webrtcd.rs"
+required-features = ["native"]
+
+[[bin]]
+name = "openpilot-carrot-webrtcd"
+path = "src/carrot_webrtcd.rs"
+required-features = ["native"]

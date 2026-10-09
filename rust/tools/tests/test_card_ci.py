@@ -71,7 +71,7 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
     'joystickd-runtime', 'planner-runtime', 'planner-memory', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime',
     'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime',
     'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime'}
-  assert set(jobs['fast']['needs']) == inherited | {'card-runtime', 'webcam-runtime'}
+  assert set(jobs['fast']['needs']) == inherited | {'card-runtime', 'webrtc-runtime', 'webcam-runtime'}
   assert 'test "$CARD" = success' in jobs['fast']['steps'][0]['run']
   for job, test_command in (('workspace', 'cargo test --workspace'), ('card-runtime', 'cargo test -p openpilot-can')):
     scripts = [step.get('run', '') for step in jobs[job]['steps']]

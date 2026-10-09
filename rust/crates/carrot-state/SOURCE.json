@@ -1,0 +1,12 @@
+{
+  "source_commit": "3d55bd71f931fd10e0d82f5b1b22eaf922905783",
+  "original_runtime": "openpilot/selfdrive/carrot/realtime/compact_state.py",
+  "original_repository": "https://github.com/bin9208/openpilot-rust",
+  "frozen_live_files": [
+    "rust/crates/carrot-server/src/live/compact.rs",
+    "rust/crates/carrot-server/src/live/compact_fields.rs",
+    "rust/crates/carrot-server/src/live/compact_schema.rs",
+    "rust/crates/carrot-server/src/live/value.rs"
+  ],
+  "shared_boundary": "encoding/schema/Cereal reader helpers only; WebSocket and WebRTC scheduling remain independent"
+}
