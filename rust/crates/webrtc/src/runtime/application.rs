@@ -1,10 +1,10 @@
-use super::http::{Reply, internal, reply};
+use super::http::{internal, reply, Reply};
 use super::{Application, Profile, SessionHandle};
 use crate::{
-    Error,
     network::Network,
     request::StreamRequest,
     session::{Publishers, Session},
+    Error,
 };
 use hyper::StatusCode;
 use openpilot_params::Params;

@@ -1,8 +1,8 @@
-use super::{Lease, Network, dns::Name};
+use super::{dns::Name, Lease, Network};
 use crate::Error;
 use rtc::{
     ice::candidate::unmarshal_candidate,
-    peer_connection::{RTCRemoteTransportParameters, transport::RTCIceCandidateInit},
+    peer_connection::{transport::RTCIceCandidateInit, RTCRemoteTransportParameters},
 };
 use tokio::task::JoinSet;
 

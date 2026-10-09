@@ -1,9 +1,9 @@
-use super::{Peer, metadata::projected, owner::prepared_owner};
+use super::{metadata::projected, owner::prepared_owner, Peer};
 use crate::{
-    Error,
     network::{Gathered, Network},
-    owner_graph::{Graph, mid},
+    owner_graph::{mid, Graph},
     video::{ipc::Camera, track::Track},
+    Error,
 };
 use rtc::sansio::Protocol;
 use rtc::{

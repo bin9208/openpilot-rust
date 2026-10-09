@@ -4,14 +4,14 @@ mod metadata;
 mod owner;
 pub(crate) use answer::prepare;
 
-use crate::{Error, channel::Channel, sender::Sender};
+use crate::{channel::Channel, sender::Sender, Error};
 use bytes::BytesMut;
 use rtc::{
     peer_connection::{
-        RTCPeerConnection,
         event::{RTCDataChannelEvent, RTCPeerConnectionEvent},
         message::RTCMessage,
         state::RTCPeerConnectionState,
+        RTCPeerConnection,
     },
     sansio::Protocol,
     shared::{TaggedBytesMut, TransportContext, TransportProtocol},

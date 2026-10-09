@@ -1,13 +1,13 @@
 use super::{
-    Peer,
     metadata::{configured, h264},
+    Peer,
 };
 use crate::{
-    Error,
     channel::Channel,
-    owner_graph::{Graph, mid},
+    owner_graph::{mid, Graph},
     sender::Sender,
     video::{ipc::Camera, track::Track},
+    Error,
 };
 use rtc::{
     media_stream::MediaStreamTrack,

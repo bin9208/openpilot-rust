@@ -68,8 +68,10 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
   inherited = {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
     'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
     'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
-    'joystickd-runtime', 'planner-runtime', 'planner-memory', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime', 'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime', 'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime'}
-  assert set(jobs['fast']['needs']) == inherited | {'card-runtime'}
+    'joystickd-runtime', 'planner-runtime', 'planner-memory', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime',
+    'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime', 'xiaoge-runtime',
+    'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime'}
+  assert set(jobs['fast']['needs']) == inherited | {'card-runtime', 'webrtc-runtime'}
   assert 'test "$CARD" = success' in jobs['fast']['steps'][0]['run']
   for job, test_command in (('workspace', 'cargo test --workspace'), ('card-runtime', 'cargo test -p openpilot-can')):
     scripts = [step.get('run', '') for step in jobs[job]['steps']]

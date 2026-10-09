@@ -110,7 +110,7 @@ impl Lease {
         let (sockets, id, first) = {
             let mut state = self
                 .0
-                .0
+                 .0
                 .lock()
                 .map_err(|_| Error::Contract("mDNS query lock poisoned"))?;
             let Some(sockets) = state.sockets.as_ref().map(Arc::clone) else {
@@ -164,7 +164,7 @@ impl Lease {
 
 impl Drop for Lease {
     fn drop(&mut self) {
-        match self.0.0.lock() {
+        match self.0 .0.lock() {
             Ok(mut state) => {
                 state.users = state.users.saturating_sub(1);
                 if state.users == 0 {

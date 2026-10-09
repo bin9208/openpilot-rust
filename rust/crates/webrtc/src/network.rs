@@ -14,7 +14,7 @@ use rtc::peer_connection::transport::{
 };
 use rtc::stun::{
     message::Getter,
-    message::{BINDING_REQUEST, BINDING_SUCCESS, Message, TransactionId},
+    message::{Message, TransactionId, BINDING_REQUEST, BINDING_SUCCESS},
     xoraddr::XorMappedAddress,
 };
 use std::{
@@ -24,7 +24,7 @@ use std::{
 };
 use tokio::{
     task::JoinSet,
-    time::{Instant, timeout},
+    time::{timeout, Instant},
 };
 
 #[derive(Clone)]

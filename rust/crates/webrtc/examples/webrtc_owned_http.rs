@@ -1,4 +1,4 @@
-use openpilot_webrtc::{Error, network::Network, runtime};
+use openpilot_webrtc::{network::Network, runtime, Error};
 use std::net::{IpAddr, Ipv4Addr};
 
 fn main() -> Result<(), Error> {

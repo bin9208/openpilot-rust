@@ -1,5 +1,5 @@
 use crate::Error;
-use nix::sys::socket::{self, AddressFamily, SockFlag, SockType, SockaddrIn, sockopt};
+use nix::sys::socket::{self, sockopt, AddressFamily, SockFlag, SockType, SockaddrIn};
 use std::{
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, UdpSocket},
     os::fd::AsRawFd,

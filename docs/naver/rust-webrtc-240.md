@@ -328,6 +328,21 @@ pinned in `rust/tools/webrtc_source_requirements.txt`; binding provenance, nativ
 package versions, architecture, SHA and outputs are artifacts. Browser captures
 and unchanged historical corpora are reused separately.
 
+The first native CI run at ea3302e8b, [37950081007](https://github.com/bin9208/openpilot-rust/actions/runs/37950081007),
+passed native compilation, unit tests and strict Clippy on both architectures,
+then failed importing the original hardware chain because the declared Python
+requirements omitted pyserial. The repair pins pyserial 3.5 and verifies all 35
+declared packages in a fresh CPython 3.12.14 environment. Original hardware,
+WebRTC entrypoint and CI-helper imports pass without hardware stubs or the old
+broad site-packages path; the four actual identifier ownership sequences pass
+using the existing 52e69a11… native ELF. The same run exposed package-formatting
+differences and an inherited Card aggregate assertion missing webrtc-runtime.
+Only the reported formatting and required-job assertion are changed. Workspace
+formatting, the focused Card assertion and 23 isolation-policy checks pass;
+exact-head cloud results for the repair remain pending. Logs, invocations,
+clean package list and file identities are in
+`.omo/evidence/240-webrtc/ci-first-repair/final-freeze.json`.
+
 The job requires the FFmpeg 6.1.1 / libavcodec60 ABI, libvpx9 and libx264-164
 encoders. Ubuntu publishes [libavcodec-dev](https://packages.ubuntu.com/noble/libavcodec-dev),
 [libvpx9](https://packages.ubuntu.com/noble/libvpx9) and
@@ -336,8 +351,9 @@ This Linux runner coverage does not establish AGNOS deployment compatibility.
 The target package must supply compatible FFmpeg avcodec/avformat/avutil and
 libvpx/libx264 native libraries, their transitive dependencies and licenses;
 AWS-LC builds from the pinned Cargo source. Existing logger-only cross libraries
-do not enable the debug VP8/H264 encoders. No new local dependency install was
-performed for this CI change.
+do not enable the debug VP8/H264 encoders. Initial CI preparation reused local
+providers; its dependency repair installs only the pinned source-oracle closure
+into a separate clean environment.
 
 The adjacent original `selfdrive/carrot/server/features/stream.py` remains the
 server owner's integration boundary: raw POST bytes and Content-Type go to
