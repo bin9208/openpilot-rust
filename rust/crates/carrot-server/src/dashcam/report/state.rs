@@ -1,0 +1,82 @@
+use super::excursions::Excursions;
+use crate::Value;
+
+pub(super) struct State {
+    pub auto_enabled: f64,
+    pub auto_active: f64,
+    pub manual: f64,
+    pub manual_gas: f64,
+    pub manual_brake: f64,
+    pub stop: f64,
+    pub steer: f64,
+    pub distance: f64,
+    pub auto_distance: f64,
+    pub max_speed: f64,
+    pub max_lat: f64,
+    pub stop_count: usize,
+    pub disengage_count: usize,
+    pub steer_count: usize,
+    pub corner_count: usize,
+    pub causes: Vec<(&'static str, usize)>,
+    pub disengages: Vec<(f64, &'static str)>,
+    pub warn_counts: [usize; 3],
+    pub warn_previous: [bool; 3],
+    pub accel: Excursions,
+    pub decel: Excursions,
+    pub enabled: bool,
+    pub standstill: bool,
+    pub steering: bool,
+    pub cornering: bool,
+    pub last_cancel: f64,
+    pub first_wall: f64,
+    pub last_wall: f64,
+    pub source: &'static str,
+    pub used_log: bool,
+    pub steer_ratio: f64,
+    pub wheelbase: f64,
+}
+impl State {
+    pub fn new() -> Self {
+        Self {
+            auto_enabled: 0.0,
+            auto_active: 0.0,
+            manual: 0.0,
+            manual_gas: 0.0,
+            manual_brake: 0.0,
+            stop: 0.0,
+            steer: 0.0,
+            distance: 0.0,
+            auto_distance: 0.0,
+            max_speed: 0.0,
+            max_lat: 0.0,
+            stop_count: 0,
+            disengage_count: 0,
+            steer_count: 0,
+            corner_count: 0,
+            causes: Vec::new(),
+            disengages: Vec::new(),
+            warn_counts: [0; 3],
+            warn_previous: [false; 3],
+            accel: Excursions::new(true, 1.5, 2.5),
+            decel: Excursions::new(false, -2.0, -3.0),
+            enabled: false,
+            standstill: false,
+            steering: false,
+            cornering: false,
+            last_cancel: -9e9,
+            first_wall: 0.0,
+            last_wall: 0.0,
+            source: "",
+            used_log: false,
+            steer_ratio: 14.0,
+            wheelbase: 2.8,
+        }
+    }
+    pub fn warnings(&self) -> Value {
+        Value::object([
+            ("fcw", Value::integer(self.warn_counts[0])),
+            ("ldw", Value::integer(self.warn_counts[1])),
+            ("driverDistracted", Value::integer(self.warn_counts[2])),
+        ])
+    }
+}

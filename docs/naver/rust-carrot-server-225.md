@@ -920,6 +920,32 @@ separately in [#252](https://github.com/bin9208/openpilot-rust/issues/252);
 changing warning semantics is outside the current compatibility conversion.
 This observation is not vehicle-log evidence.
 
+## Driving-report HTTP integration (2026-10-09 KST)
+
+The native report now reads raw, zstd and bzip2 logs with the full cereal schema,
+retaining cross-segment state, warning/disengagement/corner aggregation,
+excursion merging and limits, source selection and original numeric formatting.
+Its 51 standalone comparisons include an unfinished zstd stream: the original
+preserves the decoded prefix on unexpected EOF, while checksum and malformed-tail
+errors still fail. The native decoder follows that distinction.
+
+Nine HTTP source/native comparisons pass for default and qlog selection, HEAD,
+duplicate query values, segment aliases, missing routes, POST rejection, NaN and
+an owned-root permission error. Six Application responses preserve normal report
+results and unrelated Params access before and after either success or a 500.
+The permission-error comparison normalizes only the owned fixture root in the
+body and its corresponding Content-Length delta; captured wire bytes remain exact.
+All owned source/native processes exited successfully and cleanup checks passed.
+
+The selected examples and Application were built; strict all-target Clippy,
+19 library tests, formatting, Ruff/syntax and diff checks pass. Existing unchanged
+standalone and upload evidence was reused. The source comparisons are available
+through `rust/tools/carrot_server_dashcam_report*.py`; current results are under
+`.omo/evidence/carrot-server-225-resume/dashcam-report/`.
+Only `bzip2` 0.6.1 and `libbz2-rs-sys` 0.2.5 were added to the lockfile, together
+with a dependency edge to the already locked zstd 0.13.3. Other versions remain
+unchanged. Whole-server and normal-startup integration remain open.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
