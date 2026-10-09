@@ -122,6 +122,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.carrot_server",
       "status": "not_ported",
+      "runtime_scope": "Partial native feature and HTTP comparisons are recorded in docs/naver/rust-carrot-server-225.md; complete server startup remains unfinished. The original dashcam/__init__.py registers routes.py only: legacy server-side replay scan/query/cache modules remain inactive and unported. Active replay-source file routes and unchanged browser-side replay assets remain in scope.",
       "production_replaced": false
     },
     {

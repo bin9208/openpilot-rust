@@ -26,6 +26,37 @@ pub struct Snapshot {
     pub prompt: Option<Prompt>,
 }
 
+/// Reads the live connection without holding the mutable action client.
+#[derive(Clone)]
+pub struct SnapshotReader {
+    peer: Peer,
+    shared: Shared,
+}
+
+impl SnapshotReader {
+    pub async fn snapshot(&self) -> Result<Snapshot, Error> {
+        let (adapters, devices) = objects::snapshot(&read_objects(&self.peer).await?)?;
+        let state = self.shared.lock()?;
+        Ok(Snapshot {
+            adapters,
+            devices,
+            pair: state.pair.clone(),
+            prompt: state.prompt.clone(),
+        })
+    }
+}
+
+async fn read_objects(peer: &Peer) -> Result<Vec<objects::Object>, Error> {
+    let message = Message::new_method_call(
+        "org.bluez",
+        "/",
+        "org.freedesktop.DBus.ObjectManager",
+        "GetManagedObjects",
+    )
+    .map_err(Error::Request)?;
+    objects::read(&peer.send(message, Duration::from_secs(10)).await?)
+}
+
 pub(super) struct Connection {
     pub(super) peer: Peer,
     agent: agent::Server,
@@ -83,14 +114,7 @@ impl Bluez {
 
     async fn objects(&mut self) -> Result<Vec<objects::Object>, Error> {
         let peer = self.ensure().await?;
-        let message = Message::new_method_call(
-            "org.bluez",
-            "/",
-            "org.freedesktop.DBus.ObjectManager",
-            "GetManagedObjects",
-        )
-        .map_err(Error::Request)?;
-        objects::read(&peer.send(message, Duration::from_secs(10)).await?)
+        read_objects(&peer).await
     }
 
     pub(super) async fn locate(&mut self, address: &Address) -> Result<dbus::Path<'static>, Error> {
@@ -105,13 +129,13 @@ impl Bluez {
     }
 
     pub async fn snapshot(&mut self) -> Result<Snapshot, Error> {
-        let (adapters, devices) = objects::snapshot(&self.objects().await?)?;
-        let state = self.shared.lock()?;
-        Ok(Snapshot {
-            adapters,
-            devices,
-            pair: state.pair.clone(),
-            prompt: state.prompt.clone(),
+        self.snapshot_reader().await?.snapshot().await
+    }
+
+    pub async fn snapshot_reader(&mut self) -> Result<SnapshotReader, Error> {
+        Ok(SnapshotReader {
+            peer: self.ensure().await?,
+            shared: self.shared.clone(),
         })
     }
 
@@ -143,6 +167,9 @@ impl Bluez {
         let (stop, mut stopping) = watch::channel(false);
         self.scan_stop = Some(stop);
         self.scan.spawn(async move {
+            if *stopping.borrow() {
+                return Ok(());
+            }
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_secs(30)) => {},
                 _ = stopping.wait_for(|stop| *stop) => {},

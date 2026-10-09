@@ -1,15 +1,18 @@
 #![forbid(unsafe_code)]
 
+mod capture;
 mod detached_child;
 mod ensure;
 mod exec;
 mod launch;
+mod lock_fd;
 mod logging;
 mod persistent;
 mod pid;
 mod process;
 mod state;
 
+pub use capture::{capture_output, CaptureError};
 pub use ensure::ensure_running;
 pub use launch::{run_child, CapturedChild, CapturedCommand, NativeCommand};
 pub use logging::ProcessLog;

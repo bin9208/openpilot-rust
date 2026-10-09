@@ -411,6 +411,7 @@ dependencies = [
  "idna",
  "indexmap",
  "log",
+ "publicsuffix",
  "serde",
  "serde_derive",
  "serde_json",
@@ -1180,8 +1181,6 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 [[package]]
 name = "hyper"
 version = "1.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27b501faa50e7a26c3d3560ca625132f4078a17771f4810baf70475ae48cbe43"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -1656,6 +1655,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "mime"
+version = "0.3.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
+
+[[package]]
 name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1690,6 +1695,21 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "multer"
+version = "3.1.0"
+dependencies = [
+ "bytes",
+ "encoding_rs",
+ "futures-util",
+ "http",
+ "httparse",
+ "memchr",
+ "mime",
+ "spin",
+ "version_check",
 ]
 
 [[package]]
@@ -2118,6 +2138,61 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "unicode-general-category 0.6.0",
+]
+
+[[package]]
+name = "openpilot-carrot-server"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "brotli-decompressor",
+ "bytes",
+ "capnp",
+ "chrono",
+ "encoding_rs",
+ "flate2",
+ "futures-util",
+ "http-body-util",
+ "httpdate",
+ "hyper",
+ "hyper-util",
+ "libc",
+ "libloading",
+ "multer",
+ "nix 0.31.3",
+ "num-bigint",
+ "num-traits",
+ "openpilot-beepd",
+ "openpilot-bluetooth",
+ "openpilot-calibrationd",
+ "openpilot-carrot-navi",
+ "openpilot-cereal",
+ "openpilot-dashcam-upload",
+ "openpilot-hardware-info",
+ "openpilot-http-transport",
+ "openpilot-logging",
+ "openpilot-logmessaged",
+ "openpilot-messaging",
+ "openpilot-params",
+ "openpilot-process-supervision",
+ "openpilot-runtime-core",
+ "openpilot-usbgpu",
+ "openpilot-web-upload",
+ "percent-encoding",
+ "reqwest",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha1",
+ "sha2",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-tungstenite",
+ "ureq",
+ "url",
+ "uuid",
+ "zlib-rs",
 ]
 
 [[package]]
@@ -3370,22 +3445,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "openpilot-web-upload"
-version = "0.1.0"
-dependencies = [
- "encoding_rs",
- "openpilot-logging",
- "openpilot-runtime-core",
- "rand 0.9.5",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "ureq",
- "url",
-]
-
-[[package]]
 name = "openpilot-usbgpu"
 version = "0.1.0"
 dependencies = [
@@ -3398,6 +3457,22 @@ dependencies = [
  "signal-hook",
  "tempfile",
  "thiserror",
+ "url",
+]
+
+[[package]]
+name = "openpilot-web-upload"
+version = "0.1.0"
+dependencies = [
+ "encoding_rs",
+ "openpilot-logging",
+ "openpilot-runtime-core",
+ "rand 0.9.5",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "ureq",
  "url",
 ]
 
@@ -3660,6 +3735,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "psl-types"
+version = "2.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33cb294fe86a74cbcf50d4445b37da762029549ebeea341421c7c70370f86cac"
+
+[[package]]
+name = "publicsuffix"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f42ea446cab60335f76979ec15e12619a2165b5ae2c12166bef27d283a9fadf"
+dependencies = [
+ "idna",
+ "psl-types",
+]
+
+[[package]]
 name = "qrcodegen"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3745,17 +3836,6 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "rand"
-version = "0.10.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65c9fb96cbc91e3478eaae79a69fcd3f1ae4ad052e471fe6732fff548984b4af"
-dependencies = [
- "chacha20",
- "getrandom 0.4.3",
- "rand_core 0.10.1",
-]
-
-[[package]]
-name = "rand"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e058c7de0b26af77780c769414d6257830bb240f3c38477dbc2c16e5f54d6d4c"
@@ -3773,6 +3853,17 @@ checksum = "b9ef1d0d795eb7d84685bca4f72f3649f064e6641543d3a8c415898726a57b41"
 dependencies = [
  "rand_chacha 0.9.0",
  "rand_core 0.9.5",
+]
+
+[[package]]
+name = "rand"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65c9fb96cbc91e3478eaae79a69fcd3f1ae4ad052e471fe6732fff548984b4af"
+dependencies = [
+ "chacha20",
+ "getrandom 0.4.3",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -3797,12 +3888,6 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
-
-[[package]]
-name = "rand_core"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
@@ -3818,6 +3903,12 @@ checksum = "76afc826de14238e6e8c374ddcc1fa19e374fd8dd986b0d2af0d02377261d83c"
 dependencies = [
  "getrandom 0.3.4",
 ]
+
+[[package]]
+name = "rand_core"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
 name = "rand_pcg"
@@ -3894,6 +3985,8 @@ checksum = "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
 dependencies = [
  "base64 0.23.1",
  "bytes",
+ "cookie",
+ "cookie_store",
  "futures-channel",
  "futures-core",
  "futures-util",
@@ -4790,8 +4883,6 @@ dependencies = [
 [[package]]
 name = "tungstenite"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c01152af293afb9c7c2a57e4b559c5620b421f6d133261c60dd2d0cdb38e6b8"
 dependencies = [
  "bytes",
  "data-encoding",
@@ -4907,8 +4998,6 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 [[package]]
 name = "ureq"
 version = "3.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a7ac20be9b7726e0bbdbf974c059676d9acb1cd414961f570a4e8231cacd7fc"
 dependencies = [
  "base64 0.23.1",
  "brotli-decompressor",
@@ -4929,8 +5018,6 @@ dependencies = [
 [[package]]
 name = "ureq-proto"
 version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f86fd172ccca569e458f61b6bdd6220965a9ef36e672a6852953b51a0e1583be"
 dependencies = [
  "base64 0.23.1",
  "http",
