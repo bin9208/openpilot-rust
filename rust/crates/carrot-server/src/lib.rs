@@ -67,6 +67,8 @@ mod web_settings_http;
 pub mod web_sound;
 mod web_sound_http;
 pub mod xiaoge;
+pub mod youtube_live;
+pub mod youtube_test;
 
 pub use openpilot_carrot_navi::json::Value;
 pub use request_body::DecodeFailure;

@@ -94,6 +94,7 @@ enum StreamMode {
     Stdout,
     Inherited,
     Redirected(Stdio, Stdio),
+    SessionFiles(Stdio, Stdio),
 }
 
 impl CapturedCommand {
@@ -137,6 +138,15 @@ impl CapturedCommand {
 
     pub fn spawn_redirected(&self, stdout: Stdio, stderr: Stdio) -> Result<CapturedChild, Error> {
         self.spawn_with_stdio(StreamMode::Redirected(stdout, stderr), &[], false)
+    }
+
+    /// Detach a new session with file outputs and EOF on stdin, matching Popen.
+    pub fn spawn_session_redirected(
+        &self,
+        stdout: Stdio,
+        stderr: Stdio,
+    ) -> Result<CapturedChild, Error> {
+        self.spawn_with_stdio(StreamMode::SessionFiles(stdout, stderr), &[], true)
     }
 
     pub fn spawn_piped_stdin(&self) -> Result<CapturedChild, Error> {
@@ -233,6 +243,9 @@ impl CapturedCommand {
             StreamMode::Stdout => command.stdout(Stdio::piped()),
             StreamMode::Inherited => &mut command,
             StreamMode::Redirected(stdout, stderr) => command.stdout(stdout).stderr(stderr),
+            StreamMode::SessionFiles(stdout, stderr) => {
+                command.stdin(Stdio::null()).stdout(stdout).stderr(stderr)
+            }
         };
         let mut child = command.spawn()?;
         if let Err(error) = wait_for_exec(&listener, &mut child, lock) {

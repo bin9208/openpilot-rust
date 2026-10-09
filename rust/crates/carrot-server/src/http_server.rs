@@ -103,11 +103,15 @@ async fn serve_local(
     let mut sync_changes = app.dashcam_sync_uploads.subscribe();
     let mut live_changes = app.live.as_ref().map(|service| service.subscribe());
     let mut navi_changes = app.web_navi.as_ref().map(|service| service.subscribe());
+    let mut youtube_changes = app.youtube_live.as_ref().map(|service| service.changed());
     app.dashcam_sync_uploads.quiesce();
     if let Some(service) = &app.live {
         service.quiesce();
     }
     if let Some(service) = &app.web_navi {
+        service.quiesce();
+    }
+    if let Some(service) = &app.youtube_live {
         service.quiesce();
     }
     let _ = stop.send(true);
@@ -119,7 +123,8 @@ async fn serve_local(
             }
             if connections.is_empty() && sounds.is_empty() && app.dashcam_sync_uploads.is_idle()
                 && app.live.as_ref().is_none_or(|service| service.is_idle())
-                && app.web_navi.as_ref().is_none_or(|service| service.is_idle()) {
+                && app.web_navi.as_ref().is_none_or(|service| service.is_idle())
+                && app.youtube_live.as_ref().is_none_or(|service| service.is_idle()) {
                 break;
             }
             tokio::select! {
@@ -128,6 +133,7 @@ async fn serve_local(
                 _ = sync_changes.changed() => {}
                 _ = async { if let Some(changes) = &mut live_changes { let _ = changes.changed().await; } }, if live_changes.is_some() => {}
                 _ = async { if let Some(changes) = &mut navi_changes { let _ = changes.changed().await; } }, if navi_changes.is_some() => {}
+                _ = async { if let Some(changes) = &mut youtube_changes { let _ = changes.changed().await; } }, if youtube_changes.is_some() => {}
                 Some(launch) = launches.recv() => {
                     sounds.spawn_local(crate::web_sound_http::run(launch));
                 }
@@ -140,6 +146,7 @@ async fn serve_local(
         app.dashcam_sync_uploads.force();
         if let Some(service) = &app.live { service.force(); }
         if let Some(service) = &app.web_navi { service.force(); }
+        if let Some(service) = &app.youtube_live { service.force(); }
         let _ = sound_stop.send(crate::web_sound::Shutdown::Force);
         connections.abort_all();
         while connections.join_next().await.is_some() {}
@@ -151,6 +158,9 @@ async fn serve_local(
     }
     if let Some(service) = &app.web_navi {
         service.shutdown().await?;
+    }
+    if let Some(service) = &app.youtube_live {
+        service.finish().await?;
     }
     warm.abort();
     network_stop.send_replace(true);

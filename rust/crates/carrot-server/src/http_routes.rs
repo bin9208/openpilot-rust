@@ -29,6 +29,9 @@ pub(crate) async fn dispatch(
     if crate::web_navi::http::matches(&path) {
         return Ok(crate::web_navi::http::handle(request, app.web_navi.clone()).await);
     }
+    if crate::youtube_live::http::matches(&path) {
+        return Ok(crate::youtube_live::http::handle(request, app.youtube_live.clone()).await);
+    }
     if path == "/api/cars" {
         return Ok(crate::cars::handle(&request, Arc::clone(&app.cars)).await);
     }

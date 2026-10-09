@@ -52,6 +52,7 @@ pub struct Application {
     pub live: Option<Arc<crate::live::Service>>,
     pub live_error: Option<String>,
     pub web_navi: Option<Arc<crate::web_navi::Service>>,
+    pub youtube_live: Option<Arc<crate::youtube_live::service::Service>>,
     pub system: Arc<crate::system::Service>,
     pub network_refresh: bool,
     pub qr_dependency: crate::qr_dependency::Provider,
@@ -106,6 +107,11 @@ impl Application {
             Err(error) => (None, Some(error.to_string())),
         };
         let web_navi = crate::web_navi::Service::start(params.native_params().cloned()).ok();
+        let youtube_live = crate::youtube_live::service::Service::original(
+            &config,
+            params.native_params().cloned(),
+        )
+        .ok();
         Self {
             qr_dependency: crate::qr_dependency::Provider::original(&config),
             system: crate::system::Service::original(&config),
@@ -135,6 +141,7 @@ impl Application {
             live,
             live_error,
             web_navi,
+            youtube_live,
             history: History::new(Paths {
                 log: config.state.join("param_changes.jsonl"),
                 baseline: config.state.join("fingerprint_baseline.json"),

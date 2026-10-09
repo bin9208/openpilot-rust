@@ -1194,9 +1194,56 @@ The original aiohttp helper retains asyncio and the optional preference audit
 is not reported as passing. Exact sources, executable and reuse limits are in
 `.omo/evidence/225-qr-dependency/checkpoint/receipt.json`.
 
+The native YouTube Live family now owns its Params/state/key handling, H.264
+admission, FLV/AAC muxing, queued RTMPS writes and HTTP routes. The normal App
+installs the service and includes its admitted work in the existing shutdown
+sequence. External FFmpeg and librtmp remain declared providers; diagnostics
+identify the actual native TLS/muxer implementation and missing provider symbols.
+The target package must supply compatible libraries and OS trust roots.
+
+Actual original/native comparisons under
+`.omo/evidence/carrot-server-225-resume/youtube-live/` cover live Cereal input
+and owned TLS/RTMP recipients, decoded video and silent AAC, key code points,
+URL preservation, route decoding, partial-write carry, disconnect and stalled
+writes. The live comparison briefly holds a real IDR until the reader confirms
+receipt, then resumes 20 Hz input; it is not proof of uninterrupted startup at
+that rate. The controlled partial write retains the original caller allocation
+and drains its remaining 23 bytes on the next call. This deliberately injected
+short write is not presented as naturally occurring provider behavior.
+
+The direct-provider sanitizer run exposed a TLS context lifetime problem when
+per-client library unloading lost the provider's process-global root. Successful
+loads now retain the Library for the process lifetime, matching the original
+ctypes ownership; each client still closes and frees its own handle. Failed
+symbol resolution is not cached. Disconnect, forced wake, repeated clients and
+controlled carry pass the affected ASan/LSan checks. Installed external libraries
+are uninstrumented; the controlled proxy and Rust boundary are instrumented.
+An empty-symbol provider leaves the App alive and reports all eleven missing
+functions, matching the original availability/error boundary.
+
+`openpilot-youtube-test` implements the active terminal command's offroad camera
+test. The original and native paths exercise actual owned VisionIPC/Cereal and
+RTMPS traffic, a detached session, EOF on stdin, logs after starter exit,
+status/logs/stop and the original ten-second stable verification criterion.
+The narrow process-supervision addition reuses its exec/setsid handshake.
+Separate pre-fixture-cleanup observations verify runner/child exit and restoration
+of Live/Snapshot Params after verification and an encoder-spawn failure.
+The source publishes its error before its finally cleanup; the comparison waits
+for owned process completion before asserting final state. The stream-zero
+console regression was reproduced and corrected. Missing-executable diagnostics
+match after normalizing only the owned root path.
+
+Four actual App shutdown cases retain an admitted TLS health probe through
+shutdown, both with the HTTP caller connected and after its disconnect. The
+original and native processes drain it, close the owned recipient and reap
+cleanly. Selected builds, both changed packages' tests and all-target strict
+Clippy, formatting and 24 Python helper checks pass. The final source/build
+receipt records each executable and the narrower comparisons reused after
+subsequent changes. These host comparisons establish neither target-provider
+closure nor vehicle behavior.
+
 The remaining active families include tool jobs,
-terminal/support terminal, YouTube Live and
-vision diagnostics/test services. The web bridge is distinct from the converted
+terminal/support terminal and vision diagnostics/test services. The web bridge is distinct from the converted
 Carrot Navi daemon. `/stream` also depends on the separately inventoried WebRTC
 conversion. Each family's existing guards, background tasks and cleanup belong
 to the same conversion scope as its registered HTTP routes.
