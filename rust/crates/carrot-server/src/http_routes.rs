@@ -43,6 +43,12 @@ pub(crate) async fn dispatch(
             None => crate::tools_git_status::unavailable(head),
         });
     }
+    if crate::tools::http::matches(&path) {
+        return Ok(match &app.tools {
+            Some(service) => crate::tools::http::handle(request, Arc::clone(service)).await,
+            None => error_response("Tools service unavailable".into(), head),
+        });
+    }
     if path == "/api/heartbeat_status" {
         return Ok(crate::heartbeat::handle(&request, &app.heartbeat));
     }

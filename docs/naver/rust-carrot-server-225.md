@@ -1242,8 +1242,53 @@ receipt records each executable and the narrower comparisons reused after
 subsequent changes. These host comparisons establish neither target-provider
 closure nor vehicle behavior.
 
-The remaining active families include tool jobs,
-terminal/support terminal and vision diagnostics/test services. The web bridge is distinct from the converted
+## Tools actions and job ownership (2026-10-10 KST)
+
+The native Tools service now registers the six additional paths/seven method
+registrations and all nineteen synchronous/background actions, beside the
+previously converted Git-status endpoint. It reuses the existing repository
+lock, Git repair/pull, Params and process-supervision boundaries. Actual Git
+operations use owned repositories and file-only remotes in the comparisons;
+reboot/build/tmux providers are harmless recorded adapters. The runtime keeps
+Git, bash, tmux, sudo and the explicit build tool as external executables.
+
+Retained original/native comparisons cover forty action requests, fifty-two
+HTTP/error/lock controls and eight history/recovery cases. Focused corrections
+cover changed-HEAD/dirty pulls, timeout behavior, UTF-8 and surrogate diagnostics,
+local capture failures and unknown Git-action lock priority. A busy lock still
+precedes unknown-action validation for synchronous Git-prefixed requests.
+No terminal result/error fields are hidden by comparison normalization.
+
+Eight actual native Application scenarios connect Tools with heartbeat,
+attachment download and the converted preview/restore APIs; an owned CustomSR
+value is restored from 15 to its backed-up value 12. A separate migration pair
+checks that legacy history moves before the job store is loaded. An accepted
+job continues after its caller disconnects, remains persisted as running when
+the App cleans up, and reloads with the original interrupted-job failure fields.
+Owned session children are reaped when the runtime exits.
+
+Synchronous admission participates in the existing sixty-second server drain.
+An explicit post-quiesce force fixture verifies direct-child cleanup and native
+exit zero. This is not source timer parity: the original synchronous subprocess
+can block its Python event loop, and its direct child survives parent SIGTERM
+until the owned fixture reaps it. The native synchronous path kills only its
+owned direct child, without killing a process group or unowned descendants.
+Backup JSON values/types, indentation and restore usability agree, while the
+source C++ key iteration order differs from the native sorted registry. Native
+unexpected-exception diagnostics retain truthful native failure text rather
+than reproducing a Python traceback.
+
+The final fixture ELF SHA256 is
+`025ab812fa81179a0f8d7ea3fe35397a696c6fe7f79ed553447733ba9be3dd90`.
+The selected build, strict all-target Clippy, twenty-one library tests,
+formatting and portable helper checks pass. Source and executable identities,
+invocations, scoped proof reuse and retained failures are recorded in
+`.omo/evidence/carrot-server-225-resume/tools/checkpoint/receipt.json`.
+The incomplete-body shutdown hypothesis is retained as an unfinished local
+experiment; it caused no generic HTTP change and is not a passing Tools claim.
+
+The remaining active families include terminal/support terminal and vision
+diagnostics/test services. The web bridge is distinct from the converted
 Carrot Navi daemon. `/stream` also depends on the separately inventoried WebRTC
 conversion. Each family's existing guards, background tasks and cleanup belong
 to the same conversion scope as its registered HTTP routes.

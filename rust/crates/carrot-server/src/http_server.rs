@@ -23,7 +23,6 @@ async fn serve_local(
 ) -> Result<(), Error> {
     app.config.validate()?;
     app.static_web.validate()?;
-    app.config.migrate_legacy_state();
     let (heartbeat_stop, heartbeat_stopped) = watch::channel(false);
     let heartbeat = app.heartbeat_params.clone().map(|params| {
         let service = Arc::clone(&app.heartbeat);
@@ -104,7 +103,11 @@ async fn serve_local(
     let mut live_changes = app.live.as_ref().map(|service| service.subscribe());
     let mut navi_changes = app.web_navi.as_ref().map(|service| service.subscribe());
     let mut youtube_changes = app.youtube_live.as_ref().map(|service| service.changed());
+    let mut tools_changes = app.tools.as_ref().map(|service| service.changed());
     app.dashcam_sync_uploads.quiesce();
+    if let Some(service) = &app.tools {
+        service.quiesce();
+    }
     if let Some(service) = &app.live {
         service.quiesce();
     }
@@ -124,7 +127,8 @@ async fn serve_local(
             if connections.is_empty() && sounds.is_empty() && app.dashcam_sync_uploads.is_idle()
                 && app.live.as_ref().is_none_or(|service| service.is_idle())
                 && app.web_navi.as_ref().is_none_or(|service| service.is_idle())
-                && app.youtube_live.as_ref().is_none_or(|service| service.is_idle()) {
+                && app.youtube_live.as_ref().is_none_or(|service| service.is_idle())
+                && app.tools.as_ref().is_none_or(|service| service.is_idle()) {
                 break;
             }
             tokio::select! {
@@ -134,6 +138,7 @@ async fn serve_local(
                 _ = async { if let Some(changes) = &mut live_changes { let _ = changes.changed().await; } }, if live_changes.is_some() => {}
                 _ = async { if let Some(changes) = &mut navi_changes { let _ = changes.changed().await; } }, if navi_changes.is_some() => {}
                 _ = async { if let Some(changes) = &mut youtube_changes { let _ = changes.changed().await; } }, if youtube_changes.is_some() => {}
+                _ = async { if let Some(changes) = &mut tools_changes { let _ = changes.changed().await; } }, if tools_changes.is_some() => {}
                 Some(launch) = launches.recv() => {
                     sounds.spawn_local(crate::web_sound_http::run(launch));
                 }
@@ -144,6 +149,7 @@ async fn serve_local(
     .is_err()
     {
         app.dashcam_sync_uploads.force();
+        if let Some(service) = &app.tools { service.force(); }
         if let Some(service) = &app.live { service.force(); }
         if let Some(service) = &app.web_navi { service.force(); }
         if let Some(service) = &app.youtube_live { service.force(); }
@@ -211,5 +217,8 @@ async fn serve_local(
         Err(error) => eprintln!("static precompression task: {error}"),
     }
     app.bluetooth_http.shutdown().await?;
+    if let Some(service) = &app.tools {
+        service.shutdown().await?;
+    }
     served
 }

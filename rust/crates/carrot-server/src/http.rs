@@ -56,6 +56,7 @@ pub struct Application {
     pub system: Arc<crate::system::Service>,
     pub network_refresh: bool,
     pub qr_dependency: crate::qr_dependency::Provider,
+    pub tools: Option<Arc<crate::tools::service::Service>>,
 }
 
 impl Application {
@@ -86,6 +87,9 @@ impl Application {
         application.heartbeat_params = heartbeat_params;
         application.auto_update = Some(auto_update);
         application.network_refresh = true;
+        application.tools = Some(crate::tools::service::Service::new(
+            crate::tools::config::Config::original(&application),
+        ));
         Arc::new(application)
     }
 
@@ -94,6 +98,7 @@ impl Application {
         params: Backend,
         git_status: Option<Arc<crate::git_status::Service>>,
     ) -> Self {
+        config.migrate_legacy_state();
         let dashcam = crate::dashcam::Service::original(&config);
         let dashcam_metadata = crate::dashcam::MetadataFiles::original(Arc::clone(&dashcam));
         let dashcam_media = crate::dashcam::Media::original(&dashcam, &config);
@@ -112,7 +117,8 @@ impl Application {
             params.native_params().cloned(),
         )
         .ok();
-        Self {
+        let mut application = Self {
+            tools: None,
             qr_dependency: crate::qr_dependency::Provider::original(&config),
             system: crate::system::Service::original(&config),
             network_refresh: false,
@@ -150,7 +156,11 @@ impl Application {
             settings: Mutex::new(SettingsCache::new(config.settings.clone())),
             config,
             params: Mutex::new(params),
-        }
+        };
+        application.tools = Some(crate::tools::service::Service::new(
+            crate::tools::config::Config::original(&application),
+        ));
+        application
     }
 
     pub(crate) fn settings_payload(&self) -> Result<Value, Error> {

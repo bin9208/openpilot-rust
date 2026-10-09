@@ -1,0 +1,33 @@
+//! Active tools/{routes,jobs,actions,dispatcher}.py. Fixed provider paths belong to the caller.
+mod job_updates;
+pub mod jobs;
+mod jobs_load;
+mod jobs_persist;
+pub mod policy;
+mod text;
+
+mod admission;
+pub mod config;
+mod context;
+mod context_git;
+pub use context::Reply;
+mod dispatch;
+mod files;
+mod git_branch;
+mod git_checkout;
+mod git_factory;
+mod git_factory_checkout;
+mod git_log;
+mod git_pull;
+mod git_remote;
+mod git_reset;
+mod git_summary;
+mod group;
+pub mod http;
+pub mod info;
+pub mod runner;
+pub mod service;
+mod shell;
+mod shell_action;
+mod sync_capture;
+mod system_actions;

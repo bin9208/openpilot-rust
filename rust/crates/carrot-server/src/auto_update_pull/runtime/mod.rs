@@ -74,6 +74,20 @@ impl Runtime {
         })
     }
 
+    pub(crate) async fn clear_for_tools(
+        &self,
+        lock: Arc<std::fs::File>,
+        stopped: watch::Receiver<bool>,
+    ) -> Result<(), super::Failure> {
+        self.pull
+            .clear_recovered_git_ref_error(super::Notification {
+                old_head: String::new(),
+                lock,
+                stopped,
+            })
+            .await
+    }
+
     pub fn enabled(&self) -> bool {
         self.settings
             .read()
