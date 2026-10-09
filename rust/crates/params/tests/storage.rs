@@ -51,6 +51,19 @@ fn existing_native_symlink_and_clear_mask_interoperate() {
 }
 
 #[test]
+fn constructor_recreates_namespace_when_symlink_target_is_missing() {
+    let root = tempfile::tempdir().unwrap();
+    let original = Params::open(root.path(), "d").unwrap();
+    fs::remove_dir_all(fs::canonicalize(root.path().join("d")).unwrap()).unwrap();
+
+    let reopened = Params::open(root.path(), "d").unwrap();
+
+    reopened.put("IsMetric", b"1").unwrap();
+    assert_eq!(original.get("IsMetric").unwrap(), Some(b"1".to_vec()));
+    assert_eq!(fs::read_dir(root.path()).unwrap().count(), 3);
+}
+
+#[test]
 fn concurrent_writers_publish_only_complete_values() {
     let root = tempfile::tempdir().unwrap();
     let params = Arc::new(Params::open(root.path(), "d").unwrap());
