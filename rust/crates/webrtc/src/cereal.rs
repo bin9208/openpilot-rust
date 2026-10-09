@@ -8,6 +8,7 @@ use capnp::{
 };
 mod outgoing;
 pub use outgoing::outgoing;
+#[cfg(feature = "native")]
 pub(crate) use outgoing::outgoing_event;
 
 use num_traits::ToPrimitive;

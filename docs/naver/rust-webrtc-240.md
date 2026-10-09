@@ -343,6 +343,15 @@ exact-head cloud results for the repair remain pending. Logs, invocations,
 clean package list and file identities are in
 `.omo/evidence/240-webrtc/ci-first-repair/final-freeze.json`.
 
+The rerun at 4409bcf00, [37952349718](https://github.com/bin9208/openpilot-rust/actions/runs/37952349718),
+passes all native source comparisons on both x86 and ARM. Workspace Clippy then
+finds an unused native-only re-export in the default-feature configuration.
+Gating that re-export with the existing native feature preserves both function
+bodies and native callers. Scoped default-feature all-target Clippy and the
+native library check are recorded in
+`.omo/evidence/240-webrtc/default-feature-repair/final-freeze.json`; the next
+exact-head workspace result remains pending.
+
 The job requires the FFmpeg 6.1.1 / libavcodec60 ABI, libvpx9 and libx264-164
 encoders. Ubuntu publishes [libavcodec-dev](https://packages.ubuntu.com/noble/libavcodec-dev),
 [libvpx9](https://packages.ubuntu.com/noble/libvpx9) and
