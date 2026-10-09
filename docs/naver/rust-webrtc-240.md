@@ -4,8 +4,8 @@
 `webrtcd` and Carrot Vision WebRTC runtimes within the full conversion in
 [#1](https://github.com/bin9208/openpilot-rust/issues/1). The current host
 checkpoint covers real HTTP, native Cereal/msgq, ICE/DTLS/SRTP and ordered SCTP.
-Browser interoperability, remaining network/error
-boundaries, startup composition and exact-head CI are still pending. This is
+Remaining client-ID forms, production multi-camera interaction, startup
+composition, target packaging and exact-head CI are still pending. This is
 intermediate engineering evidence; no device or performance claim is made.
 
 ## Ownership and external dependencies
@@ -57,8 +57,8 @@ checks are captured in `production-srtcp-delivery-final/`.
   order is not claimed byte-identical.
 - A usable application-first MAX_BUNDLE offer connects and exchanges data in
   both implementations. The distinct-credential BALANCED application-first
-  input remains a recorded provider gap: original authenticated STUN error 400
-  fails promptly; native remains checking at the bounded observation time.
+  input exposed the provider STUN-error gap addressed in the scoped #259
+  correction below; the original accepted input and failure are preserved.
 - `production-audio-readiness-bridge-invocation.json` covers four real offered
   audio cases. Incoming sendonly audio is unconsumed, holds the Cereal bridge
   unready, and still permits notify. No audio playback/capture is activated.
@@ -200,7 +200,72 @@ close before caller cleanup; native exits zero. The provider's existing
 `base_addr()` routing works, so no additional mapping or SDK change is needed.
 These are loopback controls, not a claim about external STUN or a deployed LAN.
 
-Remaining work includes actual browser I/O,
-STUN-error timing, remaining client-ID/body decoding forms, normal startup,
-target dependency packaging and exact-SHA CI. No C3X, NAS or vehicle handoff has
+Remaining work includes compound/lone-surrogate client identifiers,
+production multi-camera ordering, startup composition, target dependency
+packaging and exact-SHA CI. No C3X, NAS or vehicle handoff has
 been performed.
+
+## Browser, HTTP text and CLI checkpoint
+
+`browser-media-first-invocation.json` and `browser-carrot-first-invocation.json`
+drive owned Chrome 155 with unchanged BALANCED offers and genuine UUID.local
+candidates. Source/native each receive 37 RTP packets / 45,529 payload bytes and
+decode three 128×96 frames with equal RGBA hashes and relative RTP timestamps
+0/4500/9000. Carrot's three binary CVF1 tuples exactly match those browser frame
+timestamps; actual Cython-owned Params bytes are ASCII 0→1→0. Notify is delivered,
+browser errors are empty and native exits zero. Before caller closure Chrome
+reports PC connected, DTLS closed, track live and data channel closed in both
+cases; this is not a claim that Chrome's PC became closed.
+
+`body-codec-green-invocation.json` compares 15 actual HTTP cases and delivered
+SCTP JSON against the saved source capture. Request-declared strict decoding
+uses the existing pinned `rust/vendor/charset-norm` 3.5.1 provider, including
+UTF8-sig/UTF16/UTF32/BOM, Latin1, CP1252 and EUC-KR cases. CP1252 byte81 and
+EUC-KR8141 are rejected; EUC-KR's composed-Jamo encoding of 힣 returns the same
+syllable. Unknown encodings and route-specific decode failures preserve source
+status behavior. No detection or replacement fallback is used, and every Python
+codec is not claimed covered.
+
+`cli-affinity-green-invocation.json` runs five actual original/native Carrot
+CLI pairs with valid, nonnumeric, negative, large and Unicode/underscore core
+values. PC startup preserves inherited affinity after integer parsing;
+CPU-set/range validation and the syscall remain in the source `/TICI` path.
+Actual default `Params()` uses owned PARAMS_ROOT, schema responds and SIGTERM
+exits zero. This host control does not establish target/device startup.
+
+Reusable drivers are `rust/tools/webrtc_{browser,body,cli,stun}_compare.py`,
+`webrtc_browser_peer.mjs` and their narrow helpers. Run them in the recorded
+source-oracle environment. Browser inputs use WEBRTC_BROWSER_FRAMES,
+WEBRTC_PARAMS_BINDING and WEBRTC_OMOWRIGHT_ADAPTER; profiles, listeners, Params
+and IPC namespaces remain owned. The original scratch launch hashes and final
+tracked helper identities are retained; mechanical/style moves did not repeat
+the network corpus.
+
+## Opt-in STUN check correction (#259)
+
+[#259](https://github.com/bin9208/openpilot-rust/issues/259) records two concrete
+provider gaps: rtc-ice discarded error responses before transaction handling,
+and silently discarded bad request usernames instead of returning source400.
+The pinned owned rtc-ice0.21.0 copy enables original aioice check semantics only
+through the deferred/source-owned RTC preparation path. Ordinary provider mode
+retains its upstream policy. No arbitrary timeout or whole-peer400 shutdown is
+introduced. Submitted SDP and source credentials remain unchanged.
+
+`stun-error-pairs-red-invocation.json` preserves the actual source/native RED.
+`stun-error-http-green-invocation.json` reuses that source capture and observes
+native client/ICE/DTLS failure: its pair changes from IN_PROGRESS at0.050535s to
+FAILED at0.059453s. Transaction/local-owner matching, late/unknown/wrong-local
+handling, one failed pair with another viable pair, real checklist exhaustion,
+signed bad-request replies,487 retry and pending nomination failure/fallback
+are exercised by eight actual owned UDP controls in `stun-provider/`.
+The nomination fallback first failed by choosing recipient0 again, then reaches
+Connected through viable recipient1 after the narrow pointer correction.
+
+`browser-carrot-stun-regression-invocation.json` and
+`srflx-stun-regression-invocation.json` retain nominal browser/CVF1 and forced
+srflx transport after the initial check correction. Their d885ac66… ELF predates
+the final nomination-only pointer fix. Reuse is explicit: those paths never
+enter that unselected nomination-error branch; they are not represented as runs
+of the final ELF. Final build/strict gate, eight controls, source/ELF identities
+and license provenance are frozen separately in
+`.omo/evidence/240-webrtc/stun-provider/final-freeze.json`.

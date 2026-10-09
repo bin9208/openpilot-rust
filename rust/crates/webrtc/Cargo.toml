@@ -60,6 +60,10 @@ required-features = ["native"]
 name = "webrtc_owned_http"
 required-features = ["native"]
 
+[[example]]
+name = "webrtc_stun_checks"
+required-features = ["native"]
+
 [[bin]]
 name = "openpilot-webrtcd"
 path = "src/webrtcd.rs"

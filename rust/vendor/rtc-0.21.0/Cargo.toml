@@ -480,6 +480,7 @@ version = "0.4.3"
 
 [dependencies.ice]
 version = "0.21.0"
+path = "../rtc-ice-0.21.0"
 default-features = false
 package = "rtc-ice"
 
@@ -598,6 +599,7 @@ features = ["full"]
 
 [dev-dependencies.ice]
 version = "0.21.0"
+path = "../rtc-ice-0.21.0"
 default-features = false
 package = "rtc-ice"
 

@@ -13,7 +13,8 @@
     "Initiate SCTP association using the negotiated ICE role, retaining ordinary DTLS and stream-ID handling.",
     "Prepare one source-owned transport without starting timers; explicitly activate with the actual activation Instant and selected original ICE/fingerprint/local DTLS role.",
     "Opt-in DTLS close-notify forwarding through the existing endpoint and datagram queues before ordinary close.",
-    "Remove only inherited trailing whitespace and one EOF blank line reported by the repository fast diff check; runtime tokens unchanged."
+    "Remove only inherited trailing whitespace and one EOF blank line reported by the repository fast diff check; runtime tokens unchanged.",
+    "Use the owned pinned rtc-ice package and enable original aioice check-error semantics only on the deferred/source-owned preparation API; ordinary remote-description mode remains unchanged."
   ],
   "original_manifest_retained": true,
   "source_contract": "openpilot/system/webrtc and teleoprtc_repo/teleoprtc",

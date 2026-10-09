@@ -194,7 +194,7 @@ async def main(binary, output):
   try:
     with tempfile.TemporaryDirectory(prefix='msgq_rtc240_nat_', dir='/dev/shm') as namespace:
       os.environ['OPENPILOT_PREFIX'] = Path(namespace).name.removeprefix('msgq_')
-      for mode in ('source', 'native'):
+      for mode in ('native',) if len(sys.argv) > 3 and sys.argv[3] == 'native' else ('source', 'native'):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as recipient:
           recipient.bind(('127.0.0.1', 0))
           recipient.setblocking(False)

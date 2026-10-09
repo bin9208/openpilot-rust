@@ -1379,7 +1379,9 @@ impl RTCPeerConnection {
         {
             return Err(Error::ErrIncorrectSignalingState);
         }
-        self.set_remote_description_inner(now, remote_description, Some(transport))
+        self.set_remote_description_inner(now, remote_description, Some(transport))?;
+        self.ice_transport_mut().agent.enable_source_checks();
+        Ok(())
     }
 
     /// Starts a prepared transport once, using the real activation instant.

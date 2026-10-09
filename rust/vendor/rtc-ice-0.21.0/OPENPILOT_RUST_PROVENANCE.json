@@ -1,0 +1,19 @@
+{
+  "upstream": "https://github.com/webrtc-rs/rtc",
+  "package": "rtc-ice",
+  "version": "0.21.0",
+  "commit": "c8321cab79ae745aad973d62034ec84d301e893c",
+  "path_in_vcs": "rtc-ice",
+  "crate_sha256": "4f437cc58721fdb3f0a2ab8b90660d3c19ea2817bc4e2117b2d80f3f6cfba5f3",
+  "license": ["MIT", "Apache-2.0"],
+  "license_sources": [
+    "https://github.com/webrtc-rs/rtc/blob/c8321cab79ae745aad973d62034ec84d301e893c/LICENSE-MIT",
+    "https://github.com/webrtc-rs/rtc/blob/c8321cab79ae745aad973d62034ec84d301e893c/LICENSE-APACHE"
+  ],
+  "registry_marker_excluded": ".cargo-ok",
+  "local_changes": [
+    "Opt-in original aioice request authentication and signed400 responses, transaction/local-owner error matching, candidate-pair failure/checklist exhaustion and487 role retry. Ordinary agents retain upstream behavior."
+  ],
+  "source_contract": "aiortc1.14.0 with aioice0.10.2 ice.py/stun.py",
+  "tracking_issue": "https://github.com/bin9208/openpilot-rust/issues/259"
+}
