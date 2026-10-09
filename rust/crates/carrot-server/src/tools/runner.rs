@@ -31,6 +31,12 @@ pub struct Command<'a> {
     pub timeout: Option<Duration>,
 }
 impl Runner {
+    pub(crate) async fn raw_capture(
+        &self,
+        command: Command<'_>,
+    ) -> Result<std::process::Output, Failure> {
+        super::sync_capture::run(self, command).await
+    }
     pub async fn job(
         &self,
         command: Command<'_>,

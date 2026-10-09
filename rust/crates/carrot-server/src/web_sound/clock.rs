@@ -1,7 +1,7 @@
 use crate::Error;
 use num_traits::ToPrimitive;
 
-pub(super) fn now() -> Result<f64, Error> {
+pub(crate) fn now() -> Result<f64, Error> {
     let time = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
     let seconds = time
         .tv_sec
@@ -14,7 +14,7 @@ pub(super) fn now() -> Result<f64, Error> {
     Ok(seconds + nanos / 1e9)
 }
 
-pub(super) enum Heartbeat {
+pub(crate) enum Heartbeat {
     PingAt(f64),
     PongBefore(f64),
 }

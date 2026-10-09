@@ -3,7 +3,7 @@ use crate::{Error, Value};
 use openpilot_msgq::{VisionClient, VisionStream};
 use std::time::Duration;
 
-pub(super) fn streams() -> Vec<i32> {
+pub(crate) fn streams() -> Vec<i32> {
     let mut streams: Vec<_> = VisionClient::available_streams("camerad")
         .unwrap_or_default()
         .into_iter()

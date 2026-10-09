@@ -56,12 +56,15 @@ mod state_preferences;
 pub mod static_assets;
 pub mod static_web;
 pub mod system;
+pub mod terminal;
+pub mod terminal_commands;
 pub mod tools;
 pub mod tools_git_status;
 #[cfg(test)]
 mod transport_test;
 #[cfg(test)]
 mod ureq_raw_test;
+pub mod vision_test;
 pub mod web_navi;
 pub mod web_settings;
 mod web_settings_http;

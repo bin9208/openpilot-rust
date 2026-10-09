@@ -3,14 +3,20 @@ use crate::{Error, Value};
 use std::time::Duration;
 
 pub(super) fn snapshot(config: &Config, active: bool) -> Result<(), Error> {
-    config.params.put_bool("IsTakingSnapshot", active)?;
+    snapshot_active(&config.params, &config.repository, active, "youtube-test")
+}
+pub(crate) fn snapshot_active(
+    params: &openpilot_params::Params,
+    repository: &std::path::Path,
+    active: bool,
+    component: &str,
+) -> Result<(), Error> {
+    params.put_bool("IsTakingSnapshot", active)?;
     let alert = "Offroad_IsTakingSnapshot";
     if active {
         let saved = (|| -> Result<(), Error> {
             let mut value = storage::json(
-                &config
-                    .repository
-                    .join("openpilot/selfdrive/selfdrived/alerts_offroad.json"),
+                &repository.join("openpilot/selfdrive/selfdrived/alerts_offroad.json"),
             )
             .get(alert)
             .clone();
@@ -18,14 +24,14 @@ pub(super) fn snapshot(config: &Config, active: bool) -> Result<(), Error> {
                 return Ok(());
             }
             storage::set(&mut value, "extra", Value::text(""));
-            config.params.put(alert, value.encode()?.as_bytes())?;
+            params.put(alert, value.encode()?.as_bytes())?;
             Ok(())
         })();
         if let Err(error) = saved {
-            eprintln!("[youtube-test] snapshot alert: {error}");
+            eprintln!("[{component}] snapshot alert: {error}");
         }
-    } else if let Err(error) = config.params.remove(alert) {
-        eprintln!("[youtube-test] snapshot alert: {error}");
+    } else if let Err(error) = params.remove(alert) {
+        eprintln!("[{component}] snapshot alert: {error}");
     }
     Ok(())
 }

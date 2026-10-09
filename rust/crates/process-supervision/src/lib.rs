@@ -10,6 +10,7 @@ mod logging;
 mod persistent;
 mod pid;
 mod process;
+pub mod pty;
 mod state;
 
 pub use capture::{capture_output, CaptureError};

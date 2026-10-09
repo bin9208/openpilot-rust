@@ -95,9 +95,27 @@ enum StreamMode {
     Inherited,
     Redirected(Stdio, Stdio),
     SessionFiles(Stdio, Stdio),
+    SessionPty(Stdio, Stdio, Stdio),
 }
 
 impl CapturedCommand {
+    /// Start a new session with all three standard streams sharing one PTY slave.
+    /// Like the source terminal, this does not acquire a controlling terminal.
+    /// The caller owns PTY closure and session-group termination/reaping.
+    pub fn spawn_session_pty_with_env(
+        &self,
+        slave: std::fs::File,
+        environment: &[(OsString, OsString)],
+    ) -> Result<CapturedChild, Error> {
+        let stdout = slave.try_clone()?;
+        let stderr = slave.try_clone()?;
+        self.spawn_with_stdio(
+            StreamMode::SessionPty(slave.into(), stdout.into(), stderr.into()),
+            environment,
+            true,
+        )
+    }
+
     pub fn spawn(&self) -> Result<CapturedChild, Error> {
         self.spawn_with_stdio(StreamMode::Captured, &[], false)
     }
@@ -246,6 +264,11 @@ impl CapturedCommand {
             StreamMode::SessionFiles(stdout, stderr) => {
                 command.stdin(Stdio::null()).stdout(stdout).stderr(stderr)
             }
+            StreamMode::SessionPty(stdin, stdout, stderr) => command
+                .env_remove("TMUX")
+                .stdin(stdin)
+                .stdout(stdout)
+                .stderr(stderr),
         };
         let mut child = command.spawn()?;
         if let Err(error) = wait_for_exec(&listener, &mut child, lock) {
@@ -304,7 +327,21 @@ fn wait_for_exec(
                 };
             }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                if child.try_wait()?.is_some() {
+                let pid = i32::try_from(child.id())
+                    .ok()
+                    .and_then(rustix::process::Pid::from_raw)
+                    .ok_or(Error::PidRange)?;
+                let exited = loop {
+                    use rustix::process::{waitid, WaitId, WaitIdOptions};
+                    match waitid(
+                        WaitId::Pid(pid),
+                        WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+                    ) {
+                        Err(rustix::io::Errno::INTR) => continue,
+                        result => break result.map_err(std::io::Error::from)?,
+                    }
+                };
+                if exited.is_some() {
                     return Err(Error::LaunchProtocol("helper exited before exec handshake"));
                 }
                 std::thread::sleep(Duration::from_millis(1));
@@ -314,6 +351,10 @@ fn wait_for_exec(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "launch_tests.rs"]
+mod tests;
 
 pub fn run_child(input: impl Read) -> Result<(), Error> {
     let request: LaunchRequest = serde_json::from_reader(input)?;

@@ -27,7 +27,7 @@ pub mod http;
 pub mod info;
 pub mod runner;
 pub mod service;
-mod shell;
+pub(crate) mod shell;
 mod shell_action;
 mod sync_capture;
 mod system_actions;

@@ -1302,3 +1302,86 @@ check and full manager startup with the existing log-upload path remain gates.
 The user performs the first device comparison only after the complete runtime
 candidate is ready. These host observations establish no CPU savings or vehicle
 acceptance.
+
+
+## Inherited terminal reset race (2026-10-10 KST)
+
+[Issue 264](https://github.com/bin9208/openpilot-rust/issues/264) records an
+actual unchanged-source PTY/WebSocket reset failure. The source announces a
+new shell, then the cancelled old reader's cleanup closes the replacement
+master/process fields and current clients. The retained control ends with
+`pty_exit(null)`, normal WebSocket close and an inactive empty session.
+Natural exit 7 and ordinary replay/detach behavior are separate observations.
+
+The native terminal must bind read completion and cleanup to the process/FD
+generation that owns them. Keeping the replacement usable is an explicit
+correction of this inherited race, not parity with its failed-reset outcome.
+The original Python source remains unchanged. The source captures are under
+`.omo/evidence/carrot-server-225-resume/terminal/source-reset-v1/`; native
+implementation and the corresponding gate are still pending at this note.
+
+## Owned terminal process identity (2026-10-10 KST)
+
+[Issue 265](https://github.com/bin9208/openpilot-rust/issues/265) records a
+code-established cleanup risk, with no observed PID-reuse incident. Terminal
+status and pre-handshake launch failure previously used `Child::try_wait`, which
+can reap the leader before a later signal to its numeric process group. Native
+observations now use `waitid(EXITED | NOHANG | NOWAIT)` with interrupted-call
+retry; final owned-group signals precede the final child wait.
+
+The focused real-child controls retain exit status 23 across failed handshake,
+reap a failed locked-session helper and release its lock, and preserve normal
+7 and signalled -15 mapping. The actor reset keeps its replacement usable and
+reaps the old group. Captured test output and App cleanup are recorded under
+`.omo/evidence/carrot-server-225-resume/terminal/leader-ownership/` and
+`terminal/final-checks/`. Both source and native nonblocking EOF observation
+can expose a null status before exit is observable; `native-eof-v3` retains
+that timing outcome with Close 1000. One final source/native EOF pair exposes
+7/Close 1000 in both, without an artificial delay or blocking wait. This
+ownership fix is distinct from the inherited Python reset race in issue 264.
+
+## Native terminal, command bridge and vision-test checkpoint
+
+The native Application now connects the six active local-terminal routes,
+seven command handlers and vision-test status/runtime. A single PTY owner binds
+reads and cleanup to their shell generation; the issue 264 reset control now
+reaps the old shell and leaves its replacement usable. The neutral PTY primitive
+preserves the source's session/stdio behavior without acquiring a controlling
+terminal, including the older-kernel peer-open fallback. Final native runtime
+ownership closes and reaps its group rather than retaining the source's blocked
+thread-pool reader at exit.
+
+Evidence under `.omo/evidence/carrot-server-225-resume/terminal/checkpoint/`
+records 69 implementation/helper paths, original source hashes and each actual
+executable identity. There are 39 distinct CLI pairs, 21 passing standalone HTTP
+pairs and six current Application pairs, with separate raw-capture and fresh
+Params-constructor controls. The earlier HTTP count of 22 included a failed
+initial case; that failure remains retained and is not counted as passing.
+Unchanged earlier captures are reused with their actual historical ELF hashes.
+
+Real owned PTYs exercise geometry, environment, replay, detach persistence,
+512 KiB history, primary-client promotion, raw writes, clear and Ctrl-C. Actual
+vision worker ownership uses original Cython VisionIPC availability and an owned
+loopback recipient; its stop/failure cases reap children and restore Snapshot
+before fixture cleanup. This does not establish operation of physical cameras
+or encoders. The tmux adapter records argv and screen results without an installed
+host tmux or execution of privileged host tools.
+
+Admitted command captures belong to the terminal owner through caller disconnect
+and the existing Application shutdown deadline. Actual Force after admission
+returns 500/connection close and reaps the child in 0.088 seconds. Original
+45.039-second and native 45.103-second timeout observations return 504 and reap
+their direct children. Raw invalid UTF-8 output matches the source's replacement
+and stripping behavior. No additional drain window is introduced. A fresh Params
+factory failure after an owned directory becomes a file returns three null device
+fields and HTTP 200; the earlier native zero/false response is preserved as RED.
+
+Current all-target strict checks for both packages, 22 server tests, 10 process
+unit tests and eight integration tests, formatting, and the selected Python
+checks pass. The current Application example SHA-256 is
+`dd2705f85c25cab2dfd8003f727e60e82b07dc5593404d69887a790237bcf127`.
+Provider errors retain native diagnostics, including PTY descriptor exhaustion
+as EMFILE instead of Python's fallback text. Support-session/guest terminal,
+web bridge, stream proxy and complete Application startup remain separate
+unfinished server work. Target dependencies, required CI and full startup/upload
+still precede the user's first device comparison.

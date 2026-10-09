@@ -1,17 +1,17 @@
 use crate::Error;
 use std::{fs, time::Duration};
 
-pub(super) fn command(pid: i32) -> String {
+pub(crate) fn command(pid: i32) -> String {
     fs::read(format!("/proc/{pid}/cmdline"))
         .map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
         .unwrap_or_default()
 }
-pub(super) fn alive(pid: i32, pattern: &str) -> bool {
+pub(crate) fn alive(pid: i32, pattern: &str) -> bool {
     rustix::process::Pid::from_raw(pid)
         .is_some_and(|pid| rustix::process::test_kill_process(pid).is_ok())
         && (pattern.is_empty() || command(pid).contains(pattern))
 }
-pub(super) fn matching(pattern: &str) -> Vec<i32> {
+pub(crate) fn matching(pattern: &str) -> Vec<i32> {
     let mut pids = Vec::new();
     if let Ok(entries) = fs::read_dir("/proc") {
         for entry in entries.flatten() {
@@ -29,7 +29,7 @@ pub(super) fn matching(pattern: &str) -> Vec<i32> {
     pids.sort_unstable();
     pids
 }
-pub(super) async fn terminate(pid: i32, pattern: &str, timeout: Duration) -> Result<(), Error> {
+pub(crate) async fn terminate(pid: i32, pattern: &str, timeout: Duration) -> Result<(), Error> {
     if !alive(pid, pattern) {
         return Ok(());
     }

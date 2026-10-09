@@ -15,6 +15,15 @@ pub(crate) async fn dispatch(
     let path = percent_encoding::percent_decode_str(request.uri().path())
         .decode_utf8_lossy()
         .into_owned();
+    if crate::terminal::http::matches(&path) {
+        if let Some(service) = &app.terminal {
+            return Ok(crate::terminal::http::handle(request, Arc::clone(service)).await);
+        }
+        return Ok(error_response("terminal owner unavailable".into(), head));
+    }
+    if path == "/api/vision_test/status" {
+        return Ok(crate::vision_test::http::handle(request, app.vision_test.clone()).await);
+    }
     if path == "/ws/web_sound" {
         return Ok(crate::web_sound_http::handle(request, &app, &sound));
     }

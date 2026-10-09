@@ -5,7 +5,7 @@ enum Quote {
     Single,
     Double,
 }
-pub(super) fn split(input: &str) -> Option<Vec<String>> {
+pub(crate) fn split(input: &str) -> Option<Vec<String>> {
     let mut words = Vec::new();
     let mut word = String::new();
     let mut opened = false;
@@ -67,7 +67,7 @@ pub(super) fn split(input: &str) -> Option<Vec<String>> {
         }
     }
 }
-pub(super) fn quote(input: &str) -> String {
+pub(crate) fn quote(input: &str) -> String {
     if !input.is_empty()
         && input
             .chars()

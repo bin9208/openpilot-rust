@@ -57,6 +57,8 @@ pub struct Application {
     pub network_refresh: bool,
     pub qr_dependency: crate::qr_dependency::Provider,
     pub tools: Option<Arc<crate::tools::service::Service>>,
+    pub terminal: Option<Arc<crate::terminal::Service>>,
+    pub vision_test: Option<crate::vision_test::Config>,
 }
 
 impl Application {
@@ -118,6 +120,10 @@ impl Application {
         )
         .ok();
         let mut application = Self {
+            terminal: crate::terminal::Config::original()
+                .and_then(crate::terminal::Service::start)
+                .ok(),
+            vision_test: None,
             tools: None,
             qr_dependency: crate::qr_dependency::Provider::original(&config),
             system: crate::system::Service::original(&config),

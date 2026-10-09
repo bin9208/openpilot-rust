@@ -1,10 +1,10 @@
 //! Active terminal youtube-test support, from services/youtube_test.py.
-mod cleanup;
+pub(crate) mod cleanup;
 mod config;
 mod control;
 mod output;
 mod poll;
-mod process;
+pub(crate) mod process;
 pub mod report;
 mod runner;
 pub mod status;

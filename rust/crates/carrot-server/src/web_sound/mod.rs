@@ -1,5 +1,5 @@
 //! Original features/web_sound.py sound state and per-connection WebSocket session.
-mod clock;
+pub(crate) mod clock;
 #[cfg(test)]
 mod close_tests;
 #[cfg(test)]
