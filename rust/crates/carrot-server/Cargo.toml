@@ -14,6 +14,7 @@ openpilot-params = { path = "../params" }
 openpilot-cereal = { path = "../cereal" }
 capnp = "=0.27.2"
 openpilot-carrot-navi = { path = "../carrot-navi", default-features = false }
+openpilot-carrot-state = { path = "../carrot-state" }
 openpilot-runtime-core = { path = "../runtime-core" }
 openpilot-logmessaged = { path = "../logmessaged" }
 openpilot-logging = { path = "../logging" }

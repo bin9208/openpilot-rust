@@ -1153,6 +1153,17 @@ Final all-target strict Clippy, formatting, Ruff and Python syntax checks pass.
 The optional AnyIO-preference audit flags the original asyncio AppRunner helper;
 that source execution boundary is retained and the audit is not marked passing.
 
+Live now uses the same `openpilot-carrot-state` codec/schema/Cereal helpers as
+the separately developed WebRTC runtime. The server's WebSocket intervals and
+error display remain local and unchanged. The copied crate is frozen from
+WebRTC checkpoint `723bb174d5a65e69517b6a4981b491aede0adf7e`; no RTC provider or
+runtime is merged by this extraction. All 21 saved original encodings remain
+byte-identical, and one actual compact WebSocket delivers the expected CVB1
+packet with clean process/IPC cleanup. The selected Live build, all-target
+strict Clippy for the affected packages, formatting and diff checks pass.
+See `.omo/evidence/225-shared-compact/checkpoint/receipt.json` for source and
+binary identities and the narrowly reused comparisons.
+
 The remaining active families include QR provider status/repair, tool jobs,
 terminal/support terminal, YouTube Live and
 vision diagnostics/test services. The web bridge is distinct from the converted

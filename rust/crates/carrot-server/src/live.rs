@@ -3,8 +3,6 @@ mod broker;
 mod camera;
 mod camera_frame;
 pub mod compact;
-mod compact_fields;
-mod compact_schema;
 pub mod http;
 mod owner;
 mod raw;

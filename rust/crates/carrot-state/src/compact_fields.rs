@@ -155,63 +155,66 @@ fn pack(out: &mut Vec<u8>, value: Reader<'_>, spec: &Spec) -> Result<(), Error> 
         | Spec::I16List
         | Spec::U16CmList
         | Spec::I16CmList
-        | Spec::I16MmList => {
-            let items = list(
-                value,
-                if matches!(spec, Spec::F32FirstList) {
-                    1
+        | Spec::I16MmList => pack_list(out, value, spec)?,
+    }
+    Ok(())
+}
+
+fn pack_list(out: &mut Vec<u8>, value: Reader<'_>, spec: &Spec) -> Result<(), Error> {
+    let items = list(
+        value,
+        if matches!(spec, Spec::F32FirstList) {
+            1
+        } else {
+            65535
+        },
+    );
+    out.extend(u16::try_from(items.len()).unwrap_or(0).to_le_bytes());
+    for item in items {
+        match spec {
+            Spec::F32List | Spec::F32FirstList => float(out, finite(item, 0.))?,
+            Spec::I16List => out.extend(
+                i16::try_from(value::integer(item).clamp(-32768, 32767))
+                    .unwrap_or(0)
+                    .to_le_bytes(),
+            ),
+            Spec::U16CmList => out.extend(
+                (finite(item, 0.) * 100.)
+                    .round_ties_even()
+                    .clamp(0., 65535.)
+                    .to_u16()
+                    .unwrap_or(0)
+                    .to_le_bytes(),
+            ),
+            Spec::I16CmList | Spec::I16MmList => {
+                let scale = if matches!(spec, Spec::I16MmList) {
+                    1000.
                 } else {
-                    65535
-                },
-            );
-            out.extend(u16::try_from(items.len()).unwrap_or(0).to_le_bytes());
-            for item in items {
-                match spec {
-                    Spec::F32List | Spec::F32FirstList => float(out, finite(item, 0.))?,
-                    Spec::I16List => out.extend(
-                        i16::try_from(value::integer(item).clamp(-32768, 32767))
-                            .unwrap_or(0)
-                            .to_le_bytes(),
-                    ),
-                    Spec::U16CmList => out.extend(
-                        (finite(item, 0.) * 100.)
-                            .round_ties_even()
-                            .clamp(0., 65535.)
-                            .to_u16()
-                            .unwrap_or(0)
-                            .to_le_bytes(),
-                    ),
-                    Spec::I16CmList | Spec::I16MmList => {
-                        let scale = if matches!(spec, Spec::I16MmList) {
-                            1000.
-                        } else {
-                            100.
-                        };
-                        out.extend(
-                            (finite(item, 0.) * scale)
-                                .round_ties_even()
-                                .clamp(-32768., 32767.)
-                                .to_i16()
-                                .unwrap_or(0)
-                                .to_le_bytes(),
-                        );
-                    }
-                    Spec::Bool
-                    | Spec::I8
-                    | Spec::I16
-                    | Spec::U16
-                    | Spec::I32
-                    | Spec::U32
-                    | Spec::U64
-                    | Spec::F32
-                    | Spec::F64
-                    | Spec::Text
-                    | Spec::CoordList
-                    | Spec::Enum(_)
-                    | Spec::Struct(_)
-                    | Spec::StructList(_) => unreachable!("list match narrowed above"),
-                }
+                    100.
+                };
+                out.extend(
+                    (finite(item, 0.) * scale)
+                        .round_ties_even()
+                        .clamp(-32768., 32767.)
+                        .to_i16()
+                        .unwrap_or(0)
+                        .to_le_bytes(),
+                );
             }
+            Spec::Bool
+            | Spec::I8
+            | Spec::I16
+            | Spec::U16
+            | Spec::I32
+            | Spec::U32
+            | Spec::U64
+            | Spec::F32
+            | Spec::F64
+            | Spec::Text
+            | Spec::CoordList
+            | Spec::Enum(_)
+            | Spec::Struct(_)
+            | Spec::StructList(_) => unreachable!("list match narrowed above"),
         }
     }
     Ok(())

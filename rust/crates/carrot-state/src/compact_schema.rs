@@ -1,4 +1,4 @@
-//! Display schema ported from carrot/realtime/compact_state.py; original source license applies.
+//! Display schema ported from `carrot/realtime/compact_state.py`; original source license applies.
 use super::compact_fields::{Field, Spec};
 pub(super) const SERVICES: &[(&str, u8, &[Field])] = &[
     (
