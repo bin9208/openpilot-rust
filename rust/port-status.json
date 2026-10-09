@@ -1,7 +1,7 @@
 {
   "source_repo": "https://github.com/bin9208/openpilot",
   "source_commit": "f3a92524d87be714f6b8b5f44ecdc8319a8c53d1",
-  "scope": "Registered source processes, including conditional/disabled entries. Manager and libraries are tracked separately; not a claim of runtime coverage.",
+  "scope": "Registered source processes, including conditional/disabled entries. Startup entrypoints, manager and libraries are tracked separately; not a claim of runtime coverage.",
   "manager_status": "native_orchestration_host_candidate",
   "manager_scope": "Native initialization, Params transitions, continuous messaging/process loop, cleanup and exit policy; seven focused unchanged-source scenarios plus isolated IPC/owned children. Native bootlog, board action, registration and Reporter adapters are composed; complete daemon selection, startup UI/stdout and launcher packaging remain integration work; no production selection or device acceptance. See docs/naver/rust-manager-106.md.",
   "processes": [
@@ -953,6 +953,37 @@
       "evidence": "docs/rust-port/monitoring-validation.md"
     }
   ],
+  "startup_integration": {
+    "status": "incomplete",
+    "issue": "https://github.com/bin9208/openpilot-rust/issues/1",
+    "scope": "Project-owned startup entrypoints outside the registered process catalog; component host checks do not establish a complete normal-startup/log-upload candidate.",
+    "components": [
+      {
+        "name": "normal_launcher",
+        "source_entrypoint": "launch_chffrplus.sh",
+        "status": "not_ported",
+        "remaining": "Native repository-lock and staged-checkout activation, independent early services, AGNOS/build/model readiness, UI progress and complete manager executable composition; prerequisite native components are tracked separately.",
+        "issues": [116, 120, 154]
+      },
+      {
+        "name": "standalone_carrot_recovery",
+        "source_entrypoint": "openpilot/selfdrive/carrot/recovery/server.py",
+        "status": "not_ported",
+        "remaining": "Independent HTTP/WebSocket listeners, persistent PTY, support sessions, Git/tools, tmux upload and CwebPush boot control; must start before build readiness with main-server codec providers absent.",
+        "native_dependencies_to_package": ["shell/login utilities", "git", "tmux", "cloudflared when support is requested", "OS trust roots"],
+        "issues": [263]
+      },
+      {
+        "name": "external_carrot_web_watchdog",
+        "source_entrypoint": "scripts/carrot_web_watchdog.sh",
+        "status": "not_ported",
+        "remaining": "Process-table/PID-file/flock ownership, physical checkout re-entry on every restart, external port7000 selection, retry and signal cleanup, inherited repository-lock release.",
+        "issues": [116, 120]
+      }
+    ],
+    "evidence": "docs/naver/rust-runtime-startup-integration.md",
+    "production_replaced": false
+  },
   "startup_bootlog": {
     "source_entrypoints": ["openpilot/system/loggerd/bootlog.cc", "openpilot/system/manager/helpers.py::save_bootlog"],
     "status": "native_component_host_validated_pending_integration",

@@ -131,3 +131,34 @@ and passing local pair are retained in the primary checkout at
 `.analysis/scratch/2026-10-08-runtime-resume/230-card-failure/`.
 The hosted pause remains unresolved. A single scoped retry of the failed Card
 job at the unchanged head is the next gate; local success does not replace it.
+
+
+## Nissan prior-output timing on WebRTC PR 262
+
+Head `6ed320487962bf77788cb8486bb1b6e733cfb697`, Card job
+[113900149326](https://github.com/bin9208/openpilot-rust/actions/runs/37953981375/job/113900149326),
+retains eight pairs with 80 single-packet states each. Artifact `11630741423`
+differs only at Nissan carOutput47 torque: source -0.30000001192092896 versus
+native -0.4000000059604645. Source CAN46 arrives 44.252766 ms after sending;
+CAN47 is sent 0.081836 ms after that reception and before the control read.
+The source control receive interval is 54.458856 ms, followed by a step with
+no new control. Native CAN46 arrives in 0.093172 ms with CAN47 another
+10.072636 ms later. The prior-actuator publication and these clocks support
+source consumption of control47 on CAN46 versus native control46; consumed
+control identity remains inferred, and the hosted pause cause remains unknown.
+
+One bounded local pair reuses the exact input and retained `8e418a68` ELF.
+All 80-send/state/single-packet, Params, state, actuator, CAN and shutdown checks
+pass. This is the earlier `6bf088e5` build, not the hosted ELF; the later Params
+namespace-recreation patch is absent and unexercised here. Card/CAN/msgq/control
+and checked-in comparator sources are unchanged. Removed old DBC and missing
+torque-data fixture paths caused two setup failures retained separately; after
+restoring owned fixture paths, the passing source capture was reused for the
+native-only comparison. No build/install or runtime/comparator change occurred.
+
+Evidence is in the RTC worktree at
+`.omo/evidence/240-webrtc/exact-head-6ed320/card-summary.json` with the raw
+archive, selected captures and invocation/exit receipts.
+[Issue update](https://github.com/bin9208/openpilot-rust/issues/228#issuecomment-6085063169)
+records the exact run and limitations. A scoped Card retry at the same head
+remains a gate; this is not a fix for the hosted pause.
