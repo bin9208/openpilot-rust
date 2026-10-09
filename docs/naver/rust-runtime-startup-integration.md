@@ -16,6 +16,35 @@ arguments, working directory and persistent-process policy. Source Python module
 names are provenance, never fallback launch targets. Keep a selected missing
 implementation as an error and account for source-disabled entries explicitly.
 
+The catalog's package/binary pair is insufficient as a launch binding. Current
+entry points have these concrete composition requirements:
+
+| Entry | Required binding |
+|---|---|
+| `card` | `--root` and `--numerics` are mandatory; bind the packaged checkout/DBC assets and verified numerical provider |
+| `modeld`, `dmonitoringmodeld` | `--trusted-catalog` is mandatory; supply the correct immutable model catalog for each daemon |
+| Encoder variants | Preserve each source mode argument such as `--stream`, `--carrot-vision-road` and the four YouTube choices while selecting the single native encoder executable |
+| `controlsd`, `torqued` | Resolve their numerical companion directories; controlsd also reads torque assets relative to its working directory unless given `--assets` |
+| Native subprocess users | Keep `openpilot-process-child` beside the executable, or pass the supported explicit launcher path |
+
+This table comes from reading the current native argument parsers, not a
+completed installed binding test. Resolve normal arguments independently of
+fixture-only frame limits, fake providers and phase fences.
+
+Managed diagnostic composition also remains open. The source Python launcher
+adds the daemon log/Sentry tag and catches entry errors inside the child;
+the source native launcher instead sets `MANAGER_DAEMON` and execs. The native
+`managed-entry` library implements the former boundary, but the inspected
+workspace manifests currently link it only from manager and Athena. A generic
+parent wait cannot recover a typed error from another executable. Each
+translated Python entry must therefore compose its actual child diagnostic
+boundary, while retaining the source distinction for originally native entries.
+Manager logging binds a process-local factory context; a fresh daemon
+`Factory::for_runtime()` starts with an empty context. Do not assume exec
+inherits the parent's bound fields as source fork did. Verify the installed
+child's context and error event through the native collector and existing
+upload path, rather than only checking manager logs.
+
 The outer `manager.py` entry point still owns `helpers.unblock_stdout`, startup
 failure reporting, stopping the UI before the error window, and final status.
 The stdout wrapper uses a PTY, forwards SIGINT/SIGTERM, drains 4096-byte chunks,
