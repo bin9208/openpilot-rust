@@ -105,3 +105,97 @@ access occurs. Full startup/upload and device/performance acceptance are separat
 Host-filtered locked offline metadata passed; full-target offline resolution is
 limited by the uncached Redox-only `redox_syscall 0.5.18` archive. Its existing
 lock entry is preserved and hosted Cargo resolution remains pending.
+
+## Preserved implementation resumed (2026-10-09)
+
+The following historical bridge/ASIC sections were recovered from the preserved
+`5283090a7` issue worktree. The original raw `.omo/evidence/usbgpu-154` receipts
+and old binaries were removed during user-authorized cleanup. Their recorded
+results describe prior bounded work, not current executable acceptance evidence.
+The preserved source additionally contains HCQ2, native probe/worker/client,
+QCOM warp and driving-model integration drafts. Full pinned-model numerical
+execution and current source-format/fallback/lifecycle checks remain unfinished.
+The 2026-10-08 dev integration record above is retained unchanged.
+
+## Bridge, GPU memory and firmware checkpoint
+
+Stock ASM command policy now has 49 comparisons against the unchanged controller
+at its SCSI boundary. Native UAS windows intentionally correct inherited stale
+results after 31 commands; the reproduction, consumer audit and compatibility
+exception are tracked separately in [#160](rust-usbgpu-uas-160.md).
+
+Further host evidence under `.omo/evidence/usbgpu-154/`:
+
+| Scenario / runner in `rust/tools/` | Binary observable | Artifact |
+| --- | --- | --- |
+| `check_usbgpu_stock_asm.py --binary <target>/debug/examples/stock_asm_trace --evidence <file>` | 49 command/result comparisons, including multi-window reads, caching, PCIe and SRAM sizes | `stock-asm-traces.json` |
+| `check_usbgpu_pci.py --binary <target>/debug/examples/pci_trace --evidence <file>` | 16 exact config/BAR transaction traces across BAR sizes/types and resizable BAR capabilities | `pci-traces.json` |
+| `check_usbgpu_allocator.py --binary <target>/debug/examples/allocator_trace --evidence <file>` | 7,130 allocation/free addresses match across 20 seeded scenarios | `allocator-traces.json` |
+| `check_usbgpu_page_table.py --binary <target>/debug/examples/page_table_trace --evidence <file>` | 2,098 page/flag/fragment results match | `page-table-traces.json` |
+| `check_usbgpu_memory.py --binary <target>/debug/examples/memory_trace --evidence <file>` | 12 complete allocation/mapping/free write traces match across gfx9/10/12, table reserves and GMMU states | `memory-traces.json` |
+| `check_usbgpu_discovery.py --binary <target>/debug/examples/discovery_trace --evidence <file>` | Eight discovery and complete register-binding results match, including 32/64-bit bases and multiple instances | `discovery-traces.json` |
+| `check_usbgpu_firmware.py --binary <target>/debug/examples/firmware_trace --firmware <verified-directory> --evidence <file>` | Eight pinned blobs yield exact SOS/SMU/12 descriptor bytes and microcode entry addresses | `firmware-traces.json`, `firmware-fetch.json` |
+| `cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-usbgpu --no-default-features --test memory` | Three allocation, mapping/reuse and aperture tests pass | `miri-memory.log` |
+
+`generate_usbgpu_amd_metadata.py --check` verifies the checked-in native register,
+constant and C-layout data against source hashes. It parses declarative AST data
+without importing the source modules. Production code reads the resulting JSON;
+it does not execute Python. The 28 register modules and 105 layouts retain their
+original tinygrad/AMD source provenance through the generated source-hash table.
+
+The local system supplied four matching compressed firmware files. Four others
+were obtained from the original pinned linux-firmware GitLab commit and verified
+against the original hash table. These external blobs stay in the private
+fixture cache; no firmware or vehicle installation was performed. Native bus
+binding exists, but hardware initialization, command queues, model import/
+execution, provisioning, compilation, warp and daemon integration remain pending.
+
+## ASIC initialization and queue setup checkpoint
+
+Native Rust now implements the inherited GPU discovery-to-finalization sequence:
+GMC page tables/hubs, PSP firmware commands, SMU clocks/power, GFX and SDMA
+initialization, interrupts/recovery, and compute/copy ring setup. Production
+uses the native bridge bus; Python remains an offline source oracle only.
+
+`rust/tools/check_usbgpu_asic.py --binary <asic_rpc> --firmware <verified-directory>
+--evidence <directory>` compares both implementations against the same owned
+gfx1200 hardware model. Eight cases pass: cold/warm/dirty startup with default
+and 42.5 W limits, PSP response failure, and cold startup with both queue rings.
+All native events match in order (325–1,024 events per case); extra source PTE
+rereads may be skipped only after auditing their values against prior owned
+writes/zeroes. Register, firmware, queue descriptor, sleep and final state
+observations remain compared. The fixture supplies hardware DPM frequencies;
+it does not replace source clock policy.
+
+The queue comparison caught an eager native leaf-table read absent in the
+source. Inspection/free now short-circuit leaf nodes as the source does. The
+preserved old binary still fails exactly that queue case with the same checker.
+
+Evidence: `.omo/evidence/usbgpu-154/asic-manifest.json` links raw traces, exact
+invocations, binary hashes/preserved binaries, 13 passing crate tests, strict
+Clippy, three strict-provenance Miri memory tests, 12 mapping/free comparisons
+and the failing old-binary control. Two initial Miri infrastructure failures
+(stale dependency metadata and competing toolchain sysroot setup) remain in
+separate logs; a fresh target with the pinned toolchain passes.
+
+These are host hardware-boundary comparisons, not physical GPU execution or
+vehicle validation. Command submission, ELF programs, native model import/
+execution, provisioning/compilation, warp and daemon integration remain pending.
+
+## Current owned-host checkpoint (2026-10-09)
+
+The resumed dev-based worktree preserves the sources above and replaces the
+project-owned CXX USB adapter with Rust ownership and checked libusb calls.
+Current worker/client, native warm fallback, emulated probe, dispatcher, USB
+failure/lifetime and memory-check results are recorded in
+[the resumed runtime checkpoint](../rust-port/usbgpu-native-runtime.md#october-9-resumed-checkpoint).
+Its `.omo/evidence/154-runtime-resume/checkpoint/receipt.json` identifies the
+frozen files, eight binaries, command receipts and failures.
+
+Full-model numerical acceptance remains failed/incomplete: 1,149 native outputs
+are NaN and the original replay timed out. Those failures are explicit in the
+linked record and [issue update](https://github.com/bin9208/openpilot-rust/issues/154#issuecomment-6080676637).
+The passing fallback and USB controls do not replace this gate. Model assets,
+provisioning/compiler integration, AMD/QCOM warp, source/recurrent equivalence,
+exact-head CI and normal startup/log-upload composition remain required. No
+device/NAS access or deployment occurred.

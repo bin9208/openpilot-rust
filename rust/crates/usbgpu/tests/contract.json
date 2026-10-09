@@ -1,0 +1,49 @@
+{
+  "issue": 154,
+  "baseline": "3eac955988b0f4cd616d86b2873078ae4d15787f",
+  "runtime_rule": "Rust owns project runtime. No Python tinygrad interpreter or Python worker is a completed native backend. Build-time source extraction/oracles are separate.",
+  "source_responsibilities": {
+    "hardware": "openpilot/system/hardware/usbgpu.py: ordered discovery, firmware/speed/link diagnostics, signed INA231 status, two fresh checks and PCIe-only retry",
+    "selection": "openpilot/selfdrive/modeld/helpers.py: device/layout selection, chunked compiled artifact, current/previous model, discovery grace, nested transient causes",
+    "provisioning": "openpilot/selfdrive/modeld/big_model.py and precompiled_model.py: pinned manifest, resume/hash/size, atomic current/previous state, runtime provenance, archive constraints and failure rejection",
+    "compilation": "openpilot/selfdrive/modeld/compile_modeld.py and pinned generic compile_onnx/compile_warp: supported model compile/update, preserved kernel/model identity and recurrent graph",
+    "execution": "precompiled_runner.py, precompiled_worker.py, generic_model_runtime.py: inputs/layout, output aliases, first/steady deadlines, parent cleanup and recurrent feedback",
+    "preupload": "local_gpu_warp.py: C3-only QCOM path, actual AMD/QCOM probe comparison, exact sampling-boundary rule and AMD fallback",
+    "integration": "modeld.py: five-second remembered-device discovery, six initialization attempts, 120-second load policy, live Params/diagnostics/tmux queue, warm internal model and same-frame fallback",
+    "usb_amd": "original and artifact-pinned tinygrad USB/PCIe/AMD initialization, memory, ELF kernels, command queues, synchronization, firmware and teardown"
+  },
+  "exact": [
+    "integer/control branches and Params transitions",
+    "USB control/bulk and PCIe packets, byte ordering, retry conditions and partial-transfer handling",
+    "register masks/addresses, page tables, kernel arguments/ELF bytes, dispatch ordering and synchronization",
+    "artifact hashes, chunk boundaries, selected model/checkpoint, tensor dimensions/layout/dtype, aliasing and recurrence",
+    "model input/output transport bytes, finite-validity decisions, fallback and failure classification",
+    "source diagnostics and UI JSON success-versus-boundary-failure distinction",
+    "C3 validation decision for every pixel; no percentage/intensity tolerance"
+  ],
+  "numerical": {
+    "unchanged_compiled_kernels": "retain original kernel binaries and constants; byte-identical commands/arguments and buffer input/output traces on owned host driver fixtures; physical AMD results remain a later device gate",
+    "owned_f32_preprocessing": {"absolute": 0.000001, "relative": 0.000001, "discrete_decisions": "exact; any differing safety/selection/validity branch fails"},
+    "c3_sampling_boundary": {"source_pixel_distance_maximum": 0.00025, "require_repeat_identical": true, "require_each_result_matches_original_adjacent_NV12_value": true},
+    "raw_predictions_and_recurrence": "no newly introduced approximation; reuse established parser/publication contracts, preserve original dtype and in-place feedback aliases"
+  },
+  "ui_boundary": {
+    "binary": "openpilot-usbgpu-check",
+    "flags": ["--timeout-seconds SECONDS", "--allow-link-errors"],
+    "default_timeout_seconds_per_attempt": 15,
+    "attempts": 2,
+    "retry_delay_seconds": 1,
+    "stdout": {"error": "null or original diagnostic string"},
+    "exit_zero": "completed diagnostic including normal GPU check failure",
+    "exit_nonzero": "invalid arguments or inability to spawn/communicate with native probe"
+  },
+  "validation": [
+    "preimplementation source-state and numerical contracts",
+    "actual original source comparison, not copied expected output",
+    "native binaries with private sysfs/USB/driver/process/IPC fixtures",
+    "artifact identity and complete responsibility ledger",
+    "owned memory/lifetime/synchronization checks and appropriate Miri/native sanitizers",
+    "portable host and parent ARM/CI integration gates"
+  ],
+  "prohibited_validation": "No vehicle/C3X, physical GPU, NAS, account or production service access; no device-test handoff; no CPU-savings claim. Never count a status-only probe or hidden Python child as completion."
+}

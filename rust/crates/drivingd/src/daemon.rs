@@ -7,7 +7,7 @@ use openpilot_driving_modeld::{
     jetlink, parameters,
     publication::{Output, Publication, Sources},
     state::State,
-    Error,
+    usb_selection, Error,
 };
 use openpilot_logging::{
     log_site,
@@ -48,6 +48,24 @@ pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Res
         .layout()
         .ok_or(Error::Contract("connected camera has no layout"))?;
     let mut runtime = process::model(&catalog, &layout, logger)?;
+    let usb_config = usb_selection::Configuration::for_runtime(Arc::clone(stop))?;
+    let camera = [
+        u32::try_from(layout.width).map_err(|_| Error::Contract("camera width"))?,
+        u32::try_from(layout.height).map_err(|_| Error::Contract("camera height"))?,
+    ];
+    match usb_selection::start(&usb_config, &params, camera) {
+        Ok(Some(model)) => runtime.enable_usb(model),
+        Ok(None) => {}
+        Err(error) => {
+            logger.emit(
+                log_site!(),
+                Record::text(
+                    Level::Error,
+                    format!("eGPU model load failed; using internal GPU: {error}"),
+                ),
+            )?;
+        }
+    }
     let mut subscribers = SubMaster::for_runtime(bus::TOPICS, SubscriberOptions::default())?;
     let mut publishers = PubMaster::for_runtime(bus::OUTPUTS)?;
     let Some(car_params) = process::car_params(&params, stop)? else {
@@ -100,7 +118,7 @@ pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Res
         params.get_bool("JetlinkActive")? || params.get_bool("JetlinkLossLatched")?,
     )?;
     let mut external_stored = None;
-    let mut frame_count = 0;
+    let mut frame_count = 0u64;
     let mut diagnostics = RuntimeDiagnostics::new("modeld", 1.0);
     while !stop.load(Ordering::Relaxed) {
         let loop_start = process::monotonic();
@@ -146,12 +164,12 @@ pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Res
             )?;
         }
         let (lateral, longitudinal) = state.action_times();
-        runtime.inputs.update(
-            i32::from(publication.desire.desire),
-            sources.monitoring.get_is_r_h_d(),
-            lateral,
-            longitudinal,
-        );
+        runtime.update_inputs(openpilot_driving_modeld::usb_model::Controls {
+            desire: i32::from(publication.desire.desire),
+            is_rhd: sources.monitoring.get_is_r_h_d(),
+            lateral_time: lateral,
+            longitudinal_time: longitudinal,
+        });
         let start = Instant::now();
         let camera_age_at_run_ms =
             (process::monotonic() - frame.metadata.timestamp_eof as f64 * 1e-9) * 1000.0;
@@ -209,7 +227,28 @@ pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Res
             &extra_frame.buffer.bytes,
             [calibration.main(), calibration.extra()],
             dropped.prepare_only,
-        )?;
+        );
+        let prediction = match prediction {
+            Ok(prediction) => prediction,
+            Err(error) if runtime.uses_usb() => {
+                logger.emit(
+                    log_site!(),
+                    Record::text(
+                        Level::Error,
+                        format!("eGPU model failed, falling back to internal GPU: {error}"),
+                    ),
+                )?;
+                usb_selection::fail(&params)?;
+                runtime.disable_usb();
+                runtime.infer(
+                    &frame.buffer.bytes,
+                    &extra_frame.buffer.bytes,
+                    [calibration.main(), calibration.extra()],
+                    dropped.prepare_only,
+                )?
+            }
+            Err(error) => return Err(error),
+        };
         let prediction = external.finish(prediction);
         jetlink::persist(&params, &mut external_stored, &external.status)?;
         let model_execution_time = start.elapsed().as_secs_f64();
@@ -261,6 +300,9 @@ pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Res
             publishers.send("modelV2", &messages.model)?;
             publishers.send("drivingModelData", &messages.driving)?;
             publishers.send("cameraOdometry", &messages.pose)?;
+            if runtime.uses_usb() {
+                usb_selection::published(&params)?;
+            }
         }
         FrameTiming {
             frame_id: frame.metadata.frame_id,
@@ -279,6 +321,9 @@ pub fn run(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Res
         }
         .record(&mut diagnostics, logger);
         frame_count += 1;
+        if frame_count.is_multiple_of(20) {
+            usb_selection::refresh(&usb_config, &params)?;
+        }
         if options.frames == Some(frame_count) {
             break;
         }

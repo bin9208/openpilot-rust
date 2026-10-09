@@ -1,3 +1,4 @@
+use crate::usb_model::{Controls, UsbModel};
 use crate::Error;
 use openpilot_model_runtime::{
     catalog::{Bundle, Kind},
@@ -52,6 +53,7 @@ pub struct DrivingRuntime<'a> {
     output_bytes: Vec<u8>,
     output_values: Vec<f32>,
     hidden: [usize; 2],
+    usb: Option<UsbModel>,
 }
 
 impl<'a> DrivingRuntime<'a> {
@@ -96,6 +98,7 @@ impl<'a> DrivingRuntime<'a> {
             output_bytes: vec![0; output],
             output_values: vec![0.0; output / 4],
             hidden,
+            usb: None,
         })
     }
 
@@ -120,6 +123,9 @@ impl<'a> DrivingRuntime<'a> {
         transforms: [[f32; 9]; 2],
         prepare_only: bool,
     ) -> Result<Option<DrivingPrediction>, Error> {
+        if let Some(usb) = &mut self.usb {
+            return usb.infer(main, extra, transforms).map(Some);
+        }
         self.backend.write("frame", main)?;
         self.backend.write("big_frame", extra)?;
         for (name, matrix) in ["tfm", "big_tfm"].into_iter().zip(transforms) {
@@ -198,6 +204,25 @@ impl<'a> DrivingRuntime<'a> {
     }
 
     pub fn raw_predictions(&self) -> &[u8] {
-        &self.output_bytes
+        self.usb
+            .as_ref()
+            .map_or(&self.output_bytes, |usb| usb.client.raw_output())
+    }
+    pub fn update_inputs(&mut self, controls: Controls) {
+        match &mut self.usb {
+            Some(usb) => usb.update(controls),
+            None => controls.apply(&mut self.inputs),
+        }
+    }
+    pub fn enable_usb(&mut self, model: UsbModel) {
+        self.usb = Some(model);
+    }
+    pub fn uses_usb(&self) -> bool {
+        self.usb.is_some()
+    }
+    pub fn disable_usb(&mut self) {
+        if let Some(usb) = self.usb.take() {
+            usb.controls.apply(&mut self.inputs);
+        }
     }
 }

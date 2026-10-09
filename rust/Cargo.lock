@@ -2317,6 +2317,7 @@ dependencies = [
  "openpilot-modeld",
  "openpilot-msgq",
  "openpilot-params",
+ "openpilot-usbgpu",
  "rustix",
  "serde",
  "serde_json",
@@ -3389,12 +3390,14 @@ dependencies = [
 name = "openpilot-usbgpu"
 version = "0.1.0"
 dependencies = [
- "cxx",
- "cxx-build",
+ "libc",
+ "libloading",
+ "openpilot-model-runtime",
  "parking_lot",
  "rustix",
  "serde",
  "serde_json",
+ "sha2",
  "signal-hook",
  "tempfile",
  "thiserror",
