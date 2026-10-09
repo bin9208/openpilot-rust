@@ -4,6 +4,7 @@ mod http;
 
 use crate::{
     network::Network,
+    request::ClientKey,
     session::{Publishers, Session},
     Error,
 };
@@ -23,7 +24,7 @@ use tokio::{
 
 struct SessionHandle {
     identifier: String,
-    client_key: String,
+    client_key: ClientKey,
     road: bool,
     value: Mutex<Session>,
 }

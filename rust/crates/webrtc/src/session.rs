@@ -2,7 +2,7 @@ use crate::{
     network::Network,
     owner_graph::Graph,
     peer::{self, Peer},
-    request::StreamRequest,
+    request::{ClientKey, StreamRequest},
     runtime::Profile,
     video::{ipc::Camera, track::Track},
     Error,
@@ -35,7 +35,7 @@ struct Lifecycle {
 
 pub(crate) struct Session {
     pub identifier: String,
-    pub client_key: String,
+    pub client_key: ClientKey,
     pub road: bool,
     pub created: Instant,
     pub peers: Vec<Peer>,

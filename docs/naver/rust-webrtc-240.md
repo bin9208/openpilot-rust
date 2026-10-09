@@ -4,8 +4,8 @@
 `webrtcd` and Carrot Vision WebRTC runtimes within the full conversion in
 [#1](https://github.com/bin9208/openpilot-rust/issues/1). The current host
 checkpoint covers real HTTP, native Cereal/msgq, ICE/DTLS/SRTP and ordered SCTP.
-Remaining client-ID forms, production multi-camera interaction, startup
-composition, target packaging and exact-head CI are still pending. This is
+Production multi-camera interaction, startup composition, target packaging
+and exact-head CI are still pending. This is
 intermediate engineering evidence; no device or performance claim is made.
 
 ## Ownership and external dependencies
@@ -200,8 +200,7 @@ close before caller cleanup; native exits zero. The provider's existing
 `base_addr()` routing works, so no additional mapping or SDK change is needed.
 These are loopback controls, not a claim about external STUN or a deployed LAN.
 
-Remaining work includes compound/lone-surrogate client identifiers,
-production multi-camera ordering, startup composition, target dependency
+Remaining work includes production multi-camera ordering, startup composition, target dependency
 packaging and exact-SHA CI. No C3X, NAS or vehicle handoff has
 been performed.
 
@@ -269,3 +268,20 @@ enter that unselected nomination-error branch; they are not represented as runs
 of the final ELF. Final build/strict gate, eight controls, source/ELF identities
 and license provenance are frozen separately in
 `.omo/evidence/240-webrtc/stun-provider/final-freeze.json`.
+
+## Client identifier ownership
+
+`identifiers-red-invocation.json` records four actual original/native HTTP
+ownership sequences: compound client/device values and lone surrogate strings
+return source200 versus the former native500. The native adapter now reuses
+`openpilot-runtime-version::python_str` and retains code points in its internal
+client key, including trimming and the 128-code-point limit. Carrot's original
+ASCII identifier normalization remains separate.
+
+`identifiers-final-invocation.json` reuses that source capture and matches all
+four complete sequences. Standard D800/D801 keys remain distinct and replacing
+D800 closes only its prior peer; compound values match their Python string
+representation. Carrot compound device precedence and surrogate normalization
+replace the original owner. Peer/channel states are captured before caller
+cleanup. The source HTTP subset leaves Params binding inactive; actual Cython
+Carrot 0→1→0 parity is covered by the earlier separate ownership control.

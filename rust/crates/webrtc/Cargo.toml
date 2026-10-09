@@ -16,6 +16,7 @@ openpilot-carrot-state = { path = "../carrot-state" }
 openpilot-msgq = { path = "../msgq", default-features = false }
 openpilot-messaging = { path = "../messaging", default-features = false }
 openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-runtime-version = { path = "../runtime-version" }
 openpilot-logmessaged = { path = "../logmessaged" }
 openpilot-logging = { path = "../logging" }
 openpilot-params = { path = "../params" }

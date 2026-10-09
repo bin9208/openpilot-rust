@@ -1,13 +1,16 @@
 use crate::{video::ipc::Camera, Error};
 use openpilot_logmessaged::{JsonValue, JsonView};
 
+#[derive(Clone, PartialEq, Eq)]
+pub(crate) struct ClientKey(Vec<u32>);
+
 pub(crate) struct StreamRequest {
     pub sdp: String,
     pub cameras: Vec<Camera>,
     pub incoming: Vec<String>,
     pub outgoing: Vec<String>,
-    pub client: String,
-    pub device: String,
+    pub client: Vec<u32>,
+    pub device: Vec<u32>,
     pub takeover: bool,
     pub carrot_state: bool,
 }
@@ -21,36 +24,6 @@ pub(crate) fn truth(value: &JsonValue) -> bool {
         JsonView::Text(value) => !value.is_empty(),
         JsonView::Array(value) => !value.is_empty(),
         JsonView::Object(value) => !value.is_empty(),
-    }
-}
-
-fn source_str(value: &JsonValue) -> Result<String, Error> {
-    match value.view() {
-        JsonView::Null => Ok("None".to_owned()),
-        JsonView::Bool(value) => Ok(if value { "True" } else { "False" }.to_owned()),
-        JsonView::Text(_) => value
-            .to_utf8()
-            .ok_or(Error::Contract("identifier contains non-UTF8 Unicode")),
-        JsonView::Integer(value) => Ok(value.to_owned()),
-        JsonView::Float(value) => {
-            if value.is_nan() {
-                return Ok("nan".to_owned());
-            }
-            if value.is_infinite() {
-                return Ok(if value.is_sign_negative() {
-                    "-inf"
-                } else {
-                    "inf"
-                }
-                .to_owned());
-            }
-            let mut output = String::new();
-            openpilot_runtime_core::python_float::write_float(value, &mut output)?;
-            Ok(output)
-        }
-        JsonView::Array(_) | JsonView::Object(_) => {
-            Err(Error::Contract("identifier must be scalar"))
-        }
     }
 }
 
@@ -71,19 +44,34 @@ fn strings(value: Option<JsonValue>) -> Result<Vec<String>, Error> {
         .collect()
 }
 
-fn whitespace(value: char) -> bool {
-    value.is_whitespace() || matches!(value, '\u{1c}'..='\u{1f}')
+fn whitespace(value: u32) -> bool {
+    char::from_u32(value)
+        .is_some_and(|value| value.is_whitespace() || matches!(value, '\u{1c}'..='\u{1f}'))
 }
 
-fn normalize(value: Option<JsonValue>) -> Result<String, Error> {
+fn strip(points: &[u32]) -> &[u32] {
+    let start = points
+        .iter()
+        .position(|point| !whitespace(*point))
+        .unwrap_or(points.len());
+    let end = points
+        .iter()
+        .rposition(|point| !whitespace(*point))
+        .map_or(start, |index| index + 1);
+    &points[start..end]
+}
+
+fn normalize(value: Option<JsonValue>) -> Result<Vec<u32>, Error> {
     let Some(value) = value.filter(truth) else {
-        return Ok(String::new());
+        return Ok(Vec::new());
     };
-    let source = source_str(&value)?;
+    let source = openpilot_runtime_version::python_str(&value)?;
     let mut result = String::new();
     let mut bad = false;
-    for value in source.trim_matches(whitespace).chars() {
-        if value.is_ascii_alphanumeric() || matches!(value, '.' | '_' | ':' | '-') {
+    for point in strip(&source) {
+        if let Some(value) = char::from_u32(*point)
+            .filter(|value| value.is_ascii_alphanumeric() || matches!(value, '.' | '_' | ':' | '-'))
+        {
             result.push(value);
             bad = false;
         } else if !bad {
@@ -91,7 +79,12 @@ fn normalize(value: Option<JsonValue>) -> Result<String, Error> {
             bad = true;
         }
     }
-    Ok(result.trim_matches('-').chars().take(128).collect())
+    Ok(result
+        .trim_matches('-')
+        .chars()
+        .take(128)
+        .map(u32::from)
+        .collect())
 }
 
 impl StreamRequest {
@@ -112,9 +105,9 @@ impl StreamRequest {
         let client = if carrot {
             normalize(input.get("client_id"))?
         } else {
-            input
-                .get("client_id")
-                .map_or(Ok(String::new()), |value| source_str(&value))?
+            input.get("client_id").map_or(Ok(Vec::new()), |value| {
+                openpilot_runtime_version::python_str(&value)
+            })?
         };
         Ok(Self {
             sdp,
@@ -125,24 +118,24 @@ impl StreamRequest {
             device: if carrot {
                 normalize(input.get("device_id"))?
             } else {
-                String::new()
+                Vec::new()
             },
             takeover: input.get("takeover").is_some_and(|value| truth(&value)),
             carrot_state: input.get("carrot_state").is_some_and(|value| truth(&value)),
         })
     }
 
-    pub fn key(&self, remote: &str) -> String {
+    pub fn key(&self, remote: &str) -> ClientKey {
         let client = if self.device.is_empty() {
             &self.client
         } else {
             &self.device
         };
-        let normalized: String = client.trim_matches(whitespace).chars().take(128).collect();
+        let normalized: Vec<_> = strip(client).iter().take(128).copied().collect();
         if normalized.is_empty() {
-            format!("remote:{remote}")
+            ClientKey(format!("remote:{remote}").chars().map(u32::from).collect())
         } else {
-            format!("client:{normalized}")
+            ClientKey("client:".chars().map(u32::from).chain(normalized).collect())
         }
     }
 }

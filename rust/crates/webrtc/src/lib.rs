@@ -36,6 +36,8 @@ pub enum Error {
     #[error(transparent)]
     PythonJson(#[from] openpilot_logmessaged::JsonError),
     #[error(transparent)]
+    PythonString(#[from] openpilot_runtime_version::Error),
+    #[error(transparent)]
     Format(#[from] std::fmt::Error),
     #[error(transparent)]
     Transport(#[from] openpilot_msgq::Error),

@@ -3666,6 +3666,7 @@ dependencies = [
  "openpilot-msgq",
  "openpilot-params",
  "openpilot-runtime-core",
+ "openpilot-runtime-version",
  "percent-encoding",
  "rtc",
  "rustix",
