@@ -3403,6 +3403,7 @@ dependencies = [
  "libloading",
  "openpilot-http-transport",
  "openpilot-model-runtime",
+ "openpilot-params",
  "parking_lot",
  "rustix",
  "rustls-native-certs",

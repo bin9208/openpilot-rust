@@ -15,6 +15,7 @@ fixture-inspection = []
 unsafe_op_in_unsafe_fn = "deny"
 
 [dependencies]
+openpilot-params = { path = "../params" }
 openpilot-model-runtime = { path = "../model-runtime", optional = true }
 libloading = { version = "0.8", optional = true }
 libc = { version = "0.2", optional = true }

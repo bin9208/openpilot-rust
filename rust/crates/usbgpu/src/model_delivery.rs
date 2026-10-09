@@ -1,6 +1,7 @@
 //! Verified, resumable optional-model delivery; failure does not select a new model.
 pub mod archive;
 pub mod assets;
+pub mod background;
 pub mod boot;
 pub mod catalog;
 mod download;
@@ -14,8 +15,8 @@ pub mod validation;
 
 pub use download::{download, download_fallible, download_observed, sha256, DownloadKind, Event};
 pub use state::{
-    ensure, ensure_observed, fetch_manifest, parse_manifest, pinned_manifest, State,
-    DEFAULT_MANIFEST_URL,
+    ensure, ensure_fallible, ensure_observed, fetch_manifest, parse_manifest, pinned_manifest,
+    State, DEFAULT_MANIFEST_URL,
 };
 
 use std::time::Duration;

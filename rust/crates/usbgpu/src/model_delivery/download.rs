@@ -183,6 +183,8 @@ pub fn download_fallible(
         DownloadKind::Model => 4 << 20,
         DownloadKind::Precompiled => 1 << 20,
     };
+    let fixed_length = response.headers().contains_key("Content-Length")
+        && !response.headers().contains_key("Transfer-Encoding");
     let mut buffer = vec![0; chunk];
     let mut reader = response.into_body().into_reader();
     let mut file = OpenOptions::new()
@@ -194,7 +196,14 @@ pub fn download_fallible(
     loop {
         let mut filled = 0;
         while filled < buffer.len() {
-            let count = reader.read(&mut buffer[filled..])?;
+            let count = match reader.read(&mut buffer[filled..]) {
+                Ok(count) => count,
+                // HTTPResponse.read(amt) preserves a short fixed-length prefix; final size/hash verification still rejects it.
+                Err(error) if fixed_length && error.kind() == std::io::ErrorKind::UnexpectedEof => {
+                    0
+                }
+                Err(error) => return Err(error.into()),
+            };
             if count == 0 {
                 break;
             }

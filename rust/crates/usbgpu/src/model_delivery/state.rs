@@ -1,4 +1,4 @@
-use super::{download_observed, DownloadKind, Error, Event};
+use super::{download_fallible, DownloadKind, Error, Event};
 use crate::model::Manifest;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -147,6 +147,18 @@ pub fn ensure_observed(
     cache: &Path,
     observe: &mut impl FnMut(Event),
 ) -> Result<(PathBuf, bool), Error> {
+    ensure_fallible(agent, model, cache, &mut |event| {
+        observe(event);
+        Ok(())
+    })
+}
+
+pub fn ensure_fallible(
+    agent: &ureq::Agent,
+    model: &Manifest,
+    cache: &Path,
+    observe: &mut impl FnMut(Event) -> Result<(), Error>,
+) -> Result<(PathBuf, bool), Error> {
     if !model.validate() {
         return Err(Error::Invalid("invalid model manifest".into()));
     }
@@ -160,7 +172,7 @@ pub fn ensure_observed(
     if !changed && target.is_file() && target.metadata()?.len() == model.size {
         return Ok((target, false));
     }
-    let target = download_observed(
+    let target = download_fallible(
         agent,
         &model.url,
         &target,
