@@ -22,6 +22,17 @@ constructor. It removes the target, reopens Params, writes through the new
 handle, reads through the original handle and checks that no temporary link
 is left behind. Evidence is retained under
 `.omo/evidence/257-params-dangling/`. All seven Params tests, all-target strict
-Clippy, formatting and diff checks pass. The affected HTTP comparison remains
-pending in the Carrot server integration; it is distinct from these passing
-storage tests. These are host storage observations; no device was accessed.
+Clippy, formatting and diff checks pass. The Carrot server integration at
+`a642aa0e614407c254738386d3923c45490505c6` with the working settings-snapshot
+handler also passes the affected original/native HTTP comparison: both return
+200 and recreate the removed target; both return the original 500/errno 13
+response for an inaccessible root. These two cases exited successfully in
+0.962 seconds; see `.omo/evidence/225-settings-snapshot/constructor-final/`.
+They are distinct from the storage tests and do not imply whole-server completion.
+
+Exact-SHA Fast checks passed for the isolated fix
+[`041627701`](https://github.com/bin9208/openpilot-rust/actions/runs/37915977544)
+and its server-branch inclusion
+[`a642aa0e6`](https://github.com/bin9208/openpilot-rust/actions/runs/37916003713).
+PR/integration acceptance remains pending. These are host storage observations;
+no device was accessed.

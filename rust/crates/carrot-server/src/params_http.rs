@@ -28,7 +28,7 @@ fn failure(head: bool) -> Response<Body> {
         head,
     )
 }
-fn device_type() -> String {
+pub(crate) fn device_type() -> String {
     let value = if std::path::Path::new("/TICI").is_file() {
         openpilot_hardware_info::Tici::default().get_device_type()
     } else {

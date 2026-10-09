@@ -1112,7 +1112,8 @@ it does not invoke a Python media worker.
 
 Owned-source controls in
 `.omo/evidence/carrot-server-225-resume/web-navi/` cover Unicode state, image
-packets, eight-frame fragmented MP4, map-disabled subscriptions, restart after
+packets, eight H.264 inputs with seven decoded fragmented-MP4 output frames,
+map-disabled subscriptions, restart after
 idle, the 90-frame GOP bound, the twelve-packet bootstrap bound, slow-client
 closure, malformed configuration, keyframe-only retry after five seconds and
 diagnostic expiry. `application-v1` verifies the real remote address, ordinary
@@ -1131,8 +1132,29 @@ deadline. The owned three-second grace probe observes both original and native
 WebSockets remaining active until the fixture deadline, followed by clean
 process exit. No browser, vehicle or C3X acceptance is claimed by these checks.
 
-The remaining active families include composed settings snapshots, QR provider
-status/repair, tool jobs, terminal/support terminal, YouTube Live and
+The composed `/api/settings/snapshot` now combines the filtered catalog and
+current values with device/network/SSH information, favorites, profiles,
+popular settings and unit preferences. Reading it observes external parameter
+changes through the existing history service. It preserves the original fresh
+Params constructor boundary; the independently tracked dangling-link repair
+is described in [issue 257](https://github.com/bin9208/openpilot-rust/issues/257).
+
+Nineteen original/native HTTP cases cover ordinary and unavailable Params,
+compression, HEAD/method handling, changed values/history, malformed preference
+files and missing settings. Two additional actual-Cython constructor cases
+pass after the shared fix: removed targets are recreated with HTTP 200, and
+inaccessible roots retain the original HTTP 500 error. The owned held-refresh
+control confirms that cached snapshots respond while network GETs are blocked;
+a repeated snapshot does not start another refresh, and both processes exit
+cleanly. Receipts are under `.omo/evidence/225-settings-snapshot/`, including
+`constructor-final/` and `held-refresh/`. Existing nineteen-case results were
+reused after the isolated constructor fix; only the affected boundary was rerun.
+Final all-target strict Clippy, formatting, Ruff and Python syntax checks pass.
+The optional AnyIO-preference audit flags the original asyncio AppRunner helper;
+that source execution boundary is retained and the audit is not marked passing.
+
+The remaining active families include QR provider status/repair, tool jobs,
+terminal/support terminal, YouTube Live and
 vision diagnostics/test services. The web bridge is distinct from the converted
 Carrot Navi daemon. `/stream` also depends on the separately inventoried WebRTC
 conversion. Each family's existing guards, background tasks and cleanup belong

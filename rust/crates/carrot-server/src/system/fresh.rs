@@ -1,7 +1,7 @@
 use crate::Error;
 use openpilot_params::Params;
 
-pub(super) fn reopen(params: Option<&Params>) -> Result<Option<Params>, Error> {
+pub(crate) fn reopen(params: Option<&Params>) -> Result<Option<Params>, Error> {
     let Some(params) = params else {
         return Ok(None);
     };

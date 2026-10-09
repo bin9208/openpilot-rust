@@ -336,9 +336,6 @@ impl Service {
 }
 
 fn context(params: &Backend, catalog: Option<&Catalog>) -> (String, String) {
-    if !params.has_params() {
-        return (String::new(), String::new());
-    }
     (
         payload::param_text(params, "CarSelected3"),
         catalog

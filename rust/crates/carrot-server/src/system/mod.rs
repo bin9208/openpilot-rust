@@ -3,7 +3,7 @@ pub mod actions;
 pub(crate) mod background;
 pub mod calibration;
 pub mod defaults;
-mod fresh;
+pub(crate) mod fresh;
 pub(crate) mod http;
 mod http_read;
 mod http_time;

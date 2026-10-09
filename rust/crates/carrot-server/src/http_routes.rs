@@ -148,6 +148,9 @@ pub(crate) async fn dispatch(
     if path == "/api/web_settings" {
         return Ok(crate::web_settings_http::handle(request, app).await);
     }
+    if path == "/api/settings/snapshot" {
+        return Ok(crate::settings_snapshot_http::handle(request, app).await);
+    }
     if path == "/api/settings" {
         if request.method() != hyper::Method::GET && !head {
             let mut result = text(
