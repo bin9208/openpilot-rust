@@ -1,4 +1,4 @@
-use openpilot_webrtc::{network::Network, runtime, Error};
+use openpilot_webrtc::{Error, network::Network, runtime};
 use std::net::{IpAddr, Ipv4Addr};
 
 fn main() -> Result<(), Error> {
@@ -9,10 +9,22 @@ fn main() -> Result<(), Error> {
         .ok_or(Error::Contract("missing owned port"))?
         .parse::<u16>()
         .map_err(|_| Error::Contract("invalid owned port"))?;
-    let mut server = arguments.next();
-    let debug = server.as_deref() == Some("--debug");
-    if debug {
-        server = arguments.next();
+    let mut server = None;
+    let mut resolver = None;
+    let mut debug = false;
+    while let Some(argument) = arguments.next() {
+        match argument.as_str() {
+            "--debug" => debug = true,
+            "--mdns" => {
+                resolver = Some(
+                    arguments
+                        .next()
+                        .ok_or(Error::Contract("missing owned mDNS recipient"))?,
+                );
+            }
+            _ if server.is_none() => server = Some(argument),
+            _ => return Err(Error::Contract("invalid owned resolver argument")),
+        }
     }
     let server = server
         .map(|server| {
@@ -26,7 +38,14 @@ fn main() -> Result<(), Error> {
             ))
         })
         .transpose()?;
-    let network = Network::owned(vec![IpAddr::V4(Ipv4Addr::LOCALHOST)], server);
+    let mut network = Network::owned(vec![IpAddr::V4(Ipv4Addr::LOCALHOST)], server);
+    if let Some(recipient) = resolver {
+        network = network.owned_mdns(
+            recipient
+                .parse()
+                .map_err(|_| Error::Contract("invalid owned mDNS recipient"))?,
+        )?;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;

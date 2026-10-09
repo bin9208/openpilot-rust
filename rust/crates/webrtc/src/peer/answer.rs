@@ -1,111 +1,22 @@
-use super::{
-    metadata::{configured, h264, projected},
-    Peer,
-};
+use super::{Peer, metadata::projected, owner::prepared_owner};
 use crate::{
-    channel::Channel,
-    network::{Gathered, Network},
-    owner_graph::{mid, Graph},
-    sender::Sender,
-    video::{ipc::Camera, track::Track},
     Error,
+    network::{Gathered, Network},
+    owner_graph::{Graph, mid},
+    video::{ipc::Camera, track::Track},
 };
 use rtc::sansio::Protocol;
 use rtc::{
     crypto::{self, SignatureScheme},
-    media_stream::MediaStreamTrack,
     peer_connection::{
         certificate::{CertificateParams, RTCCertificate},
         sdp::RTCSessionDescription,
-        state::RTCPeerConnectionState,
         transport::RTCIceCandidateInit,
-    },
-    rtp_transceiver::rtp_sender::{
-        RTCRtpCodec, RTCRtpCodingParameters, RTCRtpEncodingParameters, RtpCodecKind,
     },
     sdp::description::{common::Attribute, session::SessionDescription},
 };
-use std::{collections::VecDeque, time::Instant};
+use std::time::Instant;
 use tokio::task::JoinSet;
-
-fn prepared_owner(
-    index: usize,
-    parsed: &SessionDescription,
-    graph: &Graph,
-    tracks: &mut [(usize, Camera, Option<Track>)],
-    sync: bool,
-    certificate: RTCCertificate,
-) -> Result<Option<Peer>, Error> {
-    let members: Vec<_> = graph
-        .bindings
-        .iter()
-        .enumerate()
-        .filter_map(|(media, owner)| (*owner == index).then_some(media))
-        .collect();
-    if members.is_empty() {
-        return Ok(None);
-    }
-    let mut partition = parsed.clone();
-    partition.media_descriptions = members
-        .iter()
-        .map(|index| parsed.media_descriptions[*index].clone())
-        .collect();
-    partition.attributes.retain(|value| value.key != "group");
-    let mut rtc = configured(certificate)?;
-    rtc.prepare_remote_description(
-        Instant::now(),
-        RTCSessionDescription::offer(partition.marshal())?,
-        graph.transport(parsed, index)?,
-    )?;
-    let mut senders = Vec::new();
-    for (media, camera, track) in tracks.iter_mut() {
-        if !members.contains(media) {
-            continue;
-        }
-        let random = uuid::Uuid::new_v4();
-        let ssrc = u32::from_be_bytes(random.as_bytes()[0..4].try_into()?);
-        let debug = track.as_ref().is_some_and(Track::is_debug);
-        let id = rtc.add_track(MediaStreamTrack::new(
-            uuid::Uuid::new_v4().to_string(),
-            format!("{}:{}", camera.name(), uuid::Uuid::new_v4()),
-            camera.name().to_owned(),
-            RtpCodecKind::Video,
-            vec![RTCRtpEncodingParameters {
-                rtp_coding_parameters: RTCRtpCodingParameters {
-                    ssrc: Some(ssrc),
-                    ..Default::default()
-                },
-                codec: if debug {
-                    RTCRtpCodec::default()
-                } else {
-                    h264("42001f")
-                },
-                ..Default::default()
-            }],
-        ))?;
-        senders.push(Sender::new(
-            id,
-            track
-                .take()
-                .ok_or(Error::Contract("camera assigned twice"))?,
-            mid(&parsed.media_descriptions[*media])?,
-            ssrc,
-            !debug && sync && *camera == Camera::Road,
-        )?);
-    }
-    Ok(Some(Peer {
-        cname: String::new(),
-        index,
-        rtc,
-        sockets: Vec::new(),
-        state: RTCPeerConnectionState::New,
-        active: false,
-        gathered: false,
-        senders,
-        channel: Channel::default(),
-        queued: VecDeque::new(),
-    }))
-}
 
 fn owner_answers(
     peers: &mut [Peer],
@@ -159,6 +70,59 @@ fn owner_answers(
     Ok(answers)
 }
 
+async fn remote_owners(
+    parsed: &SessionDescription,
+    graph: &Graph,
+    network: &Network,
+) -> Result<std::collections::HashMap<usize, crate::network::Remote>, Error> {
+    let mut remote_tasks = JoinSet::new();
+    for index in 0..graph.owners.len() {
+        if graph.bindings.contains(&index) {
+            let parameters = graph.transport(parsed, index)?;
+            let network = network.clone();
+            remote_tasks.spawn(async move { (index, network.resolve(parameters).await) });
+        }
+    }
+    let mut remotes = std::collections::HashMap::new();
+    while let Some(result) = remote_tasks.join_next().await {
+        let (index, remote) =
+            result.map_err(|_| Error::Contract("remote candidate task failed"))?;
+        remotes.insert(index, remote?);
+    }
+    Ok(remotes)
+}
+
+async fn gather_owners(
+    parsed: &SessionDescription,
+    graph: &Graph,
+    network: &Network,
+    peers: &mut [Peer],
+) -> Result<Vec<(usize, Gathered)>, Error> {
+    let mut gathering = JoinSet::new();
+    let mut remotes = remote_owners(parsed, graph, network).await?;
+    for peer in peers {
+        let remote = remotes
+            .remove(&peer.index)
+            .ok_or(Error::Contract("remote owner disappeared"))?;
+        for candidate in remote.parameters.candidates {
+            peer.rtc.add_remote_candidate(candidate)?;
+        }
+        peer.mdns = remote.lease;
+        if !graph.owners[peer.index].stopped {
+            let index = peer.index;
+            let network = network.clone();
+            gathering.spawn(async move { (index, network.gather().await) });
+        }
+    }
+    let mut gathered = Vec::new();
+    while let Some(result) = gathering.join_next().await {
+        let (index, result) =
+            result.map_err(|_| Error::Contract("candidate gathering task failed"))?;
+        gathered.push((index, result?));
+    }
+    Ok(gathered)
+}
+
 pub(crate) async fn prepare(
     parsed: &SessionDescription,
     graph: &Graph,
@@ -190,25 +154,26 @@ pub(crate) async fn prepare(
         })
         .collect::<Result<_, _>>()?;
     let mut peers = Vec::new();
-    let mut gathering = JoinSet::new();
-    for (index, selection) in graph.owners.iter().enumerate() {
-        let Some(peer) =
-            prepared_owner(index, parsed, graph, &mut tracks, sync, certificate.clone())?
+    for index in 0..graph.owners.len() {
+        if !graph.bindings.contains(&index) {
+            continue;
+        }
+        let parameters = graph.transport(parsed, index)?;
+        let Some(peer) = prepared_owner(
+            index,
+            parsed,
+            graph,
+            &mut tracks,
+            sync,
+            certificate.clone(),
+            parameters,
+        )?
         else {
             continue;
         };
         peers.push(peer);
-        if !selection.stopped {
-            let network = network.clone();
-            gathering.spawn(async move { (index, network.gather().await) });
-        }
     }
-    let mut gathered = Vec::new();
-    while let Some(result) = gathering.join_next().await {
-        let (index, result) =
-            result.map_err(|_| Error::Contract("candidate gathering task failed"))?;
-        gathered.push((index, result?));
-    }
+    let gathered = gather_owners(parsed, graph, network, &mut peers).await?;
     let cname = uuid::Uuid::new_v4().to_string();
     for peer in &mut peers {
         peer.cname.clone_from(&cname);

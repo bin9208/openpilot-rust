@@ -1,10 +1,10 @@
-use super::http::{internal, reply, Reply};
+use super::http::{Reply, internal, reply};
 use super::{Application, Profile, SessionHandle};
 use crate::{
+    Error,
     network::Network,
     request::StreamRequest,
     session::{Publishers, Session},
-    Error,
 };
 use hyper::StatusCode;
 use openpilot_params::Params;
@@ -189,6 +189,9 @@ impl Application {
 
     pub(super) async fn shutdown(&self) {
         self.shutting_down.set(true);
+        if let Err(error) = self.network.close() {
+            eprintln!("WebRTC mDNS shutdown failed: {error}");
+        }
         let streams = self.streams.borrow().clone();
         for session in streams {
             session.value.lock().await.close().await;

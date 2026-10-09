@@ -1,16 +1,17 @@
 mod answer;
 mod feedback;
 mod metadata;
+mod owner;
 pub(crate) use answer::prepare;
 
-use crate::{channel::Channel, sender::Sender, Error};
+use crate::{Error, channel::Channel, sender::Sender};
 use bytes::BytesMut;
 use rtc::{
     peer_connection::{
+        RTCPeerConnection,
         event::{RTCDataChannelEvent, RTCPeerConnectionEvent},
         message::RTCMessage,
         state::RTCPeerConnectionState,
-        RTCPeerConnection,
     },
     sansio::Protocol,
     shared::{TaggedBytesMut, TransportContext, TransportProtocol},
@@ -23,6 +24,7 @@ use std::{
 
 pub(crate) struct Peer {
     cname: String,
+    mdns: Option<crate::network::Lease>,
     pub index: usize,
     pub rtc: RTCPeerConnection,
     pub sockets: Vec<UdpSocket>,
@@ -52,7 +54,7 @@ impl Peer {
                         std::io::ErrorKind::WouldBlock | std::io::ErrorKind::Interrupted
                     ) =>
                 {
-                    break
+                    break;
                 }
                 Err(error) => eprintln!("WebRTC datagram send failed: {error}"),
             }
@@ -227,5 +229,6 @@ impl Peer {
         }
         self.sockets.clear();
         self.senders.clear();
+        self.mdns = None;
     }
 }

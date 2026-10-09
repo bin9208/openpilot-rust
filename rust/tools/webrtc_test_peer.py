@@ -11,7 +11,7 @@ def save(path, value):
   path.write_text(json.dumps(value, indent=2) + "\n")
 
 
-async def start_service(binary, mode, folder):
+async def start_service(binary, mode, folder, options=()):
   owned = await asyncio.to_thread(folder.resolve, strict=True)
   evidence = await asyncio.to_thread(Path(os.environ['WEBRTC_OWNED_ROOT']).resolve, strict=True)
   assert owned.is_relative_to(evidence) and owned != evidence
@@ -21,6 +21,7 @@ async def start_service(binary, mode, folder):
   arguments = [str(binary), mode.removesuffix('-debug'), '0']
   if mode.endswith('-debug'):
     arguments.append('--debug')
+  arguments.extend(options)
   return await asyncio.create_subprocess_exec(*arguments, env=environment, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
 
 

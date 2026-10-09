@@ -147,6 +147,17 @@ STUN through the existing fixture provider; production network behavior is not
 validated by these controls. Original HTTP tests invoke real source sessions,
 but omit the unavailable Python Params binding and original CLI startup.
 
+The subsequent `params-source-native-bytes-invocation.json` closes the Params
+ownership gap using the existing unchanged Cython binding, explicit owned Params
+roots and an isolated logging path. One actual original/native Carrot road
+connection persists exact ASCII `0,1,0` and closes the peer before caller
+cleanup. The original uses its real nonblocking writer; the native process uses
+runtime `PARAMS_ROOT`. The first observation incorrectly compared the binding's
+typed `get` result with bytes and timed out while the actual source file already
+contained `0`; that failure is retained. The corrected control observes the
+persisted bytes directly. Original CLI/default-root and affinity startup remain
+separate work.
+
 An earlier boundary-only native fixture omitted `PARAMS_ROOT` and wrote ASCII
 `0` to the workstation's `~/.comma/params/d/CarrotVisionActive`. Its previous
 value is unknown because Params replaces files atomically. The host file was
@@ -155,7 +166,41 @@ uncertainty. The shared fixture launch now fails closed unless its Params root
 is inside the dedicated evidence directory and an explicit IPC namespace is
 present. Only the affected 16 HTTP checks were rerun with verified owned paths.
 
-Remaining work includes mDNS and browser I/O,
+## Owned mDNS and server-reflexive transport
+
+The project resolver follows aioice 0.10.2's actual query/answer boundary;
+`rust/crates/webrtc/AIOICE-LICENSE` retains its BSD license. No new dependency
+or vendor visibility patch is used. It resolves selected remote candidates
+after SDP preparation and before answering, without rewriting the submitted
+description. Candidate and owner resolution are concurrent. Queries coalesce
+only while pending; each waiter retains the source one-second timeout.
+
+Eleven actual original/native UDP cases match query bytes, reply bytes, results
+and empty waiter state. They cover A/AAAA, case-insensitive names, duplicate
+waiters, uncached repeated queries, cancellation, close, compressed names,
+first-answer selection, malformed/truncated/class/opcode rejection, and the
+source's acceptance of QR/AA-unset answers with a nonzero ID. Native owner
+sockets can be rebound after cleanup. `mdns-source-native-replay.json` binds
+the captured source cases and native test executable.
+
+The HTTP adapter initially serialized two missing names: source answered in
+1.011 seconds and native in 2.032 seconds. The retained
+`mdns-http-serial-red-invocation.json` records this failure. A scoped concurrent
+candidate adapter now answers in 1.031 seconds against source 1.009 seconds.
+That negative case proves answer timing and query behavior only. The actual
+duplicate-name session emits one query in both runtimes, connects ICE/DTLS and
+the ordered data channel, delivers `/notify`, and closes the peer before caller
+cleanup. See `mdns-http-concurrent-invocation.json`.
+
+`srflx-owned-nat-first-invocation.json` exercises both runtimes through owned
+STUN and UDP NAT aliases. The client retains only advertised server-reflexive
+candidates and drops direct base-address datagrams before handling. Both
+nominate the real alias, forward datagrams in both directions, deliver data and
+close before caller cleanup; native exits zero. The provider's existing
+`base_addr()` routing works, so no additional mapping or SDK change is needed.
+These are loopback controls, not a claim about external STUN or a deployed LAN.
+
+Remaining work includes actual browser I/O,
 STUN-error timing, remaining client-ID/body decoding forms, normal startup,
 target dependency packaging and exact-SHA CI. No C3X, NAS or vehicle handoff has
 been performed.

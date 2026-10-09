@@ -1,27 +1,37 @@
 use crate::Error;
+mod dns;
+mod mdns;
+mod mdns_socket;
+#[cfg(test)]
+mod mdns_tests;
+mod remote;
 use md5::{Digest, Md5};
+pub(crate) use mdns::Lease;
+pub(crate) use remote::Remote;
 use rtc::ice::candidate::candidate_server_reflexive::CandidateServerReflexiveConfig;
 use rtc::peer_connection::transport::{
     CandidateConfig, CandidateHostConfig, RTCIceCandidate, RTCIceCandidateInit,
 };
 use rtc::stun::{
     message::Getter,
-    message::{Message, TransactionId, BINDING_REQUEST, BINDING_SUCCESS},
+    message::{BINDING_REQUEST, BINDING_SUCCESS, Message, TransactionId},
     xoraddr::XorMappedAddress,
 };
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket},
+    sync::Arc,
     time::Duration,
 };
 use tokio::{
     task::JoinSet,
-    time::{timeout, Instant},
+    time::{Instant, timeout},
 };
 
 #[derive(Clone)]
 pub struct Network {
     addresses: Option<Vec<IpAddr>>,
     stun: Option<(String, u16)>,
+    mdns: Arc<mdns::Resolver>,
 }
 
 pub(crate) struct Gathered {
@@ -110,11 +120,15 @@ async fn binding(socket: UdpSocket, server: (String, u16)) -> Result<RTCIceCandi
 }
 
 impl Network {
+    pub(crate) fn close(&self) -> Result<(), Error> {
+        self.mdns.close()
+    }
     #[must_use]
     pub fn for_runtime() -> Self {
         Self {
             addresses: None,
             stun: Some(("stun.l.google.com".to_owned(), 19302)),
+            mdns: Arc::new(mdns::Resolver::new(None)),
         }
     }
 
@@ -123,7 +137,22 @@ impl Network {
         Self {
             addresses: Some(addresses),
             stun,
+            mdns: Arc::new(mdns::Resolver::new(None)),
         }
+    }
+
+    /// Uses an owned loopback recipient for the original mDNS query/answer boundary.
+    ///
+    /// # Errors
+    /// Rejects recipients outside the owned loopback interface.
+    pub fn owned_mdns(mut self, recipient: SocketAddr) -> Result<Self, Error> {
+        if !recipient.ip().is_loopback() || !recipient.is_ipv4() {
+            return Err(Error::Contract(
+                "mDNS control recipient must be IPv4 loopback",
+            ));
+        }
+        self.mdns = Arc::new(mdns::Resolver::new(Some(recipient)));
+        Ok(self)
     }
 
     pub(crate) async fn gather(&self) -> Result<Gathered, Error> {
