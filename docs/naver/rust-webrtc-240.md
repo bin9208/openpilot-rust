@@ -1,0 +1,117 @@
+# Rust WebRTC runtime (#240)
+
+[#240](https://github.com/bin9208/openpilot-rust/issues/240) tracks the standard
+`webrtcd` and Carrot Vision WebRTC runtimes within the full conversion in
+[#1](https://github.com/bin9208/openpilot-rust/issues/1). The current host
+checkpoint covers real HTTP, native Cereal/msgq, ICE/DTLS/SRTP and ordered SCTP.
+Generated debug video, browser interoperability, remaining network/error
+boundaries, startup composition and exact-head CI are still pending. This is
+intermediate engineering evidence; no device or performance claim is made.
+
+## Ownership and external dependencies
+
+Rust owns request/session policy, the original transport-owner graph, source
+activation order, answer metadata, encoded-camera scheduling, H.264 packetization,
+Cereal bridges, compact-state cadence, RTP sender history/reporting and cleanup.
+Source contracts are `openpilot/system/webrtc/{webrtcd,carrot_webrtcd,
+carrot_session,carrot_state}.py`, `device/video.py`, the local `teleoprtc` package
+and pinned aiortc 1.14.0. Their original licenses are retained.
+
+The native provider is rtc 0.21.0 with AWS-LC 1.18.1 / aws-lc-sys 0.45.0.
+The owned provider copy retains its published manifest/licenses and provenance.
+Its limited patches select the negotiated BUNDLE master, prepare/defer a single
+owner until actual activation, preserve source-selected local DTLS roles and
+forward real DTLS close-notify before transport removal. Each original transport
+owner is a separate provider peer; no submitted client SDP credentials or media
+attributes are canonicalized to force BUNDLE. Ordinary provider role derivation
+is unchanged when the source-selected role is absent.
+
+## Saved host evidence (2026-10-09)
+
+Private artifacts are under `.omo/evidence/240-webrtc/` in the primary checkout.
+The current sender checkpoint is `production-sender-checkpoint.json`, which
+binds source hashes, binary hashes, invocations, captured outputs and remaining
+work. The selected native package build, strict all-target Clippy and four unit
+checks are captured in `production-srtcp-delivery-final/`.
+
+- Preserved owner controls cover negotiated BUNDLE, partial/no BUNDLE, original
+  discarded-owner references and candidate eligibility, sticky local role and
+  sequential owner activation. Carrot's real 12-second negotiation pruning,
+  13-second connected retention and wire DTLS close-notify were observed.
+- H.264 packetization and PTS controls retain 11 bitstream cases and four actual
+  source msgq cases. Two SRTP cases match 37 packets and two decoded frames each,
+  including MID then ABS header-extension order. Live clocks/random identities
+  are recorded separately from controlled source payload/header comparisons.
+- Four original/native sender-loop cases retain normal, empty-payload,
+  malformed-bitstream and buffered-channel behavior. CVF1 uses the initial RTP
+  timestamp zero and marks its source ID before callback. An empty-payload frame
+  may refer to the previous RTP timestamp at the next receive, as in the source.
+- `production-http-srtcp-regression-invocation.json` exercises both actual native
+  service paths after the sender correction: 37 received packets/two decoded
+  frames, full Cereal JSON, inbound native msgq, notify, Carrot CVF1/Params and
+  peer closure before caller cleanup. Owned listeners can be rebound.
+- The session captures retain constructor failure without replacing the old
+  peer, same-client replacement, Carrot busy/takeover and answer failure after
+  replacement. The separate guarded HTTP control compares all 16 status/error/
+  CORS/Allow results and every parsed schema field; schema JSON whitespace/key
+  order is not claimed byte-identical.
+- A usable application-first MAX_BUNDLE offer connects and exchanges data in
+  both implementations. The distinct-credential BALANCED application-first
+  input remains a recorded provider gap: original authenticated STUN error 400
+  fails promptly; native remains checking at the bounded observation time.
+- `production-audio-readiness-bridge-invocation.json` covers four real offered
+  audio cases. Incoming sendonly audio is unconsumed, holds the Cereal bridge
+  unready, and still permits notify. No audio playback/capture is activated.
+
+## Sender feedback correction
+
+`production-srtcp-loss-red/` drops one encrypted RTP datagram before the owned
+receiver's SRTP unprotect call, then sends an actual SRTCP NACK. The unchanged
+source recovers the packet. The initial Rust sender did not. This control avoids
+the invalid earlier test that requested an already received packet and was
+hidden by SRTP replay protection.
+
+Two separate causes were fixed. The provider's default interceptor did not
+deliver inbound sender RTCP to the application; a project-owned public
+`DeliverToApplication` marker now enables the original 128-slot retransmission
+cache. Separately, rtc-rtcp's SDES chunk marshaler emitted a padding count byte
+where the source requires null octets. The actual decrypted compound packet
+failed aiortc parsing. [#256](https://github.com/bin9208/openpilot-rust/issues/256)
+tracks that native dependency defect. The project emits source SDES bytes using
+the public `RawPacket` API without modifying the provider. The live result in
+`production-srtcp-delivery-wire-invocation.json` verifies loss recovery and parsed
+SR/SDES/BYE, source packet/octet counters and CNAME identity, and BYE/close while
+the transport is still live. Negotiated RTX wrapping has a focused unit check;
+its actual wire path remains pending with generated debug video.
+
+## Shared compact encoding
+
+`openpilot-carrot-state` mechanically extracts the four frozen Live
+codec/schema/value files from commit
+`3d55bd71f931fd10e0d82f5b1b22eaf922905783`, preserving diagnostic display.
+`shared-compact-checkpoint.json` records the source-to-destination hash mapping.
+The source's saved 21-service encodings match the new crate's bytes, without a
+source recapture. Actual standard HTTP/SCTP delivery also matches all 21 service
+packets and subsequent sequence increments. WebSocket intervals stay in the
+server; RTC preserves its own intervals, 16 KiB gate and last-send advancement
+before a buffered drop. Primary server reexports are integration work.
+
+## Boundaries and local fixture side effect
+
+All wire recipients are owned loopback peers. Tests disable default external
+STUN through the existing fixture provider; production network behavior is not
+validated by these controls. Original HTTP tests invoke real source sessions,
+but omit the unavailable Python Params binding and original CLI startup.
+
+An earlier boundary-only native fixture omitted `PARAMS_ROOT` and wrote ASCII
+`0` to the workstation's `~/.comma/params/d/CarrotVisionActive`. Its previous
+value is unknown because Params replaces files atomically. The host file was
+preserved. `host-params-side-effect.json` records the exact invocation/path and
+uncertainty. The shared fixture launch now fails closed unless its Params root
+is inside the dedicated evidence directory and an explicit IPC namespace is
+present. Only the affected 16 HTTP checks were rerun with verified owned paths.
+
+Remaining work includes debug codec/sender feedback, mDNS and browser I/O,
+STUN-error timing, remaining client-ID/body decoding forms, normal startup,
+target dependency packaging and exact-SHA CI. No C3X, NAS or vehicle handoff has
+been performed.

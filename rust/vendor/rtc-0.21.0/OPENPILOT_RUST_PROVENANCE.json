@@ -1,0 +1,21 @@
+{
+  "upstream": "https://github.com/webrtc-rs/rtc",
+  "version": "0.21.0",
+  "tag": "v0.21.0",
+  "commit": "f24423bacd2b4e0756279b7a0dbe1ea716a1ea0e",
+  "crate_sha256": "a0c5e4a8791908797789d63efd013d6987b1f87cce4255b94343d1fa9c69a81f",
+  "license": [
+    "MIT",
+    "Apache-2.0"
+  ],
+  "local_changes": [
+    "Use declared BUNDLE master credentials for shared transport extraction.",
+    "Initiate SCTP association using the negotiated ICE role, retaining ordinary DTLS and stream-ID handling.",
+    "Prepare one source-owned transport without starting timers; explicitly activate with the actual activation Instant and selected original ICE/fingerprint/local DTLS role.",
+    "Opt-in DTLS close-notify forwarding through the existing endpoint and datagram queues before ordinary close.",
+    "Remove only inherited trailing whitespace and one EOF blank line reported by the repository fast diff check; runtime tokens unchanged."
+  ],
+  "original_manifest_retained": true,
+  "source_contract": "openpilot/system/webrtc and teleoprtc_repo/teleoprtc",
+  "validation": "Scratch controls cover actual SDP owner composition, ordered data, SRTP, pruning, close-notify and source H264/CVF1 boundaries; production integration remains separately required."
+}

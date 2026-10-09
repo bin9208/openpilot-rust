@@ -1,0 +1,23 @@
+[package]
+name = "openpilot-carrot-state"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+openpilot-cereal = { path = "../cereal" }
+capnp = "=0.27.2"
+num-traits = "=0.2.19"
+thiserror = "2"
+
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
