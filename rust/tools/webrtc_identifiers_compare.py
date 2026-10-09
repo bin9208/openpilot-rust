@@ -132,8 +132,7 @@ async def main(binary, output, reference=None):
     ]
     save(output / 'result.json', {'source': sources, 'native': natives, 'mismatches': mismatches})
     print(json.dumps({'sequences': len(sources), 'mismatches': mismatches}, indent=2))
-    if reference is not None:
-      assert not mismatches, mismatches
+    assert not mismatches, mismatches
   finally:
     aiortc.RTCPeerConnection, aioice.ice.get_host_addresses = constructor, addresses
     for key, value in previous.items():

@@ -122,7 +122,8 @@ These host controls use the existing FFmpeg 6.1.1 native libraries (avcodec
 60.31.102, libvpx 1.14.0) through ffmpeg-next 8.1.0; the original PyAV 16.1.0
 environment uses avcodec 62. This is an explicit external dependency difference.
 Compressed debug bitstreams are not claimed byte-identical. Target native
-dependency packaging and browser behavior remain separate acceptance work.
+dependency packaging and exact cloud checks remain separate acceptance work;
+the later owned browser controls are recorded below.
 
 ## Shared compact encoding
 
@@ -314,3 +315,33 @@ Clippy pass. The multi-camera proof uses c882a01e…; the FIR correction uses
 52e69a11…. These are distinct binaries. The prior multi-camera media/clock
 observations are reused because they contain no FIR or an unroutable leading
 RTCP packet. Native/aarch64 CI and AGNOS dependency packaging are separate gates.
+
+## Native CI and integration boundary
+
+The `webrtc-runtime` job in `.github/workflows/rust.yml` selects the native
+feature on Ubuntu 24.04 x86_64 and ARM runners and is required by the aggregate
+Rust check. It builds both service binaries and the two owned examples, runs
+strict native Clippy and the five native unit checks, then compares actual
+ownership/media/FIR/body/Params/CLI/srflx boundaries, plus one selected original/
+native H264 debug pair for libx264, NACK/RTX/PLI/REMB. Python oracle packages are
+pinned in `rust/tools/webrtc_source_requirements.txt`; binding provenance, native
+package versions, architecture, SHA and outputs are artifacts. Browser captures
+and unchanged historical corpora are reused separately.
+
+The job requires the FFmpeg 6.1.1 / libavcodec60 ABI, libvpx9 and libx264-164
+encoders. Ubuntu publishes [libavcodec-dev](https://packages.ubuntu.com/noble/libavcodec-dev),
+[libvpx9](https://packages.ubuntu.com/noble/libvpx9) and
+[libx264-164](https://packages.ubuntu.com/noble/libx264-164) for amd64 and arm64.
+This Linux runner coverage does not establish AGNOS deployment compatibility.
+The target package must supply compatible FFmpeg avcodec/avformat/avutil and
+libvpx/libx264 native libraries, their transitive dependencies and licenses;
+AWS-LC builds from the pinned Cargo source. Existing logger-only cross libraries
+do not enable the debug VP8/H264 encoders. No new local dependency install was
+performed for this CI change.
+
+The adjacent original `selfdrive/carrot/server/features/stream.py` remains the
+server owner's integration boundary: raw POST bytes and Content-Type go to
+fixed `http://127.0.0.1:5001/stream`, with total five-second timeout,
+ClusterHud409, timeout504/network502 and diagnostic events. This read-only audit
+does not implement that primary server proxy. Full manager startup, log upload,
+target packaging and user device acceptance remain global delivery gates.

@@ -121,8 +121,7 @@ async def main(binary, output):
       mismatch = [(a, b) for a, b in zip(rows[0]['cases'], rows[1]['cases'], strict=True) if a != b]
       save(output / 'result.json', {'rows': rows, 'mismatches': mismatch})
       print(json.dumps({'cases': len(rows[0]['cases']), 'mismatches': mismatch}, indent=2))
-      if len(sys.argv) > 3:
-        assert not mismatch, mismatch
+      assert not mismatch, mismatch
   finally:
     aiortc.RTCPeerConnection = constructor
 

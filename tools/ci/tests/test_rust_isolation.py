@@ -285,7 +285,7 @@ class RustIsolationTests(unittest.TestCase):
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'joystickd-runtime',
             'planner-runtime', 'planner-memory',
-            'card-runtime', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime', 'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime', 'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime',
+            'card-runtime', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime', 'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime', 'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime', 'webrtc-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
         self.assertEqual(validation['env'], {'WORKSPACE': '${{ needs.workspace.result }}', 'MEMORY': '${{ needs.model-memory.result }}',
@@ -318,6 +318,7 @@ class RustIsolationTests(unittest.TestCase):
                                             'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}',
                                             'PANDA': '${{ needs.panda-runtime.result }}',
                                             'CARROT_MAN': '${{ needs.carrot-man-runtime.result }}',
+                                            'WEBRTC': '${{ needs.webrtc-runtime.result }}',
                                             'CAMERA': '${{ needs.camera-runtime.result }}',
                                             'ENCODER': '${{ needs.encoder-runtime.result }}',
                                             'XIAOGE': '${{ needs.xiaoge-runtime.result }}',
@@ -335,6 +336,31 @@ class RustIsolationTests(unittest.TestCase):
                                                   capture_output=True).returncode, 0)
         for job in data['jobs'].values():
             self.assertNotIn('continue-on-error', job)
+
+    def test_webrtc_requires_native_host_and_arm_real_media_and_failure_boundaries(self):
+        jobs = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
+        job = jobs['webrtc-runtime']
+        self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        self.assertNotIn('if', job)
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('webrtc_source_requirements.txt', 'libavcodec-dev=7:6.1.1-*', 'build_params_python.py', 'build_msgq_python.py',
+                         '-p openpilot-webrtc --features native --bins', '--features native --lib --locked', '--features native --all-targets --locked',
+                         'webrtc_stun_checks', 'webrtc_identifiers_compare.py', 'webrtc_multicamera_compare.py', 'webrtc_fir_compare.py',
+                         'webrtc_body_compare.py', 'webrtc_params_compare.py', 'webrtc_cli_compare.py', 'webrtc_srflx_compare.py',
+                         'webrtc_debug_compare.py', 'source-standard-h264 native-standard-h264',
+                         'WEBRTC_PARAMS_BINDING', 'card_ci_space.py', 'SHA256SUMS'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'run' in step:
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(artifacts[0]['if'], 'always()')
+        requirements = (ROOT / 'rust/tools/webrtc_source_requirements.txt').read_text().splitlines()
+        self.assertIn('aiortc==1.14.0', requirements)
+        self.assertIn('av==16.1.0', requirements)
+        self.assertIn('aioice==0.10.2', requirements)
 
     def test_xiaoge_requires_both_architectures_and_instrumented_native_libraries(self):
         jobs = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)['jobs']

@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -41,6 +41,7 @@ jobs:
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
           JOYSTICKD: ${{ needs.joystickd-runtime.result }}
           CARROT_MAN: ${{ needs.carrot-man-runtime.result }}
+          WEBRTC: ${{ needs.webrtc-runtime.result }}
           PLANNER: ${{ needs.planner-runtime.result }}
           PLANNER_MEMORY: ${{ needs.planner-memory.result }}
           CARD: ${{ needs.card-runtime.result }}
@@ -78,6 +79,7 @@ jobs:
           test "$UPLOAD_TIMEOUTS" = success
           test "$JOYSTICKD" = success
           test "$CARROT_MAN" = success
+          test "$WEBRTC" = success
           test "$PLANNER" = success
           test "$PLANNER_MEMORY" = success
           test "$CARD" = success
@@ -334,6 +336,85 @@ jobs:
             ${{ runner.temp }}/carrot-man-input-tests/**
             ${{ runner.temp }}/carrot-man-geos/**
             rust/target/debug/openpilot-carrot-man
+  webrtc-runtime:
+    name: rust WebRTC source runtime (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      LIBCLANG_PATH: /usr/lib/llvm-18/lib
+      CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
+      PYTHONPATH: ${{ github.workspace }}/rust/tools:${{ github.workspace }}:${{ github.workspace }}/teleoprtc_repo:${{ github.workspace }}/opendbc_repo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Reserve capacity and install pinned source and native providers
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update
+          sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev ffmpeg 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install -r rust/tools/webrtc_source_requirements.txt
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+          mkdir -p "$RUNNER_TEMP/webrtc"
+          git rev-parse HEAD > "$RUNNER_TEMP/webrtc/SOURCE_COMMIT"
+          uname -m > "$RUNNER_TEMP/webrtc/machine.txt"
+          python -m pip freeze > "$RUNNER_TEMP/webrtc/python-packages.txt"
+          dpkg-query -W libavcodec-dev libavformat-dev libavutil-dev libvpx9 libx264-164 > "$RUNNER_TEMP/webrtc/native-packages.txt"
+          test "$(pkg-config --modversion libavcodec)" = 60.31.102
+          ffmpeg -hide_banner -encoders > "$RUNNER_TEMP/webrtc/encoders.txt" 2>&1
+          grep -q 'libvpx ' "$RUNNER_TEMP/webrtc/encoders.txt"
+          grep -q 'libx264 ' "$RUNNER_TEMP/webrtc/encoders.txt"
+      - name: Build unchanged original Params and msgq bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/webrtc/params"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/webrtc/msgq"
+          python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"webrtc/params/provenance.json"; print("WEBRTC_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s/webrtc/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Compile and check both native service entrypoints
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-webrtc --features native --bins --example webrtc_owned_http --example webrtc_stun_checks --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-webrtc --features native --lib --locked
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-webrtc --features native --all-targets --locked -- -D warnings
+          file rust/target/debug/openpilot-webrtcd rust/target/debug/openpilot-carrot-webrtcd > "$RUNNER_TEMP/webrtc/elf.txt"
+          sha256sum rust/target/debug/openpilot-webrtcd rust/target/debug/openpilot-carrot-webrtcd rust/target/debug/examples/webrtc_owned_http rust/target/debug/examples/webrtc_stun_checks > "$RUNNER_TEMP/webrtc/SHA256SUMS"
+      - name: Compare real ownership, media, HTTP and failure boundaries
+        run: |
+          rust/target/debug/examples/webrtc_stun_checks > "$RUNNER_TEMP/webrtc/stun-checks.json"
+          python -P rust/tools/webrtc_identifiers_compare.py "$PWD/rust/target/debug/examples/webrtc_owned_http" "$RUNNER_TEMP/webrtc/identifiers"
+          python -P rust/tools/webrtc_multicamera_compare.py "$PWD/rust/target/debug/examples/webrtc_owned_http" "$RUNNER_TEMP/webrtc/multicamera"
+          python -P rust/tools/webrtc_fir_compare.py "$PWD/rust/target/debug/examples/webrtc_owned_http" "$RUNNER_TEMP/webrtc/fir"
+          python -P rust/tools/webrtc_debug_compare.py "$PWD/rust/target/debug/examples/webrtc_owned_http" "$RUNNER_TEMP/webrtc/debug-h264" source-standard-h264 native-standard-h264
+          python -P rust/tools/webrtc_body_compare.py "$PWD/rust/target/debug/examples/webrtc_owned_http" "$RUNNER_TEMP/webrtc/body"
+          python -P rust/tools/webrtc_params_compare.py "$PWD/rust/target/debug/examples/webrtc_owned_http" "$RUNNER_TEMP/webrtc/params-ownership" "$WEBRTC_PARAMS_BINDING"
+          python -P rust/tools/webrtc_cli_compare.py "$PWD/rust/target/debug" "$RUNNER_TEMP/webrtc/cli"
+          python -P rust/tools/webrtc_srflx_compare.py "$PWD/rust/target/debug/examples/webrtc_owned_http" "$RUNNER_TEMP/webrtc/srflx"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-webrtc-${{ matrix.runner }}-evidence
+          path: |
+            ${{ runner.temp }}/webrtc/
+            rust/target/debug/openpilot-webrtcd
+            rust/target/debug/openpilot-carrot-webrtcd
+            rust/target/debug/examples/webrtc_owned_http
+            rust/target/debug/examples/webrtc_stun_checks
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
