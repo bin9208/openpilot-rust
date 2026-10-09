@@ -1,14 +1,18 @@
 //! Verified, resumable optional-model delivery; failure does not select a new model.
 pub mod archive;
 pub mod assets;
+pub mod boot;
 pub mod catalog;
 mod download;
 pub mod failure;
 pub mod precompiled;
+pub mod presence;
+pub mod smoke;
 mod state;
 pub mod status;
+pub mod validation;
 
-pub use download::{download, download_observed, sha256, DownloadKind, Event};
+pub use download::{download, download_fallible, download_observed, sha256, DownloadKind, Event};
 pub use state::{
     ensure, ensure_observed, fetch_manifest, parse_manifest, pinned_manifest, State,
     DEFAULT_MANIFEST_URL,

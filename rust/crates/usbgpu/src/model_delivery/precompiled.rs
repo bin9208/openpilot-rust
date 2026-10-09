@@ -1,4 +1,6 @@
-use super::{archive, assets, catalog::Catalog, download, sha256, DownloadKind, Error};
+use super::{
+    archive, assets, catalog::Catalog, download_fallible, sha256, DownloadKind, Error, Event,
+};
 use crate::model::Manifest;
 use std::{
     fs,
@@ -77,6 +79,27 @@ pub fn ensure(
     assets: &Path,
     progress: &mut impl FnMut(u64, u64),
 ) -> Result<Option<PathBuf>, Error> {
+    ensure_fallible(
+        catalog_agent,
+        artifact_agent,
+        model,
+        cache,
+        assets,
+        &mut |done, total| {
+            progress(done, total);
+            Ok(())
+        },
+    )
+}
+
+pub fn ensure_fallible(
+    catalog_agent: &ureq::Agent,
+    artifact_agent: &ureq::Agent,
+    model: &Manifest,
+    cache: &Path,
+    assets: &Path,
+    progress: &mut impl FnMut(u64, u64) -> Result<(), Error>,
+) -> Result<Option<PathBuf>, Error> {
     if let Some(existing) = installed(model, cache, assets)? {
         let root = existing
             .parent()
@@ -116,12 +139,11 @@ pub fn ensure(
         (&catalog.pickle, path.clone()),
         (&catalog.runtime, root.join("runtime.tar.gz")),
     ] {
-        let mut observe = |done, total| {
-            if target == path {
-                progress(done, total)
-            }
+        let mut observe = |event| match event {
+            Event::Progress { downloaded, total } if target == path => progress(downloaded, total),
+            Event::Progress { .. } | Event::Verifying => Ok(()),
         };
-        download(
+        download_fallible(
             artifact_agent,
             &artifact.url,
             &target,

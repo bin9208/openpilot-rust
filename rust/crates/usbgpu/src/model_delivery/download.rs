@@ -77,13 +77,36 @@ pub fn download_observed(
     kind: DownloadKind,
     observe: &mut impl FnMut(Event),
 ) -> Result<PathBuf, Error> {
+    download_fallible(
+        agent,
+        url,
+        target,
+        expected_size,
+        expected_sha,
+        kind,
+        &mut |event| {
+            observe(event);
+            Ok(())
+        },
+    )
+}
+
+pub fn download_fallible(
+    agent: &ureq::Agent,
+    url: &str,
+    target: &Path,
+    expected_size: u64,
+    expected_sha: &str,
+    kind: DownloadKind,
+    observe: &mut impl FnMut(Event) -> Result<(), Error>,
+) -> Result<PathBuf, Error> {
     let parent = target
         .parent()
         .ok_or_else(|| Error::Invalid("artifact has no parent".into()))?;
     fs::create_dir_all(parent)?;
     if size(target)? == expected_size && target.is_file() {
         if matches!(kind, DownloadKind::Model) {
-            observe(Event::Verifying);
+            observe(Event::Verifying)?;
         }
         if sha256(target)? == expected_sha {
             return Ok(target.to_path_buf());
@@ -98,7 +121,7 @@ pub fn download_observed(
     let mut offset = size(&partial)?;
     if offset >= expected_size && partial.is_file() {
         if offset == expected_size && matches!(kind, DownloadKind::Model) {
-            observe(Event::Verifying);
+            observe(Event::Verifying)?;
         }
         if offset == expected_size && sha256(&partial)? == expected_sha {
             fs::rename(&partial, target)?;
@@ -132,7 +155,7 @@ pub fn download_observed(
         observe(Event::Progress {
             downloaded: offset,
             total: expected_size,
-        });
+        })?;
     }
     let response = request.call()?;
     let append = offset != 0 && response.status().as_u16() == 206;
@@ -193,7 +216,7 @@ pub fn download_observed(
         observe(Event::Progress {
             downloaded: offset,
             total: expected_size,
-        });
+        })?;
     }
     file.flush()?;
     file.sync_all()?;
@@ -204,7 +227,7 @@ pub fn download_observed(
         )));
     }
     if matches!(kind, DownloadKind::Model) {
-        observe(Event::Verifying);
+        observe(Event::Verifying)?;
     }
     if sha256(&partial)? != expected_sha {
         fs::remove_file(&partial)?;

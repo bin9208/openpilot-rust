@@ -47,6 +47,10 @@ name = "openpilot-usbgpu-worker"
 path = "src/bin/worker.rs"
 required-features = ["native-skip-miri"]
 
+[[bin]]
+name = "openpilot-usbgpu-model"
+path = "src/bin/model.rs"
+
 [[example]]
 name = "hcq_link_snapshot"
 required-features = ["fixture-inspection"]
