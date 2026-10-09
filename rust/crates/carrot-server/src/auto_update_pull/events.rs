@@ -1,11 +1,19 @@
 use super::{Failure, Pull};
 use crate::{auto_update::short_error, git_state::Time, Error, Value};
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::{fs::File, future::Future, pin::Pin, sync::Arc};
+use tokio::sync::watch;
 
 type Alert = dyn Fn(bool, &Value) -> Result<(), Error> + Send + Sync;
 type Notify =
-    dyn Fn(String) -> Pin<Box<dyn Future<Output = Result<(), Error>> + Send>> + Send + Sync;
+    dyn Fn(Notification) -> Pin<Box<dyn Future<Output = Result<(), Failure>> + Send>> + Send + Sync;
 
+pub struct Notification {
+    pub old_head: String,
+    pub lock: Arc<File>,
+    pub stopped: watch::Receiver<bool>,
+}
+
+#[derive(Clone)]
 pub struct Effects {
     pub clock: Arc<dyn Fn() -> Time + Send + Sync>,
     pub alert: Arc<Alert>,

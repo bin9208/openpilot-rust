@@ -60,7 +60,8 @@ pub fn effects(lock: &Path, records: Arc<Mutex<Vec<Value>>>) -> Effects {
                 ]));
             Ok(())
         }),
-        notify: Arc::new(move |head| {
+        notify: Arc::new(move |notification| {
+            let head = notification.old_head;
             let records = Arc::clone(&records);
             let lock = notify_lock.clone();
             Box::pin(async move {

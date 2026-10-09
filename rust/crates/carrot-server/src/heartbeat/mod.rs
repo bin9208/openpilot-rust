@@ -1,4 +1,4 @@
-mod body;
+pub(crate) mod body;
 pub mod environment;
 mod http;
 mod online;

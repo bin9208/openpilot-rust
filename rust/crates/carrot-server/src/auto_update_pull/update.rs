@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tokio::sync::watch;
 
 pub struct Policy {
-    pub ready: Arc<dyn Fn() -> bool + Send + Sync>,
+    pub ready: Box<dyn Fn() -> bool>,
     pub monotonic: Arc<dyn Fn() -> f64 + Send + Sync>,
 }
 
@@ -50,7 +50,14 @@ impl Update {
         if !(self.policy.ready)() {
             return Ok(unchanged());
         }
-        let status = self.pull.service.get(false).await?;
+        let mut status_stop = stopped.clone();
+        let status = tokio::select! {
+            result = self.pull.service.get(false) => result?,
+            () = crate::auto_update_runtime::stopping(&mut status_stop) => {
+                self.pull.service.wait_idle().await;
+                return Err(git_status::Failure::Cancelled.into());
+            }
+        };
         let value = Value::object([
             ("available", Value::Bool(status.available)),
             (

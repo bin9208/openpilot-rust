@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             monotonic: Arc::new(move || {
                 sampled_now.lock().map(|now| *now).unwrap_or(f64::INFINITY)
             }),
-            ready: Arc::new(move || match (calls.lock(), sampled_ready.lock()) {
+            ready: Box::new(move || match (calls.lock(), sampled_ready.lock()) {
                 (Ok(mut calls), Ok(mut ready)) => {
                     *calls = calls.saturating_add(1);
                     ready.pop_front().unwrap_or(true)

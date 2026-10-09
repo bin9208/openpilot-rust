@@ -77,7 +77,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(())
             }
         }),
-        notify: Arc::new(move |old_head| {
+        notify: Arc::new(move |notification| {
+            let old_head = notification.old_head;
             let sink = Arc::clone(&notify_sink);
             let checks = Arc::clone(&notify_checks);
             let lock = notify_lock.clone();
@@ -91,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|error| Error::Source(error.to_string()))?
                     .push(Value::text(&old_head));
                 if input.notify_failure {
-                    Err(Error::Source("owned notify failure".into()))
+                    Err(Error::Source("owned notify failure".into()).into())
                 } else {
                     Ok(())
                 }

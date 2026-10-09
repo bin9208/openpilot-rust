@@ -25,6 +25,10 @@ tests preserve that termination rather than silently returning a fallback.
 
 Evidence is local under `.omo/evidence/`; these are intermediate host checks,
 not complete-server acceptance.
+On 2026-10-09 the user authorized deleting old records and reproducible build
+outputs to prioritize the complete candidate. Some historical local paths below
+were removed; their recorded outcomes remain historical summaries, not claims
+that those files still exist. Current unfinished-family evidence is retained.
 
 | Boundary | Observed result | Local evidence |
 | --- | --- | --- |
@@ -946,7 +950,65 @@ Only `bzip2` 0.6.1 and `libbz2-rs-sys` 0.2.5 were added to the lockfile, togethe
 with a dependency edge to the already locked zstd 0.13.3. Other versions remain
 unchanged. Whole-server and normal-startup integration remain open.
 
+## Current dev composition (2026-10-09 KST)
+
+`d2f5a6a46cbe69a8a7435840a3eb6f5164fbfa7d` combines the committed server
+features with validated dev `bbed1c5432e8b1f2d8974fd8b001e93feaee456e`, including
+the interrupted logger connection correction. Merge resolution preserves dev's
+Athena pyzmq dependency and single CarrotMan gate entry, plus the server workspace
+member and patched providers. Locked offline metadata resolves 91 packages and
+all 22 CI-isolation tests pass. The composed App was rebuilt in the separate
+integration checkout, then its six report/Params responses passed against the
+existing source references. No unchanged full corpus was repeated.
+[Exact-commit Fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/37894118462)
+also pass. Required whole-server CI and complete startup remain later gates.
+
+## Automatic-update runtime (2026-10-09 KST)
+
+The native service now owns the continuously sampled manager readiness monitor,
+existing locked update transaction, post-update reboot monitor, offroad alert and
+CWP notification. Messaging objects stay on the local runtime thread. The
+manager observer continues during blocked Git operations; a manager restart
+therefore resets the ten-second readiness interval. Reboot requests retain the
+existing vehicle-state conditions and persistent duplicate-request receipts.
+Alert and DoReboot writes retain the existing Cython Params boundary: filesystem
+return codes are discarded, while key and encoding failures remain errors. This
+is confined to these server recipients; the shared Rust Params API is unchanged.
+
+Seven source/native live scenarios pass with actual msgq, owned Git repositories,
+loopback notification recipients and local Params. They cover disabled updates,
+the verified update through park-triggered DoReboot, manager invalidation during
+held fetch, fetch cancellation/reaping, shielded configuration completion and
+lock retention after stop, native Application cleanup during configuration, and
+notification Git cancellation after the updated state is persisted. The
+Application case compares native server cleanup with cancellation of the original
+auto-update coroutine; it does not run the original complete web Application.
+Persisted behavior, recipient requests and cleanup match. Command traces remain
+available but are not included in the whole-loop equality comparison. A separate
+actual-msgq scenario verifies subscription retry, readiness and invalid reset.
+Results are under `.omo/evidence/225-auto-update-runtime/live-service-v1/` and
+`live-manager-v1/`; all owned children and repository locks are released.
+
+Notification comparisons include the UTF-8 payload, ten-commit cap, diff counts,
+redirects, HTTP errors, timeout and incomplete bodies. Seven earlier wire cases
+are reused; the explicit HTTP/1.1 truncated-chunk case also matches the source
+failure. An earlier fixture sent HTTP/1.0 with Transfer-Encoding: chunked, which
+is faulty framing under [RFC 9112 section 6.1](https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1).
+The differing external-provider response to that malformed framing remains an
+explicit limit in `http10-provider-limit.json`; no provider patch or claimed
+matching result was added for it. These owned checks contact no CWP deployment.
+
 ## Remaining work
+
+The live-family source comparison also reproduced an inherited navigation
+snapshot defect, tracked separately in
+[issue 254](https://github.com/bin9208/openpilot-rust/issues/254). With a populated
+actual-msgq `NavInstruction` message, the original API returns null `mainText`,
+`distanceText` and `turnType`: the snapshot reads those nonexistent Cereal fields
+instead of the `maneuver*` fields. The port preserves this observed output.
+The retained HTTP capture precedes the unfinished idle-control stage in
+`carrot-server-225-resume/live-runtime/whole-v4/family/`; it is evidence for this
+specific source defect, not whole-family completion or vehicle behavior.
 
 Profiles, restoration and change-history services have independent process
 evidence, and profile/history HTTP routes and real index bootstrap are connected.
@@ -956,9 +1018,13 @@ The request decoder has the tested expanded charset/compression coverage above;
 broader original codec aliases and provider error diagnostics remain explicit
 limits. Multipart extended names use the existing encoding_rs provider for
 supported labels.
-The remaining feature families, automatic-update tasks, live
-broker and camera/WebSocket transport remain outside the completed foundation.
-`/stream` also depends on the separately inventoried WebRTC conversion.
+The live broker plus raw/compact/camera WebSocket transport are in progress. The remaining active
+families include system actions, network/calibration/time-sync services, tool
+jobs, terminal/support terminal, Carrot Navi's web bridge, YouTube Live and
+vision diagnostics/test services. The web bridge is distinct from the converted
+Carrot Navi daemon. `/stream` also depends on the separately inventoried WebRTC
+conversion. Each family's existing guards, background tasks and cleanup belong
+to the same conversion scope as its registered HTTP routes.
 The executable now resolves runtime assets using existing OPENPILOT_ROOT/BASEDIR
 environment conventions or executable/working-directory ancestors, without a
 build-checkout fallback. Eight relocated CLI cases pass; this exercises the

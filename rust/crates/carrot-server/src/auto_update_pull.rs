@@ -1,10 +1,11 @@
 //! Pinned Git transaction from services/auto_update.py; alert/notify recipients are supplied by the caller.
 mod events;
+pub mod runtime;
 mod update;
 
 use crate::{git_state::Store, git_status, Error, Value};
-pub use events::Effects;
 use events::ErrorEvent;
+pub use events::{Effects, Notification};
 use std::{fs::File, sync::Arc, time::Duration};
 use tokio::sync::watch;
 pub use update::{Policy, Update, UpdateFailure};
@@ -12,6 +13,7 @@ pub use update::{Policy, Update, UpdateFailure};
 const INFO_TIMEOUT: Duration = Duration::from_secs(10);
 const RESET_TIMEOUT: Duration = Duration::from_secs(120);
 const PULL_TIMEOUT: Duration = Duration::from_secs(180);
+#[derive(Clone)]
 pub struct Pull {
     service: Arc<git_status::Service>,
     store: Arc<Store>,
@@ -97,6 +99,11 @@ impl Pull {
             }
             return Ok(unchanged());
         }
+        let notification = Notification {
+            old_head: String::new(),
+            lock: Arc::clone(&attempt.lock),
+            stopped: attempt.stopped.clone(),
+        };
         let commands = self.service.locked_commands(attempt.lock, attempt.stopped);
         let (code, output) = commands.run(&["rev-parse", "HEAD"], INFO_TIMEOUT).await?;
         let old_head = if code == 0 { output.trim() } else { "" };
@@ -227,7 +234,15 @@ impl Pull {
         }
         self.alert(false, &Value::text(""));
         if let Err(_error) = self.pull_time() {}
-        if let Err(error) = (self.effects.notify)(old_head.into()).await {
+        if let Err(error) = (self.effects.notify)(Notification {
+            old_head: old_head.into(),
+            ..notification
+        })
+        .await
+        {
+            if matches!(error, Failure::Command(git_status::Failure::Cancelled)) {
+                return Err(error);
+            }
             println!("[auto_update] notify skipped: {error}");
         }
         Ok((true, true, new_head.into()))

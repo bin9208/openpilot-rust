@@ -48,6 +48,7 @@ pub struct Application {
     pub git_state: crate::git_state::Store,
     pub heartbeat: Arc<crate::heartbeat::Service>,
     pub heartbeat_params: Option<openpilot_params::Params>,
+    pub auto_update: Option<Arc<crate::auto_update_runtime::Runtime>>,
 }
 
 impl Application {
@@ -69,8 +70,14 @@ impl Application {
         git_status: Arc<crate::git_status::Service>,
     ) -> Arc<Self> {
         let heartbeat_params = params.native_params().cloned();
+        let auto_update = crate::auto_update_runtime::Runtime::new(
+            &config,
+            heartbeat_params.clone(),
+            Arc::clone(&git_status),
+        );
         let mut application = Self::initialize(config, params, Some(git_status));
         application.heartbeat_params = heartbeat_params;
+        application.auto_update = Some(auto_update);
         Arc::new(application)
     }
 
@@ -108,6 +115,7 @@ impl Application {
             git_state: crate::git_state::Store::new(config.state.clone()),
             heartbeat: crate::heartbeat::Service::new(),
             heartbeat_params: None,
+            auto_update: None,
             history: History::new(Paths {
                 log: config.state.join("param_changes.jsonl"),
                 baseline: config.state.join("fingerprint_baseline.json"),

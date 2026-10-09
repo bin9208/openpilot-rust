@@ -1,7 +1,7 @@
 use crate::mapbox_tokens::body_error;
 use std::io;
 
-pub(super) fn failure(error: io::Error, body: &ureq::Body, received: usize) -> String {
+pub(crate) fn failure(error: io::Error, body: &ureq::Body, received: usize) -> String {
     if error.kind() == io::ErrorKind::UnexpectedEof {
         if let Some(length) = body.raw_content_length() {
             return format!(

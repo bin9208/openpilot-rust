@@ -1,6 +1,7 @@
 //! Original Carrot Web server policies from openpilot/selfdrive/carrot/server (#225).
 pub mod auto_update;
 pub mod auto_update_pull;
+pub use auto_update_pull::runtime as auto_update_runtime;
 pub mod bluetooth_http;
 mod bootstrap;
 pub mod cars;

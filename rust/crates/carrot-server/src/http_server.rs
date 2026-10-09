@@ -35,6 +35,11 @@ async fn serve_local(
         .git_status
         .clone()
         .map(|service| tokio::spawn(async move { service.run_loop(git_stopped).await }));
+    let (auto_stop, auto_stopped) = watch::channel(false);
+    let auto_update = app
+        .auto_update
+        .clone()
+        .map(|service| tokio::task::spawn_local(async move { service.run(auto_stopped).await }));
     let precompress = app.static_web.start_precompress();
     let popular_upload = app.popular_values.start_upload(Arc::clone(&app));
     let warm_app = Arc::clone(&app);
@@ -136,6 +141,12 @@ async fn serve_local(
             Ok(Ok(())) => {}
             Ok(Err(error)) => eprintln!("Git status cleanup: {error}"),
             Err(error) => eprintln!("Git status task: {error}"),
+        }
+    }
+    auto_stop.send_replace(true);
+    if let Some(task) = auto_update {
+        if let Err(error) = task.await {
+            eprintln!("Auto update cleanup: {error}");
         }
     }
     if let Some(task) = popular_upload {
