@@ -98,6 +98,10 @@ impl Drop for Completion {
 }
 
 impl Service {
+    pub(crate) fn repository(&self) -> &Repository {
+        &self.repository
+    }
+
     pub(crate) fn locked_commands(
         &self,
         lock: Arc<std::fs::File>,

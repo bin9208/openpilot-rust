@@ -1,11 +1,13 @@
 //! Pinned Git transaction from services/auto_update.py; alert/notify recipients are supplied by the caller.
 mod events;
+mod update;
 
 use crate::{git_state::Store, git_status, Error, Value};
 pub use events::Effects;
 use events::ErrorEvent;
 use std::{fs::File, sync::Arc, time::Duration};
 use tokio::sync::watch;
+pub use update::{Policy, Update, UpdateFailure};
 
 const INFO_TIMEOUT: Duration = Duration::from_secs(10);
 const RESET_TIMEOUT: Duration = Duration::from_secs(120);
@@ -39,8 +41,20 @@ fn head_prefix(head: &str) -> String {
 
 impl Pull {
     pub fn new(repository: git_status::Repository, store: Arc<Store>, effects: Effects) -> Self {
+        Self::with_service(
+            git_status::Service::with_clock(repository, || 0.),
+            store,
+            effects,
+        )
+    }
+
+    pub fn with_service(
+        service: Arc<git_status::Service>,
+        store: Arc<Store>,
+        effects: Effects,
+    ) -> Self {
         Self {
-            service: git_status::Service::with_clock(repository, || 0.),
+            service,
             store,
             effects,
         }

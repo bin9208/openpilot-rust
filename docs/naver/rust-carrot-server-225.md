@@ -882,6 +882,44 @@ in `dashcam-sync/checkpoint/receipt.json` beneath the evidence directory above.
 Whole-server completion, branch CI, normal startup and device acceptance remain
 separate gates.
 
+## Automatic-update attempt coordination (2026-10-09 KST)
+
+`auto_update_pull::Update` now composes the original readiness and verified
+status checks, 300-second cooldown, locked branch/HEAD revalidation, repository
+recovery, Git configuration and pinned-target Pull. The same cooperative lock
+stays owned through these operations. Cancellation during blocking Git
+configuration waits for that operation before releasing the lock. Busy outcomes
+retain the original waiting state, and the status cache is cleared on every
+exit from the locked attempt, including errors.
+
+The portable source comparison runs 23 paired cases with 28 update calls.
+These include every readiness checkpoint, branch/HEAD changes and failures,
+configuration failures, idle/pulling lock contention, dirty repositories,
+299.999/300-second boundaries and cancellation while configuration holds the
+lock. Results, state transitions, Git arguments, cache probes and child cleanup
+match the source. Existing Pull and recovery comparisons were reused.
+
+Selected strict Clippy, scoped rustfmt, Python Ruff/syntax and diff checks pass.
+The current example SHA256 is
+`af139933258dbf5906d7cf6b2422c38c9b29e51fb97ec7454b91f3459cfeee74`;
+the current checkpoint is `.omo/evidence/225-auto-update-attempt/checkpoint/receipt.json`.
+The monitor loop, reboot/notification integration and Application lifecycle
+remain the next implementation stage. This is not a complete update service or
+whole-runtime candidate.
+
+## Driving-report source compatibility (2026-10-09 KST)
+
+The unchanged source report does not count the current numbered
+`driverDistracted1/2/3` and `driverUnresponsive1/2/3` warning names: its category
+still lists the older names plus `tooDistracted`. A synthetic full-cereal
+sequence confirms that `driverDistracted1` is unmatched while `tooDistracted`
+is counted. Evidence is retained in
+`.omo/evidence/carrot-server-225-resume/dashcam-report/original-state-v1`.
+The port preserves this membership. The inherited reporting defect is tracked
+separately in [#252](https://github.com/bin9208/openpilot-rust/issues/252);
+changing warning semantics is outside the current compatibility conversion.
+This observation is not vehicle-log evidence.
+
 ## Remaining work
 
 Profiles, restoration and change-history services have independent process
