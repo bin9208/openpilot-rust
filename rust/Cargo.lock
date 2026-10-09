@@ -3635,8 +3635,8 @@ dependencies = [
 name = "openpilot-usbgpu"
 version = "0.1.0"
 dependencies = [
- "cxx",
- "cxx-build",
+ "libc",
+ "libloading",
  "parking_lot",
  "rustix",
  "serde",

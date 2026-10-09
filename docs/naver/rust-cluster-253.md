@@ -74,6 +74,24 @@ Private evidence is under primary `.omo/evidence/253-cluster/`:
 Initial strict-Clippy documentation/annotation findings are retained;
 `policy-clippy-final.json` records the corrected strict gate.
 
+## Reviewed USB provider integration
+
+The cluster branch imports only the reviewed Rust USB provider from
+`f6f301913200edc15d898d672590a48a0603b799`, whose five native owner modules match
+the earlier `da9b6a3e` checkpoint. The obsolete project CXX USB bridge is removed;
+optional libc/libloading and the required typed allocation error replace its
+compile seams. GPU/model runtime changes are not imported. The retained libusb
+header and LGPL notices still describe the external ABI.
+
+One new owned library control verifies three terminal callbacks followed by
+transfer, stream, interface, handle and context release. The source-identical
+provider's prior eight shared-library comparisons and ten ASan cases are reused.
+Four Miri observations cover the production callback's owned Cell lifetime,
+not the entire foreign USB implementation. `usb-provider-transfer-freeze.json`
+binds exact copied source hashes, the selected binary, command output and scope.
+Metadata-only discovery and configuration/endpoint APIs are the next additive
+boundary; no control GET_DESCRIPTOR requests are substituted for cached metadata.
+
 The registered process, actual live Params/IPC, USB I/O/recovery, rendering,
 codec/GLES lifetime, nondefault inputs, complete entrypoint, host/ARM CI and AGNOS
 packaging remain open. No C3X, NAS, physical USB display or vehicle is contacted.

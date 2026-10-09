@@ -5,14 +5,12 @@ pub mod hardware;
 #[cfg(feature = "native-skip-miri")]
 pub mod native_usb;
 pub mod transport;
-#[cfg(feature = "native-skip-miri")]
-mod usb_bridge;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[cfg(feature = "native-skip-miri")]
     #[error(transparent)]
-    Native(#[from] cxx::Exception),
+    Library(#[from] libloading::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
@@ -31,6 +29,8 @@ pub enum Error {
     Contract(&'static str),
     #[error("short eGPU power status ({0} bytes)")]
     ShortPower(usize),
+    #[error("Cannot allocate {0} bytes")]
+    Allocation(u64),
     #[error("GPU check cancelled")]
     Cancelled,
 }
