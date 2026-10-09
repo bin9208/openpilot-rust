@@ -1,7 +1,7 @@
 use crate::{
     video::{
-        ipc::{CameraTrack, EncodedFrame},
         pack,
+        track::{Frame, Payload, Track},
     },
     Error,
 };
@@ -22,7 +22,7 @@ const ABS_SEND_EXTENSION: &str = "http://www.webrtc.org/experiments/rtp-hdrext/a
 
 pub(crate) struct Sender {
     pub id: RTCRtpSenderId,
-    pub track: CameraTrack,
+    pub track: Track,
     pub stopped: bool,
     pub active: bool,
     pub sync_enabled: bool,
@@ -43,7 +43,7 @@ pub(crate) struct Sender {
 impl Sender {
     pub fn new(
         id: RTCRtpSenderId,
-        track: CameraTrack,
+        track: Track,
         mid: &str,
         ssrc: u32,
         sync_enabled: bool,
@@ -112,13 +112,14 @@ impl Sender {
         Ok(())
     }
 
-    pub fn frame(
-        &mut self,
-        peer: &mut RTCPeerConnection,
-        frame: &EncodedFrame,
-    ) -> Result<(), Error> {
-        self.last_source = Some(frame.frame_id);
-        let payloads = pack(&frame.data).map_err(|_| Error::Contract("invalid H264 NAL unit"))?;
+    pub fn frame(&mut self, peer: &mut RTCPeerConnection, frame: Frame) -> Result<(), Error> {
+        self.last_source = frame.source_id;
+        let payloads = match frame.payload {
+            Payload::H264(data) => {
+                pack(&data).map_err(|_| Error::Contract("invalid H264 NAL unit"))?
+            }
+            Payload::Encoded(payloads) => payloads,
+        };
         let timestamp = self
             .origin
             .wrapping_add(u32::try_from(frame.pts.rem_euclid(1_i64 << 32))?);
@@ -180,6 +181,19 @@ impl Sender {
     pub fn set_cname(&mut self, cname: &str) {
         self.control.cname.clear();
         self.control.cname.push_str(cname);
+    }
+
+    pub fn receive(&mut self, peer: &mut RTCPeerConnection) -> Result<Option<Frame>, Error> {
+        let mut sender = peer
+            .rtp_sender(self.id)
+            .ok_or(Error::Contract("camera sender disappeared"))?;
+        let codec = sender
+            .get_parameters()
+            .rtp_parameters
+            .codecs
+            .first()
+            .ok_or(Error::Contract("missing negotiated codec"))?;
+        self.track.receive(&codec.rtp_codec.mime_type)
     }
 
     pub fn report(&mut self, peer: &mut RTCPeerConnection) -> Result<(), Error> {

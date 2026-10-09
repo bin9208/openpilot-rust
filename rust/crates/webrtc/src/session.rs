@@ -3,7 +3,8 @@ use crate::{
     owner_graph::Graph,
     peer::{self, Peer},
     request::StreamRequest,
-    video::ipc::{Camera, CameraTrack},
+    runtime::Profile,
+    video::{ipc::Camera, track::Track},
     Error,
 };
 use openpilot_messaging::{runtime::SubMaster, state::Options};
@@ -22,6 +23,8 @@ pub(crate) use bridge::Publishers;
 enum Mode {
     Standard,
     Carrot,
+    StandardDebug,
+    CarrotDebug,
 }
 
 struct Lifecycle {
@@ -38,7 +41,7 @@ pub(crate) struct Session {
     pub peers: Vec<Peer>,
     graph: Option<Graph>,
     parsed: SessionDescription,
-    tracks: Vec<(Camera, CameraTrack)>,
+    tracks: Vec<(Camera, Track)>,
     incoming: Vec<String>,
     outgoing: Option<SubMaster>,
     compact: Option<compact::Compact>,
@@ -59,10 +62,15 @@ fn direction(media: &rtc::sdp::description::media::MediaDescription, name: &str)
 
 impl Session {
     const fn is_carrot(&self) -> bool {
-        matches!(self.mode, Mode::Carrot)
+        matches!(self.mode, Mode::Carrot | Mode::CarrotDebug)
     }
 
-    pub fn new(request: &StreamRequest, remote: &str, carrot: bool) -> Result<Self, Error> {
+    const fn is_debug(&self) -> bool {
+        matches!(self.mode, Mode::StandardDebug | Mode::CarrotDebug)
+    }
+
+    pub fn new(request: &StreamRequest, remote: &str, profile: Profile) -> Result<Self, Error> {
+        let carrot = profile.carrot;
         let parsed = RTCSessionDescription::offer(request.sdp.clone())?.unmarshal()?;
         let expected = parsed
             .media_descriptions
@@ -82,7 +90,7 @@ impl Session {
             if tracks.iter().any(|(existing, _)| existing == camera) {
                 return Err(Error::Contract("duplicate camera"));
             }
-            tracks.push((*camera, CameraTrack::for_runtime(*camera, carrot)?));
+            tracks.push((*camera, Track::new(*camera, carrot, profile.debug)?));
         }
         let outgoing = if request.outgoing.is_empty() {
             None
@@ -122,7 +130,12 @@ impl Session {
                 None
             },
             outgoing_alive: true,
-            mode: if carrot { Mode::Carrot } else { Mode::Standard },
+            mode: match (carrot, profile.debug) {
+                (false, false) => Mode::Standard,
+                (true, false) => Mode::Carrot,
+                (false, true) => Mode::StandardDebug,
+                (true, true) => Mode::CarrotDebug,
+            },
             sync: carrot && request.carrot_state,
             lifecycle: Lifecycle {
                 ready: false,
@@ -138,7 +151,7 @@ impl Session {
     }
 
     pub async fn answer(&mut self, network: &Network) -> Result<RTCSessionDescription, Error> {
-        if !self.tracks.is_empty() {
+        if !self.is_debug() && !self.tracks.is_empty() {
             for media in &mut self.parsed.media_descriptions {
                 if media.media_name.media != "video" {
                     continue;

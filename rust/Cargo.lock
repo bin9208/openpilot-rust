@@ -3650,6 +3650,7 @@ dependencies = [
  "aws-lc-rs",
  "bytes",
  "capnp",
+ "ffmpeg-next",
  "http-body-util",
  "hyper",
  "hyper-util",

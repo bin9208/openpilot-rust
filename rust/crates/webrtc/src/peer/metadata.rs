@@ -34,14 +34,12 @@ pub(super) fn source_cname(answer: &mut SessionDescription, cname: &str) {
     }
 }
 
-pub(super) fn h264(profile: &str) -> RTCRtpCodec {
+fn video_codec(name: &str, parameters: &str) -> RTCRtpCodec {
     RTCRtpCodec {
-        mime_type: "video/H264".to_owned(),
+        mime_type: format!("video/{name}"),
         clock_rate: 90_000,
         channels: 0,
-        sdp_fmtp_line: format!(
-            "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id={profile}"
-        ),
+        sdp_fmtp_line: parameters.to_owned(),
         rtcp_feedback: [("nack", ""), ("nack", "pli"), ("goog-remb", "")]
             .into_iter()
             .map(|(typ, parameter)| RTCPFeedback {
@@ -52,16 +50,69 @@ pub(super) fn h264(profile: &str) -> RTCRtpCodec {
     }
 }
 
+pub(super) fn h264(profile: &str) -> RTCRtpCodec {
+    video_codec(
+        "H264",
+        &format!("level-asymmetry-allowed=1;packetization-mode=1;profile-level-id={profile}"),
+    )
+}
+
 pub(super) fn configured(certificate: RTCCertificate) -> Result<RTCPeerConnection, Error> {
     let mut media = MediaEngine::default();
-    media.register_default_codecs()?;
-    for (profile, payload_type) in [("42001f", 102), ("42e01f", 125)] {
+    for (name, clock_rate, channels, payload_type) in [
+        ("opus", 48_000, 2, 96),
+        ("G722", 8000, 1, 9),
+        ("PCMU", 8000, 1, 0),
+        ("PCMA", 8000, 1, 8),
+    ] {
         media.register_codec(
             RTCRtpCodecParameters {
-                rtp_codec: h264(profile),
+                rtp_codec: RTCRtpCodec {
+                    mime_type: format!("audio/{name}"),
+                    clock_rate,
+                    channels,
+                    ..Default::default()
+                },
+                payload_type,
+            },
+            RtpCodecKind::Audio,
+        )?;
+    }
+    for (codec, payload_type) in [
+        (video_codec("VP8", ""), 97),
+        (h264("42001f"), 99),
+        (h264("42e01f"), 101),
+    ] {
+        media.register_codec(
+            RTCRtpCodecParameters {
+                rtp_codec: codec,
                 payload_type,
             },
             RtpCodecKind::Video,
+        )?;
+        media.register_codec(
+            RTCRtpCodecParameters {
+                rtp_codec: RTCRtpCodec {
+                    mime_type: "video/rtx".to_owned(),
+                    clock_rate: 90_000,
+                    sdp_fmtp_line: format!("apt={payload_type}"),
+                    ..Default::default()
+                },
+                payload_type: payload_type + 1,
+            },
+            RtpCodecKind::Video,
+        )?;
+    }
+    for uri in [
+        "urn:ietf:params:rtp-hdrext:sdes:mid",
+        "urn:ietf:params:rtp-hdrext:ssrc-audio-level",
+    ] {
+        media.register_header_extension(
+            RTCRtpHeaderExtensionCapability {
+                uri: uri.to_owned(),
+            },
+            RtpCodecKind::Audio,
+            None,
         )?;
     }
     for uri in [

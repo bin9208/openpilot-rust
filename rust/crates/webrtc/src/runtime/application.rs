@@ -1,5 +1,5 @@
 use super::http::{internal, reply, Reply};
-use super::{Application, SessionHandle};
+use super::{Application, Profile, SessionHandle};
 use crate::{
     network::Network,
     request::StreamRequest,
@@ -17,14 +17,15 @@ use std::{
 use tokio::sync::Mutex;
 
 impl Application {
-    pub(super) fn new(carrot: bool, network: Network) -> Result<Self, Error> {
+    pub(super) fn new(profile: Profile, network: Network) -> Result<Self, Error> {
         let app = Self {
-            carrot,
+            carrot: profile.carrot,
+            debug: profile.debug,
             network,
             streams: RefCell::new(Vec::new()),
             stream_lock: Mutex::new(()),
             publishers: RefCell::new(Publishers::default()),
-            params: if carrot {
+            params: if profile.carrot {
                 Some(Params::for_runtime()?)
             } else {
                 None
@@ -105,7 +106,14 @@ impl Application {
         if road && !foreign.is_empty() && !request.takeover {
             return reply(StatusCode::CONFLICT, "{\"ok\": false, \"code\": \"carrot_vision_busy\", \"error\": \"Carrot Vision is already active on another client\"}".to_owned(), true, false);
         }
-        let session = match Session::new(&request, &remote.ip().to_string(), self.carrot) {
+        let session = match Session::new(
+            &request,
+            &remote.ip().to_string(),
+            Profile {
+                carrot: self.carrot,
+                debug: self.debug,
+            },
+        ) {
             Ok(session) => session,
             Err(error) => return internal(&error),
         };

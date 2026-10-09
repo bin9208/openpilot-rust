@@ -1,9 +1,17 @@
 use super::{Error, Sender};
 use bytes::BytesMut;
 use rtc::{
-    peer_connection::RTCPeerConnection,
+    peer_connection::{
+        message::{RTCMessage, TaggedRTCMessage},
+        RTCPeerConnection,
+    },
+    rtcp::payload_feedbacks::{
+        full_intra_request::FullIntraRequest, picture_loss_indication::PictureLossIndication,
+        receiver_estimated_maximum_bitrate::ReceiverEstimatedMaximumBitrate,
+    },
     rtcp::{transport_feedbacks::transport_layer_nack::TransportLayerNack, Packet},
     rtp::Packet as RtpPacket,
+    sansio::Protocol,
 };
 
 fn rtx(packet: &mut RtpPacket, payload_type: u8, ssrc: u32, sequence: u16) {
@@ -23,6 +31,27 @@ impl Sender {
         packets: &[Box<dyn Packet>],
     ) -> Result<(), Error> {
         for packet in packets {
+            if packet
+                .as_any()
+                .downcast_ref::<PictureLossIndication>()
+                .is_some_and(|pli| pli.media_ssrc == self.ssrc)
+                || packet
+                    .as_any()
+                    .downcast_ref::<FullIntraRequest>()
+                    .is_some_and(|fir| fir.fir.iter().any(|entry| entry.ssrc == self.ssrc))
+            {
+                self.track.keyframe();
+            }
+            if let Some(remb) = packet
+                .as_any()
+                .downcast_ref::<ReceiverEstimatedMaximumBitrate>()
+            {
+                if remb.ssrcs.contains(&self.ssrc) {
+                    let bitrate = num_traits::ToPrimitive::to_u32(&remb.bitrate.min(3_000_000.0))
+                        .ok_or(Error::Contract("invalid REMB bitrate"))?;
+                    self.track.bitrate(bitrate);
+                }
+            }
             let Some(nack) = packet.as_any().downcast_ref::<TransportLayerNack>() else {
                 continue;
             };
@@ -55,10 +84,26 @@ impl Sender {
                     .and_then(|encoding| encoding.rtp_coding_parameters.rtx.as_ref())
                     .map(|rtx| rtx.ssrc);
                 if let (Some(codec), Some(ssrc)) = (codec, ssrc) {
+                    if packet.header.extensions.iter().any(|extension| {
+                        !parameters
+                            .rtp_parameters
+                            .header_extensions
+                            .iter()
+                            .any(|negotiated| u8::try_from(negotiated.id) == Ok(extension.id))
+                    }) {
+                        return Err(Error::Contract("cached RTX extension is not negotiated"));
+                    }
                     rtx(&mut packet, codec.payload_type, ssrc, self.rtx_sequence);
                     self.rtx_sequence = self.rtx_sequence.wrapping_add(1);
+                    let track = sender.track().track_id().clone();
+                    // The provider's write_rtp guard recognizes primary SSRCs only.
+                    peer.handle_write(TaggedRTCMessage {
+                        now: std::time::Instant::now(),
+                        message: RTCMessage::RtpPacket(track, packet),
+                    })?;
+                } else {
+                    sender.write_rtp(std::time::Instant::now(), packet)?;
                 }
-                sender.write_rtp(std::time::Instant::now(), packet)?;
             }
         }
         Ok(())

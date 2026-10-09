@@ -28,8 +28,15 @@ struct SessionHandle {
 }
 
 type Sessions = Vec<Rc<SessionHandle>>;
+#[derive(Clone, Copy)]
+pub struct Profile {
+    pub carrot: bool,
+    pub debug: bool,
+}
+
 struct Application {
     carrot: bool,
+    debug: bool,
     network: Network,
     streams: RefCell<Sessions>,
     stream_lock: Mutex<()>,
@@ -65,8 +72,8 @@ async fn serve_connection(
 ///
 /// # Errors
 /// Returns startup, listener or signal initialization failures.
-pub async fn serve(host: &str, port: u16, carrot: bool, network: Network) -> Result<(), Error> {
-    let app = Rc::new(Application::new(carrot, network)?);
+pub async fn serve(host: &str, port: u16, profile: Profile, network: Network) -> Result<(), Error> {
+    let app = Rc::new(Application::new(profile, network)?);
     let listener = TcpListener::bind((host, port)).await?;
     println!("webrtcd listening {}", listener.local_addr()?);
     let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
@@ -159,9 +166,6 @@ pub fn entrypoint(carrot: bool) -> Result<(), Error> {
             _ => return Err(Error::Contract("unknown argument")),
         }
     }
-    if debug {
-        return Err(Error::Contract("generated debug video remains unported"));
-    }
     if carrot {
         if let Err(error) = affinity() {
             eprintln!("WebRTC Carrot Vision affinity failed: {error}");
@@ -170,6 +174,13 @@ pub fn entrypoint(carrot: bool) -> Result<(), Error> {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
-    tokio::task::LocalSet::new()
-        .block_on(&runtime, serve(&host, port, carrot, Network::for_runtime()))
+    tokio::task::LocalSet::new().block_on(
+        &runtime,
+        serve(
+            &host,
+            port,
+            Profile { carrot, debug },
+            Network::for_runtime(),
+        ),
+    )
 }

@@ -9,8 +9,12 @@ fn main() -> Result<(), Error> {
         .ok_or(Error::Contract("missing owned port"))?
         .parse::<u16>()
         .map_err(|_| Error::Contract("invalid owned port"))?;
-    let server = arguments
-        .next()
+    let mut server = arguments.next();
+    let debug = server.as_deref() == Some("--debug");
+    if debug {
+        server = arguments.next();
+    }
+    let server = server
         .map(|server| {
             let (host, port) = server
                 .rsplit_once(':')
@@ -26,6 +30,13 @@ fn main() -> Result<(), Error> {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
-    tokio::task::LocalSet::new()
-        .block_on(&runtime, runtime::serve("127.0.0.1", port, carrot, network))
+    tokio::task::LocalSet::new().block_on(
+        &runtime,
+        runtime::serve(
+            "127.0.0.1",
+            port,
+            runtime::Profile { carrot, debug },
+            network,
+        ),
+    )
 }

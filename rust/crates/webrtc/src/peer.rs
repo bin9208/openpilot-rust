@@ -158,15 +158,20 @@ impl Peer {
                         }
                     }
                 }
-                match sender.track.receive() {
+                match sender.receive(&mut self.rtc) {
                     Ok(Some(frame)) => {
-                        if let Err(error) = sender.frame(&mut self.rtc, &frame) {
+                        if let Err(error) = sender.frame(&mut self.rtc, frame) {
                             sender.stopped = true;
                             eprintln!("WebRTC video sender stopped: {error}");
                         }
                     }
                     Ok(None) => {}
-                    Err(error) => eprintln!("WebRTC could not build video packet: {error}"),
+                    Err(error) => {
+                        if sender.track.is_debug() {
+                            sender.stopped = true;
+                        }
+                        eprintln!("WebRTC could not build video packet: {error}");
+                    }
                 }
             }
         }

@@ -8,7 +8,7 @@ publish = false
 
 [features]
 default = []
-native = ["openpilot-msgq/native-skip-miri", "openpilot-messaging/native", "dep:rtc", "dep:aws-lc-rs", "dep:tokio", "dep:hyper", "dep:hyper-util", "dep:http-body-util", "dep:nix", "dep:uuid"]
+native = ["openpilot-msgq/native-skip-miri", "openpilot-messaging/native", "dep:rtc", "dep:aws-lc-rs", "dep:tokio", "dep:hyper", "dep:hyper-util", "dep:http-body-util", "dep:nix", "dep:uuid", "dep:ffmpeg-next"]
 
 [dependencies]
 openpilot-cereal = { path = "../cereal" }
@@ -36,6 +36,7 @@ hyper-util = { version = "=0.1.21", features = ["tokio"], optional = true }
 http-body-util = { version = "=0.1.5", optional = true }
 nix = { version = "=0.31.3", default-features = false, features = ["net", "sched"], optional = true }
 uuid = { version = "=1.26.1", features = ["v4"], optional = true }
+ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format"], optional = true }
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -7,7 +7,7 @@ use crate::{
     network::{Gathered, Network},
     owner_graph::{mid, Graph},
     sender::Sender,
-    video::ipc::{Camera, CameraTrack},
+    video::{ipc::Camera, track::Track},
     Error,
 };
 use rtc::sansio::Protocol;
@@ -20,7 +20,9 @@ use rtc::{
         state::RTCPeerConnectionState,
         transport::RTCIceCandidateInit,
     },
-    rtp_transceiver::rtp_sender::{RTCRtpCodingParameters, RTCRtpEncodingParameters, RtpCodecKind},
+    rtp_transceiver::rtp_sender::{
+        RTCRtpCodec, RTCRtpCodingParameters, RTCRtpEncodingParameters, RtpCodecKind,
+    },
     sdp::description::{common::Attribute, session::SessionDescription},
 };
 use std::{collections::VecDeque, time::Instant};
@@ -30,7 +32,7 @@ fn prepared_owner(
     index: usize,
     parsed: &SessionDescription,
     graph: &Graph,
-    tracks: &mut [(usize, Camera, Option<CameraTrack>)],
+    tracks: &mut [(usize, Camera, Option<Track>)],
     sync: bool,
     certificate: RTCCertificate,
 ) -> Result<Option<Peer>, Error> {
@@ -62,6 +64,7 @@ fn prepared_owner(
         }
         let random = uuid::Uuid::new_v4();
         let ssrc = u32::from_be_bytes(random.as_bytes()[0..4].try_into()?);
+        let debug = track.as_ref().is_some_and(Track::is_debug);
         let id = rtc.add_track(MediaStreamTrack::new(
             uuid::Uuid::new_v4().to_string(),
             format!("{}:{}", camera.name(), uuid::Uuid::new_v4()),
@@ -72,7 +75,11 @@ fn prepared_owner(
                     ssrc: Some(ssrc),
                     ..Default::default()
                 },
-                codec: h264("42001f"),
+                codec: if debug {
+                    RTCRtpCodec::default()
+                } else {
+                    h264("42001f")
+                },
                 ..Default::default()
             }],
         ))?;
@@ -83,7 +90,7 @@ fn prepared_owner(
                 .ok_or(Error::Contract("camera assigned twice"))?,
             mid(&parsed.media_descriptions[*media])?,
             ssrc,
-            sync && *camera == Camera::Road,
+            !debug && sync && *camera == Camera::Road,
         )?);
     }
     Ok(Some(Peer {
@@ -155,7 +162,7 @@ fn owner_answers(
 pub(crate) async fn prepare(
     parsed: &SessionDescription,
     graph: &Graph,
-    tracks: Vec<(Camera, CameraTrack)>,
+    tracks: Vec<(Camera, Track)>,
     sync: bool,
     network: &Network,
 ) -> Result<(Vec<Peer>, RTCSessionDescription), Error> {

@@ -4,7 +4,13 @@ use crate::Error;
 use num_traits::ToPrimitive;
 
 #[cfg(feature = "native")]
+mod debug;
+#[cfg(feature = "native")]
+mod debug_codec;
+#[cfg(feature = "native")]
 pub mod ipc;
+#[cfg(feature = "native")]
+pub(crate) mod track;
 
 const PACKET_MAX: usize = 1300;
 const DT: f64 = 0.05;

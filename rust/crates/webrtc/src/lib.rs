@@ -68,4 +68,7 @@ pub enum Error {
     Params(#[from] openpilot_params::Error),
     #[error(transparent)]
     Compact(#[from] openpilot_carrot_state::Error),
+    #[cfg(feature = "native")]
+    #[error(transparent)]
+    Codec(#[from] ffmpeg_next::Error),
 }

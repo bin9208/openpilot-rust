@@ -4,7 +4,7 @@
 `webrtcd` and Carrot Vision WebRTC runtimes within the full conversion in
 [#1](https://github.com/bin9208/openpilot-rust/issues/1). The current host
 checkpoint covers real HTTP, native Cereal/msgq, ICE/DTLS/SRTP and ordered SCTP.
-Generated debug video, browser interoperability, remaining network/error
+Browser interoperability, remaining network/error
 boundaries, startup composition and exact-head CI are still pending. This is
 intermediate engineering evidence; no device or performance claim is made.
 
@@ -82,7 +82,47 @@ the public `RawPacket` API without modifying the provider. The live result in
 `production-srtcp-delivery-wire-invocation.json` verifies loss recovery and parsed
 SR/SDES/BYE, source packet/octet counters and CNAME identity, and BYE/close while
 the transport is still live. Negotiated RTX wrapping has a focused unit check;
-its actual wire path remains pending with generated debug video.
+its actual negotiated wire path is verified by the debug controls below.
+
+## Generated debug video
+
+The native track preserves aiortc's 640x480 YUV420 frames with all input plane
+bytes zero, its wall-clock cadence, and its original lazy VP8/H.264 encoder
+settings. It uses a separate native codec worker and the same RTP history/report
+path as encoded cameras. The public media registry contains the pinned source's
+codec set; VP9/AV1 provider defaults are not advertised. VP8's source codec
+time-base conversion yields initial RTP deltas `0,2999,6000,9000`; H.264 yields
+`0,3000,6000,9000`. These observed values are preserved.
+
+Three actual source/native HTTP pairs cover standard VP8, Carrot VP8 and
+negotiated H.264. Each native case decodes twelve frames, receives actual RTX,
+responds to PLI and REMB, and closes the peer before caller cleanup. Visible
+decoded plane hashes match the first five original frames. Zero input planes
+do not imply zero decoded planes through the lossy codec: an initial fixture
+assumption failed and is recorded separately. Losing the initial H.264 SPS/PPS
+packet also requires a fresh PLI keyframe before decoding resumes in the
+original; the corrected fixture records that boundary explicitly.
+
+[#258](https://github.com/bin9208/openpilot-rust/issues/258) records the provider
+API boundary found by the actual loss control: `write_rtp` accepts only primary
+SSRCs and rejects the negotiated RTX SSRC. The project uses the public protocol
+write path for RTX after checking its negotiated apt, SSRC and extension IDs.
+Primary RTP keeps its existing provider guards. The initial source/native RED
+and actual corrected wire captures are indexed by `debug-checkpoint.json`.
+The reusable driver is `rust/tools/webrtc_debug_compare.py`, with owned Params
+roots, explicit IPC namespaces and loopback ICE. Its helper/style gates and
+tracked-driver wire check are in `debug-driver-final/`.
+After the registry change, a native sendonly-audio connection matches its saved
+original control: the peer/channel connects, the unconsumed audio keeps the
+Cereal bridge unready, notify is delivered and the native process exits zero.
+`debug-audio-registry/` records that focused regression; the source corpus was
+not repeated.
+
+These host controls use the existing FFmpeg 6.1.1 native libraries (avcodec
+60.31.102, libvpx 1.14.0) through ffmpeg-next 8.1.0; the original PyAV 16.1.0
+environment uses avcodec 62. This is an explicit external dependency difference.
+Compressed debug bitstreams are not claimed byte-identical. Target native
+dependency packaging and browser behavior remain separate acceptance work.
 
 ## Shared compact encoding
 
@@ -94,7 +134,11 @@ The source's saved 21-service encodings match the new crate's bytes, without a
 source recapture. Actual standard HTTP/SCTP delivery also matches all 21 service
 packets and subsequent sequence increments. WebSocket intervals stay in the
 server; RTC preserves its own intervals, 16 KiB gate and last-send advancement
-before a buffered drop. Primary server reexports are integration work.
+before a buffered drop.
+The primary server now connects these reexports at
+`d07befaf345012c2f14164d147a4f2c8215d641a`, with 21 saved encoding comparisons
+and one actual compact WebSocket check. This shared-code integration does not
+merge the RTC runtime or its provider into the server branch.
 
 ## Boundaries and local fixture side effect
 
@@ -111,7 +155,7 @@ uncertainty. The shared fixture launch now fails closed unless its Params root
 is inside the dedicated evidence directory and an explicit IPC namespace is
 present. Only the affected 16 HTTP checks were rerun with verified owned paths.
 
-Remaining work includes debug codec/sender feedback, mDNS and browser I/O,
+Remaining work includes mDNS and browser I/O,
 STUN-error timing, remaining client-ID/body decoding forms, normal startup,
 target dependency packaging and exact-SHA CI. No C3X, NAS or vehicle handoff has
 been performed.
