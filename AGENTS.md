@@ -15,9 +15,13 @@
   at least 25 GiB free plus the operation's estimated growth; when below that
   floor, stop new build work and recover at least 35 GiB before resuming. Prefer
   bounded package builds with incremental compilation disabled and reuse a
-  coordinated inactive target cache after preserving required evidence. Remove
-  only unused, reproducible outputs from completed work; preserve sources,
-  uncommitted edits, logs, reproduction evidence and binaries still in use.
+  coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
+  old Rust-port records, archived validation artifacts and all unused build
+  caches without another approval or preservation/compression step. This
+  supersedes earlier instructions to retain historical local evidence. Preserve
+  source changes and files needed by current implementation/validation; retain
+  concise results in the existing tracked records instead of old binary copies.
+  Prioritize the complete runtime candidate, then user testing and refinement.
 
 - This checkout belongs to bin9208/openpilot-rust. Never push to bin9208/openpilot or ajouatom/openpilot.
 - User explicitly authorized isolated Rust development here. Work from dev on issue branches; PRs target dev. Older carrot-wip synchronization instructions below are historical source context and do not authorize synchronization from this repository.
