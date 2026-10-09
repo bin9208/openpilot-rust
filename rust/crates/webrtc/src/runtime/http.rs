@@ -1,7 +1,7 @@
 use super::Application;
 use crate::{schema, Error};
 use bytes::Bytes;
-use http_body_util::{BodyExt, Full};
+use http_body_util::Full;
 use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
 use openpilot_logmessaged::JsonValue;
 use std::{convert::Infallible, net::SocketAddr};
@@ -49,31 +49,6 @@ pub(super) fn internal(error: &Error) -> Reply {
     )
 }
 
-async fn body(request: Request<Incoming>) -> Result<String, Reply> {
-    let mut body = request.into_body();
-    let mut bytes = Vec::new();
-    while let Some(frame) = body.frame().await {
-        let frame = frame
-            .map_err(|error| reply(StatusCode::BAD_REQUEST, error.to_string(), false, false))?;
-        if let Ok(data) = frame.into_data() {
-            bytes.extend_from_slice(&data);
-            if bytes.len() >= 1_048_576 {
-                return Err(reply(
-                    StatusCode::PAYLOAD_TOO_LARGE,
-                    format!(
-                        "Maximum request body size 1048576 exceeded, actual body size {}",
-                        bytes.len()
-                    ),
-                    false,
-                    false,
-                ));
-            }
-        }
-    }
-    String::from_utf8(bytes)
-        .map_err(|error| reply(StatusCode::BAD_REQUEST, error.to_string(), false, false))
-}
-
 impl Application {
     pub(super) async fn handle(
         &self,
@@ -91,11 +66,11 @@ impl Application {
             return Ok(response);
         }
         let response = match (method, path.as_str()) {
-            (Method::POST, "/stream") => match body(request).await {
+            (Method::POST, "/stream") => match super::body::read(request).await {
                 Ok(body) => self.stream(&body, remote).await,
                 Err(response) => response,
             },
-            (Method::POST, "/notify") => match body(request).await {
+            (Method::POST, "/notify") => match super::body::read(request).await {
                 Ok(text) => match JsonValue::parse(&text).and_then(|value| {
                     value
                         .to_json()

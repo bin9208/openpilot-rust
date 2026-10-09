@@ -1,4 +1,5 @@
 mod application;
+mod body;
 mod http;
 
 use crate::{
@@ -123,19 +124,38 @@ pub async fn serve(host: &str, port: u16, profile: Profile, network: Network) ->
 fn affinity() -> Result<(), Error> {
     let configured =
         std::env::var("CARROT_VISION_WEBRTC_CORES").unwrap_or_else(|_| "0,1,2,3".to_owned());
+    let mut cores = Vec::new();
+    for core in configured.split(',').filter(|core| {
+        !core
+            .trim_matches(|value: char| {
+                value.is_whitespace() || matches!(value, '\u{1c}'..='\u{1f}')
+            })
+            .is_empty()
+    }) {
+        let text = core.trim();
+        if text
+            .chars()
+            .any(|value| !value.is_numeric() && !matches!(value, '+' | '-' | '_'))
+            || text.chars().filter(|value| value.is_numeric()).count() > 4300
+        {
+            return Err(Error::Contract("invalid Carrot Vision CPU affinity"));
+        }
+        cores.push(
+            openpilot_runtime_core::python_float::parse(text)
+                .ok_or(Error::Contract("invalid Carrot Vision CPU affinity"))?,
+        );
+    }
+    if cores.is_empty() || !std::path::Path::new("/TICI").is_file() {
+        return Ok(());
+    }
     let mut set = nix::sched::CpuSet::new();
-    let mut count = 0;
-    for core in configured.split(',').filter(|core| !core.trim().is_empty()) {
+    for core in cores {
         set.set(
-            core.trim()
-                .parse::<usize>()
-                .map_err(|_| Error::Contract("invalid Carrot Vision CPU affinity"))?,
+            num_traits::ToPrimitive::to_usize(&core)
+                .ok_or(Error::Contract("Carrot Vision CPU affinity out of range"))?,
         )?;
-        count += 1;
     }
-    if count > 0 {
-        nix::sched::sched_setaffinity(nix::unistd::Pid::from_raw(0), &set)?;
-    }
+    nix::sched::sched_setaffinity(nix::unistd::Pid::from_raw(0), &set)?;
     Ok(())
 }
 
