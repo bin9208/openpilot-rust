@@ -107,6 +107,9 @@ pub(crate) async fn dispatch(
     if crate::restore_http::matches(&path, request.method()) {
         return Ok(crate::restore_http::handle(request, app, &path).await);
     }
+    if crate::qr_dependency::http::matches(&path) {
+        return Ok(crate::qr_dependency::http::handle(request, app, &path).await);
+    }
     if crate::history_http::matches(&path, request.method()) {
         return Ok(crate::history_http::handle(request, app, &path).await);
     }

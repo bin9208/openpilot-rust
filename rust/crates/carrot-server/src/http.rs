@@ -54,6 +54,7 @@ pub struct Application {
     pub web_navi: Option<Arc<crate::web_navi::Service>>,
     pub system: Arc<crate::system::Service>,
     pub network_refresh: bool,
+    pub qr_dependency: crate::qr_dependency::Provider,
 }
 
 impl Application {
@@ -106,6 +107,7 @@ impl Application {
         };
         let web_navi = crate::web_navi::Service::start(params.native_params().cloned()).ok();
         Self {
+            qr_dependency: crate::qr_dependency::Provider::original(&config),
             system: crate::system::Service::original(&config),
             network_refresh: false,
             static_web: StaticWeb::new(config.clone()),

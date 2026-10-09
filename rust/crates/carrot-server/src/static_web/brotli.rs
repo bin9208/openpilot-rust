@@ -2,14 +2,17 @@
 
 use crate::Error;
 use libloading::Library;
+use std::{ffi::OsStr, path::Path};
 
 type MaxSize = unsafe extern "C" fn(usize) -> usize;
 type Compress = unsafe extern "C" fn(i32, i32, i32, usize, *const u8, *mut usize, *mut u8) -> i32;
 type Decompress = unsafe extern "C" fn(usize, *const u8, *mut usize, *mut u8) -> i32;
+type Version = unsafe extern "C" fn() -> u32;
 
 pub(crate) struct Brotli {
     _encoder: Library,
     _decoder: Library,
+    _common: Option<Library>,
     maximum_size: MaxSize,
     compress: Compress,
     decompress: Decompress,
@@ -20,7 +23,33 @@ impl Brotli {
         Self::load_libraries("libbrotlienc.so.1", "libbrotlidec.so.1")
     }
 
-    fn load_libraries(encoder: &str, decoder: &str) -> Option<Self> {
+    pub(crate) fn load_bundle(root: &Path, version: u32) -> Option<Self> {
+        // SAFETY: the caller verified this trusted package's target, fixed names
+        // and hashes. Brotli's common library has no Rust callbacks or state.
+        let common = unsafe { Library::new(root.join("libbrotlicommon.so.1")) }.ok()?;
+        let mut codec = Self::load_libraries(
+            root.join("libbrotlienc.so.1"),
+            root.join("libbrotlidec.so.1"),
+        )?;
+        // SAFETY: these zero-argument signatures match the Brotli 1 C version
+        // API; retained libraries own the symbols through both calls.
+        let encoder_version =
+            *unsafe { codec._encoder.get::<Version>(b"BrotliEncoderVersion\0") }.ok()?;
+        // SAFETY: signature matches BrotliDecoderVersion in decode.h.
+        let decoder_version =
+            *unsafe { codec._decoder.get::<Version>(b"BrotliDecoderVersion\0") }.ok()?;
+        // SAFETY: version functions retain no state and take no pointers.
+        let encoder_version = unsafe { encoder_version() };
+        // SAFETY: same zero-argument version ABI, decoder handle still retained.
+        let decoder_version = unsafe { decoder_version() };
+        if encoder_version != version || decoder_version != version {
+            return None;
+        }
+        codec._common = Some(common);
+        Some(codec)
+    }
+
+    fn load_libraries(encoder: impl AsRef<OsStr>, decoder: impl AsRef<OsStr>) -> Option<Self> {
         // SAFETY: these system Brotli libraries have the C ABI declared in
         // brotli/encode.h and brotli/decode.h and no Rust callbacks or state.
         let encoder = unsafe { Library::new(encoder) }.ok()?;
@@ -38,6 +67,7 @@ impl Brotli {
         Some(Self {
             _encoder: encoder,
             _decoder: decoder,
+            _common: None,
             maximum_size,
             compress,
             decompress,

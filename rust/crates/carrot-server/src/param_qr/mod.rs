@@ -25,6 +25,13 @@ impl Codec {
         Self::with_schema(Schema::from_backend(backend).ok(), true)
     }
 
+    pub fn with_provider(backend: &Backend, provider: &crate::qr_dependency::Provider) -> Self {
+        Self {
+            schema: Schema::from_backend(backend).ok(),
+            brotli: provider.codec(),
+        }
+    }
+
     pub fn with_schema(schema: Option<Schema>, brotli_available: bool) -> Self {
         Self {
             schema,

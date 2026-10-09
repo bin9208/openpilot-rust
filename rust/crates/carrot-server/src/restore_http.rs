@@ -82,9 +82,11 @@ fn process(
         .map_err(|_| Error::Source("Params lock poisoned".into()))?;
     let mut response = Value::object([("ok", Value::Bool(true))]);
     if backup {
-        if let (Value::Object(response), Value::Object(payload)) =
-            (&mut response, param_qr::build(None, &params)?)
-        {
+        let values = params.backup_values()?;
+        if let (Value::Object(response), Value::Object(payload)) = (
+            &mut response,
+            param_qr::Codec::with_provider(&params, &app.qr_dependency).build(&values)?,
+        ) {
             response.extend(payload);
         }
         return Ok(response);
@@ -105,7 +107,7 @@ fn process(
     } else {
         body.get("payload")
     };
-    let values = param_qr::parse(data, &params)?;
+    let values = param_qr::Codec::with_provider(&params, &app.qr_dependency).parse(data)?;
     let keys = if matches!(body.get("keys"), Value::Array(_)) {
         body.get("keys")
     } else {

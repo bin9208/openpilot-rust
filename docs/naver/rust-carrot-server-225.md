@@ -1164,7 +1164,37 @@ strict Clippy for the affected packages, formatting and diff checks pass.
 See `.omo/evidence/225-shared-compact/checkpoint/receipt.json` for source and
 binary identities and the narrowly reused comparisons.
 
-The remaining active families include QR provider status/repair, tool jobs,
+QR provider status and repair now use a verified native Brotli bundle. The
+Application passes its provider explicitly to QR backup and restore; repair
+checks all three target libraries and hashes, exercises a staged generation,
+and atomically selects it. Failed staging preserves the previous selection.
+Status reports actual availability and paths. This intentionally replaces
+Python wheel/pip repair with the packaged native provider; see
+[`rust/native/brotli/README.md`](../../rust/native/brotli/README.md) for the
+manifest, license/provenance requirement and same-SONAME loader limitation.
+The final package still must supply the same-target provider closure.
+
+Seven owned repair cases cover fresh installation/idempotence/CQR3 roundtrip
+and corrupt, wrong-target, wrong-version, symlink, extra-name and missing-file
+rejection. A fresh process maps all three selected generation paths. Twelve
+original-handler/native-App HTTP observations pass, with exact available and
+repaired CQR3 backup payloads. The repair setup deliberately starts with the
+original Python module available and native system fallback disabled; that
+initial availability difference and native paths/provider/error details are
+explicit, not whole-response byte equivalence. Three additional unavailable
+App responses and six responses from the final native executable pass; the
+latter reuse the unchanged original backup capture. All children exit cleanly.
+
+One focused failed-loader test preserves the prior generation and removes
+staging. Three native ASan processes cover loader/codec lifetime and declared
+version rejection without diagnostics; this is an instrumented host boundary,
+not proof about every instruction in the external library. Selected build,
+all-target strict Clippy, formatting, Ruff and Python syntax checks pass.
+The original aiohttp helper retains asyncio and the optional preference audit
+is not reported as passing. Exact sources, executable and reuse limits are in
+`.omo/evidence/225-qr-dependency/checkpoint/receipt.json`.
+
+The remaining active families include tool jobs,
 terminal/support terminal, YouTube Live and
 vision diagnostics/test services. The web bridge is distinct from the converted
 Carrot Navi daemon. `/stream` also depends on the separately inventoried WebRTC
