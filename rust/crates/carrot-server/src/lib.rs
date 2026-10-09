@@ -57,6 +57,7 @@ pub mod tools_git_status;
 mod transport_test;
 #[cfg(test)]
 mod ureq_raw_test;
+pub mod web_navi;
 pub mod web_settings;
 mod web_settings_http;
 pub mod web_sound;

@@ -51,6 +51,7 @@ pub struct Application {
     pub auto_update: Option<Arc<crate::auto_update_runtime::Runtime>>,
     pub live: Option<Arc<crate::live::Service>>,
     pub live_error: Option<String>,
+    pub web_navi: Option<Arc<crate::web_navi::Service>>,
     pub system: Arc<crate::system::Service>,
     pub network_refresh: bool,
 }
@@ -103,6 +104,7 @@ impl Application {
             Ok(service) => (Some(service), None),
             Err(error) => (None, Some(error.to_string())),
         };
+        let web_navi = crate::web_navi::Service::start(params.native_params().cloned()).ok();
         Self {
             system: crate::system::Service::original(&config),
             network_refresh: false,
@@ -130,6 +132,7 @@ impl Application {
             auto_update: None,
             live,
             live_error,
+            web_navi,
             history: History::new(Paths {
                 log: config.state.join("param_changes.jsonl"),
                 baseline: config.state.join("fingerprint_baseline.json"),

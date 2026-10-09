@@ -41,6 +41,7 @@ http-body-util = "=0.1.5"
 httpdate = "1"
 bytes = "=1.12.1"
 flate2 = "1"
+ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format"] }
 bzip2 = "=0.6.1"
 zstd = "=0.13.3"
 sha2 = "0.10"

@@ -61,7 +61,7 @@ async fn serve_local(
         tokio::select! {
             () = &mut shutdown => break Ok(()),
             accepted = listener.accept() => {
-                let (socket, _) = match accepted {
+                let (socket, peer) = match accepted {
                     Ok(socket) => socket,
                     Err(error) => break Err(Error::Io(error)),
                 };
@@ -69,7 +69,10 @@ async fn serve_local(
                 let sound = sound.clone();
                 let mut stopped = stop.subscribe();
                 connections.spawn(async move {
-                    let service = hyper::service::service_fn(move |request| route(request, Arc::clone(&app), sound.clone()));
+                    let service = hyper::service::service_fn(move |mut request| {
+                        request.extensions_mut().insert(peer);
+                        route(request, Arc::clone(&app), sound.clone())
+                    });
                     let connection = hyper::server::conn::http1::Builder::new()
                         .preserve_raw_conditional_headers(true)
                         .close_after_response(true)
@@ -99,8 +102,12 @@ async fn serve_local(
     drop(listener);
     let mut sync_changes = app.dashcam_sync_uploads.subscribe();
     let mut live_changes = app.live.as_ref().map(|service| service.subscribe());
+    let mut navi_changes = app.web_navi.as_ref().map(|service| service.subscribe());
     app.dashcam_sync_uploads.quiesce();
     if let Some(service) = &app.live {
+        service.quiesce();
+    }
+    if let Some(service) = &app.web_navi {
         service.quiesce();
     }
     let _ = stop.send(true);
@@ -111,7 +118,8 @@ async fn serve_local(
                 sounds.spawn_local(crate::web_sound_http::run(launch));
             }
             if connections.is_empty() && sounds.is_empty() && app.dashcam_sync_uploads.is_idle()
-                && app.live.as_ref().is_none_or(|service| service.is_idle()) {
+                && app.live.as_ref().is_none_or(|service| service.is_idle())
+                && app.web_navi.as_ref().is_none_or(|service| service.is_idle()) {
                 break;
             }
             tokio::select! {
@@ -119,6 +127,7 @@ async fn serve_local(
                 _ = sounds.join_next(), if !sounds.is_empty() => {}
                 _ = sync_changes.changed() => {}
                 _ = async { if let Some(changes) = &mut live_changes { let _ = changes.changed().await; } }, if live_changes.is_some() => {}
+                _ = async { if let Some(changes) = &mut navi_changes { let _ = changes.changed().await; } }, if navi_changes.is_some() => {}
                 Some(launch) = launches.recv() => {
                     sounds.spawn_local(crate::web_sound_http::run(launch));
                 }
@@ -130,6 +139,7 @@ async fn serve_local(
     {
         app.dashcam_sync_uploads.force();
         if let Some(service) = &app.live { service.force(); }
+        if let Some(service) = &app.web_navi { service.force(); }
         let _ = sound_stop.send(crate::web_sound::Shutdown::Force);
         connections.abort_all();
         while connections.join_next().await.is_some() {}
@@ -137,6 +147,9 @@ async fn serve_local(
     }
     app.dashcam_sync_uploads.shutdown().await?;
     if let Some(service) = &app.live {
+        service.shutdown().await?;
+    }
+    if let Some(service) = &app.web_navi {
         service.shutdown().await?;
     }
     warm.abort();

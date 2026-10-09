@@ -1103,8 +1103,36 @@ AnyIO-preference audit still flags the unchanged-source asyncio AppRunner
 fixture; preserving that source cancellation behavior is intentional, and the
 optional audit is not reported as passing.
 
+The Carrot Navi web bridge now serves capabilities, status, client diagnostics,
+state WebSockets and CNWB media through the actual Application listener. Native
+msgq readers preserve single-viewer ownership, state-only takeover, Cluster HUD
+exclusion, profile ownership, cached bootstrap and idle reader release. H.264
+remuxing uses the existing native FFmpeg dependency through owned custom AVIO;
+it does not invoke a Python media worker.
+
+Owned-source controls in
+`.omo/evidence/carrot-server-225-resume/web-navi/` cover Unicode state, image
+packets, eight-frame fragmented MP4, map-disabled subscriptions, restart after
+idle, the 90-frame GOP bound, the twelve-packet bootstrap bound, slow-client
+closure, malformed configuration, keyframe-only retry after five seconds and
+diagnostic expiry. `application-v1` verifies the real remote address, ordinary
+HTTP alongside WebSockets, packets during shared shutdown grace, channel
+cleanup and profile reset. Quiet registered takeover and slow-client controls
+observe the same immediate EOF after Close in both implementations. An
+unregistered busy connection instead retains the source's ten-second close
+wait. Eight unavailable-service/no-Params HTTP comparisons and two unrelated
+native HTTP requests pass in `isolation-v1`.
+
+Media comparison checks container/sample semantics and decoded frames. The
+host native FFmpeg 60 and original PyAV FFmpeg 62 write different provider
+metadata and initialization bytes; the evidence does not assert byte-identical
+MP4 output. The shared runtime keeps one sixty-second application shutdown
+deadline. The owned three-second grace probe observes both original and native
+WebSockets remaining active until the fixture deadline, followed by clean
+process exit. No browser, vehicle or C3X acceptance is claimed by these checks.
+
 The remaining active families include composed settings snapshots, QR provider
-status/repair, tool jobs, terminal/support terminal, Carrot Navi's web bridge, YouTube Live and
+status/repair, tool jobs, terminal/support terminal, YouTube Live and
 vision diagnostics/test services. The web bridge is distinct from the converted
 Carrot Navi daemon. `/stream` also depends on the separately inventoried WebRTC
 conversion. Each family's existing guards, background tasks and cleanup belong

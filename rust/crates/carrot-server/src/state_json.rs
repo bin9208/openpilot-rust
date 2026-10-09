@@ -26,7 +26,7 @@ pub(crate) fn compact_encoded(encoded: &str) -> String {
         .collect()
 }
 
-fn utf8_text(points: &[u32], prefix: &str) -> Result<String, Error> {
+pub(crate) fn utf8_text(points: &[u32], prefix: &str) -> Result<String, Error> {
     let mut text = String::from(prefix);
     text.push('"');
     for (index, point) in points.iter().enumerate() {

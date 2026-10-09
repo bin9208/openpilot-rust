@@ -2166,6 +2166,7 @@ dependencies = [
  "capnp",
  "chrono",
  "encoding_rs",
+ "ffmpeg-next",
  "flate2",
  "futures-util",
  "http-body-util",
