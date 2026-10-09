@@ -51,6 +51,8 @@ pub struct Application {
     pub auto_update: Option<Arc<crate::auto_update_runtime::Runtime>>,
     pub live: Option<Arc<crate::live::Service>>,
     pub live_error: Option<String>,
+    pub system: Arc<crate::system::Service>,
+    pub network_refresh: bool,
 }
 
 impl Application {
@@ -80,6 +82,7 @@ impl Application {
         let mut application = Self::initialize(config, params, Some(git_status));
         application.heartbeat_params = heartbeat_params;
         application.auto_update = Some(auto_update);
+        application.network_refresh = true;
         Arc::new(application)
     }
 
@@ -101,6 +104,8 @@ impl Application {
             Err(error) => (None, Some(error.to_string())),
         };
         Self {
+            system: crate::system::Service::original(&config),
+            network_refresh: false,
             static_web: StaticWeb::new(config.clone()),
             intro: crate::intro::Intro::new(config.clone()),
             cars: crate::cars::Cars::original(),

@@ -41,6 +41,11 @@ async fn serve_local(
         .clone()
         .map(|service| tokio::task::spawn_local(async move { service.run(auto_stopped).await }));
     let precompress = app.static_web.start_precompress();
+    let (network_stop, network_stopped) = watch::channel(false);
+    let network = app.network_refresh.then(|| {
+        let target = Arc::clone(&app);
+        tokio::spawn(crate::system::background::run(target, network_stopped))
+    });
     let popular_upload = app.popular_values.start_upload(Arc::clone(&app));
     let warm_app = Arc::clone(&app);
     let warm = tokio::task::spawn_blocking(move || {
@@ -135,6 +140,12 @@ async fn serve_local(
         service.shutdown().await?;
     }
     warm.abort();
+    network_stop.send_replace(true);
+    if let Some(task) = network {
+        if let Err(error) = task.await {
+            eprintln!("device network cleanup: {error}");
+        }
+    }
     heartbeat_stop.send_replace(true);
     if let Some(task) = heartbeat {
         match task.await {

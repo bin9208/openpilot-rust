@@ -1067,9 +1067,44 @@ The request decoder has the tested expanded charset/compression coverage above;
 broader original codec aliases and provider error diagnostics remain explicit
 limits. Multipart extended names use the existing encoding_rs provider for
 supported labels.
-The remaining active families include system actions,
-network/calibration/time-sync services, tool
-jobs, terminal/support terminal, Carrot Navi's web bridge, YouTube Live and
+The system family now implements device network caching, calibration status,
+regulatory content, reboot/poweroff/recalibration/default actions and browser
+time synchronization. Fresh action Params instances preserve the source's
+constructor boundary; network probes execute outside the shared Params lock.
+Runtime startup enables the existing 15-second network refresh worker.
+
+Owned-source comparisons in `.omo/evidence/225-system/` cover 21 network/time
+and selection cases and 22 action/calibration/default cases using the actual
+original Cython Params binding. Two additional constructor controls confirm
+namespace recreation after removal and the source's exact 500 response when
+the Params root cannot be opened. `application-v2` adds 54 actual HTTP response
+pairs across ordinary, engaged and unavailable-Params modes, including HEAD,
+method rejection and request charset handling. A held network command leaves
+cached HTTP responsive; the held-stop control observes both processes waiting
+for the owned child and exiting cleanly after about three seconds. Every
+captured child is reaped. The first App attempt failed in the comparison helper
+because it looked up mixed-case header names in a lowercase response map; the
+corrected comparison passed in 5.263 seconds without a production-code change.
+These fixtures own Params, settings, regulatory files, zoneinfo/localtime and
+command recipients; no host clock, real network configuration or device action
+is changed.
+
+The frozen System-only snapshot was built in the independent integration
+worktree without unfinished Navi changes. Its selected build, strict Clippy
+and fmt checks passed; the resulting `carrot_system` SHA256 is
+`eb68b58d4251515e3bd102821e6578771a37d20b5c49049fa36be469af37f14d`.
+That binary also passed a small live connection check for cached HTTP during a
+held probe, malformed time-request rejection, an owned reboot Param write and
+child cleanup. Integration build receipts are in that worktree's
+`.omo/evidence/225-integration/system-frozen/`; the connection result is in the
+primary checkout's `.omo/evidence/225-system/integration-smoke/`.
+Seven Python helpers pass Ruff, formatting and syntax checks. An optional
+AnyIO-preference audit still flags the unchanged-source asyncio AppRunner
+fixture; preserving that source cancellation behavior is intentional, and the
+optional audit is not reported as passing.
+
+The remaining active families include composed settings snapshots, QR provider
+status/repair, tool jobs, terminal/support terminal, Carrot Navi's web bridge, YouTube Live and
 vision diagnostics/test services. The web bridge is distinct from the converted
 Carrot Navi daemon. `/stream` also depends on the separately inventoried WebRTC
 conversion. Each family's existing guards, background tasks and cleanup belong

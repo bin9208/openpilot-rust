@@ -18,6 +18,9 @@ pub(crate) async fn dispatch(
     if path == "/ws/web_sound" {
         return Ok(crate::web_sound_http::handle(request, &app, &sound));
     }
+    if crate::system::http::matches(&path) {
+        return Ok(crate::system::http::handle(request, app, path).await);
+    }
     if crate::live::http::matches(&path) {
         return Ok(
             crate::live::http::handle(request, app.live.clone(), app.live_error.as_deref()).await,
