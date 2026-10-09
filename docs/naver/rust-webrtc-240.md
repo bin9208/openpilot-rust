@@ -4,7 +4,7 @@
 `webrtcd` and Carrot Vision WebRTC runtimes within the full conversion in
 [#1](https://github.com/bin9208/openpilot-rust/issues/1). The current host
 checkpoint covers real HTTP, native Cereal/msgq, ICE/DTLS/SRTP and ordered SCTP.
-Production multi-camera interaction, startup composition, target packaging
+Startup composition, target packaging
 and exact-head CI are still pending. This is
 intermediate engineering evidence; no device or performance claim is made.
 
@@ -200,7 +200,7 @@ close before caller cleanup; native exits zero. The provider's existing
 `base_addr()` routing works, so no additional mapping or SDK change is needed.
 These are loopback controls, not a claim about external STUN or a deployed LAN.
 
-Remaining work includes production multi-camera ordering, startup composition, target dependency
+Remaining work includes startup composition, target dependency
 packaging and exact-SHA CI. No C3X, NAS or vehicle handoff has
 been performed.
 
@@ -285,3 +285,32 @@ representation. Carrot compound device precedence and surrogate normalization
 replace the original owner. Peer/channel states are captured before caller
 cleanup. The source HTTP subset leaves Params binding inactive; actual Cython
 Carrot 0→1→0 parity is covered by the earlier separate ownership control.
+
+## Production multi-camera and FIR routing
+
+`production-multicamera-first-invocation.json` runs the actual standard and
+Carrot HTTP services with simultaneous driver/road/wideRoad queues. Distinct
+encoded bitstreams and rotating publication order preserve each camera's MID,
+payload hashes, four marker timestamps and three decoded RGBA frames. Track
+order matches the requested driver/road/wideRoad order. Carrot road relative
+timestamps are 0/4500/18000/45000 while the other clocks remain sequential;
+exactly four road CVF1 tuples match the received road RTP timestamps. Source
+and native peers/channels close before caller cleanup.
+
+[#261](https://github.com/bin9208/openpilot-rust/issues/261) records FIR and
+compound RTCP routing mismatches. aiortc selects FIR by media_ssrc and considers
+every packet in a compound datagram. Native formerly used FIR entry SSRCs and
+gated the vector on its first packet. A default-false source-mode endpoint flag
+now selects the first routable SSRC across that vector, uses FIR media_ssrc and
+delivers the vector once. Project sender guards still select each recipient;
+ordinary provider routing retains its prior behavior.
+
+`fir-routing-red-invocation.json` and `fir-compound-wire-red-invocation.json`
+retain the real encrypted feedback/keyframe failures. The native-only
+`fir-routing-green-invocation.json` reuses both captured source subsets and
+matches all five observations: matching FIR, zero media SSRC, mismatched entry,
+empty RR before FIR and the reversed compound order. Build and strict native
+Clippy pass. The multi-camera proof uses c882a01e…; the FIR correction uses
+52e69a11…. These are distinct binaries. The prior multi-camera media/clock
+observations are reused because they contain no FIR or an unroutable leading
+RTCP packet. Native/aarch64 CI and AGNOS dependency packaging are separate gates.

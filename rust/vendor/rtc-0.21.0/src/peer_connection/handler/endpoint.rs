@@ -24,6 +24,7 @@ use std::time::Instant;
 
 #[derive(Default)]
 pub(crate) struct EndpointHandlerContext {
+    pub(crate) source_rtcp_routing: bool,
     pub(crate) read_outs: VecDeque<TaggedRTCMessageInternal>,
     pub(crate) write_outs: VecDeque<TaggedRTCMessageInternal>,
     pub(crate) event_outs: VecDeque<TaggedRTCEventInternal>,
@@ -207,7 +208,22 @@ impl<'a> EndpointHandler<'a> {
     ) -> Result<()> {
         debug!("handle_rtcp_message {}", transport_context.peer_addr);
 
-        let rtcp_ssrc = if let Some(rtcp_packet) = rtcp_packets.first() {
+        let rtcp_ssrc = if self.ctx.source_rtcp_routing {
+            rtcp_packets.iter().find_map(|packet| {
+                if let Some(fir) = packet
+                    .as_any()
+                    .downcast_ref::<rtcp::payload_feedbacks::full_intra_request::FullIntraRequest>(
+                ) {
+                    self.find_track_id(fir.media_ssrc, None)
+                        .map(|_| fir.media_ssrc)
+                } else {
+                    packet
+                        .destination_ssrc()
+                        .into_iter()
+                        .find(|&ssrc| self.find_track_id(ssrc, None).is_some())
+                }
+            })
+        } else if let Some(rtcp_packet) = rtcp_packets.first() {
             rtcp_packet.destination_ssrc().first().cloned()
         } else {
             None

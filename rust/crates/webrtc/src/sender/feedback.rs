@@ -38,7 +38,7 @@ impl Sender {
                 || packet
                     .as_any()
                     .downcast_ref::<FullIntraRequest>()
-                    .is_some_and(|fir| fir.fir.iter().any(|entry| entry.ssrc == self.ssrc))
+                    .is_some_and(|fir| fir.media_ssrc == self.ssrc)
             {
                 self.track.keyframe();
             }

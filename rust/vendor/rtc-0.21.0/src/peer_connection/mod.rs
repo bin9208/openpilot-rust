@@ -1381,6 +1381,9 @@ impl RTCPeerConnection {
         }
         self.set_remote_description_inner(now, remote_description, Some(transport))?;
         self.ice_transport_mut().agent.enable_source_checks();
+        self.pipeline_context
+            .endpoint_handler_context
+            .source_rtcp_routing = true;
         Ok(())
     }
 
