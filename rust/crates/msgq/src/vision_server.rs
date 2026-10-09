@@ -17,9 +17,18 @@ use std::{
     thread::JoinHandle,
 };
 
+#[cfg(feature = "webcam-inactive-stream")]
+mod inactive;
+#[cfg(feature = "webcam-inactive-stream")]
+mod unaligned;
+#[cfg(feature = "webcam-inactive-stream")]
+pub use unaligned::UnalignedWebcamImage;
+
 struct Stream {
     publisher: Queue,
     buffers: Vec<Rc<Buffer>>,
+    #[cfg(feature = "webcam-inactive-stream")]
+    webcam_files: Option<inactive::FileStorage>,
 }
 
 struct Listener {
@@ -179,7 +188,12 @@ impl VisionServer {
                 buffer: Rc::clone(buffer),
             })
             .collect();
-        state.streams[stream_index] = Some(Stream { publisher, buffers });
+        state.streams[stream_index] = Some(Stream {
+            publisher,
+            buffers,
+            #[cfg(feature = "webcam-inactive-stream")]
+            webcam_files: None,
+        });
         Ok(images)
     }
 
@@ -208,6 +222,10 @@ impl VisionServer {
                     .push(buffer.fd.as_fd().try_clone_to_owned().map_err(|error| {
                         Error::Io("duplicate VisionIPC listener descriptor", error)
                     })?);
+            }
+            #[cfg(feature = "webcam-inactive-stream")]
+            if let Some(files) = &stream.webcam_files {
+                files.transfer(&mut transfer, state.server_id)?;
             }
             *target = Some(transfer);
         }

@@ -9,6 +9,28 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 
 class RustIsolationTests(unittest.TestCase):
+    def test_webcam_requires_two_architectures_and_real_capture_ipc(self):
+        workflow = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
+        job = workflow['jobs']['webcam-runtime']
+        self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        self.assertNotIn('if', job)
+        self.assertEqual(job['env']['CARGO_BUILD_JOBS'], '2')
+        self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
+        self.assertEqual(job['env']['CARGO_PROFILE_DEV_DEBUG'], '0')
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        for required in ('webcam_source_requirements.txt', 'build_xiaoge_opencv.py --prepare-only',
+                         'build_webcam_opencv.py', 'build_visionipc_python.py', 'libswscale-dev=7:6.1.1-*',
+                         'pkg-config --modversion libswscale', 'openpilot-webcam --features native',
+                         'webcam_camera_compare.py', 'webcam_worker_compare.py', 'odd-height unaligned-even',
+                         'webcam_cli_compare.py', 'webcam_capture_errors.py', 'webcam_capture_fault.cc'):
+            self.assertIn(required, commands)
+        for step in job['steps']:
+            if 'python -P rust/tools/webcam_' in step.get('run', ''):
+                self.assertNotIn('if', step)
+                self.assertNotIn('continue-on-error', step)
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(artifacts[0]['if'], 'always()')
     def test_athena_requires_complete_native_runtime_and_codec_checks(self):
         workflow = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = workflow['jobs']['athena-runtime']
@@ -284,7 +306,7 @@ class RustIsolationTests(unittest.TestCase):
             'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
             'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts', 'joystickd-runtime',
-            'planner-runtime', 'planner-memory',
+            'planner-runtime', 'planner-memory', 'webcam-runtime',
             'card-runtime', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime', 'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime', 'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime',
         })
         validation = next(step for step in gate['steps'] if 'MEMORY' in step.get('env', {}))
@@ -318,6 +340,7 @@ class RustIsolationTests(unittest.TestCase):
                                             'SELFDRIVE': '${{ needs.selfdrive-runtime.result }}',
                                             'PANDA': '${{ needs.panda-runtime.result }}',
                                             'CARROT_MAN': '${{ needs.carrot-man-runtime.result }}',
+                                            'WEBCAM': '${{ needs.webcam-runtime.result }}',
                                             'CAMERA': '${{ needs.camera-runtime.result }}',
                                             'ENCODER': '${{ needs.encoder-runtime.result }}',
                                             'XIAOGE': '${{ needs.xiaoge-runtime.result }}',

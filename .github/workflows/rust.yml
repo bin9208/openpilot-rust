@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webcam-runtime]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -41,6 +41,7 @@ jobs:
           UPLOAD_TIMEOUTS: ${{ needs.web-upload-timeouts.result }}
           JOYSTICKD: ${{ needs.joystickd-runtime.result }}
           CARROT_MAN: ${{ needs.carrot-man-runtime.result }}
+          WEBCAM: ${{ needs.webcam-runtime.result }}
           PLANNER: ${{ needs.planner-runtime.result }}
           PLANNER_MEMORY: ${{ needs.planner-memory.result }}
           CARD: ${{ needs.card-runtime.result }}
@@ -78,6 +79,7 @@ jobs:
           test "$UPLOAD_TIMEOUTS" = success
           test "$JOYSTICKD" = success
           test "$CARROT_MAN" = success
+          test "$WEBCAM" = success
           test "$PLANNER" = success
           test "$PLANNER_MEMORY" = success
           test "$CARD" = success
@@ -95,6 +97,93 @@ jobs:
           test "$XIAOGE" = success
           test "$XIAOGE_MEMORY" = success
           test "$UI_RUNTIME" = success
+  webcam-runtime:
+    name: rust webcam source runtime (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      LIBCLANG_PATH: /usr/lib/llvm-18/lib
+      CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
+      PYTHONPATH: ${{ github.workspace }}/rust/tools:${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Install exact source closure and native capture providers
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          sudo apt-get update
+          sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install -r rust/tools/webcam_source_requirements.txt
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+          mkdir -p "$RUNNER_TEMP/webcam"
+          git rev-parse HEAD > "$RUNNER_TEMP/webcam/SOURCE_COMMIT"
+          uname -m > "$RUNNER_TEMP/webcam/machine.txt"
+          python -m pip freeze > "$RUNNER_TEMP/webcam/python-packages.txt"
+          dpkg-query -W libavcodec-dev libavformat-dev libavutil-dev libswscale-dev > "$RUNNER_TEMP/webcam/native-packages.txt"
+          test "$(pkg-config --modversion libavcodec)" = 60.31.102
+          test "$(pkg-config --modversion libswscale)" = 7.5.100
+      - name: Build pinned hardened videoio and unchanged source IPC bindings
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          python rust/tools/build_xiaoge_opencv.py --prepare-only --output "$RUNNER_TEMP/webcam-opencv-source"
+          python rust/tools/build_webcam_opencv.py --source "$RUNNER_TEMP/webcam-opencv-source/opencv-fe38fc608f6acb8b68953438a62305d8318f4fcd" --output "$RUNNER_TEMP/webcam/provider" --growth-mib 4096
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/webcam/binding"
+          printf 'OPENPILOT_WEBCAM_OPENCV_ROOT=%s/webcam/provider\nLD_LIBRARY_PATH=%s/webcam/provider/install/lib\nPYTHONPATH=%s/webcam/binding:%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Build native daemon and check all webcam targets
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-webcam --features native --bins --examples --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-webcam --features native --lib --locked
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-webcam --features native --all-targets --locked -- -D warnings
+          cc -shared -fPIC -std=c11 -Wall -Wextra -Werror -O2 rust/tools/webcam_owned_open.c -ldl -o "$RUNNER_TEMP/webcam/owned-open.so"
+          c++ -shared -fPIC -std=c++17 -Wall -Wextra -Werror -O2 -I"$OPENPILOT_WEBCAM_OPENCV_ROOT/install/include/opencv4" rust/tools/webcam_capture_fault.cc -ldl -o "$RUNNER_TEMP/webcam/capture-fault.so"
+          file rust/target/debug/openpilot-webcam > "$RUNNER_TEMP/webcam/elf.txt"
+          sha256sum rust/target/debug/openpilot-webcam rust/target/debug/examples/webcam_trace rust/target/debug/examples/webcam_workers > "$RUNNER_TEMP/webcam/SHA256SUMS"
+      - name: Compare actual pixels, independent workers, IPC and Linux entrypoints
+        run: |
+          python -P rust/tools/webcam_camera_compare.py "$PWD/rust/target/debug/examples/webcam_trace" "$RUNNER_TEMP/webcam/pixels" --reserve-mib 512
+          python -P rust/tools/webcam_worker_compare.py "$RUNNER_TEMP/webcam/source-workers" --cases unequal-eof odd-worker unavailable-worker odd-height unaligned-even --reserve-mib 512
+          python -P rust/tools/webcam_worker_compare.py "$RUNNER_TEMP/webcam/native-workers" --native "$PWD/rust/target/debug/examples/webcam_workers" --source "$RUNNER_TEMP/webcam/source-workers" --cases unequal-eof odd-worker unavailable-worker odd-height unaligned-even --reserve-mib 512
+          python -P rust/tools/webcam_cli_compare.py "$RUNNER_TEMP/webcam/linux-cli" --native "$PWD/rust/target/debug/openpilot-webcam" --shim "$RUNNER_TEMP/webcam/owned-open.so" --reserve-mib 512
+          python -P rust/tools/webcam_capture_errors.py "$RUNNER_TEMP/webcam/errors" --trace "$PWD/rust/target/debug/examples/webcam_trace" --workers "$PWD/rust/target/debug/examples/webcam_workers" --fault-shim "$RUNNER_TEMP/webcam/capture-fault.so" --source "$RUNNER_TEMP/webcam/source-workers/unequal-eof" --reserve-mib 512
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: rust-webcam-${{ matrix.runner }}-evidence
+          path: |
+            ${{ runner.temp }}/webcam/**/result.json
+            ${{ runner.temp }}/webcam/**/*invocation.json
+            ${{ runner.temp }}/webcam/**/*.log
+            ${{ runner.temp }}/webcam/**/*.stdout
+            ${{ runner.temp }}/webcam/**/*.stderr
+            ${{ runner.temp }}/webcam/**/*.nv12
+            ${{ runner.temp }}/webcam/**/*.bin
+            ${{ runner.temp }}/webcam/*.txt
+            ${{ runner.temp }}/webcam/SOURCE_COMMIT
+            ${{ runner.temp }}/webcam/SHA256SUMS
+            ${{ runner.temp }}/webcam/provider/receipt.json
+            ${{ runner.temp }}/webcam/provider/native-libraries.sha256
+            ${{ runner.temp }}/webcam/provider/source-files.json
+            ${{ runner.temp }}/webcam/provider/licenses/
+            ${{ runner.temp }}/webcam/provider/install/lib/
+            ${{ runner.temp }}/webcam-opencv-source/source.json
+            ${{ runner.temp }}/webcam-opencv-source/hardening.json
+            rust/target/debug/openpilot-webcam
   planner-runtime:
     name: rust planner source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
