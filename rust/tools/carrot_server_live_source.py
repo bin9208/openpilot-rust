@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import socket
 import sys
+import time
 import traceback
 from types import SimpleNamespace
 
@@ -74,6 +75,29 @@ async def main() -> None:
   cleanup_scope = {'web': web, 'asyncio': sys.modules['asyncio'], 'traceback': traceback}
   exec(compile(ast.Module(body=[cleanup_node], type_ignores=[]), str(app_path), 'exec'), cleanup_scope)
   app.on_cleanup.append(cleanup_scope['on_cleanup'])
+  if config.get('network_program'):
+    from openpilot.selfdrive.carrot.server.services.device_info import refresh_device_network
+    system_path = Path('openpilot/selfdrive/carrot/server/features/system.py')
+    context = next(node for node in ast.parse(system_path.read_text()).body if isinstance(node, ast.AsyncFunctionDef) and node.name == 'device_network_context')
+    context_scope = {'web': web, 'asyncio': sys.modules['asyncio'], 'refresh_device_network': refresh_device_network, 'DEVICE_NETWORK_REFRESH_INTERVAL_SEC': 15.0}
+    exec(compile(ast.Module(body=[context], type_ignores=[]), str(system_path), 'exec'), context_scope)
+    app.cleanup_ctx.append(context_scope['device_network_context'])
+    save(output / 'network-source-proof.json', {'device_network_context': hashlib.sha256(ast.get_source_segment(system_path.read_text(), context).encode()).hexdigest(), 'device_info': hashlib.sha256(Path('openpilot/selfdrive/carrot/server/services/device_info.py').read_bytes()).hexdigest()})
+  if config.get('idle_trim'):
+    trim_nodes = [node for node in ast.parse(app_text).body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in {'_do_gc_and_trim', '_malloc_trim_loop'}]
+    trim_scope = {'web': web, 'asyncio': sys.modules['asyncio']}
+    exec(compile(ast.Module(body=trim_nodes, type_ignores=[]), str(app_path), 'exec'), trim_scope)
+    original_trim = trim_scope['_do_gc_and_trim']
+
+    def observe_trim() -> None:
+      original_trim()
+      with (output / 'trim-calls.jsonl').open('a') as receipt:
+        receipt.write(json.dumps({'time': time.monotonic(), 'real_source_gc_trim': True}) + '\n')
+
+    trim_scope['_do_gc_and_trim'] = observe_trim
+    app['params'] = extension.Params(os.environ['PARAMS_ROOT'])
+    app['malloc_trim_task'] = sys.modules['asyncio'].create_task(trim_scope['_malloc_trim_loop'](app))
+    save(output / 'trim-source-proof.json', {node.name: hashlib.sha256(ast.get_source_segment(app_text, node).encode()).hexdigest() for node in trim_nodes})
 
   async def engaged(request: web.Request) -> web.Response:
     return web.json_response({'engaged': scope['is_drive_engaged'](request)})
@@ -102,6 +126,8 @@ async def main() -> None:
         print(json.dumps({'stopping': True, 'engaged': scope['is_drive_engaged'](SimpleNamespace(app=app))}), flush=True)
     finally:
       await runner.cleanup()
+      if config.get('network_program'):
+        print(json.dumps({'serve_returned': True}), flush=True)
 
 
 if __name__ == '__main__':

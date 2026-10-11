@@ -38,6 +38,7 @@ pub(super) struct Spec {
     hello: String,
 }
 pub(super) enum Command {
+    RawClients(oneshot::Sender<usize>),
     Poll {
         force: bool,
         reply: oneshot::Sender<Result<Value, Error>>,
@@ -129,6 +130,16 @@ impl Service {
         result
             .await
             .map_err(|_| Error::Source("realtime broker unavailable".into()))?
+    }
+    pub async fn raw_clients(&self) -> Result<usize, Error> {
+        let (reply, result) = oneshot::channel();
+        self.commands
+            .send(Command::RawClients(reply))
+            .await
+            .map_err(|_| Error::Source("realtime raw hub unavailable".into()))?;
+        result
+            .await
+            .map_err(|_| Error::Source("realtime raw hub unavailable".into()))
     }
     async fn launch(&self, upgrade: hyper::upgrade::OnUpgrade, spec: Spec) -> Result<(), Error> {
         if self.quiescing.load(Ordering::SeqCst) {

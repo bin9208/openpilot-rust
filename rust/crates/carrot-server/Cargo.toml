@@ -6,6 +6,10 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
+[features]
+default = ["allocator-skip-miri"]
+allocator-skip-miri = []
+
 [lints.rust]
 unsafe_code = "deny"
 

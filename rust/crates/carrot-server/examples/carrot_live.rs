@@ -70,6 +70,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         owned.heartbeat_params = None;
         owned.auto_update = None;
         owned.popular_values = openpilot_carrot_server::popular_values::Service::new(false);
+        if input.get("network_program").truth() {
+            owned.network_refresh = true;
+            owned.system = Arc::new(openpilot_carrot_server::system::Service {
+                network: openpilot_carrot_server::system::network::Network::new(PathBuf::from(
+                    input.get("network_program").string()?,
+                )),
+                time_sync: openpilot_carrot_server::system::time_sync::TimeSync::default(),
+                regulatory: owned.config.shared_assets.join("offroad/fcc.html"),
+            });
+        }
         if input.get("unavailable").truth() {
             owned.live = None;
             owned.live_error = None;
@@ -118,6 +128,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         })
         .await?;
+        if input.get("network_program").truth() {
+            println!("{{\"serve_returned\":true}}");
+            io::stdout().flush()?;
+        }
         input_worker.join().map_err(|_| "fixture input panicked")?;
         return Ok(());
     }

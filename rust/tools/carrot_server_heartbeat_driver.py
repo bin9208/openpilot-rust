@@ -13,7 +13,7 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-BINDING = ROOT / '.analysis/scratch/2026-10-01-rust-ui-application/worktree/.omo/evidence/plannerd-review-197/ci-cython-params-v2/params_pyx.cpython-312-x86_64-linux-gnu.so'
+BINDING = Path(os.environ.get('ORIGINAL_PARAMS_BINDING', str(ROOT / '.analysis/scratch/2026-10-01-rust-ui-application/worktree/.omo/evidence/plannerd-review-197/ci-cython-params-v2/params_pyx.cpython-312-x86_64-linux-gnu.so')))
 
 
 @dataclass(frozen=True, slots=True)

@@ -38,6 +38,7 @@ pub(super) async fn run(
         tokio::select! {
             changed=stop.changed()=>if changed.is_err() || *stop.borrow()==Shutdown::Force {break;},
             command=commands.recv()=>match command {
+                Some(Command::RawClients(reply))=>{let _sent=reply.send(raw.borrow().clients.len());}
                 Some(Command::Poll{force,reply})=>{
                     let response=match &mut broker {Ok(broker)=>broker.response(force),Err(error)=>Ok(Value::object([("ok",Value::Bool(false)),("error",Value::text(&error.to_string()))]))};
                     match reply.send(response) {Ok(())|Err(_)=>{}}

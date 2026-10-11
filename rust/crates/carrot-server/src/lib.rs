@@ -22,6 +22,7 @@ mod http_route;
 mod http_routes;
 mod http_server;
 mod http_shutdown;
+mod idle_trim;
 pub mod intro;
 mod json_fields;
 pub mod live;

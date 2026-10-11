@@ -14,6 +14,8 @@ pub(crate) struct Background {
     popular_upload: Option<JoinHandle<()>>,
     warm: JoinHandle<()>,
     precompress: JoinHandle<Result<(), Error>>,
+    trim_stop: watch::Sender<bool>,
+    trim: JoinHandle<()>,
 }
 
 impl Background {
@@ -34,6 +36,8 @@ impl Background {
             tokio::task::spawn_local(async move { service.run(auto_stopped).await })
         });
         let precompress = app.static_web.start_precompress();
+        let (trim_stop, trim_stopped) = watch::channel(false);
+        let trim = tokio::spawn(crate::idle_trim::run(Arc::clone(app), trim_stopped));
         let (network_stop, network_stopped) = watch::channel(false);
         let network = app.network_refresh.then(|| {
             let target = Arc::clone(app);
@@ -58,10 +62,16 @@ impl Background {
             popular_upload,
             warm,
             precompress,
+            trim_stop,
+            trim,
         }
     }
 
     pub async fn finish(self, app: &Application) -> Result<(), Error> {
+        self.trim_stop.send_replace(true);
+        if let Err(error) = self.trim.await {
+            eprintln!("Idle trim cleanup: {error}");
+        }
         self.warm.abort();
         self.network_stop.send_replace(true);
         if let Some(task) = self.network {

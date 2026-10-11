@@ -1,5 +1,26 @@
 # Carrot Web runtime conversion: issue 225
 
+The 2026-10-12 Application continuation adds source-compatible 30-second idle
+allocator trim: raw relay clients and CarrotVisionActive suppress it, while a
+camera-only connection permits it. Actual source/native 30/60/90-second controls
+and the real GNU allocator call passed; Miri cannot execute that FFI, so its
+explicit fallback and Rust/std ASAN control are recorded separately. Ten routes,
+raw WS, real login PTY output, native snapshot identity and SIGTERM cleanup were
+observed through the normal native executable in owned filesystem/network
+namespaces. The existing supervisor reaps graceful SIGINT exit0 and escalates
+at five seconds during a progressing owned heartbeat body. Source/native
+background cancellation returns before its blocking thread ends: held nmcli
+children finish/reap at about five seconds; silent heartbeat sockets finish at
+about3.5 seconds and progressing bodies at about8 seconds. The latter run
+outlives the socket interval; source inspection shows no global deadline. It
+does not establish an infinite hang or change source cancellation policy. These observations differ from the
+explicit support-cleanup adaptation in issue268. Exact scenarios, invocation,
+ELF hashes,22 tests and strict checks are in local
+`carrot-server-225-resume/support-terminal/resume-20261011/application.md`.
+Required exact-SHA host/ARM CI, standalone Recovery263 and normal installed
+launcher/watchdog/dependency composition in issue269 remain separate gates;
+this is no full-runtime/device handoff.
+
 This is an incomplete implementation stage of the full runtime conversion in
 [issue 1](https://github.com/bin9208/openpilot-rust/issues/1), tracked in
 [issue 225](https://github.com/bin9208/openpilot-rust/issues/225). The Rust server

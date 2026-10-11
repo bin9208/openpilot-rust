@@ -90,6 +90,8 @@ impl Running {
             .ok_or_else(|| Error::Source("owned App already shared".into()))?;
         application.heartbeat = input.service;
         application.git_status = None;
+        application.auto_update = None;
+        application.network_refresh = false;
         application.popular_values = openpilot_carrot_server::popular_values::Service::new(false);
         let active = application.heartbeat_params.is_some();
         let (stop, stopped) = oneshot::channel();
