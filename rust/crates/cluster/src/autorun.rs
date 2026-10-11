@@ -1,6 +1,15 @@
 //! `cluster_autorun.py` encoder order, live arguments and HUD gates.
 use serde::{Deserialize, Serialize};
 
+pub mod controller;
+pub mod entry;
+pub mod events;
+pub mod gpu;
+pub mod native;
+pub mod params;
+pub mod usb;
+mod wait;
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Encoder {

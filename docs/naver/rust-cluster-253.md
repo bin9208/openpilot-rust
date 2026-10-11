@@ -245,3 +245,72 @@ codec/GLES lifetime, nondefault inputs, complete entrypoint, host/ARM CI and AGN
 packaging remain open. No C3X, NAS, physical USB display or vehicle is contacted.
 Full normal startup and existing log upload must be composed before the user's
 first device comparison.
+
+## Autorun controller and startup dependency composition
+
+The native autorun owner now retains its source persistent Params owner, reads
+the existing HUD/encoder/orientation/debug/onroad settings, and distinguishes
+automatic H264 initialization fallback from ordinary runtime failures. Malformed
+registered integers follow the actual Cython `std::stoi` fatal boundary: both
+processes abort with SIGABRT, while key I/O failure remains an empty value. Eleven
+actual-file/source controls pass, including decimal prefixes, missing/directory
+keys, completed initialization and namespace removal. Six real-clock startup
+controls retain the original 3-second discovery, 60-second startup timeout,
+10-second stabilization and 100-ms polls; their unchanged full timeout receipts
+are reused rather than rerun for the dependency import.
+
+The reviewed GPU source closure is imported from
+`f8cf3a23bfadb0f0e3ee5f07187d282869e67768`, with the shared home resolver repair
+from `e8ff61aeb5dc2952ca515974851fc5ab2e2c2c52`. Cargo dependencies/module exports
+are unioned; the six cluster metadata additions and metadata fixture remain
+unchanged. The UI native initializer also calls the shared `Paths::for_runtime`
+resolver. The source cache location is independent of Params prefix; absent HOME
+uses the passwd fallback, empty HOME uses `/`, and an empty model override falls
+back normally. The cluster probe preserves presence-before-readiness ordering.
+Five composed cases use owned USB sysfs files, actual original model state and
+chunk readiness, and the current admitted native package: active float-speed
+SuperSpeed, previous fallback, USB2 rejection, missing local provider and
+precompiled-only blocking previous. They match actual Params startup-wait
+decisions. The reused 406165-byte JIT model has a synthetic ONNX identity; this is
+not trained-model or physical GPU acceptance.
+
+Ten original/native controller comparisons match exact argv, state and call
+order through controlled entrypoint/scheduler/discovery recipients. They cover
+mode stop, PC window fallback, board/PC encoder fallback, forced H264 and unplug
+five-second retries, output-disabled dim requests, owned-datagram connection,
+waiting cancellation and orientation recheck. The source uses the actual Cython
+Params reader/writer; retry clocks and sockets are real. Error messages and
+tracebacks remain raw captures, not a claim of identical error payloads. The
+native platform separately composes the existing core-7 scheduler, shared bus
+lock, native scan/dim, kernel netlink owner and readiness probe. Render-thread and
+encoder-child scheduling still belongs to their pending runtime owners.
+
+Seven event controls compare the actual kernel group-1 socket factory and owned
+nonblocking datagrams, including queue draining, zero timeout, absent events and
+8192-byte truncation. Five dimming cases compose the original dimming helper,
+PyUSB/native recipients, actual Params and wall-clock brackets: success, sync
+retry, missing device, metadata failure and missing vendor directory. USB payloads
+match after separately bracketed timestamps are removed; operation order and
+final connected-state files match, with clean recipient teardown.
+
+The vendor `cluster/.vendor/turing-smart-screen-python-main/library` directory
+remains the original availability gate for native scanning/dimming. Those native
+operations execute no vendor Python and read no files inside that directory.
+Until the packaging policy changes with equivalent evidence, issue #269 must
+retain that directory-presence condition alongside the actual native shared
+libraries and model assets. Process locale initialization, renderer/codec
+entrypoint, live input owners and complete startup/upload composition remain
+pending; the controlled entrypoint does not render frames.
+
+Primary evidence is `.omo/evidence/253-cluster/`: `autorun-params-final/result.json`,
+`gpu-startup-final/result.json`, `usb-events-source/result.json`,
+`autorun-controller-corrected/result.json`, `autorun-readiness-source/result.json`,
+`autorun-dim-source/result.json`, their corresponding invocation receipts,
+`autorun-final-tests.json`, `autorun-import-final-clippy.json` and
+`autorun-startup-freeze.json`. The earlier observed controller, readiness and
+dimming ELFs are respectively `7bac051725f32f4f5c6966df451128c32c18b0b889134da92f821e3938bfe9c8`,
+`8dd2912fbfbca413a078ef3f9bc5198f4242d7d14c1b3008012bb60944e45537`
+and `29d9e2e2444e696cbde90d1de80492cccb542a13d4f620f35dea84d53c9f3f9f`;
+the freeze records final source/build hashes without retaining duplicate ELFs.
+Nine owned-file/socket package tests pass. No physical device or production
+selection is changed, and no complete-runtime or CPU claim is made.

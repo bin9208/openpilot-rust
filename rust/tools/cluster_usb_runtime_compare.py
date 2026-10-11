@@ -30,6 +30,8 @@ def original(root: Path, binding: Path, oracle: Path, library: Path, case_file: 
   case = json.loads(case_file.read_text())
   module, logging = load(binding, 'ipc://' + str(case_file.parent / 'source-log'), case_file.parent / 'logs')
   display_module = importlib.import_module('cluster_usb_display')
+  if case.get('dim'):
+    display_module.VENDOR_LIBRARY = Path(case['repository']) / 'openpilot/selfdrive/carrot/cluster/.vendor/turing-smart-screen-python-main/library'
   backend = usb.backend.libusb1.get_backend(find_library=lambda _: str(library))
   assert backend is not None
   display_module._LIBUSB_BACKEND = backend
@@ -61,7 +63,7 @@ def original(root: Path, binding: Path, oracle: Path, library: Path, case_file: 
   exec(compile(ast.Module(body=nodes, type_ignores=[]), str(vendor), 'exec'), vendor_module.__dict__)
   sys.modules[vendor_module.__name__] = vendor_module
   params = module.Params()
-  display = display_module.TuringUsbDisplay(display_fps=5 if case['active'] else 10)
+  display = None if case.get('dim') else display_module.TuringUsbDisplay(display_fps=5 if case['active'] else 10)
   devices = []
   original_find = usb.core.find
 
@@ -73,21 +75,32 @@ def original(root: Path, binding: Path, oracle: Path, library: Path, case_file: 
 
   usb.core.find = retained_find
   try:
-    display.open()
-    initial = params.get_bool('ClusterHudConnected')
-    try:
-      display.send_jpeg(bytes([1, 2, 3]))
-      jpeg = {'Ok': None}
-    except RuntimeError as error:
-      jpeg = {'Err': str(error)}
-    after_frame = params.get_bool('ClusterHudConnected')
-    size = None
-    if case['stream']:
-      size = display.start_h264_stream(0)
-      display.send_h264_chunk(bytes([0, 0, 1, 65, 12]), wait_for_ack=False, require_ack_response=False)
-      display.stop_h264_stream()
-    display.close()
-    result = {'initial': initial, 'jpeg': jpeg, 'after_frame': after_frame, 'chunk_size': size, 'closed': params.get_bool('ClusterHudConnected')}
+    if case.get('dim'):
+      import locale
+
+      path = root / 'openpilot/selfdrive/carrot/cluster_autorun.py'
+      tree = ast.parse(path.read_text())
+      names = {'_configure_autorun_locale', '_turn_off_supported_usb_device'}
+      nodes = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names]
+      namespace = {'locale': locale, 'os': os}
+      exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), 'exec'), namespace)
+      result = {'dim': namespace['_turn_off_supported_usb_device'](case['product'], 'output disabled'), 'closed': params.get_bool('ClusterHudConnected')}
+    else:
+      display.open()
+      initial = params.get_bool('ClusterHudConnected')
+      try:
+        display.send_jpeg(bytes([1, 2, 3]))
+        jpeg = {'Ok': None}
+      except RuntimeError as error:
+        jpeg = {'Err': str(error)}
+      after_frame = params.get_bool('ClusterHudConnected')
+      size = None
+      if case['stream']:
+        size = display.start_h264_stream(0)
+        display.send_h264_chunk(bytes([0, 0, 1, 65, 12]), wait_for_ack=False, require_ack_response=False)
+        display.stop_h264_stream()
+      display.close()
+      result = {'initial': initial, 'jpeg': jpeg, 'after_frame': after_frame, 'chunk_size': size, 'closed': params.get_bool('ClusterHudConnected')}
   finally:
     for device in devices:
       usb.util.dispose_resources(device)
@@ -187,8 +200,10 @@ def compare(root: Path, binding: Path, oracle: Path, library: Path, native: Path
     'pass': True,
     'rows': rows,
     'binary_sha256': hashlib.sha256(native.read_bytes()).hexdigest(),
-    'scope': ('actual original Cython and Rust Params plus real wall clocks drive owned USB ABI; '
-              + 'command timestamps separately bracketed, payloads exact after timestamp removal; no physical display/runtime proof'),
+    'scope': (
+      'actual original Cython and Rust Params plus real wall clocks drive owned USB ABI; '
+      + 'command timestamps separately bracketed, payloads exact after timestamp removal; no physical display/runtime proof'
+    ),
   }
   (output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
   print(json.dumps(result))

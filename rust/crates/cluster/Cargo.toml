@@ -14,6 +14,7 @@ zlib-rs = "=0.6.8"
 chrono = { version = "=0.4.45", default-features = false, features = ["clock"] }
 openpilot-params = { path = "../params" }
 openpilot-ui-application = { path = "../ui-application" }
+rustix = { version = "=1.1.5", features = ["net", "event"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "=1.0.151"
 thiserror = "2"
