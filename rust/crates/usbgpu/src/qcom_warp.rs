@@ -20,4 +20,26 @@ impl LocalWarp {
         }
         Ok(output.to_vec())
     }
+    pub fn prepare_split(
+        &mut self,
+        frames: [&[u8]; 2],
+        transforms: &[u8],
+    ) -> Result<Vec<u8>, Error> {
+        self.0.write_input("frame", frames[0])?;
+        self.0.write_input("big_frame", frames[1])?;
+        self.0.write_input(
+            "tfm",
+            transforms
+                .get(..36)
+                .ok_or(Error::Contract("local transform missing"))?,
+        )?;
+        self.0.write_input(
+            "big_tfm",
+            transforms
+                .get(36..72)
+                .ok_or(Error::Contract("local wide transform missing"))?,
+        )?;
+        self.0.run_entry("prepare")?;
+        Ok(self.0.read_output("warped")?.to_vec())
+    }
 }

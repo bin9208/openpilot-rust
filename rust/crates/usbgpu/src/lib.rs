@@ -52,6 +52,7 @@ pub mod usb3;
 
 pub mod custom_asm;
 
+pub mod local_artifact;
 pub mod model;
 pub mod model_delivery;
 pub mod model_graph;
@@ -101,6 +102,7 @@ pub mod runtime_bus;
 pub mod warp;
 pub mod worker;
 pub mod worker_artifact;
+pub mod worker_local;
 pub mod worker_native;
 
 pub mod gpu_memory;

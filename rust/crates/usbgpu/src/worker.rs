@@ -52,6 +52,37 @@ pub struct Info {
     pub frame_size: usize,
 }
 impl Info {
+    pub fn local(metadata: Metadata, camera: [u32; 2]) -> Result<Self, Error> {
+        let mut info = Self::new(metadata, camera)?;
+        let [width, height] = camera.map(|value| {
+            usize::try_from(value).map_err(|_| Error::Contract("local camera size overflow"))
+        });
+        let (width, height) = (width?, height?);
+        let stride = width.next_multiple_of(128);
+        let y_height = height.next_multiple_of(32);
+        let uv_height = (height / 2).next_multiple_of(16);
+        let planes = stride * y_height + stride * uv_height + 4096;
+        let full = (planes + (16 * 1024).max(8 * stride)).next_multiple_of(4096);
+        let full = (full + width.next_multiple_of(512) * 512).next_multiple_of(4096);
+        let start = info
+            .layout
+            .get("img")
+            .ok_or(Error::Contract("local image layout missing"))?
+            .offset;
+        for (index, name) in ["img", "big_img"].into_iter().enumerate() {
+            let view = info
+                .layout
+                .get_mut(name)
+                .ok_or(Error::Contract("local image layout missing"))?;
+            view.offset = start + index * full;
+            view.shape = vec![full];
+            info.input_shapes.insert(name.into(), vec![full]);
+        }
+        info.frame_size = full;
+        info.input_bytes = start + 2 * full;
+        info.size = info.input_bytes + info.output_count * 4;
+        Ok(info)
+    }
     pub fn new(metadata: Metadata, camera: [u32; 2]) -> Result<Self, Error> {
         if ![[1344, 760], [1928, 1208]].contains(&camera)
             || metadata.checkpoint.is_empty()
@@ -149,6 +180,10 @@ impl Info {
 }
 pub trait Runtime {
     fn run(&mut self, packed: &[u8], info: &Info, output: &mut [u8]) -> Result<(), Error>;
+    fn prepare(&mut self, packed: &[u8], info: &Info, output: &mut [u8]) -> Result<bool, Error> {
+        self.run(packed, info, output)?;
+        Ok(true)
+    }
 }
 pub fn watch_parent() -> bool {
     let parent = rustix::process::getppid();
@@ -181,9 +216,19 @@ pub fn serve(
     while control_in.read(&mut command)? != 0 {
         match command[0] {
             b'q' => break,
-            b'r' => {
+            b'r' | b'p' => {
                 file.read_exact_at(&mut packed, 0)?;
-                runtime.run(&packed, info, &mut output)?;
+                let publish = if command[0] == b'p' {
+                    runtime.prepare(&packed, info, &mut output)?
+                } else {
+                    runtime.run(&packed, info, &mut output)?;
+                    true
+                };
+                if !publish {
+                    control_out.write_all(b"0\n")?;
+                    control_out.flush()?;
+                    continue;
+                }
                 if output
                     .chunks_exact(4)
                     .any(|value| !f32::from_le_bytes(value.try_into().unwrap()).is_finite())

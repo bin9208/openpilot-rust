@@ -89,13 +89,25 @@ fn installed_attempt(
         config,
         model,
         Phase::Compiled,
-        "downloaded precompiled model",
+        if crate::local_artifact::is_local(path) {
+            "converted local run_policy model"
+        } else {
+            "downloaded precompiled model"
+        },
     )?;
-    writeln!(
-        std::io::stdout().lock(),
-        "Using precompiled eGPU model without SCons compilation: {}",
-        path.display()
-    )?;
+    if crate::local_artifact::is_local(path) {
+        writeln!(
+            std::io::stdout().lock(),
+            "Using converted native local eGPU model: {}",
+            path.display()
+        )?;
+    } else {
+        writeln!(
+            std::io::stdout().lock(),
+            "Using precompiled eGPU model without SCons compilation: {}",
+            path.display()
+        )?;
+    }
     Ok(None)
 }
 
@@ -131,6 +143,15 @@ pub fn prepare(config: &Config, cancelled: &AtomicBool) -> Result<bool, Error> {
             None
         }
     };
+    let installed = installed.or_else(|| {
+        if model.precompiled_only() {
+            return None;
+        }
+        let path = model::local_compiled_path(&config.paths, &model);
+        crate::local_artifact::Package::open(&path, &config.paths.assets, Some(&model.sha256))
+            .ok()
+            .map(|_| path)
+    });
     if let Some(path) = installed {
         let failed = match installed_attempt(config, &model, &path, cancelled) {
             Ok(None) => return Ok(true),
@@ -158,7 +179,7 @@ pub fn prepare(config: &Config, cancelled: &AtomicBool) -> Result<bool, Error> {
     let detail = if model.precompiled_only() {
         "precompiled model unavailable; using internal model"
     } else {
-        "native local run_policy companions/queue adapter unavailable; using internal model"
+        "converted native local run_policy package unavailable; using internal model"
     };
     write(config, &model, Phase::Error, detail)?;
     Ok(false)

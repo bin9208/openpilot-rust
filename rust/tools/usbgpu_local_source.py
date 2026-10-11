@@ -9,11 +9,12 @@ from tinygrad import Device, Tensor, TinyJit
 from model_export.amd import export_amd
 from model_export.original import driving
 from openpilot.selfdrive.modeld.helpers import dump_oob
-from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, POLICY_INPUTS, make_input_queues, make_run_policy, make_warp
+from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
+from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, POLICY_INPUTS, WARP_DEV, make_input_queues, make_run_policy, make_warp
 
 
-def owned_null_storage() -> None:
-  allocator = Device.default.allocator
+def owned_null_storage(device: str | None = None) -> None:
+  allocator = Device[device or Device.DEFAULT].allocator
   allocator._alloc = lambda size, _options: memoryview(bytearray(size))
   allocator._offset = lambda buffer, size, offset: buffer[offset : offset + size]
   allocator._copyin = lambda destination, source: destination.cast('B').__setitem__(slice(None), source.cast('B'))
@@ -30,11 +31,13 @@ def model_runner(inputs: dict[str, Tensor]) -> dict[str, Tensor]:
   return {'output': Tensor.cat(images, hidden).reshape(1, 8)}
 
 
-def run(destination: Path, *, capture: bool) -> None:
+def run(destination: Path, *, capture: bool, camera: tuple[int, int] = (1344, 760), export_graph: bool = True) -> None:
   if capture:
     owned_null_storage()
-  width, height, stride, y_height, uv_height = 1344, 760, 1408, 768, 384
-  frame_size = stride * (y_height + uv_height)
+    if WARP_DEV:
+      owned_null_storage(WARP_DEV)
+  width, height = camera
+  stride, y_height, uv_height, frame_size = get_nv12_info(width, height)
   metadata = {
     'model_checkpoint': 'owned-small-run-policy',
     'input_shapes': {
@@ -52,8 +55,8 @@ def run(destination: Path, *, capture: bool) -> None:
   image = np.arange(frame_size, dtype=np.uint32).astype(np.uint8)
   warp = TinyJit(make_warp(NV12Frame(width, height, stride, y_height, uv_height, frame_size), 4, 4, 4), prune=True)
   warp_inputs = {
-    'frame': Tensor(image.copy()).realize(),
-    'big_frame': Tensor((image + 1).astype(np.uint8)).realize(),
+    'frame': Tensor(image.copy(), device=WARP_DEV).realize(),
+    'big_frame': Tensor((image + 1).astype(np.uint8), device=WARP_DEV).realize(),
     'tfm': queues['tfm'],
     'big_tfm': queues['big_tfm'],
   }
@@ -68,8 +71,9 @@ def run(destination: Path, *, capture: bool) -> None:
     artifact = destination / 'small-driving.pkl'
     with artifact.open('wb') as source:
       dump_oob({(width, height): warp, 'run_policy': policy, 'metadata': metadata}, source)
-    original = driving(artifact, (width, height))
-    export_amd(original.pipeline, original.bindings, destination / 'bundle')
+    if export_graph:
+      original = driving(artifact, (width, height))
+      export_amd(original.pipeline, original.bindings, destination / 'bundle')
     return
   for name in ('img_q', 'big_img_q', 'feat_q', 'desire_q'):
     queues[name].assign(Tensor.zeros(queues[name].shape, dtype=queues[name].dtype)).realize()

@@ -23,22 +23,11 @@ pub struct Configuration {
 }
 impl Configuration {
     pub fn for_runtime(cancelled: Arc<AtomicBool>) -> Result<Self, Error> {
-        let cache = match std::env::var_os("CARROT_BIG_MODEL_DIR") {
-            Some(path) => PathBuf::from(path),
-            None if std::path::Path::new("/TICI").is_file() => {
-                PathBuf::from("/data/media/0/carrot/models")
-            }
-            None => PathBuf::from(
-                std::env::var_os("HOME").ok_or(Error::Contract("missing home directory"))?,
-            )
-            .join(".comma/models"),
-        };
         Ok(Self {
-            paths: Paths {
-                cache,
-                models: std::env::current_dir()?.join("openpilot/selfdrive/modeld/models"),
-                assets: std::env::current_exe()?.with_file_name("usbgpu-assets"),
-            },
+            paths: Paths::for_runtime(
+                &std::env::current_dir()?,
+                std::env::current_exe()?.with_file_name("usbgpu-assets"),
+            )?,
             devices: hardware::SYSFS.into(),
             worker: std::env::current_exe()?.with_file_name("openpilot-usbgpu-worker"),
             cancelled,
@@ -59,7 +48,7 @@ pub fn refresh(config: &Configuration, params: &Params) -> Result<(), Error> {
     }
     params.put_bool(
         "UsbGpuCompiled",
-        model::active_compiled_path(&config.paths).is_some(),
+        model::compiled_path(&config.paths).is_some(),
     )?;
     Ok(())
 }
@@ -69,7 +58,7 @@ pub fn start(
     params: &Params,
     camera: [u32; 2],
 ) -> Result<Option<UsbModel>, Error> {
-    let path = model::active_compiled_path(&config.paths);
+    let path = model::compiled_path(&config.paths);
     let compiled = path.is_some();
     let mut present = config.present()?;
     if !present && compiled && params.get_bool("UsbGpuHardwareSeen")? {

@@ -157,10 +157,7 @@ pub fn run(config: &Config<'_>) -> Result<(), Error> {
         );
     }
     let present = presence::present(config.devices);
-    let compiled = active(config.paths)?.is_some_and(|model| {
-        super::precompiled::installed(&model, &config.paths.cache, &config.paths.assets)
-            .is_ok_and(|path| path.is_some())
-    });
+    let compiled = model::compiled_path(config.paths).is_some();
     let known = remembered(config.params)?;
     if !(known || present || compiled) {
         return Ok(());

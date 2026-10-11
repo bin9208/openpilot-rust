@@ -2,12 +2,11 @@ use crate::{
     worker::{Info, Input, Metadata},
     Error,
 };
+mod frame;
 mod protocol;
 use protocol::receive;
 use rustix::process::{kill_process, Pid, Signal};
 use std::{
-    io::Write,
-    os::unix::fs::FileExt,
     path::Path,
     process::{Child, Command, Stdio},
     sync::{atomic::AtomicBool, Arc},
@@ -48,22 +47,30 @@ fn validate(info: &Info, camera: [u32; 2]) -> Result<(), Error> {
         .filter(|(name, _)| ["desire", "traffic_convention", "action_t"].contains(&name.as_str()))
         .collect::<Vec<_>>();
     inputs.sort_by_key(|(_, view)| view.offset);
-    let expected = Info::new(
-        Metadata {
-            model_sha256: String::new(),
-            checkpoint: info.checkpoint.clone(),
-            output_count: info.output_count,
-            output_slices: info.output_slices.clone(),
-            inputs: inputs
-                .into_iter()
-                .map(|(name, view)| Input {
-                    name: name.clone(),
-                    shape: view.shape.clone(),
-                })
-                .collect(),
-        },
-        camera,
-    )?;
+    let metadata = Metadata {
+        model_sha256: String::new(),
+        checkpoint: info.checkpoint.clone(),
+        output_count: info.output_count,
+        output_slices: info.output_slices.clone(),
+        inputs: inputs
+            .into_iter()
+            .map(|(name, view)| Input {
+                name: name.clone(),
+                shape: view.shape.clone(),
+            })
+            .collect(),
+    };
+    let [width, height] = camera;
+    let plane_bytes = usize::try_from(
+        width.next_multiple_of(128)
+            * (height.next_multiple_of(32) + (height / 2).next_multiple_of(16)),
+    )
+    .map_err(|_| Error::Contract("worker camera size overflow"))?;
+    let expected = if info.frame_size == plane_bytes {
+        Info::new(metadata, camera)?
+    } else {
+        Info::local(metadata, camera)?
+    };
     if &expected != info {
         return Err(Error::Contract("worker ready layout mismatch"));
     }
@@ -160,76 +167,26 @@ impl Client {
         Ok(client)
     }
     pub fn run(&mut self, frame: Frame<'_>) -> Result<&[f32], Error> {
+        self.run_with_prepare(frame, false)?
+            .ok_or(Error::Contract("model worker omitted inference output"))
+    }
+    pub fn run_with_prepare(
+        &mut self,
+        frame: Frame<'_>,
+        prepare_only: bool,
+    ) -> Result<Option<&[f32]>, Error> {
         if self.failed {
             return Err(Error::Contract("model worker stopped after failure"));
         }
-        if let Err(error) = self.run_inner(frame) {
-            self.failed = true;
-            self.stop();
-            return Err(error);
-        }
-        Ok(&self.values)
-    }
-    fn run_inner(&mut self, frame: Frame<'_>) -> Result<(), Error> {
-        if frame.inputs.len() < 12
-            || frame.main.len() != self.info.frame_size
-            || frame.extra.len() != self.info.frame_size
-        {
-            return Err(Error::Contract("model worker input layout mismatch"));
-        }
-        for (target, value) in self.packed[..72]
-            .chunks_exact_mut(4)
-            .zip(frame.transforms.into_iter().flatten())
-        {
-            target.copy_from_slice(&value.to_le_bytes());
-        }
-        for (name, values) in [
-            ("desire", &frame.inputs[..8]),
-            ("traffic_convention", &frame.inputs[8..10]),
-            ("action_t", &frame.inputs[10..12]),
-        ] {
-            let view = &self.info.layout[name];
-            for (target, value) in self.packed[view.offset..view.offset + values.len() * 4]
-                .chunks_exact_mut(4)
-                .zip(values)
-            {
-                target.copy_from_slice(&value.to_le_bytes());
+        match self.run_inner(frame, prepare_only) {
+            Ok(true) => Ok(Some(&self.values)),
+            Ok(false) => Ok(None),
+            Err(error) => {
+                self.failed = true;
+                self.stop();
+                Err(error)
             }
         }
-        for (name, bytes) in [("img", frame.main), ("big_img", frame.extra)] {
-            let offset = self.info.layout[name].offset;
-            self.packed[offset..offset + bytes.len()].copy_from_slice(bytes);
-        }
-        self.shared.as_file().write_all_at(&self.packed, 0)?;
-        self.child
-            .stdin
-            .as_mut()
-            .ok_or(Error::Contract("missing worker input"))?
-            .write_all(b"r")?;
-        let stdout = self
-            .child
-            .stdout
-            .as_mut()
-            .ok_or(Error::Contract("missing worker output"))?;
-        if receive(
-            stdout,
-            Duration::from_secs(if self.first { 20 } else { 1 }),
-            &self.cancelled,
-        )? != b"1\n"
-        {
-            return Err(Error::Contract("invalid model worker response"));
-        }
-        self.first = false;
-        self.shared
-            .as_file()
-            .read_exact_at(&mut self.output, self.info.input_bytes as u64)?;
-        for (value, bytes) in self.values.iter_mut().zip(self.output.chunks_exact(4)) {
-            *value = f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-        }
-        if !self.values.iter().all(|value| value.is_finite()) {
-            return Err(Error::Contract("non-finite model output"));
-        }
-        Ok(())
     }
     pub fn raw_output(&self) -> &[u8] {
         &self.output

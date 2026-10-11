@@ -21,19 +21,7 @@ fn argument(args: &mut VecDeque<String>) -> Result<String, Error> {
         .ok_or(Error::Contract("missing model command argument"))
 }
 fn paths(root: PathBuf, assets: PathBuf) -> Result<Paths, Error> {
-    let cache = match std::env::var_os("CARROT_BIG_MODEL_DIR") {
-        Some(path) => path.into(),
-        None if std::path::Path::new("/TICI").is_file() => "/data/media/0/carrot/models".into(),
-        None => PathBuf::from(
-            std::env::var_os("HOME").ok_or(Error::Contract("missing home directory"))?,
-        )
-        .join(".comma/models"),
-    };
-    Ok(Paths {
-        models: root.join("openpilot/selfdrive/modeld/models"),
-        cache,
-        assets,
-    })
+    Paths::for_runtime(&root, assets)
 }
 fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1).collect::<VecDeque<_>>();
@@ -119,7 +107,7 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
                 network_wait_seconds,
             })?;
         }
-        "--ready" => return Ok(if model::active_compiled_path(&paths).is_some() {ExitCode::SUCCESS} else {ExitCode::FAILURE}),
+        "--ready" => return Ok(if model::compiled_path(&paths).is_some() {ExitCode::SUCCESS} else {ExitCode::FAILURE}),
         "--active-sha" => emit(model::active_manifest(&paths).map_or_else(String::new, |model| model.sha256))?,
         "--active-path" => emit(model::active_manifest(&paths).map_or_else(String::new, |model| paths.cache.join(model.cache_filename()).display().to_string()))?,
         "--help" => emit("openpilot-usbgpu-model --boot|--ready|--active-sha|--active-path|--ensure-if-egpu|--smoke MODEL.pkl [--camera WIDTHxHEIGHT]")?,

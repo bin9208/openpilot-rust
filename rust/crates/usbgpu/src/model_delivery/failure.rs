@@ -48,6 +48,9 @@ pub fn record(
     phase: &str,
     wall_time: f64,
 ) -> Result<bool, Error> {
+    if crate::local_artifact::is_local(path) {
+        return crate::local_artifact::validation::record(path, detail, kind, phase, wall_time);
+    }
     let root = path
         .parent()
         .ok_or(Error::Contract("installed model has no directory"))?;

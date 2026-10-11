@@ -124,7 +124,7 @@ impl<'a> DrivingRuntime<'a> {
         prepare_only: bool,
     ) -> Result<Option<DrivingPrediction>, Error> {
         if let Some(usb) = &mut self.usb {
-            return usb.infer(main, extra, transforms).map(Some);
+            return usb.infer_with_prepare([main, extra], transforms, prepare_only);
         }
         self.backend.write("frame", main)?;
         self.backend.write("big_frame", extra)?;

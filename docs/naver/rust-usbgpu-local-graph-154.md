@@ -54,11 +54,64 @@ uninstalled inherited pytest plugins. The dedicated exporter cases were run with
 the tools boundary and inherited addopts cleared; this is not an inherited
 whole-repository test result. No dependency installation was performed.
 
-Local native companion packaging, historical active/previous selection and worker
-integration remain open. The source local defaults use QCOM warp and AMD queues,
-so that integration also needs its genuine hybrid stage adapter or an approved
-build-time AMD warp companion. A pinned `comma-run-model` `model_runtime.py`
+The continuation below adds native companion packaging, historical selection and
+worker integration. A pinned `comma-run-model` `model_runtime.py`
 contract is absent from retained inputs; its queue offsets are not guessed.
 Trained local artifact acceptance, installed target package/AGNOS dependencies,
 physical GPU execution and the user's first device comparison remain separate
 pending gates. This checkpoint does not complete #154 or the full runtime port.
+
+## Local package and worker continuation (2026-10-12)
+
+`build_usbgpu_local.py` explicitly converts trusted captured source artifacts at
+build time. It derives packed inputs and hidden-state feedback from the source
+metadata, exports both camera sizes, and publishes an immutable hashed generation
+with verified firmware, probe and licensing companions. The native worker does
+not invoke Python. AMD warp/policy and separate QCOM warp/AMD policy packages use
+the source stages. Hybrid admission checks the exact bridge sizes and native QCOM
+kernel argument contracts before opening a GPU.
+
+Local input buffers follow `get_nv12_info`: 2,428,928 bytes at 1344x760 and
+4,804,608 bytes at 1928x1208, including source allocation padding. Each comparison
+receipt records Y/UV offsets, strides, plane lengths and the received buffer
+length. The generic worker retains its existing 1,622,016/3,735,552 plane-byte
+contract. A plane-only local frame is rejected.
+
+The local adapter owns queue state and hidden-state feedback. Its prepare-only
+request warps the current images and preserves policy queues and the preceding
+published output. The generic fused adapter still produces its full policy
+output for a prepare request. Nonfinite local output fails before feedback or
+publication; subsequent work on that runtime is rejected.
+
+Native readiness now follows active local selection and previous local fallback;
+an active precompiled-only selection blocks that fallback. It requires verified
+native companions, beyond the original Python chunk marker. Status keeps active
+compile-pending separate from availability of a previous compiled model. Repeated
+status polls reuse at most two unchanged admitted generations using pre/post
+inode, size, mtime, ctime and directory checks. Worker startup always performs full
+validation. The shared path resolver preserves an empty cache override as a
+fallback to the normal source location.
+
+Receipts below are under `.omo/evidence/154-runtime-resume/local-worker/`.
+
+| Scenario and invocation | Actual observable | Artifact |
+| --- | --- | --- |
+| Source `usbgpu_local_source.run(capture=False, camera=...)`; `check_usbgpu_local_worker.py --camera ...` | Both sizes execute 15 owned frames, including three prepare-only calls; 180 model/warp/queue observations are byte-equal and finite. The 1928 run additionally rejects nonfinite inference and subsequent work. 261+281 actual emulator kernels include that failure control | `source-full-invocation.json`, `source-1928.json`, `native-full-invocation.json`, `native-1928.json`, `full-frame*/comparison.json` |
+| Trusted source capture and hybrid publication through pinned ARM QCOM compiler | Actual small source warp kernels and AMD policy export for both sizes; native worker admits both QCOM/AMD bridge contracts. This is structural admission, **not QCOM GPU execution or numerical acceptance** | `hybrid-publish-v5.json`, `structural-final.json` |
+| Worker `--check-artifacts` against the genuine converted package | 15 positive/negative controls include corrupt firmware/kernel/weights/probe/PKL, scalar/hidden/camera/path errors and real chunk precedence with an empty tail | `structural-controls.json` |
+| `local_selection` with captured syscalls and source helper comparison | Repeated status performs zero package/PKL opens; full worker validation opens companions. Changed generation and changed same-size kernel reject; historical local selection agrees in five source/native cases | `selection-admission.json`, `admission-full.strace`, `source-selection.json` |
+| `worker_client_local` against owned protocol worker | Prepare-only omits output, preserves previous bytes, full local input succeeds, plane-only input fails and later work is rejected | `client-protocol.json`, `client-inputs.jsonl` |
+| Shared path resolver against unchanged `model_cache_dir` source body | Absent, empty and explicit cache overrides agree | `runtime-paths.json` |
+| Original `read_state` and native selection with malformed active and valid previous; worker admission through a symlinked package prefix | Both selectors invalidate the complete malformed state. The owned symlink control reproduces acceptance before the fix and rejects it after prefix validation | `malformed-active.json`, `malformed-active-invocation.json`, `package-prefix-symlink-{red,green}.json` |
+| Native `--boot` with no USB presence and an owned closed catalog port | Converted local package selects successfully; missing companions and active precompiled-only format retain the internal path | `boot-local.json` |
+| Scoped native/Python checks | Nine focused Rust cases and two exporter cases pass; all-target strict Clippy, driving-model caller check, Ruff/format pass. Four pure Rust boundary cases pass both Miri alias models; existing unrelated nightly manifest warnings remain explicit | `tests-final.json`, `python-tests-final.json`, `strict-final.json`, `drivingd-check-final.json`, `ruff-final.json`, `format-final.json`, `miri-{stacked,tree}.json` |
+
+The Python rule checker reports three external open-set match boundaries
+(captured storage, Tinygrad operations and build backends). They have explicit
+unsupported-input errors and manually justified exceptions in
+`manual-audit-exceptions.json`; Ruff accepts their ordinary explanatory comments.
+
+The small model and synthetic ONNX identity remain engineering fixtures. The
+trained local PKL is unavailable. Existing generic numerical controls are reused;
+no unchanged generic kernel replay, device access, NAS modification, production
+selection change, CPU benefit or complete-runtime claim is included.

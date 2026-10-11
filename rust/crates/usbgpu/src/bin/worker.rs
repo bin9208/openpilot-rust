@@ -58,6 +58,16 @@ fn run() -> Result<(), Error> {
             return Err(Error::Contract("invalid native asset manifest identity"))
         }
     };
+    if openpilot_usbgpu::local_artifact::is_local(&path) {
+        return local(
+            &args,
+            &path,
+            &assets,
+            camera,
+            expected.as_deref(),
+            structural,
+        );
+    }
     let artifact = worker_artifact::prepare(&path, &assets, camera, expected.as_deref())
         .map_err(|error| Error::Protocol(format!("native model assets: {error}")))?;
     if structural {
@@ -99,6 +109,62 @@ fn run() -> Result<(), Error> {
             ),
         }
     }
+    let file = OpenOptions::new().read(true).write(true).open(&args[1])?;
+    worker::serve(
+        &mut runtime,
+        &file,
+        &info,
+        &mut io::stdin().lock(),
+        &mut io::stdout().lock(),
+    )
+}
+
+fn local(
+    args: &[String],
+    path: &std::path::Path,
+    assets: &std::path::Path,
+    camera: [u32; 2],
+    expected: Option<&str>,
+    structural: bool,
+) -> Result<(), Error> {
+    use openpilot_usbgpu::{
+        gpu::{Gpu, Options},
+        local_artifact::Package,
+    };
+    let package = Package::open(path, assets, None)?;
+    if expected.is_some_and(|digest| digest != package.manifest_sha256) {
+        return Err(Error::Contract(
+            "native local asset manifest differs from validated binding",
+        ));
+    }
+    let manifest = package.manifest_sha256.clone();
+    let artifact = package.prepare(camera)?;
+    if structural {
+        serde_json::to_writer(
+            io::stdout().lock(),
+            &serde_json::json!({
+            "assets":artifact.assets,"manifest_sha256":manifest,"camera":camera,
+            "checkpoint":artifact.info.checkpoint,"frame_size":artifact.info.frame_size,
+            "output_count":artifact.info.output_count,"qcom_warp":artifact.qcom_warp,
+            "scope":"native local artifact preparation; no GPU open or execution"}),
+        )?;
+        return Ok(());
+    }
+    let mut firmware = FirmwareDirectory(artifact.assets.join("firmware"));
+    let local = if let Some(path) = &artifact.qcom_warp {
+        // SAFETY: the build-time package contains trusted immutable source kernels; Package::open verifies their layout and checksums before this native boundary.
+        Some(unsafe { openpilot_usbgpu::qcom_warp::LocalWarp::load(path) }?)
+    } else {
+        None
+    };
+    let info = artifact.info.clone();
+    let gpu = Gpu::new(native_runtime::open(&mut firmware)?, Options::default())?;
+    let mut runtime = match local {
+        Some(local) => {
+            openpilot_usbgpu::worker_local::NativeRuntime::with_qcom(gpu, artifact, local)?
+        }
+        None => openpilot_usbgpu::worker_local::NativeRuntime::new(gpu, artifact)?,
+    };
     let file = OpenOptions::new().read(true).write(true).open(&args[1])?;
     worker::serve(
         &mut runtime,

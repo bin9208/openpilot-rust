@@ -75,6 +75,16 @@ impl UsbModel {
         extra: &[u8],
         transforms: [[f32; 9]; 2],
     ) -> Result<DrivingPrediction, Error> {
+        self.infer_with_prepare([main, extra], transforms, false)?
+            .ok_or(Error::Contract("USB model omitted inference output"))
+    }
+    pub fn infer_with_prepare(
+        &mut self,
+        images: [&[u8]; 2],
+        transforms: [[f32; 9]; 2],
+        prepare_only: bool,
+    ) -> Result<Option<DrivingPrediction>, Error> {
+        let [main, extra] = images;
         let bytes = self.client.info.frame_size;
         let main = main
             .get(..bytes)
@@ -82,15 +92,21 @@ impl UsbModel {
         let extra = extra
             .get(..bytes)
             .ok_or(Error::Contract("USB extra NV12 planes are truncated"))?;
-        let values = self.client.run(Frame {
-            main,
-            extra,
-            transforms,
-            inputs: self.inputs.packed(),
-        })?;
-        Ok(DrivingPrediction::parse(&RawOutputs::new(
+        let values = self.client.run_with_prepare(
+            Frame {
+                main,
+                extra,
+                transforms,
+                inputs: self.inputs.packed(),
+            },
+            prepare_only,
+        )?;
+        let Some(values) = values else {
+            return Ok(None);
+        };
+        Ok(Some(DrivingPrediction::parse(&RawOutputs::new(
             values,
             &self.slices,
-        )?)?)
+        )?)?))
     }
 }

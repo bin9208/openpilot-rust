@@ -64,11 +64,14 @@ pub fn key(
     {
         return Ok(None);
     }
-    let root = model
-        .parent()
-        .ok_or_else(|| Error::Invalid("installed model has no directory".into()))?;
-    let catalog: serde_json::Value =
-        serde_json::from_slice(&fs::read(root.join("installed.json"))?)?;
+    let catalog = if crate::local_artifact::is_local(model) {
+        crate::local_artifact::validation::identity(model)?
+    } else {
+        let root = model
+            .parent()
+            .ok_or_else(|| Error::Invalid("installed model has no directory".into()))?;
+        serde_json::from_slice::<serde_json::Value>(&fs::read(root.join("installed.json"))?)?
+    };
     let identity = serde_json::json!({"schema":2,"catalog":catalog,"device":device,"camera_sizes":cameras(&device.device),
         "provider":{"kind":"native-usbgpu","worker_sha256":sha256(provider.worker)?,"runner_sha256":sha256(provider.runner)?,
             "assets_manifest_sha256":provider.manifest_sha256}});
@@ -82,6 +85,9 @@ pub fn cached(model: &Path, key: Option<&str>) -> bool {
     let Some(key) = key else {
         return false;
     };
+    if crate::local_artifact::is_local(model) {
+        return crate::local_artifact::validation::cached(model, key);
+    }
     let Some(root) = model.parent() else {
         return false;
     };
@@ -99,6 +105,9 @@ pub fn save(model: &Path, key: Option<&str>) -> Result<(), Error> {
     let Some(key) = key else {
         return Ok(());
     };
+    if crate::local_artifact::is_local(model) {
+        return Ok(crate::local_artifact::validation::save(model, key)?);
+    }
     let root = model
         .parent()
         .ok_or_else(|| Error::Invalid("installed model has no directory".into()))?;

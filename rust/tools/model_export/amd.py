@@ -45,7 +45,7 @@ class Manifest:
 
 def amd_buffer(buffer: Buffer | MultiBuffer) -> Buffer:
   match buffer:  # MATCH_OK: External buffers and unsupported storage are rejected at this export boundary.
-    case Buffer() if buffer.device.split(':')[0] in {'AMD', 'NULL', 'CPU', 'NPY'}:
+    case Buffer() if buffer.device.split(':')[0] in {'AMD', 'NULL', 'CPU', 'NPY', 'QCOM'}:
       return buffer
     case _:
       raise ExportError('AMD export requires one owned AMD or host buffer')

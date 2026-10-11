@@ -18,6 +18,14 @@ struct OwnedRuntime {
     pause_after_one: bool,
 }
 impl Runtime for OwnedRuntime {
+    fn prepare(&mut self, packed: &[u8], info: &Info, output: &mut [u8]) -> Result<bool, Error> {
+        if std::env::var_os("USBGPU_WORKER_TEST_LOCAL").is_some() {
+            Ok(false)
+        } else {
+            self.run(packed, info, output)?;
+            Ok(true)
+        }
+    }
     fn run(&mut self, packed: &[u8], info: &Info, output: &mut [u8]) -> Result<(), Error> {
         self.runs += 1;
         let mut inputs = serde_json::Map::new();
@@ -78,7 +86,12 @@ fn run() -> Result<(), Error> {
         ));
     }
     let metadata: Metadata = serde_json::from_slice(&std::fs::read(&args[0])?)?;
-    let info = Info::new(
+    let build_info = if std::env::var_os("USBGPU_WORKER_TEST_LOCAL").is_some() {
+        Info::local
+    } else {
+        Info::new
+    };
+    let info = build_info(
         metadata,
         [
             args[2].parse().map_err(|_| Error::Contract("width"))?,

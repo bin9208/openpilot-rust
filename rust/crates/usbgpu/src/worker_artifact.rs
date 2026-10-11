@@ -57,6 +57,13 @@ fn package(model: &Path, root: &Path) -> Result<(Catalog, assets::Package), Erro
 }
 
 pub fn bind(model: &Path, root: &Path) -> Result<Binding, Error> {
+    if crate::local_artifact::is_local(model) {
+        let package = crate::local_artifact::Package::open(model, root, None)?;
+        return Ok(Binding {
+            root: package.assets,
+            manifest_sha256: package.manifest_sha256,
+        });
+    }
     let (_, package) = package(model, root)?;
     Ok(Binding {
         root: package.root,

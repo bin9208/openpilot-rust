@@ -11,6 +11,23 @@ pub struct Paths {
     pub cache: PathBuf,
     pub assets: PathBuf,
 }
+impl Paths {
+    pub fn for_runtime(root: &Path, assets: PathBuf) -> Result<Self, Error> {
+        let cache = match std::env::var_os("CARROT_BIG_MODEL_DIR").filter(|path| !path.is_empty()) {
+            Some(path) => PathBuf::from(path),
+            None if Path::new("/TICI").is_file() => PathBuf::from("/data/media/0/carrot/models"),
+            None => PathBuf::from(
+                std::env::var_os("HOME").ok_or(Error::Contract("missing home directory"))?,
+            )
+            .join(".comma/models"),
+        };
+        Ok(Self {
+            cache,
+            models: root.join("openpilot/selfdrive/modeld/models"),
+            assets,
+        })
+    }
+}
 #[derive(Debug, PartialEq, Eq)]
 pub struct ModelStatus {
     pub compiled: bool,
@@ -131,16 +148,9 @@ pub fn installed(paths: &Paths, model: &Manifest) -> Option<PathBuf> {
         .unwrap_or_default()
 }
 pub fn status(paths: &Paths) -> Result<ModelStatus, Error> {
-    let Some(model) = active_manifest(paths) else {
-        return Ok(ModelStatus {
-            compiled: false,
-            compile_pending: false,
-        });
-    };
-    let installed = installed(paths, &model).is_some();
     Ok(ModelStatus {
-        compiled: installed,
-        compile_pending: !installed,
+        compiled: compiled_path(paths).is_some(),
+        compile_pending: active_manifest(paths).is_some() && active_compiled_path(paths).is_none(),
     })
 }
 
@@ -149,9 +159,28 @@ pub fn active_compiled_path(paths: &Paths) -> Option<PathBuf> {
     if let Some(path) = installed(paths, &model) {
         return Some(path);
     }
-    // A build-time Python chunk manifest is not a native execution companion.
-    // Local run_policy/comma-run-model adapters must issue native readiness first.
-    None
+    if model.precompiled_only() {
+        return None;
+    }
+    local_ready(paths, &model)
+}
+
+fn local_ready(paths: &Paths, model: &Manifest) -> Option<PathBuf> {
+    let path = local_compiled_path(paths, model);
+    crate::local_artifact::admission::ready(&path, &paths.assets, &model.sha256)
+        .ok()
+        .map(|_| path)
+}
+
+pub fn compiled_path(paths: &Paths) -> Option<PathBuf> {
+    if let Some(path) = active_compiled_path(paths) {
+        return Some(path);
+    }
+    if active_manifest(paths).is_some_and(|model| model.precompiled_only()) {
+        return None;
+    }
+    let previous = crate::model_delivery::State::read(&paths.cache).ok()?.previous?;
+    local_ready(paths, &previous)
 }
 
 pub fn remove_active_chunk_manifest(paths: &Paths) -> Result<bool, Error> {
