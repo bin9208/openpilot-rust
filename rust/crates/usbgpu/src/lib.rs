@@ -54,6 +54,7 @@ pub mod custom_asm;
 
 pub mod model;
 pub mod model_delivery;
+pub mod model_graph;
 #[cfg(feature = "native-skip-miri")]
 pub mod qcom_warp;
 pub mod warp_validation;
