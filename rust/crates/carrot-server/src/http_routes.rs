@@ -15,6 +15,9 @@ pub(crate) async fn dispatch(
     let path = percent_encoding::percent_decode_str(request.uri().path())
         .decode_utf8_lossy()
         .into_owned();
+    if crate::vision_diag::http::matches(&path) {
+        return Ok(crate::vision_diag::http::handle(request, app).await);
+    }
     if path == "/stream" {
         return Ok(match &app.stream_proxy {
             Some(service) => crate::stream_proxy::handle(request, Arc::clone(service)).await,

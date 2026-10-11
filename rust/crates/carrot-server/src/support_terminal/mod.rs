@@ -7,7 +7,6 @@ mod context;
 pub mod http;
 mod lines;
 mod local;
-mod metadata;
 mod model;
 mod network;
 mod owner;
@@ -21,7 +20,7 @@ mod tunnel;
 pub mod tunnel_binary;
 mod webhook;
 
-use crate::{web_sound::Shutdown, Error, Value};
+use crate::{diagnostic_metadata as metadata, web_sound::Shutdown, Error, Value};
 use admission::{Admission, Counter};
 pub use config::Config;
 pub use policy::StartOptions;

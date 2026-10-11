@@ -65,7 +65,7 @@ fn strict(bytes: &[u8]) -> Result<String, Failure> {
     let text = crate::request_text::decode(bytes, "utf-8")?;
     Ok(text.replace("\r\n", "\n").replace('\r', "\n"))
 }
-pub(super) fn code(status: std::process::ExitStatus) -> i32 {
+pub(crate) fn code(status: std::process::ExitStatus) -> i32 {
     status
         .code()
         .unwrap_or_else(|| -status.signal().unwrap_or(1))

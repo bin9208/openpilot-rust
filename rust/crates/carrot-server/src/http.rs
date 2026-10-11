@@ -55,6 +55,7 @@ pub struct Application {
     pub support_terminal: Option<Arc<crate::support_terminal::Service>>,
     pub stream_proxy: Option<Arc<crate::stream_proxy::Service>>,
     pub vision_test: Option<crate::vision_test::Config>,
+    pub vision_diag: Option<crate::vision_diag::Config>,
 }
 
 impl Application {
@@ -120,6 +121,7 @@ impl Application {
                 .and_then(crate::terminal::Service::start)
                 .ok(),
             vision_test: None,
+            vision_diag: None,
             support_terminal: None,
             stream_proxy: crate::stream_proxy::Service::original(params.native_params().cloned())
                 .map(Arc::new)

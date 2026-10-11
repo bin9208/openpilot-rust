@@ -1448,3 +1448,32 @@ terminal/live/navigation owners still answered after serve returned; afterward,
 all report unavailable while the same EMFILE reaches the caller. Evidence and
 the native fixture hash are in the adjacent `resume-20261011/cleanup.md`; its
 bounded build, strict all-target Clippy, programming and format/diff checks pass.
+
+## Native vision diagnostics checkpoint (2026-10-12)
+
+The main snapshot and multipart diagnostic/console upload routes are now native.
+Paired owned controls cover process/Params/VIPC/port/log/socket/journal snapshots,
+source line limits, malformed/missing/nonobject and 16 MiB requests, methods/HEAD,
+8 MiB UTF-8 truncation, delivery rejection/unavailability and actual 20-second
+timeouts, disabled/invalid URLs and environment precedence. The currently
+unregistered Params URL aliases remain ignored as in the original checked Params.
+
+Focused actual directory-valued Params controls corrected native read errors to
+the source's false/empty values; fresh constructor failure still returns 500.
+That constructor response is the source's plain framework error versus native
+JSON retaining errno 17; matching status does not imply matching error bytes.
+An actual vision status conversion error now produces unknown in the upload
+message instead of the initial native None. Real `/proc` captures recognize the
+owned native server and 121 actual stream requests produce the shared bounded
+120-entry diagnostic history. Native runtime/executable identity and commit links
+to this repository are explicit adaptations; no Python version is fabricated.
+
+Evidence, exact invocation/artifact mapping and the corrected source fixture
+binding observation are in adjacent `resume-20261011/diagnostics.md`. All ten
+common snapshot sections match after root/clock/runtime normalization. Current
+all-target strict Clippy, 22 library tests, selected programming rules and
+format/diff checks pass. App example SHA-256:
+`423b09735a4b3c8566310b35497045012cad8af48c49d3150c865f22c220168a`.
+Neutral metadata/certificate-root extraction also passes the affected actual
+held-tunnel App Force control in 0.0066 seconds. Idle trim, complete normal
+executable startup, required host/ARM CI and Recovery #263 remain unfinished.

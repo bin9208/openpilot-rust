@@ -129,7 +129,12 @@ impl Context {
         self.event(Event::Expiry(Rc::clone(session)))?;
         self.detail(session, "Sending Carrot server notification")
             .await;
-        let metadata = metadata::collect(&self.config, &self.runner).await?;
+        let metadata = metadata::collect(
+            &self.config.repository,
+            self.config.params.clone(),
+            &self.runner,
+        )
+        .await?;
         if self.stale(session).await? {
             return Ok(());
         }

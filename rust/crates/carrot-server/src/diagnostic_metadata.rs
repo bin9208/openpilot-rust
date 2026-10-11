@@ -1,13 +1,12 @@
-use super::Config;
 use crate::{
     tools::runner::{Command, Runner},
     Error,
 };
 use openpilot_dashcam_upload::metadata;
-use std::{collections::BTreeMap, time::Duration};
+use std::{collections::BTreeMap, path::Path, time::Duration};
 
 #[derive(Clone)]
-pub(super) struct Metadata {
+pub(crate) struct Metadata {
     pub car: String,
     pub dongle: String,
     pub serial: String,
@@ -15,7 +14,7 @@ pub(super) struct Metadata {
     pub commit: String,
     pub date: String,
 }
-async fn git(config: &Config, runner: &Runner, args: &[&str]) -> String {
+async fn git(repository: &Path, runner: &Runner, args: &[&str]) -> String {
     let argv: Vec<_> = std::iter::once("git")
         .chain(args.iter().copied())
         .map(str::to_owned)
@@ -23,7 +22,7 @@ async fn git(config: &Config, runner: &Runner, args: &[&str]) -> String {
     let output = runner
         .raw_capture(Command {
             argv: &argv,
-            cwd: Some(&config.repository),
+            cwd: Some(repository),
             timeout: Some(Duration::from_secs(4)),
         })
         .await;
@@ -39,8 +38,11 @@ async fn git(config: &Config, runner: &Runner, args: &[&str]) -> String {
     };
     read().unwrap_or_else(|_| "unknown".into())
 }
-pub(super) async fn collect(config: &Config, runner: &Runner) -> Result<Metadata, Error> {
-    let params = config.params.clone();
+pub(crate) async fn collect(
+    repository: &Path,
+    params: Option<openpilot_params::Params>,
+    runner: &Runner,
+) -> Result<Metadata, Error> {
     let basic = tokio::task::spawn_blocking(move || -> Result<_, Error> {
         let mut logger = openpilot_logging::producer::Factory::for_runtime()
             .map_err(|error| Error::Source(error.to_string()))?
@@ -66,10 +68,10 @@ pub(super) async fn collect(config: &Config, runner: &Runner) -> Result<Metadata
         car: basic.0,
         dongle: basic.1,
         serial: basic.2,
-        branch: git(config, runner, &["branch", "--show-current"]).await,
-        commit: git(config, runner, &["rev-parse", "--short", "HEAD"]).await,
+        branch: git(repository, runner, &["branch", "--show-current"]).await,
+        commit: git(repository, runner, &["rev-parse", "--short", "HEAD"]).await,
         date: git(
-            config,
+            repository,
             runner,
             &[
                 "show",

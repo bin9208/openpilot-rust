@@ -13,6 +13,8 @@ use tokio::{sync::watch, task::JoinSet};
 mod application;
 #[path = "carrot_terminal/config.rs"]
 mod command_config;
+#[path = "carrot_terminal/diagnostics.rs"]
+mod diagnostics;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

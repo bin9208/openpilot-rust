@@ -53,6 +53,7 @@ pub async fn run(
             openpilot_carrot_server::support_terminal::Service::start(support)?,
         );
     }
+    super::diagnostics::configure(writable, &root)?;
     let (stop, stopped) = tokio::sync::oneshot::channel();
     let terminal_control = Arc::clone(&terminal);
     let support_control = writable.support_terminal.clone();
