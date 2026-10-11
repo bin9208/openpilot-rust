@@ -20,6 +20,7 @@ mod http_response;
 mod http_route;
 mod http_routes;
 mod http_server;
+mod http_shutdown;
 pub mod intro;
 mod json_fields;
 pub mod live;

@@ -173,27 +173,7 @@ async fn serve_local(
         while connections.join_next().await.is_some() {}
         while sounds.join_next().await.is_some() {}
     }
-    app.dashcam_sync_uploads.shutdown().await?;
-    if let Some(service) = &app.support_terminal {
-        service.shutdown().await?;
-    }
-    if let Some(service) = &app.terminal {
-        service.shutdown().await?;
-    }
-    if let Some(service) = &app.live {
-        service.shutdown().await?;
-    }
-    if let Some(service) = &app.web_navi {
-        service.shutdown().await?;
-    }
-    if let Some(service) = &app.youtube_live {
-        service.finish().await?;
-    }
-    background.finish(&app).await?;
-    app.bluetooth_http.shutdown().await?;
-    if let Some(service) = &app.tools {
-        service.shutdown().await?;
-    }
+    crate::http_shutdown::finish(&app, background).await?;
     served
 }
 

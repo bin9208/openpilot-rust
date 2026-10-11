@@ -1440,3 +1440,11 @@ after a service cleanup error is still a separate pending repair. Diagnostics
 snapshot/upload, idle allocator trim, complete normal startup, required host/ARM
 CI and Recovery #263 remain unfinished. This is an intermediate server checkpoint
 with owned local providers, not a full runtime or device-test handoff.
+
+The subsequent bounded cleanup repair now catches each owner failure and drains
+later owners before returning the first error. An actual private descriptor-limit
+control causes a support reactor to return EMFILE: before the repair, retained
+terminal/live/navigation owners still answered after serve returned; afterward,
+all report unavailable while the same EMFILE reaches the caller. Evidence and
+the native fixture hash are in the adjacent `resume-20261011/cleanup.md`; its
+bounded build, strict all-target Clippy, programming and format/diff checks pass.

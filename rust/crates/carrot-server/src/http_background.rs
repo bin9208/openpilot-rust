@@ -101,7 +101,7 @@ impl Background {
                 Err(error) => eprintln!("popular startup refresh: {error}"),
             }
         }
-        app.popular_values.shutdown().await?;
+        let popular = app.popular_values.shutdown().await;
         if let Err(error) = self.warm.await {
             if !error.is_cancelled() {
                 eprintln!("Settings warm task: {error}");
@@ -114,6 +114,6 @@ impl Background {
             Err(error) if error.is_cancelled() => {}
             Err(error) => eprintln!("static precompression task: {error}"),
         }
-        Ok(())
+        popular
     }
 }
