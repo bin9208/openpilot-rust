@@ -1,6 +1,7 @@
 # Complete runtime startup integration boundary
 
-This remaining work belongs to [issue 116](https://github.com/bin9208/openpilot-rust/issues/116),
+Final composition is tracked in [issue 269](https://github.com/bin9208/openpilot-rust/issues/269),
+building on [issue 116](https://github.com/bin9208/openpilot-rust/issues/116),
 [issue 120](https://github.com/bin9208/openpilot-rust/issues/120) and the complete
 candidate gate in [issue 1](https://github.com/bin9208/openpilot-rust/issues/1).
 The manager library from issue 106 is implemented; it is not yet an installed
@@ -22,9 +23,12 @@ entry points have these concrete composition requirements:
 | Entry | Required binding |
 |---|---|
 | `card` | `--root` and `--numerics` are mandatory; bind the packaged checkout/DBC assets and verified numerical provider |
+| `xiaoge_data` | `--root` is mandatory and canonicalized; default assets and config resolve beneath `openpilot/selfdrive/carrot/xiaoge` in that root |
 | `modeld`, `dmonitoringmodeld` | `--trusted-catalog` is mandatory; supply the correct immutable model catalog for each daemon |
 | Encoder variants | Preserve each source mode argument such as `--stream`, `--carrot-vision-road` and the four YouTube choices while selecting the single native encoder executable |
 | `controlsd`, `torqued` | Resolve their numerical companion directories; controlsd also reads torque assets relative to its working directory unless given `--assets` |
+| `plannerd` | Bind `--solver` or `PLANNER_ACADOS`, otherwise the pinned solver is expected beside the executable as `plannerd-acados` |
+| `radarcan` | Bind `--numerics`/`RADARCAN_NUMERICS` and `--dbc`/`RADARCAN_DBC`, otherwise both directories are expected beside the executable as `radarcan-numerics` and `radarcan-dbc` |
 | Native subprocess users | Keep `openpilot-process-child` beside the executable, or pass the supported explicit launcher path |
 
 This table comes from reading the current native argument parsers, not a
