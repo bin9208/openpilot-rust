@@ -43,6 +43,8 @@ pub use vision_types::{VisionLayout, VisionMetadata, VisionStream};
 mod vision_server;
 #[cfg(feature = "native-skip-miri")]
 pub use vision_buffer::VisionBufferDescriptor;
+#[cfg(feature = "webcam-inactive-stream")]
+pub use vision_server::UnalignedWebcamImage;
 #[cfg(feature = "native-skip-miri")]
 pub use vision_server::{RawVisionImage, VisionImage, VisionServer};
 

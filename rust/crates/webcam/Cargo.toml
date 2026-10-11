@@ -1,0 +1,42 @@
+[package]
+name = "openpilot-webcam"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = []
+native = ["dep:cxx", "dep:ffmpeg-next", "openpilot-msgq/native-skip-miri", "openpilot-msgq/webcam-inactive-stream", "openpilot-messaging/native"]
+
+[dependencies]
+capnp = "=0.27.2"
+cxx = { version = "=1.0.202", optional = true }
+ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format", "software-scaling"], optional = true }
+num-traits = "=0.2.19"
+openpilot-cereal = { path = "../cereal" }
+openpilot-msgq = { path = "../msgq", default-features = false }
+openpilot-messaging = { path = "../messaging", default-features = false }
+rustix = { version = "=1.1.5", features = ["time"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "=1.0.151"
+thiserror = "2"
+
+[build-dependencies]
+cxx-build = "=1.0.202"
+
+[[example]]
+name = "webcam_trace"
+required-features = ["native"]
+
+[[example]]
+name = "webcam_workers"
+required-features = ["native"]
+
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+all = "deny"
+pedantic = "deny"

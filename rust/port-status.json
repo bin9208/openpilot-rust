@@ -610,7 +610,11 @@
       "name": "webcamerad",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.tools.webcam.camerad",
-      "status": "not_ported",
+      "status": "native_optional_runtime_host_validated",
+      "implementation": "rust/crates/webcam; native Linux camera selection, owned OpenCV capture bridge, Rust rotation/NV12, independent workers, 20Hz scheduling and actual VisionIPC/Cereal publication",
+      "native_dependencies": ["pinned hardened OpenCV 4.13.0 core/imgproc/imgcodecs/videoio with FFmpeg/V4L2/JPEG", "FFmpeg 6.1.1 libavcodec/libavformat/libavutil/libswscale ABI", "libstdc++ and Linux shared-memory/V4L2 APIs"],
+      "runtime_scope": "owned source/native pixels, real file capture, independent worker errors/EOF, FD teardown, source/Rust IPC clients and fixed post-startup Linux CLI interval; x86/ARM cloud CI, manager integration, AGNOS/ION packaging, physical cameras and full startup/upload pending",
+      "evidence": "docs/naver/rust-webcam-255.md",
       "production_replaced": false
     },
     {

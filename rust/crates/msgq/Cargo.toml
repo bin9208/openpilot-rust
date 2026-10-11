@@ -10,6 +10,7 @@ publish = false
 default = ["native-skip-miri"]
 native-skip-miri = ["dep:libc", "dep:nix"]
 visionipc-ion = ["native-skip-miri"]
+webcam-inactive-stream = ["native-skip-miri"]
 
 [dependencies]
 libc = { version = "0.2", optional = true }

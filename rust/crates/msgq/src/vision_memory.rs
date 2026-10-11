@@ -24,8 +24,8 @@ fn length(length: usize) -> Result<usize, Error> {
         .ok_or(Error::Invalid("VisionIPC allocation length overflow"))
 }
 
-#[cfg(not(feature = "visionipc-ion"))]
-fn allocate_fd(length: usize) -> Result<File, Error> {
+#[cfg(any(not(feature = "visionipc-ion"), feature = "webcam-inactive-stream"))]
+pub(crate) fn allocate_fd(length: usize) -> Result<File, Error> {
     use std::{
         fs::OpenOptions,
         os::unix::fs::OpenOptionsExt,
