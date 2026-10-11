@@ -9,6 +9,8 @@ publish = false
 [dependencies]
 des = "=0.8.1"
 num-traits = "=0.2.19"
+openpilot-usbgpu = { path = "../usbgpu" }
+zlib-rs = "=0.6.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "=1.0.151"
 thiserror = "2"

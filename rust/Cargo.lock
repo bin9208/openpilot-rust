@@ -2397,9 +2397,11 @@ version = "0.1.0"
 dependencies = [
  "des",
  "num-traits",
+ "openpilot-usbgpu",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+ "zlib-rs",
 ]
 
 [[package]]

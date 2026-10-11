@@ -125,9 +125,49 @@ Private receipts are `metadata-comparison-invocation.json`,
 `metadata-comparison/result.json`, `metadata-allocated-error/result.json`,
 `metadata-asan/result.json`, `metadata-lazy-symbols/invocation.json` and
 `metadata-miri-level-{1,2,3,4}.json` under primary `.omo/evidence/253-cluster/`.
-These controls do not cover display setup, frame transfer, hotplug or recovery.
+These metadata controls do not cover display setup, frame transfer, hotplug or recovery.
 
-The registered process, actual live Params/IPC, USB I/O/recovery, rendering,
+## Owned display transport checkpoint
+
+The cluster crate now owns display connection, cached endpoint selection,
+initialization, brightness/orientation/rate updates, JPEG/PNG upload, H264 setup,
+chunk negotiation, acknowledgement/queue flow control, bounded draining,
+disconnect detection and reset/reconnect behavior. It retains a metadata context
+across reconnects like the source's retained PyUSB backend. Partial endpoint-cache
+failure remains an owned state, and the slow acknowledgement error path preserves
+the source's repeated connection-state notification. Every USB operation and
+handle release uses the existing shared bus lock.
+
+The owned transport recipient presents an active alternate-0 bulk interface.
+It is separate from the metadata alternate-2/non-bulk ordering fixture. Unchanged
+original display methods execute with actual PyUSB 1.3.1 and the original vendor
+packet function bodies. Thirty-four source/native scenarios match command,
+frame, transparent overlay and H264 bytes, clear/read/write/reset ordering,
+requested sleeps, dimensions, setting results and connection-state updates.
+They include slow/fast and acknowledgement choices, both discovered products,
+initialization/access/configuration failures, partial endpoints, three-error
+recovery, short writes, empty/time-out acknowledgements, successful bounded
+drains, optional clear failures, input/I/O disconnects, intermittent frame
+failures, eGPU reset protection and H264 sizing/pacing/status behavior.
+
+The comparator normalizes each `Err` payload to failure status; it does **not**
+assert identical error strings or error classes. Raw messages are captured in
+each source/native invocation and result. Clock and Params effects are controlled
+inputs here; this does not prove real Params, local-time or profiler integration.
+The source harness retains actual discovered PyUSB devices solely for final
+resource disposal after source disconnect has cleared its display reference.
+
+The invoked native ELF is
+`fc157cb462568c8f79c95f1f5acad1cdedaf0bd4f3e488a9ec582cac73e548e9`.
+Receipts are `transport-final-invocation.json`, `transport-final/result.json`,
+`transport-clippy-final.json`, `transport-package-test.json` and
+`transport-freeze.json` under primary `.omo/evidence/253-cluster/`.
+Strict Clippy/all-target checks and the package test command pass; the behavioral
+proof is the owned-recipient comparison, not the empty unit-test suite. No new
+unsafe Rust is added. The source overlay's level-4 zlib output is reproduced by
+the already pinned external `zlib-rs 0.6.8` provider.
+
+The registered process, actual live Params/IPC, USB hotplug/autorun composition, rendering,
 codec/GLES lifetime, nondefault inputs, complete entrypoint, host/ARM CI and AGNOS
 packaging remain open. No C3X, NAS, physical USB display or vehicle is contacted.
 Full normal startup and existing log upload must be composed before the user's

@@ -12,4 +12,14 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Usb(#[from] openpilot_usbgpu::Error),
+    #[error("TURZX USB display disconnected")]
+    Disconnected(#[source] Box<Error>),
+    #[error("{message}")]
+    DisplayIo {
+        message: &'static str,
+        #[source]
+        cause: Box<Error>,
+    },
 }
