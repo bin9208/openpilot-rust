@@ -2395,11 +2395,15 @@ dependencies = [
 name = "openpilot-cluster"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "des",
  "num-traits",
+ "openpilot-params",
+ "openpilot-ui-application",
  "openpilot-usbgpu",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.21",
  "zlib-rs",
 ]

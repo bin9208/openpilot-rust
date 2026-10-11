@@ -29,7 +29,7 @@ pub(super) fn disconnected(error: &Error) -> bool {
         | Error::Usb(openpilot_usbgpu::Error::UsbApi { code: -4 | -1, .. }) => return true,
         Error::DisplayIo { cause, .. } => return disconnected(cause),
         Error::Io(error) if matches!(error.raw_os_error(), Some(19 | 6 | 5 | 108)) => return true,
-        Error::Usb(_) | Error::Io(_) | Error::Contract(_) | Error::Json(_) => {}
+        Error::Usb(_) | Error::Io(_) | Error::Contract(_) | Error::Json(_) | Error::Params(_) => {}
     }
     let message = error.to_string().to_lowercase();
     [

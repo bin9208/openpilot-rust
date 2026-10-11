@@ -167,7 +167,56 @@ proof is the owned-recipient comparison, not the empty unit-test suite. No new
 unsafe Rust is added. The source overlay's level-4 zlib output is reproduced by
 the already pinned external `zlib-rs 0.6.8` provider.
 
-The registered process, actual live Params/IPC, USB hotplug/autorun composition, rendering,
+## Params and live-clock composition checkpoint
+
+`usb::ParamsRuntime` constructs a fresh existing Params/UI FIFO store for every
+source helper. Reset protection reads loading and, when needed, active from the
+same owner. It flushes each connection update before the helper returns, matching
+the destructor of the source's temporary Cython Params owner. Boolean key
+read/open failures become empty values like original C++ `read_file`; constructor
+failure returns false for pacing and true for reset protection. Loading and active
+flags retain separate decisions. Wall-clock command timestamps use the
+source floating subtraction from local midnight through pinned `chrono 0.4.45`.
+
+The reused original Cython Params ELF is
+`4b71d2b2cc5117f4e62fb55ece3c305e1fd09e4934c3a8af993010344e1f684d`;
+all recorded source hashes match the current tree. Thirty-eight physical-file
+controls compare unchanged source helpers with Rust, including absent, empty,
+strict boolean, malformed and directory-valued flags and completed atomic
+connection writes. Three live-clock controls bracket the native value with the
+actual vendor timestamp expression in UTC, Asia/Seoul and America/New_York.
+These clock controls do not establish historical DST ambiguity/gap behavior.
+Three owned-file Rust tests pass after their missing-API RED run.
+
+Two actual source/native lifecycle controls reproduced a review finding before
+the repair: removing the namespace after runtime construction allowed the source
+connected helper to recreate it, while the native persistent owner failed to
+write; replacing the root with an ordinary file protected reset in source while
+native returned false. Both controls now match after moving constructor ownership
+to each helper. Global Params get/put error and recovery semantics are unchanged.
+
+Four additional cases compose actual original/Rust Params and live clocks with
+the owned USB recipient: idle, active eGPU, recovery while loading, and disconnect.
+They match state, operation order and packet content. Real packet timestamps are
+separately checked against source clock brackets and removed only for the packet
+comparison. Failure strings remain captured and are normalized to failure status.
+No physical display or vehicle is contacted.
+
+Private receipts are `params-lifecycle-red-invocation.json`,
+`params-lifecycle-red/result.json`, `params-lifecycle-green-invocation.json`,
+`params-lifecycle-green/result.json`, `params-runtime-final-invocation.json`,
+`params-runtime-final/result.json`, `params-usb-final-invocation.json`,
+`params-usb-final/result.json`, `params-runtime-test-final.json`,
+`params-runtime-clippy-reviewed.json`, `params-runtime-ruff-reviewed.json` and
+`params-runtime-freeze.json` under primary `.omo/evidence/253-cluster/`.
+The Params recipient ELF is `103938dec87e6b501809933b1138641202f8e1ab169fb84aaca6943c23f15083`;
+the composed USB recipient ELF is `758abd5735fd1172064c982add5e2a9567da9ad95d3dc0a76ff6f50c8fc869e4`.
+The cluster now imports the existing UI application library for its Params store
+and subsequent core-7 scheduler composition; its locked raylib provider/header
+remains an explicit build dependency. This checkpoint does not implement the
+registered autorun entrypoint or its complete runtime closure.
+
+The registered process, actual live IPC, USB hotplug/autorun composition, rendering,
 codec/GLES lifetime, nondefault inputs, complete entrypoint, host/ARM CI and AGNOS
 packaging remain open. No C3X, NAS, physical USB display or vehicle is contacted.
 Full normal startup and existing log upload must be composed before the user's

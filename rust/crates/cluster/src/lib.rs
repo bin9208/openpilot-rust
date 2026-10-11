@@ -14,6 +14,8 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error(transparent)]
     Usb(#[from] openpilot_usbgpu::Error),
+    #[error(transparent)]
+    Params(#[from] openpilot_params::Error),
     #[error("TURZX USB display disconnected")]
     Disconnected(#[source] Box<Error>),
     #[error("{message}")]
