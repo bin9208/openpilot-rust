@@ -16,10 +16,14 @@ impl Paths {
         let cache = match std::env::var_os("CARROT_BIG_MODEL_DIR").filter(|path| !path.is_empty()) {
             Some(path) => PathBuf::from(path),
             None if Path::new("/TICI").is_file() => PathBuf::from("/data/media/0/carrot/models"),
-            None => PathBuf::from(
-                std::env::var_os("HOME").ok_or(Error::Contract("missing home directory"))?,
-            )
-            .join(".comma/models"),
+            None => {
+                let home = match std::env::var_os("HOME") {
+                    Some(path) if path.is_empty() => PathBuf::from("/"),
+                    Some(path) => PathBuf::from(path),
+                    None => home::home_dir().ok_or(Error::Contract("missing home directory"))?,
+                };
+                home.join(".comma/models")
+            }
         };
         Ok(Self {
             cache,
@@ -179,7 +183,9 @@ pub fn compiled_path(paths: &Paths) -> Option<PathBuf> {
     if active_manifest(paths).is_some_and(|model| model.precompiled_only()) {
         return None;
     }
-    let previous = crate::model_delivery::State::read(&paths.cache).ok()?.previous?;
+    let previous = crate::model_delivery::State::read(&paths.cache)
+        .ok()?
+        .previous?;
     local_ready(paths, &previous)
 }
 

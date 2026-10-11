@@ -3399,6 +3399,7 @@ name = "openpilot-usbgpu"
 version = "0.1.0"
 dependencies = [
  "flate2",
+ "home",
  "libc",
  "libloading",
  "openpilot-http-transport",

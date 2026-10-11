@@ -90,7 +90,10 @@ compile-pending separate from availability of a previous compiled model. Repeate
 status polls reuse at most two unchanged admitted generations using pre/post
 inode, size, mtime, ctime and directory checks. Worker startup always performs full
 validation. The shared path resolver preserves an empty cache override as a
-fallback to the normal source location.
+fallback to the normal source location. With no `HOME`, it uses the existing
+pinned home-directory lookup; an empty `HOME` resolves to `/`, matching
+`Path.home()`. Nine original/native HOME/override combinations agree; the two
+preceding failures are retained under `runtime-paths-home/{red,green}.json`.
 
 Receipts below are under `.omo/evidence/154-runtime-resume/local-worker/`.
 
