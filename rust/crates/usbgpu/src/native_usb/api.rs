@@ -41,6 +41,16 @@ pub(super) struct Api {
 }
 
 impl Api {
+    pub fn configuration_symbols(&self) -> Result<super::configuration::Symbols, Error> {
+        // SAFETY: category8; signatures match the retained SDK header; Api retains the loaded library.
+        unsafe {
+            Ok(super::configuration::Symbols {
+                get: *self._library.get(b"libusb_get_config_descriptor\0")?,
+                free: *self._library.get(b"libusb_free_config_descriptor\0")?,
+            })
+        }
+    }
+
     pub fn system() -> Result<Rc<Self>, Error> {
         // SAFETY: this fixed trusted native dependency implements libusb-1.0; the owner retains its library.
         let library = unsafe { Library::new("libusb-1.0.so.0")? };

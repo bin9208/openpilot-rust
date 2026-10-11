@@ -33,3 +33,7 @@ path = "src/bin/check.rs"
 [[example]]
 name = "usb_boundary_fixture"
 required-features = ["native-skip-miri"]
+
+[[example]]
+name = "usb_metadata_fixture"
+required-features = ["native-skip-miri"]

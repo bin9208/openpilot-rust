@@ -89,8 +89,43 @@ provider's prior eight shared-library comparisons and ten ASan cases are reused.
 Four Miri observations cover the production callback's owned Cell lifetime,
 not the entire foreign USB implementation. `usb-provider-transfer-freeze.json`
 binds exact copied source hashes, the selected binary, command output and scope.
-Metadata-only discovery and configuration/endpoint APIs are the next additive
-boundary; no control GET_DESCRIPTOR requests are substituted for cached metadata.
+The transfer is durable at `9300830f6f8b2b96d7a599038849ffbaaea3b1b8`.
+
+## Additive USB metadata checkpoint
+
+`native_usb::Scanner` owns a retained metadata-only context and returns the first
+matching device descriptor without opening a handle. `Usb::configuration(index)`
+loads `get/free_config_descriptor` lazily, copies configuration, interface and
+endpoint fields, then releases the entire foreign tree. Existing
+`Api::system`, `Usb::open`, synchronous transfers and batch ownership are unchanged;
+no control GET_DESCRIPTOR requests replace cached descriptor queries.
+
+The original `find_supported_usb_product`, `_find_expected_usb_device` and
+`_cache_out_endpoint` execute unchanged with pinned
+[PyUSB 1.3.1](https://github.com/pyusb/pyusb/blob/v1.3.1/usb/core.py), BSD-3-Clause,
+wheel SHA256 `bf9b754557af4717fe80c2b07cc2b923a9151f5c08d17bdb5345dac09d6a0430`.
+Five actual source/native controls cover PID 0092, PID 0123, absence, denied open
+and configuration failure. The configured value is 7, and source descriptor order
+chooses OUT 07 / IN 84 from alternate 2 regardless of transfer type. Repeated scans
+precede any open. Raw warning/wrapped-error strings remain captured; this API
+boundary compares the underlying USB error code, not final display error wording.
+
+Six additional native controls reject null/negative descriptor trees and release
+an allocated tree even when its query returns an error. All eleven native cases
+pass with ASan instrumenting Rust and the owned foreign library; system libusb
+is not instrumented. A separate actual control verifies discovery/open against
+the original owned library lacking both optional configuration symbols.
+Three copier tests pass all four Miri levels, including copied data after input
+storage expires. Miri metadata stripping was disabled only for those checks after
+dependency E0463 failures. Its first executable run found a stale shared pointer
+in a mutable test input; the test now borrows each immutable tree afresh. Failure
+outputs remain in `metadata-miri-*.json`.
+
+Private receipts are `metadata-comparison-invocation.json`,
+`metadata-comparison/result.json`, `metadata-allocated-error/result.json`,
+`metadata-asan/result.json`, `metadata-lazy-symbols/invocation.json` and
+`metadata-miri-level-{1,2,3,4}.json` under primary `.omo/evidence/253-cluster/`.
+These controls do not cover display setup, frame transfer, hotplug or recovery.
 
 The registered process, actual live Params/IPC, USB I/O/recovery, rendering,
 codec/GLES lifetime, nondefault inputs, complete entrypoint, host/ARM CI and AGNOS

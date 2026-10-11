@@ -2,7 +2,13 @@
 mod abi;
 mod api;
 mod batch;
+mod configuration;
+mod metadata_abi;
+mod scanner;
 mod sync;
+
+pub use configuration::{Configuration, Endpoint, InterfaceDescriptor};
+pub use scanner::{DeviceIdentity, Scanner};
 
 use crate::{transport::Description, Error};
 use abi::{Descriptor, Pointer};
