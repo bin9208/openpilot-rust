@@ -194,3 +194,11 @@ The selected current captures, exact input and inspection notes are under
 `.analysis/scratch/2026-10-12-card-228/`; the reproducible large archive may be
 removed under the current user cleanup policy. No cadence, validity, frame-count,
 packet-count, equality or shutdown requirement is relaxed.
+
+The single retry completed successfully at the same merge SHA: Card job
+[114509329939](https://github.com/bin9208/openpilot-rust/actions/runs/38149368079/job/114509329939)
+passes functional, actual host IPC and shutdown steps, and workflow attempt2
+finishes with all 46 jobs successful. Other passing jobs were reused. This
+clears the exact-SHA post-merge gate without changing the source/runtime or
+comparison requirements; the original failure and unresolved pause remain
+recorded, and issue228 stays open.
