@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import itertools
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -52,10 +53,22 @@ def cases() -> list[tuple[str, str, dict]]:
     rows.append((mode, mode, {'options': {'wait_for_frame_ack': True}, 'actions': [frame[0], *[frame[1]] * 5, frame[-1]]}))
   rows.append(('loading-frame-recovery', 'write_error', {'reset_protected': True, 'actions': frame}))
   for fast in [False, True]:
-    rows.append((f'bounded-drains-{fast}', 'drain_success', {'options': {
-      'fast_write': fast, 'frame_drain_attempts': 4, 'frame_drain_timeout_ms': 3,
-      'fast_frame_drain_attempts': 7, 'fast_frame_drain_timeout_ms': 5,
-    }, 'actions': frame}))
+    rows.append(
+      (
+        f'bounded-drains-{fast}',
+        'drain_success',
+        {
+          'options': {
+            'fast_write': fast,
+            'frame_drain_attempts': 4,
+            'frame_drain_timeout_ms': 3,
+            'fast_frame_drain_attempts': 7,
+            'fast_frame_drain_timeout_ms': 5,
+          },
+          'actions': frame,
+        },
+      )
+    )
   for protected in [False, True]:
     rows.append((f'init-recovery-{protected}', 'sync_timeout_once', {'reset_protected': protected, 'actions': frame}))
   for gpu, requested in itertools.product((False, True), (0, 1, 1_100_000)):
@@ -109,11 +122,37 @@ def invoke(argv: list[str], environment: dict[str, str], directory: Path, stdin:
   return receipt
 
 
-def compare(root: Path, oracle: Path, library: Path, native: Path, output: Path) -> None:
+def compare(root: Path, oracle: Path, library: Path, native: Path, output: Path, profile: bool = False) -> None:
   output.mkdir(parents=True)
   environment = {**os.environ, 'LD_LIBRARY_PATH': str(library.parent), 'PYTHONNOUSERSITE': '1'}
   rows = []
-  for name, mode, case in cases():
+  scenarios = cases()
+  if profile:
+    for _, _, case in scenarios:
+      case['profile_enabled'] = True
+    scenarios.extend(
+      [
+        ('profile-disabled', 'ok', {'profile_enabled': False, 'actions': [{'op': 'open'}, {'op': 'jpeg', 'bytes': [1]}, {'op': 'close'}]}),
+        (
+          'profile-clear-toggle',
+          'ok',
+          {
+            'profile_enabled': True,
+            'actions': [
+              {'op': 'open'},
+              {'op': 'jpeg', 'bytes': [1]},
+              {'op': 'clear_profile'},
+              {'op': 'profile_enabled', 'value': False},
+              {'op': 'jpeg', 'bytes': [2]},
+              {'op': 'profile_enabled', 'value': True},
+              {'op': 'png', 'bytes': [3]},
+              {'op': 'close'},
+            ],
+          },
+        ),
+      ]
+    )
+  for name, mode, case in scenarios:
     directory = output / name
     directory.mkdir()
     case['lock'] = str(directory / 'bus.lock')
@@ -142,7 +181,12 @@ def compare(root: Path, oracle: Path, library: Path, native: Path, output: Path)
       'wire_match': (directory / 'source/wire.txt').read_bytes() == (directory / 'native/wire.txt').read_bytes(),
       'bytes_match': (directory / 'source/bytes.bin').read_bytes() == (directory / 'native/bytes.bin').read_bytes(),
     }
+    if profile:
+      result['profile_match'] = [name for name, _ in expected['profiles']] == [name for name, _ in observed['profiles']]
+      result['profile_durations_valid'] = all(math.isfinite(value) and value >= 0 for report in [expected, observed] for _, value in report['profiles'])
     result['pass'] = all(result[key] for key in ['results_match', 'runtime_match', 'dimensions_match', 'wire_match', 'bytes_match'])
+    if profile:
+      result['pass'] = result['pass'] and result['profile_match'] and result['profile_durations_valid']
     (directory / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
     rows.append({'scenario': name, 'pass': result['pass']})
   result = {
@@ -157,4 +201,5 @@ def compare(root: Path, oracle: Path, library: Path, native: Path, output: Path)
 
 
 if __name__ == '__main__':
-  compare(*(Path(value).resolve() for value in sys.argv[1:]))
+  profile = sys.argv[1] == '--profile'
+  compare(*(Path(value).resolve() for value in sys.argv[2 if profile else 1 :]), profile=profile)

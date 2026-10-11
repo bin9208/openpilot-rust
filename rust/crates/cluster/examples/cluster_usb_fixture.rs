@@ -17,6 +17,7 @@ struct Case {
     gpu_active: bool,
     #[serde(default)]
     reset_protected: bool,
+    profile_enabled: Option<bool>,
     actions: Vec<Action>,
     lock: std::path::PathBuf,
 }
@@ -54,6 +55,10 @@ enum Action {
         require: bool,
     },
     StopH264,
+    ProfileEnabled {
+        value: bool,
+    },
+    ClearProfile,
 }
 
 #[derive(Default, serde::Serialize)]
@@ -90,6 +95,7 @@ struct Observation<'a> {
     results: Vec<Result<serde_json::Value, String>>,
     dimensions: [u32; 2],
     runtime: &'a Trace,
+    profiles: &'a [(&'static str, f64)],
 }
 
 fn action(display: &mut Display<TraceRuntime>, action: Action) -> Result<serde_json::Value, Error> {
@@ -133,6 +139,14 @@ fn action(display: &mut Display<TraceRuntime>, action: Action) -> Result<serde_j
             display.stop_h264_stream();
             Ok(Value::Null)
         }
+        Action::ProfileEnabled { value } => {
+            display.set_profile_enabled(value);
+            Ok(Value::Null)
+        }
+        Action::ClearProfile => {
+            display.clear_profile_samples();
+            Ok(Value::Null)
+        }
     }
 }
 fn main() -> Result<(), Error> {
@@ -146,6 +160,9 @@ fn main() -> Result<(), Error> {
     }));
     let runtime = TraceRuntime(Rc::clone(&trace));
     let mut display = Display::new(case.options, runtime, &case.lock)?;
+    if let Some(enabled) = case.profile_enabled {
+        display.set_profile_enabled(enabled);
+    }
     let results = case
         .actions
         .into_iter()
@@ -157,6 +174,7 @@ fn main() -> Result<(), Error> {
         results,
         dimensions,
         runtime: &trace.borrow(),
+        profiles: display.profile_samples(),
     };
     println!("{}", serde_json::to_string(&observation)?);
     Ok(())

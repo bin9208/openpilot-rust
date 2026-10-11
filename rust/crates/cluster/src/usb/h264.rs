@@ -33,12 +33,7 @@ impl<R: Runtime> Display<R> {
             self.runtime.sleep(Duration::from_millis(gap));
         }
         let bytes = super::overlay::transparent()?;
-        self.drain(
-            u32::try_from(self.options.frame_drain_attempts).unwrap_or(0),
-            u32::try_from(self.options.frame_drain_timeout_ms).unwrap_or(0),
-        );
-        let mut payload = super::packet::frame(102, self.runtime.milliseconds()?, &bytes, false)?;
-        self.write(&mut payload)?;
+        self.frame_payload_with_drain(FrameKind::Png, &bytes, false, false)?;
         self.runtime.sleep(Duration::from_millis(70));
         if self.options.display_fps > 0 {
             self.optional_command(15, &[(8, i64::from(self.options.display_fps))], NoAck::NONE);

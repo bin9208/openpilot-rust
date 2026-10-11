@@ -216,6 +216,30 @@ and subsequent core-7 scheduler composition; its locked raylib provider/header
 remains an explicit build dependency. This checkpoint does not implement the
 registered autorun entrypoint or its complete runtime closure.
 
+## USB profiling composition checkpoint
+
+The actual Display owner now collects the source USB timing stages for command
+preparation/write/acknowledgement, JPEG/PNG payload construction and uploads,
+transparent H264 setup frames, and H264 chunks. Enabled/disabled and clear
+operations retain the original collection behavior. Only completed stages append
+samples; missing endpoints fail before sampling like source. The command I/O and
+frame methods are separate modules so these hooks do not grow one transport file.
+
+The same 34 owned USB cases, plus disabled and clear/toggle controls, match exact
+stage names and order, wire operations, packet bytes and state. Source and native
+stage durations use real monotonic clocks and are checked as finite/nonnegative;
+their elapsed values are not compared for equality or treated as CPU savings.
+The initial profiling comparison exposed two endpoint prerequisites that sampled
+native work after source had rejected it; the corrected full 36-case run passes.
+The four actual Params/live-clock/USB composition cases and strict package,
+Clippy, format and Ruff checks also pass. The profiling recipient ELF is
+`0e9d6ba1fd49df9a2f9b87e275167ece15e8c5e18082b91aeb1b5fdb9bb6f5de`.
+Receipts are `usb-profile-{red-build,first-invocation,final-invocation,test,clippy}.json`,
+`usb-profile-final/result.json`, `usb-profile-params-invocation.json`,
+`usb-profile-params/result.json` and `usb-profile-freeze.json` under primary
+`.omo/evidence/253-cluster/`. Runtime profiling summaries and encoder/render/input
+timing hooks will compose with their respective owners.
+
 The registered process, actual live IPC, USB hotplug/autorun composition, rendering,
 codec/GLES lifetime, nondefault inputs, complete entrypoint, host/ARM CI and AGNOS
 packaging remain open. No C3X, NAS, physical USB display or vehicle is contacted.

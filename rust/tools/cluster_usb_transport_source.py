@@ -17,6 +17,7 @@ import json
 from pathlib import Path
 import struct
 import sys
+import time
 from types import ModuleType, SimpleNamespace
 
 
@@ -47,7 +48,7 @@ def source(root: Path, oracle: Path, library: Path, case_path: Path) -> None:
   display_module._usbgpu_transfer_active = lambda: trace['gpu_active']
   display_module._usbgpu_reset_protected = lambda: trace['reset_protected']
   display_module._set_cluster_hud_connected = trace['connected'].append
-  display_module.time = SimpleNamespace(sleep=lambda seconds: trace['sleeps_ms'].append(round(seconds * 1000)))
+  display_module.time = SimpleNamespace(sleep=lambda seconds: trace['sleeps_ms'].append(round(seconds * 1000)), perf_counter=time.perf_counter)
   vendor = root / 'openpilot/selfdrive/carrot/cluster/.vendor/turing-smart-screen-python-main/library/lcd/lcd_comm_turing_usb.py'
   tree = ast.parse(vendor.read_text())
   names = {'build_command_packet_header', 'encrypt_with_des', 'encrypt_command_packet', 'find_usb_device', 'send_image', 'send_jpeg'}
@@ -75,6 +76,8 @@ def source(root: Path, oracle: Path, library: Path, case_path: Path) -> None:
   exec(compile(ast.Module(body=constants, type_ignores=[]), str(vendor), 'exec'), module.__dict__)
   sys.modules[module.__name__] = module
   display = display_module.TuringUsbDisplay(**case.get('options', {}))
+  if 'profile_enabled' in case:
+    display.set_profile_enabled(case['profile_enabled'])
   results = []
   try:
     for item in case['actions']:
@@ -100,6 +103,10 @@ def source(root: Path, oracle: Path, library: Path, case_path: Path) -> None:
             value = display.send_h264_chunk(bytes(item['bytes']), is_last=item['last'], wait_for_ack=item['wait'], require_ack_response=item['require'])
           case 'stop_h264':
             value = display.stop_h264_stream()
+          case 'profile_enabled':
+            value = display.set_profile_enabled(item['value'])
+          case 'clear_profile':
+            value = display.clear_profile_samples()
           case _:
             raise AssertionError(item)
         results.append({'Ok': value})
@@ -117,7 +124,7 @@ def source(root: Path, oracle: Path, library: Path, case_path: Path) -> None:
     devices.clear()
     gc.collect()
     backend.finalize()
-  print(json.dumps({'results': results, 'dimensions': dimensions, 'runtime': trace}))
+  print(json.dumps({'results': results, 'dimensions': dimensions, 'runtime': trace, 'profiles': display.profile_samples()}))
 
 
 if __name__ == '__main__':

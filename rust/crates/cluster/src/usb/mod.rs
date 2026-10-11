@@ -1,10 +1,13 @@
 mod connection;
 mod display;
+mod frame;
 mod h264;
+mod io;
 mod options;
 mod overlay;
 pub mod packet;
 mod params_runtime;
+mod profile;
 mod settings;
 mod write;
 

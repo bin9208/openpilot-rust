@@ -1,4 +1,4 @@
-use super::{connection::Connection, write::NoAck, Options};
+use super::{connection::Connection, profile::Samples, write::NoAck, Options};
 use crate::Error;
 use openpilot_usbgpu::{bus_lock::BusLock, native_usb::Scanner, transport::Setup};
 use std::{path::Path, time::Duration};
@@ -22,6 +22,7 @@ pub struct Display<R: Runtime> {
     pub(super) frame_errors: u32,
     pub(super) orientation: u8,
     pub(super) chunk_gap: Duration,
+    pub(super) profile: Samples,
     dimensions: [u32; 2],
     bus: BusLock,
     scanner: Option<Scanner>,
@@ -44,6 +45,7 @@ impl<R: Runtime> Display<R> {
             frame_errors: 0,
             orientation: 0,
             chunk_gap: Duration::ZERO,
+            profile: Samples::from_environment(),
             dimensions: [1920, 480],
             bus: BusLock::open(lock)?,
             scanner: None,
@@ -53,6 +55,19 @@ impl<R: Runtime> Display<R> {
     #[must_use]
     pub const fn dimensions(&self) -> [u32; 2] {
         self.dimensions
+    }
+
+    pub fn set_profile_enabled(&mut self, enabled: bool) {
+        self.profile.enabled = enabled;
+    }
+
+    pub fn clear_profile_samples(&mut self) {
+        self.profile.values.clear();
+    }
+
+    #[must_use]
+    pub fn profile_samples(&self) -> &[(&'static str, f64)] {
+        &self.profile.values
     }
 
     /// # Errors
