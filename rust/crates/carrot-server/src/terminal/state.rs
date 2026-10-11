@@ -84,26 +84,7 @@ impl State {
             self.finish(Value::Null, stop).await;
             self.history.clear();
         }
-        let alive = self
-            .generation
-            .as_mut()
-            .map(Generation::alive)
-            .transpose()?
-            .unwrap_or(false);
-        if !alive {
-            self.generation.take();
-            self.history.clear();
-            self.rows = 30;
-            let command = tmux::start_command(shell.config, shell.runner).await?;
-            self.generation = Some(Generation::start(shell.config, &command)?);
-        }
-        let pid = self
-            .generation
-            .as_ref()
-            .ok_or_else(|| Error::Source("terminal session is not running".into()))?
-            .pid
-            .as_raw_nonzero()
-            .get();
+        let (alive, pid) = self.ensure(shell).await?;
         self.clients.insert(id, client);
         if eligible
             && self.primary.is_none_or(|primary| {
@@ -133,6 +114,29 @@ impl State {
             }
         }
         Ok(())
+    }
+    pub async fn ensure(&mut self, shell: Shell<'_>) -> Result<(bool, i32), Error> {
+        let alive = self
+            .generation
+            .as_mut()
+            .map(Generation::alive)
+            .transpose()?
+            .unwrap_or(false);
+        if !alive {
+            self.generation.take();
+            self.history.clear();
+            self.rows = 30;
+            let command = tmux::start_command(shell.config, shell.runner).await?;
+            self.generation = Some(Generation::start(shell.config, &command)?);
+        }
+        let pid = self
+            .generation
+            .as_ref()
+            .ok_or_else(|| Error::Source("terminal session is not running".into()))?
+            .pid
+            .as_raw_nonzero()
+            .get();
+        Ok((alive, pid))
     }
     pub fn detach(&mut self, id: u64) {
         self.clients.remove(&id);

@@ -4,7 +4,7 @@ pub mod jobs;
 mod jobs_load;
 mod jobs_persist;
 pub mod policy;
-mod text;
+pub(crate) mod text;
 
 mod admission;
 pub mod config;

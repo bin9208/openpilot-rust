@@ -1,7 +1,4 @@
-use crate::{
-    http::{route, Application},
-    Error,
-};
+use crate::{http::Application, http_route::route, Error};
 use hyper_util::rt::TokioIo;
 use std::{future::Future, sync::Arc, time::Duration};
 use tokio::{net::TcpListener, sync::watch, task::JoinSet};
@@ -23,33 +20,7 @@ async fn serve_local(
 ) -> Result<(), Error> {
     app.config.validate()?;
     app.static_web.validate()?;
-    let (heartbeat_stop, heartbeat_stopped) = watch::channel(false);
-    let heartbeat = app.heartbeat_params.clone().map(|params| {
-        let service = Arc::clone(&app.heartbeat);
-        let backend = crate::params::Backend::native(params, app.config.state.clone());
-        tokio::spawn(async move { service.run_loop(backend, heartbeat_stopped).await })
-    });
-    let (git_stop, git_stopped) = watch::channel(false);
-    let git_status = app
-        .git_status
-        .clone()
-        .map(|service| tokio::spawn(async move { service.run_loop(git_stopped).await }));
-    let (auto_stop, auto_stopped) = watch::channel(false);
-    let auto_update = app
-        .auto_update
-        .clone()
-        .map(|service| tokio::task::spawn_local(async move { service.run(auto_stopped).await }));
-    let precompress = app.static_web.start_precompress();
-    let (network_stop, network_stopped) = watch::channel(false);
-    let network = app.network_refresh.then(|| {
-        let target = Arc::clone(&app);
-        tokio::spawn(crate::system::background::run(target, network_stopped))
-    });
-    let popular_upload = app.popular_values.start_upload(Arc::clone(&app));
-    let warm_app = Arc::clone(&app);
-    let warm = tokio::task::spawn_blocking(move || {
-        let _ = warm_app.settings_payload();
-    });
+    let background = crate::http_background::Background::start(&app);
     let (stop, _) = watch::channel(false);
     let (sound_stop, _) = watch::channel(crate::web_sound::Shutdown::Running);
     let (sound, mut launches) = crate::web_sound_http::Sessions::channel(sound_stop.subscribe());
@@ -105,7 +76,14 @@ async fn serve_local(
     let mut youtube_changes = app.youtube_live.as_ref().map(|service| service.changed());
     let mut tools_changes = app.tools.as_ref().map(|service| service.changed());
     let mut terminal_changes = app.terminal.as_ref().map(|service| service.changed());
+    let mut support_changes = app
+        .support_terminal
+        .as_ref()
+        .map(|service| service.changed());
     app.dashcam_sync_uploads.quiesce();
+    if let Some(service) = &app.support_terminal {
+        service.quiesce();
+    }
     if let Some(service) = &app.terminal {
         service.quiesce();
     }
@@ -121,30 +99,47 @@ async fn serve_local(
     if let Some(service) = &app.youtube_live {
         service.quiesce();
     }
-    let _ = stop.send(true);
-    let _ = sound_stop.send(crate::web_sound::Shutdown::Quiescing);
+    stop.send_replace(true);
+    sound_stop.send_replace(crate::web_sound::Shutdown::Quiescing);
     if tokio::time::timeout(Duration::from_secs(60), async {
         loop {
             while let Ok(launch) = launches.try_recv() {
                 sounds.spawn_local(crate::web_sound_http::run(launch));
             }
-            if connections.is_empty() && sounds.is_empty() && app.dashcam_sync_uploads.is_idle()
+            if connections.is_empty()
+                && sounds.is_empty()
+                && app.dashcam_sync_uploads.is_idle()
                 && app.live.as_ref().is_none_or(|service| service.is_idle())
-                && app.web_navi.as_ref().is_none_or(|service| service.is_idle())
-                && app.youtube_live.as_ref().is_none_or(|service| service.is_idle())
+                && app
+                    .web_navi
+                    .as_ref()
+                    .is_none_or(|service| service.is_idle())
+                && app
+                    .youtube_live
+                    .as_ref()
+                    .is_none_or(|service| service.is_idle())
                 && app.tools.as_ref().is_none_or(|service| service.is_idle())
-                && app.terminal.as_ref().is_none_or(|service| service.is_idle()) {
+                && app
+                    .support_terminal
+                    .as_ref()
+                    .is_none_or(|service| service.is_idle())
+                && app
+                    .terminal
+                    .as_ref()
+                    .is_none_or(|service| service.is_idle())
+            {
                 break;
             }
             tokio::select! {
                 _ = connections.join_next(), if !connections.is_empty() => {}
                 _ = sounds.join_next(), if !sounds.is_empty() => {}
                 _ = sync_changes.changed() => {}
-                _ = async { if let Some(changes) = &mut live_changes { let _ = changes.changed().await; } }, if live_changes.is_some() => {}
-                _ = async { if let Some(changes) = &mut navi_changes { let _ = changes.changed().await; } }, if navi_changes.is_some() => {}
-                _ = async { if let Some(changes) = &mut youtube_changes { let _ = changes.changed().await; } }, if youtube_changes.is_some() => {}
-                _ = async { if let Some(changes) = &mut tools_changes { let _ = changes.changed().await; } }, if tools_changes.is_some() => {}
-                _ = async { if let Some(changes) = &mut terminal_changes { let _ = changes.changed().await; } }, if terminal_changes.is_some() => {}
+                _ = changed(&mut live_changes), if live_changes.is_some() => {}
+                _ = changed(&mut navi_changes), if navi_changes.is_some() => {}
+                _ = changed(&mut youtube_changes), if youtube_changes.is_some() => {}
+                _ = changed(&mut tools_changes), if tools_changes.is_some() => {}
+                _ = changed(&mut terminal_changes), if terminal_changes.is_some() => {}
+                _ = changed(&mut support_changes), if support_changes.is_some() => {}
                 Some(launch) = launches.recv() => {
                     sounds.spawn_local(crate::web_sound_http::run(launch));
                 }
@@ -155,17 +150,33 @@ async fn serve_local(
     .is_err()
     {
         app.dashcam_sync_uploads.force();
-        if let Some(service) = &app.tools { service.force(); }
-        if let Some(service) = &app.live { service.force(); }
-        if let Some(service) = &app.web_navi { service.force(); }
-        if let Some(service) = &app.youtube_live { service.force(); }
-        if let Some(service) = &app.terminal { service.force(); }
-        let _ = sound_stop.send(crate::web_sound::Shutdown::Force);
+        if let Some(service) = &app.tools {
+            service.force();
+        }
+        if let Some(service) = &app.live {
+            service.force();
+        }
+        if let Some(service) = &app.web_navi {
+            service.force();
+        }
+        if let Some(service) = &app.youtube_live {
+            service.force();
+        }
+        if let Some(service) = &app.terminal {
+            service.force();
+        }
+        if let Some(service) = &app.support_terminal {
+            service.force();
+        }
+        sound_stop.send_replace(crate::web_sound::Shutdown::Force);
         connections.abort_all();
         while connections.join_next().await.is_some() {}
         while sounds.join_next().await.is_some() {}
     }
     app.dashcam_sync_uploads.shutdown().await?;
+    if let Some(service) = &app.support_terminal {
+        service.shutdown().await?;
+    }
     if let Some(service) = &app.terminal {
         service.shutdown().await?;
     }
@@ -178,57 +189,18 @@ async fn serve_local(
     if let Some(service) = &app.youtube_live {
         service.finish().await?;
     }
-    warm.abort();
-    network_stop.send_replace(true);
-    if let Some(task) = network {
-        if let Err(error) = task.await {
-            eprintln!("device network cleanup: {error}");
-        }
-    }
-    heartbeat_stop.send_replace(true);
-    if let Some(task) = heartbeat {
-        match task.await {
-            Ok(Ok(
-                crate::heartbeat::LoopExit::Returned | crate::heartbeat::LoopExit::Cancelled,
-            )) => {}
-            Ok(Err(error)) => eprintln!("heartbeat cleanup: {error}"),
-            Err(error) => eprintln!("heartbeat task: {error}"),
-        }
-    }
-    git_stop.send_replace(true);
-    if let Some(task) = git_status {
-        match task.await {
-            Ok(Ok(())) => {}
-            Ok(Err(error)) => eprintln!("Git status cleanup: {error}"),
-            Err(error) => eprintln!("Git status task: {error}"),
-        }
-    }
-    auto_stop.send_replace(true);
-    if let Some(task) = auto_update {
-        if let Err(error) = task.await {
-            eprintln!("Auto update cleanup: {error}");
-        }
-    }
-    if let Some(task) = popular_upload {
-        task.abort();
-        match task.await {
-            Ok(()) => {}
-            Err(error) if error.is_cancelled() => {}
-            Err(error) => eprintln!("popular startup refresh: {error}"),
-        }
-    }
-    app.popular_values.shutdown().await?;
-    let _ = warm.await;
-    precompress.abort();
-    match precompress.await {
-        Ok(Ok(())) => {}
-        Ok(Err(error)) => eprintln!("static precompression: {error}"),
-        Err(error) if error.is_cancelled() => {}
-        Err(error) => eprintln!("static precompression task: {error}"),
-    }
+    background.finish(&app).await?;
     app.bluetooth_http.shutdown().await?;
     if let Some(service) = &app.tools {
         service.shutdown().await?;
     }
     served
+}
+
+async fn changed<T>(changes: &mut Option<watch::Receiver<T>>) {
+    if let Some(changes) = changes {
+        if let Err(error) = changes.changed().await {
+            eprintln!("Application service notification: {error}");
+        }
+    }
 }

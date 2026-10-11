@@ -15,6 +15,20 @@ pub(crate) async fn dispatch(
     let path = percent_encoding::percent_decode_str(request.uri().path())
         .decode_utf8_lossy()
         .into_owned();
+    if path == "/stream" {
+        return Ok(match &app.stream_proxy {
+            Some(service) => crate::stream_proxy::handle(request, Arc::clone(service)).await,
+            None => error_response("stream proxy unavailable".into(), head),
+        });
+    }
+    if crate::support_terminal::http::matches(&path) {
+        return Ok(match &app.support_terminal {
+            Some(service) => {
+                crate::support_terminal::http::handle(request, Arc::clone(service)).await
+            }
+            None => error_response("support terminal owner unavailable".into(), head),
+        });
+    }
     if crate::terminal::http::matches(&path) {
         if let Some(service) = &app.terminal {
             return Ok(crate::terminal::http::handle(request, Arc::clone(service)).await);

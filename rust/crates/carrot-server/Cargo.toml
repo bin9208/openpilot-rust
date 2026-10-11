@@ -35,7 +35,7 @@ chrono = { version = "0.4", default-features = false, features = ["std", "clock"
 sha1 = "=0.10.7"
 uuid = { version = "=1.26.1", features = ["v4"] }
 thiserror = "2"
-tokio = { version = "=1.53.1", features = ["rt", "macros", "net", "time", "sync", "signal", "io-util", "process"] }
+tokio = { version = "=1.53.1", features = ["rt", "macros", "net", "time", "sync", "signal", "io-util", "process", "fs"] }
 hyper = { version = "=1.11.1", features = ["http1", "server"] }
 hyper-util = { version = "=0.1.21", features = ["tokio"] }
 http-body-util = "=0.1.5"

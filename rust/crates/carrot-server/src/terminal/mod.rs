@@ -2,6 +2,7 @@
 mod cli_http;
 mod config;
 mod frames;
+mod guest;
 pub mod http;
 mod legacy;
 mod owner;
@@ -22,12 +23,21 @@ use std::sync::{
 };
 use tokio::sync::{mpsc, oneshot, watch, Notify};
 
-struct Client {
-    sink: socket::Sink,
-    finished: Arc<Notify>,
-    closed: Arc<AtomicBool>,
+pub(crate) struct Client {
+    pub sink: socket::Sink,
+    pub finished: Arc<Notify>,
+    pub closed: Arc<AtomicBool>,
 }
 enum Command {
+    Ensure(oneshot::Sender<Result<(), Error>>),
+    GuestAttach {
+        client: Client,
+        reply: oneshot::Sender<Result<u64, Error>>,
+    },
+    GuestDetach {
+        id: u64,
+        reply: oneshot::Sender<()>,
+    },
     Capture {
         argv: Vec<String>,
         admission: Admission,

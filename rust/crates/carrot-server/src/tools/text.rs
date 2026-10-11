@@ -53,6 +53,6 @@ pub(super) fn lines(points: &[u32]) -> Vec<u32> {
     normalized
 }
 
-pub(super) fn whitespace(character: char) -> bool {
+pub(crate) fn whitespace(character: char) -> bool {
     character.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&character)
 }

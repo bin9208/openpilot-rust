@@ -34,6 +34,13 @@ pub(super) async fn run(
         tokio::select! {
             changed = stop.changed() => if changed.is_err() || *stop.borrow() == Shutdown::Force { break; },
             command = commands.recv() => match command {
+                Some(Command::Ensure(reply)) => { let _accepted = reply.send(state.ensure(Shell { config: &config, runner: &runner }).await.map(|_| ())); }
+                Some(Command::GuestAttach { client, reply }) => {
+                    next = next.wrapping_add(1);
+                    let result = state.attach(Shell { config: &config, runner: &runner }, Attachment { id: next, client, eligible: false, reset: false }, &mut stop).await.map(|()| next);
+                    let _accepted = reply.send(result);
+                }
+                Some(Command::GuestDetach { id, reply }) => { state.detach(id); let _accepted = reply.send(()); }
                 Some(Command::Capture { argv, admission, reply }) => {
                     let runner = runner.clone();
                     let cwd = config.cli_cwd.clone();

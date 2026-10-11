@@ -55,6 +55,7 @@ class Peer:
     self.log: anyio.AsyncFile[bytes] | None = None
     self.port = 0
     self.shell: Path | None = None
+    self.source_program = Path(__file__).with_name('carrot_server_terminal_source.py')
 
   async def start(self) -> None:
     await self.fixture.setup()
@@ -70,7 +71,7 @@ class Peer:
     await anyio.to_thread.run_sync(programs, self.root, self.source, self.fixture.inputs.native, self.fixture.config)
     await anyio.Path(self.root / 'web').mkdir()
     await anyio.Path(self.root / 'web/index.html').write_text('owned terminal application')
-    argv = [sys.executable, '-P', str(Path(__file__).with_name('carrot_server_terminal_source.py'))] if self.source else [str(self.server)]
+    argv = [sys.executable, '-P', str(self.source_program)] if self.source else [str(self.server)]
     config = {
       'owned_root': str(self.root),
       'launcher': str(self.fixture.inputs.launcher),

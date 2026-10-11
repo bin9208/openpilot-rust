@@ -1,6 +1,4 @@
 pub use crate::http_request::read_json;
-use crate::http_response::{error_response, text};
-use crate::http_routes::dispatch;
 pub use crate::http_server::serve;
 pub use crate::request_body::{decode_request, DecodedBody as RequestBody};
 use crate::{
@@ -13,11 +11,7 @@ use crate::{
 };
 use bytes::Bytes;
 use http_body_util::Full;
-use hyper::{body::Incoming, header, Request, Response, StatusCode};
-use std::{
-    convert::Infallible,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 pub type Body = Full<Bytes>;
 
@@ -58,6 +52,8 @@ pub struct Application {
     pub qr_dependency: crate::qr_dependency::Provider,
     pub tools: Option<Arc<crate::tools::service::Service>>,
     pub terminal: Option<Arc<crate::terminal::Service>>,
+    pub support_terminal: Option<Arc<crate::support_terminal::Service>>,
+    pub stream_proxy: Option<Arc<crate::stream_proxy::Service>>,
     pub vision_test: Option<crate::vision_test::Config>,
 }
 
@@ -124,6 +120,11 @@ impl Application {
                 .and_then(crate::terminal::Service::start)
                 .ok(),
             vision_test: None,
+            support_terminal: None,
+            stream_proxy: crate::stream_proxy::Service::original(params.native_params().cloned())
+                .map(Arc::new)
+                .map_err(|error| eprintln!("Stream proxy startup: {error}"))
+                .ok(),
             tools: None,
             qr_dependency: crate::qr_dependency::Provider::original(&config),
             system: crate::system::Service::original(&config),
@@ -166,6 +167,12 @@ impl Application {
         application.tools = Some(crate::tools::service::Service::new(
             crate::tools::config::Config::original(&application),
         ));
+        application.support_terminal = application.terminal.as_ref().and_then(|terminal| {
+            crate::support_terminal::Config::original(&application, Arc::clone(terminal))
+                .and_then(crate::support_terminal::Service::start)
+                .map_err(|error| eprintln!("Support terminal startup: {error}"))
+                .ok()
+        });
         application
     }
 
@@ -217,62 +224,4 @@ impl Application {
                 })
                 .unwrap_or(false)
     }
-}
-
-pub(crate) async fn route(
-    mut request: Request<Incoming>,
-    app: Arc<Application>,
-    sound: crate::web_sound_http::Sessions,
-) -> Result<Response<Body>, Infallible> {
-    let context = crate::request_body::DecodeContext::default();
-    request.extensions_mut().insert(context.clone());
-    let head = request.method() == hyper::Method::HEAD;
-    let mut request = decode_request(request);
-    let prefetched =
-        std::future::poll_fn(|cx| std::task::Poll::Ready(request.body_mut().prefetch(cx))).await;
-    let mut response = match prefetched {
-        Ok(()) => {
-            if let Some(expectation) = request
-                .extensions()
-                .get::<hyper::ext::RawConditionalHeaders>()
-                .and_then(|headers| headers.get(&header::EXPECT))
-                .or_else(|| request.headers().get(header::EXPECT))
-                .filter(|value| {
-                    request.version() == hyper::Version::HTTP_11 && !value.as_bytes().is_empty()
-                })
-            {
-                if expectation.as_bytes().eq_ignore_ascii_case(b"100-continue") {
-                    match request
-                        .extensions()
-                        .get::<hyper::ext::ContinueSignal>()
-                        .map(hyper::ext::ContinueSignal::send)
-                        .transpose()
-                    {
-                        Ok(_) => dispatch(request, app, sound).await?,
-                        Err(error) => error_response(error.to_string(), head),
-                    }
-                } else {
-                    let expectation = String::from_utf8_lossy(expectation.as_bytes());
-                    text(
-                        StatusCode::EXPECTATION_FAILED,
-                        &format!("Unknown Expect: {expectation}"),
-                        head,
-                    )
-                }
-            } else {
-                dispatch(request, app, sound).await?
-            }
-        }
-        Err(failure) => {
-            let error = Error::Request(failure);
-            crate::http_response::parser_response(&error, head)
-                .unwrap_or_else(|| error_response(error.to_string(), head))
-        }
-    };
-    if context.requires_close() {
-        response
-            .extensions_mut()
-            .insert(hyper::ext::CloseAfterResponse);
-    }
-    Ok(response)
 }

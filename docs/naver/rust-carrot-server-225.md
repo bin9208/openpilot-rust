@@ -1385,3 +1385,58 @@ as EMFILE instead of Python's fallback text. Support-session/guest terminal,
 web bridge, stream proxy and complete Application startup remain separate
 unfinished server work. Target dependencies, required CI and full startup/upload
 still precede the user's first device comparison.
+
+## Source support cleanup observation
+
+[Issue 268](https://github.com/bin9208/openpilot-rust/issues/268) records a
+separate inherited lifecycle omission. The owned source run starts a support
+session through HTTP, authenticates its guest with the generated PIN, observes
+the same PTY PID from local and guest clients, and executes an owner-approved
+command. Calling `AppRunner.cleanup()` with the unchanged original
+`app.py::on_cleanup` callback leaves the PTY alive, the support session active,
+the separate guest page serving HTTP 200 and the owned tunnel child alive.
+The fixture then explicitly stops the support manager and reaps the child.
+
+Evidence is under `carrot-server-225-resume/support-terminal/source-owned-v1`
+with its invocation receipt and hashed original source identities. External
+cloudflared, Git metadata, MOTD paths and webhook delivery use owned fixtures.
+No actual cloud tunnel or Discord message is sent. This proves survival of main
+Application cleanup while the event loop continues, not survival after the OS
+process exits. The native Application must own support listener/session/tunnel
+cleanup within its existing shutdown deadline; that implementation and its
+observed final cleanup remain pending at this source checkpoint.
+
+## Native support and stream checkpoint (2026-10-12)
+
+Main Application now owns the support session, separate guest listener and tunnel
+inside its existing single 60-second drain. An owned tunnel that ignores TERM
+is forced and reaped together with the PTY; the current actual App control closes
+the guest listener and completes cleanup in 0.0086 seconds. This resolves the
+specific native cleanup requirement from #268; the unchanged source observation
+above remains the independent upstream defect record.
+
+Paired source/native HTTP and WebSocket controls cover the shared PTY, approve_each
+approval/reject and real 15-second command expiry, allow_all controller takeover,
+no-owner/viewer write rejection, shared five-PIN failure count and all sixteen
+guest assets/CSP. Actual 900-second session expiry reaches expired/idle at
+900.945/900.564 seconds. A guest becomes primary after local detach in both
+implementations; initial eligibility and input authorization remain separate,
+preserving the source's promotion behavior.
+
+The `/stream` POST proxy preserves raw request/response bytes and content type,
+upstream statuses and decompression, its five-second timeout, ClusterHud 409 gate
+and all six recorded result kinds. Focused malformed/overflow ClusterHud children
+abort as the original Params conversion does. Owned tunnel stdout/stderr lines
+over the source's 64 KiB reader limit return immediate 500 and reap the child,
+replacing the earlier native 20-second no-URL wait.
+
+Evidence and exact invocation/artifact mapping:
+`.omo/evidence/carrot-server-225-resume/support-terminal/resume-20261011/freeze.md`.
+Current all-target strict Clippy, 22 library tests, format/diff and selected Rust
+and Python programming checks pass. The current App example SHA-256 is
+`3f3881663cca9054a8ee24ec6c82f90e1e6d042a50a099307b95bac86f4c64f1`.
+Background ownership extraction preserves existing cleanup behavior; continuing
+after a service cleanup error is still a separate pending repair. Diagnostics
+snapshot/upload, idle allocator trim, complete normal startup, required host/ARM
+CI and Recovery #263 remain unfinished. This is an intermediate server checkpoint
+with owned local providers, not a full runtime or device-test handoff.
