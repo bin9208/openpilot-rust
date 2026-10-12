@@ -12,7 +12,7 @@ workspace = true
 [dependencies]
 openpilot-logging = { path = "../logging" }
 thiserror = "2"
-openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-logmessaged = { package = "openpilot-log-format", path = "../log-format" }
 openpilot-runtime-core = { path = "../runtime-core" }
 unicode-general-category = "=0.6.0"
 

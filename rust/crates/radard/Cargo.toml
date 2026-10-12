@@ -11,6 +11,7 @@ default = ["native-skip-miri"]
 native-skip-miri = ["dep:libc", "dep:rustix", "dep:signal-hook", "dep:openpilot-params", "dep:openpilot-logging", "dep:openpilot-beepd"]
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-messaging = { path = "../messaging", default-features = false }
 capnp = "=0.27.2"

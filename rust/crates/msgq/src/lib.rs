@@ -36,7 +36,7 @@ mod vision_memory;
 #[cfg(feature = "native-skip-miri")]
 mod vision_socket;
 #[cfg(feature = "native-skip-miri")]
-pub use vision::{VisionClient, VisionFrame};
+pub use vision::{RetainedBuffer, VisionClient, VisionFrame};
 #[cfg(any(feature = "native-skip-miri", test))]
 pub use vision_types::{VisionLayout, VisionMetadata, VisionStream};
 #[cfg(feature = "native-skip-miri")]

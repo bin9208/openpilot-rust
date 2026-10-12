@@ -30,6 +30,26 @@ pub struct Snapshot {
 }
 
 impl Snapshot {
+    pub fn run_executable(self, binary: &Path, launcher: &Path) -> Result<(), Error> {
+        let cwd = binary.parent().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "bootlog executable has no parent",
+            )
+        })?;
+        let mut child = CapturedCommand {
+            launcher: launcher.to_owned(),
+            cwd: cwd.to_owned(),
+            argv: vec![binary.as_os_str().to_owned()],
+        }
+        .spawn_inherited_with_env(&[(
+            "PARAMS_COPY_PATH".into(),
+            self.path.clone().into_os_string(),
+        )])?;
+        child.process.wait()?;
+        fs::remove_dir_all(self.path)?;
+        Ok(())
+    }
     pub fn capture(params_directory: &Path, temp_root: &Path) -> Result<Self, Error> {
         // Keep the directory on copy/thread/spawn errors, matching mkdtemp without finally.
         let path = tempfile::Builder::new()
@@ -99,6 +119,32 @@ pub fn save_bootlog(
 ) -> Result<JoinHandle<Result<(), Error>>, Error> {
     let snapshot = Snapshot::capture(params_directory, &std::env::temp_dir())?;
     Ok(snapshot.launch(loggerd_directory.to_owned(), launcher.to_owned())?)
+}
+
+pub fn save_bootlog_executable(
+    params_directory: &Path,
+    binary: &Path,
+    launcher: &Path,
+) -> Result<JoinHandle<Result<(), Error>>, Error> {
+    if !fs::metadata(binary)?.is_file() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "bootlog executable is not a file",
+        )
+        .into());
+    }
+    let snapshot = Snapshot::capture(params_directory, &std::env::temp_dir())?;
+    let binary = binary.to_owned();
+    let launcher = launcher.to_owned();
+    Ok(thread::Builder::new()
+        .name("bootlog".into())
+        .spawn(move || {
+            let result = snapshot.run_executable(&binary, &launcher);
+            if let Err(error) = &result {
+                eprintln!("bootlog snapshot worker: {error}");
+            }
+            result
+        })?)
 }
 
 fn copy_tree(source: &Path, destination: &Path, failures: &mut Vec<(PathBuf, String)>) {

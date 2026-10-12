@@ -23,7 +23,7 @@ void *library() {
       throw std::runtime_error(
           "native startup raylib plugin contract mismatch");
     }
-    const char *required[] = {"LoadImage", "ImageFormat", "DrawRing", "DrawCircleLines", "UpdateTexture", "SetShaderValueTexture",
+    const char *required[] = {"BeginMode3D", "EndMode3D", "rlViewport", "DrawTriangle3D", "DrawLine3D", "DrawSphereEx", "DrawCubeV", "GetWorldToScreenEx", "rlEnableBackfaceCulling", "rlDisableBackfaceCulling", "rlBegin", "rlVertex3f", "rlColor4ub", "rlEnd", "MemAlloc", "MemFree", "UploadMesh", "UnloadMesh", "LoadModelFromMesh", "IsModelValid", "UnloadModel", "DrawModelEx", "BeginBlendMode", "rlSetBlendFactors", "EndBlendMode", "GenImageColor", "ImageDrawTextEx", "LoadImage", "LoadImageFromMemory", "GetFontDefault", "DrawRectangleRec", "DrawTriangle", "rlTranslatef", "ImageFormat", "DrawRing", "DrawCircleLines", "UpdateTexture", "SetShaderValueTexture",
                               "UnloadImage",
                               "ImageAlphaPremultiply",
                               "ImageResize",
@@ -69,7 +69,7 @@ void *library() {
                               "GetMouseWheelMove",
                               "PollInputEvents",
                               "GetMonitorWidth",
-                              "GetMonitorHeight", "ImageFlipHorizontal", "DrawCircleV", "DrawRectangleGradientEx", "DrawLineEx", "DrawCircleGradient", "SetTextureWrap", "LoadShaderFromMemory", "UnloadShader", "BeginShaderMode", "EndShaderMode", "SetWindowTitle", "GetFPS", "DrawFPS", "GetKeyPressed", "GetCharPressed", "IsKeyDown", "IsKeyPressed", "GetMousePosition", "GetShaderLocation", "SetShaderValueV", "SetShaderValue", "SetShaderValueMatrix", "DrawTriangleStrip", "DrawSplineLinear", "SetTraceLogLevel", "SetTraceLogCallback", "DrawRectangleLines"};
+                              "GetMonitorHeight", "ImageFlipHorizontal", "DrawCircleV", "DrawRectangleGradientEx", "DrawLineEx", "DrawCircleGradient", "SetTextureWrap", "LoadShaderFromMemory", "UnloadShader", "BeginShaderMode", "EndShaderMode", "SetWindowTitle", "GetFPS", "DrawFPS", "GetKeyPressed", "GetCharPressed", "IsKeyDown", "IsKeyPressed", "GetMousePosition", "GetShaderLocation", "SetShaderValueV", "SetShaderValue", "SetShaderValueMatrix", "DrawSplineLinear", "SetTraceLogLevel", "SetTraceLogCallback", "DrawRectangleLines"};
     for (const char *name : required) {
       if (!dlsym(loaded, name)) {
         dlclose(loaded);
@@ -89,12 +89,46 @@ template <typename Function> Function resolve(const char *name) {
   return reinterpret_cast<Function>(dlsym(library(), name));
 }
 } // namespace
+bool openpilot_raylib_symbol_available(const char *name) {return dlsym(library(),name)!=nullptr;}
 #define FORWARD(result, name, parameters, arguments)                           \
   result name parameters {                                                     \
     static auto function = resolve<decltype(&name)>(#name);                    \
     return function arguments;                                                 \
   }
 FORWARD(Image, LoadImage, (const char *path), (path))
+FORWARD(Image, LoadImageFromMemory, (const char *extension, const unsigned char *bytes, int size), (extension,bytes,size))
+FORWARD(Font, GetFontDefault, (), ())
+FORWARD(void, DrawRectangleRec, (Rectangle rect, Color color), (rect,color))
+FORWARD(void, DrawTriangle, (Vector2 a, Vector2 b, Vector2 c, Color color), (a,b,c,color))
+FORWARD(void, rlTranslatef, (float x,float y,float z), (x,y,z))
+FORWARD(Image, GenImageColor, (int width,int height,Color color), (width,height,color))
+FORWARD(void, ImageDrawTextEx, (Image *image,Font font,const char *text,Vector2 position,float size,float spacing,Color color), (image,font,text,position,size,spacing,color))
+FORWARD(void, BeginMode3D, (Camera3D camera), (camera))
+FORWARD(void, EndMode3D, (), ())
+FORWARD(void, rlViewport, (int x,int y,int width,int height), (x,y,width,height))
+FORWARD(void, DrawTriangle3D, (Vector3 a,Vector3 b,Vector3 c,Color color), (a,b,c,color))
+FORWARD(void, DrawLine3D, (Vector3 a,Vector3 b,Color color), (a,b,color))
+FORWARD(void, DrawSphereEx, (Vector3 center,float radius,int rings,int slices,Color color), (center,radius,rings,slices,color))
+FORWARD(void, DrawCubeV, (Vector3 center,Vector3 size,Color color), (center,size,color))
+FORWARD(void, DrawTriangleStrip3D, (const Vector3 *points,int count,Color color), (points,count,color))
+FORWARD(Vector2, GetWorldToScreenEx, (Vector3 point,Camera camera,int width,int height), (point,camera,width,height))
+FORWARD(void, rlEnableBackfaceCulling, (), ())
+FORWARD(void, rlDisableBackfaceCulling, (), ())
+FORWARD(void, rlBegin, (int mode), (mode))
+FORWARD(void, rlVertex3f, (float x,float y,float z), (x,y,z))
+FORWARD(void, rlColor4ub, (unsigned char r,unsigned char g,unsigned char b,unsigned char a), (r,g,b,a))
+FORWARD(void, rlEnd, (), ())
+FORWARD(void *, MemAlloc, (unsigned int size), (size))
+FORWARD(void, MemFree, (void *value), (value))
+FORWARD(void, UploadMesh, (Mesh *mesh,bool dynamic), (mesh,dynamic))
+FORWARD(void, UnloadMesh, (Mesh mesh), (mesh))
+FORWARD(Model, LoadModelFromMesh, (Mesh mesh), (mesh))
+FORWARD(bool, IsModelValid, (Model model), (model))
+FORWARD(void, UnloadModel, (Model model), (model))
+FORWARD(void, DrawModelEx, (Model model,Vector3 position,Vector3 axis,float angle,Vector3 scale,Color color), (model,position,axis,angle,scale,color))
+FORWARD(void, BeginBlendMode, (int mode), (mode))
+FORWARD(void, rlSetBlendFactors, (int source,int destination,int equation), (source,destination,equation))
+FORWARD(void, EndBlendMode, (), ())
 FORWARD(void, UpdateTexture, (Texture2D texture, const void *pixels), (texture, pixels))
 FORWARD(void, SetShaderValueTexture, (Shader shader, int location, Texture2D texture), (shader, location, texture))
 FORWARD(void, ImageFormat, (Image *image, int format), (image, format))
@@ -157,6 +191,7 @@ FORWARD(Image, LoadImageFromTexture, (Texture2D texture), (texture))
 FORWARD(Image, LoadImageFromScreen, (), ())
 FORWARD(void, ImageFlipVertical, (Image * image), (image))
 FORWARD(bool, ExportImage, (Image image, const char *path), (image, path))
+FORWARD(unsigned char *, ExportImageToMemory, (Image image,const char *extension,int *size), (image,extension,size))
 FORWARD(bool, WindowShouldClose, (), ())
 FORWARD(void, SetTargetFPS, (int fps), (fps))
 FORWARD(float, GetFrameTime, (), ())
@@ -197,6 +232,7 @@ FORWARD(void, DrawTriangleStrip, (const Vector2 *points, int count, Color color)
 FORWARD(void, SetTraceLogLevel, (int level), (level))
 FORWARD(void, SetTraceLogCallback, (TraceLogCallback callback), (callback))
 FORWARD(void, DrawRectangleLines, (int x, int y, int width, int height, Color color), (x,y,width,height,color))
+FORWARD(void, DrawRectangleLinesEx, (Rectangle rect, float thickness, Color color), (rect,thickness,color))
 FORWARD(void, DrawSplineLinear, (const Vector2 *points, int count, float thick, Color color), (points, count, thick, color))
 FORWARD(void, DrawCircleLines, (int x, int y, float radius, Color color), (x, y, radius, color))
 #undef FORWARD

@@ -1,5 +1,7 @@
 //! Managed child diagnostic boundary, called inside the translated daemon.
 #![forbid(unsafe_code)]
+mod runtime;
+pub use runtime::{runtime, RuntimeError};
 
 use openpilot_crash_reporting::{Inputs, NativeException, Reporter, Sdk};
 use openpilot_logging::{

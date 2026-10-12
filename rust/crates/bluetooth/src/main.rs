@@ -41,8 +41,12 @@ fn run() -> Result<(), RuntimeError> {
 }
 
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.carrot.bluetooth.daemon",
+        "carrot_bluetooth",
+        || run().map_err(openpilot_managed_entry::StepError::raised),
+    ) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("bluetoothd: {error}");
             ExitCode::FAILURE

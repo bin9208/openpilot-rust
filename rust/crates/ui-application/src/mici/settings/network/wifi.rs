@@ -7,11 +7,47 @@ use openpilot_ui_framework::{
     navigation::NavWidget,
     network::WifiSession,
     scroller::Scroller,
-    widget::{Frame, RenderResult, Widget, WidgetState},
+    widget::{Frame, RenderResult, Widget, WidgetHandle, WidgetState},
     Error,
 };
 use openpilot_wifi::Command;
 use std::rc::Rc;
+#[derive(Clone)]
+pub struct WifiContext {
+    pub actions: crate::context::Actions,
+    pub pc: bool,
+    pub now_monotonic: Rc<dyn Fn() -> f64>,
+}
+impl From<Context> for WifiContext {
+    fn from(context: Context) -> Self {
+        Self {
+            actions: context.actions,
+            pc: context.pc,
+            now_monotonic: context.now_monotonic,
+        }
+    }
+}
+
+pub fn network_button(
+    session: WifiSession,
+    wifi: WidgetHandle,
+    canvas: &mut Canvas,
+) -> Result<Box<dyn Widget>, Error> {
+    Ok(Box::new(super::top_button::TopButton::new(
+        session,
+        wifi,
+        &Assets::new(canvas)?,
+    )?))
+}
+
+pub fn grow_network_button(widget: &mut dyn Widget, until: f64) -> Result<(), Error> {
+    let button = (widget as &mut dyn std::any::Any)
+        .downcast_mut::<super::top_button::TopButton>()
+        .ok_or(Error::Contract("network button type"))?;
+    button.grow_until(until);
+    Ok(())
+}
+
 pub struct Wifi {
     state: WidgetState,
     pub scroller: Scroller,
@@ -23,13 +59,21 @@ pub struct Wifi {
 }
 impl Wifi {
     pub fn new(context: Context, session: WifiSession, canvas: &mut Canvas) -> Result<Self, Error> {
+        Self::with_context(context.into(), session, canvas)
+    }
+    pub fn with_context(
+        context: WifiContext,
+        session: WifiSession,
+        canvas: &mut Canvas,
+    ) -> Result<Self, Error> {
         Self::with_assets(context, session, Rc::new(Assets::new(canvas)?))
     }
     pub(super) fn with_assets(
-        context: Context,
+        context: impl Into<WifiContext>,
         session: WifiSession,
         assets: Rc<Assets>,
     ) -> Result<Self, Error> {
+        let context = context.into();
         let model = Model::new(context.clone(), session.clone());
         let mut scroller = Scroller::new(true, false, !context.pc, 20.0);
         scroller.indicator = Some(assets.get(

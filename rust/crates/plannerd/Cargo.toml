@@ -14,6 +14,7 @@ native-skip-miri = ["dep:libloading", "dep:sha2", "dep:openpilot-beepd", "dep:op
 unsafe_code = "deny"
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 libc = { version = "0.2", optional = true }
 rustix = { version = "1", features = ["thread", "time"], optional = true }
 signal-hook = { version = "0.3", optional = true }

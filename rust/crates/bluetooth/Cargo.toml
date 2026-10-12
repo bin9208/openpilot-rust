@@ -14,6 +14,7 @@ name = "openpilot-bluetoothd"
 path = "src/main.rs"
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 libc = "0.2"
 num-traits = "0.2"

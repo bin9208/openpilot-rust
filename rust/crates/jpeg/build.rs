@@ -47,6 +47,7 @@ fn main() {
     );
     cxx_build::bridge("src/bridge.rs")
         .file("native/bridge.cc")
+        .file("native/turbo.cc")
         .include("native")
         .std("c++17")
         .compile("openpilot-jpeg-bridge");
@@ -58,12 +59,15 @@ fn main() {
         .compile("openpilot-jpeg-encode");
     println!("cargo:rustc-link-search=native={}", output.display());
     println!("cargo:rustc-link-lib=static=jpeg");
+    println!("cargo:rustc-link-lib=dl");
     println!("cargo:source_include={}", source.join("src").display());
     println!("cargo:build_include={}", output.display());
     for path in [
         "src/bridge.rs",
         "native/bridge.h",
         "native/bridge.cc",
+        "native/turbo.cc",
+        "native/turbo.h",
         "native/encode.h",
         "native/encode.c",
         "native/vendor",

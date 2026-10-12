@@ -1,5 +1,6 @@
 #include "bridge.h"
 #include "openpilot-startup-ui/src/camera_bridge.rs.h"
+#include "rlgl.h"
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -21,6 +22,13 @@ void Surface::plane_update(uint32_t id, rust::Slice<const uint8_t> bytes) {
   if (bytes.size() < length) throw std::invalid_argument("camera plane upload is too short");
   UpdateTexture(texture, bytes.data());
 }
+void Surface::camera_plane_filter(uint32_t id) {
+  const auto texture = textures.at(id);
+  if (!texture.id || (texture.format != PIXELFORMAT_UNCOMPRESSED_GRAYSCALE && texture.format != PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA && texture.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8))
+    throw std::invalid_argument("camera plane is unavailable");
+  SetTextureFilter(texture, TEXTURE_FILTER_BILINEAR);
+}
+void Surface::flush_camera() { rlDrawRenderBatchActive(); }
 uint32_t Surface::texture_native(uint32_t id) const {
   const auto texture = textures.at(id);
   if (!texture.id) throw std::invalid_argument("texture has been released");

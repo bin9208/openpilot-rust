@@ -14,6 +14,7 @@ native-skip-miri = ["dep:libloading"]
 unsafe_op_in_unsafe_fn = "deny"
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-navd = { path = "../navd", default-features = false }
 openpilot-params = { path = "../params" }
 openpilot-cereal = { path = "../cereal" }

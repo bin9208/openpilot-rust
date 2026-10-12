@@ -49,9 +49,17 @@ fn run(frames: Option<NonZeroU64>) -> Result<(), Error> {
     Ok(())
 }
 fn main() -> ExitCode {
-    match options().and_then(|value| value.map_or(Ok(()), run)) {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(Error::Parameter(callbacks::Error::IntegerParameter { .. })) => std::process::abort(),
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.selfdrived.selfdrived",
+        "selfdrived",
+        || match options().and_then(|value| value.map_or(Ok(()), run)) {
+            Err(Error::Parameter(callbacks::Error::IntegerParameter { .. })) => {
+                std::process::abort()
+            }
+            result => result.map_err(openpilot_managed_entry::StepError::raised),
+        },
+    ) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("selfdrived: {error}");
             ExitCode::FAILURE

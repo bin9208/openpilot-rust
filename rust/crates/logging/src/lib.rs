@@ -19,6 +19,8 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Transport(#[from] zmq::Error),
+    #[error("inherited logging context: {0}")]
+    Context(#[from] serde_json::Error),
     #[error("{0}")]
     Contract(&'static str),
 }

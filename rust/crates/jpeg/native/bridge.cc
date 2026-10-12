@@ -12,7 +12,7 @@ rust::Vec<std::uint8_t> encode(rust::Slice<const std::uint8_t> rgb,std::uint32_t
   return encode_with(rgb,Layout{width,height,3},75);
 }
 rust::Vec<std::uint8_t> encode_with(rust::Slice<const std::uint8_t> pixels,Layout layout,std::uint8_t quality) {
-  if (!layout.width || !layout.height || layout.width>65500 || layout.height>65500 || (layout.components!=1 && layout.components!=3))
+  if (!layout.width || !layout.height || layout.width>65500 || layout.height>65500 || (layout.components!=1 && layout.components!=3 && layout.components!=4))
     throw std::invalid_argument("JPEG dimensions/components do not match packed pixels");
   if (!quality || quality>100) throw std::invalid_argument("JPEG quality must be 1..100");
   const std::uint64_t length=std::uint64_t{layout.width}*layout.height*layout.components;

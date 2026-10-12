@@ -3,6 +3,7 @@ use std::{error::Error, fmt};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
     Rgb,
+    Rgbx,
     Gray,
 }
 
@@ -10,6 +11,7 @@ impl Color {
     pub const fn components(self) -> u8 {
         match self {
             Self::Rgb => 3,
+            Self::Rgbx => 4,
             Self::Gray => 1,
         }
     }

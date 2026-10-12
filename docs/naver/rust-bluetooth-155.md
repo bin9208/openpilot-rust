@@ -194,6 +194,36 @@ Evidence: `input-system-python-red`, `input-system-python-green` and
 
 Docs-Not-Needed: implementation-language conversion of existing behavior; no
 setting or user-visible behavior change.
+## Immediate scan cancellation boundary (#235)
+
+During the #225 HTTP adapter work, an owned private D-Bus comparison found that
+immediate `scan` then `close`, before the Python timer task first runs, omits
+`StopDiscovery` in the original but emits it in Rust. Python cancellation skips
+the unstarted coroutine's `finally`; Rust wakes and joins its watch-driven task.
+The existing 30-second timer policy was not changed. Both Rust function bodies
+are byte-identical to `edcdbf20e8b4281ac89c46479f93ece9c9552380`; no older ELF
+was available, so pre-existing behavior is established by source identity only.
+
+[Issue #235](https://github.com/bin9208/openpilot-rust/issues/235) tracks this
+boundary. The failing trace and identity receipt are under
+`.omo/evidence/carrot-server-225-resume/bluetooth/`. The separate yielding
+request/response comparison passes four commands and ordered calls; it does
+not resolve the immediate-call difference. Neither case uses an actual radio.
+
+The follow-up adds a three-line check at the scan task's first poll: if the
+existing stop signal is already set, the task returns before entering its timer.
+The rest of the thirty-second timer and running-task cleanup is byte-identical.
+The retained pre-fix executable reproduces the extra call. The corrected
+`bluez_client` SHA256
+`5ff2333e8bb5c834ce425f0bfdcf20e397390ca338e2145cc2225b5cdb772b11`
+matches both the immediate three-call trace and the yielded four-call trace,
+including all responses and exit status. The old-reader rejection and reopened
+snapshot comparison also passes. The bounded build, strict Clippy, formatting
+and diff checks pass; exact receipts and source identities are under
+`.omo/evidence/carrot-server-235/`. This closes the observed host cancellation
+difference; fresh hosted integration and whole-runtime/device acceptance remain
+separate gates, and no new physical-radio or thirty-second expiry run is claimed.
+
 # Manager catalog follow-up
 
 The candidate manager catalog now records the Bluetooth crate and executable,

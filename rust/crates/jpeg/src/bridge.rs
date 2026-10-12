@@ -5,10 +5,21 @@ pub(crate) mod ffi {
         height: u32,
         components: u8,
     }
-    // SAFETY: the adapter validates dimensions against the borrowed RGB slice,
-    // retains no input pointer, and returns a new owned Vec. JPEG longjmp stays in C.
+    // SAFETY: category8/14 FFI guards validate packed dimensions/length/quality
+    // before reading the immutable borrowed slice and retain no pixel pointer.
+    // Native longjmp stays inside C; exceptions cross via CXX Result. The owned
+    // nonnull Turbo resource pins its DLL/handle until destruction on its owner thread.
     unsafe extern "C++" {
         include!("bridge.h");
+        include!("turbo.h");
+        type Turbo;
+        fn open_turbo(path: &[u8]) -> Result<UniquePtr<Turbo>>;
+        fn encode_turbo(
+            codec: Pin<&mut Turbo>,
+            pixels: &[u8],
+            layout: Layout,
+            quality: u8,
+        ) -> Result<Vec<u8>>;
         fn encode(rgb: &[u8], width: u32, height: u32) -> Result<Vec<u8>>;
         fn encode_with(pixels: &[u8], layout: Layout, quality: u8) -> Result<Vec<u8>>;
     }

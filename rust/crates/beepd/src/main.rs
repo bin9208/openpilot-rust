@@ -42,8 +42,10 @@ fn run() -> Result<(), Error> {
     )
 }
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.selfdrive.controls.beep", "beep", || {
+        run().map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("beepd: {error}");
             ExitCode::FAILURE

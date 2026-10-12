@@ -35,6 +35,7 @@ void Surface::uniform_matrix(uint32_t id, rust::Str name, rust::Slice<const floa
   SetShaderValueMatrix(shader,GetShaderLocation(shader,std::string(name).c_str()),matrix);
 }
 void Surface::triangle_strip(rust::Slice<const Point> points, uint32_t tint, uint32_t id, bool shaded) {
+  if(!strip2d_available())throw std::runtime_error("2D triangle strip primitive is unavailable");
   if (points.size()>std::numeric_limits<int>::max()) throw std::runtime_error("triangle strip too large");
   std::vector<Vector2> vertices;
   vertices.reserve(points.size());

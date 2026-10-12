@@ -45,3 +45,21 @@ pub(super) fn fragment(compact: bool, external: bool) -> String {
     code.push_str("fragColor = color;\n}\n");
     code
 }
+
+/// Original cluster_live_camera.py NV12/external contrast, without UI tonemapping.
+pub(super) fn cluster_fragment(external: bool) -> String {
+    let mut code = "#version 300 es\n".to_owned();
+    if external {
+        code.push_str("#extension GL_OES_EGL_image_external_essl3 : enable\n");
+    }
+    code.push_str("precision mediump float;\nin vec2 fragTexCoord;\nout vec4 fragColor;\n");
+    code.push_str(if external {
+        "uniform samplerExternalOES texture0;\nvoid main() {\nvec3 rgb = texture(texture0, fragTexCoord).rgb;\n"
+    } else {
+        "uniform sampler2D texture0;\nuniform sampler2D texture1;\nvoid main() {\nfloat y = texture(texture0, fragTexCoord).r;\nvec2 uv = texture(texture1, fragTexCoord).ra - 0.5;\nvec3 rgb = vec3(y + 1.402 * uv.y, y - 0.344 * uv.x - 0.714 * uv.y, y + 1.772 * uv.x);\n"
+    });
+    code.push_str(
+        "rgb = clamp((rgb - 0.5) * 1.08 + 0.5, 0.0, 1.0);\nfragColor = vec4(rgb, 1.0);\n}\n",
+    );
+    code
+}

@@ -11,7 +11,7 @@ workspace = true
 
 [dependencies]
 openpilot-runtime-version = { path = "../runtime-version" }
-openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-logmessaged = { package = "openpilot-log-format", path = "../log-format" }
 openpilot-params = { path = "../params" }
 openpilot-params-typed = { path = "../params-typed" }
 openpilot-logging = { path = "../logging" }

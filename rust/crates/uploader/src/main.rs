@@ -22,8 +22,12 @@ fn run() -> Result<(), Error> {
     runtime::run(cycles)
 }
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    let result =
+        openpilot_managed_entry::runtime("openpilot.system.loggerd.uploader", "uploader", || {
+            run().map_err(openpilot_managed_entry::StepError::raised)
+        });
+    match result {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("uploader: {error}");
             ExitCode::FAILURE

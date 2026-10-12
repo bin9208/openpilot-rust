@@ -12,6 +12,8 @@ workspace = true
 [dependencies]
 openpilot-bootlog = { path = "../bootlog" }
 openpilot-hardware-control = { path = "../hardware-control" }
+openpilot-hardware-info = { path = "../hardware-info" }
+openpilot-startup-ui = { path = "../startup-ui", default-features = false }
 openpilot-params = { path = "../params" }
 openpilot-manager-catalog = { path = "../manager-catalog" }
 openpilot-process-supervision = { path = "../process-supervision" }
@@ -29,9 +31,9 @@ thiserror = "2"
 serde_json = "1"
 tempfile = "3"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
-rustix = { version = "1", features = ["time"] }
+rustix = { version = "1", features = ["time", "fs", "event", "process", "stdio"] }
 signal-hook = "0.3"
 
 [dev-dependencies]
-openpilot-hardware-info = { path = "../hardware-info" }
 serde = { version = "1", features = ["derive"] }
+zmq = "0.10"

@@ -27,8 +27,10 @@ fn run() -> Result<(), Error> {
     openpilot_ublox::runtime::receiver(config, stop)
 }
 fn main() -> std::process::ExitCode {
-    match run() {
-        Ok(()) => std::process::ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.system.ubloxd.pigeond", "pigeond", || {
+        run().map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("pigeond: {error}");
             std::process::ExitCode::FAILURE

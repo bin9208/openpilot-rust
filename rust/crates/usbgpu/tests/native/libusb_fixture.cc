@@ -34,8 +34,8 @@ int libusb_set_interface_alt_setting(libusb_device_handle *,int,int) {return 0;}
 int libusb_clear_halt(libusb_device_handle *,unsigned char) {return 0;}
 int libusb_alloc_streams(libusb_device_handle *,uint32_t count,unsigned char *,int) {record("streams allocated");return count;}
 int libusb_free_streams(libusb_device_handle *,unsigned char *,int) {record("streams freed");return 0;}
-int libusb_control_transfer(libusb_device_handle *,uint8_t,uint8_t,uint16_t,uint16_t,unsigned char *out,uint16_t length,unsigned int) {if(mode("control_error"))return LIBUSB_ERROR_IO;std::memset(out,0xa5,length);return length;}
-int libusb_bulk_transfer(libusb_device_handle *,unsigned char,unsigned char *out,int length,int *actual,unsigned int) {std::memset(out,0x5a,length);*actual=mode("partial")?length/2:length;return mode("partial")?LIBUSB_ERROR_IO:0;}
+int libusb_control_transfer(libusb_device_handle *,uint8_t,uint8_t,uint16_t,uint16_t,unsigned char *out,uint16_t length,unsigned int) {record("control");if(mode("control_error"))return LIBUSB_ERROR_IO;std::memset(out,0xa5,length);return mode("control_short")?length/2:length;}
+int libusb_bulk_transfer(libusb_device_handle *,unsigned char,unsigned char *out,int length,int *actual,unsigned int) {record("bulk");std::memset(out,0x5a,length);*actual=(mode("partial")||mode("bulk_short"))?length/2:length;return mode("partial")?LIBUSB_ERROR_IO:0;}
 const char *libusb_strerror(int code) {return code<0?"fixture USB failure":"ok";}
 libusb_transfer *libusb_alloc_transfer(int) {++live_transfers;return static_cast<libusb_transfer*>(std::calloc(1,sizeof(libusb_transfer)));}
 void libusb_free_transfer(libusb_transfer *transfer) {for(auto *p:pending)assert(p!=transfer);std::free(transfer);--live_transfers;record("transfer freed");}

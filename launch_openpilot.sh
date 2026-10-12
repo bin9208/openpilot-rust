@@ -1,6 +1,3 @@
 #!/usr/bin/env bash
-#if [[ "$(cat /data/params/d/EnableConnect)" == "2" ]]; then
-#  export API_HOST="https://api.carrotpilot.app"
-#  export ATHENA_HOST="wss://athena.carrotpilot.app"
-#fi
-exec ./launch_chffrplus.sh
+RUST_LAUNCH_ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd) || exit 1
+exec "$RUST_LAUNCH_ROOT/rust/bin/openpilot-launch" --root "$RUST_LAUNCH_ROOT" "$@"

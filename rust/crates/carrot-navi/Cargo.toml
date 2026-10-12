@@ -11,6 +11,7 @@ default = []
 native = ["dep:tokio", "dep:tokio-tungstenite", "dep:hyper", "dep:hyper-util", "dep:http-body-util", "dep:bytes", "dep:futures-util", "dep:nix", "dep:getrandom", "dep:rustix", "dep:openpilot-params", "dep:openpilot-beepd", "dep:openpilot-messaging", "dep:openpilot-cereal", "dep:capnp", "dep:base64"]
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-logmessaged = { path = "../logmessaged" }
 openpilot-runtime-core = { path = "../runtime-core" }
 num-bigint = "=0.4.8"

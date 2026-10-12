@@ -47,8 +47,12 @@ fn options() -> Result<Option<Options>, Error> {
 }
 
 fn main() -> ExitCode {
-    match options().and_then(|options| options.map_or(Ok(()), native::run)) {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.selfdrive.navd.navd", "navd", || {
+        options()
+            .and_then(|options| options.map_or(Ok(()), native::run))
+            .map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("navd: {error}");
             ExitCode::FAILURE

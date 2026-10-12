@@ -1,7 +1,17 @@
 use openpilot_pandad::supervisor_runtime::{self, Config};
 use std::{path::PathBuf, process::ExitCode};
 
-fn run() -> Result<(), Box<dyn std::error::Error>> {
+#[derive(Debug, thiserror::Error)]
+enum EntryError {
+    #[error("{0}")]
+    Arguments(&'static str),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Supervisor(#[from] openpilot_pandad::supervisor::Fault),
+}
+
+fn run() -> Result<(), EntryError> {
     let base = std::env::var_os("BASEDIR")
         .map(PathBuf::from)
         .unwrap_or(std::env::current_dir()?);
@@ -22,17 +32,36 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 println!("openpilot-pandad-supervisor [--root PATH] [--basedir PATH] [--firmware PATH] [--child PATH] [--launcher PATH] [--cycles N]\n\nPrepares Panda firmware and supervises the native Panda runtime. Alternate paths and bounded cycles support owned host fixtures.");
                 return Ok(());
             }
-            Some("--root") => config.root = args.next().ok_or("--root needs a path")?.into(),
+            Some("--root") => {
+                config.root = args
+                    .next()
+                    .ok_or(EntryError::Arguments("--root needs a path"))?
+                    .into()
+            }
             Some("--basedir") => {
-                config.basedir = args.next().ok_or("--basedir needs a path")?.into()
+                config.basedir = args
+                    .next()
+                    .ok_or(EntryError::Arguments("--basedir needs a path"))?
+                    .into()
             }
             Some("--firmware") => {
-                config.firmware = args.next().ok_or("--firmware needs a path")?.into();
+                config.firmware = args
+                    .next()
+                    .ok_or(EntryError::Arguments("--firmware needs a path"))?
+                    .into();
                 explicit_firmware = true;
             }
-            Some("--child") => config.child = args.next().ok_or("--child needs a path")?.into(),
+            Some("--child") => {
+                config.child = args
+                    .next()
+                    .ok_or(EntryError::Arguments("--child needs a path"))?
+                    .into()
+            }
             Some("--launcher") => {
-                config.launcher = args.next().ok_or("--launcher needs a path")?.into()
+                config.launcher = args
+                    .next()
+                    .ok_or(EntryError::Arguments("--launcher needs a path"))?
+                    .into()
             }
             Some("--cycles") if config.cycles.is_none() => {
                 config.cycles = args
@@ -40,10 +69,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     .and_then(|value| value.to_str().and_then(|text| text.parse().ok()))
                     .filter(|value| *value > 0);
                 if config.cycles.is_none() {
-                    return Err("--cycles must be positive".into());
+                    return Err(EntryError::Arguments("--cycles must be positive"));
                 }
             }
-            _ => return Err("unknown or duplicate Panda supervisor option".into()),
+            _ => {
+                return Err(EntryError::Arguments(
+                    "unknown or duplicate Panda supervisor option",
+                ))
+            }
         }
     }
     if !explicit_firmware {
@@ -53,8 +86,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.selfdrive.pandad.pandad", "pandad", || {
+        run().map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("pandad-supervisor: {error}");
             ExitCode::FAILURE

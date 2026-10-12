@@ -17,7 +17,7 @@ enum Reader {
     File(File),
     Remote {
         store: String,
-        agent: transport::Client,
+        agent: Box<transport::Client>,
     },
 }
 struct Source {
@@ -204,7 +204,7 @@ pub fn extract_image(
                 .casync_store
                 .clone()
                 .ok_or_else(|| Error::Contract("missing casync_store".into()))?,
-            agent: transport::agent(60, 60),
+            agent: Box::new(transport::agent(60, 60)),
         },
         chunks: dictionary(&target),
     });

@@ -23,7 +23,13 @@ impl Config {
     pub fn for_runtime() -> Result<Self, Error> {
         let prefix = std::env::var("OPENPILOT_PREFIX").unwrap_or_else(|_| "d".into());
         let data = PathBuf::from("/data");
-        let geos_library = std::env::var_os("CARROT_GEOS_LIBRARY").map(PathBuf::from);
+        let repo_root = std::env::var_os("OPENPILOT_ROOT")
+            .or_else(|| std::env::var_os("BASEDIR"))
+            .map_or_else(|| PathBuf::from("/data/openpilot"), PathBuf::from);
+        let geos_library = match std::env::var_os("CARROT_GEOS_LIBRARY") {
+            Some(path) => Some(PathBuf::from(path)),
+            None => crate::geos::installed_library(&repo_root)?,
+        };
         let carrot_data = std::env::var_os("CARROT_DATA_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from("/data/carrot"));
@@ -41,7 +47,7 @@ impl Config {
             broadcast_port: 7705,
             geos_library,
             data_root: data,
-            repo_root: PathBuf::from("/data/openpilot"),
+            repo_root,
             web_settings: carrot_data.join("state/web_settings.json"),
         })
     }

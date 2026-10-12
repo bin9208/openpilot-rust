@@ -12,6 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .file("native/graphics.cc")
         .file("native/camera.cc")
         .file("native/egl.cc")
+        .file("native/gles.cc")
         .include("native")
         .include(raylib.join("include"))
         .std("c++17")
@@ -28,6 +29,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "native/graphics.cc",
         "native/egl.cc",
         "native/egl.h",
+        "native/gles.cc",
+        "native/gles.h",
     ] {
         println!("cargo:rerun-if-changed={file}");
     }

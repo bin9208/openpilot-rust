@@ -52,8 +52,12 @@ fn options() -> Result<Option<Options>, Error> {
 }
 
 fn main() -> ExitCode {
-    match options().and_then(|options| options.map_or(Ok(()), run)) {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.selfdrive.modeld.modeld", "modeld", || {
+        options()
+            .and_then(|options| options.map_or(Ok(()), run))
+            .map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("modeld: {error}");
             ExitCode::FAILURE
@@ -73,7 +77,13 @@ fn run(options: Options) -> Result<(), Error> {
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&interrupted))?;
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stop))?;
-    let result = daemon::run(options, &mut logger, &stop);
+    let config = daemon::Configuration {
+        options,
+        usb: openpilot_driving_modeld::usb_selection::Configuration::for_runtime(Arc::clone(
+            &stop,
+        ))?,
+    };
+    let result = daemon::run(config, &mut logger, &stop);
     if interrupted.load(Ordering::Relaxed) {
         logger.emit(
             log_site!(),

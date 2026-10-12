@@ -32,8 +32,10 @@ fn run() -> Result<(), openpilot_ui_application::Error> {
     Ok(())
 }
 fn main() -> std::process::ExitCode {
-    match run() {
-        Ok(()) => std::process::ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.selfdrive.ui.ui", "ui", || {
+        run().map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             openpilot_startup_ui::logging::emit(
                 openpilot_logging::record::Level::Error,

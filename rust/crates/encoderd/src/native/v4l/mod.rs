@@ -1,6 +1,7 @@
 #![allow(unsafe_code)]
 mod abi;
 mod io;
+pub mod primitives;
 mod setup;
 
 use super::{platform, publisher::VideoPublisher, Mapping};

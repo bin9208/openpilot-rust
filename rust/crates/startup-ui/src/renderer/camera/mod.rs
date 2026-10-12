@@ -6,13 +6,30 @@ use crate::{
 };
 
 impl Renderer {
+    pub fn flush_camera(&mut self) {
+        self.surface.pin_mut().flush_camera();
+    }
+    pub fn release_cluster_camera_shader(&mut self, external: bool) -> Result<(), Error> {
+        if let Some(shader) = self.camera_shaders[4 + usize::from(external)].take() {
+            self.surface.pin_mut().shader_unload(shader)?;
+        }
+        Ok(())
+    }
     pub fn camera_shader(&mut self, style: Style, external: bool) -> Result<u32, Error> {
-        let compact = matches!(style, Style::Compact { .. });
-        let index = usize::from(compact) * 2 + usize::from(external);
+        let kind = match style {
+            Style::Large => 0,
+            Style::Compact { .. } => 1,
+            Style::Cluster => 2,
+        };
+        let index = kind * 2 + usize::from(external);
         if let Some(shader) = self.camera_shaders[index] {
             return Ok(shader);
         }
-        let fragment = shaders::fragment(compact, external);
+        let fragment = match style {
+            Style::Cluster => shaders::cluster_fragment(external),
+            Style::Large => shaders::fragment(false, external),
+            Style::Compact { .. } => shaders::fragment(true, external),
+        };
         let shader = self
             .surface
             .pin_mut()
@@ -40,6 +57,9 @@ impl Renderer {
     }
     pub fn update_camera_plane(&mut self, texture: u32, bytes: &[u8]) -> Result<(), Error> {
         Ok(self.surface.pin_mut().plane_update(texture, bytes)?)
+    }
+    pub fn smooth_camera_plane(&mut self, texture: u32) -> Result<(), Error> {
+        Ok(self.surface.pin_mut().camera_plane_filter(texture)?)
     }
     pub fn native_texture(&self, texture: u32) -> Result<u32, Error> {
         Ok(self.surface.texture_native(texture)?)

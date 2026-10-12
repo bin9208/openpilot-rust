@@ -38,10 +38,14 @@ def main():
     (env.params / 'RecordFront').write_text('1')
     directory = env.root / 'openpilot/system/camerad'
     directory.mkdir(parents=True)
-    (directory / 'camerad').symlink_to(args.vision.resolve())
+    installed = env.root / 'rust/bin'
+    installed.mkdir(parents=True)
+    launcher = installed / 'openpilot-process-child'
+    launcher.symlink_to(args.launcher.resolve())
+    (installed / 'openpilot-camerad').symlink_to(args.vision.resolve())
     with published(args.ipc, 'wideRoadCameraState', env.env, camera(79)) as packets:
       with (args.output / 'owned.log').open('w') as output:
-        process = subprocess.Popen([args.snapshot, args.launcher], env=dict(env.env, ATHENA_VISION_FIXTURE_AUTO='1'), stdout=output, stderr=subprocess.STDOUT)
+        process = subprocess.Popen([args.snapshot, launcher], env=dict(env.env, ATHENA_VISION_FIXTURE_AUTO='1'), stdout=output, stderr=subprocess.STDOUT)
         try:
           child = wait_for(lambda: camera_children(process.pid, args.vision), 6)[0]
           assert (env.params / 'IsTakingSnapshot').read_text() == '1'
@@ -59,23 +63,28 @@ def main():
       snapshot = next(json.loads(line) for line in lines if line.startswith('{"jpegBack"'))
       assert all(base64.b64decode(snapshot[key]) == expected_jpeg() for key in ['jpegBack', 'jpegFront'])
       result['owned_snapshot_source_exact'] = True
-    (directory / 'camerad').unlink()
+    (installed / 'openpilot-camerad').unlink()
+    (installed / 'openpilot-camerad').symlink_to('/usr/bin/sleep')
     (directory / 'camerad').symlink_to('/usr/bin/sleep')
-    already = subprocess.Popen([directory / 'camerad', '30'])
-    try:
-      captured = subprocess.run([args.snapshot, args.launcher], env=env.env, text=True, capture_output=True, timeout=6)
-      (args.output / 'already-running.log').write_text(captured.stdout + captured.stderr)
-      assert captured.returncode == 0
-      assert json.loads(captured.stdout.splitlines()[-1]) == {'jpegBack': None, 'jpegFront': None}
-      assert already.poll() is None
-      assert (env.params / 'IsTakingSnapshot').read_text() == '0'
-      assert not (env.params / 'Offroad_IsTakingSnapshot').exists()
-      result.update(already_running_not_stopped=True, **{'pass': True})
-    finally:
-      already.terminate()
-      already.wait(timeout=5)
-      (args.output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
-  print('PASS: actual process-supervision camera start,realtime VisionIPC snapshot,owned child reaping,source-exact JPEGs,already-running camera preservation and Params cleanup')
+    result['already_running'] = []
+    for executable in (installed / 'openpilot-camerad', directory / 'camerad'):
+      already = subprocess.Popen([executable, '30'])
+      try:
+        assert wait_for(lambda pid=already.pid, name=executable.name[:15]: Path(f'/proc/{pid}/comm').read_text().strip() == name)
+        captured = subprocess.run([args.snapshot, launcher], env=env.env, text=True, capture_output=True, timeout=6)
+        (args.output / f'already-running-{executable.name}.log').write_text(captured.stdout + captured.stderr)
+        assert captured.returncode == 0
+        assert json.loads(captured.stdout.splitlines()[-1]) == {'jpegBack': None, 'jpegFront': None}
+        assert already.poll() is None
+        assert (env.params / 'IsTakingSnapshot').read_text() == '0'
+        assert not (env.params / 'Offroad_IsTakingSnapshot').exists()
+        result['already_running'].append(executable.name)
+      finally:
+        already.terminate()
+        already.wait(timeout=5)
+    result.update(already_running_not_stopped=True, **{'pass': True})
+    (args.output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
+  print('PASS: native camera start, VisionIPC snapshot, child reaping, source-exact JPEGs, native/legacy process detection and Params cleanup')
 
 
 if __name__ == '__main__':

@@ -10,6 +10,7 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-crash-reporting = { path = "../crash-reporting" }
 openpilot-runtime-version = { path = "../runtime-version" }
 openpilot-logmessaged = { path = "../logmessaged" }

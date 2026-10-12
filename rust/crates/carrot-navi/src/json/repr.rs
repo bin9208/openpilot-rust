@@ -5,7 +5,7 @@ use unicode_general_category::{get_general_category, GeneralCategory};
 
 const _: () = assert!(unicode_general_category::UNICODE_VERSION.0 == 15);
 
-fn printable(point: u32) -> bool {
+pub fn printable(point: u32) -> bool {
     if point == 32 {
         return true;
     }

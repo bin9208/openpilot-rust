@@ -17,7 +17,23 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-fn bool_param(params: &Params, key: &str) -> Result<bool, Box<dyn std::error::Error>> {
+#[derive(Debug, thiserror::Error)]
+enum EntryError {
+    #[error("{0}")]
+    Arguments(&'static str),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Params(#[from] openpilot_params::Error),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Parse(#[from] std::num::ParseIntError),
+    #[error(transparent)]
+    Jetlink(#[from] Error),
+}
+
+fn bool_param(params: &Params, key: &str) -> Result<bool, EntryError> {
     Ok(params.get(key)?.is_some_and(|v| v == b"1"))
 }
 fn setup_gadget() -> Result<(), Error> {
@@ -45,7 +61,7 @@ fn setup_gadget() -> Result<(), Error> {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn run() -> Result<(), EntryError> {
     if env::args().skip(1).collect::<Vec<_>>() == ["--setup-gadget"] {
         openpilot_jetlink::gadget::provision_device()?;
         return Ok(());
@@ -55,15 +71,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut iterations = None;
     match args.next().as_deref() {
         Some("--run") => {}
-        _ => return Err("usage: jetlinkd-rs --run [--socket PATH] [--iterations N]".into()),
+        _ => {
+            return Err(EntryError::Arguments(
+                "usage: jetlinkd-rs --run [--socket PATH] [--iterations N]",
+            ))
+        }
     }
     while let Some(arg) = args.next() {
         match arg.as_str() {
-            "--socket" => socket = args.next().ok_or("missing socket")?.into(),
-            "--iterations" => {
-                iterations = Some(args.next().ok_or("missing iterations")?.parse::<usize>()?)
+            "--socket" => {
+                socket = args
+                    .next()
+                    .ok_or(EntryError::Arguments("missing socket"))?
+                    .into()
             }
-            _ => return Err("unknown option".into()),
+            "--iterations" => {
+                iterations = Some(
+                    args.next()
+                        .ok_or(EntryError::Arguments("missing iterations"))?
+                        .parse::<usize>()?,
+                )
+            }
+            _ => return Err(EntryError::Arguments("unknown option")),
         }
     }
     let lock_path = socket.with_extension("owner.lock");
@@ -73,7 +102,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .create(true)
         .truncate(false)
         .open(lock_path)?;
-    rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+    rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)
+        .map_err(std::io::Error::from)?;
     let params = Arc::new(Params::for_runtime()?);
     let stop = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
@@ -184,4 +214,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         server.stop(Duration::from_secs(2))?;
     }
     Ok(())
+}
+
+fn main() -> std::process::ExitCode {
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.modeld.jetlink.daemon",
+        "jetlinkd",
+        || run().map_err(openpilot_managed_entry::StepError::raised),
+    ) {
+        Ok(_) => std::process::ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("jetlinkd: {error}");
+            std::process::ExitCode::FAILURE
+        }
+    }
 }

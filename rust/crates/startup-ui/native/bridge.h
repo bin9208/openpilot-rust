@@ -4,18 +4,46 @@
 #include <memory>
 #include <vector>
 namespace startup_ui {
+bool try_process_locale(rust::Str candidate);
 struct Point;
 struct Rect;
 struct Sample;
 struct Ring;
+struct TextPaint;
+struct Vector3;
+struct Camera3D;
+struct TargetInfo;
+struct TexturePaint;
+struct ModelPaint;
+class Points2D {
+public:
+  explicit Points2D(uint32_t capacity);
+  void update(rust::Slice<const Point> points);
+  std::vector<::Vector2> values;
+  size_t length=0;
+};
+class Points3D {
+public:
+  explicit Points3D(rust::Slice<const float> values);
+  std::vector<::Vector3> values;
+};
 struct CameraRect;
 class Image {
 public:
   explicit Image(const char *path);
+  Image(rust::Str extension, rust::Slice<const uint8_t> bytes);
+  Image(int32_t width, int32_t height, uint32_t color);
+  explicit Image(::Texture2D texture);
   ~Image();
   int32_t width() const;
   int32_t height() const;
   rust::Vec<uint8_t> rgba();
+  rust::Slice<const uint8_t> rgba_view() const;
+  int32_t format() const;
+  void rgba_format();
+  void flip_vertical();
+  rust::Vec<uint8_t> encode(rust::Str extension) const;
+  void export_file(rust::Str path) const;
   void premultiply();
   void flip_horizontal();
   void resize(int32_t width, int32_t height);
@@ -23,16 +51,78 @@ public:
 };
 class Surface {
 public:
-  Surface(int32_t width, int32_t height, rust::Str title, uint32_t flags);
+  Surface(int32_t width, int32_t height, rust::Str title, uint32_t flags, int32_t level=LOG_DEBUG, bool apply_flags=true);
   ~Surface();
   uint32_t texture(Image &image, int32_t logical_width, int32_t logical_height);
   void clear(uint32_t color) noexcept;
+  uint32_t default_font();
+  void font_bilinear(uint32_t font);
+  void rectangle_rec(Rect rect, uint32_t color);
+  void rectangle_lines_ex(Rect rect, float thickness, uint32_t color);
+  void triangle(Point a, Point b, Point c, uint32_t color);
+  void push_matrix();
+  void pop_matrix();
+  void scale(float x, float y, float z);
+  void translate(float x, float y, float z);
+  void begin_capture();
+  void end_capture();
+  TargetInfo capture_info() const;
+  void capture_draw(TexturePaint paint);
+  void capture_filter(int32_t filter);
+  std::unique_ptr<Image> capture_image() const;
+  std::unique_ptr<Image> target_image(uint32_t index) const;
+  void text_batch(rust::Str text, rust::Slice<const TextPaint> paints);
+  void frame_begin();
+  void frame_end();
+  void image_text(Image &image, rust::Str text, TextPaint paint);
+  void texture_filter(uint32_t texture, int32_t filter);
+  void texture_size(uint32_t texture,int32_t width,int32_t height);
+  void uniform_texture(uint32_t shader,rust::Str name,uint32_t texture);
+  void mode3d_begin(Camera3D camera);
+  void mode3d_end();
+  void viewport(int32_t x,int32_t y,int32_t width,int32_t height);
+  void triangle3d(Vector3 a,Vector3 b,Vector3 c,uint32_t color);
+  void line3d(Vector3 a,Vector3 b,uint32_t color);
+  void sphere(Vector3 center,float radius,int32_t rings,int32_t slices,uint32_t color);
+  void cube_v(Vector3 center,Vector3 size,uint32_t color);
+  void strip3d(const Points3D &points,uint32_t color);
+  void strip2d(const Points2D &points,uint32_t offset,uint32_t count,uint32_t color);
+  bool strip2d_available() const;
+  bool strip_available() const;
+  Point world_to_screen(Vector3 point,Camera3D camera,int32_t width,int32_t height) const;
+  void culling(bool enabled);
+  void vertices_begin(int32_t mode);
+  void vertex3(Vector3 point);
+  void color4(uint32_t color);
+  void vertices_end();
+  uint32_t target_create(int32_t width,int32_t height);
+  void target_release(uint32_t index);
+  void target_begin(uint32_t index);
+  void external_target_begin(TargetInfo target);
+  void target_end();
+  TargetInfo target_info(uint32_t index) const;
+  rust::Vec<uint8_t> target_pixels(uint32_t index,bool flip_vertical) const;
+  void target_draw(uint32_t index,TexturePaint paint);
+  void target_filter(uint32_t index,int32_t filter);
+  uint32_t mesh_create(rust::Slice<const float> vertices,rust::Slice<const float> normals,rust::Slice<const uint8_t> colors);
+  void mesh_upload(uint32_t index,bool dynamic);
+  void mesh_release(uint32_t index);
+  uint32_t model_from_mesh(uint32_t index);
+  void model_release(uint32_t index);
+  void model_draw(uint32_t index,ModelPaint paint);
+  void shader_begin(uint32_t index);
+  void shader_end();
+  void blend_custom(int32_t source,int32_t destination,int32_t equation);
+  void blend_end();
   void texture_release(uint32_t texture) noexcept;
   uint32_t pixel_texture(int32_t width, int32_t height, rust::Slice<const uint8_t> rgba);
   void smooth_texture(uint32_t texture);
+  void pixel_update(uint32_t texture, rust::Slice<const uint8_t> rgba);
   void ring(Ring ring);
   uint32_t plane_texture(int32_t width, int32_t height, bool chroma);
   void plane_update(uint32_t texture, rust::Slice<const uint8_t> bytes);
+  void camera_plane_filter(uint32_t texture);
+  void flush_camera();
   uint32_t texture_native(uint32_t texture) const;
   void camera_texture(uint32_t shader, uint32_t luma, uint32_t chroma, bool external, CameraRect source, CameraRect destination);
   uint32_t font(rust::Str path, int32_t size, rust::Slice<const int32_t> points,
@@ -88,16 +178,28 @@ public:
   float wheel() const;
 
 private:
+  std::vector<::RenderTexture> targets;
+  std::vector<::Model> models;
+  std::vector<::Mesh> meshes;
   std::vector<::Shader> shaders;
   std::vector<::Font> fonts;
+  int64_t default_font_index = -1;
   std::vector<::Texture> textures;
   ::RenderTexture target{};
   ::Shader shader{};
 };
 std::unique_ptr<Surface> create(int32_t width, int32_t height, rust::Str title,
                                 uint32_t flags);
+std::unique_ptr<Surface> create_with_trace(int32_t width,int32_t height,rust::Str title,uint32_t flags,int32_t level);
+std::unique_ptr<Surface> create_inheriting_flags(int32_t width,int32_t height,rust::Str title,int32_t level);
+void trace_level(int32_t level);
 Point monitor();
 void poll_input();
 Sample sample_input(int32_t slot);
 std::unique_ptr<Image> image(rust::Str path);
+std::unique_ptr<Image> image_encoded(rust::Str extension, rust::Slice<const uint8_t> bytes);
+std::unique_ptr<Image> image_blank(int32_t width, int32_t height, uint32_t color);
+std::unique_ptr<Points3D> points3d(rust::Slice<const float> values);
+std::unique_ptr<Points2D> points2d(uint32_t capacity);
+void export_rgba(int32_t width, int32_t height, rust::Slice<const uint8_t> bytes, rust::Str path);
 } // namespace startup_ui

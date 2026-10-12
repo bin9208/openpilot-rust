@@ -1,8 +1,6 @@
 use super::assets::Assets;
-use crate::{
-    context::{Action, Context},
-    mici::widgets::dialog::Confirmation,
-};
+use super::wifi::WifiContext;
+use crate::{context::Action, mici::widgets::dialog::Confirmation};
 use openpilot_ui_framework::{
     assets::Texture,
     draw::{Draw, WHITE},
@@ -14,14 +12,18 @@ use openpilot_ui_framework::{
 use std::rc::Rc;
 pub(super) struct Forget {
     pub state: WidgetState,
-    context: Context,
+    context: WifiContext,
     callback: Rc<dyn Fn()>,
     backgrounds: [Texture; 2],
     trash: Texture,
     confirm_icon: Texture,
 }
 impl Forget {
-    pub fn new(context: Context, callback: Rc<dyn Fn()>, assets: &Assets) -> Result<Self, Error> {
+    pub fn new(
+        context: WifiContext,
+        callback: Rc<dyn Fn()>,
+        assets: &Assets,
+    ) -> Result<Self, Error> {
         let mut state = WidgetState::default();
         state.rect = Rect {
             x: 0.0,

@@ -32,8 +32,10 @@ fn run() -> Result<(), Error> {
     runtime::run(config, stop)
 }
 fn main() -> std::process::ExitCode {
-    match run() {
-        Ok(()) => std::process::ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.system.sensord.sensord", "sensord", || {
+        run().map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("sensord: {error}");
             std::process::ExitCode::FAILURE

@@ -5,7 +5,7 @@ use std::{
     fs::Permissions,
     io::{Read, Write},
     os::{
-        fd::AsRawFd,
+        fd::{AsFd, AsRawFd, BorrowedFd},
         unix::{
             ffi::OsStringExt,
             fs::PermissionsExt,
@@ -55,6 +55,10 @@ enum LaunchRequest {
         handshake: Vec<u8>,
         #[serde(default)]
         new_session: bool,
+        #[serde(default)]
+        controlling_terminal: bool,
+        #[serde(default)]
+        inherit_lock: bool,
     },
 }
 
@@ -92,11 +96,63 @@ enum StreamMode {
     Stdout,
     Inherited,
     Redirected(Stdio, Stdio),
+    SessionFiles(Stdio, Stdio),
+    SessionPty(Stdio, Stdio, Stdio),
+    ControllingPty(Stdio, Stdio, Stdio),
 }
 
 impl CapturedCommand {
+    pub fn spawn_controlling_pty(&self, slave: std::fs::File) -> Result<CapturedChild, Error> {
+        let stdout = slave.try_clone()?;
+        let stderr = slave.try_clone()?;
+        self.spawn_with_stdio(
+            StreamMode::ControllingPty(slave.into(), stdout.into(), stderr.into()),
+            &[],
+            true,
+        )
+    }
+
+    /// Start a new session with all three standard streams sharing one PTY slave.
+    /// Like the source terminal, this does not acquire a controlling terminal.
+    /// The caller owns PTY closure and session-group termination/reaping.
+    pub fn spawn_session_pty_with_env(
+        &self,
+        slave: std::fs::File,
+        environment: &[(OsString, OsString)],
+    ) -> Result<CapturedChild, Error> {
+        let stdout = slave.try_clone()?;
+        let stderr = slave.try_clone()?;
+        self.spawn_with_stdio(
+            StreamMode::SessionPty(slave.into(), stdout.into(), stderr.into()),
+            environment,
+            true,
+        )
+    }
+
     pub fn spawn(&self) -> Result<CapturedChild, Error> {
         self.spawn_with_stdio(StreamMode::Captured, &[], false)
+    }
+
+    /// Capture separate byte streams under one post-spawn child/EOF deadline.
+    pub fn capture(
+        &self,
+        timeout: Duration,
+        lock: Option<BorrowedFd<'_>>,
+    ) -> Result<std::process::Output, crate::CaptureError> {
+        let mut child = match lock {
+            Some(lock) => self.spawn_captured_with_lock(&[], lock)?,
+            None => self.spawn()?,
+        };
+        crate::capture_output(&mut child.process, timeout)
+    }
+
+    /// Pass one borrowed lock into a child with separate pipes and no new session.
+    pub fn spawn_captured_with_lock(
+        &self,
+        environment: &[(OsString, OsString)],
+        lock: BorrowedFd<'_>,
+    ) -> Result<CapturedChild, Error> {
+        self.spawn_controlled(StreamMode::Captured, environment, false, Some(lock))
     }
 
     pub fn spawn_stdout(&self) -> Result<CapturedChild, Error> {
@@ -115,12 +171,25 @@ impl CapturedCommand {
         self.spawn_with_stdio(StreamMode::Redirected(stdout, stderr), &[], false)
     }
 
+    /// Detach a new session with file outputs and EOF on stdin, matching Popen.
+    pub fn spawn_session_redirected(
+        &self,
+        stdout: Stdio,
+        stderr: Stdio,
+    ) -> Result<CapturedChild, Error> {
+        self.spawn_with_stdio(StreamMode::SessionFiles(stdout, stderr), &[], true)
+    }
+
     pub fn spawn_piped_stdin(&self) -> Result<CapturedChild, Error> {
         self.spawn_with_stdio(StreamMode::PipedStdin, &[], false)
     }
 
     pub fn spawn_inherited(&self) -> Result<CapturedChild, Error> {
         self.spawn_with_stdio(StreamMode::Inherited, &[], false)
+    }
+
+    pub fn spawn_inherited_with_lock(&self, lock: BorrowedFd<'_>) -> Result<CapturedChild, Error> {
+        self.spawn_controlled(StreamMode::Inherited, &[], false, Some(lock))
     }
 
     pub fn spawn_inherited_with_env(
@@ -146,11 +215,38 @@ impl CapturedCommand {
         Ok((child, reader))
     }
 
+    /// Pass exactly one repository lock's open-file description into an owned session.
+    pub fn spawn_session_merged_with_lock(
+        &self,
+        environment: &[(OsString, OsString)],
+        lock: BorrowedFd<'_>,
+    ) -> Result<(CapturedChild, std::io::PipeReader), Error> {
+        let (reader, writer) = std::io::pipe()?;
+        let stderr = writer.try_clone()?;
+        let child = self.spawn_controlled(
+            StreamMode::Redirected(writer.into(), stderr.into()),
+            environment,
+            true,
+            Some(lock),
+        )?;
+        Ok((child, reader))
+    }
+
     fn spawn_with_stdio(
         &self,
         mode: StreamMode,
         environment: &[(OsString, OsString)],
         new_session: bool,
+    ) -> Result<CapturedChild, Error> {
+        self.spawn_controlled(mode, environment, new_session, None)
+    }
+
+    fn spawn_controlled(
+        &self,
+        mode: StreamMode,
+        environment: &[(OsString, OsString)],
+        new_session: bool,
+        lock: Option<BorrowedFd<'_>>,
     ) -> Result<CapturedChild, Error> {
         crate::exec::validate_arguments(&self.argv)?;
         let directory = Builder::new()
@@ -169,6 +265,8 @@ impl CapturedCommand {
                 .collect(),
             handshake: socket_path.into_os_string().into_vec(),
             new_session,
+            controlling_terminal: matches!(mode, StreamMode::ControllingPty(..)),
+            inherit_lock: lock.is_some(),
         };
         let mut descriptor = tempfile::NamedTempFile::new_in(directory.path())?;
         serde_json::to_writer(descriptor.as_file_mut(), &request)?;
@@ -181,9 +279,32 @@ impl CapturedCommand {
             StreamMode::Stdout => command.stdout(Stdio::piped()),
             StreamMode::Inherited => &mut command,
             StreamMode::Redirected(stdout, stderr) => command.stdout(stdout).stderr(stderr),
+            StreamMode::SessionFiles(stdout, stderr) => {
+                command.stdin(Stdio::null()).stdout(stdout).stderr(stderr)
+            }
+            StreamMode::SessionPty(stdin, stdout, stderr)
+            | StreamMode::ControllingPty(stdin, stdout, stderr) => command
+                .env_remove("TMUX")
+                .stdin(stdin)
+                .stdout(stdout)
+                .stderr(stderr),
         };
         let mut child = command.spawn()?;
-        if let Err(error) = wait_for_exec(&listener, &mut child) {
+        if let Err(error) = wait_for_exec(&listener, &mut child, lock) {
+            if lock.is_some() && new_session {
+                let group = i32::try_from(child.id())
+                    .ok()
+                    .and_then(rustix::process::Pid::from_raw)
+                    .ok_or(Error::PidRange)?;
+                match rustix::process::kill_process_group(group, rustix::process::Signal::KILL) {
+                    Ok(()) | Err(rustix::io::Errno::SRCH) => {}
+                    Err(error) => {
+                        child.kill()?;
+                        child.wait()?;
+                        return Err(std::io::Error::from(error).into());
+                    }
+                }
+            }
             let termination = child.kill();
             child.wait()?;
             match termination {
@@ -200,10 +321,17 @@ impl CapturedCommand {
     }
 }
 
-fn wait_for_exec(listener: &UnixListener, child: &mut Child) -> Result<(), Error> {
+fn wait_for_exec(
+    listener: &UnixListener,
+    child: &mut Child,
+    lock: Option<BorrowedFd<'_>>,
+) -> Result<(), Error> {
     loop {
         match listener.accept() {
-            Ok((stream, _)) => {
+            Ok((mut stream, _)) => {
+                if let Some(lock) = lock {
+                    crate::lock_fd::send(&mut stream, lock)?;
+                }
                 let mut report = Vec::new();
                 stream.take(5).read_to_end(&mut report)?;
                 return match report.as_slice() {
@@ -218,7 +346,21 @@ fn wait_for_exec(listener: &UnixListener, child: &mut Child) -> Result<(), Error
                 };
             }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                if child.try_wait()?.is_some() {
+                let pid = i32::try_from(child.id())
+                    .ok()
+                    .and_then(rustix::process::Pid::from_raw)
+                    .ok_or(Error::PidRange)?;
+                let exited = loop {
+                    use rustix::process::{waitid, WaitId, WaitIdOptions};
+                    match waitid(
+                        WaitId::Pid(pid),
+                        WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+                    ) {
+                        Err(rustix::io::Errno::INTR) => continue,
+                        result => break result.map_err(std::io::Error::from)?,
+                    }
+                };
+                if exited.is_some() {
                     return Err(Error::LaunchProtocol("helper exited before exec handshake"));
                 }
                 std::thread::sleep(Duration::from_millis(1));
@@ -228,6 +370,10 @@ fn wait_for_exec(listener: &UnixListener, child: &mut Child) -> Result<(), Error
         }
     }
 }
+
+#[cfg(test)]
+#[path = "launch_tests.rs"]
+mod tests;
 
 pub fn run_child(input: impl Read) -> Result<(), Error> {
     let request: LaunchRequest = serde_json::from_reader(input)?;
@@ -247,15 +393,34 @@ pub fn run_child(input: impl Read) -> Result<(), Error> {
             argv,
             handshake,
             new_session,
+            controlling_terminal,
+            inherit_lock,
         } => {
             let mut stream = UnixStream::connect(PathBuf::from(OsString::from_vec(handshake)))?;
             rustix::io::fcntl_setfd(&stream, rustix::io::FdFlags::CLOEXEC)
                 .map_err(std::io::Error::from)?;
             let outcome = (|| {
+                let lock = if inherit_lock {
+                    Some(crate::lock_fd::receive(&mut stream)?)
+                } else {
+                    None
+                };
                 if new_session {
                     nix::unistd::setsid().map_err(std::io::Error::from)?;
                 }
-                crate::detached_child::prepare(stream.as_raw_fd())?;
+                if controlling_terminal {
+                    if !new_session {
+                        return Err(Error::LaunchProtocol(
+                            "controlling PTY requires a new session",
+                        ));
+                    }
+                    rustix::process::ioctl_tiocsctty(rustix::stdio::stdin())
+                        .map_err(std::io::Error::from)?;
+                }
+                crate::detached_child::prepare_with_lock(
+                    stream.as_raw_fd(),
+                    lock.as_ref().map(AsFd::as_fd),
+                )?;
                 let environment = crate::exec::environment(None)?;
                 std::env::set_current_dir(PathBuf::from(OsString::from_vec(cwd)))?;
                 let arguments: Vec<_> = argv.into_iter().map(OsString::from_vec).collect();

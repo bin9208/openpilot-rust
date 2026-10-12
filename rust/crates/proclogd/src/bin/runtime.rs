@@ -3,7 +3,6 @@ use openpilot_proclogd::{cadence::Cadence, wire::encode_snapshot, PROC_LOG_QUEUE
 use openpilot_runtime_core::procfs::Collector;
 use std::{
     env,
-    error::Error,
     num::NonZeroU64,
     path::PathBuf,
     process::ExitCode,
@@ -20,7 +19,23 @@ struct Options {
     root: PathBuf,
 }
 
-fn options() -> Result<Option<Options>, Box<dyn Error>> {
+#[derive(Debug, thiserror::Error)]
+enum EntryError {
+    #[error("{0}")]
+    Arguments(&'static str),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Integer(#[from] std::num::TryFromIntError),
+    #[error(transparent)]
+    Parse(#[from] std::num::ParseIntError),
+    #[error(transparent)]
+    Messaging(#[from] openpilot_msgq::Error),
+    #[error(transparent)]
+    Encode(#[from] openpilot_proclogd::wire::Error),
+}
+
+fn options() -> Result<Option<Options>, EntryError> {
     let mut args = env::args_os().skip(1);
     let mut frames = None;
     let mut root = None;
@@ -33,16 +48,23 @@ fn options() -> Result<Option<Options>, Box<dyn Error>> {
             Some("--frames") if frames.is_none() => {
                 frames = Some(
                     args.next()
-                        .ok_or("missing frame count")?
+                        .ok_or(EntryError::Arguments("missing frame count"))?
                         .to_str()
-                        .ok_or("invalid frame count")?
+                        .ok_or(EntryError::Arguments("invalid frame count"))?
                         .parse::<NonZeroU64>()?,
                 );
             }
             Some("--proc-root") if root.is_none() => {
-                root = Some(PathBuf::from(args.next().ok_or("missing proc root")?));
+                root = Some(PathBuf::from(
+                    args.next()
+                        .ok_or(EntryError::Arguments("missing proc root"))?,
+                ));
             }
-            _ => return Err("unknown or duplicate option; see --help".into()),
+            _ => {
+                return Err(EntryError::Arguments(
+                    "unknown or duplicate option; see --help",
+                ))
+            }
         }
     }
     Ok(Some(Options {
@@ -51,15 +73,15 @@ fn options() -> Result<Option<Options>, Box<dyn Error>> {
     }))
 }
 
-fn timestamp() -> Result<u64, Box<dyn Error>> {
+fn timestamp() -> Result<u64, EntryError> {
     let now = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
     u64::try_from(now.tv_sec)?
         .checked_mul(1_000_000_000)
         .and_then(|seconds| seconds.checked_add(u64::try_from(now.tv_nsec).ok()?))
-        .ok_or_else(|| "monotonic timestamp overflow".into())
+        .ok_or(EntryError::Arguments("monotonic timestamp overflow"))
 }
 
-fn run(options: Options) -> Result<(), Box<dyn Error>> {
+fn run(options: Options) -> Result<(), EntryError> {
     let stop = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stop))?;
@@ -67,8 +89,9 @@ fn run(options: Options) -> Result<(), Box<dyn Error>> {
     let mut collector = Collector::new(
         &options.root,
         NonZeroU64::new(rustix::param::clock_ticks_per_second())
-            .ok_or("invalid clock tick rate")?,
-        NonZeroU64::new(u64::try_from(rustix::param::page_size())?).ok_or("invalid page size")?,
+            .ok_or(EntryError::Arguments("invalid clock tick rate"))?,
+        NonZeroU64::new(u64::try_from(rustix::param::page_size())?)
+            .ok_or(EntryError::Arguments("invalid page size"))?,
     );
     let epoch = Instant::now();
     let mut cadence = Cadence::default();
@@ -110,8 +133,12 @@ fn run(options: Options) -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> ExitCode {
-    match options().and_then(|options| options.map_or(Ok(()), run)) {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.system.proclogd", "proclogd", || {
+        options()
+            .and_then(|options| options.map_or(Ok(()), run))
+            .map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("proclogd: {error}");
             ExitCode::FAILURE

@@ -14,6 +14,7 @@ native = ["dep:cxx", "dep:openpilot-msgq", "dep:openpilot-messaging", "dep:openp
 unsafe_code = "deny"
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-msgq = { path = "../msgq", optional = true }
 openpilot-cereal = { path = "../cereal" }
 openpilot-messaging = { path = "../messaging", optional = true }

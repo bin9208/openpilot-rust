@@ -71,6 +71,10 @@ impl Params {
         Self::open_namespace(root, prefix.as_deref().unwrap_or("d"), true)
     }
 
+    pub fn directory(&self) -> &Path {
+        &self.directory
+    }
+
     fn open_namespace(root: &Path, prefix: &str, allow_empty: bool) -> Result<Self, Error> {
         if (!allow_empty && prefix.is_empty())
             || prefix.len() > 100
@@ -89,14 +93,18 @@ impl Params {
             let temporary = tempfile::Builder::new()
                 .prefix(".tmp_")
                 .tempdir_in(&params.root)?;
-            match symlink(temporary.path(), &params.directory) {
+            let mut link_path = temporary.path().as_os_str().to_os_string();
+            link_path.push(".link");
+            symlink(temporary.path(), &link_path)?;
+            let link = tempfile::TempPath::try_from_path(link_path)?;
+            match link.persist(&params.directory) {
                 Ok(()) => {
                     File::open(temporary.keep())?.sync_all()?;
                 }
-                Err(error)
-                    if error.kind() == io::ErrorKind::AlreadyExists
+                Err(failure)
+                    if failure.error.kind() == io::ErrorKind::AlreadyExists
                         && params.directory.is_dir() => {}
-                Err(error) => return Err(error.into()),
+                Err(failure) => return Err(failure.error.into()),
             }
             File::open(&params.root)?.sync_all()?;
         }

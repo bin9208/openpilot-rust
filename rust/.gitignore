@@ -1,2 +1,4 @@
 /target/
+/bin/
+/runtime-manifest.json
 __pycache__/

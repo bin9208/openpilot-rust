@@ -13,6 +13,7 @@ visionipc-ion = ["openpilot-msgq/visionipc-ion"]
 unsafe_op_in_unsafe_fn = "deny"
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-modeld = { path = "../modeld" }
 openpilot-model-runtime = { path = "../model-runtime" }

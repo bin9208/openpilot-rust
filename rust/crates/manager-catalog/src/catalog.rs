@@ -87,12 +87,14 @@ impl Descriptor {
 fn availability(name: &str) -> RustAvailability {
     let (package, binary) = match name {
         "xiaoge_data" => ("openpilot-xiaoge", "openpilot-xiaoge"),
+        "carrot_cluster" => ("openpilot-cluster", "openpilot-cluster-autorun"),
         "_pandad" => ("openpilot-pandad", "openpilot-pandad"),
         "beep" => ("openpilot-beepd", "openpilot-beepd"),
         "bridge" => ("openpilot-bridge", "bridge"),
         "camerad" => ("openpilot-camerad-runtime", "openpilot-camerad"),
         "calibrationd" => ("openpilot-calibrationd", "openpilot-calibrationd"),
         "carrot_navi" => ("openpilot-carrot-navi", "openpilot-carrot-navi"),
+        "carrot_server" => ("openpilot-carrot-server", "openpilot-carrot-server"),
         "card" => ("openpilot-card", "openpilot-card"),
         "carrot_bluetooth" => ("openpilot-bluetooth", "openpilot-bluetoothd"),
         "carrot_man" => ("openpilot-carrot-man", "openpilot-carrot-man"),
@@ -146,6 +148,9 @@ fn availability(name: &str) -> RustAvailability {
         "ubloxd" => ("openpilot-ublox", "openpilot-ubloxd"),
         "ui" => ("openpilot-ui-application", "openpilot-ui"),
         "updated" => ("openpilot-updated", "openpilot-updated"),
+        "uploader" => ("openpilot-uploader", "openpilot-uploader"),
+        "webrtcd" => ("openpilot-webrtc", "openpilot-webrtcd"),
+        "carrot_webrtcd" => ("openpilot-webrtc", "openpilot-carrot-webrtcd"),
         "webcamerad" => ("openpilot-webcam", "openpilot-webcam"),
         _ => return RustAvailability::NotPorted,
     };

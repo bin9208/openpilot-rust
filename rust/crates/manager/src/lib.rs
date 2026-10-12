@@ -4,10 +4,12 @@
 pub mod boot_lock;
 pub mod diagnostics;
 pub mod initialization;
+pub mod installed;
 pub mod lifecycle;
 pub mod main_loop;
 pub mod native_boot;
 pub mod native_exit;
+pub mod output;
 pub mod parameters;
 pub mod processes;
 pub mod runtime;

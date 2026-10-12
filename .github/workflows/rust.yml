@@ -543,6 +543,8 @@ jobs:
           python tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host"
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: cargo fmt --all --check
+      - name: Reject incomplete or invalid native runtime packages
+        run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests -q tools/tests/test_runtime_package.py tools/tests/test_offline_qcom_publish.py
       - name: Install source-pinned Eigen headers
         run: |
           python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
@@ -587,6 +589,32 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
+      - name: Build standalone recovery service
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-carrot-recovery -p openpilot-process-supervision --bins --examples --locked
+          sudo apt-get install -y tmux
+      - name: Compare recovery HTTP, terminal, support, actions and upload paths
+        working-directory: .
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -P rust/tools/carrot_recovery_http_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/http" --standalone
+          python -P rust/tools/carrot_recovery_terminal_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/terminal"
+          python -P rust/tools/carrot_recovery_terminal_lifecycle.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/lifecycle"
+          python -P rust/tools/carrot_recovery_support_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/support"
+          python -P rust/tools/carrot_recovery_support_shutdown.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/shutdown"
+          python -P rust/tools/carrot_recovery_actions_control.py --binary rust/target/debug/examples/recovery_actions --tmux /usr/bin/tmux --output "$RUNNER_TEMP/recovery/actions"
+          python -P rust/tools/check_carrot_recovery_upload.py --binary rust/target/debug/examples/upload --http-binary rust/target/debug/examples/recovery_actions --output "$RUNNER_TEMP/recovery/upload"
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --no-run --locked --message-format=json > "$RUNNER_TEMP/recovery/tests.jsonl"
+          recovery_test=$(python -c 'import json,sys; print(next(x["executable"] for x in map(json.loads,open(sys.argv[1])) if x.get("reason")=="compiler-artifact" and x.get("profile",{}).get("test") and x["target"]["name"]=="openpilot_carrot_recovery"))' "$RUNNER_TEMP/recovery/tests.jsonl")
+          python -P rust/tools/carrot_recovery_cwp_check.py --test-binary "$recovery_test" --output "$RUNNER_TEMP/recovery/cwp"
+      - name: Preserve recovery source comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-recovery-evidence
+          path: ${{ runner.temp }}/recovery/
+          if-no-files-found: warn
       - name: Compare USB GPU status and transport foundation with original source
         run: |
           python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
@@ -2011,7 +2039,8 @@ jobs:
         run: |
           rustc --version
           cargo --version
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged --bins --examples --locked
       - name: Build original startup message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/startup-msgq-python"
@@ -2028,6 +2057,12 @@ jobs:
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry-readiness"
           python rust/tools/check_managed_entry.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry"
+          python rust/tools/check_managed_runtime.py --binaries rust/target/debug --daemon uploader \
+            --output "$RUNNER_TEMP/startup-runtime/uploader-entry"
+      - name: Exercise the native bootstrap with owned startup providers
+        run: |
+          python rust/tools/check_runtime_launcher.py --binary rust/target/debug/openpilot-launch \
+            --provider rust/target/debug/examples/bootstrap_provider --output "$RUNNER_TEMP/startup-runtime/bootstrap"
       - name: Verify the exact native response detector source archive
         run: |
           curl --fail --location --retry 3 https://static.crates.io/crates/charset-norm/charset-norm-3.5.1.crate --output "$RUNNER_TEMP/charset-norm-3.5.1.crate"
@@ -2575,6 +2610,7 @@ jobs:
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
     defaults:
       run:
         working-directory: rust
@@ -2588,10 +2624,18 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libyuv-dev libzmq5 ffmpeg strace
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
-      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 PyJWT==2.15.1 requests==2.34.2 cryptography==50.0.1
       - run: cargo test -p openpilot-loggerd --locked
       - run: cargo test -p openpilot-msgq --test queued --locked
-      - run: cargo build -p openpilot-loggerd -p openpilot-logmessaged --locked
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          cargo build -p openpilot-loggerd -p openpilot-logmessaged -p openpilot-uploader --locked
+      - name: Verify managed crash recording and existing route upload
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python -P tools/check_runtime_log_upload.py \
+            --binaries target/debug --output "$RUNNER_TEMP/runtime-log-upload"
       - run: cargo build -p openpilot-logging --example native_logging_probe --locked
       - name: Compare shared native logging context, transport and rate-limit boundaries
         run: python tools/check_native_logging.py --binary target/debug/examples/native_logging_probe --output "$RUNNER_TEMP/native-logging"
@@ -2654,6 +2698,7 @@ jobs:
             ${{ runner.temp }}/logger-io/
             ${{ runner.temp }}/logger-counters/
             ${{ runner.temp }}/logger-pipeline/
+            ${{ runner.temp }}/runtime-log-upload/
             ${{ runner.temp }}/native-logging/
             ${{ runner.temp }}/logger-original/*.json
             ${{ runner.temp }}/logger-original/*.log

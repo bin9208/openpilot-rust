@@ -10,6 +10,8 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-log-format = { path = "../log-format" }
+openpilot-managed-entry = { path = "../managed-entry" }
 capnp = "=0.27.2"
 getrandom = "0.4"
 home = "0.5.12"

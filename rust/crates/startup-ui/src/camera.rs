@@ -9,6 +9,7 @@ pub enum PlaneFormat {
 pub enum Style {
     Large,
     Compact { engaged: bool, driver: bool },
+    Cluster,
 }
 pub struct CameraDraw {
     pub luma: u32,

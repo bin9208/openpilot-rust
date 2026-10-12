@@ -26,14 +26,29 @@ fn run() -> Result<(), Error> {
     runtime::run(frames)
 }
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(Error::Signal(signal)) => {
-            if let Err(error) = signal_hook::low_level::emulate_default_handler(signal) {
-                eprintln!("radard signal: {error}");
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.carrot.radar.radard_dpath",
+        "radard",
+        || match run() {
+            Ok(()) => Ok(()),
+            Err(Error::Signal(signal))
+                if signal == signal_hook::consts::SIGINT
+                    && std::env::var_os("MANAGER_DAEMON").is_some() =>
+            {
+                Err(openpilot_managed_entry::StepError::Interrupted)
             }
-            ExitCode::FAILURE
-        }
+            Err(Error::Signal(signal)) => {
+                if let Err(error) = signal_hook::low_level::emulate_default_handler(signal) {
+                    eprintln!("radard signal: {error}");
+                }
+                Err(openpilot_managed_entry::StepError::raised(Error::Signal(
+                    signal,
+                )))
+            }
+            Err(error) => Err(openpilot_managed_entry::StepError::raised(error)),
+        },
+    ) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("radard: {error}");
             ExitCode::FAILURE

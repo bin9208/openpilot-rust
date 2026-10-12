@@ -26,8 +26,12 @@ fn run() -> Result<(), Error> {
     runtime::run(frames)
 }
 fn main() -> std::process::ExitCode {
-    match run() {
-        Ok(()) => std::process::ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.locationd.locationd",
+        "locationd",
+        || run().map_err(openpilot_managed_entry::StepError::raised),
+    ) {
+        Ok(_) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("locationd: {error}");
             std::process::ExitCode::FAILURE

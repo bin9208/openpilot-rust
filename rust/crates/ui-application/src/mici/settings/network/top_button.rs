@@ -23,6 +23,9 @@ pub(super) struct TopButton {
     draw_lock: bool,
 }
 impl TopButton {
+    pub(super) fn grow_until(&mut self, until: f64) {
+        self.button.grow_until = Some(until);
+    }
     pub fn new(session: WifiSession, wifi: WidgetHandle, assets: &Assets) -> Result<Self, Error> {
         let mut button = assets.button("wi-fi")?;
         button.value = "not connected".into();

@@ -17,6 +17,25 @@ struct Artifact {
     sha256: String,
 }
 
+pub(super) fn default_manifest() -> &'static [u8] {
+    if cfg!(target_arch = "aarch64") {
+        include_bytes!("../geos-aarch64.json")
+    } else {
+        include_bytes!("../native-dependencies.json")
+    }
+}
+
+pub(crate) fn installed_library(root: &Path) -> Result<Option<PathBuf>, Error> {
+    let manifest: Manifest = serde_json::from_slice(default_manifest())?;
+    let artifact = manifest
+        .libraries
+        .into_iter()
+        .find(|library| library.name.starts_with("libgeos_c-"))
+        .ok_or_else(|| Error::Geos("pinned C API artifact is missing".into()))?;
+    let path = root.join("rust/bin/carrot-geos").join(artifact.name);
+    Ok(path.is_file().then_some(path))
+}
+
 pub(super) fn verify(path: &Path, bytes: &[u8]) -> Result<PathBuf, Error> {
     let manifest: Manifest = serde_json::from_slice(bytes)?;
     if manifest.schema_version != 1
@@ -70,4 +89,30 @@ pub(super) fn verify(path: &Path, bytes: &[u8]) -> Result<PathBuf, Error> {
         return Err(Error::Geos("C API artifact is missing".into()));
     }
     dependency.ok_or_else(|| Error::Geos("GEOS implementation artifact is missing".into()))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn installed_provider_is_discovered_only_at_the_pinned_package_path() {
+        let root = tempfile::tempdir().unwrap();
+        assert_eq!(super::installed_library(root.path()).unwrap(), None);
+        let manifest: super::Manifest = serde_json::from_slice(super::default_manifest()).unwrap();
+        let name = manifest
+            .libraries
+            .iter()
+            .find(|file| file.name.starts_with("libgeos_c-"))
+            .unwrap();
+        let expected = root.path().join("rust/bin/carrot-geos").join(&name.name);
+        std::fs::create_dir_all(expected.parent().unwrap()).unwrap();
+        std::fs::write(
+            &expected,
+            b"presence fixture; loader verifies content separately",
+        )
+        .unwrap();
+        assert_eq!(
+            super::installed_library(root.path()).unwrap(),
+            Some(expected)
+        );
+    }
 }
