@@ -10,7 +10,8 @@ from model_export.offline_pipeline import OfflinePipelineSpec, build_pipeline
 
 def test_exact_driver_pipeline_preserves_source_warp_when_camera_is_supported() -> None:
     # Given the exact source driver model and original TICI camera dimensions.
-    spec = OfflinePipelineSpec("driver", Path("openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"),
+    source = Path(__file__).resolve().parents[3] / "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
+    spec = OfflinePipelineSpec("driver", source,
                                "dee5a294e8afaacc9295ac5d100e00733ecac278e79264b96331e40a3ede1b04", (1928, 1208))
 
     # When the original warp and model graph are captured without numeric input execution.

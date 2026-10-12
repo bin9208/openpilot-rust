@@ -707,3 +707,19 @@ are unchanged. Separately, clean source `bfab5104dc5f0d159c448065369e034f666ae43
 built all 86 optimized ARM executables in 999.43 seconds, and their staged AGNOS
 dependency audit passed for 159 roots and 161 objects. These are pre-merge
 receipts; the final merged-source build, seal and cloud gates remain pending.
+
+The [next workspace run](https://github.com/bin9208/openpilot-rust/actions/runs/38318822769/job/115041777995)
+passed all 1,139 Rust tests and the original QCOM packet oracles, then exposed a
+missing ONNX dependency while collecting the complete Python tools suite. Local
+execution after installing source-validated ONNX 1.20.1 identified four tests
+without their genuine ARM compiler command and one model path that assumed the
+repository root instead of the workflow's `rust/` working directory.
+
+The workspace now stages the SHA256-pinned standalone ARM Python and original
+AGNOS A630 compiler under QEMU. The file-only stager verifies hashes, ARM ELF
+identity and bounded safe extraction, reserves disk capacity and records its
+provider provenance. The test resolves its real model relative to its source
+file. With NumPy 2.5.3, ONNX 1.20.1 and a fresh Ubuntu ARM cross-library sysroot,
+the full tools suite passes 148 tests, including seven added provider-integrity
+guards. Existing NumPy deprecation warnings remain visible. This supplies the
+real compiler without GPU access; it is not device numerical validation.
