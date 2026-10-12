@@ -679,3 +679,20 @@ isolated child-driver entries, and the 25-second timeout and strict `/proc` chec
 remain unchanged. Strict all-target Clippy and the focused independent review
 pass. Evidence is in `.omo/evidence/recovery-tunnel-ci-20261013/` and
 `.omo/evidence/273-recovery-cleanup-review.md`.
+
+The next [Rust CI run](https://github.com/bin9208/openpilot-rust/actions/runs/38312606664)
+reached a transient `/proc/<pid>/maps` read after a short-lived Panda supervisor
+child exited. Linux returned `ESRCH` after the maps file had already opened;
+the checker handled only an absent file. A controlled owned-child experiment
+reproduces that kernel error and now selects the surviving mapped process.
+The checker handles only those two process-disappearance errors, retaining its
+deadline, supervisor liveness and exact native-library assertions. Both explicit
+and default firmware-path runs pass all three native Panda composition scenarios
+with owned USB providers. No Panda runtime behavior changed.
+
+That run also identified missing SDL2 in the clean workspace runner. The
+workspace dependency installation now includes SDL2 and FFmpeg, which are used
+by real virtual-gamepad and software-encoder tests. The complete local workspace
+run on `3bb68029d9e72660416e5c3175cc3761100e2532` passes 1,139 tests with zero
+failures; seven deliberately isolated child-driver entries are invoked by their
+parent tests. Clean-runner verification remains an exact-SHA CI gate.
