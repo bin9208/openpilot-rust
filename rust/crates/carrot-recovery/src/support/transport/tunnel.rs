@@ -160,9 +160,10 @@ impl Tunnel {
                 Err(error) => return Err(std::io::Error::from(error).into()),
             }
             // Reserve the leader until same-session children in other groups are reaped.
-            crate::terminal::session::cleanup(pid)?;
+            let descendants = crate::terminal::session::cleanup(pid);
             child.process.wait()?;
             self.child.take();
+            descendants?;
         }
         if let Some(drainer) = self.drainer.take() {
             drainer

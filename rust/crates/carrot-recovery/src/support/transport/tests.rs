@@ -169,6 +169,92 @@ fn silent_provider_is_reaped_when_startup_deadline_expires() {
 }
 
 #[test]
+fn failed_tunnel_reaps_leader_when_descendant_cleanup_cannot_adopt() {
+    // Given: an isolated uninitialized driver under this owned subreaper.
+    use rustix::process::{Pid, WaitId, WaitIdOptions, WaitOptions};
+    rustix::process::set_child_subreaper(Some(Pid::INIT)).unwrap();
+    let fixture = Fixture::new();
+    let descendant_file = fixture.0.join("descendant.pid");
+    let binary = fixture.script(&format!(
+        "sleep 120 &\nprintf '%s' \"$!\" > '{}'\nexit 0",
+        descendant_file.display()
+    ));
+    // When: the provider exits but descendant cleanup cannot adopt its child.
+    let output = fixture.invoke(
+        "tunnel-error-uninitialized",
+        "invalid",
+        binary.to_str().unwrap(),
+    );
+    assert_eq!(
+        result(&output),
+        Value::text("cloudflared did not provide a trycloudflare URL")
+    );
+    let leader: i32 = fs::read_to_string(fixture.0.join("pid"))
+        .unwrap()
+        .parse()
+        .unwrap();
+    let descendant: i32 = fs::read_to_string(descendant_file)
+        .unwrap()
+        .parse()
+        .unwrap();
+    let leader_stat = fs::read_to_string(format!("/proc/{leader}/stat")).ok();
+    let descendant_stat = fs::read_to_string(format!("/proc/{descendant}/stat")).unwrap();
+    let fields: Vec<_> = descendant_stat
+        .rsplit_once(')')
+        .unwrap()
+        .1
+        .split_whitespace()
+        .collect();
+    assert_eq!(fields[0], "Z");
+    assert_eq!(fields[1].parse::<u32>().unwrap(), std::process::id());
+    assert_eq!(fields[3].parse::<i32>().unwrap(), leader);
+    for pid in [leader, descendant] {
+        let pid = Pid::from_raw(pid).unwrap();
+        match rustix::process::waitid(
+            WaitId::Pid(pid),
+            WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+        ) {
+            Ok(Some(_)) => {
+                rustix::process::waitpid(Some(pid), WaitOptions::empty()).unwrap();
+            }
+            Err(rustix::io::Errno::CHILD) => {}
+            status => panic!("unexpected owned fixture state: {status:?}"),
+        }
+    }
+    let observation = Value::object([
+        ("main_test_pid", Value::integer(std::process::id())),
+        ("leader", Value::integer(leader)),
+        (
+            "leader_reaped_by_tunnel",
+            Value::Bool(leader_stat.is_none()),
+        ),
+        (
+            "leader_stat_before_fixture_cleanup",
+            leader_stat.as_deref().map_or(Value::Null, Value::text),
+        ),
+        ("descendant", Value::integer(descendant)),
+        (
+            "descendant_stat_before_fixture_cleanup",
+            Value::text(&descendant_stat),
+        ),
+    ]);
+    fs::write(
+        fixture.0.join("ownership.json"),
+        observation.encode().unwrap(),
+    )
+    .unwrap();
+    println!(
+        "OWNED_TUNNEL_CLEANUP_ERROR={}",
+        observation.encode().unwrap()
+    );
+    // Then: the direct leader was reaped despite the descendant ownership error.
+    assert!(
+        leader_stat.is_none(),
+        "owned leader leaked after descendant cleanup error"
+    );
+}
+
+#[test]
 fn webhook_posts_source_contract_to_owned_recipient() {
     // Given: an owned HTTP recipient and a support session payload.
     let fixture = Fixture::new();
@@ -280,8 +366,13 @@ fn child_driver() {
     let config = Config {
         repository: root.clone(),
         web: root.join("web"),
-        launcher: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../target/debug/openpilot-process-child"),
+        launcher: std::env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("openpilot-process-child"),
         data: root.join("data"),
         params: root.join("params"),
         tmux_log: root.join("tmux.log"),
@@ -303,6 +394,22 @@ fn child_driver() {
         ),
     ]);
     let action = std::env::var("SUPPORT_PROBE_ACTION").unwrap();
+    if action != "tunnel-error-uninitialized" {
+        rustix::process::set_child_subreaper(Some(rustix::process::Pid::INIT)).unwrap();
+    }
+    fs::write(
+        root.join("driver-initialization.json"),
+        Value::object([
+            ("driver_pid", Value::integer(std::process::id())),
+            (
+                "driver_is_subreaper",
+                Value::Bool(rustix::process::child_subreaper().unwrap().is_some()),
+            ),
+        ])
+        .encode()
+        .unwrap(),
+    )
+    .unwrap();
     let output = match action.as_str() {
         "metadata" => metadata(&config).unwrap(),
         "notify" | "notify-disabled" => notify(&config, &payload),
@@ -320,7 +427,7 @@ fn child_driver() {
             }
             Value::text(&tunnel.url)
         }
-        "tunnel-error" => match Tunnel::start(
+        "tunnel-error" | "tunnel-error-uninitialized" => match Tunnel::start(
             &config,
             "http://127.0.0.1:6999",
             Arc::new(AtomicBool::new(false)),
