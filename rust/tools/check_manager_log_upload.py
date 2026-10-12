@@ -70,7 +70,7 @@ def run(root: Path, binaries: Path, probe: Path, output: Path) -> None:
   try:
     with endpoint({}, captures) as host:
       result = subprocess.run(
-        [str(binaries / 'openpilot-uploader'), '--cycles', '6'], env={**environment, 'API_HOST': host}, capture_output=True, timeout=20, check=False
+        [str(binaries / 'openpilot-uploader'), '--cycles', '6'], env={**environment, 'API_HOST': host}, cwd=root, capture_output=True, timeout=20, check=False
       )
   finally:
     shutil.rmtree(namespace)

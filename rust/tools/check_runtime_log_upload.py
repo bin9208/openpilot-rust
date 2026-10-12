@@ -87,6 +87,7 @@ def run(binaries: Path, output: Path) -> None:
         uploaded = subprocess.run(
           [str(binaries / 'openpilot-uploader'), '--cycles', '1'],
           env={**environment, 'API_HOST': host, 'FORCEWIFI': '1', 'UPLOADER_SLEEP': '0'},
+          cwd=Path(__file__).resolve().parents[2],
           capture_output=True,
           timeout=15,
           check=False,

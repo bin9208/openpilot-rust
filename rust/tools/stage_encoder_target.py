@@ -8,7 +8,9 @@ from pathlib import Path, PurePosixPath
 import shutil
 import stat
 import subprocess
+import tarfile
 import tomllib
+from typing import Final, TypedDict
 import zipfile
 
 from card_qa.ci import ROOT, require_space
@@ -41,6 +43,82 @@ PACKAGES = (
   Package('libyuv', '1922.0', '28c3c2a2444232aeeaf989c33fd333ce74e6fc90',
           '1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475', 267013),
 )
+
+SWSCALE_VERSION: Final = '7.1'
+SWSCALE_SHA256: Final = '40973d44970dbc83ef302b0609f2e74982be2d85916dd2ee7472d30678a7abe6'
+SWSCALE_URL: Final = f'https://ffmpeg.org/releases/ffmpeg-{SWSCALE_VERSION}.tar.xz'
+
+
+class SwscaleReceipt(TypedDict):
+  source_version: str
+  source_sha256: str
+  url: str
+  license: str
+  commands: list[list[str]]
+  files: dict[str, str]
+
+
+class SwscaleProviderError(ValueError):
+  def __init__(self, path: Path, reason: str) -> None:
+    self.path = path
+    self.reason = reason
+    super().__init__(f'{path}: {reason}')
+
+
+def verify_swscale_headers(source: Path, install: Path) -> None:
+  for name in ('version.h', 'pixfmt.h'):
+    header = install / 'include/libavutil' / name
+    if header.read_bytes() != (source / 'libavutil' / name).read_bytes():
+      raise SwscaleProviderError(header, 'avutil header differs from the pinned scaler source')
+
+
+def build_swscale(output: Path, install: Path, source_archive: Path | None,
+                  cc: str, ar: str, ranlib: str) -> SwscaleReceipt:
+  """Add only the missing scaler to the unchanged, verified FFmpeg 7.1 wheel."""
+  require_space(output, 512 * 1024**2)
+  output.mkdir(parents=True, exist_ok=False)
+  archive = output / f'ffmpeg-{SWSCALE_VERSION}.tar.xz'
+  if source_archive:
+    shutil.copyfile(source_archive, archive)
+  else:
+    subprocess.run(['curl', '--retry', '3', '--connect-timeout', '20', '--max-time', '180', '-fsSL',
+                    SWSCALE_URL, '-o', str(archive)], check=True)
+  with archive.open('rb') as stream:
+    if hashlib.file_digest(stream, 'sha256').hexdigest() != SWSCALE_SHA256:
+      raise SwscaleProviderError(archive, 'source SHA256 differs from pinned FFmpeg 7.1')
+  with tarfile.open(archive) as source_tar:
+    source_tar.extractall(output, filter='data')
+  source = output / f'ffmpeg-{SWSCALE_VERSION}'
+  verify_swscale_headers(source, install)
+  work = output / 'build'
+  work.mkdir()
+  configure = [str(source / 'configure'), f'--prefix={install}', '--arch=aarch64', '--target-os=linux',
+               '--enable-cross-compile', f'--cc={cc}', f'--ar={ar}', f'--ranlib={ranlib}',
+               '--enable-static', '--disable-shared', '--enable-pic', '--disable-autodetect',
+               '--disable-everything', '--disable-debug', '--disable-doc', '--disable-programs',
+               '--disable-avcodec', '--disable-avformat', '--disable-avdevice', '--disable-avfilter',
+               '--disable-swresample', '--disable-postproc', '--enable-avutil', '--enable-swscale']
+  receipt: SwscaleReceipt = {'source_version': SWSCALE_VERSION, 'source_sha256': SWSCALE_SHA256,
+                            'url': SWSCALE_URL, 'license': 'LGPL-2.1-or-later',
+                            'commands': [configure, ['make', '-j2', 'libswscale/libswscale.a']], 'files': {}}
+  record = output / 'receipt.json'
+  record.write_text(json.dumps(receipt, indent=2) + '\n')
+  with (output / 'build.log').open('wb') as log:
+    for command in receipt['commands']:
+      require_space(output, 512 * 1024**2)
+      subprocess.run(command, cwd=work, stdout=log, stderr=subprocess.STDOUT, check=True)
+  require_space(output, 16 * 1024**2)
+  files = [(work / 'libswscale/libswscale.a', 'lib/libswscale.a'),
+           *((source / 'libswscale' / name, f'include/libswscale/{name}')
+             for name in ('swscale.h', 'version.h', 'version_major.h')),
+           *((source / name, f'share/licenses/swscale/{name}') for name in ('COPYING.LGPLv2.1', 'LICENSE.md'))]
+  for origin, relative in files:
+    destination = install / relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(origin, destination)
+    receipt['files'][relative] = hashlib.sha256(destination.read_bytes()).hexdigest()
+  record.write_text(json.dumps(receipt, indent=2) + '\n')
+  return receipt
 
 
 def verify_lock(lock: dict, package: Package) -> None:
@@ -85,6 +163,10 @@ def main() -> None:
   parser = argparse.ArgumentParser(description='Stage pinned native ARM codec payloads without installing Python launchers')
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--archive-directory', type=Path, help='use already downloaded exact wheel filenames')
+  parser.add_argument('--swscale-archive', type=Path, help='use the verified FFmpeg 7.1 scaler source archive')
+  parser.add_argument('--cc', default='aarch64-linux-gnu-gcc')
+  parser.add_argument('--ar', default='aarch64-linux-gnu-ar')
+  parser.add_argument('--ranlib', default='aarch64-linux-gnu-ranlib')
   args = parser.parse_args()
   output = args.output.resolve()
   space = require_space(output, 512 * 1024**2)
@@ -105,8 +187,11 @@ def main() -> None:
     install = output / package.name / 'install'
     records = extract_native(archive, package, install)
     result[package.name] = {**asdict(package), 'url': package.url, 'install': str(install), 'files': records}
+  result['swscale'] = build_swscale(output / 'swscale', output / 'ffmpeg/install',
+                                   args.swscale_archive, args.cc, args.ar, args.ranlib)
   required = [*(output / 'ffmpeg/install/lib' / f'lib{name}.a' for name in
-               ('avcodec', 'avformat', 'avutil', 'swresample', 'x264', 'z', 'va', 'va-drm', 'drm')),
+               ('avcodec', 'avformat', 'avutil', 'swscale', 'swresample', 'x264', 'z', 'va', 'va-drm', 'drm')),
+              output / 'ffmpeg/install/include/libswscale/swscale.h',
               output / 'ffmpeg/install/include/libavcodec/avcodec.h', output / 'libyuv/install/lib/libyuv.a',
               output / 'libyuv/install/include/libyuv.h']
   for path in required:

@@ -927,7 +927,7 @@ jobs:
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libyuv-dev libzmq3-dev ffmpeg
+          sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg
       - name: Install pinned encoder oracle dependencies
         run: |
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2411,6 +2411,7 @@ jobs:
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 5120
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision --bin openpilot-process-child --locked
           cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked
       - name: Build native UI and record current dependency outputs
         run: |
