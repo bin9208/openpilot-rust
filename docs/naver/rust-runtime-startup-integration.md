@@ -696,3 +696,14 @@ by real virtual-gamepad and software-encoder tests. The complete local workspace
 run on `3bb68029d9e72660416e5c3175cc3761100e2532` passes 1,139 tests with zero
 failures; seven deliberately isolated child-driver entries are invoked by their
 parent tests. Clean-runner verification remains an exact-SHA CI gate.
+
+The same run passed Card's complete source comparison and actual IPC/shutdown
+gate. Its ARM job completed the GNU workspace build, then reached the job's
+60-minute limit while compiling the complete musl workspace; GitHub explicitly
+reported maximum execution time, with no compiler error in the captured log.
+The ARM job now has a 90-minute limit for both full builds and the remaining
+native provider checks. Its commands, assertions and two-worker resource bound
+are unchanged. Separately, clean source `bfab5104dc5f0d159c448065369e034f666ae439`
+built all 86 optimized ARM executables in 999.43 seconds, and their staged AGNOS
+dependency audit passed for 159 roots and 161 objects. These are pre-merge
+receipts; the final merged-source build, seal and cloud gates remain pending.
