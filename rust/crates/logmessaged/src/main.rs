@@ -5,7 +5,6 @@ use openpilot_logmessaged::{
 };
 use openpilot_messaging::runtime::PubMaster;
 use std::{
-    error::Error,
     process::ExitCode,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -13,18 +12,36 @@ use std::{
     },
 };
 
-fn timestamp() -> Result<u64, Box<dyn Error>> {
+#[derive(Debug, thiserror::Error)]
+enum EntryError {
+    #[error("{0}")]
+    Contract(&'static str),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Integer(#[from] std::num::TryFromIntError),
+    #[error(transparent)]
+    Arguments(#[from] openpilot_logmessaged::options::Error),
+    #[error(transparent)]
+    Files(#[from] openpilot_logmessaged::Error),
+    #[error(transparent)]
+    Messaging(#[from] openpilot_messaging::runtime::Error),
+    #[error(transparent)]
+    Zmq(#[from] zmq::Error),
+}
+
+fn timestamp() -> Result<u64, EntryError> {
     let time = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
     let seconds = u64::try_from(time.tv_sec)?;
     let nanos = u32::try_from(time.tv_nsec)?;
     let timestamp = seconds
         .checked_mul(1_000_000_000)
         .and_then(|value| value.checked_add(u64::from(nanos)))
-        .ok_or("monotonic timestamp overflow")?;
+        .ok_or(EntryError::Contract("monotonic timestamp overflow"))?;
     Ok(timestamp)
 }
 
-fn run(options: Options) -> Result<(), Box<dyn Error>> {
+fn run(options: Options) -> Result<(), EntryError> {
     let stop = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stop))?;
@@ -43,7 +60,7 @@ fn run(options: Options) -> Result<(), Box<dyn Error>> {
     socket.set_rcvtimeo(100)?;
     socket.bind(&options.endpoint)?;
     let mut publisher = PubMaster::for_runtime(&[Topic::Log.name(), Topic::Error.name()])?;
-    let result = (|| -> Result<(), Box<dyn Error>> {
+    let result = (|| -> Result<(), EntryError> {
         let mut frames = 0_u64;
         while !stop.load(Ordering::Relaxed) {
             let parts = match socket.recv_multipart(0) {
@@ -54,7 +71,7 @@ fn run(options: Options) -> Result<(), Box<dyn Error>> {
             let bytes: Vec<u8> = parts.into_iter().flatten().collect();
             let (&level, raw) = bytes
                 .split_first()
-                .ok_or("empty log record has no level byte")?;
+                .ok_or(EntryError::Contract("empty log record has no level byte"))?;
             let record = String::from_utf8_lossy(raw);
             if level >= 20 {
                 if let Err(error) = files.emit(&record) {
@@ -92,11 +109,13 @@ fn run(options: Options) -> Result<(), Box<dyn Error>> {
     result
 }
 fn main() -> ExitCode {
-    match Options::parse(std::env::args_os().skip(1))
-        .map_err(|error| -> Box<dyn Error> { Box::new(error) })
-        .and_then(|options| options.map_or(Ok(()), run))
-    {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.system.logmessaged", "logmessaged", || {
+        Options::parse(std::env::args_os().skip(1))
+            .map_err(EntryError::from)
+            .and_then(|options| options.map_or(Ok(()), run))
+            .map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("logmessaged: {error}");
             ExitCode::FAILURE

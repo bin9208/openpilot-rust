@@ -35,6 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let boot = NativeBoot {
         params_directory: output.join("params/d"),
         loggerd_directory: loggerd.clone(),
+        executable: None,
         launcher: launcher.clone(),
         lock_path: lock_path.clone(),
         lock: Some(lock),

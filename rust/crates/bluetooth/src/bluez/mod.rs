@@ -10,7 +10,7 @@ pub mod policy;
 mod state;
 mod wire;
 
-pub use client::{Action, Bluez, Snapshot};
+pub use client::{Action, Bluez, Snapshot, SnapshotReader};
 pub use error::Error;
 pub use objects::{Adapter, Device};
 pub use state::{Pair, Prompt};

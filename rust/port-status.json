@@ -1,9 +1,9 @@
 {
   "source_repo": "https://github.com/bin9208/openpilot",
   "source_commit": "f3a92524d87be714f6b8b5f44ecdc8319a8c53d1",
-  "scope": "Registered source processes, including conditional/disabled entries. Manager and libraries are tracked separately; not a claim of runtime coverage.",
+  "scope": "Registered source processes, including conditional/disabled entries. Startup entrypoints, manager and libraries are tracked separately; not a claim of runtime coverage.",
   "manager_status": "native_orchestration_host_candidate",
-  "manager_scope": "Native initialization, Params transitions, continuous messaging/process loop, cleanup and exit policy; seven focused unchanged-source scenarios plus isolated IPC/owned children. Native bootlog, board action, registration and Reporter adapters are composed; complete daemon selection, startup UI/stdout and launcher packaging remain integration work; no production selection or device acceptance. See docs/naver/rust-manager-106.md.",
+  "manager_scope": "Native initialization, Params transitions, continuous messaging/process loop, cleanup and exit policy. Installed-manager startup/error/cleanup, stdout pressure, outer signals and native child-log-upload composition pass owned host controls. The normal shell entry selects the native launcher. Integrated package inspection admits 62 of 63 entries; webjoystick alone is disabled because its original module is absent. All four genuine internal GPU model catalogs pass ARM structural admission. Final release build, sealed package, exact-SHA CI and user device acceptance remain open. See docs/naver/rust-runtime-startup-integration.md.",
   "processes": [
     {
       "name": "_pandad",
@@ -21,7 +21,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.controls.beep",
       "status": "continuous_runtime_host_validated",
-      "native_dependencies": ["original msgq through CXX", "OS clocks/scheduling", "/bin/sh, sudo/tee and GPIO42 sysfs"],
+      "native_dependencies": ["native Rust msgq/VisionIPC", "OS clocks/scheduling", "/bin/sh, sudo/tee and GPIO42 sysfs"],
       "runtime_scope": "normal main/test=False alert loop, startup commands, pulse workers and per-pulse integer volume reads; safe hardware fixtures only; not selected by manager; AGNOS/device and full-runtime integration pending",
       "production_replaced": false
     },
@@ -31,7 +31,7 @@
       "source_entrypoint": "openpilot/cereal/messaging",
       "status": "continuous_runtime_host_validated",
       "implementation": "rust/crates/bridge; continuous bidirectional msgq/ZMQ bridge with source service ports and connection-driven subscriptions",
-      "native_dependencies": ["libzmq 4.3.4 through existing zmq crate", "temporary original msgq through CXX", "Linux signals"],
+      "native_dependencies": ["libzmq 4.3.4 through existing zmq crate", "native Rust msgq/VisionIPC", "Linux signals"],
       "evidence": "docs/rust-port/bridge-validation.md",
       "runtime_scope": "original C++ versus native loopback TCP/IPC bursts, substring whitelist, disconnect/reconnect and shutdown; manager selection, full-runtime startup/upload and AGNOS/device acceptance pending",
       "production_replaced": false
@@ -41,7 +41,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.calibrationd",
       "status": "continuous_runtime_host_validated",
-      "native_dependencies": ["original msgq through CXX", "libc scheduling and source-compatible strtof"],
+      "native_dependencies": ["native Rust msgq/VisionIPC", "libc scheduling and source-compatible strtof"],
       "runtime_scope": "calibration estimator, liveCalibration IPC and asynchronous Params persistence; not selected by manager; TICI scheduling, whole-runtime integration and device acceptance pending",
       "production_replaced": false
     },
@@ -78,7 +78,7 @@
         "Linux evdev/filesystem/process/signal APIs",
         "sudo chmod permission fallback and system BlueZ daemon",
         "libdbus through dbus/dbus-tokio",
-        "current original C++ msgq/libzmq transport boundary"
+        "native Rust msgq and libzmq transport"
       ],
       "unported_scope": [
         "Carrot HTTP server adapter and complete normal startup selection",
@@ -92,7 +92,11 @@
       "name": "carrot_cluster",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.cluster_autorun",
-      "status": "not_ported",
+      "status": "native_runtime_host_validated_and_arm_linked",
+      "implementation": "rust/crates/cluster and sdl2; native autorun, live/random/gamepad/route/navigation inputs, renderer, USB display, H264/JPEG/PNG output, replay helpers, scheduling and cleanup",
+      "native_dependencies": ["external raylib and EGL/GLES/GL", "external SDL2/SDL2_ttf and font assets", "libusb and Linux USB/ION/VIDC", "external FFmpeg, libyuv and libjpeg-turbo", "native Rust msgq/VisionIPC and libzmq"],
+      "runtime_scope": "147 focused tests across 59 executables, source pixel and protocol controls, owned live IPC, normal autorun/retry/interrupt/Params/helper cleanup; integrated AArch64 native-media binaries pass AGNOS loader help paths and 15-object ELF closure. Physical display/USB/encoder operation, complete sealed runtime and user device acceptance remain pending.",
+      "evidence": "docs/naver/rust-cluster-253.md",
       "production_replaced": false
     },
     {
@@ -121,7 +125,10 @@
       "name": "carrot_server",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.carrot.carrot_server",
-      "status": "not_ported",
+      "status": "native_runtime_host_candidate",
+      "implementation": "rust/crates/carrot-server; installed native HTTP/WebSocket owner, active route/features and owned subprocess lifecycles",
+      "runtime_scope": "Native feature, actual HTTP/WebSocket and whole owner startup/cleanup controls are recorded in docs/naver/rust-carrot-server-225.md. Integrated package carries native Brotli, media and source web assets. The original dashcam/__init__.py registers routes.py only: legacy server-side replay scan/query/cache modules remain inactive and unported. Active replay-source file routes and unchanged browser-side replay assets remain in scope; final sealed runtime, exact-SHA CI and device acceptance remain pending.",
+      "evidence": "docs/naver/rust-carrot-server-225.md",
       "production_replaced": false
     },
     {
@@ -143,7 +150,11 @@
       "name": "carrot_webrtcd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.webrtc.carrot_webrtcd",
-      "status": "not_ported",
+      "status": "native_runtime_host_and_arm_compared",
+      "implementation": "rust/crates/webrtc; native Carrot WebRTC HTTP/session owner, source activation, video scheduling, RTP/RTCP and Cereal bridge",
+      "native_dependencies": ["rtc 0.21.0 and AWS-LC", "external FFmpeg 6.1.1, libvpx9 and libx264-164", "native Rust msgq/VisionIPC, libzmq and Linux sockets"],
+      "runtime_scope": "Original HTTP/ICE/DTLS/SRTP/SCTP, source activation and cleanup comparisons passed host and ARM CI; final sealed package, exact integration SHA and user device acceptance remain pending",
+      "evidence": "docs/naver/rust-webrtc-240.md",
       "production_replaced": false
     },
     {
@@ -182,7 +193,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.monitoring.dmonitoringd",
       "status": "continuous_runtime_host_validated",
-      "native_dependencies": ["original msgq through CXX"],
+      "native_dependencies": ["native Rust msgq/VisionIPC"],
       "runtime_scope": "continuous policy, cereal and Params loop; production selection and full-runtime/device acceptance pending",
       "production_replaced": false
     },
@@ -191,7 +202,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.modeld.dmonitoringmodeld",
       "status": "continuous_runtime_host_validated",
-      "native_dependencies": ["original msgq/VisionIPC through CXX", "CPU Clang/LLVM kernels or QCOM OpenCL runtime"],
+      "native_dependencies": ["native Rust msgq/VisionIPC", "CPU Clang/LLVM kernels or QCOM OpenCL runtime"],
       "runtime_scope": "continuous driver-model daemon with source service queue capacities (#19); not selected by manager; QCOM device execution, zero-copy input, whole-runtime integration and device acceptance pending",
       "production_replaced": false
     },
@@ -216,7 +227,7 @@
       "source_entrypoint": "openpilot.selfdrive.ui.feedback.feedbackd",
       "status": "continuous_native_host_validated",
       "implementation": "rust/crates/feedbackd",
-      "native_dependencies": ["original msgq through CXX", "Linux clocks and signals"],
+      "native_dependencies": ["native Rust msgq/VisionIPC", "Linux clocks and signals"],
       "runtime_scope": "Active bookmark loop matches unchanged source over actual IPC; source-disabled LKAS audio recording remains disabled; Actions/ARM and complete startup/upload pending",
       "evidence": "docs/rust-port/feedbackd-validation.md",
       "production_replaced": false
@@ -246,7 +257,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.journald",
       "status": "native_runtime_host_validated",
-      "native_dependencies": ["OS journalctl executable and Linux journal service", "original C++ msgq shared-memory transport", "libzmq structured logging transport"],
+      "native_dependencies": ["OS journalctl executable and Linux journal service", "native Rust msgq/VisionIPC", "libzmq structured logging transport"],
       "runtime_scope": "Rust-owned child/stdout/JSON/androidLog/diagnostics and terminate/wait lifecycle; actual source, host ASan and generic ARM/QEMU synthetic journal evidence; manager selection and real AGNOS/device acceptance pending; inherited direct-SIGTERM orphan tracked in #66",
       "production_replaced": false
     },
@@ -278,7 +289,7 @@
       "source_entrypoint": "openpilot.selfdrive.locationd.lagd",
       "status": "continuous_runtime_host_validated",
       "implementation": "rust/crates/lagd; source-compatible masked correlation, calibration, recovery/window/block policy and continuous native liveDelay/Params loop",
-      "native_dependencies": ["pinned external PocketFFT numerical kernel through CXX (no Python runtime)", "original msgq through CXX", "existing native Params/logging adapters", "Linux clocks, scheduling and filesystem"],
+      "native_dependencies": ["pinned external PocketFFT numerical kernel through CXX (no Python runtime)", "native Rust msgq/VisionIPC", "existing native Params/logging adapters", "Linux clocks, scheduling and filesystem"],
       "runtime_scope": "fixed-tolerance source numeric/candidate and full-loop comparisons; real private IPC/Params learning, cache, cadence and signal scenarios; source constant-signal decisions retain pinned PocketFFT arithmetic; not selected by manager; full-runtime startup/upload, generic ARM/AGNOS/device acceptance remain separate; see docs/naver/rust-lagd-139.md",
       "production_replaced": false
     },
@@ -309,7 +320,7 @@
       "source_kind": "NativeProcess",
       "source_entrypoint": "openpilot/system/loggerd",
       "status": "route_storage_runtime_host_validated",
-      "native_dependencies": ["original msgq through CXX", "FFmpeg", "zstd"],
+      "native_dependencies": ["native Rust msgq/VisionIPC", "FFmpeg", "zstd"],
       "runtime_scope": "continuous route storage, media writer and native diagnostic callsites with actual collector/rlog integration; manager selection and full startup/upload acceptance pending",
       "production_replaced": false
     },
@@ -318,7 +329,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.logmessaged",
       "status": "continuous_native_host_validated_pending_integration",
-      "native_dependencies": ["libzmq 4.3.4 through zmq/zmq-sys", "original msgq through Rust PubMaster/CXX"],
+      "native_dependencies": ["libzmq 4.3.4 through zmq/zmq-sys", "native Rust msgq/VisionIPC"],
       "runtime_scope": "continuous ZMQ log collector, rotating swaglog files, and logMessage/errorLogMessage publications; manager selection unchanged",
       "evidence": "docs/rust-port/logmessaged-validation.md",
       "production_replaced": false
@@ -331,7 +342,7 @@
       "production_replaced": false,
       "implementation": "rust/crates/athena; openpilot-manage-athenad and openpilot-athenad",
       "native_dependencies": [
-        "temporary original msgq/VisionIPC through CXX",
+        "native Rust msgq/VisionIPC",
         "external libjpeg-turbo 3.1.4.1 through bounded C/CXX bridge",
         "libzmq logging; rustls TLS; zstd compression"
       ],
@@ -355,7 +366,7 @@
       "source_entrypoint": "openpilot.system.micd",
       "status": "continuous_native_host_validated",
       "implementation": "rust/crates/micd; PortAudio input, original raw audio bytes and A-weighted pressure publication",
-      "native_dependencies": ["external PortAudio v19", "temporary original msgq through CXX", "libzmq logging", "Linux clocks and signals"],
+      "native_dependencies": ["external PortAudio v19", "native Rust msgq/VisionIPC", "libzmq logging", "Linux clocks and signals"],
       "runtime_scope": "source numerical/callback comparison and actual owned PortAudio ABI/native IPC/retry/shutdown; real audio hardware, target execution, manager selection and full startup/upload acceptance pending",
       "evidence": "docs/rust-port/micd-validation.md",
       "production_replaced": false
@@ -365,7 +376,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.modeld.modeld",
       "status": "internal_model_runtime_host_validated",
-      "native_dependencies": ["original msgq/VisionIPC through CXX", "trusted original CPU/QCOM model kernels"],
+      "native_dependencies": ["native Rust msgq/VisionIPC", "trusted original CPU/QCOM model kernels"],
       "runtime_scope": "continuous internal driving model loop with native Jetlink worker/adapter and loss publication; USB/eGPU fallback, zero-copy, manager selection and whole-runtime/device acceptance pending",
       "production_replaced": false
     },
@@ -440,7 +451,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.proclogd",
       "status": "continuous_runtime_host_validated",
-      "native_dependencies": ["original msgq through CXX"],
+      "native_dependencies": ["native Rust msgq/VisionIPC"],
       "runtime_scope": "continuous procLog daemon and bounded diagnostic producer; not selected by manager; whole-runtime integration and device acceptance pending",
       "production_replaced": false
     },
@@ -450,7 +461,7 @@
       "source_entrypoint": "openpilot.system.qcomgpsd.qcomgpsd",
       "status": "continuous_runtime_host_validated",
       "implementation": "rust/crates/qcomgpsd; native diagnostic framing, five GNSS reports, modem setup/assistance/lifecycle and separate NMEA debug entrypoint",
-      "native_dependencies": ["Linux serial/termios/flock and GPIO34 sysfs", "Quectel/Qualcomm modem firmware", "mmcli/ModemManager assistance injection", "HTTP/TLS transport", "original msgq through CXX; existing native logging transport"],
+      "native_dependencies": ["Linux serial/termios/flock and GPIO34 sysfs", "Quectel/Qualcomm modem firmware", "mmcli/ModemManager assistance injection", "HTTP/TLS transport", "native Rust msgq and logging transport"],
       "runtime_scope": "source report/setup comparisons and real native processes with private PTYs, GPIO files, loopback HTTP and isolated msgq; NMEA source delimiter-only checksum and nonempty AT response TypeError preserved; not selected by manager; whole-runtime startup/upload, AGNOS and device acceptance pending; see docs/naver/rust-qcomgps-130.md",
       "production_replaced": false
     },
@@ -515,7 +526,7 @@
       "source_entrypoint": "openpilot.system.statsd",
       "status": "continuous_runtime_host_and_emulator_validated",
       "implementation": "rust/crates/statsd; native StatLog producer and statsd-rs continuous deviceState/aggregation/atomic-file loop",
-      "native_dependencies": ["libzmq", "original C++ msgq through existing messaging", "Linux clock/filesystem/signal APIs", "Git for source metadata without build.json"],
+      "native_dependencies": ["libzmq", "native Rust msgq/VisionIPC", "Linux clock/filesystem/signal APIs", "Git for source metadata without build.json"],
       "evidence": "docs/rust-port/statsd-validation.md",
       "production_replaced": false
     },
@@ -539,7 +550,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.timed",
       "status": "continuous_runtime_host_validated",
-      "native_dependencies": ["original msgq through CXX", "libzmq structured logging", "OS sudo/date/rm/ln commands and zoneinfo", "Rust HTTP/TLS and local-time libraries"],
+      "native_dependencies": ["native Rust msgq/VisionIPC", "libzmq structured logging", "OS sudo/date/rm/ln commands and zoneinfo", "Rust HTTP/TLS and local-time libraries"],
       "runtime_scope": "native GPS clock publication, source-priority timezone policy and interruptible process shutdown; original-source host comparisons and generic ARM emulation; ARM missing-command error propagation differs under QEMU; manager and real AGNOS/device acceptance pending",
       "evidence": "docs/rust-port/timed-validation.md",
       "production_replaced": false
@@ -549,7 +560,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.tombstoned",
       "status": "continuous_runtime_host_validated",
-      "native_dependencies": ["Bash/cat/echo and OS apport-retrace (may itself use Python)", "native Sentry SDK/HTTP/TLS", "Git", "libzmq and temporary original C++ msgq"],
+      "native_dependencies": ["Bash/cat/echo and OS apport-retrace (may itself use Python)", "native Sentry SDK/HTTP/TLS", "Git", "libzmq and native Rust msgq"],
       "runtime_scope": "crash scan/report/copy/remove loop and native logging; manager/startup, target apport, full-runtime upload and device acceptance pending",
       "evidence": "docs/rust-port/tombstoned-validation.md",
       "production_replaced": false
@@ -559,7 +570,7 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.selfdrive.locationd.torqued",
       "status": "continuous_runtime_host_validated",
-      "native_dependencies": ["original msgq through CXX", "NumPy2.5.3 OpenBLAS0.3.34.106.0 ILP64 dgesdd artifact with Fortran runtime; ARM additionally needs OS libz/libgcc_s", "libc scheduling"],
+      "native_dependencies": ["native Rust msgq/VisionIPC", "NumPy2.5.3 OpenBLAS0.3.34.106.0 ILP64 dgesdd artifact with Fortran runtime; ARM additionally needs OS libz/libgcc_s", "libc scheduling"],
       "runtime_scope": "source estimator, seeded sampling parity, liveTorqueParameters IPC and asynchronous cache; native GNU artifact required; normal manager/startup integration and device acceptance pending",
       "evidence": "docs/rust-port/torqued-validation.md",
       "production_replaced": false
@@ -622,13 +633,18 @@
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.tools.bodyteleop.web",
       "status": "not_ported",
+      "runtime_scope": "The source module is absent from this checkout, so the original conditional entry is disabled. Package admission exempts it only while both source absence and disabled status hold.",
       "production_replaced": false
     },
     {
       "name": "webrtcd",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.system.webrtc.webrtcd",
-      "status": "not_ported",
+      "status": "native_runtime_host_and_arm_compared",
+      "implementation": "rust/crates/webrtc; native standard WebRTC HTTP/session owner, source activation, video scheduling, RTP/RTCP and Cereal bridge",
+      "native_dependencies": ["rtc 0.21.0 and AWS-LC", "external FFmpeg 6.1.1, libvpx9 and libx264-164", "native Rust msgq/VisionIPC, libzmq and Linux sockets"],
+      "runtime_scope": "Original HTTP/ICE/DTLS/SRTP/SCTP, source activation and cleanup comparisons passed host and ARM CI; final sealed package, exact integration SHA and user device acceptance remain pending",
+      "evidence": "docs/naver/rust-webrtc-240.md",
       "production_replaced": false
     },
     {
@@ -707,23 +723,21 @@
     {
       "name": "usbgpu_status_transport_foundation",
       "source_entrypoint": "openpilot/system/hardware/usbgpu.py; openpilot/selfdrive/modeld/helpers.py; tinygrad runtime/support/usb.py",
-      "status": "status_transport_foundation_host_validated",
-      "implementation": "rust/crates/usbgpu; sysfs/power/status parsing, model availability, owned diagnostic child wrapper, USB BOT/UAS/custom ASM policy and libusb ownership boundary",
+      "status": "native_runtime_host_compared_and_arm_package_admitted",
+      "implementation": "rust/crates/usbgpu and drivingd; native USB/PCI/MMU/AMD firmware/queues/HCQ execution, model delivery/selection/cache and worker ownership, C3 QCOM and C4 AMD warp paths, live internal-model fallback and source-compatible diagnostics",
       "native_dependencies": [
         "external libusb-1.0.so.0 and Linux USB/sysfs/drivers",
-        "project-owned CXX USB adapter in rust/crates/usbgpu/native; declaration-only libusb ABI header retains LGPL-2.1-or-later terms"
+        "genuine source-pinned AMD firmware, kernels and model weights; 45 packaged assets and three license/provenance files",
+        "Linux KGSL/ION for the QCOM warp path; native Rust libusb ownership and ABI declarations"
       ],
-      "runtime_scope": "historical host source/status/ASM/owned-child and native USB fixture evidence only; diagnostic wrapper requires a real probe and cannot substitute for the missing GPU runtime",
-      "unported_scope": [
-        "native GPU probe executable",
-        "complete UAS full-window and stock ASM behavior; PCIe BAR/MMU",
-        "AMD firmware initialization, queues and synchronization",
-        "model download/provisioning, compile/import and native artifact execution",
-        "C3 QCOM/C4 AMD warp and model-daemon live fallback",
-        "project-owned CXX USB ownership adapter remains native code; complete startup/upload and device acceptance pending"
+      "runtime_scope": "Native source-policy/transport/queue/worker controls plus actual packaged default-source ARM ensure/boot/ready/active-SHA calls, both camera admissions, corruption/alternate-selection rejection and hot fingerprint invalidation. The original 776634338-byte PKL is immutable package data copied into the ordinary mutable cache; no runtime catalog URL or fixture metadata is invented. These checks do not execute trained GPU inference.",
+      "external_artifact_gaps": [
+        "local run_policy family code exists, but its genuine trained source artifact is unavailable in this checkout",
+        "historical run_model compatibility lacks the corresponding trained queue artifact"
       ],
+      "validation_limits": ["trained numerical GPU execution, physical hardware, timing and vehicle acceptance remain unvalidated", "final source-commit release build and complete startup/upload package acceptance remain pending"],
       "production_replaced": false,
-      "evidence": "docs/naver/rust-usbgpu-154.md"
+      "evidence": "docs/naver/rust-usbgpu-package-assets-269.md"
     },
     {
       "name": "shared_ui_framework",
@@ -814,7 +828,7 @@
       "source_entrypoint": "openpilot.system.manager.process:launcher",
       "status": "native_host_entry_boundary_validated",
       "implementation": "rust/crates/managed-entry; in-process preparation/context callbacks, daemon logging/Sentry binding, cooperative interrupt and returned-error policy",
-      "native_dependencies": ["existing crash-reporting/logging/Params", "Linux naming and signal APIs", "temporary original C++ msgq in the real child validation context"],
+      "native_dependencies": ["existing crash-reporting/logging/Params", "Linux naming and signal APIs", "native Rust msgq/VisionIPC"],
       "entrypoint_adoption": false,
       "production_replaced": false,
       "evidence": "docs/rust-port/managed-entry-validation.md"
@@ -824,7 +838,7 @@
       "source_entrypoint": "openpilot.system.sentry; registration reporting gate",
       "status": "native_host_transport_validated",
       "implementation": "rust/crates/crash-reporting; project gates, native SDK envelopes, report/flush and explicit Rust error capture; Python automatic thread hooks are not ported",
-      "native_dependencies": ["sentry 0.49.3 ureq/rustls", "Git", "libzmq and temporary original C++ msgq"],
+      "native_dependencies": ["sentry 0.49.3 ureq/rustls", "Git", "libzmq and native Rust msgq"],
       "production_replaced": false,
       "evidence": "docs/rust-port/tombstoned-validation.md"
     },
@@ -842,7 +856,7 @@
       "source_entrypoint": "openpilot.system.athena.registration; registration subset of openpilot.common.api",
       "status": "native_startup_policy_host_and_emulator_validated",
       "implementation": "rust/crates/registration; typed Params/persist fallback, RSA/EC signed registration, actual HTTP, retries and hardware/spinner interfaces",
-      "native_dependencies": ["libzmq structured logging", "Linux filesystem and clock APIs", "Rust HTTP/TLS/crypto/encoding/cookie libraries", "vendored native charset-norm 3.5.1 with manifest-only Rust 1.94 compatibility patch", "existing C++ msgq in support crates"],
+      "native_dependencies": ["libzmq structured logging", "Linux filesystem and clock APIs", "Rust HTTP/TLS/crypto/encoding/cookie libraries", "vendored native charset-norm 3.5.1 with manifest-only Rust 1.94 compatibility patch", "native Rust msgq/VisionIPC"],
       "runtime_scope": "native hardware information adapter preserves serial and raw modem identity values; visual spinner, manager/full startup, normal log-upload comparison and device acceptance pending; no project Python runtime call",
       "production_replaced": false,
       "evidence": "docs/rust-port/registration-validation.md"
@@ -855,7 +869,7 @@
       "native_dependencies": [
         "Git executable",
         "native logging/libzmq",
-        "existing logmessaged JSON parser and temporary original C++ msgq dependency"
+        "native logmessaged JSON parser and Rust msgq"
       ],
       "production_replaced": false,
       "evidence": "docs/rust-port/version-validation.md"
@@ -891,7 +905,7 @@
       "source_process_registration": "commented_out",
       "status": "continuous_runtime_host_validated",
       "implementation": "rust/crates/uploader; optional native upload loop, source ordering/xattrs, JWT, HTTP, zstd and structured events",
-      "native_dependencies": ["original msgq through CXX", "libzmq", "zstd", "Rust HTTP/TLS/crypto libraries"],
+      "native_dependencies": ["native Rust msgq/VisionIPC", "libzmq", "zstd", "Rust HTTP/TLS/crypto libraries"],
       "production_replaced": false,
       "evidence": "docs/rust-port/uploader-validation.md"
     },
@@ -929,8 +943,10 @@
     },
     {
       "name": "msgq_ownership_boundary",
-      "status": "native_ffi_host_validated",
-      "implementation": "original C++ transport; not a Rust transport rewrite",
+      "status": "native_rust_transport_host_validated",
+      "implementation": "rust/crates/msgq; Rust shared-memory transport, VisionIPC client/server and buffer ownership, with original C++ peers compiled only as interoperability test executables",
+      "native_dependencies": ["Linux shared memory, socket, mmap, signal and optional ION APIs through libc/nix"],
+      "runtime_scope": "Native consumers are used by the integrated runtime and owned logger/manager/upload and cluster controls; final release package and physical ION/device acceptance remain pending",
       "production_replaced": false
     },
     {
@@ -942,11 +958,12 @@
     },
     {
       "name": "native_qcom_model_executor",
-      "status": "host_argument_packet_and_ownership_validated",
+      "status": "host_arguments_and_genuine_arm_catalog_admission_validated",
       "implementation": "Rust QCOMCL a630 artifact parser, KGSL allocation and submission; original generated GPU kernels; no Python runtime call",
+      "runtime_scope": "Original driving and driver ONNX graphs, source warp/recurrent queues and exact CPU constant-layout transforms produce all four camera/kind catalogs without opening a GPU. Genuine A630 compiler binaries and native ARM catalog/bundle admission pass. This is not numerical inference or physical GPU validation.",
       "production_replaced": false,
       "gpu_backend_validated": false,
-      "evidence": "docs/rust-port/qcom-runtime-validation.md"
+      "evidence": "docs/naver/rust-runtime-qcom-catalog-269.md"
     },
     {
       "name": "driver_monitoring_policy_and_state_packet",
@@ -956,6 +973,41 @@
       "evidence": "docs/rust-port/monitoring-validation.md"
     }
   ],
+  "startup_integration": {
+    "status": "incomplete",
+    "issue": "https://github.com/bin9208/openpilot-rust/issues/1",
+    "scope": "Project-owned startup entrypoints outside the registered process catalog; component host checks do not establish a complete normal-startup/log-upload candidate.",
+    "components": [
+      {
+        "name": "normal_launcher",
+        "source_entrypoint": "launch_chffrplus.sh",
+        "status": "native_composition_in_progress",
+        "implementation": "rust/crates/runtime-launcher; native repository-lock handoff, staged-checkout activation, independent early recovery, AGNOS/model orchestration and installed manager entry",
+        "remaining": "Six owned bootstrap-provider scenarios pass from the normal launch_openpilot.sh shell entry. Manager stdout/signal fixes and actual native manager-child-to-collector-to-route-logger-to-uploader composition pass with owned HTTP. Four genuine internal model catalogs and default eGPU package consumers are admitted. Final release package sealing, exact-SHA CI and user device acceptance remain pending.",
+        "issues": [116, 120, 154, 269]
+      },
+      {
+        "name": "standalone_carrot_recovery",
+        "source_entrypoint": "openpilot/selfdrive/carrot/recovery/server.py",
+        "status": "native_runtime_host_candidate",
+        "implementation": "rust/crates/carrot-recovery; independent HTTP/WebSocket, persistent PTY/support owners, native Git/tools recovery, tmux destinations and CwebPush recovery boot",
+        "evidence": "docs/naver/rust-carrot-recovery-263.md",
+        "remaining": "Installed launcher repository-lock handoff and recovery-before-update order, required exact-SHA CI and full normal startup/log-upload composition. Host minimal-package and pinned AGNOS loader/library checks pass; runtime/kernel/hardware and complete-runtime acceptance remain pending.",
+        "native_dependencies_to_package": ["shell/login utilities", "git", "tmux", "cloudflared when support is requested", "OS trust roots"],
+        "issues": [263, 269, 270]
+      },
+      {
+        "name": "external_carrot_web_watchdog",
+        "source_entrypoint": "scripts/carrot_web_watchdog.sh",
+        "status": "native_owner_host_candidate",
+        "implementation": "rust/crates/runtime-launcher; openpilot-carrot-web-watchdog",
+        "remaining": "Owned duplicate-start/flock, physical checkout replacement, absent checkout retry and resistant child cleanup checks pass; complete main-server native package and normal startup selection remain pending.",
+        "issues": [116, 120, 269]
+      }
+    ],
+    "evidence": "docs/naver/rust-runtime-startup-integration.md",
+    "production_replaced": false
+  },
   "startup_bootlog": {
     "source_entrypoints": ["openpilot/system/loggerd/bootlog.cc", "openpilot/system/manager/helpers.py::save_bootlog"],
     "status": "native_component_host_validated_pending_integration",

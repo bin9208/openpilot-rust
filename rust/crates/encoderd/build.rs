@@ -41,14 +41,52 @@ fn main() {
         .write_to_file(output.join("jpeg.rs"))
         .expect("write libjpeg ABI bindings");
     let kernel = root.join("third_party/linux/include");
-    let mut header = format!("#include <stddef.h>\n#include <sys/time.h>\n#include \"{}/v4l2-controls.h\"\n#include <linux/videodev2.h>\n#include <linux/ion.h>\n#include <linux/msm_ion.h>\n", kernel.display());
+    let mut header = format!(
+        "#include <stddef.h>\n#include <sys/time.h>\n#include \"{}/v4l2-controls.h\"\n#include <linux/videodev2.h>\n#include <linux/ion.h>\n#include <linux/msm_ion.h>\n",
+        kernel.display()
+    );
+    let qcom_header = root.join("openpilot/tools/replay/qcom_decoder.h");
+    let qcom = std::fs::read_to_string(&qcom_header).expect("pinned source Qualcomm decoder UAPI");
+    for constant in [
+        "V4L2_EVENT_MSM_VIDC_START",
+        "V4L2_EVENT_MSM_VIDC_FLUSH_DONE",
+        "V4L2_EVENT_MSM_VIDC_PORT_SETTINGS_CHANGED_INSUFFICIENT",
+        "V4L2_QCOM_CMD_FLUSH_CAPTURE",
+        "V4L2_QCOM_CMD_FLUSH",
+    ] {
+        let prefix = format!("#define {constant} ");
+        let expression = qcom
+            .lines()
+            .find_map(|line| line.strip_prefix(&prefix))
+            .expect("source Qualcomm decoder ABI definition");
+        header.push_str(&format!("#ifdef {constant}\n#if {constant} != ({expression})\n#error Qualcomm_decoder_ABI_differs_from_pinned_source\n#endif\n#else\n#define {constant} {expression}\n#endif\n"));
+    }
+    println!("cargo:rerun-if-changed={}", qcom_header.display());
+    let cluster_encoder = root.join("openpilot/system/loggerd/encoder/cluster_h264_encoder.cc");
+    let encoder_text =
+        std::fs::read_to_string(&cluster_encoder).expect("pinned source cluster encoder flags");
+    for name in ["V4L2_QCOM_BUF_FLAG_CODECCONFIG", "V4L2_QCOM_BUF_FLAG_EOS"] {
+        let prefix = format!("#define {name} ");
+        let value = encoder_text
+            .lines()
+            .find_map(|line| line.strip_prefix(&prefix))
+            .expect("source cluster encoder ABI definition");
+        header.push_str(&format!("#ifdef {name}\n#if {name} != ({value})\n#error Qualcomm_encoder_ABI_differs_from_pinned_source\n#endif\n#else\n#define {name} {value}\n#endif\n"));
+    }
+    println!("cargo:rerun-if-changed={}", cluster_encoder.display());
     for request in [
         "VIDIOC_QUERYCAP",
+        "VIDIOC_ENUM_FMT",
         "VIDIOC_S_FMT",
+        "VIDIOC_G_FMT",
         "VIDIOC_S_PARM",
         "VIDIOC_S_SELECTION",
         "VIDIOC_S_CTRL",
         "VIDIOC_G_CTRL",
+        "VIDIOC_S_EXT_CTRLS",
+        "VIDIOC_SUBSCRIBE_EVENT",
+        "VIDIOC_DQEVENT",
+        "VIDIOC_DECODER_CMD",
         "VIDIOC_REQBUFS",
         "VIDIOC_STREAMON",
         "VIDIOC_STREAMOFF",
@@ -60,6 +98,7 @@ fn main() {
         "ION_IOC_FREE",
         "ION_IOC_CUSTOM",
         "ION_IOC_INV_CACHES",
+        "ION_IOC_CLEAN_CACHES",
     ] {
         header.push_str(&format!(
             "static const unsigned long ENCODER_{request} = {request};\n"

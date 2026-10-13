@@ -17,6 +17,7 @@ openpilot-params-typed = { path = "../params-typed" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-messaging = { path = "../messaging" }
 openpilot-logging = { path = "../logging" }
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-runtime-core = { path = "../runtime-core" }
 capnp = "=0.27.2"
 home = "0.5.12"

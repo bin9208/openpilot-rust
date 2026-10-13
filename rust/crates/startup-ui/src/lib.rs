@@ -2,6 +2,8 @@
 pub mod camera;
 pub mod config;
 mod digits;
+pub use digits::decimal as decimal_digit;
+pub use digits::is_digit;
 pub mod draw;
 pub mod geometry;
 pub mod network;
@@ -38,6 +40,10 @@ mod bridge;
 )]
 mod camera_bridge;
 #[cfg(feature = "native")]
+pub mod gles;
+#[cfg(feature = "native")]
+pub mod gles_egl;
+#[cfg(feature = "native")]
 pub mod renderer;
 
 #[cfg(feature = "native")]
@@ -51,6 +57,8 @@ mod number;
 
 #[cfg(feature = "native")]
 pub mod renderer_controls;
+#[cfg(feature = "native")]
+pub use renderer_controls::try_process_locale;
 
 #[cfg(feature = "native")]
 pub mod diagnostics;

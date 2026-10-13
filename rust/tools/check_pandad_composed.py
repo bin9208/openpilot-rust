@@ -59,7 +59,7 @@ class ComposedPeer(RuntimePeer):
           continue
         try:
           maps = Path(f'/proc/{pid}/maps').read_text()
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):
           continue
         if str(self.fixture) in maps:
           assert 'libpython' not in maps

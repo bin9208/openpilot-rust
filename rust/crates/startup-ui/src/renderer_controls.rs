@@ -1,6 +1,13 @@
 //! Safe frame, input and diagnostic controls for the owning raylib surface.
 use crate::{bridge::ffi, geometry::Point, renderer::Renderer, Error};
 use std::collections::{BTreeSet, VecDeque};
+
+/// Sets the C library process locale before application workers start.
+/// # Errors
+/// Returns an embedded NUL in the locale name; unavailable locales return false.
+pub fn try_process_locale(candidate: &str) -> Result<bool, Error> {
+    Ok(ffi::try_process_locale(candidate)?)
+}
 #[derive(Default)]
 pub struct KeyboardSnapshot {
     pub queued: VecDeque<i32>,
@@ -111,5 +118,11 @@ impl Renderer {
             }
         }
         input
+    }
+    pub fn key_started(&self, key: i32) -> bool {
+        self.surface.key_started(key)
+    }
+    pub fn mouse_button_down(&self, button: i32) -> bool {
+        self.surface.sample(button).down
     }
 }

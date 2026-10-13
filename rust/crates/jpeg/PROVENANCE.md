@@ -50,3 +50,19 @@ Pure contracts are available without `native-skip-miri`; actual codec calls requ
 native byte/ownership/sanitizer checks. Fresh Pillow12.3.0 oracle evidence is retained
 under `.omo/evidence/xiaoge-200/opencv-jpeg-*`; its success is not inferred from the
 older quality75 comparison.
+
+Cluster JPEG extension adds packed RGBX through the same pinned libjpeg primitive;
+alpha is ignored and Source Pillow baseline4:2:0/slow-DCT settings remain unchanged.
+`TurboJpeg` loads a selected external `libturbojpeg.so.0` using the already-vendored
+TurboJPEG1.2+ public ABI declarations (`tjInitCompress`, `tjCompress2`, `tjFree`,
+`tjDestroy`, `tjGetErrorStr`). It owns the library/compressor and every output
+allocation; only read-only borrowed RGBA enters the synchronous call and owned
+Rust bytes return. Pinning plus `PhantomData<Rc<()>>` prevents transferring a
+compressor to another thread. Defaults are RGBA/4:2:0/flags0, the primary
+PyTurboJPEG1.8.3 Source wrapper contract. Rust cluster code owns selection,
+quality clamping, sticky Auto fallback, profiling and async queues. C/CXX contains
+only external primitive calls, ABI/resource ownership and input guards. The
+shared TurboJPEG provider is a separate external package input; the runtime
+never executes Python. Host positive provider is built from the unchanged
+release described above; proof will be indexed under
+`.omo/evidence/253-cluster-jpeg-async/`.

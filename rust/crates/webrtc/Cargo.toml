@@ -11,6 +11,7 @@ default = []
 native = ["openpilot-msgq/native-skip-miri", "openpilot-messaging/native", "dep:rtc", "dep:aws-lc-rs", "dep:tokio", "dep:hyper", "dep:hyper-util", "dep:http-body-util", "dep:nix", "dep:uuid", "dep:ffmpeg-next", "dep:charset-norm"]
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-carrot-state = { path = "../carrot-state" }
 openpilot-msgq = { path = "../msgq", default-features = false }

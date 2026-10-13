@@ -202,8 +202,16 @@ fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Re
 }
 
 fn main() -> ExitCode {
-    match options().and_then(|options| options.map_or(Ok(()), run)) {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.modeld.dmonitoringmodeld",
+        "dmonitoringmodeld",
+        || {
+            options()
+                .and_then(|options| options.map_or(Ok(()), run))
+                .map_err(openpilot_managed_entry::StepError::raised)
+        },
+    ) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("dmonitoringmodeld: {error}");
             ExitCode::FAILURE

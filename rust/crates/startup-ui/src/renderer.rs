@@ -40,11 +40,12 @@ pub struct Window {
 }
 pub struct Renderer {
     texture_releases: Rc<std::cell::RefCell<Vec<u32>>>,
+    resource_releases: Rc<std::cell::RefCell<Vec<resources::Release>>>,
     pub(crate) surface: cxx::UniquePtr<ffi::Surface>,
     pub config: Config,
     pub(crate) dimensions: (f32, f32),
     pub(crate) polygon_shader: Option<u32>,
-    camera_shaders: [Option<u32>; 4],
+    camera_shaders: [Option<u32>; 6],
     normal: u32,
     medium: u32,
     pretendard: u32,
@@ -173,7 +174,8 @@ impl Renderer {
         let display = fonts.get("KaiGenGothicKR-Bold").copied();
         let mut renderer = Self {
             texture_releases: Rc::default(),
-            camera_shaders: [None; 4],
+            resource_releases: Rc::default(),
+            camera_shaders: [None; 6],
             surface,
             config,
             dimensions,
@@ -211,3 +213,15 @@ use paint::convert;
 mod camera;
 mod dynamic;
 pub use dynamic::{DecodedImage, DynamicTexture};
+mod cluster;
+pub use cluster::{RawImage, RawTextDraw, RawTextPaint, TextureFilter};
+mod resources;
+mod three_d;
+mod two_d;
+use resources::vector;
+pub use resources::{
+    MeshResource, ModelPaint, ModelResource, RenderTarget, ShaderResource, TargetInfo, TargetPaint,
+    Vector3,
+};
+pub use three_d::{Camera3D, PointBuffer3D};
+pub use two_d::{PointBuffer2D, RawPoint};

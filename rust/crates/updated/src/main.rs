@@ -98,8 +98,10 @@ fn run() -> Result<(), Error> {
     runtime::run(&mut updater, &wake, cycles)
 }
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.system.updated.updated", "updated", || {
+        run().map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("updated: {error}");
             ExitCode::FAILURE

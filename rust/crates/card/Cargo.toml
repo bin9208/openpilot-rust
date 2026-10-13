@@ -41,6 +41,7 @@ default = []
 native = ["openpilot-messaging/native", "openpilot-control-policy/numerics", "dep:openpilot-msgq", "dep:openpilot-logging", "dep:rustix", "dep:libc", "dep:signal-hook"]
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 aes = "=0.8.4"
 cmac = "=0.7.2"
 capnp = "=0.27.2"

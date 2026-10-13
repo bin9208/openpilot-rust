@@ -73,7 +73,7 @@ def main() -> None:
   common = ["--manifest-path", str(ROOT / "rust/Cargo.toml"), "-p", PACKAGES[0], "-p", PACKAGES[1],
     "--features", "native-skip-miri", "--locked", "--message-format=json"]
   messages = run("tests-build", ["cargo", "test", *common, "--lib", "--tests", "--no-run"], environment)
-  example_messages = run("examples-build", ["cargo", "build", *common, "--examples"], environment)
+  example_messages = run("examples-build", ["cargo", "build", *common, "--example", "opencv_trace", "--example", "jpeg_options"], environment)
   tests, examples = artifacts(messages, example_messages)
   runtime = {"LD_PRELOAD": str(library), "LD_LIBRARY_PATH": f"{args.opencv}/install/lib:{library.parent}",
     "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1", "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",

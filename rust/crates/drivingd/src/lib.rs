@@ -7,10 +7,16 @@ pub mod parameters;
 pub mod publication;
 pub mod runtime;
 pub mod state;
+pub mod usb_model;
+pub mod usb_selection;
 pub mod wire;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error(transparent)]
+    UsbGpu(#[from] openpilot_usbgpu::Error),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
     #[error(transparent)]
     Logging(#[from] openpilot_logging::Error),
     #[error(

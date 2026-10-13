@@ -30,7 +30,7 @@ int encode_pixels(const uint8_t *pixels,unsigned int width,unsigned int height,u
   jpeg_create_compress(&state->info);
   jpeg_mem_dest(&state->info,output,size);
   state->info.image_width=width; state->info.image_height=height;
-  state->info.input_components=(int)components; state->info.in_color_space=components==1 ? JCS_GRAYSCALE : JCS_RGB;
+  state->info.input_components=(int)components; state->info.in_color_space=components==1 ? JCS_GRAYSCALE : components==4 ? JCS_EXT_RGBX : JCS_RGB;
   jpeg_set_defaults(&state->info);
   jpeg_set_quality(&state->info,(int)quality,TRUE);
   state->info.dct_method=JDCT_ISLOW;

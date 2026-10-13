@@ -116,6 +116,12 @@ impl IonBuffer {
         self.length
     }
     pub fn sync_from_device(&self) -> Result<(), Error> {
+        self.sync(abi::ENCODER_ION_IOC_INV_CACHES)
+    }
+    pub fn sync_to_device(&self) -> Result<(), Error> {
+        self.sync(abi::ENCODER_ION_IOC_CLEAN_CACHES)
+    }
+    fn sync(&self, command: u64) -> Result<(), Error> {
         let mut flush = abi::ion_flush_data {
             handle: self.handle,
             fd: 0,
@@ -124,7 +130,7 @@ impl IonBuffer {
             length: u32::try_from(self.length)?,
         };
         let mut custom = abi::ion_custom_data {
-            cmd: u32::try_from(abi::ENCODER_ION_IOC_INV_CACHES)?,
+            cmd: u32::try_from(command)?,
             arg: (&mut flush as *mut abi::ion_flush_data) as libc::c_ulong,
         };
         // SAFETY: [FFI boundary] CUSTOM embeds a live flush structure whose

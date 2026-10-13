@@ -62,8 +62,12 @@ fn run(cycles: Option<NonZeroU64>) -> Result<(), Error> {
 }
 
 fn main() -> ExitCode {
-    match options().and_then(|value| value.map_or(Ok(()), run)) {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.system.loggerd.deleter", "deleter", || {
+        options()
+            .and_then(|value| value.map_or(Ok(()), run))
+            .map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("deleter: {error}");
             ExitCode::FAILURE

@@ -10,6 +10,7 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 capnp = "=0.27.2"
 indexmap = "=2.14.2"
 openpilot-cereal = { path = "../cereal" }

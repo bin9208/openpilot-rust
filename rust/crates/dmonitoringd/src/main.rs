@@ -91,8 +91,16 @@ fn run(frames: Option<u64>) -> Result<(), Error> {
 }
 
 fn main() -> ExitCode {
-    match options().and_then(|options| options.map_or(Ok(()), run)) {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.monitoring.dmonitoringd",
+        "dmonitoringd",
+        || {
+            options()
+                .and_then(|options| options.map_or(Ok(()), run))
+                .map_err(openpilot_managed_entry::StepError::raised)
+        },
+    ) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("dmonitoringd: {error}");
             ExitCode::FAILURE

@@ -1,5 +1,6 @@
 //! Ordered manager catalog policy ported from system/manager/process_config.py.
 //! Source launch metadata is provenance, not executable fallback configuration.
+pub mod binding;
 mod catalog;
 pub use catalog::{catalog, Descriptor, ImportConfig, RustAvailability, SourceProcess};
 

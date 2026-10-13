@@ -30,8 +30,10 @@ fn run() -> Result<(), Error> {
     modem.stop()
 }
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.system.hardware.tici.modem", "modem", || {
+        run().map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("modem: {error}");
             ExitCode::FAILURE

@@ -7,6 +7,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-can = { path = "../can" }
 openpilot-card = { path = "../card", default-features = false }
 openpilot-beepd = { path = "../beepd" }

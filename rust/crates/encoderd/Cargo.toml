@@ -14,7 +14,7 @@ visionipc-ion = ["native", "openpilot-msgq/visionipc-ion"]
 
 [dependencies]
 capnp = { version = "=0.27.2", optional = true }
-ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format"], optional = true }
+ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format", "software-scaling"], optional = true }
 libc = "0.2"
 openpilot-cereal = { path = "../cereal", optional = true }
 openpilot-jpeg = { path = "../jpeg", optional = true }
@@ -45,4 +45,8 @@ required-features = ["native"]
 
 [[example]]
 name = "encoder_v4l_trace"
+required-features = ["native"]
+
+[[example]]
+name = "decoder_trace"
 required-features = ["native"]

@@ -3,7 +3,7 @@ use crate::{
     context::{ContextGuard, GlobalContext, LocalContext},
     record::{format_record, Level, Record},
     site::Site,
-    Error, Fields,
+    Error, Fields, Value,
 };
 use std::{
     env,
@@ -49,7 +49,49 @@ impl Factory {
                 return Err(Error::Contract("logging IPC prefix is not UTF-8"))
             }
         };
-        Self::new(format!("ipc:///tmp/logmessage{prefix}"))
+        let factory = Self::new(format!("ipc:///tmp/logmessage{prefix}"))?;
+        match env::var("OPENPILOT_LOG_CONTEXT") {
+            Ok(context) => {
+                let Value::Object(mut fields) = serde_json::from_str(&context)? else {
+                    return Err(Error::Contract(
+                        "inherited logging context must be an object",
+                    ));
+                };
+                for key in [
+                    "runtime_language",
+                    "source_commit",
+                    "source_tree",
+                    "runtime_implementation",
+                    "daemon",
+                ] {
+                    fields.shift_remove(key);
+                }
+                let executable = env::current_exe()?;
+                let implementation = executable
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .ok_or(Error::Contract("logging implementation name is not UTF-8"))?;
+                fields.insert(
+                    "runtime_implementation".into(),
+                    Value::Text(implementation.into()),
+                );
+                match env::var("MANAGER_DAEMON") {
+                    Ok(name) => {
+                        fields.insert("daemon".into(), Value::Text(name));
+                    }
+                    Err(env::VarError::NotPresent) => {}
+                    Err(env::VarError::NotUnicode(_)) => {
+                        return Err(Error::Contract("logging daemon name is not UTF-8"))
+                    }
+                }
+                factory.bind_global(fields)?;
+            }
+            Err(env::VarError::NotPresent) => {}
+            Err(env::VarError::NotUnicode(_)) => {
+                return Err(Error::Contract("inherited logging context is not UTF-8"))
+            }
+        }
+        Ok(factory)
     }
     pub fn bind_global(&self, fields: Fields) -> Result<(), Error> {
         self.global.bind(fields)

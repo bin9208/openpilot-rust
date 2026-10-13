@@ -7,6 +7,10 @@ license.workspace = true
 publish = false
 
 [[bin]]
+name = "openpilot-agnos-updater"
+path = "src/bin/agnos_updater.rs"
+
+[[bin]]
 name = "openpilot-ui"
 path = "src/bin/ui.rs"
 
@@ -14,6 +18,10 @@ path = "src/bin/ui.rs"
 unsafe_code = "deny"
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
+rustls-native-certs = "=0.8.4"
+openpilot-process-supervision = { path = "../process-supervision" }
+openpilot-agnos = { path = "../agnos" }
 openpilot-runtime-core = { path = "../runtime-core" }
 openpilot-msgq = { path = "../msgq" }
 openpilot-usbgpu = { path = "../usbgpu", default-features = false }

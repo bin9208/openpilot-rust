@@ -27,8 +27,12 @@ fn run() -> Result<(), Error> {
 }
 
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime(
+        "openpilot.tools.lateral_maneuvers.lateral_maneuversd",
+        "lateral_maneuversd",
+        || run().map_err(openpilot_managed_entry::StepError::raised),
+    ) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("lateral maneuvers: {error}");
             ExitCode::FAILURE

@@ -66,3 +66,20 @@ fn readable_character_device_link_is_copied_as_a_regular_file() {
     assert!(std::fs::symlink_metadata(&copied).unwrap().is_file());
     assert!(std::fs::read(copied).unwrap().is_empty());
 }
+
+#[test]
+fn explicit_missing_executable_fails_before_snapshot_worker_starts() {
+    let root = tempfile::tempdir().unwrap();
+    let params = root.path().join("params");
+    fs::create_dir(&params).unwrap();
+    let result = openpilot_bootlog::snapshot::save_bootlog_executable(
+        &params,
+        &root.path().join("openpilot-bootlog"),
+        &root.path().join("launcher"),
+    );
+    assert!(
+        matches!(result, Err(openpilot_bootlog::snapshot::Error::Io(error))
+        if error.kind() == std::io::ErrorKind::NotFound)
+    );
+    assert_eq!(fs::read_dir(root.path()).unwrap().count(), 1);
+}

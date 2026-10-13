@@ -1,5 +1,7 @@
 mod clock;
 mod discovery;
+mod embedded;
+pub use embedded::EmbeddedServer;
 mod http;
 mod options;
 mod params;

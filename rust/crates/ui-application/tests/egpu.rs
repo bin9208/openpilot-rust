@@ -81,6 +81,7 @@ fn native_facade_reads_owned_sysfs_and_runs_owned_probe() -> Result<(), Box<dyn 
         models: Paths {
             models: temp.path().join("models"),
             cache: temp.path().join("cache"),
+            assets: temp.path().join("native-assets"),
         },
     });
     assert_eq!(native.link()?, "5 Gbps");

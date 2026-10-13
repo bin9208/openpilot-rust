@@ -1,0 +1,23 @@
+# Standalone AGNOS updater source contract
+
+This module ports `openpilot/system/ui/{updater,tici_updater,mici_updater}.py` with the existing Rust UI component system. `../../DESIGN.md` and `../../../startup-ui/DESIGN.md` define original fonts, textures, viewport/scaling, touch and navigation. No redesign, browser UI, new theme or breakpoint is authorized. Web/React/Lighthouse and gallery concepts do not apply to this native source-preserving surface.
+
+## Runtime states
+
+Both layouts start automatically with one owned worker and invoke the supplied native AGNOS executable with `--swap --retry-network MANIFEST`. The AGNOS implementation owns verified downloads, inactive-slot selection, retry/fatal handling and swap; UI never substitutes a successful status or modifies image requirements. Duplicate starts are ignored while the worker runs. Navigation to Wi-Fi keeps the worker alive. Actual child stdout/stderr drives progress, retains twelve last messages truncated to240 Unicode characters, and ignores malformed progress. Success shows100/rebooting and invokes the existing hardware reboot boundary. Spawn/error exits expose their concrete cause and Retry/Wi-Fi/reboot controls. Close terminates, escalates after5seconds and reaps the reserved session leader; no Python interpreter executes in production.
+
+## Tici tokens and primitives
+
+Large logical viewport2160×1080, inherited source scaling and Inter/Pretendard typography. Margin50; button400×160; progress title rect(150,330,width-300,100), Semibold90; progress bar rect(150,530,width-300,72), roundness0.5/10segments, background(41,41,41), foreground(54,77,239). Failure text starts(150,650), Normal65, height2×65×FONT_SCALE. Running screen keeps a half-width Wi-Fi button atbottom50. Failed screen divides the available bottom row into three equal buttons: Retry primary, Connect to Wi-Fi normal, Reboot normal. Wi-Fi panel inset50 with(51,51,51), roundness0.035/10segments; its content inset another50, using the real shared WifiManagerUi. Back stays bottom-left. Backgroundblack and original widget interaction styles remain unchanged.
+
+## Mici tokens and primitives
+
+Small logical viewport536×240. Progress NavWidget uses original entrance/dismiss/gesture semantics with Back disabled and nav bar alpha0. Title Display64, alpha229,lineheight0.8 at(12,2), source underscore/newline wrapping and ellipsis. Percent Roman132,alpha165,bottom aligned at(12,18,width-180,height). Wi-Fi normal Button36 at(width-160,height-80,148,68). Root horizontal Scroller uses GreyBigButton `updating system`/`the device will\nrestart automatically` and licensed64×64 green-wheel texture, plus402×180 BigPillButton `Connect\nto Wi-Fi`. Failed NavScroller contains Retry, Connect to Wi-Fi, `update paused` concrete reason, and original confirmed reboot circle/slider. Pill buttons reuse source402×180 continue/start textures and BigButton press/grow physics, center48text. Network page reuses the actual compact Wi-Fi cards, password keyboard, forget confirmation, status button and scroller. Its back-to-update button always remains available, including offline/advisory-probe failures. Connectivity changes retain the source0.7second return/scroll/grow behavior; probes never authorize starting or cancelling an update.
+
+## Ownership and accessibility constraints
+
+The standalone app initializes only application/resources, Wi-Fi, updater, advisory connectivity and hardware effects. Compact Wi-Fi receives its lightweight Actions/pc/clock context rather than product IPC/API state. UI thread owns widget navigation and consumes worker events; worker state and cancellation are synchronized. Fixed dark layouts, touch semantics, font metrics and source accessibility limitations are inherited constraints, not new accessibility compliance. Product Wi-Fi constructors retain their behavior through the context adapter; their source/native regression must pass.
+
+## Verification matrix
+
+Capture actual source/native Tici and Mici initial/progress/waiting/failure/long-message/rebooting, Wi-Fi/offline/connected views, Retry and duplicate starts, Back during download, password/forget dialogs and Mici gestures. Use owned fake updater executables, loopback advisory requests, owned Params and injected hardware/Wi-Fi boundaries for fixtures. Exercise real native positionalCLI onPC with a fake updater (hardware PC reboot only prints). Screenshots compare actual widgets/textures through raylib; never paste a reference image. Record process exit/reap, argv, outputs, state/action and screenshot/diff artifacts. Native external raylib/GL/fonts/NetworkManager dependencies remain explicit. Host component evidence is not AGNOS flash, device acceptance or complete runtime handoff.

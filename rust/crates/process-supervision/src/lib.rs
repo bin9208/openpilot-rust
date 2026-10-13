@@ -1,17 +1,22 @@
 #![forbid(unsafe_code)]
 
+mod capture;
 mod detached_child;
 mod ensure;
 mod exec;
 mod launch;
+mod lock_fd;
 mod logging;
 mod persistent;
 mod pid;
 mod process;
+pub mod pty;
 mod state;
 
+pub use capture::{capture_output, CaptureError};
 pub use ensure::ensure_running;
 pub use launch::{run_child, CapturedChild, CapturedCommand, NativeCommand};
+pub use lock_fd::{receive_boot_lock, send_boot_lock};
 pub use logging::ProcessLog;
 pub use persistent::{ParamsSource, PersistentCommand, PersistentDaemonProcess};
 pub use process::{Execution, ManagedProcess, ProcessPolicy, StopOptions};

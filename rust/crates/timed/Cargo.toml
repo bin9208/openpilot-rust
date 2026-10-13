@@ -10,6 +10,7 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-logmessaged = { path = "../logmessaged" }
 openpilot-http-transport = { path = "../http-transport" }
 openpilot-params = { path = "../params" }

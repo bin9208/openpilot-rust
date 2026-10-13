@@ -57,6 +57,9 @@ impl Peer {
     }
 
     pub async fn send(&self, request: Message, timeout: Duration) -> Result<Message, Error> {
+        if *self.disconnected.borrow() || self.disconnected.has_changed().is_err() {
+            return Err(Error::Closed);
+        }
         let (sender, receiver) = oneshot::channel();
         let token = self
             .connection

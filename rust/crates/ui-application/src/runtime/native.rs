@@ -30,21 +30,12 @@ impl Runtime {
                 .persist_root()
                 .map_err(|error| Error::Io(std::io::Error::other(error)))?,
         );
-        let cache = std::env::var_os("CARROT_BIG_MODEL_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| {
-                if Path::new("/TICI").is_file() {
-                    "/data/media/0/carrot/models".into()
-                } else {
-                    PathBuf::from(std::env::var_os("HOME").unwrap_or_default())
-                        .join(".comma/models")
-                }
-            });
-        let paths = || openpilot_usbgpu::model::Paths {
-            models: root.join("openpilot/selfdrive/modeld/models"),
-            cache: cache.clone(),
-        };
-        let models = Arc::new(paths());
+        let paths = openpilot_usbgpu::model::Paths::for_runtime(
+            root,
+            openpilot_usbgpu::model::assets(root),
+        )
+        .map_err(|error| crate::Error::Io(std::io::Error::other(error)))?;
+        let models = Arc::new(paths.clone());
         let model_status = Rc::new(move || {
             openpilot_usbgpu::model::status(&models)
                 .map(|status| ModelStatus {
@@ -118,7 +109,7 @@ impl Runtime {
             egpu: Arc::new(services::egpu::native::Native {
                 options: openpilot_usbgpu::check::Options::for_runtime()
                     .map_err(|error| Error::Io(std::io::Error::other(error)))?,
-                models: paths(),
+                models: paths,
             }),
         };
         let hardware = Box::new(hardware::Native::new(&device_type, launcher)?);

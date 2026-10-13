@@ -42,8 +42,12 @@ fn run() -> Result<(), Error> {
     runtime::run(frames, &assets, &numerics)
 }
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.controls.controlsd",
+        "controlsd",
+        || run().map_err(openpilot_managed_entry::StepError::raised),
+    ) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("controlsd: {error}");
             ExitCode::FAILURE

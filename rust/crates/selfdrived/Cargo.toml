@@ -10,6 +10,7 @@ publish = false
 unsafe_op_in_unsafe_fn = "deny"
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 capnp = "=0.27.2"
 openpilot-messaging = { path = "../messaging" }
 openpilot-msgq = { path = "../msgq" }

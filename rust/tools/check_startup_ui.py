@@ -140,6 +140,35 @@ def live_interaction(ctx: Context) -> None:
           if window is None:
             time.sleep(0.05)
         require(window is not None, 'TextWindow did not create a window')
+        while time.monotonic() < deadline:
+          require(process.poll() is None, 'TextWindow exited before rendering its button')
+          pixels = window.get_image(335, 139, 152, 82, X.ZPixmap, 0xffffffff)
+          if pixels is not None and any(min(pixels.data[offset:offset + 3]) >= 200 for offset in range(0, len(pixels.data), 4)):
+            break
+          time.sleep(0.05)
+        else:
+          raise RuntimeError('TextWindow did not render its button before the startup deadline')
+        geometry = window.get_geometry()
+        capture = window.get_image(0, 0, geometry.width, geometry.height, X.ZPixmap, 0xffffffff)
+        require(capture is not None, 'TextWindow frame capture failed')
+        Image.frombytes('RGB', (geometry.width, geometry.height), capture.data, 'raw', 'BGRX').save(ctx.output / 'live-text-ready.png')
+        window.set_input_focus(X.RevertToParent, X.CurrentTime)
+        coords = connection.screen().root.translate_coords(window, 100, 100)
+        xtest.fake_input(connection, X.MotionNotify, x=coords.x, y=coords.y)
+        connection.sync()
+        time.sleep(0.1)
+        xtest.fake_input(connection, X.ButtonPress, 1)
+        connection.sync()
+        time.sleep(0.12)
+        xtest.fake_input(connection, X.ButtonRelease, 1)
+        connection.sync()
+        try:
+          process.wait(timeout=0.5)
+        except subprocess.TimeoutExpired:
+          outside_click_alive = process.poll() is None
+        else:
+          outside_click_alive = False
+        require(outside_click_alive, 'TextWindow exited after a click outside its button')
         # Fonts finish loading after window creation. Retry the same real click until
         # the first rendered frame can consume it, bounded by the startup deadline.
         attempts = 0
@@ -159,7 +188,7 @@ def live_interaction(ctx: Context) -> None:
             process.wait(timeout=0.5)
           except subprocess.TimeoutExpired:
             continue
-        require(process.poll() == 0, 'TextWindow did not exit zero after a real button click')
+        require(process.poll() == 1, f'TextWindow did not exit with dismissal status 1 after a real button click: {process.poll()}')
       finally:
         if process.poll() is None:
           process.kill()
@@ -190,8 +219,15 @@ def live_interaction(ctx: Context) -> None:
         process.wait()
         if process.stdin is not None:
           process.stdin.close()
-    write_json(ctx.output / 'live-result.json', {'text_actual_XTest_click_exit': 0, 'text_click_attempts': attempts, 'spinner_stdin_then_SIGINT_exit': 0})
-    (ctx.output / 'live-result.log').write_text('PASS actual native text XTest click exit 0; spinner stdin/SIGINT exit 0\n')
+    write_json(ctx.output / 'live-result.json', {
+      'text_outside_XTest_click_alive': outside_click_alive,
+      'text_actual_XTest_click_exit': 1,
+      'text_click_attempts': attempts,
+      'spinner_stdin_then_SIGINT_exit': 0,
+    })
+    (ctx.output / 'live-result.log').write_text(
+      'PASS actual native text remains alive after an outside XTest click; button XTest click exits 1; spinner stdin/SIGINT exits 0\n',
+    )
   finally:
     connection.close()
   require(not protocol_errors, f'X protocol errors: {protocol_errors}')

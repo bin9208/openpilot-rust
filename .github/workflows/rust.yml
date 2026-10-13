@@ -534,15 +534,17 @@ jobs:
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 12288
-      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev cmake
+      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev ffmpeg libsdl2-2.0-0 cmake qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross
       - run: |
           python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+          python -m pip install numpy==2.5.3 onnx==1.20.1 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
       - name: Stage pinned native startup UI headers
         run: |
           python tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host"
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: cargo fmt --all --check
+      - name: Reject incomplete or invalid native runtime packages
+        run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests -q tools/tests/test_runtime_package.py tools/tests/test_offline_qcom_publish.py
       - name: Install source-pinned Eigen headers
         run: |
           python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
@@ -576,6 +578,27 @@ jobs:
           if-no-files-found: warn
       - name: Compare QCOM fixtures with the original argument and packet encoder
         run: python tools/qcom_fixtures.py --verify crates/model-runtime/tests/fixtures/qcom
+      - name: Stage the genuine pinned ARM A630 compiler for offline model tests
+        run: |
+          python tools/card_ci_space.py --path "$RUNNER_TEMP" --growth-mib 1024
+          mkdir -p "$RUNNER_TEMP/qcom-downloads"
+          curl --fail --location --retry 3 --max-time 180 \
+            'https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.12.14%2B20260929-aarch64-unknown-linux-gnu-install_only.tar.gz' \
+            --output "$RUNNER_TEMP/qcom-downloads/python.tar.gz"
+          curl --fail --location --retry 3 --max-time 180 \
+            'https://raw.githubusercontent.com/commaai/agnos-builder/ec1cf237a84565a056dbbc6f433b1b1c20c07a2c/userspace/root/usr/lib/aarch64-linux-gnu/libllvm-qcom.so' \
+            --output "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so"
+          python tools/stage_qcom_compiler.py "$RUNNER_TEMP/qcom-compiler" \
+            "$RUNNER_TEMP/qcom-downloads/python.tar.gz" "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so" \
+            /usr/bin/qemu-aarch64-static /usr/aarch64-linux-gnu/lib
+          printf 'QCOM_COMPILER_COMMAND=%s\n' "$(cat "$RUNNER_TEMP/qcom-compiler/command.json")" >> "$GITHUB_ENV"
+      - name: Preserve genuine offline compiler provenance
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-offline-qcom-compiler-provenance
+          path: ${{ runner.temp }}/qcom-compiler/provenance.json
+          if-no-files-found: warn
       - name: Compare captured graphs and original camera warps with Rust
         run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests -q
       - name: Fetch the pinned model from this independent repository
@@ -587,6 +610,32 @@ jobs:
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
       - run: python tools/check_reference.py
       - run: cargo build --workspace --examples --locked
+      - name: Build standalone recovery service
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-carrot-recovery -p openpilot-process-supervision --bins --examples --locked
+          sudo apt-get install -y tmux
+      - name: Compare recovery HTTP, terminal, support, actions and upload paths
+        working-directory: .
+        run: |
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -P rust/tools/carrot_recovery_http_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/http" --standalone
+          python -P rust/tools/carrot_recovery_terminal_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/terminal"
+          python -P rust/tools/carrot_recovery_terminal_lifecycle.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/lifecycle"
+          python -P rust/tools/carrot_recovery_support_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/support"
+          python -P rust/tools/carrot_recovery_support_shutdown.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/shutdown"
+          python -P rust/tools/carrot_recovery_actions_control.py --binary rust/target/debug/examples/recovery_actions --tmux /usr/bin/tmux --output "$RUNNER_TEMP/recovery/actions"
+          python -P rust/tools/check_carrot_recovery_upload.py --binary rust/target/debug/examples/upload --http-binary rust/target/debug/examples/recovery_actions --output "$RUNNER_TEMP/recovery/upload"
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --no-run --locked --message-format=json > "$RUNNER_TEMP/recovery/tests.jsonl"
+          recovery_test=$(python -c 'import json,sys; print(next(x["executable"] for x in map(json.loads,open(sys.argv[1])) if x.get("reason")=="compiler-artifact" and x.get("profile",{}).get("test") and x["target"]["name"]=="openpilot_carrot_recovery"))' "$RUNNER_TEMP/recovery/tests.jsonl")
+          python -P rust/tools/carrot_recovery_cwp_check.py --test-binary "$recovery_test" --output "$RUNNER_TEMP/recovery/cwp"
+      - name: Preserve recovery source comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-recovery-evidence
+          path: ${{ runner.temp }}/recovery/
+          if-no-files-found: warn
       - name: Compare USB GPU status and transport foundation with original source
         run: |
           python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
@@ -899,7 +948,7 @@ jobs:
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libyuv-dev libzmq3-dev ffmpeg
+          sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg
       - name: Install pinned encoder oracle dependencies
         run: |
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2011,7 +2060,8 @@ jobs:
         run: |
           rustc --version
           cargo --version
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged --bins --examples --locked
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged --bins --examples --locked
       - name: Build original startup message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/startup-msgq-python"
@@ -2028,6 +2078,12 @@ jobs:
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry-readiness"
           python rust/tools/check_managed_entry.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry"
+          python rust/tools/check_managed_runtime.py --binaries rust/target/debug --daemon uploader \
+            --output "$RUNNER_TEMP/startup-runtime/uploader-entry"
+      - name: Exercise the native bootstrap with owned startup providers
+        run: |
+          python rust/tools/check_runtime_launcher.py --binary rust/target/debug/openpilot-launch \
+            --provider rust/target/debug/examples/bootstrap_provider --output "$RUNNER_TEMP/startup-runtime/bootstrap"
       - name: Verify the exact native response detector source archive
         run: |
           curl --fail --location --retry 3 https://static.crates.io/crates/charset-norm/charset-norm-3.5.1.crate --output "$RUNNER_TEMP/charset-norm-3.5.1.crate"
@@ -2376,6 +2432,7 @@ jobs:
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 5120
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision --bin openpilot-process-child --locked
           cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked
       - name: Build native UI and record current dependency outputs
         run: |
@@ -2575,6 +2632,7 @@ jobs:
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
     defaults:
       run:
         working-directory: rust
@@ -2588,10 +2646,18 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libzstd-dev libyuv-dev libzmq5 ffmpeg strace
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
-      - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 PyJWT==2.15.1 requests==2.34.2 cryptography==50.0.1
       - run: cargo test -p openpilot-loggerd --locked
       - run: cargo test -p openpilot-msgq --test queued --locked
-      - run: cargo build -p openpilot-loggerd -p openpilot-logmessaged --locked
+      - run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+          cargo build -p openpilot-loggerd -p openpilot-logmessaged -p openpilot-uploader --locked
+      - name: Verify managed crash recording and existing route upload
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python -P tools/check_runtime_log_upload.py \
+            --binaries target/debug --output "$RUNNER_TEMP/runtime-log-upload"
       - run: cargo build -p openpilot-logging --example native_logging_probe --locked
       - name: Compare shared native logging context, transport and rate-limit boundaries
         run: python tools/check_native_logging.py --binary target/debug/examples/native_logging_probe --output "$RUNNER_TEMP/native-logging"
@@ -2654,6 +2720,7 @@ jobs:
             ${{ runner.temp }}/logger-io/
             ${{ runner.temp }}/logger-counters/
             ${{ runner.temp }}/logger-pipeline/
+            ${{ runner.temp }}/runtime-log-upload/
             ${{ runner.temp }}/native-logging/
             ${{ runner.temp }}/logger-original/*.json
             ${{ runner.temp }}/logger-original/*.log
@@ -2817,7 +2884,7 @@ jobs:
     name: rust aarch64 build
     if: github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'

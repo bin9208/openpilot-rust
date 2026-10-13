@@ -7,6 +7,7 @@ use std::{
 };
 #[path = "geos_artifact.rs"]
 mod artifact;
+pub(crate) use artifact::installed_library;
 
 type Context = *mut c_void;
 type Object = *mut c_void;
@@ -41,7 +42,7 @@ impl Geos {
     pub fn open(path: &Path) -> Result<Self, Error> {
         let manifest = match std::env::var_os("CARROT_GEOS_MANIFEST") {
             Some(path) => std::fs::read(path)?,
-            None => include_bytes!("../native-dependencies.json").to_vec(),
+            None => artifact::default_manifest().to_vec(),
         };
         let dependency_path = artifact::verify(path, &manifest)?;
         // SAFETY: manifest filename, SHA256, ELF architecture and companion hash were verified before dlopen.

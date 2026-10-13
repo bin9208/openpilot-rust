@@ -38,13 +38,14 @@ pub fn take(shared: &Shared, stop: &Stop) -> Result<Value, Error> {
     let front = state::boolean(&shared.params, "RecordFront")?;
     shared.params.put_bool("IsTakingSnapshot", true)?;
     let launcher = shared.config.process_launcher.clone();
+    let executable = launcher.with_file_name("openpilot-camerad");
     let camera = ManagedProcess::new(
         "camerad".into(),
         Execution::Native(NativeCommand {
             launcher,
             basedir: shared.config.basedir.clone(),
             cwd: "openpilot/system/camerad".into(),
-            argv: vec!["./camerad".into()],
+            argv: vec![executable.into_os_string()],
         }),
         ProcessLog::new(shared.factory.logger()),
     );
@@ -64,7 +65,12 @@ pub fn take(shared: &Shared, stop: &Stop) -> Result<Value, Error> {
     if stop.requested() {
         return Err(Error::Stopped);
     }
-    if Command::new("pgrep").arg("camerad").status()?.success() {
+    if Command::new("pgrep").arg("camerad").status()?.success()
+        || Command::new("pgrep")
+            .args(["-x", "openpilot-camer"])
+            .status()?
+            .success()
+    {
         return Ok(json!({"jpegBack":null,"jpegFront":null}));
     }
     if !shared.config.pc {

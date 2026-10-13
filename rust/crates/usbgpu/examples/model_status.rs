@@ -9,6 +9,10 @@ fn main() {
         let value = status(&Paths {
             models: paths[0].clone(),
             cache: paths[1].clone(),
+            assets: paths
+                .get(2)
+                .cloned()
+                .unwrap_or_else(|| paths[0].join("usbgpu-assets")),
         })
         .unwrap();
         println!(

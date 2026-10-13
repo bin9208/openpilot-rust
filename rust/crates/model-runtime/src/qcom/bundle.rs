@@ -88,6 +88,26 @@ impl QcomBundle {
     pub fn kernel_count(&self) -> usize {
         self.programs.len()
     }
+    pub fn input_size(&self, name: &str) -> Option<usize> {
+        self.graph
+            .inputs
+            .iter()
+            .find(|binding| binding.name == name)
+            .map(|binding| self.graph.views[binding.view].bytes)
+    }
+    pub fn output_size(&self, name: &str) -> Option<usize> {
+        self.graph
+            .outputs
+            .iter()
+            .find(|binding| binding.name == name)
+            .map(|binding| self.graph.views[binding.view].bytes)
+    }
+    pub fn entrypoints(&self) -> impl Iterator<Item = &str> {
+        self.graph
+            .entrypoints
+            .iter()
+            .map(|entry| entry.name.as_str())
+    }
 }
 
 impl super::graph::ArgumentSpec {

@@ -6,6 +6,7 @@ use std::{fs::File, path::PathBuf, thread::JoinHandle};
 pub struct NativeBoot {
     pub params_directory: PathBuf,
     pub loggerd_directory: PathBuf,
+    pub executable: Option<PathBuf>,
     pub launcher: PathBuf,
     pub lock_path: PathBuf,
     pub lock: Option<File>,
@@ -13,11 +14,19 @@ pub struct NativeBoot {
 }
 impl BootBoundary for NativeBoot {
     fn save_bootlog(&mut self) -> Result<(), Error> {
-        self.worker = Some(openpilot_bootlog::snapshot::save_bootlog(
-            &self.params_directory,
-            &self.loggerd_directory,
-            &self.launcher,
-        )?);
+        self.worker = Some(if let Some(installed) = &self.executable {
+            openpilot_bootlog::snapshot::save_bootlog_executable(
+                &self.params_directory,
+                installed,
+                &self.launcher,
+            )?
+        } else {
+            openpilot_bootlog::snapshot::save_bootlog(
+                &self.params_directory,
+                &self.loggerd_directory,
+                &self.launcher,
+            )?
+        });
         Ok(())
     }
     fn release_boot_lock(&mut self) -> Result<(), Error> {

@@ -1,0 +1,33 @@
+[package]
+name = "openpilot-carrot-recovery"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+openpilot-process-supervision = { path = "../process-supervision" }
+openpilot-carrot-navi = { path = "../carrot-navi", default-features = false }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-http-transport = { path = "../http-transport" }
+openpilot-cweb-push = { path = "../cweb-push" }
+base64 = "=0.22.1"
+sha1 = "=0.10.7"
+num-traits = "=0.2.19"
+getrandom = "=0.4.3"
+thiserror = "2"
+httpdate = "1"
+rustix = { version = "=1.1.5", features = ["fs", "process", "event", "net", "pty", "termios"] }
+signal-hook = "0.3"
+ureq = "=3.4.2"
+url = "=2.5.8"
+rustls-native-certs = "=0.8.4"
+chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"] }
+
+[[bin]]
+name = "openpilot-carrot-recovery"
+path = "src/main.rs"

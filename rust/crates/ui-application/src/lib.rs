@@ -1,4 +1,5 @@
 //! Native product UI policy from selfdrive/ui (MIT); production selection is external.
+pub mod agnos_updater;
 pub mod api;
 pub mod cache;
 pub mod context;

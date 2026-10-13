@@ -1,3 +1,4 @@
+pub mod decoder;
 mod mapping;
 pub mod platform;
 pub mod publisher;

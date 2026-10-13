@@ -2,11 +2,12 @@ use openpilot_usbgpu::model::{remove_active_chunk_manifest, status, Paths};
 use serde_json::json;
 use std::fs;
 #[test]
-fn active_model_status_excludes_previous_and_obeys_precompiled_only() {
+fn native_readiness_excludes_previous_and_python_chunk_manifests() {
     let temp = tempfile::tempdir().unwrap();
     let paths = Paths {
         models: temp.path().join("models"),
         cache: temp.path().join("cache"),
+        assets: temp.path().join("assets"),
     };
     fs::create_dir_all(&paths.models).unwrap();
     fs::create_dir_all(&paths.cache).unwrap();
@@ -29,8 +30,8 @@ fn active_model_status_excludes_previous_and_obeys_precompiled_only() {
         b"1",
     )
     .unwrap();
-    assert!(status(&paths).unwrap().compiled);
-    assert!(!status(&paths).unwrap().compile_pending);
+    assert!(!status(&paths).unwrap().compiled);
+    assert!(status(&paths).unwrap().compile_pending);
     active["filename"] = json!("model.pkl");
     fs::write(paths.cache.join("model-aaaaaaaaaaaaaaaa.pkl"), b"abc").unwrap();
     fs::write(
@@ -39,7 +40,7 @@ fn active_model_status_excludes_previous_and_obeys_precompiled_only() {
     )
     .unwrap();
     assert!(!status(&paths).unwrap().compiled);
-    assert!(!status(&paths).unwrap().compile_pending);
+    assert!(status(&paths).unwrap().compile_pending);
     fs::write(
         paths.cache.join("state.json"),
         json!({"active":null,"previous":active}).to_string(),
@@ -55,6 +56,7 @@ fn recompile_removes_only_active_chunk_manifest() {
     let paths = Paths {
         models: temp.path().join("models"),
         cache: temp.path().join("cache"),
+        assets: temp.path().join("assets"),
     };
     fs::create_dir_all(&paths.models).unwrap();
     fs::create_dir_all(&paths.cache).unwrap();

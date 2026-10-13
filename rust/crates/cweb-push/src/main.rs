@@ -60,8 +60,15 @@ fn run() -> Result<(), Error> {
     Ok(())
 }
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) | Err(Error::Stopped) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.carrot.cweb_push",
+        "cweb_push",
+        || match run() {
+            Ok(()) | Err(Error::Stopped) => Ok(()),
+            Err(error) => Err(openpilot_managed_entry::StepError::raised(error)),
+        },
+    ) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("cweb_push: {error}");
             ExitCode::FAILURE

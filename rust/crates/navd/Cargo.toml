@@ -14,6 +14,7 @@ native = ["dep:openpilot-beepd", "dep:openpilot-hardware-info", "dep:openpilot-h
 workspace = true
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 capnp = "=0.27.2"
 num-traits = "=0.2.19"
 openpilot-cereal = { path = "../cereal" }

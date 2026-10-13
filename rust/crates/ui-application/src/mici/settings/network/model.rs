@@ -1,7 +1,5 @@
-use crate::{
-    context::{Action, Context},
-    mici::widgets::dialog::InputOptions,
-};
+use super::wifi::WifiContext;
+use crate::{context::Action, mici::widgets::dialog::InputOptions};
 use openpilot_ui_framework::{network::WifiSession, Error};
 use openpilot_wifi::{Command, Event, Network, SecurityType};
 use std::{
@@ -21,7 +19,7 @@ pub(super) struct Movement {
     pub scroll: bool,
 }
 pub(super) struct Model {
-    pub context: Context,
+    pub context: WifiContext,
     pub session: WifiSession,
     pub networks: RefCell<Vec<Network>>,
     pub cards: RefCell<Vec<Rc<RefCell<CardState>>>>,
@@ -33,7 +31,7 @@ pub(super) struct Model {
     events: Rc<RefCell<VecDeque<Event>>>,
 }
 impl Model {
-    pub fn new(context: Context, session: WifiSession) -> Rc<Self> {
+    pub fn new(context: WifiContext, session: WifiSession) -> Rc<Self> {
         let events = session.subscribe();
         Rc::new(Self {
             context,

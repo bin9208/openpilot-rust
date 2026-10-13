@@ -11,6 +11,7 @@ default = []
 native = ["dep:cxx", "dep:ffmpeg-next", "openpilot-msgq/native-skip-miri", "openpilot-msgq/webcam-inactive-stream", "openpilot-messaging/native"]
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 capnp = "=0.27.2"
 cxx = { version = "=1.0.202", optional = true }
 ffmpeg-next = { version = "=8.1.0", default-features = false, features = ["codec", "format", "software-scaling"], optional = true }

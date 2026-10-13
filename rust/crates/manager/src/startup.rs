@@ -88,6 +88,11 @@ impl<S: Sdk, I: Inputs, B: BootBoundary> Startup for NativeStartup<'_, S, I, B> 
         }
         fields.insert("dirty".into(), Value::Bool(metadata.openpilot.is_dirty));
         self.logging.bind_global(fields)?;
+        let context = self.logging.logger().context_snapshot()?;
+        std::env::set_var(
+            "OPENPILOT_LOG_CONTEXT",
+            context.to_json().map_err(openpilot_logging::Error::from)?,
+        );
         Ok(())
     }
     fn prepare_processes(&mut self) -> Result<(), Error> {

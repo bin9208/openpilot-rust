@@ -10,6 +10,8 @@ use std::{
     rc::Rc,
     time::Duration,
 };
+mod retained;
+pub use retained::RetainedBuffer;
 
 /// Client for the original trusted local VisionIPC server protocol.
 pub struct VisionClient {
@@ -77,6 +79,9 @@ impl VisionClient {
             }
             value => value?,
         };
+        if payload.is_empty() && descriptors.is_empty() {
+            return Ok(false);
+        }
         let records = vision_wire::decode_buffers(&payload, descriptors.len(), self.stream)?;
         let buffers: Result<Vec<_>, _> = records
             .into_iter()

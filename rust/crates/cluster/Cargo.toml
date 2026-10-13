@@ -1,0 +1,81 @@
+[package]
+name = "openpilot-cluster"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT AND GPL-3.0-or-later AND LGPL-2.0-or-later"
+publish = false
+
+[[bin]]
+name = "openpilot-cluster"
+path = "src/bin/openpilot-cluster.rs"
+
+[[bin]]
+name = "openpilot-cluster-autorun"
+path = "src/bin/openpilot-cluster-autorun.rs"
+
+[features]
+default = []
+native-media = ["dep:openpilot-encoderd"]
+
+[dependencies]
+openpilot-can = { path = "../can" }
+openpilot-carrot-navi = { path = "../carrot-navi", features = ["native"] }
+openpilot-jpeg = { path = "../jpeg" }
+openpilot-encoderd = { path = "../encoderd", features = ["native"], optional = true }
+base64 = "=0.22.1"
+bzip2 = "=0.6.1"
+zstd = "=0.13.3"
+des = "=0.8.1"
+num-traits = "=0.2.19"
+num-bigint = "=0.4.8"
+signal-hook = "0.3"
+unicode-general-category = "=0.6.0"
+openpilot-usbgpu = { path = "../usbgpu" }
+zlib-rs = "=0.6.8"
+chrono = { version = "=0.4.45", default-features = false, features = ["clock"] }
+openpilot-params = { path = "../params" }
+openpilot-ui-application = { path = "../ui-application" }
+openpilot-msgq = { path = "../msgq" }
+openpilot-messaging = { path = "../messaging" }
+openpilot-cereal = { path = "../cereal" }
+openpilot-logmessaged = { path = "../logmessaged" }
+openpilot-runtime-version = { path = "../runtime-version" }
+openpilot-runtime-core = { path = "../runtime-core" }
+openpilot-sdl2 = { path = "../sdl2", features = ["gui"] }
+openpilot-process-supervision = { path = "../process-supervision" }
+openpilot-managed-entry = { path = "../managed-entry" }
+openpilot-hardware-info = { path = "../hardware-info" }
+capnp = "=0.27.2"
+openpilot-startup-ui = { path = "../startup-ui" }
+rustix = { version = "=1.1.5", features = ["net", "event", "fs", "time", "param", "process", "thread"] }
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = { version = "=1.0.151", features = ["raw_value"] }
+thiserror = "2"
+tempfile = "3"
+
+[dev-dependencies]
+openpilot-sdl2 = { path = "../sdl2", features = ["fixture-inspection"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "deny"
+pedantic = "deny"
+
+[[example]]
+name = "cluster_media_decode_fixture"
+required-features = ["native-media"]
+
+[[example]]
+name = "cluster_vidc_fixture"
+required-features = ["native-media"]
+
+[[example]]
+name = "cluster_media_hardware_fixture"
+required-features = ["native-media"]
+
+[[example]]
+name = "cluster_vidc_encoder_fixture"
+required-features = ["native-media"]

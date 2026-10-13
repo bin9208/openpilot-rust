@@ -318,7 +318,7 @@ impl Widget for UnifiedLabel {
         let mut height = 0.0;
         let mut broke = false;
         for line in &self.lines {
-            let needed = f64::from(line.size.y) * self.line_height * 0.9;
+            let needed = f64::from(line.size.y) * (self.line_height * 0.9);
             if height + needed > f64::from(rect.height) && !visible.is_empty() {
                 broke = true;
                 break;
@@ -407,7 +407,7 @@ impl Widget for UnifiedLabel {
                     frame.now,
                 )?;
             }
-            y += f64::from(line.size.y) * self.line_height * 0.9;
+            y += f64::from(line.size.y) * (self.line_height * 0.9);
         }
         if self.needs_scroll {
             let black = u32::from_le_bytes([0, 0, 0, 255]);

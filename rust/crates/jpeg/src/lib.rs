@@ -45,3 +45,8 @@ pub fn encode_with(
     )
     .map_err(EncodeError::Native)
 }
+
+#[cfg(feature = "native-skip-miri")]
+mod turbo;
+#[cfg(feature = "native-skip-miri")]
+pub use turbo::TurboJpeg;

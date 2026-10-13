@@ -131,3 +131,74 @@ and passing local pair are retained in the primary checkout at
 `.analysis/scratch/2026-10-08-runtime-resume/230-card-failure/`.
 The hosted pause remains unresolved. A single scoped retry of the failed Card
 job at the unchanged head is the next gate; local success does not replace it.
+
+
+## Nissan prior-output timing on WebRTC PR 262
+
+Head `6ed320487962bf77788cb8486bb1b6e733cfb697`, Card job
+[113900149326](https://github.com/bin9208/openpilot-rust/actions/runs/37953981375/job/113900149326),
+retains eight pairs with 80 single-packet states each. Artifact `11630741423`
+differs only at Nissan carOutput47 torque: source -0.30000001192092896 versus
+native -0.4000000059604645. Source CAN46 arrives 44.252766 ms after sending;
+CAN47 is sent 0.081836 ms after that reception and before the control read.
+The source control receive interval is 54.458856 ms, followed by a step with
+no new control. Native CAN46 arrives in 0.093172 ms with CAN47 another
+10.072636 ms later. The prior-actuator publication and these clocks support
+source consumption of control47 on CAN46 versus native control46; consumed
+control identity remains inferred, and the hosted pause cause remains unknown.
+
+One bounded local pair reuses the exact input and retained `8e418a68` ELF.
+All 80-send/state/single-packet, Params, state, actuator, CAN and shutdown checks
+pass. This is the earlier `6bf088e5` build, not the hosted ELF; the later Params
+namespace-recreation patch is absent and unexercised here. Card/CAN/msgq/control
+and checked-in comparator sources are unchanged. Removed old DBC and missing
+torque-data fixture paths caused two setup failures retained separately; after
+restoring owned fixture paths, the passing source capture was reused for the
+native-only comparison. No build/install or runtime/comparator change occurred.
+
+Evidence is in the RTC worktree at
+`.omo/evidence/240-webrtc/exact-head-6ed320/card-summary.json` with the raw
+archive, selected captures and invocation/exit receipts.
+[Issue update](https://github.com/bin9208/openpilot-rust/issues/228#issuecomment-6085063169)
+records the exact run and limitations. A scoped Card retry at the same head
+remains a gate; this is not a fix for the hosted pause.
+
+## ID.4 control overlap after webcam integration
+
+Post-merge dev `35038bf600d3561e13038cc9b6dc1ab89a12904c` has the same
+Git tree as the fully passing PR head `06937bf7193f7af3e8f1081d5dbfd55f210090b8`.
+Its Card job [114499390259](https://github.com/bin9208/openpilot-rust/actions/runs/38149368079/job/114499390259)
+passes all functional gates, then fails the actual host IPC comparison.
+Artifact `11707181553` contains eighteen completed source/native pairs. Exact
+normalized Params/state/output/CAN comparison agrees for seventeen; ID.4 MK1
+differs at carOutput55 validity (source true/native false) and carOutput56 torque
+(source 0.6000000238418579/native 0.5). All captured measured windows contain
+80 states and the required single CAN packets; the failed pair's readiness,
+empty-CAN counter, signal exit and Params drain pass on both sides.
+
+Source CAN55 arrives 40.545876 ms after sending. The producer interval to CAN56
+is 40.618851 ms, leaving 0.072975 ms between CAN55 reception and CAN56 sending.
+CAN56 is sent before source carControl reception at 2456.684855775 s; that
+receive interval is 50.976283 ms and the following step has no new control.
+Native CAN55 arrives in 0.081157 ms; its control read precedes CAN56 by
+9.687320 ms. These clocks, validity and prior-actuator publication support
+source consumption of control56 during CAN55 while native consumes control55.
+Consumed control identity is inferred, not directly recorded. The archive
+does not establish the cause of the hosted pause.
+
+No build, dependency install, runtime/comparator edit or repeated local matrix
+was needed to classify this observation alongside the existing overlap cases.
+The passing PR tree is unchanged. A single affected-job retry after the current
+run finishes remains required; a passing retry will not close issue228.
+The selected current captures, exact input and inspection notes are under
+`.analysis/scratch/2026-10-12-card-228/`; the reproducible large archive may be
+removed under the current user cleanup policy. No cadence, validity, frame-count,
+packet-count, equality or shutdown requirement is relaxed.
+
+The single retry completed successfully at the same merge SHA: Card job
+[114509329939](https://github.com/bin9208/openpilot-rust/actions/runs/38149368079/job/114509329939)
+passes functional, actual host IPC and shutdown steps, and workflow attempt2
+finishes with all 46 jobs successful. Other passing jobs were reused. This
+clears the exact-SHA post-merge gate without changing the source/runtime or
+comparison requirements; the original failure and unresolved pause remain
+recorded, and issue228 stays open.

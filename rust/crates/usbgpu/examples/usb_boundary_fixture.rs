@@ -44,11 +44,18 @@ fn main() {
         (result.code, result.actual),
         if mode == "partial" { (-1, 8) } else { (0, 16) }
     );
-    let mut transfers = (0..3)
+    let count = if mode == "window" {
+        124
+    } else if mode == "window_error" {
+        125
+    } else {
+        3
+    };
+    let mut transfers = (0..count)
         .map(|_| Transfer::new(0x82, Some(1), vec![0; 32]))
         .collect::<Vec<_>>();
     let result = usb.batch(&mut transfers);
-    if mode == "submit_error" || mode == "event_error" {
+    if mode == "submit_error" || mode == "event_error" || mode == "window_error" {
         assert!(result.is_err());
         assert!(transfers.iter().all(|t| t.data.len() == 32));
     } else {

@@ -14,6 +14,7 @@ native-skip-miri = ["dep:openpilot-panda-usb", "dep:openpilot-panda-spi-linux", 
 workspace = true
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 capnp = "=0.27.2"
 openpilot-cereal = { path = "../cereal" }
 openpilot-params = { path = "../params" }

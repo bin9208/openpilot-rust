@@ -141,8 +141,16 @@ fn run(args: Arguments) -> Result<(), Error> {
     Ok(())
 }
 fn main() -> ExitCode {
-    match arguments().and_then(|args| args.map_or(Ok(()), run)) {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime(
+        "openpilot.selfdrive.locationd.torqued",
+        "torqued",
+        || {
+            arguments()
+                .and_then(|args| args.map_or(Ok(()), run))
+                .map_err(openpilot_managed_entry::StepError::raised)
+        },
+    ) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("torqued: {error}");
             ExitCode::FAILURE

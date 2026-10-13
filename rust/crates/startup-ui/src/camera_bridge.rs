@@ -19,6 +19,8 @@ pub(crate) mod ffi {
             chroma: bool,
         ) -> Result<u32>;
         fn plane_update(self: Pin<&mut Surface>, texture: u32, bytes: &[u8]) -> Result<()>;
+        fn camera_plane_filter(self: Pin<&mut Surface>, texture: u32) -> Result<()>;
+        fn flush_camera(self: Pin<&mut Surface>);
         fn texture_native(self: &Surface, texture: u32) -> Result<u32>;
         fn camera_texture(
             self: Pin<&mut Surface>,

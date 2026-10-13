@@ -5,6 +5,7 @@ use openpilot_logmessaged::{JsonValue, JsonView};
 use std::fmt::Write;
 mod errors;
 mod repr;
+pub use repr::printable as is_printable;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {

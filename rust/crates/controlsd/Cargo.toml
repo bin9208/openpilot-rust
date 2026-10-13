@@ -14,6 +14,7 @@ native = ["openpilot-messaging/native", "openpilot-calibrationd/native-skip-miri
 unsafe_code = "deny"
 
 [dependencies]
+openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-runtime-core = { path = "../runtime-core" }
 openpilot-control-policy = { path = "../control-policy" }
 openpilot-cereal = { path = "../cereal" }

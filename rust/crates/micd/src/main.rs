@@ -38,8 +38,10 @@ fn run() -> Result<(), Error> {
     runtime::run(&library, stop, cycles)
 }
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    match openpilot_managed_entry::runtime("openpilot.system.micd", "micd", || {
+        run().map_err(openpilot_managed_entry::StepError::raised)
+    }) {
+        Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("micd: {error}");
             ExitCode::FAILURE
