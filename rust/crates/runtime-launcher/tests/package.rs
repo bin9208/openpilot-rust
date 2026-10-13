@@ -88,6 +88,37 @@ fn package_identity_must_match_runtime_build_metadata() {
 }
 
 #[test]
+fn stale_build_metadata_cannot_hide_a_different_checkout_commit() {
+    let (root, manifest) = fixture();
+    for arguments in [
+        vec!["init", "-q"],
+        vec![
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "commit",
+            "--allow-empty",
+            "-qm",
+            "source",
+        ],
+    ] {
+        assert!(std::process::Command::new("git")
+            .args(arguments)
+            .current_dir(root.path())
+            .status()
+            .unwrap()
+            .success());
+    }
+    fs::write(
+        root.path().join("build.json"),
+        serde_json::json!({"openpilot":{"git_commit":manifest.source_commit}}).to_string(),
+    )
+    .unwrap();
+    assert!(manifest.verify_identity(root.path()).is_err());
+}
+
+#[test]
 fn package_cannot_omit_an_installed_daemon_from_its_hash_list() {
     let (root, manifest) = fixture();
     let binaries = root.path().join("rust/bin");

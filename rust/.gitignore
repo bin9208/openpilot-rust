@@ -1,4 +1,10 @@
 /target/
 /bin/
 /runtime-manifest.json
+/.runtime-bootstrap/
+/.runtime-packages/
+/.runtime-active
+/.runtime-install.lock
+/.runtime-install-journal.json
+/.runtime-install-rollback/
 __pycache__/

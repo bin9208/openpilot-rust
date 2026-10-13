@@ -544,7 +544,7 @@ jobs:
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: cargo fmt --all --check
       - name: Reject incomplete or invalid native runtime packages
-        run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests -q tools/tests/test_runtime_package.py tools/tests/test_offline_qcom_publish.py
+        run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests -q tools/tests/test_runtime_package.py tools/tests/test_offline_qcom_publish.py tools/tests/test_runtime_bootstrap.py tools/tests/test_runtime_release.py tools/tests/test_runtime_release_publish.py
       - name: Install source-pinned Eigen headers
         run: |
           python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'

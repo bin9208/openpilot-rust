@@ -8,6 +8,36 @@ use std::{
 pub fn get_consistent_flag(path: &Path) -> bool {
     path.join(".overlay_consistent").is_file()
 }
+
+pub fn finalize_runtime_package(
+    paths: &Paths,
+    commands: &mut dyn crate::process::Commands,
+) -> Result<(), Error> {
+    let finalized = paths.finalized();
+    set_consistent_flag(paths, &finalized, false)?;
+    if finalized.join("rust/Cargo.toml").is_file() {
+        let installer = finalized.join("rust/tools/ensure_runtime.sh");
+        if !installer.is_file() {
+            return Err(Error::Contract(
+                "target Rust checkout has no runtime distribution entry",
+            ));
+        }
+        commands.run(
+            &crate::process::args(&[
+                "bash",
+                installer
+                    .to_str()
+                    .ok_or(Error::Contract("non UTF8 runtime installer path"))?,
+                "--root",
+                finalized
+                    .to_str()
+                    .ok_or(Error::Contract("non UTF8 runtime checkout path"))?,
+            ]),
+            Some(&finalized),
+        )?;
+    }
+    set_consistent_flag(paths, &finalized, true)
+}
 pub fn touch(path: &Path) -> Result<(), Error> {
     let now = rustix::fs::Timestamps {
         last_access: rustix::time::Timespec {

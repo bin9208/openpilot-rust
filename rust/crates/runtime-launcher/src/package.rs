@@ -28,6 +28,13 @@ pub struct Manifest {
 
 impl Manifest {
     pub fn verify_identity(&self, root: &Path) -> Result<(), Error> {
+        if root.join(".git").exists()
+            && openpilot_runtime_version::git::get_head(Some(root))? != self.source_commit
+        {
+            return Err(Error::Configuration(
+                "runtime package source commit differs from Git HEAD".into(),
+            ));
+        }
         let metadata = openpilot_runtime_version::get_build_metadata(root)?;
         if !metadata.openpilot.git_commit.text_eq(&self.source_commit) {
             return Err(Error::Configuration(

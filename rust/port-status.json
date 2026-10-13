@@ -1003,6 +1003,16 @@
         "implementation": "rust/crates/runtime-launcher; openpilot-carrot-web-watchdog",
         "remaining": "Owned duplicate-start/flock, physical checkout replacement, absent checkout retry and resistant child cleanup checks pass; complete main-server native package and normal startup selection remain pending.",
         "issues": [116, 120, 269]
+      },
+      {
+        "name": "runtime_distribution",
+        "source_entrypoint": "launch_openpilot.sh and updated finalized checkout",
+        "status": "native_distribution_candidate",
+        "implementation": "rust/crates/runtime-installer; static ARM64 GitHub release installer, exact-source package verification and recoverable activation",
+        "evidence": "docs/naver/rust-runtime-distribution-274.md",
+        "remaining": "Exact-SHA publication evidence is tracked in issue 274; physical device installation and runtime acceptance remain user-owned under issues 1 and 269.",
+        "native_dependencies_to_package": ["AGNOS bash, curl, Git, flock, sha256sum, df and awk", "OS TLS trust roots and public GitHub Releases", "statically linked Rust installer with musl; no device compiler or Python"],
+        "issues": [274, 269, 1]
       }
     ],
     "evidence": "docs/naver/rust-runtime-startup-integration.md",
