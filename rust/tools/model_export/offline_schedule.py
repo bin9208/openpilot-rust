@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import struct
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -14,7 +16,7 @@ from tinygrad.dtype import ImageDType
 from tinygrad.helpers import Target
 from tinygrad.renderer.cstyle import OpenCLRenderer, QCOMCLRenderer
 from tinygrad.schedule import memory
-from tinygrad.uop.ops import Ops, UOp
+from tinygrad.uop.ops import Ops, ProgramInfo, UOp
 
 from .offline_buffers import OfflineBufferTable, descriptor
 from .offline_capability import static_movement_capability
@@ -82,6 +84,35 @@ def schedule_outputs(outputs: tuple[Tensor, ...]) -> UOp:
     return linear
 
 
+def launch_dimensions(info: ProgramInfo, source: str, binary: bytes) -> tuple[tuple[int | float, ...], tuple[int, ...]]:
+    """Resolve missing offline locals without changing a kernel's work-item domain."""
+    if info.local_size is not None:
+        return info.global_size, info.local_size
+    if len(info.global_size) != 3 or any(type(size) is not int or not 1 <= size <= 2**32 - 1 for size in info.global_size):
+        raise ExportError("unsupported offline QCOM launch dimensions")
+    if re.search(r"\b(get_local_id|get_group_id|get_local_size|get_num_groups|barrier|work_group_barrier|__local)\b", source):
+        return info.global_size, (1, 1, 1)
+    try:
+        registers = struct.unpack_from("<I", binary, 0x34)[0]
+        fregs, hregs = struct.unpack_from("<II", binary, registers + 0x14)
+    except struct.error as error:
+        raise ExportError("offline QCOM binary lacks register metadata") from error
+    if registers < 0x38 or fregs > 63 or hregs > 63:
+        raise ExportError("unsupported offline QCOM register metadata")
+    # Match QCOMProgram's thread limit using native-valid register counts.
+    max_threads = min(1024, (384 * 32 // (max(1, fregs + (hregs + 1) // 2) * 128)) * 128)
+    remaining = min(64, max_threads)
+    local = []
+    for size in info.global_size:
+        group = 1
+        while group * 2 <= remaining and size % (group * 2) == 0:
+            group *= 2
+        local.append(group)
+        remaining //= group
+    # Like optimize_local_size, globals become group counts, using only exact divisors here.
+    return tuple(size // group for size, group in zip(info.global_size, local, strict=True)), tuple(local)
+
+
 def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination: Path) -> OfflineCompilation:
     model = schedule.model
     outputs = tuple(model.bindings.outputs.values())
@@ -135,6 +166,7 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
         source, binary = program.src[3].arg, program.src[4].arg
         if not isinstance(source, str) or not isinstance(binary, bytes):
             raise ExportError("offline kernel lacks genuine source or compiled bytes")
+        global_size, local_size = launch_dimensions(info, source, binary)
         for index in info.ins:
             table.read(buffers[index])
         for index in info.outs:
@@ -147,7 +179,7 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
             binaries.append(binary)
             sources.append(source)
         calls.append(KernelCall(kernel_ids[kernel], tuple(table.view(buffers[index]) for index in info.globals), (),
-                                info.global_size, info.local_size or (1, 1, 1)))
+                                global_size, local_size))
         emitted_by_source.append(len(calls))
     for tensor in outputs:
         table.read(descriptor(tensor.uop))

@@ -52,15 +52,51 @@ if ! valid_helper; then
     exit 1
   fi
   runtime_download=$(mktemp -d "$runtime_cache/download.XXXXXXXX")
-  trap 'rm -r -- "$runtime_download"' EXIT
+  runtime_child=
+  cleanup_download() {
+    local runtime_pending
+    for runtime_pending in $(jobs -p); do
+      kill "$runtime_pending" 2>/dev/null || true
+      wait "$runtime_pending" 2>/dev/null || true
+    done
+    rm -r -- "$runtime_download"
+  }
+  trap cleanup_download EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
   echo "Downloading native runtime installer for $runtime_commit" >&2
   for runtime_asset in "$runtime_helper.sha256" "$runtime_helper"; do
     runtime_limit=33554432
     [[ $runtime_asset != *.sha256 ]] || runtime_limit=4096
-    curl --fail --location --proto '=https' --proto-redir '=https' \
-      --retry 3 --retry-all-errors --connect-timeout 15 --max-time 300 \
-      --max-filesize "$runtime_limit" --output "$runtime_download/$runtime_asset" \
-      "$runtime_url/$runtime_asset"
+    while :; do
+      curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+        --connect-timeout 15 --max-time 300 --max-filesize "$runtime_limit" \
+        --write-out '%{http_code}' --output "$runtime_download/$runtime_asset" \
+        "$runtime_url/$runtime_asset" > "$runtime_download/http-status" &
+      runtime_child=$!
+      if wait "$runtime_child"; then
+        runtime_child=
+        break
+      else
+        runtime_status=$?
+      fi
+      runtime_child=
+      runtime_http=$(< "$runtime_download/http-status")
+      case "$runtime_status:$runtime_http" in
+        5:*|6:*|7:*|18:*|28:*|35:*|52:*|55:*|56:*|60:*|22:408|22:429|22:500|22:502|22:503|22:504)
+          rm -f -- "$runtime_download/$runtime_asset"
+          echo "Native runtime download waiting for network/time; asset=$runtime_asset curl_exit=$runtime_status http_status=$runtime_http retry_seconds=5"
+          sleep 5 &
+          runtime_child=$!
+          wait "$runtime_child"
+          runtime_child=
+          ;;
+        *)
+          echo "Native runtime download failed; asset=$runtime_asset curl_exit=$runtime_status" >&2
+          exit "$runtime_status"
+          ;;
+      esac
+    done
   done
   chmod 755 "$runtime_download/$runtime_helper"
   runtime_previous_cache=$runtime_cache
@@ -73,7 +109,7 @@ if ! valid_helper; then
   mv -- "$runtime_download/$runtime_helper" "$runtime_cache/$runtime_helper"
   mv -- "$runtime_download/$runtime_helper.sha256" "$runtime_cache/$runtime_helper.sha256"
   rm -r -- "$runtime_download"
-  trap - EXIT
+  trap - EXIT INT TERM
 fi
 flock --unlock 9
 exec 9>&-
