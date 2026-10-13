@@ -103,7 +103,8 @@ def test_export_preserves_real_initialized_weights_when_model_is_lazy(tmp_path: 
     assert graph["backend"] == "qcom-cl" and graph["arch"] == "a630"
     assert len(graph["kernels"]) == 1
     assert len(graph["kernels"][0]["arguments"]) == 3
-    assert graph["calls"][0]["global"] == [4, 1, 1]
+    assert graph["calls"][0]["global"] == [1, 1, 1]
+    assert graph["calls"][0]["local"] == [4, 1, 1]
     assert all(argument[0] == {"kind": "image", "width": 4, "height": 1, "pitch": 64, "element_bytes": 4}
                for argument in graph["kernels"][0]["arguments"])
     assert (destination / "kernel-0.bin").stat().st_size > 256
@@ -129,10 +130,14 @@ def test_compiled_original_ir_produces_real_values_when_executed_by_cpu_interpre
     original_ir = program.src[2]
     workitems = tuple(value for value in original_ir.src if value.op is Ops.SPECIAL)
     assert tuple(value.arg for value in workitems) == ("idx0",)
-    assert compiled.manifest.calls[0].local == (1, 1, 1)
-    executable_ir = original_ir.substitute({value: value.replace(arg="g0") for value in workitems}, walk=True)
+    call = compiled.manifest.calls[0]
+    assert call.global_ == (1, 1, 1) and call.local == (4, 1, 1)
+    group = UOp(Ops.SPECIAL, dtypes.int, (UOp.const(dtypes.int, 1),), arg="g0")
+    local = UOp(Ops.SPECIAL, dtypes.int, (UOp.const(dtypes.int, 4),), arg="l0")
+    executable_ir = original_ir.substitute(dict.fromkeys(workitems, group * 4 + local), walk=True)
+    executable_ir = UOp(Ops.LINEAR, src=tuple(executable_ir.toposort())[:-1])
     ir = interpreter.compiler.compile(interpreter.render(list(executable_ir.src)))
-    PythonProgram(program.arg.function_name, ir)(output, source, initialized, global_size=(4, 1, 1), local_size=(1, 1, 1))
+    PythonProgram(program.arg.function_name, ir)(output, source, initialized, global_size=call.global_, local_size=call.local)
 
     # Then its numeric output equals independently calculated values, without a GPU inference claim.
     assert struct.unpack("<16f", output) == tuple(index + value for index, value in enumerate(values))
