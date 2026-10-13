@@ -723,3 +723,33 @@ file. With NumPy 2.5.3, ONNX 1.20.1 and a fresh Ubuntu ARM cross-library sysroot
 the full tools suite passes 148 tests, including seven added provider-integrity
 guards. Existing NumPy deprecation warnings remain visible. This supplies the
 real compiler without GPU access; it is not device numerical validation.
+
+The [following workspace run](https://github.com/bin9208/openpilot-rust/actions/runs/38325147985/job/115061961301)
+passed those Rust and Python suites, then reached an older USB GPU status fixture
+that expected readiness from presence-only chunk markers and Python runtime
+placeholders. The native status implementation deliberately requires a validated
+native package. The checker retains all 192 original source observations:
+158 agree directly, and 34 explicitly record the stricter admission policy.
+An independent expected-result table checks both policies without changing the
+original source functions or production readiness.
+
+Twenty-four additional cases run the actual native status executable against
+synthetic model graphs and probes, with eight genuine SHA256-pinned firmware
+files. They cover valid chunked/flat packages, previous-selection fallback and
+damaged package, graph, model, firmware and selection metadata. Both reuse of
+the staged hardware assets and acquisition into a fresh isolated cache pass;
+the latter downloads 2,356,564 bytes of firmware and no trained models. These
+are structural admission checks, not GPU execution or trained-model evidence.
+The original 192 source/native observations remain identical to the captured
+failing fixture run. Receipts are in `.omo/evidence/runtime-status-269/`.
+
+The remaining workspace checks were also run locally before the next CI push.
+Thirty-two of 33 scenarios pass, including the 367-key Params C++ oracle,
+native logging rollover and IPC shutdown, an owned three-frame host probe,
+and all four msgq ASan/UBSan integration executables. The privileged low-space
+deleter case requires passwordless sudo for an owned mount namespace, which
+this host does not provide; its unchanged assertion remains a cloud gate.
+An existing Cap'n Proto 1.0.1 header provider resolved a local Params build
+dependency without source changes. The tail ledger is
+`.omo/evidence/269-workspace-tail/`; no production or tail-checker edits were
+needed. Card's complete cloud comparison and IPC/shutdown gate passed again.
