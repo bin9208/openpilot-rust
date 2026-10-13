@@ -15,6 +15,7 @@ openpilot-carrot-navi = { path = "../carrot-navi", default-features = false }
 openpilot-logmessaged = { path = "../logmessaged" }
 openpilot-http-transport = { path = "../http-transport" }
 openpilot-cweb-push = { path = "../cweb-push" }
+openpilot-web-upload = { path = "../web-upload" }
 base64 = "=0.22.1"
 sha1 = "=0.10.7"
 num-traits = "=0.2.19"
@@ -31,3 +32,6 @@ chrono = { version = "=0.4.45", default-features = false, features = ["std", "cl
 [[bin]]
 name = "openpilot-carrot-recovery"
 path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"

@@ -92,6 +92,24 @@ fn post_file(
 }
 
 fn dsm(config: &Config, fields: &[(&str, String)], raw: &[u8]) -> Result<Value, Error> {
+    if let Some(webdav) =
+        openpilot_web_upload::WebDav::load(&config.data.join("state/private_upload.json"))
+            .map_err(|error| Error::Source(error.to_string()))?
+    {
+        let metadata = fields
+            .iter()
+            .map(|(name, value)| {
+                (
+                    name.to_string(),
+                    openpilot_web_upload::Value::Text(value.clone()),
+                )
+            })
+            .collect();
+        let response = webdav
+            .upload_tmux(&metadata, &config.tmux_log, None)
+            .map_err(|error| Error::Source(error.to_string()))?;
+        return Value::parse(&String::from_utf8_lossy(&response.body)).map_err(Error::from);
+    }
     let base = web_base(config)?;
     let mut token = env("CARROT_WEB_UPLOAD_TOKEN");
     if token.is_empty() {
@@ -224,3 +242,5 @@ pub fn destinations(config: &Config, reason: &str) -> Result<Value, Error> {
         ("error", Value::text(&error)),
     ]))
 }
+#[cfg(test)]
+mod tests;

@@ -2426,10 +2426,12 @@ dependencies = [
  "openpilot-http-transport",
  "openpilot-logmessaged",
  "openpilot-process-supervision",
+ "openpilot-web-upload",
  "rustix",
  "rustls-native-certs",
  "sha1",
  "signal-hook",
+ "tempfile",
  "thiserror 2.0.21",
  "ureq",
  "url",
@@ -3919,10 +3921,13 @@ dependencies = [
 name = "openpilot-web-upload"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
+ "chrono",
  "encoding_rs",
  "openpilot-logging",
  "openpilot-runtime-core",
  "rand 0.9.5",
+ "rustix",
  "serde",
  "serde_json",
  "tempfile",

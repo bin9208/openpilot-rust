@@ -51,6 +51,9 @@ pub fn public_url(value: &str) -> String {
     output
 }
 fn item_url(payload: &Value, item: &Value) -> String {
+    if payload.get("target").and_then(Value::as_str) == Some("webdav") {
+        return String::new();
+    }
     let remote = text(item, "remotePath", "").trim();
     if !remote.is_empty() {
         return public_url(remote);
@@ -149,7 +152,7 @@ pub fn message_lines(payload: &Value, maximum: Option<usize>) -> Vec<String> {
     if current.len() > 1 {
         runs.push(current);
     }
-    if !runs.is_empty() {
+    if !runs.is_empty() && payload.get("target").and_then(Value::as_str) != Some("webdav") {
         lines.push("### Open & Analyze".into());
         for run in runs {
             if let (Some((route, first)), Some((_, last))) =
