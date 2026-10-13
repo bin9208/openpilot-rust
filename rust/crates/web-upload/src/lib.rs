@@ -1,7 +1,7 @@
 //! Native, blocking counterparts of Carrot's web upload helpers.
 //!
 //! Call from an upload worker, never the server event loop. This crate does not
-//! choose routes, start jobs, read Params, delete files, or select runtime daemons.
+//! choose routes, start jobs, read Params, delete source files, or select runtime daemons.
 #![forbid(unsafe_code)]
 mod api;
 mod compatibility;
@@ -12,6 +12,7 @@ mod multipart;
 mod response;
 mod targets;
 mod transport;
+mod webdav;
 
 pub use api::{
     create_session, create_session_with_purpose, health, post_bytes_socket, post_json_total,
@@ -25,9 +26,12 @@ pub use targets::{
     api_url, carrot_logs_target, device_id, normalize_base_url, session_payload, tmux_target,
     web_settings, Environment, Target, DEFAULT_TMUX_WEB_UPLOAD_URL, DEFAULT_WEB_UPLOAD_URL,
 };
+pub use webdav::{LocalFiles, RouteSegment, WebDav, WebDavError};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error(transparent)]
+    WebDav(#[from] WebDavError),
     #[error("web upload URL must start with http:// or https://")]
     InvalidBaseUrl,
     #[error("web upload URL is not configured")]

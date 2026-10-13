@@ -13,6 +13,10 @@ use crate::util::Writer;
 use super::state::SendRequest;
 use super::{BodyState, Call, RequestPhase, SendRequestResult};
 
+#[cfg(test)]
+#[path = "sensitive_trace.rs"]
+mod sensitive_trace;
+
 impl Call<SendRequest> {
     /// Write the request to the buffer.
     ///
@@ -42,6 +46,14 @@ impl Call<SendRequest> {
         self.maybe_analyze_request()?;
 
         let mut w = Writer::new(output);
+        if self
+            .inner
+            .request
+            .headers()
+            .any(|(_, value)| value.is_sensitive())
+        {
+            w.suppress_trace();
+        }
         try_write_prelude(&self.inner.request, &mut self.inner.state, &mut w)?;
 
         let output_used = w.len();

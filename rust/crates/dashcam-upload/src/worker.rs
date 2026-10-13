@@ -26,6 +26,8 @@ pub struct Settings {
     pub metadata: Value,
     pub webhook: String,
     pub concurrency: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub private_upload: Option<PathBuf>,
 }
 impl Settings {
     pub fn for_runtime(logger: &mut openpilot_logging::producer::Logger) -> Result<Self, Error> {
@@ -50,14 +52,23 @@ impl Settings {
             Ok((key.to_owned(), value))
         })
         .collect::<Result<BTreeMap<_, _>, Error>>()?;
-        let upload_environment = openpilot_web_upload::Environment::for_runtime()
-            .map_err(|error| Error::Runtime(error.to_string()))?;
         let (repo, settings) = metadata::runtime_paths();
-        let (base_url, token) = metadata::target_settings(&settings, &upload_environment)?;
+        let private_upload = settings.with_file_name("private_upload.json");
+        let (base_url, token) = if openpilot_web_upload::WebDav::load(&private_upload)
+            .map_err(openpilot_web_upload::Error::from)?
+            .is_some()
+        {
+            (String::new(), String::new())
+        } else {
+            let upload_environment = openpilot_web_upload::Environment::for_runtime()
+                .map_err(|error| Error::Runtime(error.to_string()))?;
+            metadata::target_settings(&settings, &upload_environment)?
+        };
         Ok(Self {
             root: "/data/media/0/realdata".into(),
             base_url,
             token,
+            private_upload: Some(private_upload),
             metadata: metadata::upload_metadata(
                 Some(&params),
                 &repo,

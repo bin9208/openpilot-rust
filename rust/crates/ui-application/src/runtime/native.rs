@@ -61,7 +61,7 @@ impl Runtime {
                 .map_err(|error| Error::Io(std::io::Error::other(error)))?,
             )),
             device: Rc::new(RefCell::new(Device::new(DeviceConfig {
-                big: graphics.big,
+                big: graphics.large_viewport,
                 pc: graphics.pc,
                 mici: device_type == "mici",
                 target_fps: 20,
@@ -83,7 +83,7 @@ impl Runtime {
             ),
             poll_gate: Arc::default(),
             actions: Actions::default(),
-            big: graphics.big,
+            big: graphics.large_viewport,
             pc: graphics.pc,
             device_type: device_type.clone(),
             now_monotonic: now,

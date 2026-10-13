@@ -26,14 +26,14 @@ pub struct Observer<'a> {
     pub progress: Option<&'a mut ProgressCallback<'a>>,
 }
 impl Observer<'_> {
-    fn check(&mut self) -> Result<(), Error> {
+    pub(crate) fn check(&mut self) -> Result<(), Error> {
         if self.cancel.as_mut().is_some_and(|callback| callback()) {
             Err(Error::Canceled)
         } else {
             Ok(())
         }
     }
-    fn progress(&mut self, progress: Progress<'_>) -> Result<(), Error> {
+    pub(crate) fn progress(&mut self, progress: Progress<'_>) -> Result<(), Error> {
         match &mut self.progress {
             Some(callback) => callback(progress),
             None => Ok(()),

@@ -26,11 +26,15 @@ pub(crate) fn compare_lowercase_ascii(a: &str, lowercased: &str) -> bool {
     true
 }
 
-pub(crate) struct Writer<'a>(pub Cursor<&'a mut [u8]>);
+pub(crate) struct Writer<'a>(pub Cursor<&'a mut [u8]>, bool);
 
 impl<'a> Writer<'a> {
     pub(crate) fn new(output: &'a mut [u8]) -> Writer<'a> {
-        Self(Cursor::new(output))
+        Self(Cursor::new(output), true)
+    }
+
+    pub(crate) fn suppress_trace(&mut self) {
+        self.1 = false;
     }
 
     pub fn len(&self) -> usize {
@@ -65,6 +69,9 @@ const CHARS_PER_ROW: usize = 16;
 
 impl<'a> Drop for Writer<'a> {
     fn drop(&mut self) {
+        if !self.1 {
+            return;
+        }
         let len = self.len();
         log_data(&self.0.get_ref()[..len]);
     }
