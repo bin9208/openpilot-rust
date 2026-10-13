@@ -105,6 +105,24 @@ impl Upload<'_> {
     }
     pub fn web(&self, why: &str, settings: bool) -> Option<Response> {
         let result = (|| {
+            let private = self
+                .config
+                .web_settings
+                .with_file_name("private_upload.json");
+            if let Some(webdav) = openpilot_web_upload::WebDav::load(&private)
+                .map_err(openpilot_web_upload::Error::from)?
+            {
+                if settings {
+                    snapshot::toggles(self.params, &self.config.data_root)?;
+                }
+                return Ok(webdav.upload_tmux(
+                    &self.payload(why),
+                    &self.config.data_root.join("media/tmux.log"),
+                    settings
+                        .then_some(self.config.data_root.join("toggle_values.json"))
+                        .as_deref(),
+                )?);
+            }
             let values = snapshot::web_settings(&self.config.web_settings);
             let environment = Environment::for_runtime()
                 .map_err(|_| Error::Contract("upload environment encoding"))?;
@@ -175,3 +193,7 @@ fn attachment(path: &std::path::Path) -> Result<Vec<u8>, Error> {
     file.take(limit / 2).read_to_end(&mut output)?;
     Ok(output)
 }
+
+#[cfg(test)]
+#[path = "upload_tests.rs"]
+mod tests;

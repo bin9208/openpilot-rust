@@ -40,6 +40,17 @@ impl UploadHealth {
     }
 
     pub(super) fn test(&self) -> Result<(u16, Value), Error> {
+        if let Some(webdav) =
+            openpilot_web_upload::WebDav::load(&self.settings.with_file_name("private_upload.json"))
+                .map_err(source)?
+        {
+            let result = webdav.health();
+            let ok = result.get("ok").and_then(serde_json::Value::as_bool) == Some(true);
+            return Ok((
+                if ok { 200 } else { 502 },
+                Value::parse(&result.to_string()).map_err(source)?,
+            ));
+        }
         let (base, token) =
             metadata::target_settings(&self.settings, &environment()?).map_err(source)?;
         let mut result = openpilot_web_upload::health(&base, &token);
@@ -73,5 +84,38 @@ impl UploadHealth {
         let payload =
             Value::parse(&serde_json::to_string(&result).map_err(source)?).map_err(source)?;
         Ok((if ok { 200 } else { 502 }, payload))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{fs, net::TcpListener, os::unix::fs::PermissionsExt};
+
+    #[test]
+    fn private_config_failure_never_tests_a_default_or_legacy_api() {
+        let root = tempfile::tempdir().unwrap();
+        let trap = TcpListener::bind("127.0.0.1:0").unwrap();
+        trap.set_nonblocking(true).unwrap();
+        let settings = root.path().join("web_settings.json");
+        fs::write(
+            &settings,
+            serde_json::json!({"web_upload_url":format!("http://{}",trap.local_addr().unwrap())})
+                .to_string(),
+        )
+        .unwrap();
+        let private = root.path().join("private_upload.json");
+        fs::write(&private, "fixture-secret malformed JSON").unwrap();
+        fs::set_permissions(&private, fs::Permissions::from_mode(0o600)).unwrap();
+        let service = UploadHealth {
+            repository: root.path().to_owned(),
+            settings,
+            params: None,
+        };
+        let error = service.test().unwrap_err();
+        assert!(!error.to_string().contains("fixture-secret"));
+        assert!(
+            matches!(trap.accept(), Err(error) if error.kind() == std::io::ErrorKind::WouldBlock)
+        );
     }
 }

@@ -68,6 +68,7 @@ fn json_fields(value: &Fields) -> Result<Json, Box<dyn std::error::Error>> {
 }
 fn error(error: Error) -> Json {
     let kind = match &error {
+        Error::WebDav(_) => "WebDavError",
         Error::InvalidBaseUrl | Error::MissingBaseUrl | Error::Url(_) => "ValueError",
         Error::BodyShape(_) => "AttributeError",
         Error::Io(_) => "OSError",
