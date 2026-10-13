@@ -18,7 +18,7 @@ static int trace_fd = -1;
 static int ready_fd = -1;
 static int release_fd = -1;
 static unsigned completed;
-static int gated;
+static int finished;
 static int loop_started;
 static _Thread_local int sleep_active;
 
@@ -55,15 +55,15 @@ static void observe(const char *event, const char *operation, int result) {
 
 static void enter(const char *operation) {
   observe("enter", operation, 0);
-  if (completed == 1 && !gated && ready_fd >= 0 && release_fd >= 0) {
-    gated = 1;
+  if (completed >= 1 && !finished && ready_fd >= 0 && release_fd >= 0) {
     observe("gate", operation, 0);
     if (write(ready_fd, "R", 1) != 1) _exit(125);
     char release;
     ssize_t count;
     do { count = read(release_fd, &release, 1); } while (count == -1 && errno == EINTR);
-    if (count != 1 || release != 'R') _exit(125);
-    observe("release", operation, 0);
+    if (count != 1 || (release != 'R' && release != 'S')) _exit(125);
+    if (release == 'S') finished = 1;
+    observe(release == 'S' ? "finish" : "release", operation, 0);
   }
 }
 

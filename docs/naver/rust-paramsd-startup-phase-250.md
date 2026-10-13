@@ -41,3 +41,7 @@ uses the previous C++ messaging transport and is not the final native proof;
 the focused current build supplies the relevant ppoll boundary. Existing
 unchanged estimator corpus results are reused. Exact-commit branch and
 post-merge CI remain required after this local checkpoint.
+
+The later PR #275 saved-publication mismatch has a separate atomic input-batch
+cause. See [#276](rust-paramsd-atomic-batch-276.md); the original startup gate
+continued to establish its required single empty update.
