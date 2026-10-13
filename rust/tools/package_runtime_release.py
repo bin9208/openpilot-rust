@@ -24,7 +24,7 @@ import tarfile
 import tempfile
 
 from runtime_release_support import (
-  AGNOS, INSTALLER, MAX_ASSET, MAX_METADATA, MAX_UNPACKED, RECEIPT, SOURCE_ASSETS, JSON, Member, ReleaseError,
+  AGNOS, INSTALLER, MAX_ASSET, MAX_METADATA, MAX_SOURCE_ASSETS, MAX_UNPACKED, RECEIPT, SOURCE_ASSETS, JSON, Member, ReleaseError,
   build_receipt, clean_source, disk_guard, hex_digest, integer, json_file, mapping, native, require, safe_name, sequence, sha256, sidecar, string,
 )
 from seal_runtime_package import BOOT_BINARIES
@@ -62,6 +62,8 @@ def sealed_members(root: Path, commit: str) -> dict[str, Member]:
     if link is not None:
       require(not Path(link).is_absolute() and '\\' not in link and '\x00' not in link, f'invalid archive symlink: {name}')
     members[name] = Member(name, digest, size, mode, link)
+  require(sum(member.size for name, member in members.items() if name in SOURCE_ASSETS) <= MAX_SOURCE_ASSETS,
+          'source assets exceed 128 MiB activation limit')
   for member in members.values():
     if member.link is not None:
       target = str((root / member.name).resolve(strict=True).relative_to(root))

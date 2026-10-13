@@ -212,3 +212,44 @@ def test_disk_floor_preserves_source_and_creates_no_release(release_source, monk
     package(root, installer, receipt, output)
   assert not output.exists()
   assert (root / 'rust/runtime-manifest.json').read_bytes() == original
+
+
+@pytest.mark.parametrize('names,sizes_mib,accepted', [
+  (('openpilot/selfdrive/assets/fonts/KaiGenGothicKR-Bold.ttf', 'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx'), (64, 65), False),
+  (('openpilot/selfdrive/assets/fonts/KaiGenGothicKR-Bold.ttf', 'openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx'), (64, 64), True),
+  (('rust/bin/usbgpu-assets/large-owned-first', 'rust/bin/usbgpu-assets/large-owned-second'), (64, 65), True),
+], ids=['source-over-activation-reserve', 'source-at-activation-reserve', 'runtime-over-source-reserve'])
+def test_packaging_respects_installer_source_activation_reserve(release_source, names, sizes_mib, accepted) -> None:
+  from runtime_release_support import disk_guard
+  root, _, receipt, output = release_source
+  disk_guard(root, 2 * sum(sizes_mib) * 1024**2 + 64 * 1024**2)
+  ignored = root / '.gitignore'
+  ignored.write_text(ignored.read_text() + '\n'.join(names) + '\n')
+  git(root, 'add', '.gitignore')
+  git(root, 'commit', '-qm', 'ignore owned sparse activation-reserve fixtures')
+  commit = git(root, 'rev-parse', 'HEAD')
+  new_rows = []
+  for name, mib in zip(names, sizes_mib, strict=True):
+    path = root / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('wb') as stream:
+      stream.write(b'owned sparse activation-reserve fixture\n')
+      stream.truncate(mib * 1024**2)
+    with path.open('rb') as stream:
+      digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+    new_rows.append({'path': name, 'sha256': digest, 'executable': False})
+  edit_manifest(root, lambda value: value.update(source_commit=commit, files=value['files'] + new_rows))
+  receipt_value = json.loads(receipt.read_text())
+  receipt_value['source_commit'] = commit
+  receipt.write_text(json.dumps(receipt_value) + '\n')
+  result = package_cli(release_source)
+  if accepted:
+    assert result.returncode == 0, result.stderr
+    verified = package_cli(release_source, '--verify-only')
+    assert verified.returncode == 0, verified.stderr
+    archive = json.loads((output / 'runtime-release.json').read_text())['archive']
+    assert archive['unpacked_bytes'] >= sum(sizes_mib) * 1024**2
+  else:
+    assert result.returncode != 0, 'publisher produced source assets the installer rejects'
+    assert 'source assets exceed 128 MiB activation limit' in result.stderr
+    assert not output.exists()

@@ -22,6 +22,9 @@ obtains its matching native runtime automatically. No vehicle is accessed.
 - The archive retains the sealed manifest layout from #269. Reject invalid
   paths, escaping links, duplicate members, unexpected files, wrong identity,
   wrong ELF architecture, and hashes/modes inconsistent with the manifest.
+- Schema 1 permits at most 128 MiB in aggregate across the 17 allowlisted source
+  assets, matching the installer's activation-space reserve. The whole archive
+  remains bounded to 8 GiB unpacked and each release asset to less than 2 GiB.
 - Stage complete verified files before activation. Preserve an installed
   generation on download/verification failure. Installation is serialized,
   interruption recovery is deterministic, and activation is completed before
@@ -102,7 +105,10 @@ Implementation evidence before publication:
   installation commands. Six existing normal bootstrap scenarios also pass.
 - Installer validation passes 29 CLI scenarios and three real curl/owned-HTTP
   scenarios, including a truncated response followed by a successful retry.
-- Publication and existing sealing validation pass 63 focused tests. A broader
+- Publication and existing sealing validation pass 66 focused tests, including
+  the shared source-asset size boundary. The actual packaging CLI rejects
+  129 MiB of source assets and accepts both the 128 MiB boundary and a 129 MiB
+  runtime binary. A broader
   local tools run exposed missing test-provider environment; full configured
   workspace validation remains the exact-SHA CI gate, not that local run.
 - A genuine preserved #269 package (`7c5935eb118d`) was installed with the real

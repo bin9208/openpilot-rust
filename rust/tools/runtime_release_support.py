@@ -16,6 +16,7 @@ REPOSITORY: Final = 'bin9208/openpilot-rust'
 AGNOS: Final = '19.8-carrot-bt1'
 MAX_ASSET: Final = 2 * 1024**3
 MAX_UNPACKED: Final = 8 * 1024**3
+MAX_SOURCE_ASSETS: Final = 128 * 1024**2
 MAX_METADATA: Final = 4 * 1024**2
 INSTALLER: Final = 'openpilot-runtime-install-aarch64'
 RECEIPT: Final = 'runtime-installer-build.json'
