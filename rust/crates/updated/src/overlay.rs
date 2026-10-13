@@ -149,7 +149,7 @@ impl Updater<'_> {
             )?,
             Err(error) => return Err(error),
         }
-        common::set_consistent_flag(paths, &paths.finalized(), true)?;
+        common::finalize_runtime_package(paths, self.context.commands)?;
         report::info(self.context.logger, "done finalizing overlay")?;
         Ok(())
     }

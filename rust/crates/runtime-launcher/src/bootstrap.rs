@@ -49,19 +49,11 @@ fn error_screen(paths: &Paths, message: &str, stopped: &AtomicBool) {
     }
 }
 
-fn ready(
-    paths: &Paths,
-    lock: &File,
-    stopped: &AtomicBool,
-    signals: &mut signal_hook::iterator::Signals,
-) -> Result<(), Error> {
-    if stopped.load(Ordering::Relaxed) {
-        return Ok(());
-    }
-    let manifest = Manifest::read(&paths.repository)?;
-    manifest.verify_identity(&paths.repository)?;
+fn verify_package(repository: &std::path::Path) -> Result<(), Error> {
+    let manifest = Manifest::read(repository)?;
+    manifest.verify_identity(repository)?;
     manifest.verify(
-        &paths.repository,
+        repository,
         &[
             "rust/bin/openpilot-launch",
             "rust/bin/openpilot-manager",
@@ -74,7 +66,19 @@ fn ready(
             "rust/bin/openpilot-text-window",
             "rust/bin/openpilot-usbgpu-model",
         ],
-    )?;
+    )
+}
+
+fn ready(
+    paths: &Paths,
+    lock: &File,
+    stopped: &AtomicBool,
+    signals: &mut signal_hook::iterator::Signals,
+) -> Result<(), Error> {
+    if stopped.load(Ordering::Relaxed) {
+        return Ok(());
+    }
+    verify_package(&paths.repository)?;
     if env::var("CARROT_WEB_EXTERNAL").is_ok_and(|value| value == "1") {
         background(
             paths,
@@ -124,9 +128,11 @@ fn ready(
 
 pub fn main() -> Result<(), Error> {
     let mut paths = Paths::default();
+    let mut verification_only = false;
     let mut arguments = env::args_os().skip(1);
     while let Some(argument) = arguments.next() {
         match argument.to_str() {
+            Some("--verify-package") => verification_only = true,
             Some("--paths") => {
                 let file = arguments
                     .next()
@@ -140,13 +146,16 @@ pub fn main() -> Result<(), Error> {
                     .into()
             }
             Some("--help" | "-h") => {
-                println!("usage: openpilot-launch [--root REPOSITORY] [--paths PATHS_JSON]");
+                println!("usage: openpilot-launch [--root REPOSITORY] [--paths PATHS_JSON] [--verify-package]");
                 return Ok(());
             }
             _ => return Err(Error::Configuration("unexpected launcher argument".into())),
         }
     }
     paths.repository = paths.repository.canonicalize()?;
+    if verification_only {
+        return verify_package(&paths.repository);
+    }
     paths.environment()?;
     fs::create_dir_all(&paths.temporary)?;
     let stopped = Arc::new(AtomicBool::new(false));

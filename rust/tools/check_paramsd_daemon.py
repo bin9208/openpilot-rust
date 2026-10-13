@@ -87,13 +87,14 @@ def phase(target, oracle, paths, restart):
         assert time.monotonic() < deadline
         time.sleep(.001)
       gate.wait()
-      previous = gate.pointer()
       for index, frame in enumerate(case['frames'][1:]):
+        if index:
+          gate.wait_batch()
+        previous = gate.pointer()
         before = time.monotonic_ns()
         peer.stdin.write(json.dumps({'packets': frame['messages']}) + '\n')
         peer.stdin.flush()
-        if index == 0:
-          gate.release(previous)
+        gate.release(previous, len(frame['messages'][-1]))
         packet = read_line(peer)['packet']
         after = time.monotonic_ns()
         with log.Event.from_bytes(bytes(packet)) as message:
@@ -103,6 +104,7 @@ def phase(target, oracle, paths, restart):
         actual.append(value)
         packets.append(packet)
       signum = signal.SIGTERM if restart else signal.SIGINT
+      gate.finish()
       before = time.monotonic()
       daemon.send_signal(signum)
       assert daemon.wait(timeout=5) == 0
