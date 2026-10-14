@@ -396,6 +396,10 @@ pub fn configure(
             }
         ),
         format!("-DBUILD_LIST={}", profile.libraries().join(",")),
+        format!(
+            "-DOPENCV_DOWNLOAD_PATH={}",
+            text(&output.join("downloads"))?
+        ),
     ];
     command.extend(
         [
@@ -450,10 +454,6 @@ pub fn configure(
             ]
             .map(String::from),
         );
-        command.push(format!(
-            "-DOPENCV_DOWNLOAD_PATH={}",
-            text(&output.join("downloads"))?
-        ));
         if profile == Profile::Webcam {
             command.push("-DWITH_PROTOBUF=OFF".into());
         } else {
@@ -979,6 +979,55 @@ pub fn cli(profile: Profile) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn every_profile_places_download_cache_outside_the_read_only_source() {
+        let source = Path::new("/owned/source");
+        let output = Path::new("/owned/output");
+        for profile in [Profile::Xiaoge, Profile::Webcam, Profile::Runtime] {
+            let command = configure(profile, source, output, false, None, false).unwrap();
+            let caches: Vec<_> = command
+                .iter()
+                .filter_map(|argument| argument.strip_prefix("-DOPENCV_DOWNLOAD_PATH="))
+                .collect();
+            assert_eq!(caches, ["/owned/output/downloads"], "{profile:?}");
+        }
+    }
+
+    #[test]
+    fn source_additions_and_edits_still_fail_the_immutable_completion_gate() {
+        for addition in [false, true] {
+            let directory = tempfile::tempdir().unwrap();
+            let source = directory.path().join("source");
+            fs::create_dir(&source).unwrap();
+            fs::write(source.join("owned.cpp"), "original").unwrap();
+            let before = source_hashes(&source).unwrap();
+            if addition {
+                fs::create_dir(source.join(".cache")).unwrap();
+                fs::write(source.join(".cache/.gitignore"), "*\n").unwrap();
+            } else {
+                fs::write(source.join("owned.cpp"), "modified").unwrap();
+            }
+            let options = Options {
+                profile: Profile::Xiaoge,
+                root: directory.path().into(),
+                output: directory.path().join("output"),
+                source: Some(source.clone()),
+                archive: None,
+                prepare_only: false,
+                toolchain: None,
+                sanitizers: false,
+                providers: None,
+                growth: 0,
+            };
+            assert!(complete(&options, &source, &before)
+                .unwrap_err()
+                .to_string()
+                .contains("external build changed its read-only source tree"));
+            assert!(!options.output.join("receipt.json").exists());
+            assert_ne!(source_hashes(&source).unwrap(), before);
+        }
+    }
+
     #[test]
     fn profiles_preserve_native_python_disabled_and_target_provider_flags() {
         let source = Path::new("/owned/source");

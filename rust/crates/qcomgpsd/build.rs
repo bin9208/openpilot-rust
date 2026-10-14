@@ -7,10 +7,8 @@ fn main() -> io::Result<()> {
     let output = PathBuf::from(
         env::var_os("OUT_DIR").ok_or_else(|| io::Error::other("output path missing"))?,
     );
-    for name in ["reports.rs"] {
-        let source = root.join("assets").join(name);
-        println!("cargo:rerun-if-changed={}", source.display());
-        fs::copy(source, output.join(name))?;
-    }
+    let source = root.join("assets/reports.rs");
+    println!("cargo:rerun-if-changed={}", source.display());
+    fs::copy(source, output.join("reports.rs"))?;
     Ok(())
 }

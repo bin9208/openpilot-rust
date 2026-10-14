@@ -298,3 +298,23 @@ Thirty tracked Python files are removed in this checkpoint only after native
 replacement validation; 3,536 still remain on disk, including original-source
 oracles and developer-tool families. This is a tested incremental candidate,
 not complete source retirement or completion of issue #296.
+
+## Exact-source CI follow-up (2026-10-14)
+
+Candidate `0992e61fcadff2957c32705efc16ada9584557ed` passed both fast
+checks and the user-doc gate, but Rust CI exposed four independent corrections:
+GPS source-free build Clippy, the startup fixture's required installer entry
+([#315](rust-runtime-startup-integration.md)), updater comparison of the approved
+rollback-preserving lifecycle ([#314](rust-updated-staging-comparison-314.md)),
+and OpenCV's download cache mutating immutable input
+([#313](rust-native-opencv-cache-313.md)). Both architectures exposed the latter.
+
+Follow-up validation passed full workspace strict all-target Clippy, workspace
+formatting, 126 native developer-tool tests, 24 CI policy tests/367 subtests,
+16 updater checker cases and focused Python lint. The actual updater comparison
+retained 19 snapshots/322 ordered commands across five scenarios; direct and
+normal-entry launcher fixtures each passed eight scenarios. The actual pinned
+OpenCV CMake module reproduced the cache-path defect and corrected placement,
+while source additions/edits still fail admission. All required CI and complete
+AGNOS package builds must run again on the follow-up commit. No device result
+is claimed by these local repairs.

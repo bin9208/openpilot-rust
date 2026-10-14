@@ -2176,6 +2176,7 @@ jobs:
         run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
       - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
         run: |
+          PYTHONPATH="$PWD/rust/tools:$PYTHONPATH" python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_updated_comparison.py -q
           python rust/tools/check_updated.py --binary "$PWD/rust/target/debug/examples/updated_trace" --launcher "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP"/services-params-binding/params_pyx*.so --output "$RUNNER_TEMP/startup-services/updated-source"
           python rust/tools/check_updated_process.py --binary "$PWD/rust/target/debug/examples/updated_command" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/startup-services/updated-process"
           python rust/tools/check_updated_daemon.py --binary "$PWD/rust/target/debug/openpilot-updated" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/startup-services/updated-daemon"
