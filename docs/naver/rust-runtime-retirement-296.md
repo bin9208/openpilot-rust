@@ -548,3 +548,21 @@ strict checks while adding only failed requirement names and typed details to
 the existing assertion messages. The cause is not established and no toolchain
 or deadline workaround is applied. A deterministic diagnostic negative control
 still fails and now retains the reason; fresh exact-head integration is required.
+
+## Beep source worker reporting (#333)
+
+At7dd63382 the inherited APK host-toolkit gate passed all470 tests. Telemetry's
+worker-on-failure comparison then failed because the original fixture worker
+was still alive after its three-second join, with an already-recorded injected
+command failure and partial default exception traceback. A controlled probe
+shows that thread termination includes exception-hook completion; it does not
+prove why the actual CI formatter stalled.
+
+The [scoped fixture correction](rust-beep-worker-report-333.md) reports worker
+exception type/message/identity concisely only during policy actions. Original
+Beepd/Ratekeeper methods, live mode, exact SystemExit policy, three-second join
+and all trace/exit/stdout/error comparisons remain unchanged. Six regressions
+and all20 policy,278 integer,1011 clock and27 sleep comparisons pass. The
+telemetry job runs those regressions before its existing comparisons. The new
+regression file increases the tracked Python inventory to3540; it is an explicit
+interim validation dependency, not a retired tool or a device-result claim.

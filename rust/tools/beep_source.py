@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Unchanged beep/Ratekeeper bodies with only external clock/hardware/path fixtures."""
+"""Unchanged beep/Ratekeeper bodies; controlled I/O, clocks and worker exception presentation."""
 import ast
 import ctypes
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -22,6 +23,24 @@ def definition(path, name, scope):
   tree.body = [node for node in tree.body if isinstance(node, (ast.ClassDef, ast.FunctionDef)) and node.name == name]
   exec(compile(tree, str(path), 'exec'), scope)
   return scope[name]
+
+
+@contextmanager
+def policy_worker_reports():
+  # Reference workers terminate only after excepthook returns. Keep expected
+  # injected failures visible without invoking default traceback/source lookup.
+  previous = threading.excepthook
+  def report(args):
+    if args.exc_type is SystemExit:
+      return
+    worker = args.thread
+    print(f'beep fixture worker {worker.name} ident={worker.ident}: {args.exc_type.__name__}: {args.exc_value}',
+          file=sys.stderr, flush=True)
+  threading.excepthook = report
+  try:
+    yield
+  finally:
+    threading.excepthook = previous
 
 
 def main():
@@ -84,21 +103,22 @@ def main():
   if config['mode'] == 'live':
     beepd.beepd_thread()
     return
-  for action in config['actions']:
-    if action['kind'] == 'alert':
-      beepd.update_alert(action['value'])
-      for worker in threading.enumerate():
-        if worker is not threading.current_thread():
-          worker.join(timeout=3)
-          assert not worker.is_alive()
-    elif action['kind'] == 'volume':
-      path = root / os.environ['OPENPILOT_PREFIX'] / 'SoundVolumeAdjust'
-      if action['bytes'] is None:
-        path.unlink(missing_ok=True)
+  with policy_worker_reports():
+    for action in config['actions']:
+      if action['kind'] == 'alert':
+        beepd.update_alert(action['value'])
+        for worker in threading.enumerate():
+          if worker is not threading.current_thread():
+            worker.join(timeout=3)
+            assert not worker.is_alive()
+      elif action['kind'] == 'volume':
+        path = root / os.environ['OPENPILOT_PREFIX'] / 'SoundVolumeAdjust'
+        if action['bytes'] is None:
+          path.unlink(missing_ok=True)
+        else:
+          path.write_bytes(bytes(action['bytes']))
       else:
-        path.write_bytes(bytes(action['bytes']))
-    else:
-      raise ValueError(action)
+        raise ValueError(action)
   trace.close()
 
 

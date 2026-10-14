@@ -2001,6 +2001,8 @@ jobs:
         run: |
           VERSION_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/version-reference" python rust/tools/check_version_reference.py rust/target/debug/examples/version_trace
           python rust/tools/check_version_collector.py rust/target/debug/examples/version_trace rust/target/debug/openpilot-logmessaged "$RUNNER_TEMP/telemetry-runtime/version-collector"
+      - name: Check source fixture worker error reporting
+        run: python -m unittest discover -s rust/tools/tests -p test_beep_worker_report.py -v
       - name: Compare alert policy, Params failures and clock conversion
         run: |
           python rust/tools/check_beepd_reference.py --binary rust/target/debug/examples/beep_trace --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-reference"
