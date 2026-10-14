@@ -24,6 +24,16 @@ struct Sample {
     previous_record_finished_ns: Option<u64>,
     schedstats_enabled: Option<bool>,
     schedstat_ns: Option<[u64; 3]>,
+    admission: Vec<Admission>,
+}
+
+#[derive(Serialize)]
+struct Admission {
+    name: &'static str,
+    seen: bool,
+    updated: bool,
+    receive_frame: i64,
+    log_mono_time: u64,
 }
 
 #[derive(Serialize)]
@@ -100,6 +110,17 @@ impl FrequencyTrace {
             previous_record_finished_ns: self.previous_record_finished_ns,
             schedstats_enabled: self.schedstats_enabled,
             schedstat_ns,
+            admission: state
+                .topics()
+                .iter()
+                .map(|topic| Admission {
+                    name: topic.service.name,
+                    seen: topic.seen,
+                    updated: topic.updated,
+                    receive_frame: topic.receive_frame,
+                    log_mono_time: topic.log_mono_time,
+                })
+                .collect(),
         };
         serde_json::to_writer(&mut self.output, &sample).map_err(std::io::Error::other)?;
         self.output.write_all(b"\n")?;
@@ -185,6 +206,62 @@ fn stop_fixture() -> std::io::Result<()> {
 mod tests {
     use super::*;
     #[test]
+    fn admission_serializes_updated_and_retained_real_control_identity() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("admission.jsonl");
+        let mut trace = FrequencyTrace::open(&path, None, 3).unwrap();
+        let mut state = State::new(&crate::core::SERVICES, Default::default()).unwrap();
+        let mut message = capnp::message::Builder::new_default();
+        let mut event = message.init_root::<openpilot_cereal::log_capnp::event::Builder>();
+        event.set_log_mono_time(123_456);
+        event.set_valid(false);
+        event.init_car_control().init_actuators().set_torque(-0.3);
+        let bytes = capnp::serialize::write_message_to_words(&message);
+        for frame in 0..3 {
+            let messages = if frame == 1 {
+                vec![]
+            } else {
+                vec![bytes.clone()]
+            };
+            state
+                .update(1.0 + f64::from(frame) * 0.01, &messages)
+                .unwrap();
+            trace
+                .record(TraceInput {
+                    state: &state,
+                    controls_ready: false,
+                    parser: None,
+                    timing: Timing {
+                        step_started_ns: 10,
+                        step_finished_ns: 30,
+                        thread_cpu_started_ns: 2,
+                        thread_cpu_finished_ns: 4,
+                        receive_ns: 20,
+                        stage_us: [0; 10],
+                    },
+                })
+                .unwrap();
+        }
+        let rows: Vec<serde_json::Value> = fs::read_to_string(path)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect();
+        for (frame, row) in rows.iter().enumerate() {
+            assert_eq!(row["frame"], frame);
+            let topic = row["admission"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|topic| topic["name"] == "carControl")
+                .unwrap();
+            assert_eq!(topic["seen"], true);
+            assert_eq!(topic["updated"], frame != 1);
+            assert_eq!(topic["receive_frame"], if frame == 2 { 2 } else { 0 });
+            assert_eq!(topic["log_mono_time"], 123_456);
+        }
+    }
+    #[test]
     fn scheduler_receipts_distinguish_disabled_missing_zero_and_malformed() {
         let root = tempfile::tempdir().unwrap();
         let path = root.path().join("counter");
@@ -222,7 +299,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let path = root.path().join("trace.jsonl");
         let mut trace = FrequencyTrace::open(&path, None, 2).unwrap();
-        let state = State::new(&["carControl"], Default::default()).unwrap();
+        let state = State::new(&crate::core::SERVICES, Default::default()).unwrap();
         for _ in 0..2 {
             trace
                 .record(TraceInput {
@@ -251,6 +328,15 @@ mod tests {
         let next = rows[1]["record_started_ns"].as_u64().unwrap();
         assert!(started <= finished && finished <= next);
         for row in rows {
+            let topics = row["admission"].as_array().unwrap();
+            assert_eq!(topics.len(), crate::core::SERVICES.len());
+            for (topic, name) in topics.iter().zip(crate::core::SERVICES) {
+                assert_eq!(topic["name"], name);
+                assert_eq!(topic["seen"], false);
+                assert_eq!(topic["updated"], false);
+                assert_eq!(topic["receive_frame"], 0);
+                assert_eq!(topic["log_mono_time"], 0);
+            }
             assert_eq!(row["timing"]["step_started_ns"], 10);
             assert_eq!(row["timing"]["step_finished_ns"], 30);
             assert_eq!(row["timing"]["thread_cpu_started_ns"], 2);

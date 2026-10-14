@@ -72,6 +72,10 @@ def main() -> None:
           'average_frequency': 1. / tracker.avg_dt.get_average() if tracker.avg_dt.count else None,
           'min_frequency': tracker.min_freq, 'max_frequency': tracker.max_freq, 'tracker_valid': tracker.valid,
           'frequency_ok': runtime.sm.freq_ok['carControl'], 'controls_ready': runtime.params.get_bool('ControlsReady'), 'parser': parser}
+        sample['admission'] = [
+          {'name': name, 'seen': runtime.sm.seen[name], 'updated': runtime.sm.updated[name],
+           'receive_frame': runtime.sm.recv_frame[name], 'log_mono_time': runtime.sm.logMonoTime[name]}
+          for name in runtime.sm.services]
         observer.write(json.dumps(sample) + '\n')
         observer.flush()
       runtime.rk.monitor_time()

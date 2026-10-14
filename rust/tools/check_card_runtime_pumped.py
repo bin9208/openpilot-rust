@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
@@ -20,6 +21,7 @@ from card_qa.runtime_catalog import CORPUS_DIRECTORIES, EXTENDED_BRANDS, FIXTURE
 from card_qa.runtime_pumped_capture import capture
 from card_qa.runtime_pumped_types import Capture, Publications, RuntimeInvocation
 from card_qa.runtime_pump import Frame, Row
+from card_qa.runtime_admission import Attempt, build_registry, run_aligned, validate_history
 from check_card_runtime import ROOT, SERVICES, wire
 from check_card_vehicle import compare
 
@@ -107,6 +109,65 @@ def measured(capture_value: Capture, sends: Path) -> Publications:
   return rows
 
 
+def wire_identity(raw: bytes) -> tuple[str, int, bool]:
+  from openpilot.cereal import log
+  with log.Event.from_bytes(raw) as event:
+    return event.which(), event.logMonoTime, event.valid
+
+
+def input_history(capture_value: Capture, folder: Path, registry: dict) -> list:
+  initial = json.loads((folder / 'initial-raw.json').read_text())
+  window = json.loads((folder / 'measured-window.json').read_text())
+  assert 0 <= window['first_event_index'] < window['end_event_index'] <= len(capture_value['stream']['carState'])
+  assert window['end_event_index'] - window['first_event_index'] == 80
+  # Frame zero is each post-constructor SubMaster's first update. Keep every
+  # startup/warmup/pre-window step; only post-measurement shutdown is excluded.
+  end_frame = len(initial['carState']) + len(capture_value['warmup']['carState']) + window['end_event_index'] - 1
+  with (folder / 'frequency.jsonl').open() as trace:
+    text = trace.read(16 * 1024 * 1024 + 1)
+  assert len(text) <= 16 * 1024 * 1024, 'admission trace exceeds bound'
+  history = validate_history([json.loads(line) for line in text.splitlines()], registry, end_frame)
+  (folder / 'input-history.json').write_text(json.dumps(history) + '\n')
+  return history
+
+
+def compare_case(invocation: RuntimeInvocation, scenario: Scenario, input_bytes: bytes) -> dict:
+  candidate, enabled = scenario.candidate, scenario.enabled
+  case_root = invocation.evidence / f'{candidate}-{enabled}'
+  case_root.mkdir()
+  (case_root / 'inputs.json').write_bytes(input_bytes)
+  registry = build_registry(json.loads(input_bytes), wire_identity)
+  (case_root / 'input-identities.json').write_text(json.dumps(
+    [{'name': name, **identity} for (name, _), identity in registry.items()]) + '\n')
+  events = []
+  passive = None
+  def record(number, value):
+    events.append({'attempt': number, **value})
+    (case_root / 'attempts.json').write_text(json.dumps(events, indent=2) + '\n')
+  def prepare(number):
+    nonlocal passive
+    attempt_root = case_root / f'attempt-{number:02}'
+    attempt_root.mkdir()
+    inputs = attempt_root / (candidate + '-inputs.json')
+    inputs.write_bytes(input_bytes)
+    attempt = replace(invocation, evidence=attempt_root)
+    source = capture(attempt, scenario, True)
+    native = capture(attempt, scenario, False)
+    assert inputs.read_bytes() == input_bytes, 'immutable input file changed'
+    source_folder = attempt_root / f'{candidate}-{enabled}-source'
+    native_folder = attempt_root / f'{candidate}-{enabled}-native'
+    # These gates always execute and fail immediately, even when the two
+    # processes happened to admit different asynchronously published topics.
+    expected = measured(source, source_folder / 'pump/sends.jsonl')
+    actual = measured(native, native_folder / 'pump/sends.jsonl')
+    compare(source['params'], native['params'])
+    passive = native['passive']
+    return Attempt(input_history(source, source_folder, registry),
+                   input_history(native, native_folder, registry), expected, actual)
+  attempts = run_aligned(prepare, compare, record)
+  return {'candidate': candidate, 'enabled': enabled, 'steps': 80, 'passive': passive, 'attempts': attempts}
+
+
 def main() -> None:
   """Compare original Card and native CLI at an independent nominal 100 Hz."""
   parser = argparse.ArgumentParser()
@@ -121,6 +182,7 @@ def main() -> None:
   parser.add_argument('--corpus-root', type=Path)
   arguments = parser.parse_args()
   arguments.evidence.mkdir(parents=True, exist_ok=True)
+  (arguments.evidence / 'result.json').unlink(missing_ok=True)
   load_binding(arguments.binding)
   controls_every = arguments.cc_every if arguments.cc_every is not None else (5 if arguments.simulation else 1)
   if not 0 < arguments.can_interval < .02 or controls_every < 1:
@@ -137,16 +199,10 @@ def main() -> None:
   for candidate, enabled in scenarios:
     if arguments.candidate and candidate not in arguments.candidate:
       continue
-    (arguments.evidence / (candidate + '-inputs.json')).write_text(json.dumps(fixture(candidate, arguments.corpus_root)) + '\n')
     scenario = Scenario(candidate, enabled,
       alpha_long=True if candidate in FIXTURE_NAMES or candidate == 'FORD_MAVERICK_MK1' else None)
-    source = capture(invocation, scenario, True)
-    native = capture(invocation, scenario, False)
-    expected = measured(source, arguments.evidence / f'{candidate}-{enabled}-source/pump/sends.jsonl')
-    actual = measured(native, arguments.evidence / f'{candidate}-{enabled}-native/pump/sends.jsonl')
-    compare(source['params'], native['params'])
-    compare(expected, actual)
-    rows.append({'candidate': candidate, 'enabled': enabled, 'steps': 80, 'passive': native['passive']})
+    input_bytes = (json.dumps(fixture(candidate, arguments.corpus_root)) + '\n').encode()
+    rows.append(compare_case(invocation, scenario, input_bytes))
   result = {'status': 'pass', 'scenarios': rows, 'simulation': arguments.simulation, 'runtime_python': False,
     'nominal_can_hz': 1. / arguments.can_interval, 'nominal_controls_hz': 1. / (arguments.can_interval * controls_every),
     'executed_elf_sha256': hashlib.sha256((arguments.elf or arguments.binary).read_bytes()).hexdigest(),
@@ -155,6 +211,8 @@ def main() -> None:
     'scope': ('independent measured CAN+prebuilt topics at explicitly recorded nominal rates; 320 completed warmup steps ' +
               'with receiver completion gate and actual frequency/readiness barrier; ' +
               '80 independent compared sends with exact timestamp/packet count and no additional timeouts; ' +
+              'exact output comparison requires matching complete post-constructor topic admissions; at most three input-only attempts, all retained; ' +
+              'startup CAN bootstrap batch counts may differ under the existing fenced setup contract; ' +
               'no physical CAN/device or CPU claim')}
   (arguments.evidence / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
   print(json.dumps(result))
