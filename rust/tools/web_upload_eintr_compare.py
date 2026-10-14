@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 import time
 
@@ -15,12 +14,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def run(side, binary, root, late):
   peer = Peer()
-  request = dict(op='session', base=peer.base, metadata={'dongle_id': 'owned'}, purpose='tmux', sync=True)
+  request = {'op': 'session', 'base': peer.base, 'metadata': {'dongle_id': 'owned'}, 'purpose': 'tmux', 'sync': True}
   command = [str(binary.resolve())] if side == 'native' else [sys.executable, '-P', str(Path(__file__).with_name('web_upload_eintr_source.py'))]
   env = dict(os.environ, NO_PROXY='127.0.0.1,localhost', PYTHONPATH=str(ROOT) + ':' + os.environ.get('PYTHONPATH', ''))
-  process, pid, trace, invocation, identity = launch(command, root, request, env)
+  process = None
+  pid = None
   receipts = []
   try:
+    process, pid, trace, invocation, identity = launch(command, root, request, env)
     until(peer.received.is_set)
     initial_wait = until(lambda: blocked(pid))
     started = time.monotonic()
@@ -39,7 +40,11 @@ def run(side, binary, root, late):
     peer.close()
     (root / 'stdout.log').write_text(stdout)
     output = json.loads(stdout)
-    result = dict(side=side, late=late, invocation=invocation, identity=identity, request=request, initial_wait=initial_wait, interruptions=receipts, elapsed=ended-started, exit_code=process.returncode, output=output, requests=peer.rows, recipient_errors=peer.errors)
+    result = {
+      'side': side, 'late': late, 'invocation': invocation, 'identity': identity, 'request': request,
+      'initial_wait': initial_wait, 'interruptions': receipts, 'elapsed': ended-started,
+      'exit_code': process.returncode, 'output': output, 'requests': peer.rows, 'recipient_errors': peer.errors
+    }
     assert process.returncode == 0 and len(peer.rows) == 1, result
     if not late:
       result['satisfied'] = output.get('result') == 'owned-session' and ended-started < 12
@@ -48,8 +53,11 @@ def run(side, binary, root, late):
     (root / 'receipt.json').write_text(json.dumps(result, indent=2) + '\n')
     return result
   finally:
-    stop_child(process, pid)
-    peer.close()
+    try:
+      if process is not None:
+        stop_child(process)
+    finally:
+      peer.close()
 
 
 def main():
@@ -65,8 +73,13 @@ def main():
     for side in ['source', 'native']:
       result = run(side, args.binary, args.output / ('after_deadline' if late else 'before_deadline') / side, late)
       results.append(result)
-      print(side, 'after_deadline' if late else 'before_deadline', json.dumps(result['output']), round(result['elapsed'], 3), 'satisfied', result['satisfied'], flush=True)
-  rows = dict(passed=all(r['satisfied'] for r in results), results=results, free_bytes=free, binary=dict(path=str(args.binary), sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest()), original_sha256=hashlib.sha256((ROOT / 'openpilot/selfdrive/carrot/web_upload.py').read_bytes()).hexdigest())
+      print(side, 'after_deadline' if late else 'before_deadline', json.dumps(result['output']),
+            round(result['elapsed'], 3), 'satisfied', result['satisfied'], flush=True)
+  rows = {
+    'passed': all(r['satisfied'] for r in results), 'results': results, 'free_bytes': free,
+    'binary': {'path': str(args.binary), 'sha256': hashlib.sha256(args.binary.read_bytes()).hexdigest()},
+    'original_sha256': hashlib.sha256((ROOT / 'openpilot/selfdrive/carrot/web_upload.py').read_bytes()).hexdigest()
+  }
   (args.output / 'result.json').write_text(json.dumps(rows, indent=2) + '\n')
   raise SystemExit(0 if rows['passed'] else 1)
 

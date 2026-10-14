@@ -404,3 +404,23 @@ unused locationd snapshots while retaining current post-rewind state. Its native
 pre/post native trace bytes agree. These follow-ups require a new exact source
 commit and its own CI/package evidence. They do not change settings, validity
 thresholds, model math or device-test authorization.
+
+`430ec72bf4fd5bc53dafb0e262b815e76c38ff37` subsequently passed the complete
+11-group/89-executable AGNOS build, static-musl installer binding, 92-root /
+115-object ELF closure, all 92 loader/usage checks and the 1,076-artifact seal.
+Native release construction and archive verification passed: 1,155,614,656
+compressed bytes, 1,708,024,293 unpacked bytes, archive SHA256
+`66153c3a29b9cc46e9ee3d16b1ab78032221249f715c8f6e75dd7a55abc6debb`,
+manifest SHA256 `5242c8e4a20145aa8febcec6b5260c173c9b4540946d98bd2cd14c9189543948`.
+These source-matched local artifacts remain premerge evidence.
+
+[Run 38566168156](https://github.com/bin9208/openpilot-rust/actions/runs/38566168156)
+then exposed a separate upload EINTR fixture race: all 14 upload timeout cases
+passed, but a two-read `/proc/.../children` predicate observed digits followed
+by an empty value and failed before its protocol comparison. This is tracked
+in [#327](https://github.com/bin9208/openpilot-rust/issues/327). The correction
+must preserve original/native request, signal and deadline assertions and make
+failed-launch cleanup observable. It is a checker correction, not evidence of
+a runtime upload failure or completed Python-tool conversion. Subsequent
+checker-only commits use the complete 430ec72b build as prior evidence; the
+final merged source still requires its own package identity and post-merge CI.

@@ -31,7 +31,7 @@ class Peer:
         pass
       def do_POST(self):
         body = self.rfile.read(int(self.headers['Content-Length']))
-        owner.rows.append(dict(path=self.path, body=body.hex(), time=time.monotonic()))
+        owner.rows.append({'path': self.path, 'body': body.hex(), 'time': time.monotonic()})
         owner.received.set()
         if not owner.release.wait(20):
           owner.errors.append('fixture response gate exceeded')
@@ -60,7 +60,19 @@ class Peer:
 
 def child_pid(tracer):
   children = Path(f'/proc/{tracer.pid}/task/{tracer.pid}/children')
-  return until(lambda: int(children.read_text().strip()) if children.exists() and children.read_text().strip().isdigit() else None)
+  def attempt():
+    if tracer.poll() is not None:
+      raise RuntimeError(f'owned EINTR tracer exited before child discovery: {tracer.returncode}')
+    try:
+      value = children.read_text().strip()
+    except (FileNotFoundError, ProcessLookupError):
+      return None
+    if value.isascii() and value.isdigit():
+      pid = int(value)
+      if pid > 0 and pid != tracer.pid:
+        return pid
+    return None
+  return until(attempt)
 
 
 def blocked(pid):
@@ -76,31 +88,59 @@ def interrupt(pid, trace, receipts):
   syscall = until(lambda: blocked(pid))
   before = len(trace.read_text())
   os.kill(pid, signal.SIGSTOP)
-  until(lambda: 'SIGSTOP' in trace.read_text()[before:] and '\nState:\t' in Path(f'/proc/{pid}/status').read_text() and Path(f'/proc/{pid}/status').read_text().split('State:\t')[1].startswith(('T', 't')))
+  until(lambda: (
+    'SIGSTOP' in trace.read_text()[before:] and '\nState:\t' in Path(f'/proc/{pid}/status').read_text()
+    and Path(f'/proc/{pid}/status').read_text().split('State:\t')[1].startswith(('T', 't'))
+  ))
   os.kill(pid, signal.SIGCONT)
   until(lambda: 'SIGCONT' in trace.read_text()[before:])
-  receipts.append(dict(pid=pid, blocked_syscall=syscall, resumed_at=time.monotonic(), trace_offset=before))
+  receipts.append({'pid': pid, 'blocked_syscall': syscall, 'resumed_at': time.monotonic(), 'trace_offset': before})
 
 
 def launch(command, root, request, env):
   root.mkdir(parents=True)
   trace = root / 'syscalls.log'
-  invocation = ['strace', '-qq', '-f', '-ttt', '-o', str(trace), '-e', 'trace=network,poll,ppoll,restart_syscall,signal'] + command
-  process = subprocess.Popen(invocation, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=(root / 'stderr.log').open('w'), text=True, env=env)
-  process.stdin.write(json.dumps(request) + '\n')
-  process.stdin.close()
-  process.stdin = None
-  pid = child_pid(process)
-  until(lambda: os.readlink(f'/proc/{pid}/exe') == str(Path(command[0]).resolve()))
-  identity = dict(pid=pid, executable=os.readlink(f'/proc/{pid}/exe'))
-  return process, pid, trace, invocation, identity
+  stderr = root / 'stderr.log'
+  # This applies only to failed fixture cleanup; normal STOP/CONT receipts and
+  # upload deadlines are unchanged. Never leave a tracee when its tracer dies.
+  invocation = ['strace', '--kill-on-exit', '-qq', '-f', '-ttt', '-o', str(trace), '-e', 'trace=network,poll,ppoll,restart_syscall,signal'] + command
+  with stderr.open('w') as errors:
+    process = subprocess.Popen(invocation, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errors, text=True, env=env)
+  pid = None
+  try:
+    process.stdin.write(json.dumps(request) + '\n')
+    process.stdin.close()
+    process.stdin = None
+    pid = child_pid(process)
+    expected = str(Path(command[0]).resolve())
+    def executable():
+      if process.poll() is not None:
+        raise RuntimeError(f'owned EINTR tracer exited before executable receipt: {process.returncode}')
+      try:
+        actual = os.readlink(f'/proc/{pid}/exe')
+      except (FileNotFoundError, ProcessLookupError):
+        return None
+      return actual if actual == expected else None
+    identity = {'pid': pid, 'executable': until(executable)}
+    return process, pid, trace, invocation, identity
+  except BaseException as error:
+    if process.stdin is not None:
+      try:
+        process.stdin.close()
+      except BrokenPipeError:
+        pass
+      process.stdin = None
+    stop_child(process)
+    if isinstance(error, Exception):
+      with stderr.open('rb') as source:
+        source.seek(0, os.SEEK_END)
+        source.seek(max(0, source.tell() - 4096))
+        detail = source.read(4096).decode(errors='replace')
+      raise RuntimeError(f'owned EINTR launch failed: {error}; tracer exit {process.returncode}; stderr: {detail}') from error
+    raise
 
 
-def stop_child(process, pid):
+def stop_child(process):
   if process.poll() is None:
-    try:
-      os.kill(pid, signal.SIGCONT)
-      os.kill(pid, signal.SIGKILL)
-    except ProcessLookupError:
-      pass
-    process.communicate(timeout=5)
+    process.kill()
+  process.communicate(timeout=5)
