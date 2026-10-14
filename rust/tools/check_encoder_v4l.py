@@ -45,6 +45,10 @@ FAILURES = {
     "source": (-signal.SIGABRT, "extra.timestamp_eof/1000 == ts"),
     "rust": (-signal.SIGABRT, "source V4L timestamp synchronization assertion"),
   },
+  "negative-frame-timestamp": {
+    "source": (-signal.SIGABRT, "extra.timestamp_eof/1000 == ts"),
+    "rust": (-signal.SIGABRT, "source V4L timestamp synchronization assertion"),
+  },
   "input-queue-failure": {"source": (-signal.SIGABRT, "VIDIOC_QBUF failed"), "rust": (-signal.SIGABRT, "Invalid argument (os error 22)")},
 }
 
@@ -118,12 +122,13 @@ def main() -> None:
   ]
   cases = [(profile, "normal", False, 128) for profile in profiles]
   cases.extend([(("main", 0, 0), "normal", False, 1928), (("main", 0, 0), "poll-eintr", False, 128), (("main", 0, 0), "hold-seven", False, 128)])
+  cases.extend([(("main", 0, 0), scenario, False, 128) for scenario in ["output-unused-timestamp", "header-unused-timestamp", "eos-unused-timestamp"]])
   cases.extend([(("--stream", 0, 0), scenario, False, 128) for scenario in ["slice-size-failure", "slice-mode-failure", "compat-failure"]])
   cases.extend([(("--youtube", 0, 0), scenario, False, 128) for scenario in ["crop-unavailable", "crop-adjusted", "cbr-unavailable", "bitrate-adjusted"]])
   cases.extend(
     [
       (("--youtube", 0, 0), scenario, True, 128)
-      for scenario in ["wrong-output", "cbr-wrong", "wrong-capability", "wrong-offset", "wrong-timestamp", "input-queue-failure"]
+      for scenario in ["wrong-output", "cbr-wrong", "wrong-capability", "wrong-offset", "wrong-timestamp", "negative-frame-timestamp", "input-queue-failure"]
     ]
   )
   results: list[dict[str, object]] = []

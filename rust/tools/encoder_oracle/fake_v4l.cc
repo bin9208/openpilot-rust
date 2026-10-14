@@ -190,6 +190,7 @@ extern "C" int ioctl(int fd, unsigned long request, ...) {
       const Slot input = device.returned.front(); device.returned.pop_front();
       if (fcntl(input.fd, F_GETFD) < 0) abort();
       value->index = input.index; plane->data_offset = 0;
+      if (test == "output-unused-timestamp") value->timestamp = {-1, -1};
       record("RETURN_INPUT %u", input.index); return 0;
     }
     if (device.capture.empty()) abort();
@@ -197,17 +198,22 @@ extern "C" int ioctl(int fd, unsigned long request, ...) {
     value->index = capture.index; plane->data_offset = test == "wrong-offset" ? 1 : 0;
     if (device.header) {
       device.header = false; value->flags = 0x00020000; plane->bytesused = 8;
+      if (test == "header-unused-timestamp") value->timestamp = {-1, -1};
       memcpy(reinterpret_cast<void *>(capture.address), "HEADER12", 8); record("CAPTURE_HEADER");
     } else if (!device.inputs.empty()) {
       const Slot input = device.inputs.front(); device.inputs.pop_front();
       if (fcntl(input.fd, F_GETFD) < 0 || input.length < 64) abort();
       value->timestamp = input.time;
       if (test == "wrong-timestamp") value->timestamp.tv_usec += 1;
+      if (test == "negative-frame-timestamp") value->timestamp = {-1, -1};
       value->flags = device.frames++ % 3 == 0 ? V4L2_BUF_FLAG_KEYFRAME : 0;
       plane->bytesused = 64; memcpy(reinterpret_cast<void *>(capture.address), reinterpret_cast<const void *>(input.address), 64);
       device.returned.push_back(input); record("CAPTURE_FRAME %ld %ld %u", input.time.tv_sec, input.time.tv_usec, value->flags);
     } else if (device.stopped && !device.eos) {
-      device.eos = true; value->flags = 0x02000000; plane->bytesused = 0; record("CAPTURE_EOS");
+      device.eos = true; value->flags = 0x02000000; plane->bytesused = 0;
+      // Physical AGNOS encoder EOS represents -1 microsecond as this timeval.
+      if (test == "eos-unused-timestamp") value->timestamp = {-1, 999999};
+      record("CAPTURE_EOS");
     } else abort();
     return 0;
   }
