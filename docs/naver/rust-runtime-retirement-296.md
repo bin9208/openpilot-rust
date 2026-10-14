@@ -318,3 +318,58 @@ OpenCV CMake module reproduced the cache-path defect and corrected placement,
 while source additions/edits still fail admission. All required CI and complete
 AGNOS package builds must run again on the follow-up commit. No device result
 is claimed by these local repairs.
+
+## Complete AGNOS host candidate closure (2026-10-14)
+
+Source `828efb0d2a8c9c9a2fa9e22f76f445832d6cc35d` passed all 11 bounded
+release groups covering 89 project executables, with ION/native features and
+the pinned AGNOS SDK. Compiler source metadata records that exact commit and
+clean tree. The static musl installer replaces the ordinary GNU helper and
+is tied to the build receipt. The native manager reports all 63 catalog
+entries ready. Native ELF admission passed 92 roots/115 objects; all 92
+AGNOS-loader dependency listings or static-installer usage checks passed.
+The native sealer recorded 1,076 artifacts. These are host/cross-build, native
+provider and package-composition results, without daemon/device execution.
+
+Review found the missing OpenSSL provider for webjoystick (#316); its pinned
+AGNOS executable/licenses are now staged, with five-object ELF closure, QEMU
+version/RSA-4096 certificate creation and independent host certificate
+verification. See [provider evidence](rust-runtime-openssl-316.md). The external
+OpenSSL/AGNOS library dependency remains explicit.
+
+The startup-services CI follow-up at `828efb0d` failed before its new pytest
+cases because that job lacked pytest. Commit
+`26ca85aad602bfe0e9661567e2bcfd69e7bc030a` adds the same pinned 9.0.2 dependency
+used elsewhere. Its startup-services job in
+[run 38556891074](https://github.com/bin9208/openpilot-rust/actions/runs/38556891074)
+passed, including updater/process/AGNOS comparisons. Other required results
+were still running at this checkpoint. The source-clean 828efb0d package
+closure is intermediate evidence: subsequent CI/source corrections and the
+[UBX recovery fix](rust-ublox-framing-317.md) require a fresh final exact-source
+build and seal. No release/device handoff or complete Python retirement is
+claimed by this checkpoint.
+
+## Scoped module corrections after complete host build
+
+The continuation's broader source audit produced four focused corrections:
+[UBX framing #317](rust-ublox-framing-317.md),
+[Athena retry pacing #318](rust-athena-log-retry-318.md),
+[Wi-Fi worker ownership #319](rust-wifi-worker-lifecycle-319.md), and
+[QCOM range admission #320](rust-qcom-diagnostic-bounds-320.md). Each has a
+failing native reproduction, focused passing tests and strict package Clippy.
+UBX preserves all 57 prior ordered source outputs and independently recovers
+one NAV-PVT; its full decoder, daemon, Pigeon and ASan/UBSan serial gates pass.
+Wi-Fi preserves 781 policy cases/2,322 frames plus both private-D-Bus gates.
+QCOM preserves original valid mask bytes, 204 publications and six daemon
+scenarios. Athena's original healthy forwarding/clock-boundary comparisons
+pass in addition to failure/stop unit tests. The remaining QCOM delimiter-free
+resource bound has no demonstrated general protocol maximum and stays open.
+
+Independent reviews found no concrete Critical/Important defects in the UBX
+or Wi-Fi corrections. Source review does not replace executed target checks.
+The CI policy suite passes 24 tests/367 subtests; updater/UBX checker controls
+pass 29 parametrized cases, focused Python lint and full-workspace strict
+all-target Clippy pass, and the native docs gate passes with a concrete settings-preserving exemption. The final source
+commit still needs its own target build, package seal, required exact-SHA CI
+and normal device startup/recording/upload checks. The developer Python
+inventory remains incomplete.

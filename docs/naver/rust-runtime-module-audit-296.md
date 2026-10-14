@@ -508,3 +508,97 @@ actual compiler AArch64 predefines. Header receipts and hashes are under
 The development prefix references the existing verified released libraries;
 this is explicit external-provider reuse, not a new full runtime provider build.
 It does not reuse host-configured headers or encoder FFmpeg 7.1 headers.
+
+## Continued module audit: inspected scope and evidence boundaries (2026-10-14)
+
+Five scoped audits inspected runtime/source paths at `0992e61f` and `828efb0d`.
+Most evidence is **source-only**, including reading existing tests and original
+implementations; those tests were not rerun by the audits. The table records
+coverage, not whole-module clearance. Full source-clean candidate builds,
+exact-SHA CI, normal device startup/recording/upload and user driving acceptance
+remain separate gates.
+
+| Area | Actually inspected | Explicit remaining coverage |
+| --- | --- | --- |
+| Telemetry/storage | uploader scan/cache/runtime and HTTP entry paths; web-upload streams/retry boundaries; dashcam manager/worker/pool ownership; statsd drain/publication; proclog Collector/cadence; journald child/poll/decode; bootlog snapshot/capture; tombstoned discovery/retrace; crash reporter runtime/policy/SDK entry; feedbackd; logmessaged main and logging producer/rate/communication; deleter retention/bookmark/lock paths | Complete HTTP/status/configuration/error matrix, dashcam reports/source extraction, log context/wire normalization, journal binary JSON, raw-file providers, external SDK/apport lifecycle, recording races and target kernel/filesystem/transport behavior |
+| UI/connectivity/audio | startup-ui and UI framework/application run/stop/child/input/render boundaries; cluster frame loop/media/decode ownership; Bluetooth poll/task/BlueZ entry; Wi-Fi initialization/monitor/scanner/bus ownership; modem PPP/state loop; LPA AT/APDU/download boundaries; registration retry/identity; Athena session/proxy/forwarding loops; Jetlink owner/RPC bounds; navd publisher/resend; WebRTC HTTP/application maintenance; bridge polling; cweb-push request/stop; soundd PortAudio ownership; beepd workers; amplifier retries/register transactions | Full rendering/widgets/settings/actions, GPU/encoder imports, USB/display/audio hardware, D-Bus reconnection and credential epochs, AT/eSIM/ASN/HTTP contracts, Athena RPC/upload scheduler, ICE/DTLS/RTP/codec internals, protocol backpressure and all device timing |
+| Vehicle/control/planning | card production/core steps and IO/Params polling with sampled Hyundai integration; CAN parser acceptance/counters/timeouts; radarcan batching/reset/staleness; radard input clock/publication; plannerd load/model/liveTracks triggers; controlsd runtime/control entry/publication; selfdrived runtime/settings ownership; CarrotMan actor/tick/bus; carrot-state compact envelopes; control-policy math/vehicle/PID; joystick/maneuver readiness; desire command freshness/geometry/helper entry | All platform-specific state/controllers/fingerprints, complete lead/scoring/filter corpus, lateral/longitudinal MPC/solver equivalence, all event/alert/HUD/suspend/desire branches, full route/source arbitration and complete numerical/control/CAN regression corpus. Shared radar changes retain their separate workflow obligations |
+| Device/estimation | locationd runtime/invalidity/estimator/Kalman/FFI snapshot; calibration cache/worker/update/status/wire; paramsd workers/loop/Kalman and sampled wire; torqued lifecycle/history/buckets/message/SVD boundary; hardwared worker/write ownership and major loop; hardware-control native IO/display/reboot entry; hardware-info command/WPA/Tici entry; Ublox serial/Pigeon/framing; QCOM setup/serial/framing/assistance; Panda USB context/handle/transfer and SPI Linux kernel ownership | Generated Kalman/Jacobian/orientation math, rewind internals, full cache migrations/random fitting/providers, complete fan/power/thermal policy, GNSS decoders/ephemeris, QCOM measurement/wire math, receiver/modem/USB removal behavior, all native fault fixtures and hardware operation |
+| Shared support | Params namespace/raw/bool/atomic write/short-read contracts; typed STRING conversion; Cereal schema build path; messaging configuration/segment ownership/frequency/liveness; log-format rotation/JSON/Unicode entry paths; runtime-core filters/float/procfs; monitoring policy/pose/events/packet; managed entry/typed failure/SIGINT ownership; checkout-status identity/capture/two-read debounce | Exhaustive syscall/power-loss/race coverage, generated bindings, adversarial wire/Unicode/float corpus, complete monitoring long-run states, crash SDK teardown, arbitrary external-command descendants and all target performance behavior |
+
+### Concrete faults and failure paths
+
+- **UBX split-preamble loss, #317:** the audit **executed the actual original
+  UbxFramer class** on owned bytes. A valid `B562010700000819` frame preceded by
+  noise succeeds in one chunk; splitting as `00B5` then `62010700000819` yields
+  no frame because failed sync clears the trailing `B5`. Native
+  `ublox/src/framing.rs:31-37` has the same branch. This is an inherited framing
+  fault, not a proven Rust regression or observed vehicle outage. The subsequent
+  [#317 repair](rust-ublox-framing-317.md) passed native RED/GREEN, full corrected
+  original-decoder comparison, Pigeon/daemon and ASan/UBSan serial gates; the
+  audit itself did not execute the native framer.
+- **Packaged OpenSSL missing, #316:** parent separately identified the missing
+  provider required by native webjoystick. Parent **executed provider validation**:
+  verified raw-image pins, five-object ELF closure, target OpenSSL version under
+  QEMU, RSA4096 certificate creation and host certificate verification. This is
+  native provider/packaging evidence; it does not establish body teleoperation,
+  on-device TLS startup or complete package acceptance.
+- Athena's non-PC log worker originally retried errors before reaching its
+  normal wait when the log directory is absent/unreadable. Source inspection
+  confirms the original has the same no-backoff loop. The subsequent
+  [#318 repair](rust-athena-log-retry-318.md) adds interruptible failure retry
+  pacing and deterministic failure/healthy/stop coverage; target evidence remains separate.
+- Wi-Fi initialization can keep awaiting the surviving scanner after its
+  monitor errors, concealing initialization failure; raw D-Bus replies also
+  have no explicit deadline and can retain the network scan lock. The [#319 repair](rust-wifi-worker-lifecycle-319.md) now propagates essential
+  worker failure and drains siblings, with owned lifecycle and unchanged
+  private-D-Bus comparisons. Generic method deadlines remain unresolved.
+- QCOM setup trusts a firmware count (`FFFFFFFF` implies a 512 MiB mask), and
+  delimiter-free diagnostic input can grow indefinitely. Original mask code also
+  trusts this input. The [#320 repair](rust-qcom-diagnostic-bounds-320.md) now validates the
+  complete 12-bit item-range table before any masks; valid original bytes and
+  decoder/daemon comparisons pass. No huge pre-fix allocation was exercised.
+  Delimiter-free envelope bounds remain open without a justified protocol cap.
+
+### Specific storage/work candidates, without measured savings
+
+- locationd reads scalar time and gyro bias through full snapshots, copying
+  18 state plus 324 covariance doubles (2,736 payload bytes) into two Rust Vecs
+  per snapshot. Scalar read-only accessors can avoid unused covariance copies
+  if numerical ordering/reset/rewind and NaN behavior remain identical.
+- CAN replaces latest raw bytes with a fresh clone on every accepted frame and
+  allocates temporary signal values for each parse. Reuse must preserve failed
+  checksum/counter publication state and counter side effects; shared radar
+  dependencies require their established validation workflow.
+- Torqued interpolation rebuilds time/value columns from its bounded history;
+  QCOM assistance creates an 8 KiB Vec per bounded download read. Reusable
+  storage needs interpolation/download/error/rename equivalence tests.
+- Other inspected allocation sites: statsd materializes directory entries only
+  to count; logmessaged copies single-part records through multipart flattening;
+  Bluetooth/bridge recreate poll/readiness vectors; WebRTC snapshots session
+  handles every 5 ms; proc-stat parsing collects temporary field vectors twice
+  per process; float formatting builds a temporary digit String; JSON scalar
+  accessors materialize child views for nonstrings; checkout polling builds a
+  two-entry vector. These are source-backed candidates, not target measurements.
+- Uploader allocates a 64 KiB xattr buffer for uncached queries. Its descriptor
+  is absent from the actual catalog (also commented out originally), so this
+  cannot be attributed to current device CPU. Preserve existing cache/marker
+  behavior if optimizing the independently callable path.
+
+### Inherited contracts deliberately retained
+
+Original controlsd explicitly polls for 15 ms. Torqued intentionally calls its
+state-mutating message/fit method for both publication and persistence on
+overlapping frames; combining those calls changes numerical state. CAN empty
+updates, proc metadata/smaps caching and unusual Swaglog startup retention order
+also have original counterparts. Unbounded original external-command waits,
+detached helper concerns and nonrewindable upload retry bodies were not promoted
+to newly proven runtime faults without a failing owned fixture. Params supports
+large binary values, and no arbitrary global cap was inferred. Ownership reuse
+must not alias retained camera/message data, expose partial parse updates or
+weaken validity, periods, priorities, control policies or settings.
+
+Detailed inspected files and per-module exclusions remain in the five ignored
+`2026-10-14-module-audit-{telemetry,ui-connectivity,controls,device,support}`
+scratch notes. Neither those notes nor this consolidated scope establish
+all-module functional/numerical clearance or measured CPU benefit.

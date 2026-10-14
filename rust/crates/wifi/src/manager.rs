@@ -144,14 +144,26 @@ async fn run(
     io.spawn_local(main_io);
     io.spawn_local(monitor_io);
     let mut workers = JoinSet::new();
+    let mut initialization = JoinSet::new();
+    let (initialization_stop, initialization_stopping) = watch::channel(false);
     let startup = engine.clone();
-    workers.spawn_local(async move { startup.initialize().await });
+    initialization.spawn_local(async move { startup.initialize(initialization_stopping).await });
     let result = loop {
         if *stopping.borrow() {
             break Ok(());
         }
         tokio::select! {
             change = stopping.changed() => { if change.is_err() || *stopping.borrow() { break Ok(()); } }
+            completed = initialization.join_next() => {
+                break match completed {
+                    Some(Ok(Err(error))) => {
+                        engine.log(Level::Error, format!("Wi-Fi initialization worker failed: {error}"));
+                        Err(error)
+                    }
+                    Some(Err(_)) => Err(Error::Panicked),
+                    Some(Ok(Ok(()))) | None => Err(Error::WorkerStopped),
+                };
+            }
             command = commands.recv() => {
                 let Some(command) = command else { break Ok(()); };
                 let worker = engine.clone();
@@ -167,6 +179,15 @@ async fn run(
             ended = io.join_next() => { break Err(Error::Transport(format!("{ended:?}"))); }
         }
     };
+    initialization_stop.send_replace(true);
+    while let Some(joined) = initialization.join_next().await {
+        if let Err(error) = joined {
+            engine.log(
+                Level::Error,
+                format!("Wi-Fi initialization shutdown: {error}"),
+            );
+        }
+    }
     workers.abort_all();
     while let Some(joined) = workers.join_next().await {
         if let Err(error) = joined {

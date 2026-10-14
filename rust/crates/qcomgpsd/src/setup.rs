@@ -23,18 +23,23 @@ pub fn retry<T>(
     Err(Error::Protocol("empty retry budget"))
 }
 pub fn logs(diag: &mut Diagnostic, types: &[u16], stop: &AtomicBool) -> Result<(), Error> {
-    let (_, payload) = diag.exchange(framing::LOG_CONFIG, &[0, 0, 0, 1, 0, 0, 0], stop)?;
+    let (opcode, payload) = diag.exchange(framing::LOG_CONFIG, &[0, 0, 0, 1, 0, 0, 0], stop)?;
     let mut reader = Reader::new(
         payload
             .get(3..)
             .ok_or(Error::Protocol("log config header"))?,
     );
-    if reader.u32()? != 1 || reader.u32()? != 0 {
+    if opcode != framing::LOG_CONFIG || reader.u32()? != 1 || reader.u32()? != 0 {
         return Err(Error::Protocol("log range response"));
     }
     let mut ranges = [0; 16];
     for range in &mut ranges {
         *range = reader.u32()?;
+    }
+    // Admit the complete table before allocating or sending any mask. Each u16
+    // log ID has four equipment bits and twelve item bits (indices 0..4095).
+    if ranges.iter().any(|&count| count > 4096) {
+        return Err(Error::Protocol("log range exceeds 12-bit item IDs"));
     }
     for (kind, count) in ranges
         .into_iter()
@@ -42,7 +47,6 @@ pub fn logs(diag: &mut Diagnostic, types: &[u16], stop: &AtomicBool) -> Result<(
         .filter(|(_, count)| *count != 0)
     {
         let kind = u32::try_from(kind).map_err(|_| Error::Protocol("log kind"))?;
-        // The ID is 12 bits; a larger firmware range cannot name additional log IDs.
         let size =
             usize::try_from(count.div_ceil(8)).map_err(|_| Error::Protocol("log mask size"))?;
         let mut request = vec![0, 0, 0];
