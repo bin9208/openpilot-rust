@@ -388,6 +388,80 @@ fn run(options: Options, state: &Mutex<State>, stop: &AtomicBool) -> Result<(), 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::os::fd::OwnedFd;
+
+    struct OwnedTestChild(std::process::Child);
+    impl OwnedTestChild {
+        fn sleeper() -> Self {
+            Self(
+                std::process::Command::new("sleep")
+                    .arg("60")
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
+                    .unwrap(),
+            )
+        }
+    }
+    impl Drop for OwnedTestChild {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+
+    fn process_fd(pid: u32) -> OwnedFd {
+        rustix::process::pidfd_open(
+            Pid::from_raw(i32::try_from(pid).unwrap()).unwrap(),
+            rustix::process::PidfdFlags::empty(),
+        )
+        .unwrap()
+    }
+
+    fn exited_by(fd: &OwnedFd, deadline: Instant) -> bool {
+        loop {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            let timeout = Timespec::try_from(remaining).unwrap();
+            let mut descriptors = [PollFd::new(fd, PollFlags::IN)];
+            match poll(&mut descriptors, Some(&timeout)) {
+                Ok(_) => return descriptors[0].revents().contains(PollFlags::IN),
+                Err(rustix::io::Errno::INTR) if Instant::now() < deadline => {}
+                Err(error) => panic!("owned pidfd poll: {error}"),
+            }
+        }
+    }
+
+    #[test]
+    fn pidfd_completion_rejects_live_process_and_survives_proc_disappearance() {
+        let mut child = OwnedTestChild::sleeper();
+        let fd = process_fd(child.0.id());
+        assert!(!exited_by(&fd, Instant::now()));
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("owned-proc-entry");
+        std::fs::create_dir(&path).unwrap();
+        let existed = path.exists();
+        assert!(existed);
+        child.0.kill().unwrap();
+        child.0.wait().unwrap();
+        std::fs::remove_dir(&path).unwrap();
+        // Deterministically exit between the old exists/read-stat observations.
+        let old_gone_or_zombie = !existed
+            || std::fs::read_to_string(path.join("stat")).is_ok_and(|s| s.contains(") Z "));
+        assert!(!old_gone_or_zombie);
+        assert!(exited_by(&fd, Instant::now() + Duration::from_secs(1)));
+    }
+
+    #[test]
+    fn unrelated_test_child_is_reaped_on_assertion_unwind() {
+        let child = OwnedTestChild::sleeper();
+        let fd = process_fd(child.0.id());
+        let result = std::panic::catch_unwind(move || {
+            let _owned = child;
+            panic!("owned test cleanup control");
+        });
+        assert!(result.is_err());
+        assert!(exited_by(&fd, Instant::now()));
+    }
     #[test]
     fn progress_policy_preserves_source_valid_and_malformed_lines() {
         let mut state = State::new(Layout::Tici);
@@ -495,10 +569,7 @@ mod tests {
     #[test]
     fn duplicate_start_and_close_reap_owned_child_preserve_unrelated() {
         let (root,mut worker)=fixture(Layout::Mici,"#!/bin/sh\necho $$ > leader\nsleep 60 &\necho $! > descendant\nprintf 'waiting for internet: 0\\n'\nwait\n");
-        let mut unrelated = std::process::Command::new("sleep")
-            .arg("60")
-            .spawn()
-            .unwrap();
+        let mut unrelated = OwnedTestChild::sleeper();
         worker.start().unwrap();
         assert!(!worker.start().unwrap());
         let deadline = Instant::now() + Duration::from_secs(2);
@@ -516,17 +587,18 @@ mod tests {
             .trim()
             .parse()
             .unwrap();
+        let descendant = process_fd(u32::try_from(child).unwrap());
+        assert!(!exited_by(&descendant, Instant::now()));
         let start = Instant::now();
         worker.close().unwrap();
         assert!(start.elapsed() < Duration::from_secs(1));
         assert!(!std::path::Path::new(&format!("/proc/{pid}")).exists());
-        let gone_or_zombie = !std::path::Path::new(&format!("/proc/{child}")).exists()
-            || std::fs::read_to_string(format!("/proc/{child}/stat"))
-                .is_ok_and(|s| s.contains(") Z "));
-        assert!(gone_or_zombie);
-        assert!(unrelated.try_wait().unwrap().is_none());
-        unrelated.kill().unwrap();
-        unrelated.wait().unwrap();
+        assert!(
+            exited_by(&descendant, start + Duration::from_secs(1)),
+            "owned descendant {child} still alive after close"
+        );
+        assert!(start.elapsed() < Duration::from_secs(1));
+        assert!(unrelated.0.try_wait().unwrap().is_none());
         println!("owned duplicate start=false; closed leader {pid} absent descendant {child} stopped; unrelated child remained alive");
     }
     #[test]

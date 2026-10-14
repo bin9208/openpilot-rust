@@ -566,3 +566,20 @@ and all20 policy,278 integer,1011 clock and27 sleep comparisons pass. The
 telemetry job runs those regressions before its existing comparisons. The new
 regression file increases the tracked Python inventory to3540; it is an explicit
 interim validation dependency, not a retired tool or a device-result claim.
+
+## Updater cleanup observation (#334)
+
+At46fb794e telemetry passed after#333 and all16 integration jobs passed. UI's
+normal library tests then failed the immediate descendant `/proc` assertion,
+before the separate#329 handshake injection. The two-step exists/read predicate
+can reject an already-exited process; the actual CI interleaving was not retained.
+The [test-only correction](rust-updater-cleanup-observation-334.md) captures a
+live descendant pidfd and observes completion within the original close-start
+plus one-second bound. Direct leader reaping, duplicate-start rejection and
+unrelated-child survival remain required. An owned test-child guard also kills
+and waits during assertion unwind. No production process lifecycle code changes.
+
+All15 UI library tests, strict library/tests Clippy and independent review pass.
+The maintained live-process negative control rejects false completion; exit and
+unwind controls pass. This repairs test observation and cleanup, without claiming
+the exact CI cause or device acceptance. Fresh exact-head CI remains required.
