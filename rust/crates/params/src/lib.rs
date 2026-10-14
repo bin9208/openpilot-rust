@@ -5,6 +5,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+mod read;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyInfo {
     pub name: &'static str,
@@ -136,7 +138,7 @@ impl Params {
     }
 
     pub fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error> {
-        match fs::read(self.path(key)?) {
+        match File::open(self.path(key)?).and_then(|mut file| read::value(&mut file)) {
             Ok(bytes) => Ok(Some(bytes)),
             Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
             Err(error) => Err(error.into()),
