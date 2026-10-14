@@ -214,7 +214,7 @@ pub struct Dequeued {
     pub index: usize,
     pub length: usize,
     pub flags: u32,
-    pub timestamp_us: u64,
+    pub timestamp_us: i128,
 }
 pub fn dequeue(fd: &OwnedFd, kind: u32) -> Result<Dequeued, Error> {
     let mut plane = abi::v4l2_plane::default();
@@ -237,13 +237,11 @@ pub fn dequeue(fd: &OwnedFd, kind: u32) -> Result<Dequeued, Error> {
         index: buffer.index.try_into()?,
         length: plane.bytesused.try_into()?,
         flags: buffer.flags,
-        timestamp_us: u64::try_from(buffer.timestamp.tv_sec)?
-            .checked_mul(1_000_000)
-            .and_then(|seconds| {
-                u64::try_from(buffer.timestamp.tv_usec)
-                    .ok()
-                    .and_then(|micros| seconds.checked_add(micros))
-            })
-            .ok_or(Error::Contract("V4L timestamp overflow"))?,
+        // Only encoded frames have timestamps to match against submitted metadata.
+        // Retain signed values for EOS/config and returned input buffers, whose
+        // timestamps the source ignores. Widen before multiplication so even an
+        // unused driver value cannot overflow; frame matching remains exact.
+        timestamp_us: i128::from(buffer.timestamp.tv_sec) * 1_000_000
+            + i128::from(buffer.timestamp.tv_usec),
     })
 }

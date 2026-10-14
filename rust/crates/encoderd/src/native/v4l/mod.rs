@@ -313,7 +313,7 @@ fn dequeue_worker(
                     }
                     queues.extras.pop_front().expect("metadata after wait")
                 };
-                if extra.timestamp_eof / 1000 != packet.timestamp_us {
+                if i128::from(extra.timestamp_eof / 1000) != packet.timestamp_us {
                     return Err(Error::Contract(
                         "source V4L timestamp synchronization assertion",
                     ));
