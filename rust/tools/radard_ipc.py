@@ -15,11 +15,14 @@ import signal
 import subprocess
 import tempfile
 import time
-from typing import Final, Literal, TypedDict, assert_never
+from typing import TYPE_CHECKING, Final, Literal, TypedDict, assert_never
 
 from capnp.lib.capnp import _DynamicStructBuilder
-from openpilot.cereal import car, log, messaging
+from openpilot.cereal import car, log
 from radard_compare import differences
+
+if TYPE_CHECKING:
+  from openpilot.cereal import messaging
 
 ROOT: Final = Path(__file__).resolve().parents[2]
 type Mode = Literal['source', 'rust']
@@ -90,7 +93,8 @@ def environment(params: Path, prefix: str) -> Mapping[str, str]:
 
 def packet(topic: Topic, index: int, *, stamp_index: int | None = None) -> _DynamicStructBuilder:
   stamp = 5_000_000_000 + (index if stamp_index is None else stamp_index) * 50_000_000
-  event = messaging.new_message(topic, logMonoTime=stamp, valid=True)
+  event = log.Event.new_message(logMonoTime=stamp, valid=True)
+  event.init(topic)
   match topic:
     case 'carState':
       event.carState.vEgo = 20.0
@@ -140,7 +144,14 @@ def wait_ready(publisher: messaging.PubMaster, child: subprocess.Popen[bytes]) -
   raise TimeoutError('input subscriptions absent')
 
 
+def availability_phase(index: int) -> float:
+  # Separate margins for liveTracks (0.5 s) and carState (0.1 s) loss.
+  return (0.025 if index >= 7 else 0.0) + (0.025 if index >= 26 else 0.0)
+
+
 def run(mode: Mode, paths: Paths, scenario: Scenario) -> list[Publication]:
+  from openpilot.cereal import messaging
+
   case = paths.output / f'{scenario.brand}-{scenario.radar_mode}-{scenario.corner_mode}-{scenario.unavailable}-{mode}'
   case.mkdir(parents=True)
   with tempfile.TemporaryDirectory(prefix='msgq_radard_', dir='/dev/shm') as shared:
@@ -172,8 +183,8 @@ def run(mode: Mode, paths: Paths, scenario: Scenario) -> list[Publication]:
         for index in range(-WARMUP_FRAMES, 40):
           if index == 0:
             assert len(warmup) == WARMUP_FRAMES and all(row['valid'] for row in warmup[-3:]), 'frequency preconditioning did not become valid'
-          # Keep live IPC samples 25 ms either side of the strict 0.5 s alive boundary.
-          phase = 0.025 if scenario.availability and index >= 7 else 0.0
+          # Keep both stopped-topic deadlines 25 ms away from live IPC samples.
+          phase = availability_phase(index) if scenario.availability else 0.0
           time.sleep(max(0.0, start + index * 0.05 + phase - time.monotonic()))
           for topic in SERVICES[1:]:
             if scenario.availability and (topic == 'livePose' or (topic == 'liveTracks' and 7 <= index < 23) or (topic == 'carState' and 26 <= index < 32)):

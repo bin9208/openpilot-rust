@@ -465,3 +465,23 @@ full affected-package tests, strict Clippy and independent review passed. The
 UI CI gate now proves the exact race ordering; the updater's strict ENOENT
 assertion remains intact. This runtime correction requires a fresh source build
 and CI before final publication.
+
+
+The next [#328 follow-up](rust-radard-ipc-startup-328.md) isolates the other
+intentional input-loss deadline: carState samples at index27 had fallen exactly
+on the100ms boundary because the earlier tracks offset cancelled. A separate
+retained25ms schedule phase puts the two checked carState samples at75/125ms;
+tracks remain at475/525ms. Runtime thresholds and all160 input packets remain
+unchanged. Four regressions, all six strict IPC scenarios (240 pairs), and
+33 original/native deterministic state updates pass, including all intentionally
+stopped services. Actual receive-clock jitter remains distinct from intended
+schedule margins. This fixture follow-up requires fresh exact-source CI.
+
+The same full workspace run then exposed a collection-only dependency in the
+new packet regression: eager messaging import required an IPC extension that
+its graph-oracle environment does not build. The fixture now constructs the
+same Cap'n Proto packet directly and imports messaging only for actual IPC.
+The original160-packet hash remains exact. Five tests pass with IPC imports
+blocked, all193 workspace tests collect, and all six actual IPC scenarios pass.
+Collection success is not a claim that all193 numerical tests executed locally;
+the existing workspace CI still runs that complete suite. No test is skipped.

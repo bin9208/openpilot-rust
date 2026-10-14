@@ -19,13 +19,19 @@ def check(binary: Path, output: Path) -> dict:
     'startup-hitch': [10.0, 10.065, 10.10],
     'invalid-recovery': [10.0, 10.05, 10.10, 10.15],
     'availability': [10.0, 10.499999, 10.5, 10.500001, 10.55],
+    'car-availability': [1.0, 1.099999, 1.1, 1.100001, 1.15],
+    'model-availability': [1.0, 1.499999, 1.5, 1.500001, 1.55],
+    'ignored-pose-availability': [10.0, 10.05, 10.10],
   }
   for name, times in cases.items():
     state = scope['SubMaster'](names, poll='modelV2', ignore_alive=['livePose'], ignore_valid=['livePose'])
     for index, now in enumerate(times):
       messages = []
       for topic in names:
-        if name == 'availability' and index in (1, 2, 3):
+        if (name == 'ignored-pose-availability' and topic == 'livePose'
+            or index in (1, 2, 3) and (name == 'availability'
+                or name == 'car-availability' and topic == 'carState'
+                or name == 'model-availability' and topic == 'modelV2')):
           continue
         event = scope['new_message'](topic, valid=not (name == 'invalid-recovery' and index == 2))
         event.logMonoTime = int(now * 1e9)
@@ -62,6 +68,10 @@ def check(binary: Path, output: Path) -> dict:
   for case, sequence in [('smooth', [False, True, True]), ('startup-hitch', [False, False, True]), ('invalid-recovery', [False, True, False, True])]:
     assert [r['checks'][3] for r in expected if r['case'] == case] == sequence
   assert [r['topics']['liveTracks'][0] for r in expected if r['case'] == 'availability'] == [True, True, False, False, True]
+  assert [r['topics']['carState'][0] for r in expected if r['case'] == 'car-availability'] == [True, True, False, False, True]
+  assert [r['topics']['modelV2'][0] for r in expected if r['case'] == 'model-availability'] == [True, True, False, False, True]
+  assert [r['checks'][3] for r in expected if r['case'] == 'ignored-pose-availability'] == [False, True, True]
+  assert all(not r['topics']['livePose'][0] for r in expected if r['case'] == 'ignored-pose-availability')
   (output / 'clock-source.json').write_text(json.dumps(expected, indent=2) + '\n')
   report = {
     'passed': True,
@@ -69,6 +79,7 @@ def check(binary: Path, output: Path) -> dict:
     'cases': list(cases),
     'startup_sequences': [[False, True, True], [False, False, True]],
     'availability_epsilon_s': 1e-6,
+    'car_state_deadline_s': 0.1,
     'invalid_recovery_preserved': True,
   }
   (output / 'receipt.json').write_text(json.dumps(report, indent=2) + '\n')
