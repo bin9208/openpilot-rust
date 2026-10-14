@@ -11,8 +11,7 @@ use tokio::sync::watch;
 pub use update::{Policy, Update, UpdateFailure};
 
 const INFO_TIMEOUT: Duration = Duration::from_secs(10);
-const RESET_TIMEOUT: Duration = Duration::from_secs(120);
-const PULL_TIMEOUT: Duration = Duration::from_secs(180);
+const STAGE_TIMEOUT: Duration = Duration::from_secs(900);
 #[derive(Clone)]
 pub struct Pull {
     service: Arc<git_status::Service>,
@@ -136,41 +135,34 @@ impl Pull {
             )?;
             return Ok(unchanged());
         }
-        let (reset_rc, reset_out) = commands.run(&["reset", "--hard"], RESET_TIMEOUT).await?;
-        crate::json_fields::set(&mut fields, "reset_rc", Value::integer(reset_rc))?;
-        if reset_rc != 0 {
-            if reset_out.contains("index.lock") && reset_out.contains("File exists") {
-                return Err(Failure::Busy(reset_out));
+        // Prepare the exact target and native package together. The active
+        // source and installed package remain the old pair until normal boot.
+        let (stage_rc, stage_out) = if old_head == target {
+            (0, String::new())
+        } else {
+            commands.stage_update(target, STAGE_TIMEOUT).await?
+        };
+        crate::json_fields::set(&mut fields, "stage_rc", Value::integer(stage_rc))?;
+        crate::json_fields::set(&mut fields, "pull_rc", Value::integer(stage_rc))?;
+        if stage_rc != 0 {
+            if stage_out.contains("index.lock") && stage_out.contains("File exists") {
+                return Err(Failure::Busy(stage_out));
             }
-            let fields = Value::object([
-                ("attempted_at", fields.get("attempted_at").clone()),
-                ("old_head", Value::text(old_head)),
-                ("target_head", Value::text(target)),
-                ("reset_rc", Value::integer(reset_rc)),
-            ]);
-            self.error("reset_failed", fail(&reset_out, fields))?;
-            return Ok(unchanged());
-        }
-        let (pull_rc, pull_out) = commands
-            .run(&["merge", "--ff-only", target], PULL_TIMEOUT)
-            .await?;
-        crate::json_fields::set(&mut fields, "pull_rc", Value::integer(pull_rc))?;
-        if pull_rc != 0 {
-            if pull_out.contains("index.lock") && pull_out.contains("File exists") {
-                return Err(Failure::Busy(pull_out));
-            }
-            let fields = Value::object([
-                ("attempted_at", fields.get("attempted_at").clone()),
-                ("old_head", Value::text(old_head)),
-                ("target_head", Value::text(target)),
-                ("reset_rc", Value::integer(reset_rc)),
-                ("pull_rc", Value::integer(pull_rc)),
-            ]);
-            self.error("pull_failed", fail(&pull_out, fields))?;
+            self.error("runtime_package_failed", fail(&stage_out, fields))?;
             return Ok(unchanged());
         }
         let (code, output) = commands.run(&["rev-parse", "HEAD"], INFO_TIMEOUT).await?;
-        let new_head = if code == 0 { output.trim() } else { "" };
+        if code != 0 || output.trim() != old_head {
+            self.error(
+                "active_source_changed",
+                fail(
+                    "Active Git HEAD changed during staged update preparation",
+                    fields,
+                ),
+            )?;
+            return Ok(unchanged());
+        }
+        let new_head = target;
         crate::json_fields::set(&mut fields, "new_head", Value::text(new_head))?;
         for name in ["error_code", "error"] {
             let Value::Object(items) = &mut fields else {
@@ -178,31 +170,10 @@ impl Pull {
             };
             items.retain(|(key, _)| !key.iter().copied().eq(name.chars().map(u32::from)));
         }
-        if new_head.is_empty() {
-            self.error(
-                "head_read_failed",
-                fail("Unable to verify Git HEAD after pull", fields),
-            )?;
-            return Ok(unchanged());
-        }
         if new_head == old_head {
             self.error(
                 "head_unchanged",
-                fail("git pull completed but HEAD did not change", fields),
-            )?;
-            return Ok((true, false, new_head.into()));
-        }
-        if new_head != target {
-            self.error(
-                "head_mismatch",
-                fail(
-                    &format!(
-                        "Pulled HEAD {} does not match selected target {}",
-                        head_prefix(new_head),
-                        head_prefix(target)
-                    ),
-                    fields,
-                ),
+                fail("Selected source is already active", fields),
             )?;
             return Ok((true, false, new_head.into()));
         }

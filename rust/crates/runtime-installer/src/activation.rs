@@ -79,7 +79,15 @@ pub(crate) fn recover(root: &Path) -> Result<()> {
             clean_generations(root, &journal.generation)
         }
         Ok(_) => Err(invalid("activation journal is not a regular file")),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => cleanup_completed(root),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            cleanup_completed(root)?;
+            // Also reap generations retained across the previous activation.
+            if root.join(STORE).try_exists()? {
+                clean_orphans(root)
+            } else {
+                Ok(())
+            }
+        }
         Err(e) => Err(e.into()),
     }
 }
@@ -275,14 +283,70 @@ pub(crate) fn clean_pending(store: &Path) -> Result<()> {
     Ok(())
 }
 
+// Keep the entire generation: Athena and other owners resolve sibling helpers
+// from current_exe later, even when no helper process is running at activation.
+fn live_generations(
+    store: &Path,
+    proc_root: &Path,
+) -> std::io::Result<Option<std::collections::HashSet<PathBuf>>> {
+    let mut live = std::collections::HashSet::new();
+    for entry in fs::read_dir(proc_root)? {
+        let entry = entry?;
+        if entry
+            .file_name()
+            .to_str()
+            .is_none_or(|name| name.parse::<u32>().is_err())
+        {
+            continue;
+        }
+        match fs::read_link(entry.path().join("exe")) {
+            Ok(executable) => {
+                use std::os::unix::ffi::OsStrExt;
+                let bytes = executable.as_os_str().as_bytes();
+                let executable = Path::new(std::ffi::OsStr::from_bytes(
+                    bytes.strip_suffix(b" (deleted)").unwrap_or(bytes),
+                ));
+                if let Ok(relative) = executable.strip_prefix(store) {
+                    if let Some(name) = relative.components().next() {
+                        live.insert(store.join(name));
+                    }
+                }
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+            Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => {
+                eprintln!(
+                    "runtime generation cleanup deferred: cannot inspect live executable: {error}"
+                );
+                return Ok(None);
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    Ok(Some(live))
+}
+
 fn clean_generations(root: &Path, active: &str) -> Result<()> {
+    clean_generations_at(root, active, Path::new("/proc"))
+}
+
+fn clean_generations_at(root: &Path, active: &str, proc_root: &Path) -> Result<()> {
     let store = real_directory(root, Path::new(STORE))?;
+    let store = fs::canonicalize(store)?;
+    let live = match live_generations(&store, proc_root) {
+        Ok(Some(live)) => live,
+        Ok(None) => return Ok(()),
+        Err(error) => {
+            eprintln!("runtime generation cleanup deferred: executable inventory failed: {error}");
+            return Ok(());
+        }
+    };
     for entry in fs::read_dir(&store)? {
         let entry = entry?;
         let name = entry.file_name();
-        if name
-            .to_str()
-            .is_some_and(|name| valid_name(name) && name != active)
+        if !live.contains(&entry.path())
+            && name
+                .to_str()
+                .is_some_and(|name| valid_name(name) && name != active)
             && entry.file_type()?.is_dir()
         {
             fs::remove_dir_all(entry.path())?;
@@ -307,4 +371,69 @@ pub(crate) fn clean_orphans(root: &Path) -> Result<()> {
         Err(e) => return Err(e.into()),
     };
     clean_generations(root, &active)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::process::Command;
+
+    #[test]
+    fn failed_process_inventory_defers_cleanup_without_failing_activation() {
+        let root = tempfile::tempdir().unwrap();
+        let name = format!("gen-{}-{}-old", "a".repeat(40), "b".repeat(64));
+        let generation = root.path().join(STORE).join(name);
+        fs::create_dir_all(&generation).unwrap();
+        clean_generations_at(root.path(), "new", &root.path().join("missing-proc")).unwrap();
+        assert!(generation.is_dir());
+    }
+
+    #[test]
+    fn running_owner_retains_sibling_helpers_until_exit() {
+        let root = tempfile::tempdir().unwrap();
+        let name = format!("gen-{}-{}-old", "a".repeat(40), "b".repeat(64));
+        let generation = root.path().join(STORE).join(&name);
+        let bin = generation.join("rust/bin");
+        fs::create_dir_all(&bin).unwrap();
+        fs::copy("/bin/sleep", bin.join("owner")).unwrap();
+        fs::write(bin.join("future-helper"), b"required after activation").unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        let mut child = loop {
+            match Command::new(bin.join("owner")).arg("30").spawn() {
+                Ok(child) => break child,
+                // Parallel subprocess fixtures can briefly inherit fs::copy's
+                // writer before their exec closes it. Retry that fixture race
+                // only; production executable ownership remains unchanged.
+                Err(error)
+                    if error.raw_os_error() == Some(rustix::io::Errno::TXTBSY.raw_os_error())
+                        && std::time::Instant::now() < deadline =>
+                {
+                    std::thread::sleep(std::time::Duration::from_millis(5));
+                }
+                Err(error) => panic!("native owner fixture failed to start: {error}"),
+            }
+        };
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        while fs::read_link(format!("/proc/{}/exe", child.id())).unwrap() != bin.join("owner") {
+            assert!(std::time::Instant::now() < deadline);
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        let proc_view = tempfile::tempdir().unwrap();
+        symlink(
+            format!("/proc/{}", child.id()),
+            proc_view.path().join(child.id().to_string()),
+        )
+        .unwrap();
+        let result = clean_generations_at(root.path(), "new", proc_view.path());
+        let retained = bin.join("future-helper").is_file();
+        child.kill().unwrap();
+        child.wait().unwrap();
+        result.unwrap();
+        assert!(
+            retained,
+            "running owner lost its generation and future sibling helper"
+        );
+        clean_generations_at(root.path(), "new", proc_view.path()).unwrap();
+        assert!(!generation.exists());
+    }
 }

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -87,7 +88,7 @@ def main() -> None:
         root.mkdir(parents=True)
         config = {'mode': 'post', 'source': str(ROOT), 'repository': str(root), 'state': str(root / 'state'),
           'params': str(root / 'params'), 'lock': str(root / 'lock'),
-          'launcher': str(ROOT / 'rust/target/debug/openpilot-process-child'), 'head': address + path, 'steps': [{'a': '기기😀', 'b': 'owned'}]}
+          'launcher': str(Path(os.environ.get('CARGO_TARGET_DIR', ROOT / 'rust/target')) / 'debug/openpilot-process-child'), 'head': address + path, 'steps': [{'a': '기기😀', 'b': 'owned'}]}
         before = len(Peer.records)
         start = time.monotonic()
         run = subprocess.run(program, input=json.dumps(config) + '\n', capture_output=True, text=True, timeout=8)

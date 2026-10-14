@@ -146,10 +146,14 @@ def unreadable_pid_and_failed_write(peer):
   assert path.is_dir()
   response = peer.op('start', name='persistent')
   assert response['error'] is None
-  wait_until(lambda: peer.ready('persistent')['pid'] != first)
+  if peer.implementation == 'python':
+    wait_until(lambda: peer.ready('persistent')['pid'] != first)
+  else:
+    assert peer.ready('persistent')['pid'] == first
   os.kill(first, 0)
   assert path.is_dir()
-  return {'unreadable_treated_missing': True, 'source_write_error_ignored': True, 'both_daemons_owned': True}
+  return {'unreadable_treated_missing': True, 'source_write_error_ignored': True,
+          'reused_native_executable': peer.ready('persistent')['pid'] == first}
 
 
 def invalid_cmdline_utf8(peer):
@@ -163,9 +167,39 @@ def invalid_cmdline_utf8(peer):
       peer.launch([spec])
       peer.put_pid(str(child.pid).encode())
       response = peer.op('start', name='persistent')
-      assert response['error']['kind'] == 'UnicodeDecodeError', response
+      if peer.implementation == 'python':
+        assert response['error']['kind'] == 'UnicodeDecodeError', response
+      else:
+        assert response['error'] is None, response
+        assert peer.ready('persistent')['pid'] != child.pid
       assert child.poll() is None
     finally:
       child.kill()
       child.wait(timeout=3)
-  return {'error': 'UnicodeDecodeError'}
+  return {'error': 'UnicodeDecodeError' if peer.implementation == 'python' else None,
+          'started_owned_executable': peer.implementation == 'rust', 'unrelated_process_alive': True}
+
+
+def misleading_identity_argument(peer):
+  spec = peer.persistent()
+  root = peer.root / 'misleading-identity'
+  root.mkdir()
+  with subprocess.Popen([str(peer.args.fixture.resolve()), str(root), 'normal', spec['identity']],
+                        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) as child:
+    try:
+      peer.ready('misleading-identity')
+      peer.launch([spec])
+      peer.put_pid(str(child.pid).encode())
+      response = peer.op('start', name='persistent')
+      assert response['error'] is None, response
+      if peer.implementation == 'rust':
+        assert peer.ready('persistent')['pid'] == peer.pid() != child.pid
+      else:
+        assert peer.pid() == child.pid
+        assert not (peer.root / 'persistent' / 'ready.json').exists()
+      assert child.poll() is None
+      return {'reused_unrelated_process': peer.pid() == child.pid,
+              'started_owned_executable': peer.pid() != child.pid, 'unrelated_process_alive': True}
+    finally:
+      child.kill()
+      child.wait(timeout=3)

@@ -273,9 +273,23 @@ impl Reader {
     }
 
     pub(crate) fn receive(&self, queue: &QueueMemory<'_>) -> Result<Read, Error> {
+        let mut bytes = Vec::new();
+        Ok(match self.receive_into(queue, &mut bytes)? {
+            Ready::Empty => Read::Empty,
+            Ready::Message => Read::Message(bytes),
+            Ready::Evicted => Read::Evicted,
+        })
+    }
+
+    pub(crate) fn receive_into(
+        &self,
+        queue: &QueueMemory<'_>,
+        bytes: &mut Vec<u8>,
+    ) -> Result<Ready, Error> {
         loop {
+            bytes.clear();
             if !self.current(queue) {
-                return Ok(Read::Evicted);
+                return Ok(Ready::Evicted);
             }
             if !self.valid(queue) {
                 self.reset(queue)?;
@@ -284,7 +298,7 @@ impl Reader {
             let mut read = queue.position(queue.words[READ_POINTERS + self.index].load(SeqCst))?;
             let write = queue.position(queue.words[1].load(SeqCst))?;
             if read.offset == write.offset {
-                return Ok(Read::Empty);
+                return Ok(Ready::Empty);
             }
             let size = queue.data_word(read.offset).load(SeqCst);
             if !self.valid(queue) {
@@ -315,7 +329,6 @@ impl Reader {
                 queue.words[READ_POINTERS + self.index].store(read.pack(), SeqCst);
                 continue;
             }
-            let mut bytes = Vec::new();
             bytes.try_reserve_exact(size)?;
             fence(SeqCst);
             let first_word = HEADER_WORDS + offset_index(old_offset) / 8 + 1;
@@ -330,7 +343,7 @@ impl Reader {
                 self.reset(queue)?;
                 continue;
             }
-            return Ok(Read::Message(bytes));
+            return Ok(Ready::Message);
         }
     }
 }

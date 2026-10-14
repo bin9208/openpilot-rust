@@ -2,6 +2,33 @@ use super::{http, options::Options, session::Route, wire};
 use crate::{json::Value, manifest::MapConfig, receiver::Receiver};
 use openpilot_cereal::log_capnp::event;
 
+#[tokio::test]
+async fn completed_connections_are_reaped_while_live_connections_remain_owned() {
+    let shared =
+        super::shared::Shared::new(Receiver::new(Value::integer(7714), MapConfig::default()));
+    let (release, waiting) = tokio::sync::oneshot::channel::<()>();
+    shared
+        .spawn(async move {
+            waiting.await.unwrap();
+        })
+        .unwrap();
+    for _ in 0..128 {
+        let (completed, completion) = tokio::sync::oneshot::channel();
+        shared
+            .spawn(async move {
+                completed.send(()).unwrap();
+            })
+            .unwrap();
+        completion.await.unwrap();
+        assert_eq!(shared.tasks.lock().unwrap().len(), 2);
+    }
+    release.send(()).unwrap();
+    let mut tasks = std::mem::take(&mut *shared.tasks.lock().unwrap());
+    while let Some(result) = tasks.join_next().await {
+        result.unwrap();
+    }
+}
+
 #[test]
 fn wall_milliseconds_floor_integer_nanoseconds_near_second_boundary() {
     let time = rustix::time::Timespec {

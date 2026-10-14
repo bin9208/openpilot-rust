@@ -1,6 +1,25 @@
 use openpilot_process_supervision::{pty::Pair, CapturedCommand};
 use std::{io::Read, path::Path};
-#[test]
+fn main() {
+    if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--fixture")) {
+        let stdin = std::io::stdin();
+        let stdout = std::io::stdout();
+        let stderr = std::io::stderr();
+        println!(
+            "{}",
+            serde_json::json!({
+                "pid":std::process::id(),
+                "sid":rustix::process::getsid(None).unwrap().as_raw_nonzero().get(),
+                "pgid":rustix::process::getpgrp().as_raw_nonzero().get(),
+                "foreground":rustix::termios::tcgetpgrp(&stdin).ok().map(|pid|pid.as_raw_nonzero().get()),
+                "stdio":[rustix::termios::isatty(&stdin),rustix::termios::isatty(&stdout),rustix::termios::isatty(&stderr)]
+            })
+        );
+        return;
+    }
+    controlling_terminal_is_additive_and_web_session_remains_uncontrolled();
+}
+
 fn controlling_terminal_is_additive_and_web_session_remains_uncontrolled() {
     let root = tempfile::tempdir().unwrap();
     let mut observed = Vec::new();
@@ -9,7 +28,10 @@ fn controlling_terminal_is_additive_and_web_session_remains_uncontrolled() {
         let request = CapturedCommand {
             launcher: env!("CARGO_BIN_EXE_openpilot-process-child").into(),
             cwd: root.path().into(),
-            argv: ["/usr/bin/python3", "-c", "import json,os; p=os.getpid(); c=None\ntry: c=os.tcgetpgrp(0)\nexcept OSError: pass\nprint(json.dumps(dict(pid=p,sid=os.getsid(0),pgid=os.getpgrp(),foreground=c,stdio=[os.isatty(i) for i in range(3)])))"].iter().map(Into::into).collect(),
+            argv: vec![
+                std::env::current_exe().unwrap().into_os_string(),
+                "--fixture".into(),
+            ],
         };
         let mut child = if controlled {
             request.spawn_controlling_pty(slave)

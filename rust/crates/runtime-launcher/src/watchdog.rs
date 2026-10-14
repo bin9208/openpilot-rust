@@ -1,5 +1,5 @@
 use crate::Error;
-use rustix::process::{kill_process, test_kill_process, Pid, Signal};
+use rustix::process::{kill_process, Pid, Signal};
 use std::{
     env,
     fs::{self, File, OpenOptions, TryLockError},
@@ -37,14 +37,8 @@ impl Owner {
             }
             Err(TryLockError::Error(error)) => return Err(error.into()),
         }
-        if let Ok(previous) = fs::read_to_string(&pid_file) {
-            if let Some(pid) = previous.trim().parse::<i32>().ok().and_then(Pid::from_raw) {
-                if pid != rustix::process::getpid() && test_kill_process(pid).is_ok() {
-                    println!("[carrot_web] watchdog pid {pid} is already running; exiting");
-                    return Ok(None);
-                }
-            }
-        }
+        // The held lock identifies the owner. A pidfile can survive a crash and
+        // name an unrelated process after PID reuse.
         let pid = format!("{}\n", std::process::id());
         fs::write(&pid_file, &pid)?;
         Ok(Some(Self {

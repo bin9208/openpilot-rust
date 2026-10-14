@@ -166,6 +166,18 @@ impl MultiSubscriber {
             .receive(0)
     }
 
+    /// Copy one packet into caller-owned storage, reusing its allocation.
+    /// Returns false and clears the buffer when the queue is empty. Buffer
+    /// contents must not be consumed on error. Queue ownership is unchanged.
+    pub fn receive_one_into(&mut self, index: usize, bytes: &mut Vec<u8>) -> Result<bool, Error> {
+        self.queues
+            .get_mut(index)
+            .ok_or(Error::Invalid("subscription index"))?
+            .as_mut()
+            .ok_or(Error::Invalid("inactive subscription"))?
+            .receive_now_into(bytes)
+    }
+
     fn open(
         specifications: &[Subscription<'_>],
         namespace: Namespace,

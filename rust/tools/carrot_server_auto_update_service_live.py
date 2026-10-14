@@ -78,7 +78,7 @@ def execute(name: str, kind: str, root: Path, base: Path, heads: dict[str, str],
   pm = messaging.PubMaster(['managerState', 'carState', 'selfdriveState', 'deviceState'])
   config = {'mode': 'app' if name == 'app-config' else 'manager' if name == 'manager-retry' else 'runtime',
     'repository': str(repository), 'source': str(ROOT), 'state': str(state), 'params': str(params), 'lock': str(root / 'repository.lock'),
-    'launcher': str(ROOT / 'rust/target/debug/openpilot-process-child'), 'failures': 1 if name == 'manager-retry' else 0}
+    'launcher': str(Path(os.environ.get('CARGO_TARGET_DIR', ROOT / 'rust/target')) / 'debug/openpilot-process-child'), 'failures': 1 if name == 'manager-retry' else 0}
   ready, release, log = root / 'ready.json', root / 'release', root / 'git.jsonl'
   environment = os.environ | {'PATH': str(wrappers) + ':' + os.environ['PATH'], 'CARROT_REPO_LOCK_PATH': config['lock'],
     'CWEB_PUSH_NOTIFY_URL': address + '/notify', 'CWEB_PUSH_REPORT_TOKEN': '',

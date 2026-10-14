@@ -64,6 +64,14 @@ def pair(binary: Path, output: Path, bare: Path, scenario: str, payload: dict[st
   repos = {name: fixture.clone(root / name, bare) for name in ("source", "native")}
   for repo in repos.values():
     prepare(repo, scenario)
+    fixture.git(repo, "remote", "set-url", "origin", "https://github.com/bin9208/openpilot-rust.git")
+  native_helper = repos["native"] / "rust/bin/openpilot-runtime-install"
+  native_helper.parent.mkdir(parents=True)
+  native_helper.write_text('#!/bin/sh\nprintf \'%s\\n\' "$@" > package-attempt\necho "Owned matching release unavailable"\nexit 17\n')
+  native_helper.chmod(0o755)
+  with (repos["native"] / ".git/info/exclude").open("a") as excluded:
+    excluded.write("\n/rust/\n/package-attempt\n")
+  before = {owner: fixture.snapshot(repo) for owner, repo in repos.items()}
   if scenario == "git_pull":
     seed = bare.parent / "seed"
     (seed / "advanced").write_text("remote update\n")
@@ -75,7 +83,7 @@ def pair(binary: Path, output: Path, bare: Path, scenario: str, payload: dict[st
   exits = {}
   module = fixture.source()
   global_config = root / "global.gitconfig"
-  global_config.write_text(f'[url "{bare}"]\n\tinsteadOf = https://github.com/ajouatom/openpilot.git\n')
+  global_config.write_text(f'[url "{bare}"]\n\tinsteadOf = https://github.com/ajouatom/openpilot.git\n\tinsteadOf = https://github.com/bin9208/openpilot-rust.git\n')
   env = {"CARROT_REPO_LOCK_PATH": str(root / "transaction.lock"), "GIT_CONFIG_GLOBAL": str(global_config), "GIT_CONFIG_NOSYSTEM": "1", "GIT_ALLOW_PROTOCOL": "file", "PYTHONPATH": str(fixture.ROOT)}
   with fixture.environment(env):
     for owner, repo in repos.items():
@@ -100,20 +108,39 @@ def pair(binary: Path, output: Path, bare: Path, scenario: str, payload: dict[st
       states[owner] = fixture.snapshot(repo)
       fixture.emit(captured, "repository.json", states[owner])
   normalized = {owner: ({**result, "command": command_body(result["command"])} if "command" in result else result) for owner, result in results.items()}
-  assert normalized["source"] == normalized["native"], normalized
-  assert states["source"] == states["native"], states
-  assert exits.get("source") == exits.get("native"), exits
-  if scenario in {"stale_index", "git_reset", "git_pull", "git_reset_repo"}:
-    assert exits["native"] == 0
-    assert states["native"]["tracked"] == "initial\n"
-  if scenario in {"fresh_index", "symlink_index", "busy_lock"}:
-    assert exits["native"] == 75, exits
-    assert (repos["native"] / "tracked").read_text() == "initial\n"
-  if scenario == "git_pull":
-    assert states["native"]["head"] == fixture.git(bare, "rev-parse", "main")
-    assert (repos["native"] / "advanced").read_text() == "remote update\n"
+  typed_actions = {"git_pull": "__git-pull", "git_sync": "__fetch-native", "git_reset": "__stage-repair", "git_rebuild": "__stage-repair", "rebuild_all": "__stage-repair", "git_checkout": "__stage-checkout", "git_checkout_commit": "__stage-commit", "git_reset_repo": "__stage-reset-repo"}
+  corrected = payload["action"] in typed_actions and "command" in results["native"]
+  if corrected:
+    command = results["native"]["command"]
+    args = shlex.split(command)
+    assert typed_actions[payload["action"]] in args
+    assert not any(unsafe in command for unsafe in ("scons", "git clean", "git reset --hard", "ajouatom"))
+    assert states["native"]["head"] == before["native"]["head"]
+    assert states["native"]["tracked"] == before["native"]["tracked"]
+    if execute:
+      if scenario in {"fresh_index", "symlink_index", "busy_lock"}:
+        assert exits["native"] == 75
+      elif scenario == "git_sync":
+        assert exits["native"] == 0 and "refs/heads/spare " in states["native"]["refs"]
+        assert "refs/heads/spare " not in states["source"]["refs"], "original deletion negative control failed"
+      elif scenario in {"quoted_branch", "git_pull_missing"}:
+        assert exits["native"] != 0
+      else:
+        assert exits["native"] == 17, exits
+        attempted = (repos["native"] / "package-attempt").read_text().splitlines()
+        assert attempted[:3] == ["--stage-update", "--root", str(repos["native"])]
+    if scenario == "git_reset_repo":
+      assert states["native"]["remote"] == "https://github.com/bin9208/openpilot-rust.git"
+      assert states["source"]["remote"] == "https://github.com/ajouatom/openpilot.git"
+    if scenario in {"git_reset", "git_pull", "git_reset_repo"}:
+      assert states["source"]["tracked"] == "initial\n"
+      assert states["native"]["tracked"] == "locally modified\n", "original behavior passed staged native contract"
+  else:
+    assert normalized["source"] == normalized["native"], normalized
+    assert states["source"] == states["native"], states
+    assert exits.get("source") == exits.get("native"), exits
   assert not (repos["native"] / "INJECTED").exists()
-  fixture.emit(root, "comparison.json", {"scenario": scenario, "payload": payload, "response_equal": True, "repository_equal": True, "exits": exits, "pass": True})
+  fixture.emit(root, "comparison.json", {"scenario": scenario, "payload": payload, "response_equal": normalized["source"] == normalized["native"], "repository_equal": states["source"] == states["native"], "staged_contract": corrected, "exits": exits, "pass": True})
 
 
 def tmux_pair(binary: Path, output: Path, bare: Path, tmux: Path) -> None:

@@ -47,14 +47,25 @@ impl Configuration {
 
 pub fn refresh(config: &Configuration, params: &Params) -> Result<(), Error> {
     let present = config.present()?;
-    params.put_bool("UsbGpuPresent", present)?;
+    refresh_status(params, "UsbGpuPresent", present)?;
     if present {
-        params.put_bool("UsbGpuHardwareSeen", true)?;
+        refresh_status(params, "UsbGpuHardwareSeen", true)?;
     }
-    params.put_bool(
+    refresh_status(
+        params,
         "UsbGpuCompiled",
         model::compiled_path(&config.paths).is_some(),
     )?;
+    Ok(())
+}
+
+fn refresh_status(params: &Params, key: &str, value: bool) -> Result<(), Error> {
+    let bytes = if value { b"1" } else { b"0" };
+    // Read persisted bytes each time so external edits, deletion and failed writes
+    // are retried, while unchanged status avoids durable Params synchronization.
+    if params.get(key)?.as_deref() != Some(bytes.as_slice()) {
+        params.put_bool(key, value)?;
+    }
     Ok(())
 }
 

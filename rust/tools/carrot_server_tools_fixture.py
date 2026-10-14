@@ -111,6 +111,13 @@ class Peer:
     await anyio.run_process(['git', 'remote', 'set-url', 'origin', str(self.options.output / 'remote.git')], cwd=self.root / 'repository')
     await anyio.run_process(['git', 'fetch', 'origin'], cwd=self.root / 'repository')
     await anyio.run_process(['git', 'branch', '--set-upstream-to=origin/dev', 'dev'], cwd=self.root / 'repository')
+    if self.name == 'native':
+      helper = self.root / 'repository/rust/bin/openpilot-runtime-install'
+      await anyio.Path(helper.parent).mkdir(parents=True)
+      await anyio.Path(helper).write_text('#!/bin/sh\nprintf \'%s\\n\' "$@" > package-attempt\necho "Owned matching release unavailable"\nexit 17\n')
+      helper.chmod(0o755)
+      with (self.root / 'repository/.git/info/exclude').open('a') as excluded:
+        excluded.write('\n/rust/\n/package-attempt\n')
     for name, value in {
       'DongleId': 'owned-dongle',
       'GitBranch': 'owned/dev',
@@ -130,7 +137,9 @@ class Peer:
       'GIT_CONFIG_GLOBAL': '/dev/null',
       'GIT_TERMINAL_PROMPT': '0',
       'GIT_ALLOW_PROTOCOL': 'file',
-      'GIT_CONFIG_COUNT': '1',
+      'GIT_CONFIG_COUNT': '2',
+      'GIT_CONFIG_KEY_1': f'url.{self.options.output / "remote.git"}.insteadOf',
+      'GIT_CONFIG_VALUE_1': 'https://github.com/bin9208/openpilot-rust.git',
       'GIT_CONFIG_KEY_0': f'url.{self.options.output / "remote.git"}.insteadOf',
       'GIT_CONFIG_VALUE_0': 'https://github.com/ajouatom/openpilot.git',
     }
@@ -195,6 +204,7 @@ class Fixture:
     self.options = options
     self.peers = [Peer(name, options.output / name, options) for name in ['source', 'native']]
     self.cases: list[str] = []
+    self.preserved_factory = False
 
   async def start(self) -> None:
     await anyio.Path(self.options.output).mkdir(parents=True)
@@ -216,7 +226,16 @@ class Fixture:
         assert_never(value)
 
   async def pair(self, label: str, command: dict[str, Json], job: bool = False) -> None:
+    if command['action'] == 'rebuild_all':
+      # Earlier calibration/reboot actions intentionally launch delayed children.
+      # Let those owned children finish before attributing calls to this repair.
+      await anyio.sleep(1.1)
     responses = []
+    native_repo = self.peers[1].root / 'repository'
+    native_head = subprocess.check_output(['/usr/bin/git', 'rev-parse', 'HEAD'], cwd=native_repo)
+    native_source = (native_repo / 'owned.txt').read_bytes()
+    provider_log = self.peers[1].root / 'providers.jsonl'
+    provider_before = len(provider_log.read_text().splitlines()) if provider_log.exists() else 0
     for peer in self.peers:
       body = json.dumps(command).replace('<owned-root>', str(peer.root)).replace('<remote>', str(self.options.output / 'remote.git')).encode()
       response = await request(peer.port, '/api/tools/start' if job else '/api/tools', 'POST', body)
@@ -235,7 +254,71 @@ class Fixture:
     )
     expected = self.normalized(responses[0]['payload'], self.peers[0])
     actual = self.normalized(responses[1]['payload'], self.peers[1])
-    assert responses[0]['status'] == responses[1]['status'] and expected == actual, (label, expected, actual)
+    action = command['action']
+    corrected = action in {'rebuild_all', 'git_reset', 'git_checkout', 'git_sync', 'git_pull', 'git_reset_repo_fetch', 'git_reset_repo_checkout'}
+    native_result = actual.get('result', {}) if job else actual
+    # Invalid-input and held-lock checks never reach the changed maintenance
+    # transaction and must keep their exact original comparison.
+    if responses[1]['status'] == 409 or native_result.get('error_code') in {'GIT_BUSY', 'GIT_PRECHECK_FAILED'}:
+      corrected = False
+    if action == 'git_reset' and command.get('mode', 'hard') not in {'hard', 'soft', 'mixed'}:
+      corrected = False
+    if action == 'git_checkout' and not command.get('branch') and not command.get('name'):
+      corrected = False
+    if action == 'git_reset_repo_checkout' and not command.get('branch'):
+      corrected = False
+    if corrected:
+      result = actual['result'] if job else actual
+      assert subprocess.check_output(['/usr/bin/git', 'rev-parse', 'HEAD'], cwd=native_repo) == native_head
+      assert (native_repo / 'owned.txt').read_bytes() == native_source
+      calls = [json.loads(line) for line in provider_log.read_text().splitlines()[provider_before:]]
+      assert not any(call['name'] == 'scons' or call['name'] == 'sudo' and call['argv'] == ['reboot'] for call in calls), calls
+      if action == 'git_reset' and command.get('mode', 'hard') != 'hard':
+        assert result['ok'] is False and result['error'] == 'Soft and mixed reset cannot preserve a verified native source/package pair', result
+        assert responses[1]['status'] == (200 if job else 400)
+      elif action in {'git_checkout', 'git_sync', 'git_pull'}:
+        assert result['ok'] is False and result['rc'] == 1 and result['out'].strip() == 'Native runtime origin must be bin9208/openpilot-rust', result
+      elif action == 'git_reset_repo_fetch':
+        self.preserved_factory = True
+        assert result['ok'] is True and result['branches'] == ['dev', 'topic'], result
+        assert subprocess.check_output(['/usr/bin/git', 'config', '--get', 'remote.origin.url'], cwd=native_repo).strip() == b'https://github.com/bin9208/openpilot-rust.git'
+        assert subprocess.check_output(['/usr/bin/git', 'remote'], cwd=native_repo).splitlines() == [b'origin', b'second']
+      else:
+        assert result['ok'] is False and result['rc'] == 17, result
+        if not job:
+          assert 'Owned matching release unavailable' in result['out']
+        arguments = (native_repo / 'package-attempt').read_text().splitlines()
+        assert arguments[:3] == ['--stage-update', '--root', str(native_repo)]
+        if action == 'git_reset_repo_checkout':
+          assert result['staged'] is False and result['reboot_required'] is False
+      # The original mutating/rebuild response must not be accepted as the new
+      # staged failure contract. Unchanged actions below retain exact comparison.
+      assert expected != actual, (label, 'original incorrectly accepted as staged native')
+    elif action == 'git_remote_add' and job and self.preserved_factory and command.get('name') == 'second' and command.get('url'):
+      # Factory preserved the native second remote/ref objects. The original
+      # deleted them and fetches exactly these two known fixture refs again.
+      refetch = f"From {self.options.output / 'remote'}\n * [new branch]      dev        -> second/dev\n * [new branch]      topic      -> second/topic\n"
+      staged_expected = json.loads(json.dumps(expected))
+      assert staged_expected['log'].count(refetch) == 1
+      assert staged_expected['result']['out'].count(refetch) == 1
+      staged_expected['log'] = staged_expected['log'].replace(refetch, '', 1)
+      staged_expected['result']['out'] = staged_expected['result']['out'].replace(refetch, '', 1)
+      assert staged_expected == actual
+    elif action == 'git_branch_list' and job and self.preserved_factory:
+      # The earlier factory/sync actions intentionally diverge: the original
+      # deletes local topic and the second remote; native preserves both.
+      result, original = actual['result'], expected['result']
+      assert result['current_branch'] == original['current_branch'] == 'dev'
+      assert result['branches'] == ['dev', 'origin/dev', 'origin/topic', 'second/dev', 'second/topic', 'topic']
+      assert original['branches'] == ['dev', 'origin/dev', 'origin/topic']
+      assert result['remotes'] == ['origin', 'second'] and original['remotes'] == ['origin']
+      assert result['remote_urls'] == {'origin': str(self.options.output / 'remote.git'), 'second': str(self.options.output / 'remote.git')}
+      assert result['summary_vars'] == {'count': 6} and len(result['branch_items']) == 6
+      assert result['device_type'] == original['device_type'] == 'pc'
+      assert result['branch_prefix'] == original['branch_prefix'] == 'c3'
+      assert subprocess.check_output(['/usr/bin/git', 'config', '--get', 'remote.origin.url'], cwd=native_repo).strip() == b'https://github.com/bin9208/openpilot-rust.git'
+    else:
+      assert responses[0]['status'] == responses[1]['status'] and expected == actual, (label, expected, actual)
     self.cases.append(label)
 
   async def close(self) -> None:

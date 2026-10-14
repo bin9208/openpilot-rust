@@ -4,10 +4,8 @@ use openpilot_logging::{
     record::{Level, Record},
 };
 use openpilot_params::{metadata, Params};
-use rustix::process::{test_kill_process, Pid};
 use std::{
     ffi::OsString,
-    fs,
     path::PathBuf,
     process::Child,
     sync::{Mutex, OnceLock},
@@ -77,6 +75,9 @@ impl PersistentDaemonProcess {
                 }
             }
         }
+        if crate::reconcile_native_service(std::path::Path::new(&self.command.identity))? {
+            return Ok(());
+        }
         logger.emit(
             log_site!(),
             Record::text(Level::Info, format!("starting daemon {name}")),
@@ -104,19 +105,83 @@ impl PersistentDaemonProcess {
 }
 
 fn matches_identity(pid: i32, identity: &str) -> Result<bool, Error> {
-    if pid <= 0 {
-        return Ok(false);
+    Ok(crate::native_identity::matches(
+        pid,
+        std::path::Path::new(identity),
+    )?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::{os::unix::process::CommandExt, process::Command};
+
+    fn wait_for_exec(child: &std::process::Child, executable: std::path::PathBuf) {
+        use std::os::unix::fs::MetadataExt;
+        let expected = fs::metadata(executable).unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        loop {
+            if fs::read(format!("/proc/{}/cmdline", child.id()))
+                .is_ok_and(|bytes| !bytes.is_empty())
+                && fs::metadata(format!("/proc/{}/exe", child.id())).is_ok_and(|actual| {
+                    (actual.dev(), actual.ino()) == (expected.dev(), expected.ino())
+                })
+            {
+                break;
+            }
+            assert!(std::time::Instant::now() < deadline, "child did not exec");
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
     }
-    let probe = test_kill_process(Pid::from_raw(pid).ok_or(Error::PidRange)?);
-    if probe.is_err() {
-        return Ok(false);
+
+    #[test]
+    fn argument_containing_identity_is_not_an_executable_match() {
+        let mut child = Command::new("/bin/sleep")
+            .arg0("unrelated-openpilot-athena")
+            .arg("30")
+            .spawn()
+            .unwrap();
+        wait_for_exec(&child, PathBuf::from("/bin/sleep"));
+        let result = matches_identity(child.id() as i32, "openpilot-athena");
+        child.kill().unwrap();
+        child.wait().unwrap();
+        assert!(
+            !result.unwrap(),
+            "argv text must not establish native ownership"
+        );
     }
-    let bytes = match fs::read(format!("/proc/{pid}/cmdline")) {
-        Ok(bytes) => bytes,
-        Err(_) => return Ok(false),
-    };
-    let command = String::from_utf8(bytes)?
-        .replace("\r\n", "\n")
-        .replace('\r', "\n");
-    Ok(command.contains(identity))
+
+    #[test]
+    fn obsolete_generation_does_not_match_current_executable() {
+        let directory = tempfile::tempdir().unwrap();
+        let old = directory.path().join("old");
+        let new = directory.path().join("new");
+        fs::create_dir(&old).unwrap();
+        fs::create_dir(&new).unwrap();
+        fs::copy("/bin/sleep", old.join("service")).unwrap();
+        fs::copy("/bin/sleep", new.join("service")).unwrap();
+        fs::File::open(old.join("service"))
+            .unwrap()
+            .sync_all()
+            .unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        let mut child = loop {
+            match Command::new(old.join("service")).arg("30").spawn() {
+                Ok(child) => break child,
+                Err(error)
+                    if error.raw_os_error() == Some(rustix::io::Errno::TXTBSY.raw_os_error())
+                        && std::time::Instant::now() < deadline =>
+                {
+                    std::thread::sleep(std::time::Duration::from_millis(5))
+                }
+                Err(error) => panic!("native fixture spawn failed: {error}"),
+            }
+        };
+        wait_for_exec(&child, old.join("service"));
+        let result = matches_identity(child.id() as i32, new.join("service").to_str().unwrap());
+        child.kill().unwrap();
+        child.wait().unwrap();
+        assert!(!result.unwrap());
+    }
 }

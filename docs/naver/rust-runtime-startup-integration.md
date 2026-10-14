@@ -61,7 +61,7 @@ signing keys and the HTTP recipient were owned host fixtures. This closes that
 logging/upload connection; it does not establish the complete managed catalog
 or physical startup. The check is wired into the logger CI job.
 
-`rust/tools/seal_runtime_package.py` checks a staged `rust/bin` against the native
+The `openpilot-dev-tools` Rust binary `seal-runtime-package` checks a staged `rust/bin` against the native
 manager inventory before writing the launcher's hash manifest. Missing implementations,
 empty companions, scripts in executable slots, wrong ELF architecture and links
 outside the checkout are rejected. Only the source-absent optional webjoystick is

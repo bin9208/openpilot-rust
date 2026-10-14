@@ -5,7 +5,7 @@ use crate::{
 use openpilot_camera_kernel::{Master, MemoryPool, Session};
 use openpilot_camerad::{
     exposure::{CameraId, ExposureError},
-    geometry::Geometry,
+    geometry::{Geometry, SampleIndices},
     requests::{FrameEvent, FrameMetadata},
     startup::FrameSync,
 };
@@ -52,7 +52,8 @@ pub struct RuntimeCamera<'pool, 'device> {
 struct Publication {
     state: FrameState,
     publisher: Publisher,
-    pixels: Vec<u8>,
+    samples: Vec<u8>,
+    sampling: SampleIndices,
 }
 
 impl<'pool, 'device> RuntimeCamera<'pool, 'device> {
@@ -75,10 +76,16 @@ impl<'pool, 'device> RuntimeCamera<'pool, 'device> {
             let service = state.service();
             let queue = openpilot_messaging::services::lookup(service)
                 .ok_or(RuntimeError::Service(service))?;
+            let publisher = Publisher::for_runtime(service, queue.queue_size)?;
+            let sampling = state
+                .sample_indices(layout.len)
+                .map_err(FrameStateError::from)?;
+            let samples = vec![0; sampling.len()];
             Some(Publication {
                 state,
-                publisher: Publisher::for_runtime(service, queue.queue_size)?,
-                pixels: vec![0; layout.len],
+                publisher,
+                samples,
+                sampling,
             })
         } else {
             None
@@ -133,10 +140,14 @@ impl<'pool, 'device> RuntimeCamera<'pool, 'device> {
         let message = publication
             .state
             .encode(frame, log_time, options.log_raw, raw.as_deref())?;
-        self.camera.copy_yuv(frame.slot, &mut publication.pixels)?;
-        let registers = publication.state.adjust_with_manual(
+        self.camera.copy_yuv_samples(
+            frame.slot,
+            publication.sampling.clone(),
+            &mut publication.samples,
+        )?;
+        let registers = publication.state.adjust_samples_with_manual(
             frame.frame_id,
-            &publication.pixels,
+            &publication.samples,
             self.camera.enabled(),
             || {
                 if !options.manual_exposure {

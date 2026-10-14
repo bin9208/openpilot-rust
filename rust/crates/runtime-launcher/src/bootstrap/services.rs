@@ -1,32 +1,12 @@
 use super::Paths;
 use crate::Error;
 use openpilot_process_supervision::CapturedCommand;
-use std::{
-    fs::{self, OpenOptions},
-    path::Path,
-    process::Command,
-    thread,
-};
+use std::{fs::OpenOptions, path::Path, process::Command, thread};
 
-fn running(binary: &str) -> bool {
-    fs::read_dir("/proc")
-        .ok()
-        .into_iter()
-        .flatten()
-        .filter_map(Result::ok)
-        .any(|entry| {
-            if entry.file_name().to_string_lossy().parse::<u32>().ok() == Some(std::process::id()) {
-                return false;
-            }
-            fs::read(entry.path().join("cmdline"))
-                .ok()
-                .is_some_and(|bytes| {
-                    let first = bytes.split(|byte| *byte == 0).next().unwrap_or_default();
-                    Path::new(std::str::from_utf8(first).unwrap_or_default())
-                        .file_name()
-                        .is_some_and(|name| name == binary)
-                })
-        })
+fn running(binary: &Path) -> Result<bool, Error> {
+    Ok(openpilot_process_supervision::reconcile_native_service(
+        binary,
+    )?)
 }
 
 pub(super) fn background(
@@ -35,8 +15,12 @@ pub(super) fn background(
     args: Vec<std::ffi::OsString>,
     log: &str,
 ) -> Result<(), Error> {
-    if running(binary) {
+    if running(&paths.binary(binary))? {
         return Ok(());
+    }
+    if binary == "openpilot-carrot-web-watchdog" {
+        // A forcibly retired watchdog may leave its old server behind.
+        running(&paths.binary("openpilot-carrot-server"))?;
     }
     let output = OpenOptions::new()
         .create(true)
@@ -70,7 +54,7 @@ pub(super) fn recovery(paths: &Paths) {
 }
 
 pub(super) fn model_update(paths: &Paths) -> Result<(), Error> {
-    if running("openpilot-usbgpu-model") {
+    if running(&paths.binary("openpilot-usbgpu-model"))? {
         return Ok(());
     }
     let mut argv: Vec<std::ffi::OsString> = vec![
@@ -113,4 +97,50 @@ pub(super) fn model_update(paths: &Paths) -> Result<(), Error> {
         }
     });
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::os::unix::process::CommandExt;
+
+    fn wait_for_exec(child: &std::process::Child, executable: std::path::PathBuf) {
+        use std::os::unix::fs::MetadataExt;
+        let expected = fs::metadata(executable).unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        loop {
+            if fs::read(format!("/proc/{}/cmdline", child.id()))
+                .is_ok_and(|bytes| !bytes.is_empty())
+                && fs::metadata(format!("/proc/{}/exe", child.id())).is_ok_and(|actual| {
+                    (actual.dev(), actual.ino()) == (expected.dev(), expected.ino())
+                })
+            {
+                break;
+            }
+            assert!(std::time::Instant::now() < deadline, "child did not exec");
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    }
+
+    #[test]
+    fn misleading_argv_basename_does_not_block_native_service() {
+        let binary = format!("openpilot-unrelated-test-{}", std::process::id());
+        let mut child = Command::new("/bin/sleep")
+            .arg0(&binary)
+            .arg("30")
+            .spawn()
+            .unwrap();
+        wait_for_exec(&child, std::path::PathBuf::from("/bin/sleep"));
+        let directory = tempfile::tempdir().unwrap();
+        let expected = directory.path().join(&binary);
+        fs::copy("/bin/true", &expected).unwrap();
+        let found = running(&expected).unwrap();
+        child.kill().unwrap();
+        child.wait().unwrap();
+        assert!(
+            !found,
+            "unrelated executable blocked the expected native service"
+        );
+    }
 }

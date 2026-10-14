@@ -87,6 +87,19 @@ impl<'device> FrameImages<'device> {
             .copy_into(destination)?)
     }
 
+    pub(crate) fn copy_yuv_samples(
+        &self,
+        slot: usize,
+        offsets: openpilot_camerad::geometry::SampleIndices,
+        destination: &mut [u8],
+    ) -> Result<(), CameraError> {
+        Ok(self
+            .yuv
+            .get(slot)
+            .ok_or(CameraError::Slot(slot))?
+            .copy_samples(offsets, destination)?)
+    }
+
     pub(crate) fn copy_raw(&self, slot: usize) -> Result<Option<Vec<u8>>, CameraError> {
         if self.raw.is_empty() {
             return Ok(None);

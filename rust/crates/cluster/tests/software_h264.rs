@@ -65,7 +65,9 @@ fn config() -> Config {
         fps: 10,
         bitrate: "500k".into(),
         gop: 3,
-        ffmpeg: "/usr/bin/ffmpeg".into(),
+        ffmpeg: std::env::var_os("FFMPEG_BINARY")
+            .unwrap_or_else(|| "/usr/bin/ffmpeg".into())
+            .into(),
         encoder: "libx264".into(),
         requested_chunk_size: 137,
         wait_for_ack: true,

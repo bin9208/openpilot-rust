@@ -39,7 +39,7 @@ def execute(case: Case, root: Path, base: Path, heads: dict[str, str], binary: P
   (root / 'repository.lock').touch()
   config = {
     'mode': case.mode, 'repository': str(repository), 'source': str(ROOT), 'state': str(state), 'params': str(params),
-    'lock': str(root / 'repository.lock'), 'launcher': str(ROOT / 'rust/target/debug/openpilot-process-child'),
+    'lock': str(root / 'repository.lock'), 'launcher': str(Path(os.environ.get('CARGO_TARGET_DIR', ROOT / 'rust/target')) / 'debug/openpilot-process-child'),
     'head': '' if case.old == 'empty' else heads[case.old], 'reboot_mode': case.reboot_mode, 'steps': case.steps,
   }
   environment = os.environ | {

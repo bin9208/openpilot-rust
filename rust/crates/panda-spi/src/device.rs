@@ -17,6 +17,25 @@ pub trait Transport: Io + Send {
     fn sleep_us(&mut self, micros: u32);
     fn close(&mut self);
 }
+/// Borrows the transport while allowing disconnect to interrupt protocol recovery.
+struct CancellableIo<'a, T> {
+    io: &'a mut T,
+    connected: &'a AtomicBool,
+}
+impl<T: Io> Io for CancellableIo<'_, T> {
+    fn cancelled(&self) -> bool {
+        !self.connected.load(Ordering::SeqCst) || self.io.cancelled()
+    }
+    fn now_ns(&mut self) -> u64 {
+        self.io.now_ns()
+    }
+    fn transfer(&mut self, tx: &mut [u8], rx: &mut [u8], length: usize) -> i32 {
+        self.io.transfer(tx, rx, length)
+    }
+    fn log(&mut self, level: u8, message: String) {
+        self.io.log(level, message);
+    }
+}
 #[derive(Default)]
 pub struct Shared {
     priority: Arbiter,
@@ -218,11 +237,31 @@ impl<T: Transport> Device<T> {
         let _priority = self.shared.priority.acquire(request.endpoint);
         let mut bus = self.shared.bus.lock().expect("SPI hardware mutex poisoned");
         let mut state = self.state.lock().expect("SPI state mutex poisoned");
+        if !self.connected() {
+            return Err(RequestError::Cancelled.into());
+        }
         let State { protocol, io } = &mut *state;
         io.file_lock();
         let locked = io.now_ns();
-        let result = protocol.attempt(io, &mut bus, request, output, start, locked);
+        let result = protocol.attempt(
+            &mut CancellableIo {
+                io,
+                connected: &self.connected,
+            },
+            &mut bus,
+            request,
+            output,
+            start,
+            locked,
+        );
         io.file_unlock();
+        if matches!(
+            result,
+            Err(RequestError::RecoveryTimeout | RequestError::Cancelled)
+        ) {
+            self.connected.store(false, Ordering::SeqCst);
+            self.healthy.store(false, Ordering::SeqCst);
+        }
         Ok((result?, protocol.timing))
     }
     fn retry(&self, request: Request<'_>, mut output: Option<&mut [u8]>) -> Result<i32, Error> {
@@ -284,6 +323,9 @@ impl<T: Transport> Drop for Device<T> {
             .close();
     }
 }
+
+#[cfg(test)]
+mod recovery_tests;
 
 #[cfg(test)]
 mod tests {

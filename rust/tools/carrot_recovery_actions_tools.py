@@ -189,6 +189,13 @@ def rebuild(binary: Path, output: Path, bare: Path) -> None:
       repo = fixture.clone(root / owner, bare)
       captured = root / (owner + "-evidence")
       captured.mkdir()
+      if owner == "native":
+        fixture.git(repo, "remote", "set-url", "origin", "https://github.com/bin9208/openpilot-rust.git")
+        helper = repo / "rust/bin/openpilot-runtime-install"
+        helper.parent.mkdir(parents=True)
+        helper.write_text('#!/bin/sh\nprintf \'%s\\n\' "$@" > package-attempt\necho "Owned matching release unavailable"\nexit 17\n')
+        helper.chmod(0o755)
+        (repo / "rust/runtime-manifest.json").write_text("old package")
       cache = captured / "cache"
       cache.mkdir()
       (cache / "old").write_text("remove me")
@@ -212,14 +219,19 @@ def rebuild(binary: Path, output: Path, bare: Path) -> None:
           with fixture.native(binary, repo, captured / "tmux.log", captured) as port:
             result = fixture.request(port, {"action": action})
         fixture.emit(captured, "reply.json", result)
-        assert fixture.execute(result["command"], repo, captured) == 0
-      observation = {"scons": (repo / "scons.argv").read_text(), "prebuilt_removed": not (repo / "prebuilt").exists(), "sign_removed": not (repo / ".sconsign.dblite").exists(), "cache_removed": not cache.exists(), "sudo": (repo / "sudo.argv").read_text() if (repo / "sudo.argv").exists() else ""}
-      assert observation["scons"] == "-c\n" and observation["prebuilt_removed"] is True
-      if action == "git_rebuild":
-        assert observation["sign_removed"] is True and observation["cache_removed"] is True
+        assert fixture.execute(result["command"], repo, captured) == (0 if owner == "source" else 17)
+      observation = {"scons": (repo / "scons.argv").read_text() if (repo / "scons.argv").exists() else "", "prebuilt_removed": not (repo / "prebuilt").exists(), "sign_removed": not (repo / ".sconsign.dblite").exists(), "cache_removed": not cache.exists(), "sudo": (repo / "sudo.argv").read_text() if (repo / "sudo.argv").exists() else ""}
+      if owner == "source":
+        assert observation["scons"] == "-c\n" and observation["prebuilt_removed"] is True
+        if action == "git_rebuild":
+          assert observation["sign_removed"] is True and observation["cache_removed"] is True
+        else:
+          assert observation["sudo"] == "reboot\n"
       else:
-        assert observation["sudo"] == "reboot\n"
+        assert observation == {"scons": "", "prebuilt_removed": False, "sign_removed": False, "cache_removed": False, "sudo": ""}
+        assert (repo / "rust/runtime-manifest.json").read_text() == "old package"
+        assert (repo / "package-attempt").read_text().splitlines()[:3] == ["--stage-update", "--root", str(repo)]
       results[owner] = observation
       fixture.emit(captured, "effects.json", observation)
-    assert results["source"] == results["native"]
+    assert results["source"] != results["native"], "Original rebuild must fail the native staged contract"
     fixture.emit(root, "comparison.json", {"scenario": action, "owned_path_boundary": "BASH_ENV translates only /data/openpilot and /tmp/scons_cache", "external_boundary": "recording scons/sudo executables; shell deletion is real", "source": results["source"], "native": results["native"], "pass": True})

@@ -26,6 +26,78 @@ fn unaligned_payload_keeps_padding_and_returns_owned_bytes() {
 }
 
 #[test]
+fn reusable_receive_keeps_storage_across_wraps_and_clears_empty_and_evicted_data() {
+    let words = memory(1024);
+    let queue = QueueMemory::new(&words).unwrap();
+    queue.initialize_publisher(10);
+    let reader = queue.register(20, false, |_| {}).unwrap();
+    let mut bytes = Vec::with_capacity(127);
+    let allocation = bytes.as_ptr();
+    let capacity = bytes.capacity();
+    for value in 0..128_u8 {
+        let payload = vec![value; usize::from(value % 127) + 1];
+        queue.send(10, &payload, |_| {}).unwrap();
+        assert_eq!(
+            reader.receive_into(&queue, &mut bytes).unwrap(),
+            Ready::Message
+        );
+        assert_eq!(bytes, payload);
+        assert_eq!(bytes.as_ptr(), allocation);
+        assert_eq!(bytes.capacity(), capacity);
+        // The returned bytes remain owned after shared memory is overwritten.
+        queue.send(10, b"pending", |_| {}).unwrap();
+        assert_eq!(bytes, payload);
+        assert_eq!(
+            reader.receive_into(&queue, &mut bytes).unwrap(),
+            Ready::Message
+        );
+        assert_eq!(bytes, b"pending");
+        assert_eq!(
+            reader.receive_into(&queue, &mut bytes).unwrap(),
+            Ready::Empty
+        );
+        assert!(bytes.is_empty());
+    }
+    bytes.extend_from_slice(b"stale");
+    queue.initialize_publisher(11);
+    assert_eq!(
+        reader.receive_into(&queue, &mut bytes).unwrap(),
+        Ready::Evicted
+    );
+    assert!(bytes.is_empty());
+}
+
+#[test]
+fn reusable_receive_preserves_conflation_and_overwrite_reset() {
+    let words = memory(1024);
+    let queue = QueueMemory::new(&words).unwrap();
+    queue.initialize_publisher(10);
+    let reader = queue.register(20, true, |_| {}).unwrap();
+    let mut bytes = b"previous".to_vec();
+    queue.send(10, b"skip", |_| {}).unwrap();
+    queue.send(10, b"latest", |_| {}).unwrap();
+    assert_eq!(
+        reader.receive_into(&queue, &mut bytes).unwrap(),
+        Ready::Message
+    );
+    assert_eq!(bytes, b"latest");
+    for value in 0..16_u8 {
+        queue.send(10, &[value; 120], |_| {}).unwrap();
+    }
+    assert_eq!(
+        reader.receive_into(&queue, &mut bytes).unwrap(),
+        Ready::Empty
+    );
+    assert!(bytes.is_empty());
+    queue.send(10, b"after reset", |_| {}).unwrap();
+    assert_eq!(
+        reader.receive_into(&queue, &mut bytes).unwrap(),
+        Ready::Message
+    );
+    assert_eq!(bytes, b"after reset");
+}
+
+#[test]
 fn wrap_tag_advances_both_cycles_through_u32_rollover() {
     let words = memory(1024);
     let queue = QueueMemory::new(&words).unwrap();

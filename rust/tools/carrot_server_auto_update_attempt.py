@@ -63,6 +63,11 @@ def execute(case: Case, directory: Path, base: Path, heads: dict[str, str], bina
   if case.pulling:
     initial['auto_update'] = {'status': 'pulling', 'error': 'old-error'}
   (state / 'git.json').write_text(json.dumps(initial))
+  if binary:
+    helper = repository / 'rust/bin/openpilot-runtime-install'
+    helper.parent.mkdir(parents=True)
+    helper.write_text('#!/bin/sh\nexec git native-stage "$@"\n')
+    helper.chmod(0o755)
   wrappers, proc = directory / 'bin', directory / 'proc'
   wrappers.mkdir()
   proc.mkdir()
@@ -71,7 +76,7 @@ def execute(case: Case, directory: Path, base: Path, heads: dict[str, str], bina
   (wrappers / 'git').symlink_to(wrapper)
   lock, phase, log, phase_log = directory / 'repository.lock', directory / 'phase', directory / 'git.jsonl', directory / 'phases.txt'
   config: Config = {
-    'repository': str(repository), 'launcher': str(ROOT / 'rust/target/debug/openpilot-process-child'),
+    'repository': str(repository), 'launcher': str(Path(os.environ.get('CARGO_TARGET_DIR', ROOT / 'rust/target')) / 'debug/openpilot-process-child'),
     'state': str(state), 'lock': str(lock), 'proc_root': str(proc), 'phase': str(phase), 'base': heads['base'],
     'steps': [{'now': now, 'ready': list(case.ready), 'restore': index > 0, 'warm': case.warm} for index, now in enumerate(case.times)],
     'busy': case.busy, 'index_lock': case.index_lock, 'cancel': case.mode == Mode.CONFIG_CANCEL,
@@ -117,7 +122,7 @@ def observable(row: Run) -> Observable:
   }
 
 
-def expected(case: Case, row: Run, heads: dict[str, str]) -> None:
+def expected(case: Case, row: Run, heads: dict[str, str], native: bool = False) -> None:
   assert row['returncode'] == 0, row['stderr']
   assert row['lock_released'] and row['no_owned_child_alive']
   assert all(child['inherited_lock'] and child['contender_blocked'] for child in row['children'])
@@ -130,7 +135,12 @@ def expected(case: Case, row: Run, heads: dict[str, str]) -> None:
   elif case.name in ('updated-dirty-owned-repo', 'prepare-pins-newly-fetched-target', 'cooldown-just-before-and-at-300'):
     target = heads['other' if case.mode == Mode.TARGET_MOVE else 'target']
     assert steps[0]['output']['result'] == [True, True, target]
-    assert row['repository_after']['head'] == target
+    assert row['repository_after']['head'] == (heads['base'] if native else target)
+    if native:
+      for step in steps:
+        state = step['state'].get('auto_update', {})
+        if state.get('status') == 'updated':
+          assert state['stage_rc'] == 0 and state['reset_rc'] is None
     if len(steps) == 3:
       assert steps[1]['output']['result'] == [False, False, '']
       assert steps[2]['output']['result'] == [True, True, target]
@@ -163,10 +173,25 @@ def main() -> None:
     comparison = {'name': case.name, 'source_passed': True}
     if args.binary:
       native = execute(case, args.output / case.name / 'native', base, heads, args.binary.resolve())
-      expected(case, native, heads)
+      expected(case, native, heads, native=True)
+      corrected = case.name in {'updated-dirty-owned-repo', 'prepare-pins-newly-fetched-target', 'cooldown-just-before-and-at-300'} or case.mode == Mode.RESET_BUSY
       left, right = observable(source), observable(native)
-      assert left == right, (case.name, left, right)
-      comparison['equal'] = True
+      if corrected:
+        commands = [child['argv'] for child in native['children']]
+        assert any(argv[:1] == ['native-stage'] for argv in commands)
+        assert not any(argv[:1] in (['reset'], ['merge']) for argv in commands)
+        comparison['staged_contract'] = True
+        if case.name == 'updated-dirty-owned-repo':
+          try:
+            expected(case, source, heads, native=True)
+          except AssertionError:
+            comparison['original_rejected_as_native'] = True
+          else:
+            raise AssertionError('Original active HEAD mutation passed native staging contract')
+      else:
+        assert left == right, (case.name, left, right)
+      comparison['equal'] = left == right
+      comparison['pass'] = True
     comparisons.append(comparison)
     print(json.dumps(comparison), flush=True)
     (args.output / 'result.json').write_text(json.dumps({'cases': comparisons, 'heads': heads}, indent=2) + '\n')

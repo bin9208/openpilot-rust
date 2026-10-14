@@ -62,3 +62,67 @@ fn planner_accepts_directory_provider() {
     std::fs::create_dir_all(root.join("rust/bin/plannerd-acados")).unwrap();
     bound(root, "plannerd").validate().unwrap();
 }
+
+#[test]
+fn native_cluster_requires_real_helpers_and_assets_but_no_python_vendor() {
+    use openpilot_manager_catalog::binding::Requirement;
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path();
+    let bound = bound(root, "carrot_cluster");
+    for required in &bound.requirements {
+        match required {
+            Requirement::Executable(path) => {
+                std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+                std::fs::copy("/bin/true", path).unwrap();
+            }
+            Requirement::File(path) => {
+                std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+                std::fs::write(path, b"real asset fixture").unwrap();
+            }
+            Requirement::Directory(path) if !path.to_string_lossy().contains(".vendor") => {
+                std::fs::create_dir_all(path).unwrap();
+            }
+            Requirement::Directory(_) => (),
+        }
+    }
+    bound
+        .validate()
+        .expect("native cluster must not require the old Python vendor library");
+    std::fs::remove_file(root.join("rust/bin/ffmpeg")).unwrap();
+    assert!(
+        bound.validate().is_err(),
+        "missing native encoder remains unavailable"
+    );
+}
+
+#[test]
+fn webjoystick_native_binding_needs_openssl_but_no_python_source() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path();
+    let installation = installation(root);
+    assert!(!binding::bodyteleop_available(&installation));
+    executable(root, "openpilot-process-child");
+    executable(root, "openpilot-webjoystick");
+    assert!(!binding::bodyteleop_available(&installation));
+    executable(root, "openssl");
+    assert!(binding::bodyteleop_available(&installation));
+    let inspected = openpilot_manager::installed::inspect(&installation);
+    let web = inspected
+        .iter()
+        .find(|entry| entry["name"] == "webjoystick")
+        .unwrap();
+    assert_eq!(web["enabled"], true);
+    assert_eq!(web["ready"], true);
+    let native = bound(root, "webjoystick");
+    assert_eq!(native.argv[1], "--root");
+    assert_eq!(native.argv[3], "--openssl");
+    std::fs::remove_file(root.join("rust/bin/openssl")).unwrap();
+    assert!(!binding::bodyteleop_available(&installation));
+    let inspected = openpilot_manager::installed::inspect(&installation);
+    let web = inspected
+        .iter()
+        .find(|entry| entry["name"] == "webjoystick")
+        .unwrap();
+    assert_eq!(web["enabled"], false);
+    assert_eq!(web["ready"], false);
+}

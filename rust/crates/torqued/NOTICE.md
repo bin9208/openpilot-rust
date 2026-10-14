@@ -15,7 +15,8 @@ checks and native staging use the source-locked NumPy v2.5.3 with unchanged
 sampling and numerical tolerances.
 
 Native OpenBLAS/Fortran libraries are external build artifacts, never vendored
-or imported from Python by the Rust daemon. `stage_torque_numerics.py` retains
+or imported from Python by the Rust daemon. The native `openpilot-dev-tools`
+binary `stage-torque-numerics` retains
 the wheel's full license directory and archive/library SHA256 provenance.
 Distributions must carry those staged license files along with this notice.
 

@@ -1,6 +1,6 @@
 use super::{
     context::{Context, Reply},
-    runner::{Completed, Failure},
+    runner::Failure,
     text,
 };
 use crate::{json_fields::set, Value};
@@ -11,25 +11,14 @@ pub(super) async fn reset(context: &Context, body: &Value) -> Result<Reply, Fail
     if !["hard", "soft", "mixed"].contains(&mode.as_str()) {
         return Ok(context.invalid("bad mode", "INVALID_RESET_MODE"));
     }
-    if context.streaming() {
-        context.progress("checking Git configuration", 0, 2)?;
+    if mode != "hard" {
+        return Ok(context.invalid(
+            "Soft and mixed reset cannot preserve a verified native source/package pair",
+            "NATIVE_RESET_MODE",
+        ));
     }
-    let repair = context.repair(None, true).await?;
-    if repair.code != 0 {
-        return context.result(repair, None);
-    }
-    context.progress(&format!("git reset --{mode} {target}"), 1, 1)?;
-    let result = context
-        .git(&["reset", &format!("--{mode}"), &target], 120, true)
-        .await?;
-    context.clear_cache()?;
-    let result = Completed {
-        streams: None,
-        code: result.code,
-        output: format!("{}\n{}", repair.output, result.output)
-            .trim()
-            .into(),
-    };
+    let result = context.stage_update(&target, None, false, false).await?;
+    let staged = result.code == 0;
     let mut reply = context.result(
         result,
         Some((
@@ -40,45 +29,12 @@ pub(super) async fn reset(context: &Context, body: &Value) -> Result<Reply, Fail
             ]),
         )),
     )?;
-    if !context.streaming() {
-        let empty = !reply.value.get("out").truth();
-        set(&mut reply.value, "empty_output", Value::Bool(empty))?;
-    }
+    set(&mut reply.value, "staged", Value::Bool(staged))?;
+    set(&mut reply.value, "reboot_required", Value::Bool(staged))?;
     Ok(reply)
 }
 pub(super) async fn sync(context: &Context) -> Result<Reply, Failure> {
-    context.progress("delete local branches", 1, 2)?;
-    let branches = context
-        .command(
-            &[
-                "bash".into(),
-                "-lc".into(),
-                "git branch | grep -v '^\\*' | xargs -r git branch -D".into(),
-            ],
-            120,
-            true,
-        )
-        .await?;
-    if branches.code != 0 {
-        return context.result(branches, None);
-    }
-    context.progress("fetch --all --prune", 2, 2)?;
-    let fetch = context
-        .git(&["fetch", "--all", "--prune"], 180, true)
-        .await?;
-    let mut reply = context.result(
-        Completed {
-            streams: None,
-            code: fetch.code,
-            output: format!("{}\n\n{}", branches.output, fetch.output)
-                .trim()
-                .into(),
-        },
-        Some(("git_result_sync_done", Value::Null)),
-    )?;
-    if !context.streaming() {
-        let empty = !reply.value.get("out").truth();
-        set(&mut reply.value, "empty_output", Value::Bool(empty))?;
-    }
-    Ok(reply)
+    // Updating remote refs must not delete local user branches or installed bins.
+    let fetched = context.native_fetch().await?;
+    context.result(fetched, Some(("git_result_sync_done", Value::Null)))
 }

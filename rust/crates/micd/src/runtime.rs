@@ -108,6 +108,9 @@ pub fn run(library: &Path, stop: Arc<AtomicBool>, cycles: Option<u64>) -> Result
     let mut frames = 0_u64;
     let name = std::env::var("MANAGER_DAEMON").unwrap_or_else(|_| "micd".into());
     while !stop.load(Ordering::Relaxed) {
+        if !stream.active()? {
+            return Err(Error::Contract("micd stream inactive"));
+        }
         let pressure = *shared
             .lock()
             .map_err(|_| Error::Contract("pressure lock poisoned"))?;

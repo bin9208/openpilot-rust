@@ -23,6 +23,14 @@ def main() -> None:
     log.write(str(os.getpid()) + ' ' + phase + '\n')
   args = sys.argv[1:]
   mode = Mode(os.environ['OWNED_ATTEMPT_MODE'])
+  if args[:1] == ['native-stage']:
+    assert args[1:3] == ['--stage-update', '--root'] and Path(args[3]).resolve() == repository
+    if mode == Mode.RESET_BUSY:
+      print('fatal: Unable to create index.lock: File exists', file=sys.stderr)
+      raise SystemExit(128)
+    target = args[args.index('--target') + 1]
+    assert subprocess.run(['/usr/bin/git', 'merge-base', '--is-ancestor', 'HEAD', target]).returncode == 0
+    return
   if mode == Mode.FETCH_ERROR and args[0] == 'fetch':
     print('owned fetch unavailable', file=sys.stderr)
     raise SystemExit(9)

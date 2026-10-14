@@ -4,7 +4,7 @@ pub mod platform;
 pub use names::sort_key as directory_sort_key;
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     ffi::OsString,
     fs, io,
     path::{Path, PathBuf},
@@ -31,14 +31,12 @@ pub struct Cycle {
 
 pub struct Deleter {
     root: PathBuf,
-    preserve_cache: HashMap<OsString, bool>,
 }
 
 impl Deleter {
     pub fn new(root: &Path) -> Self {
         Self {
             root: root.to_owned(),
-            preserve_cache: HashMap::new(),
         }
     }
 
@@ -63,19 +61,15 @@ impl Deleter {
         })
     }
 
-    fn has_preserve(&mut self, name: &OsString) -> Result<bool, Error> {
-        if let Some(value) = self.preserve_cache.get(name) {
-            return Ok(*value);
+    fn has_preserve(&self, name: &OsString) -> Result<bool, Error> {
+        // Logger can add a bookmark after an earlier pressure scan. Read the
+        // current attribute; only the exact one-byte marker is preserved.
+        let mut buffer = [0_u8; 1];
+        match rustix::fs::getxattr(self.root.join(name), "user.preserve", &mut buffer[..]) {
+            Ok(length) => Ok(&buffer[..length] == b"1"),
+            Err(rustix::io::Errno::NODATA | rustix::io::Errno::RANGE) => Ok(false),
+            Err(error) => Err(io::Error::from(error).into()),
         }
-        let mut buffer = vec![0_u8; 65536];
-        let value =
-            match rustix::fs::getxattr(self.root.join(name), "user.preserve", &mut buffer[..]) {
-                Ok(length) => &buffer[..length] == b"1",
-                Err(rustix::io::Errno::NODATA) => false,
-                Err(error) => return Err(io::Error::from(error).into()),
-            };
-        self.preserve_cache.insert(name.clone(), value);
-        Ok(value)
     }
 
     fn preserved_from(&mut self, directories: &[OsString]) -> Result<HashSet<OsString>, Error> {

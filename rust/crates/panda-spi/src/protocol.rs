@@ -7,6 +7,9 @@ pub const CAN_TURNAROUND_NS: u64 = 400_000;
 pub const CONTROL_TURNAROUND_NS: u64 = 1_000_000;
 const NACK: i32 = -2;
 const ACK_TIMEOUT: i32 = -3;
+// Failed bus recovery has its own deadline, even for an unlimited request.
+// A blocking transport syscall is outside this polling deadline.
+const RECOVERY_TIMEOUT_NS: u64 = 500_000_000;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -77,6 +80,10 @@ pub trait Clock: Send + Sync {
 /// Synchronous transport. Implementations must fill only the supplied receive slice;
 /// a negative return is the original ioctl result, including EINTR retries below this boundary.
 pub trait Io {
+    /// Cancellation is independent of the transport mutex held during recovery.
+    fn cancelled(&self) -> bool {
+        false
+    }
     fn now_ns(&mut self) -> u64;
     fn transfer(&mut self, tx: &mut [u8], rx: &mut [u8], length: usize) -> i32;
     fn log(&mut self, level: u8, message: String);
@@ -95,6 +102,10 @@ pub struct Request<'a> {
 }
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum RequestError {
+    #[error("SPI recovery exceeded its 500 ms budget")]
+    RecoveryTimeout,
+    #[error("SPI request cancelled")]
+    Cancelled,
     #[error("SPI payload must leave room for its checksum")]
     PayloadTooLarge,
     #[error("SPI caller buffer is smaller than its requested response")]
@@ -149,30 +160,66 @@ impl Protocol {
         );
     }
     fn ack(&mut self, io: &mut impl Io, ack: u8, tx: u8, timeout: u32, length: usize) -> i32 {
-        let start = io.now_ms();
+        self.ack_inner(io, ack, tx, timeout, length, None)
+            .expect("ordinary ACK polling has no recovery deadline")
+    }
+    fn ack_inner(
+        &mut self,
+        io: &mut impl Io,
+        ack: u8,
+        tx: u8,
+        timeout: u32,
+        length: usize,
+        recovery_start: Option<u64>,
+    ) -> Result<i32, RequestError> {
+        let start_ns = io.now_ns();
+        let start =
+            (start_ns / 1_000_000_000) as f64 * 1000.0 + (start_ns % 1_000_000_000) as f64 * 1e-6;
+        if let Some(recovery_start) = recovery_start {
+            Self::check_recovery(io, start_ns, recovery_start)?;
+        }
         let timeout = if timeout == 0 { 500 } else { timeout }.clamp(20, 500);
         self.tx[..length].fill(tx);
         loop {
             let result = io.transfer(&mut self.tx, &mut self.rx, length);
             if result < 0 {
                 self.log(io, 40, "SPI: failed to send ACK request".into());
-                return result;
+                return Ok(result);
+            }
+            if recovery_start.is_some() && io.cancelled() {
+                return Err(RequestError::Cancelled);
             }
             if self.rx[0] == ack {
-                return 0;
+                return Ok(0);
             }
             if self.rx[0] == 0x1f {
                 self.log(io, 10, format!("SPI: got NACK, waiting for 0x{ack:x}"));
-                return NACK;
+                return Ok(NACK);
             }
-            if io.now_ms() - start > f64::from(timeout) {
+            let now_ns = io.now_ns();
+            if let Some(recovery_start) = recovery_start {
+                Self::check_recovery(io, now_ns, recovery_start)?;
+            }
+            let now =
+                (now_ns / 1_000_000_000) as f64 * 1000.0 + (now_ns % 1_000_000_000) as f64 * 1e-6;
+            if now - start > f64::from(timeout) {
                 self.log(
                     io,
                     30,
                     format!("SPI: timed out waiting for ACK, waiting for 0x{ack:x}"),
                 );
-                return ACK_TIMEOUT;
+                return Ok(ACK_TIMEOUT);
             }
+        }
+    }
+
+    fn check_recovery(io: &impl Io, now: u64, start: u64) -> Result<(), RequestError> {
+        if io.cancelled() {
+            Err(RequestError::Cancelled)
+        } else if now.wrapping_sub(start) >= RECOVERY_TIMEOUT_NS {
+            Err(RequestError::RecoveryTimeout)
+        } else {
+            Ok(())
         }
     }
 
@@ -243,8 +290,14 @@ impl Protocol {
         }
         let phase_start = io.now_ns();
         let mut nacks = 0;
+        let mut recovery_error = None;
         while nacks < 3 {
-            if self.ack(io, 0x1f, 0x14, 1, BUFFER_SIZE / 2) == 0 {
+            let ack = self.ack_inner(io, 0x1f, 0x14, 1, BUFFER_SIZE / 2, Some(phase_start));
+            if let Err(error) = ack {
+                recovery_error = Some(error);
+                break;
+            }
+            if ack == Ok(0) {
                 nacks += 1;
             } else {
                 nacks = 0;
@@ -255,6 +308,9 @@ impl Protocol {
         bus.last_activity_ns = io.now_ns();
         bus.next_transaction_ns = CAN_TURNAROUND_NS;
         self.timing.total_us = elapsed_us(bus.last_activity_ns, attempt_start_ns);
+        if let Some(error) = recovery_error {
+            return Err(error);
+        }
         Ok(result)
     }
     fn exchange(

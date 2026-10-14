@@ -50,6 +50,22 @@ pub struct Service {
 pub(crate) struct LockedCommands<'a>(read::Context<'a>);
 
 impl LockedCommands<'_> {
+    pub(crate) async fn stage_update(
+        &self,
+        target: &str,
+        timeout: Duration,
+    ) -> Result<(i32, String), Failure> {
+        match commands::stage_update(&self.0, target, timeout).await {
+            Err(Failure::Launch(openpilot_process_supervision::Error::Io(error))) => {
+                Ok((1, format!("Native package installer unavailable: {error}")))
+            }
+            Err(Failure::Launch(openpilot_process_supervision::Error::Nul(_))) => {
+                Ok((1, "embedded null byte".into()))
+            }
+            result => result,
+        }
+    }
+
     pub(crate) async fn run(
         &self,
         args: &[&str],

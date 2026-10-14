@@ -1,8 +1,29 @@
 use super::*;
 use std::{fs::OpenOptions, os::fd::AsFd};
 
+// These tests intentionally clear CLOEXEC. Run their FD lifetime assertions in
+// a separate process so concurrently spawning tests cannot inherit the lock.
+fn isolated(name: &str) -> bool {
+    if std::env::var("OPENPILOT_LOCK_FD_TEST").ok().as_deref() == Some(name) {
+        return false;
+    }
+    let status = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", name, "--nocapture"])
+        .env("OPENPILOT_LOCK_FD_TEST", name)
+        .status()
+        .unwrap();
+    assert!(
+        status.success(),
+        "isolated descriptor lifetime test failed: {name}"
+    );
+    true
+}
+
 #[test]
 fn received_lock_preserves_open_file_description() {
+    if isolated("lock_fd::tests::received_lock_preserves_open_file_description") {
+        return;
+    }
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("repo-lock");
     let file = OpenOptions::new()
@@ -39,6 +60,9 @@ fn received_lock_preserves_open_file_description() {
 
 #[test]
 fn malformed_lock_transfers_close_received_descriptors() {
+    if isolated("lock_fd::tests::malformed_lock_transfers_close_received_descriptors") {
+        return;
+    }
     for (marker, count) in [
         (b"X".as_slice(), 1),
         (b"L", 0),

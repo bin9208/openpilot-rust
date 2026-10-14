@@ -14,7 +14,8 @@ Python reference checks use NumPy 2.4.6 and pycapnp 2.1.0. From `rust/`:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-python3 tools/check_reference.py
+cargo build --locked --release -p openpilot-runtime-core --example filter_trace
+cargo run --locked -p openpilot-dev-tools --bin check-filter-reference -- --binary "${CARGO_TARGET_DIR:-target}/release/examples/filter_trace"
 cargo build --workspace --examples --locked
 python3 tools/check_proclog_reference.py
 python3 tools/check_params_reference.py
@@ -31,7 +32,9 @@ measure that before running continuous production instrumentation.
 
 Filters accept the tested scalar domain: finite inputs, dt > 0, rc >= 0. They do
 not yet replace array-valued Python uses or validate all invalid timing inputs.
-The reference test executes the actual source classes on deterministic traces.
+The native filter reference check compares all 24,000 scalar outputs against
+captured original-source results and verifies the exact deterministic input
+corpus. Provenance and source hashes are in `crates/dev-tools/data/`.
 
 Linux host tests and aarch64 GNU builds do not prove AGNOS compatibility, vehicle
 equivalence, lower CPU/temperature, or YOLO capacity. An older device glibc may

@@ -1,10 +1,10 @@
 use crate::Error;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, ops::Range};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Entrypoint {
+pub struct Entrypoint {
     pub name: String,
     pub start: usize,
     pub end: usize,

@@ -52,6 +52,7 @@ class Run(TypedDict):
   children: list[Child]
   child_checks: dict[str, bool]
   repository_after: Snapshot
+  repository_before: Snapshot
   state_bytes_hex: str | None
 
 
@@ -103,6 +104,12 @@ def execute(case: Case, directory: Path, base: Path, heads: dict[str, str], envi
     shutil.copy2(wrapper, wrappers / 'git')
   else:
     (wrappers / 'git').symlink_to(wrapper)
+  if binary:
+    helper = repository / 'rust/bin/openpilot-runtime-install'
+    helper.parent.mkdir(parents=True)
+    helper.write_text('#!/bin/sh\nexec git native-stage "$@"\n')
+    helper.chmod(0o755)
+  before = snapshot(repository)
   lock = directory / 'repository.lock'
   child_log = directory / 'git.jsonl'
   child_environment = environment | {
@@ -123,7 +130,7 @@ def execute(case: Case, directory: Path, base: Path, heads: dict[str, str], envi
     child_environment['PATH'] = str(wrappers)
   config = {
     'repository': str(repository), 'state': str(state), 'lock': str(lock),
-    'target': target, 'launcher': str(ROOT / 'rust/target/debug/openpilot-process-child'),
+    'target': target, 'launcher': str(Path(os.environ.get('CARGO_TARGET_DIR', ROOT / 'rust/target')) / 'debug/openpilot-process-child'),
     'cancel_after_ms': 10 if case.mode in (Mode.CANCEL_GROUP, Mode.CANCEL_NO_READY) else None,
     'cancel_ready': str(directory / 'cancel-ready') if case.mode in (Mode.CANCEL_GROUP, Mode.CANCEL_NO_READY) else None,
     'alert_failure': case.alert_failure, 'notify_failure': case.notify_failure,
@@ -150,7 +157,7 @@ def execute(case: Case, directory: Path, base: Path, heads: dict[str, str], envi
     'config': config, 'command': command, 'elapsed_seconds': time.monotonic() - started,
     'returncode': run.returncode, 'stdout': run.stdout, 'stderr': run.stderr,
     'result': result, 'children': children, 'child_checks': child_checks,
-    'repository_after': snapshot(repository),
+    'repository_after': snapshot(repository), 'repository_before': before,
     'state_bytes_hex': (state / 'git.json').read_bytes().hex() if state.is_dir() and (state / 'git.json').is_file() else None,
   }
   (directory / 'result.json').write_text(json.dumps(row, ensure_ascii=True, indent=2) + '\n')
@@ -199,6 +206,46 @@ def expected(case: Case, row: dict, heads: dict[str, str]) -> bool:
   return True
 
 
+def expected_native(case: Case, row: dict, heads: dict[str, str]) -> bool:
+  """Explicit #290 staged semantics; never normalize source mutations away."""
+  assert row['returncode'] == 0 and all(row['child_checks'].values()), row
+  assert all(row['result']['effect_locks'])
+  assert row['repository_after'] == row['repository_before'], 'Native preparation changed the active source'
+  output = row['result']['output']
+  state = row['result']['state'].get('auto_update', {})
+  if case.mode in (Mode.RESET_BUSY, Mode.MERGE_BUSY):
+    assert output['exception'] == 'RepoBusyError' and 'index.lock' in output['message']
+  elif case.mode == Mode.CANCEL_GROUP:
+    assert output == {'exception': 'CancelledError', 'message': ''}
+  elif case.receipt:
+    assert output['result'] == [False, False, '']
+    assert not row['children']
+  elif case.target == 'base':
+    assert output['result'] == [True, False, heads['base']]
+    assert state['error_code'] == 'head_unchanged'
+  elif case.name in {'pinned-target-dirty-reset', 'alert-failure-keeps-verified-update', 'notification-failure-keeps-verified-update'}:
+    assert output['result'] == [True, True, heads['target']]
+    assert state['status'] == 'updated' and state['stage_rc'] == 0 and state['reset_rc'] is None
+  elif case.mode == Mode.UPDATED_STATE_FAIL:
+    assert output['result'] == [True, False, heads['target']]
+  else:
+    assert output['result'] == [False, False, '']
+    if case.mode in (Mode.POST_HEAD_FAIL, Mode.POST_HEAD_MISMATCH):
+      assert state['error_code'] == 'active_source_changed'
+    elif case.mode in (Mode.RESET_OUTPUT, Mode.RESET_SIGNAL, Mode.RESET_EXEC_DENIED) or case.base == 'divergent' or case.target == 'nul':
+      assert state['error_code'] == 'runtime_package_failed'
+  if case.mode == Mode.RESET_OUTPUT:
+    assert state['error'] == 'first � second 오류' and state['stage_rc'] == 23 and state['reset_rc'] is None
+  if case.mode == Mode.RESET_SIGNAL:
+    assert state['stage_rc'] == -15 and state['reset_rc'] is None
+  commands = [child['argv'] for child in row['children'] if child['kind'] == 'git']
+  assert not any(argv[:1] in (['reset'], ['merge']) for argv in commands)
+  for argv in commands:
+    if argv[:1] == ['native-stage']:
+      assert argv == ['native-stage', '--stage-update', '--root', row['config']['repository'], '--target', row['config']['target'], '--ff-only']
+  return True
+
+
 def observable(row: Run) -> Observable:
   raw = json.dumps({'result': row['result'], 'repository_after': row['repository_after'],
                     'state_bytes_hex': row['state_bytes_hex'], 'console': row['stdout'].splitlines()[:-1]}, ensure_ascii=True)
@@ -229,14 +276,25 @@ def main() -> None:
     source = execute(case, args.output / case.name / 'source', base, heads, environment, None)
     expected(case, source, heads)
     native = execute(case, args.output / case.name / 'native', base, heads, environment, args.binary.resolve()) if args.binary else None
+    corrected = expected_native(case, native, heads) if native else None
+    original_rejected = None
+    if native and case.name == 'pinned-target-dirty-reset':
+      try:
+        expected_native(case, source, heads)
+      except AssertionError:
+        original_rejected = True
+      else:
+        raise AssertionError('Original active checkout mutation passed the native staged contract')
+    unchanged = case.name in {'no-target', 'duplicate-reboot', 'duplicate-reboot-already-blocked', 'unborn-head', 'attempt-state-save-fails'}
     equal = observable(source) == observable(native) if native else None
     commands_equal = ([item['argv'] for item in source['children']] == [item['argv'] for item in native['children']]) if native else None
     native_checks = all(native['child_checks'].values()) and native['returncode'] == 0 if native else None
+    passed = native is None or bool(corrected and native_checks and (not unchanged or equal and commands_equal))
     row = {'case': case.name, 'source': source, 'native': native, 'equal': equal,
-           'commands_equal': commands_equal, 'native_child_checks': native_checks}
+           'commands_equal': commands_equal, 'native_child_checks': native_checks, 'staged_contract': corrected, 'unchanged_source_comparison': unchanged, 'original_rejected_as_native': original_rejected, 'pass': passed}
     rows.append(row)
     (args.output / 'result.json').write_text(json.dumps(rows, ensure_ascii=True, indent=2) + '\n')
-    print(case.name, 'PASS' if native is None or (equal and commands_equal and native_checks) else 'FAIL', flush=True)
+    print(case.name, 'PASS' if passed else 'FAIL', flush=True)
   assert rows, 'No selected scenarios'
   identity = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in [
     ROOT / 'openpilot/selfdrive/carrot/server/services/auto_update.py', ROOT / 'openpilot/common/async_process.py',
@@ -246,7 +304,7 @@ def main() -> None:
     *([args.binary.resolve()] if args.binary else []),
   ]}
   (args.output / 'identity.json').write_text(json.dumps(identity, indent=2) + '\n')
-  raise SystemExit(0 if args.binary is None or all(row['equal'] and row['commands_equal'] and row['native_child_checks'] for row in rows) else 1)
+  raise SystemExit(0 if args.binary is None or all(row['pass'] for row in rows) else 1)
 
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ static Device device = {2, "owned input", 0, 1, 0, .01, .02, .25, .03, 16000};
 static Callback callback;
 static void *user;
 static pthread_t worker;
-static atomic_int running;
+static atomic_int running, complete;
 static int launched, attempts;
 static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 static void record(const char *event, int value) {
@@ -47,11 +47,14 @@ static void *capture(void *unused) {
   }
   for (int block = 0; block < 16 && atomic_load(&running); ++block) {
     for (int i = 0; i < 800; ++i) samples[i] = (float)((i + block) % 17 - 8) / 32;
-    int result = callback(samples, NULL, 800, NULL, block == 0 ? 2 : 0, user);
+    int result = callback(setting("MIC_FIXTURE_ABORT_CALLBACK") && block == 4 ? NULL : samples,
+                          NULL, 800, NULL, block == 0 ? 2 : 0, user);
     record("callback", block);
-    if (result) break;
+    if (result) { atomic_store(&running, 0); record("aborted", result); break; }
     struct timespec delay = {0, 50000000}; nanosleep(&delay, NULL);
   }
+  if (setting("MIC_FIXTURE_INACTIVE")) atomic_store(&running, 0);
+  atomic_store(&complete, 1);
   record("complete", 0);
   return NULL;
 }
@@ -63,7 +66,12 @@ int Pa_StartStream(void *stream) {
   if (pthread_create(&worker, NULL, capture, NULL)) abort();
   launched = 1; return 0;
 }
-int Pa_IsStreamActive(void *stream) { (void)stream; abort(); }
+int Pa_IsStreamActive(void *stream) {
+  if (stream != &device) abort();
+  int result = atomic_load(&complete) && setting("MIC_FIXTURE_FAIL_ACTIVE") ? -9985 : atomic_load(&running);
+  record("poll", result);
+  return result;
+}
 int Pa_StopStream(void *stream) {
   if (stream != &device) abort();
   atomic_store(&running, 0);

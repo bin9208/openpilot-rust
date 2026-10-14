@@ -76,15 +76,15 @@ finalization retains its previous path.
 Build-side commands, run from the repository root with a clean sealed checkout:
 
 ```sh
-python3 rust/tools/package_runtime_release.py --root "$PWD" \
+cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin package-runtime-release -- --root "$PWD" \
   --installer /path/to/static/openpilot-runtime-install \
   --installer-build-receipt /path/to/runtime-installer-build.json \
   --output /path/to/new-release-directory
-python3 rust/tools/package_runtime_release.py --root "$PWD" \
+cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin package-runtime-release -- --root "$PWD" \
   --output /path/to/new-release-directory --verify-only
-python3 rust/tools/publish_runtime_release.py --root "$PWD" \
+cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin publish-runtime-release -- --root "$PWD" \
   --assets /path/to/new-release-directory --check-only
-python3 rust/tools/publish_runtime_release.py --root "$PWD" \
+cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin publish-runtime-release -- --root "$PWD" \
   --assets /path/to/new-release-directory
 ```
 

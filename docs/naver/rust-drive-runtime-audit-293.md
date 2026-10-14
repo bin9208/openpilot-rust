@@ -157,3 +157,48 @@ GitHub tracking uses the connected app because the local CLI is unauthenticated.
 
 Docs-Not-Needed: engineering investigation and internal encoder parity fix;
 no user setting or intended user-visible behavior changed.
+
+## Model publication follow-up: redundant durable USB status writes (#310)
+
+Read-only follow-up on 2026-10-14 used the same private captured full-schema
+rlogs and exact drive source `a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31`.
+No device was contacted. There is no standalone native rlog inspection executable
+in the current tools; the existing private full-cereal-schema analysis was extended
+to retain model/camera timestamps and INFO runtimeTiming records. Raw captures,
+per-frame records, scripts and correlation details remain in the existing ignored
+`2026-10-14-drive-audit` scratch directory.
+
+All 100 nonconsecutive model publication transitions have intervening
+`camera dropped ...; advancing model history` warnings. All 34,026 steady model
+messages pair equal main/extra frame IDs; the maximum matched road/wide SOF skew
+is 1.519 ms, comfortably inside the unchanged 20 ms pairing limit. The gaps split
+into 80 jumps of three frame IDs, 13 jumps of four, seven jumps of five, and
+14 gaps with consecutive IDs. Inference time on the 114 gap-ending publications
+has median 29.106 ms and maximum 30.912 ms. Continuous camera publication does
+not establish that model receive/copy/scheduling was timely.
+
+Counting publications plus deduplicated prepare-only warnings reconstructs model
+iterations. Cumulative counts agree with 1,758 of 1,759 diagnostic windows and
+with the final cumulative count. One warning's log-service timestamp trails its
+producer timing boundary by about 6.1 ms; retain this timestamp uncertainty.
+Seventy-nine of the 114 gaps immediately follow a twentieth-iteration boundary:
+45 of the jumps of three, all 13 jumps of four, all seven jumps of five, and all
+14 consecutive-ID gaps. There are 1,707 eligible publication transitions after
+such boundaries and 32,318 others. The remaining 35 gaps are jumps of three
+between route-relative 69.015 and 139.584 seconds (segments 1–2).
+
+At that exact boundary, `drivingd` calls `usb_selection::refresh` after recording
+`FrameTiming`. Even with USB absent, refresh unconditionally writes UsbGpuPresent
+and UsbGpuCompiled. `Params::put` writes a temporary file, syncs it, renames under
+the Params lock and syncs the directory. Consequently that recurring durable work
+is outside the recorded loop metric. This is an actionable source hypothesis for
+[#310](https://github.com/bin9208/openpilot-rust/issues/310), not proof that those
+writes caused every correlated gap or explain the other 35.
+
+The early dropped-frame windows also have median maximum thread CPU 31.887 ms,
+versus 8.564 ms in windows without drops. The installed source allocates and copies
+both 4,804,608-byte camera buffers before pairing, including candidates later
+discarded while catching up the nonconflated extra stream. This identifies another
+measurement/test target, not a proven cause. Existing candidate buffer reuse has
+not been measured on this drive. Preserve all exposure, pairing, drop/preparation,
+recurrent-state and validity behavior while testing either hypothesis.

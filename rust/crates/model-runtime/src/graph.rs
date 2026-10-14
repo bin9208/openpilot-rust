@@ -2,63 +2,63 @@ use crate::{
     entrypoint::{self, Entrypoint},
     Error,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 const MAX_MEMORY: u64 = 4 * 1024 * 1024 * 1024;
 const MAX_ENTRIES: usize = 1_000_000;
 const MAX_MANIFEST: usize = 64 * 1024 * 1024;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Graph {
-    pub(crate) version: u32,
-    pub(crate) backend: String,
-    pub(crate) arch: String,
-    pub(crate) weights_sha256: String,
-    pub(crate) library_sha256: String,
-    pub(crate) allocations: Vec<Allocation>,
-    pub(crate) views: Vec<View>,
-    pub(crate) inputs: Vec<Binding>,
-    pub(crate) outputs: Vec<Binding>,
-    pub(crate) kernels: Vec<Kernel>,
-    pub(crate) calls: Vec<Call>,
-    #[serde(default)]
-    pub(crate) entrypoints: Vec<Entrypoint>,
+    pub version: u32,
+    pub backend: String,
+    pub arch: String,
+    pub weights_sha256: String,
+    pub library_sha256: String,
+    pub allocations: Vec<Allocation>,
+    pub views: Vec<View>,
+    pub inputs: Vec<Binding>,
+    pub outputs: Vec<Binding>,
+    pub kernels: Vec<Kernel>,
+    pub calls: Vec<Call>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub entrypoints: Vec<Entrypoint>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Allocation {
+pub struct Allocation {
     pub bytes: usize,
     pub weight_offset: Option<usize>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct View {
+pub struct View {
     pub allocation: usize,
     pub offset: usize,
     pub bytes: usize,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Binding {
+pub struct Binding {
     pub name: String,
     pub view: usize,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Kernel {
+pub struct Kernel {
     pub buffers: usize,
     pub scalars: usize,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Call {
+pub struct Call {
     pub kernel: usize,
     pub views: Vec<usize>,
     pub scalars: Vec<i32>,

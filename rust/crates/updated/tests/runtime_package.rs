@@ -109,6 +109,11 @@ fn finalize_checkout(paths: &Paths) -> Result<(), Error> {
             )
             .unwrap();
     }
+    run_updater(paths, false)
+}
+
+fn run_updater(paths: &Paths, initialize: bool) -> Result<(), Error> {
+    let mut commands = LocalCommands;
     let mut logger = openpilot_logging::producer::Factory::new(format!(
         "ipc://{}",
         paths.system_root.join("logs.sock").display()
@@ -127,7 +132,11 @@ fn finalize_checkout(paths: &Paths) -> Result<(), Error> {
             is_agnos: false,
         },
     );
-    updater.finalize_update()
+    if initialize {
+        updater.init_overlay()
+    } else {
+        updater.finalize_update()
+    }
 }
 
 #[test]
@@ -146,4 +155,51 @@ fn complete_updater_finalization_rejects_unpublished_package() {
         Err(Error::Command { code: 17, .. })
     ));
     assert!(!common::get_consistent_flag(&paths.finalized()));
+}
+
+#[test]
+fn native_updater_stages_from_merged_source_without_copying_or_deleting_ready_update() {
+    use std::os::unix::fs::PermissionsExt;
+    let (_root, paths) = checkout(0);
+    std::fs::create_dir_all(paths.base.join("rust/bin")).unwrap();
+    std::fs::write(paths.base.join("rust/runtime-manifest.json"), "native").unwrap();
+    let helper = paths.base.join("rust/bin/openpilot-runtime-install");
+    std::fs::write(
+        &helper,
+        format!(
+            "#!/bin/sh\nprintf '%s\\n' \"$@\" > '{}'\nexit 17\n",
+            paths.base.join("attempt").display()
+        ),
+    )
+    .unwrap();
+    std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let result = finalize_checkout(&paths);
+    assert!(matches!(result, Err(Error::Command { code: 17, .. })));
+    let arguments = std::fs::read_to_string(paths.base.join("attempt")).unwrap();
+    assert!(arguments.contains("--stage-update\n"));
+    assert!(arguments.contains(&format!("--source\n{}\n", paths.merged().display())));
+    assert!(!paths.finalized().exists());
+}
+
+#[test]
+fn updater_does_not_erase_pending_native_update_or_previous_generation() {
+    let (_root, paths) = checkout(0);
+    std::fs::create_dir_all(&paths.base).unwrap();
+    std::fs::write(
+        paths.finalized().join(".runtime-update-ready.json"),
+        "ready",
+    )
+    .unwrap();
+    let backup = paths.staging.join("old_openpilot.saved");
+    std::fs::create_dir_all(&backup).unwrap();
+    std::fs::write(backup.join("live-helper"), "preserve").unwrap();
+    assert!(run_updater(&paths, true).is_err());
+    assert_eq!(
+        std::fs::read_to_string(paths.finalized().join(".runtime-update-ready.json")).unwrap(),
+        "ready"
+    );
+    assert_eq!(
+        std::fs::read_to_string(backup.join("live-helper")).unwrap(),
+        "preserve"
+    );
 }

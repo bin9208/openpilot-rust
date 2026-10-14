@@ -141,8 +141,8 @@ jobs:
       - name: Build pinned hardened videoio and unchanged source IPC bindings
         run: |
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
-          python rust/tools/build_xiaoge_opencv.py --prepare-only --output "$RUNNER_TEMP/webcam-opencv-source"
-          python rust/tools/build_webcam_opencv.py --source "$RUNNER_TEMP/webcam-opencv-source/opencv-fe38fc608f6acb8b68953438a62305d8318f4fcd" --output "$RUNNER_TEMP/webcam/provider" --growth-mib 4096
+          cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-xiaoge-opencv -- --prepare-only --output "$RUNNER_TEMP/webcam-opencv-source"
+          cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-webcam-opencv -- --source "$RUNNER_TEMP/webcam-opencv-source/opencv-fe38fc608f6acb8b68953438a62305d8318f4fcd" --output "$RUNNER_TEMP/webcam/provider" --growth-mib 4096
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/webcam/binding"
           printf 'OPENPILOT_WEBCAM_OPENCV_ROOT=%s/webcam/provider\nLD_LIBRARY_PATH=%s/webcam/provider/install/lib\nPYTHONPATH=%s/webcam/binding:%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -544,7 +544,10 @@ jobs:
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: cargo fmt --all --check
       - name: Reject incomplete or invalid native runtime packages
-        run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests -q tools/tests/test_runtime_package.py tools/tests/test_offline_qcom_publish.py tools/tests/test_runtime_bootstrap.py tools/tests/test_runtime_release.py tools/tests/test_runtime_release_publish.py
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test -p openpilot-dev-tools --locked --test seal_runtime --test package --test publish --test runtime_bootstrap
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests -q tools/tests/test_offline_qcom_publish.py
       - name: Install source-pinned Eigen headers
         run: |
           python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
@@ -555,7 +558,7 @@ jobs:
       - name: Stage pinned numerical dependency before required workspace tests
         run: |
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
-          python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-numerics"
+          cargo run --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/torque-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-numerics"
           printf 'CONTROLS_NUMERICS=%s/torque-numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Generate runner-local Hyundai source fixtures
         run: |
@@ -582,14 +585,14 @@ jobs:
         run: |
           python tools/card_ci_space.py --path "$RUNNER_TEMP" --growth-mib 1024
           mkdir -p "$RUNNER_TEMP/qcom-downloads"
-          curl --fail --location --retry 3 --max-time 180 \
-            'https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.12.14%2B20260929-aarch64-unknown-linux-gnu-install_only.tar.gz' \
-            --output "$RUNNER_TEMP/qcom-downloads/python.tar.gz"
-          curl --fail --location --retry 3 --max-time 180 \
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo +1.94.0 build --locked -p openpilot-model-runtime --target aarch64-unknown-linux-gnu --bin offline-qcom-compile
+          curl --fail --location --retry 3 --max-time 180 --max-filesize 67108864 \
             'https://raw.githubusercontent.com/commaai/agnos-builder/ec1cf237a84565a056dbbc6f433b1b1c20c07a2c/userspace/root/usr/lib/aarch64-linux-gnu/libllvm-qcom.so' \
             --output "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so"
-          python tools/stage_qcom_compiler.py "$RUNNER_TEMP/qcom-compiler" \
-            "$RUNNER_TEMP/qcom-downloads/python.tar.gz" "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so" \
+          cargo +1.94.0 run --locked -p openpilot-dev-tools --bin stage-qcom-compiler -- "$RUNNER_TEMP/qcom-compiler" \
+            "${CARGO_TARGET_DIR:-target}/aarch64-unknown-linux-gnu/debug/offline-qcom-compile" "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so" \
             /usr/bin/qemu-aarch64-static /usr/aarch64-linux-gnu/lib
           printf 'QCOM_COMPILER_COMMAND=%s\n' "$(cat "$RUNNER_TEMP/qcom-compiler/command.json")" >> "$GITHUB_ENV"
       - name: Preserve genuine offline compiler provenance
@@ -608,7 +611,12 @@ jobs:
           python tools/check_model_reference.py --model ../openpilot/selfdrive/modeld/models/dmonitoring_model.onnx --output "$RUNNER_TEMP/dm-native" --binary target/debug/model-run
           python tools/check_model_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/driving-native" --binary target/debug/model-run
           python tools/check_policy_reference.py --model ../openpilot/selfdrive/modeld/models/driving_supercombo.onnx --output "$RUNNER_TEMP/policy-native" --binary target/debug/model-run
-      - run: python tools/check_reference.py
+      - name: Compare filters with the complete pinned original-source corpus
+        run: |
+          python tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --locked --release -p openpilot-runtime-core --example filter_trace
+          cargo run --locked -p openpilot-dev-tools --bin check-filter-reference -- --binary "${CARGO_TARGET_DIR:-target}/release/examples/filter_trace"
+          cargo test --locked -p openpilot-dev-tools --test filter_reference
       - run: cargo build --workspace --examples --locked
       - name: Build standalone recovery service
         run: |
@@ -833,7 +841,7 @@ jobs:
           git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
       - name: Compile pinned OpenCV and original Python bindings
         run: |
-          python rust/tools/build_xiaoge_opencv.py --output "$RUNNER_TEMP/xiaoge-opencv"
+          cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-xiaoge-opencv -- --output "$RUNNER_TEMP/xiaoge-opencv"
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_params_python.py --output "$RUNNER_TEMP/xiaoge-original/params"
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -909,7 +917,7 @@ jobs:
         run: |
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 256
           git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
-          CC=clang-18 CXX=clang++-18 python rust/tools/build_xiaoge_opencv.py --output "$RUNNER_TEMP/xiaoge-opencv-asan" --sanitizers address,undefined
+          CC=clang-18 CXX=clang++-18 cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-xiaoge-opencv -- --output "$RUNNER_TEMP/xiaoge-opencv-asan" --sanitizers address,undefined
       - name: Check native ownership and exact model results under ASan and UBSan
         run: |
           python rust/tools/check_xiaoge_native_memory.py --opencv "$RUNNER_TEMP/xiaoge-opencv-asan" \
@@ -957,7 +965,9 @@ jobs:
           rustup toolchain install 1.94.0 --profile minimal --component clippy
       - name: Build original encoder IPC bindings and check fixture failure detection
         run: |
-          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_encoder_ci.py rust/tools/tests/test_encoder_target_stage.py rust/tools/tests/test_encoder_outcomes.py -q
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test encoder_stage
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_encoder_ci.py rust/tools/tests/test_encoder_outcomes.py -q
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/encoder-native/python"
           python -P -c 'import msgq.ipc_pyx, msgq.visionipc.visionipc_pyx, zstandard; from openpilot.cereal import log, messaging; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(msgq.visionipc.visionipc_pyx.__file__); print(zstandard.__version__)' > "$RUNNER_TEMP/encoder-native/python/imports.txt"
@@ -1229,7 +1239,7 @@ jobs:
         run: |
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/card-native/wheels"
-          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/card-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/card-native/numerics"
+          cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/card-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/card-native/numerics"
       - name: Generate all required Hyundai fixtures
         run: |
           python rust/tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-native/fixtures" --dbc "$RUNNER_TEMP/card-native/dbc"
@@ -1315,7 +1325,7 @@ jobs:
           python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
-          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
+          cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
       - name: Require RadarCAN and CAN tests, native build and Clippy
         working-directory: rust
         run: |
@@ -1380,7 +1390,7 @@ jobs:
         run: |
           python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
           python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
-          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
+          cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
       - name: Build and execute generic ARM RadarCAN tests and artifacts
         working-directory: rust
         run: |
@@ -2293,7 +2303,7 @@ jobs:
       - name: Stage source-pinned control numerical dependency
         run: |
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/control-wheels"
-          python rust/tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/control-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/control-numerics"
+          cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/control-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/control-numerics"
           printf 'CONTROLS_NUMERICS=%s/control-numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build native controller and policy probes
         run: |
@@ -2910,7 +2920,9 @@ jobs:
           python rust/tools/stage_startup_ui_raylib.py --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-arm" --shared --cxx aarch64-linux-gnu-g++
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-arm\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build pinned external FFmpeg for generic aarch64 GNU linking
-        run: python rust/tools/build_loggerd_ffmpeg.py --root "$RUNNER_TEMP/logger-ffmpeg-gnu" --cc aarch64-linux-gnu-gcc --ar aarch64-linux-gnu-ar --ranlib aarch64-linux-gnu-ranlib
+        run: |
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-loggerd-ffmpeg -- --root "$RUNNER_TEMP/logger-ffmpeg-gnu" --cc aarch64-linux-gnu-gcc --ar aarch64-linux-gnu-ar --ranlib aarch64-linux-gnu-ranlib
       - name: Install source-pinned Eigen headers
         run: |
           python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
@@ -2921,7 +2933,6 @@ jobs:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
           FFMPEG_DIR: ${{ runner.temp }}/logger-ffmpeg-gnu/install
         run: |
-          rustup toolchain install 1.94.0 --profile minimal
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
           cargo build --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-gnu
           file target/aarch64-unknown-linux-gnu/release/cpu-sample
@@ -2954,7 +2965,7 @@ jobs:
         working-directory: rust
         run: |
           python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.5.3 --dest "$RUNNER_TEMP/torque-arm-wheels"
-          python tools/stage_torque_numerics.py --wheel "$RUNNER_TEMP"/torque-arm-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-arm-numerics"
+          cargo run --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/torque-arm-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-arm-numerics"
       - name: Build and inspect native selfdrived for generic Linux aarch64
         working-directory: rust
         env:
@@ -3013,7 +3024,7 @@ jobs:
         run: |
           python -m pip install cargo-zigbuild==0.23.4 ziglang==0.16.0 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-musl
-          python tools/build_loggerd_ffmpeg.py --root "$RUNNER_TEMP/logger-ffmpeg-musl" --cc 'python-zig cc -target aarch64-linux-musl' --ar 'python-zig ar' --ranlib 'python-zig ranlib'
+          cargo run --locked -p openpilot-dev-tools --bin build-loggerd-ffmpeg -- --root "$RUNNER_TEMP/logger-ffmpeg-musl" --cc 'python-zig cc -target aarch64-linux-musl' --ar 'python-zig ar' --ranlib 'python-zig ranlib'
           FFMPEG_DIR="$RUNNER_TEMP/logger-ffmpeg-musl/install" cargo zigbuild --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-musl
           python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_aarch64.py \
@@ -3111,9 +3122,9 @@ jobs:
 
       - name: Stage exact source-pinned native ARM codec packages
         run: |
-          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 512
-          python rust/tools/stage_encoder_target.py --output "$RUNNER_TEMP/encoder-arm/dependencies"
-          python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"encoder-arm/dependencies/receipt.json"; d=json.loads(p.read_text()); print("ENCODER_ARM_FFMPEG="+d["ffmpeg"]["install"]); print("ENCODER_ARM_LIBYUV="+d["libyuv"]["install"]+"/lib")' >> "$GITHUB_ENV"
+          python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin stage-encoder-target -- --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/encoder-arm/dependencies"
+          printf 'ENCODER_ARM_FFMPEG=%s/encoder-arm/dependencies/ffmpeg/install\nENCODER_ARM_LIBYUV=%s/encoder-arm/dependencies/libyuv/install/lib\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build encoder daemon and probes with pinned ARM codecs and ION
         working-directory: rust
         env:

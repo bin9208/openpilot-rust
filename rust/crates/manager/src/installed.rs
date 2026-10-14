@@ -17,12 +17,7 @@ use openpilot_process_supervision::{
 };
 
 pub fn processes(installation: &Installation, factory: &Factory) -> Result<Processes, Error> {
-    let config = ImportConfig::from_environment(
-        installation
-            .root
-            .join("openpilot/tools/bodyteleop/web.py")
-            .is_file(),
-    );
+    let config = ImportConfig::from_environment(binding::bodyteleop_available(installation));
     let mut entries = Vec::new();
     for descriptor in catalog(config) {
         let binding = binding::resolve(descriptor, installation);
@@ -76,7 +71,7 @@ fn execution(binding: Binding, installation: &Installation) -> Execution {
 }
 
 pub fn inspect(installation: &Installation) -> Vec<serde_json::Value> {
-    catalog(ImportConfig::from_environment(installation.root.join("openpilot/tools/bodyteleop/web.py").is_file())).into_iter().map(|entry| {
+    catalog(ImportConfig::from_environment(binding::bodyteleop_available(installation))).into_iter().map(|entry| {
         match binding::resolve(entry, installation) {
             Some(bound) => {
                 let error = bound.validate().err().map(|error| error.to_string());

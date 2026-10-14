@@ -67,6 +67,30 @@ def main() -> None:
   mode = Mode(os.environ['OWNED_PULL_MODE'])
   count_path = Path(os.environ['OWNED_PULL_COUNTER'])
   count = int(count_path.read_text()) if count_path.exists() else 0
+  if args[:1] == ['native-stage']:
+    # Owned native-package boundary: preserve active source while exercising the
+    # existing lock, cancellation and error cases. Real archives are verified by
+    # runtime-installer's two-generation native CLI integration suite.
+    assert args[1:3] == ['--stage-update', '--root'] and Path(args[3]).resolve() == repository
+    target = args[args.index('--target') + 1]
+    if mode in (Mode.CANCEL_GROUP, Mode.CANCEL_NO_READY):
+      held_group()
+    if mode in (Mode.RESET_BUSY, Mode.MERGE_BUSY):
+      os.write(2, b"fatal: Unable to create index.lock: File exists\n")
+      raise SystemExit(128)
+    if mode == Mode.RESET_OUTPUT:
+      os.write(2, b' \x1cfirst \xff\r\n')
+      os.write(1, ' second\t오류\x1f '.encode())
+      raise SystemExit(23)
+    if mode == Mode.RESET_SIGNAL:
+      os.write(1, b'owned reset signal\n')
+      os.kill(os.getpid(), signal.SIGTERM)
+    if subprocess.run(['/usr/bin/git', 'merge-base', '--is-ancestor', 'HEAD', target], capture_output=True).returncode != 0:
+      os.write(2, b'Native package update requires fast-forward source\n')
+      raise SystemExit(1)
+    if mode == Mode.UPDATED_STATE_FAIL:
+      (Path(os.environ['OWNED_PULL_STATE']) / 'git.json.tmp').mkdir()
+    return
   if args == ['rev-parse', 'HEAD']:
     count += 1
     count_path.write_text(str(count))

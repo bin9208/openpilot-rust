@@ -289,6 +289,15 @@ impl<'pool, 'device> CameraPort<'pool, 'device> {
         self.images()?.copy_yuv(slot, destination)
     }
 
+    pub fn copy_yuv_samples(
+        &self,
+        slot: usize,
+        offsets: openpilot_camerad::geometry::SampleIndices,
+        destination: &mut [u8],
+    ) -> Result<(), CameraError> {
+        self.images()?.copy_yuv_samples(slot, offsets, destination)
+    }
+
     pub fn copy_raw(&self, slot: usize) -> Result<Option<Vec<u8>>, CameraError> {
         self.images()?.copy_raw(slot)
     }

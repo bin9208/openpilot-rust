@@ -1,4 +1,4 @@
-use super::{git_config::text, process};
+use super::git_config::text;
 use crate::{config::Config, Error, Value};
 
 pub(super) fn quote(text: &str) -> String {
@@ -21,41 +21,30 @@ fn parameter(payload: &Value, key: &str) -> Result<String, Error> {
 pub(super) fn git(config: &Config, action: &str, payload: &Value) -> Result<Option<String>, Error> {
     let command = match action {
         "git_pull" => "__git-pull".into(),
-        "git_sync" => {
-            let current = process::run(config, &["git", "branch", "--show-current"], 15, None)?.combined();
-            let current = current.trim_matches(text::whitespace);
-            let branches = process::run(config, &["git", "branch", "--format=%(refname:short)"], 30, None)?;
-            let mut parts = Vec::new();
-            if branches.code == 0 {
-                for branch in text::lines(&branches.combined()) {
-                    let branch = branch.trim_matches(text::whitespace);
-                    if !branch.is_empty() && branch != current { parts.push(format!("git branch -D {}", quote(branch))); }
-                }
-            }
-            parts.push("git fetch --all --prune".into());
-            parts.join(" && ")
-        }
-        "git_reset" => "git reset --hard HEAD".into(),
-        "git_checkout" => {
+        "git_sync" => "__fetch-native".into(),
+        "git_reset" | "git_rebuild" => "__stage-repair".into(),
+        "git_checkout" | "git_reset_repo" => {
             let branch = parameter(payload, "branch")?;
-            if branch.is_empty() { return Ok(None); }
-            match branch.strip_prefix("origin/") {
-                Some(local) => format!("git fetch --all --prune && git switch -C {} --track {}", quote(local), quote(&branch)),
-                None => format!("git fetch --all --prune && git switch {}", quote(&branch)),
+            if branch.is_empty() {
+                return Ok(None);
             }
+            format!(
+                "{} {}",
+                if action == "git_checkout" {
+                    "__stage-checkout"
+                } else {
+                    "__stage-reset-repo"
+                },
+                quote(&branch)
+            )
         }
         "git_checkout_commit" => {
             let commit = parameter(payload, "commit")?;
-            if commit.is_empty() { return Ok(None); }
-            format!("git checkout {}", quote(&commit))
+            if commit.is_empty() {
+                return Ok(None);
+            }
+            format!("__stage-commit {}", quote(&commit))
         }
-        "git_reset_repo" => {
-            let branch = parameter(payload, "branch")?;
-            if branch.is_empty() { return Ok(None); }
-            let branch = quote(&branch);
-            format!("git remote set-url origin https://github.com/ajouatom/openpilot.git 2>/dev/null; git merge --abort 2>/dev/null; git rebase --abort 2>/dev/null; git cherry-pick --abort 2>/dev/null; git revert --abort 2>/dev/null; git am --abort 2>/dev/null; git bisect reset 2>/dev/null; git pack-refs --all 2>/dev/null; rm -rf .git/refs/remotes/origin 2>/dev/null; git fetch origin --prune --force && git checkout -f -B {branch} origin/{branch} && git reset --hard origin/{branch} && git clean -xfd")
-        }
-        "git_rebuild" => "cd /data/openpilot && scons -c && rm -f .sconsign.dblite && rm -rf /tmp/scons_cache && rm -f prebuilt".into(),
         _ => return Ok(None),
     };
     let executable = std::env::current_exe()?;
@@ -64,9 +53,40 @@ pub(super) fn git(config: &Config, action: &str, payload: &Value) -> Result<Opti
         quote(&executable.to_string_lossy()),
         quote(&config.repository.to_string_lossy())
     );
-    Ok(Some(if action == "git_pull" {
-        format!("{wrapper} {command}")
-    } else {
-        format!("{wrapper} bash -c {}", quote(&command))
-    }))
+    Ok(Some(format!("{wrapper} {command}")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn maintenance_commands_request_native_staging_without_checkout_mutation() {
+        let config = Config::original().unwrap();
+        for (action, expected) in [
+            ("git_reset", "__stage-repair"),
+            ("git_rebuild", "__stage-repair"),
+            ("git_checkout", "__stage-checkout"),
+            ("git_checkout_commit", "__stage-commit"),
+            ("git_reset_repo", "__stage-reset-repo"),
+        ] {
+            let payload = Value::object([
+                ("branch", Value::text("candidate")),
+                ("commit", Value::text("1234567890abcdef")),
+            ]);
+            let command = git(&config, action, &payload).unwrap().unwrap();
+            assert!(
+                command.contains(expected),
+                "{action} bypassed native staging: {command}"
+            );
+            for unsafe_command in [
+                "git clean",
+                "git reset --hard",
+                "git switch",
+                "scons",
+                "ajouatom",
+            ] {
+                assert!(!command.contains(unsafe_command));
+            }
+        }
+    }
 }

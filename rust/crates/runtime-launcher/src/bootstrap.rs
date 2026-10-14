@@ -56,6 +56,7 @@ fn verify_package(repository: &std::path::Path) -> Result<(), Error> {
         repository,
         &[
             "rust/bin/openpilot-launch",
+            "rust/bin/openpilot-runtime-install",
             "rust/bin/openpilot-manager",
             "rust/bin/openpilot-process-child",
             "rust/bin/openpilot-carrot-recovery",

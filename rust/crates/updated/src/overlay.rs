@@ -1,6 +1,6 @@
 use crate::{common, process::args, report, updater::Updater, Error};
 use std::{
-    fs,
+    fs::{self, OpenOptions},
     os::unix::fs::{DirBuilderExt, MetadataExt},
     path::Path,
 };
@@ -22,6 +22,29 @@ impl Updater<'_> {
     pub fn init_overlay(&mut self) -> Result<(), Error> {
         let paths = self.context.paths.clone();
         let merged = paths.merged();
+        fs::create_dir_all(&paths.staging)?;
+        let transaction_lock = OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(paths.staging.join(".runtime-update.lock"))?;
+        transaction_lock
+            .try_lock()
+            .map_err(|_| Error::Contract("native source/package transaction is busy"))?;
+        if paths
+            .finalized()
+            .join(".runtime-update-ready.json")
+            .try_exists()?
+            || paths
+                .staging
+                .join(".runtime-update-journal.json")
+                .try_exists()?
+        {
+            return Err(Error::Contract(
+                "complete native update is pending; reboot before preparing another",
+            ));
+        }
         if paths.overlay_init().is_file() && common::is_mount(&merged) {
             let new_files = self.context.commands.run(
                 &args(&[
@@ -44,13 +67,19 @@ impl Updater<'_> {
         self.params.put_bool("UpdateAvailable", false)?;
         common::set_consistent_flag(&paths, &paths.finalized(), false)?;
         self.dismount_overlay()?;
-        self.context
-            .commands
-            .run(&args(&["sudo", "rm", "-rf", text(&paths.staging)?]), None)?;
-        if paths.staging.is_dir() {
-            common::remove_tree(&paths.staging)?;
+        // Keep complete rollback checkouts, package helpers and the transaction
+        // lock. Only the updater's disposable overlay directories are recreated.
+        for directory in [
+            &paths.upper(),
+            &paths.metadata(),
+            &merged,
+            &paths.finalized(),
+        ] {
+            if directory.try_exists()? {
+                common::remove_tree(directory)?;
+            }
         }
-        for directory in [&paths.staging, &paths.upper(), &paths.metadata(), &merged] {
+        for directory in [&paths.upper(), &paths.metadata(), &merged] {
             fs::DirBuilder::new().mode(0o755).create(directory)?;
         }
         if fs::symlink_metadata(&paths.base)?.dev() != fs::symlink_metadata(&merged)?.dev() {
@@ -104,6 +133,34 @@ impl Updater<'_> {
             "creating finalized version of the overlay",
         )?;
         let paths = self.context.paths;
+        if paths.base.join("rust/runtime-manifest.json").is_file() {
+            let target = self.context.commands.run(
+                &args(&["git", "rev-parse", "--verify", "HEAD^{commit}"]),
+                Some(&paths.merged()),
+            )?;
+            self.context.commands.run(
+                &args(&[
+                    text(&paths.base.join("rust/bin/openpilot-runtime-install"))?,
+                    "--stage-update",
+                    "--root",
+                    text(&paths.base)?,
+                    "--source",
+                    text(&paths.merged())?,
+                    "--target",
+                    target.trim(),
+                    "--staging",
+                    text(&paths.staging)?,
+                    "--params-root",
+                    text(&paths.system("/data/params"))?,
+                ]),
+                Some(&paths.base),
+            )?;
+            report::info(
+                self.context.logger,
+                "verified native source/package update staged for reboot",
+            )?;
+            return Ok(());
+        }
         common::set_consistent_flag(paths, &paths.finalized(), false)?;
         if paths.finalized().exists() {
             common::remove_tree(&paths.finalized())?;

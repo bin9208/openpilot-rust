@@ -99,3 +99,8 @@ path = "examples/http_slice.rs"
 [[example]]
 name = "carrot-server-popular-values"
 path = "examples/popular_values.rs"
+
+[[test]]
+name = "staged_updates"
+path = "tests/staged_updates.rs"
+harness = false

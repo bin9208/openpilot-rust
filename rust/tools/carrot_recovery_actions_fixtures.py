@@ -109,8 +109,10 @@ def native(binary: Path, repo: Path, tmux_log: Path, output: Path) -> Iterator[i
   with socket.socket() as reserved:
     reserved.bind(("127.0.0.1", 0))
     port = reserved.getsockname()[1]
-  launcher = ROOT / "rust/target/debug/openpilot-process-child"
+  launcher = Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "rust/target")) / "debug/openpilot-process-child"
   sibling = binary.with_name("openpilot-process-child")
+  if sibling.is_symlink() and sibling.resolve() != launcher.resolve():
+    sibling.unlink()
   if not sibling.exists():
     sibling.symlink_to(launcher)
   command = [str(binary), str(repo), str(tmux_log), str(launcher), str(port)]

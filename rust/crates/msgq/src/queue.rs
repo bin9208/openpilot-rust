@@ -284,6 +284,19 @@ impl Queue {
         }
     }
 
+    pub(crate) fn receive_now_into(&mut self, bytes: &mut Vec<u8>) -> Result<bool, Error> {
+        loop {
+            let Role::Subscriber(reader) = self.role else {
+                return Err(Error::Invalid("receive requires a subscriber"));
+            };
+            match reader.receive_into(&self.mapping.memory()?, bytes)? {
+                Ready::Empty => return Ok(false),
+                Ready::Message => return Ok(true),
+                Ready::Evicted => self.reregister(reader)?,
+            }
+        }
+    }
+
     pub(crate) fn receive(&mut self, timeout_ms: i32) -> Result<Option<Vec<u8>>, Error> {
         if timeout_ms < 0 {
             return Err(Error::Invalid("invalid receive timeout"));
