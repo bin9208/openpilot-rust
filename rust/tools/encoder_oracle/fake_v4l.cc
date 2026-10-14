@@ -211,7 +211,8 @@ extern "C" int ioctl(int fd, unsigned long request, ...) {
       device.returned.push_back(input); record("CAPTURE_FRAME %ld %ld %u", input.time.tv_sec, input.time.tv_usec, value->flags);
     } else if (device.stopped && !device.eos) {
       device.eos = true; value->flags = 0x02000000; plane->bytesused = 0;
-      if (test == "eos-unused-timestamp") value->timestamp = {-1, -1};
+      // Physical AGNOS encoder EOS represents -1 microsecond as this timeval.
+      if (test == "eos-unused-timestamp") value->timestamp = {-1, 999999};
       record("CAPTURE_EOS");
     } else abort();
     return 0;

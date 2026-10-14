@@ -91,11 +91,11 @@ def main() -> None:
   check('v4l', 'check_encoder_v4l.py', ['--rust', str(selected[2]), '--output', str(output / 'v4l'), '--native', str(native)])
   check('runtime', 'check_encoder_runtime.py', ['--rust', str(selected[0]), '--source', str(output / 'source/original-encoderd'),
     '--output', str(output / 'runtime'), '--native', str(native)])
-  for name, count in (('codecs', 5), ('v4l', 28), ('runtime', 10)):
+  for name, count in (('codecs', 5), ('v4l', 32), ('runtime', 10)):
     receipt = json.loads((output / name / 'receipt.json').read_text())
     if receipt['status'] != 'PASS' or len(receipt['results']) != count:
       raise AssertionError(f'incomplete encoder comparison: {name}')
-  (output / 'receipt.json').write_text(json.dumps({'status': 'PASS', 'codec_cases': 5, 'v4l_cases': 28, 'runtime_cases': 10,
+  (output / 'receipt.json').write_text(json.dumps({'status': 'PASS', 'codec_cases': 5, 'v4l_cases': 32, 'runtime_cases': 10,
     'scope': 'source/native host codecs and IPC; target drivers, device performance and complete startup/upload remain separate'}) + '\n')
 
 

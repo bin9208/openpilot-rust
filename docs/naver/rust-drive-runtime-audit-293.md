@@ -45,7 +45,7 @@ usable. Read-only inspection confirms source, installed manifest and drive
 `initData` all identify `a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31`.
 Current normal startup uses `launch_openpilot.sh`. All 22 currently running
 project executable mappings use the matching native generation, with no deleted
-executable mappings. No device code, setting, service or runtime was changed.
+executable mappings. No installed device code, setting, service or runtime was changed.
 
 Thirty full rlogs (454,531,890 compressed bytes) cover 1,807.751 seconds relative
 to the first CAN message. The vehicle is an Ioniq 5 PE on a tizi device. Raw logs,
@@ -104,6 +104,18 @@ average core in this drive. Preserve the current priorities and placements while
 localizing cost; do not infer free scheduling headroom from selected-process
 sums alone.
 
+Separating the same procLog deltas gives pandad user/system costs of
+4.94/40.92% and loggerd 19.53/8.28% of one core. Thus most observed pandad
+cost is kernel CPU time; this does not identify which syscall consumes it.
+The inspected SPI protocol retains the source's busy turnaround waits and
+ACK transactions. No SPI phase/slow/checksum/timeout diagnostics matched the
+inspected logMessage prefixes in the performance window. That absence is not
+a syscall profile. Loggerd retains source compression level 10, and its zstd
+provider already buffers input internally. Neither observation justifies
+changing transport cadence, safety timing or compression quality. Further
+optimization needs phase/syscall profiling or a representative benchmark;
+no speculative performance change was made to these two processes.
+
 All Python executable records in the drive and current process inspection belong
 to five AGNOS services: `/usr/comma/brightnessd.py`, `magic.py`, `power_monitor.py`,
 `varwatch.py` and `power_drop_monitor.py`. Their combined observed cost is about
@@ -125,15 +137,19 @@ qRoad drops 14. This recording defect is tracked separately in
 A focused original/native driver-boundary fixture exposed a source-parity bug:
 Rust rejects signed timestamps on buffers whose timestamps the source does not
 use. The correction and tests are recorded in
-[encoder rotation investigation](rust-encoder-rotation-294.md). It is a candidate
-for the observed SIGABRT, not yet the demonstrated physical-device cause.
+[encoder rotation investigation](rust-encoder-rotation-294.md). An explicitly
+approved offroad source-oracle probe then observed EOS timeval `{-1, 999999}`
+on both rotations and completed 16 synthetic frames normally. Replaying that
+exact timestamp reproduces SIGABRT in old Rust and passes in corrected Rust.
+This establishes the physical driver's triggering value and the faulty conversion
+path, but corrected-runtime driving acceptance remains outstanding.
 
-An isolated synthetic-frame hardware probe has been built and its dependencies
-checked with the exact AGNOS loader. User approval is pending because the older
-AGENTS device-test prohibition goes beyond the newly authorized log inspection.
-No probe has run on the device. Required exact-SHA CI, a matching release and
-actual target rotation validation remain separate gates. The installed runtime
-continues to be the inspected original candidate.
+The isolated probe was bounded to 20 seconds, used its own ION buffers and no
+camera/control/IPC interfaces, and was removed after its outputs were retrieved.
+Offroad state and absence of the temporary process were checked afterwards.
+Required exact-SHA CI, a matching release and corrected-runtime target rotation
+validation remain separate gates. The installed runtime continues to be the
+inspected original candidate.
 
 Available host space remained above 394 GiB; each build checked reserve and
 reused the coordinated target cache with incremental compilation disabled.
