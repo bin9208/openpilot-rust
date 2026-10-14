@@ -1,5 +1,6 @@
 //! Shared build-side reserve. Device installation has a separate space policy.
-use crate::seal::Result;
+pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+pub mod cli;
 use serde::Serialize;
 use std::path::Path;
 

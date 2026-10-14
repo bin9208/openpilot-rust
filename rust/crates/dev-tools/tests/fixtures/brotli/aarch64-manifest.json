@@ -1,0 +1,10 @@
+{
+  "abi_version": 1,
+  "target": "aarch64-unknown-linux-gnu",
+  "brotli_version": 16781312,
+  "files": {
+    "libbrotlienc.so.1": "7f1ca7445f5b12a101ae098a4f6a64c19e90cff1083ea450a99f0e6bf5eb9443",
+    "libbrotlidec.so.1": "c7eb1e5984f38a327d67c52a3660ef37981db6f96ff8ef48671aed7926dccfa4",
+    "libbrotlicommon.so.1": "6f9c7644d9bbe4d883a9e03da5eb6c7a8064180bc62059fe2f3433b196172065"
+  }
+}

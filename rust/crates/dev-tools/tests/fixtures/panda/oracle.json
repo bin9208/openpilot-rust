@@ -1,0 +1,19 @@
+{
+  "scope": "Independent original Python signer + public header arithmetic fixtures, no firmware compilation",
+  "source_commit": "7c8b2f0f05b1140d6d391275d3643ba3daa769b1",
+  "version": "1de1c7b1f187",
+  "inputs": {
+    "panda/SConscript": "44521b59c3f0f781c67e8e4b94d6703c8f4b08d193ed2904a2be690d08d36d5b",
+    "panda/firmware_version.py": "37be0788651d800e4f1dc9fbd0616bfef5007e0702dd814fa88bfd611bb7bfae",
+    "panda/crypto/sign.py": "d81444036a91dc0e30157b1b012c4ef6dbf37192e19bf538e2f2e03b56551c99",
+    "panda/certs/debug.pub": "98be6f5fd87ab61c51e91991628d6d9f0b3fd1ef448176e5610a55f18fd4e301",
+    "panda/certs/release.pub": "9488d5c09307bc7ab25dfec337cb54f8788a0ae6b50e97b0c51e69b3e36cfd1c"
+  },
+  "files": {
+    "signed.bin": "fbfa07728000fae82ced49c20320940e0e3bc91f1b5310405f7cc285782fae35",
+    "unsigned.bin": "fdeab9acf3710362bd2658cdc9a29e8f9c757fcf9811603a8c447cd1d9151108",
+    "version": "22d7d25bcfc31c2c9f93f112d83d917e7dc49a5fe282cb71e462cd1c9c5d8f81",
+    "cert.h": "baa137cc7dd5705fa3dd9234d69fe9a737d5168ef07b6ebad5391236bad7cba4",
+    "gitversion.h": "100a644a5daaab55ee62f80b79c155a7ec4e7c6a381faf6824aa9a4c0af58319"
+  }
+}

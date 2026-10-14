@@ -1,0 +1,37 @@
+# Native startup renderer provider staging (#326)
+
+## Approved design and existing behavior
+
+Replace `rust/tools/stage_startup_ui_raylib.py` with native `stage-startup-ui-raylib`. Preserve the reviewed comma-deps-raylib6.0.0.1.post103 URLs, exact wheel sizes and SHA256 from uv.lock, the architecture-specific static archive, all three headers, SOURCE_SHA256, plugin contract symbol/string, GNU flags/library ordering, actual compiler argv provenance and stdout STARTUP_UI_RAYLIB_ROOT. Native archives, GNU compiler/linker/system libraries and HTTPS downloader remain explicit external dependencies; no Python UI runtime is introduced.
+
+Original repeated calls overwrite selected assets, permit nonshared→shared augmentation and retain an existing plugin during a nonshared repeat. The approved native policy preserves meaningful augmentation without partial writes: verify all existing pinned assets and ownership/provenance, build a complete generation privately, recheck existing identity immediately before atomic Linux directory exchange, then clean the displaced old generation. Identical verified repeats reuse the output. Extra/unmanaged files, symlinks, changed assets or mismatching provenance fail untouched with a fresh-output instruction. Native nonshared repeats retain verified shared plugins.
+
+Native plugin-build.json preserves original fields and truthful executed argv, adding plugin_sha256 for repeat integrity. For legacy shared output lacking this hash, --shared may privately relink and byte-compare before publishing native proof. A legacy --nonshared repeat rejects with --shared verification/fresh-output guidance; this is an explicit admission tightening rather than trusting unverified plugin bytes. Oracle comparisons normalize only the owned generation root; flags, compiler/library options and link order remain exact.
+
+Bound wheel download/read/ZIP indexing/selected expansion, verify exact reviewed size/SHA before extraction, reject unsafe or duplicate selected members and use the existing raw ZIP-directory counter to detect hidden duplicate records. The shared25GiB reserve plus1GiB growth applies before download/extraction/linking; compiler/downloader processes use bounded qa_process capture/deadlines/owned groups. Caller Cargo compilation needs a guard before it starts too.
+
+## Independent original capture
+
+With disk guards, downloaded actual pinned wheels20722617bytes(x86_64) and21707647bytes(aarch64); both SHA256 exactly match uv.lock/original constants. Unchanged original extraction produced both four-file payloads plus SOURCE_SHA256. The original host --shared step compiled with one sequential GNU compiler command and its real loaded contract function returned `comma-deps-raylib-6.0.0.1.post103`. Actual aarch64 plugin linking has not been performed in this stage.
+
+Wheels have22/24central-directory records and no standalone LICENSE/NOTICE/COPYING entry. Each of raylib.h, rlgl.h and raymath.h embeds the upstream zlib/libpng license/copyright; copying all header bytes exactly preserves those notices. No invented license catalog replaces them. The selected payload is about3.2MiB/2.4MiB, although unrelated wheel members expand up to47.3MB/43.1MB individually and total about62/64MB; the native stager must extract only the four selected native members.
+
+Capture files and original copy are ignored at `.analysis/scratch/2026-10-14-native-raylib-326/`; metadata and original file SHA256 inventories are there. No captures or wheel binaries are added to Git.
+
+## Native verification (2026-10-14)
+
+User briefly paused work after initial12-test GREEN; explicit resume revoked that pause. Work stayed in the isolated native-build-tools worktree. Builds use the canonical SDK, shared coordinated target, two jobs and incremental disabled; reserve checks passed before every build with at least25GiB plus2GiB estimated growth (over370GiB free).
+
+- Observed RED: actual native unit test reached the fail-closed stub and failed with raylib staging not implemented.
+- Full dev-tools suite160/160 passed with both default and serde_json preserve_order. After the two CLI regressions below,54 library plus2 CLI tests passed in both modes (current inventory162; no full162 rerun claimed). Thirteen Raylib unit tests are included. Coverage includes exact pinned uv.lock values, original compiler argv/link ordering for both architectures, bounded downloads/ZIP metadata/unsafe members, source identity, idempotent repeat, augmentation success/failure, legacy proof admission, plugin hash tampering, final output identity checks and bounded existing-directory indexing. The last bound was added after observed RED for oversized unmanaged directory admission.
+- Actual native CLI copied both pinned wheel payloads byte-for-byte against the unchanged original and worked with an empty PATH in cached-wheel/nonshared mode. Both repeats preserved the output inode and all bytes.
+- Actual native x86_64 shared plugin is byte-identical to the original and returns the exact contract string when loaded. Actual CXX argv matches after normalizing only the owned generation root; wheel/SHA/arch provenance matches, with the added plugin_sha256 verified against the output.
+- Real failed nonshared→shared augmentation retained all old bytes/inode; successful augmentation exchanged generations; shared and nonshared native repeats then preserved all bytes/inode. A copied original legacy shared generation rejected nonshared admission unchanged, then explicit shared relinking byte-matched and upgraded its proof.
+- Native HTTPS download without --wheel-file succeeded against the fixed public pin through bounded qa_process capture, followed by exact size/SHA verification.
+- Strict all-target Clippy passed in both feature modes after the final directory bound and CLI fixes. CLI --help/-h observed RED against original argparse behavior, then GREEN with empty PATH. Independent review reproduced a preexisting FIFO lock blocking before process deadlines; regression observed the hang, killed/reaped its owned child, then passed after NOFOLLOW|NONBLOCK open and opened-FD regular-file admission. FIFO with/without reader, directory and symlink lock cases reject promptly without output or temporary generation; ordinary cooperative file locking remains intact.
+
+All five workflow callers now use native cargo-run with explicit2048MiB build guards. Policy observed RED before migration, then35 tests plus367 subtests passed. The original179 guard argument sequences remain independently pinned; five additional guards and all five original stager argument sequences are checked separately. Three manual examples migrated too. Original Python source was removed only after real native/original parity and focused tests passed; its unchanged reference copy remains ignored.
+
+No verified GNU aarch64 EGL/GLESv2/drm/gbm development provider is present in the inspected local GNU SDK/system cross paths. Actual ARM plugin linking remains CI-owned; ARM archive/header parity and original command-order oracle are complete. AGNOS Bionic graphics libraries were not substituted for a GNU provider.
+
+Independent review completed with no remaining concrete Important finding after the lock fix; it also independently checked actual pinned payload/plugin/argv parity. No target/device acceptance, complete tool retirement or CPU benefit is claimed. Arbitrary concurrent mutation of source ancestors remains excluded; cooperating stages serialize and recheck the existing generation immediately before atomic publication.

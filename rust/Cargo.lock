@@ -2707,18 +2707,32 @@ dependencies = [
 name = "openpilot-dev-tools"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "flate2",
+ "openpilot-disk-space",
  "openpilot-usbgpu",
  "regex",
+ "rsa",
  "rustix",
  "serde",
  "serde_json",
+ "sha1",
  "sha2",
  "tar",
  "tempfile",
  "toml",
  "xz2",
  "zip",
+]
+
+[[package]]
+name = "openpilot-disk-space"
+version = "0.1.0"
+dependencies = [
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]

@@ -10,6 +10,10 @@ publish = false
 workspace = true
 
 [dependencies]
+rsa = "=0.9.10"
+sha1 = "=0.10.7"
+base64 = "=0.22.1"
+openpilot-disk-space = { path = "../disk-space" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
@@ -22,6 +26,10 @@ toml = "0.8"
 xz2 = "0.1.7"
 zip = { version = "=9.0.3", default-features = false, features = ["deflate-flate2"] }
 openpilot-usbgpu = { path = "../usbgpu", default-features = false }
+
+[[bin]]
+name = "stage-brotli-provider"
+path = "src/bin/stage_brotli_provider.rs"
 
 [[bin]]
 name = "check-filter-reference"
@@ -110,3 +118,11 @@ path = "src/bin/stage_runtime_media.rs"
 [[bin]]
 name = "stage-runtime-usbgpu"
 path = "src/bin/stage_runtime_usbgpu.rs"
+
+[[bin]]
+name = "build-runtime-panda"
+path = "src/bin/build_runtime_panda.rs"
+
+[[bin]]
+name = "stage-startup-ui-raylib"
+path = "src/bin/stage_startup_ui_raylib.rs"

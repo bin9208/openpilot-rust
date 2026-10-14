@@ -424,3 +424,23 @@ failed-launch cleanup observable. It is a checker correction, not evidence of
 a runtime upload failure or completed Python-tool conversion. Subsequent
 checker-only commits use the complete 430ec72b build as prior evidence; the
 final merged source still requires its own package identity and post-merge CI.
+
+
+The current native tools batch integrates [Panda firmware tools](rust-native-panda-tools-321.md),
+[CI disk reserve admission](rust-native-disk-guard-ci-322.md),
+[Brotli staging](rust-native-brotli-tools-324.md), and
+[raylib staging](rust-native-raylib-tools-326.md) into the same candidate before
+final publication. Independent reviews resolved the artifact read/publication,
+FIFO lock, and cache admission findings. Original/native artifact comparisons
+and focused native suites pass as recorded in each evidence document; the final
+combined workflow policy passes 37 tests and 367 subtests. Actual arm64 cold
+bootstrap and raylib shared linking remain CI gates. The index contains 3,537
+Python files after removing three replaced tool entry points and adding one
+bootstrap regression suite; this is not complete tool retirement.
+
+The user resumed host work with comma disconnected. No device connection or
+installation is part of this handoff preparation. A final dev commit requires
+its own protected PUSH checks and source-matched release: normal startup
+requests `runtime-<exact-checkout-HEAD>` and will not substitute an older
+package if that release is absent. Local packages alone do not make git pull
+a usable test handoff.

@@ -1,0 +1,1 @@
+extern "C" const char *openpilot_startup_ui_raylib_contract() { return "comma-deps-raylib-6.0.0.1.post103"; }

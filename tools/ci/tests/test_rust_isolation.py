@@ -231,7 +231,7 @@ class RustIsolationTests(unittest.TestCase):
                 self.assertNotIn('if', job)
                 self.assertNotIn('continue-on-error', job)
                 commands = '\n'.join(step.get('run', '') for step in job['steps'])
-                self.assertIn('card_ci_space.py', commands)
+                self.assertIn('check-disk-space', commands)
                 self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
                 self.assertTrue(any(step.get('if') == 'always()' and
                                     step.get('uses', '').startswith('actions/upload-artifact@') for step in job['steps']))
@@ -371,7 +371,7 @@ class RustIsolationTests(unittest.TestCase):
                          'webrtc_stun_checks', 'webrtc_identifiers_compare.py', 'webrtc_multicamera_compare.py', 'webrtc_fir_compare.py',
                          'webrtc_body_compare.py', 'webrtc_params_compare.py', 'webrtc_cli_compare.py', 'webrtc_srflx_compare.py',
                          'webrtc_debug_compare.py', 'source-standard-h264 native-standard-h264',
-                         'WEBRTC_PARAMS_BINDING', 'card_ci_space.py', 'SHA256SUMS'):
+                         'WEBRTC_PARAMS_BINDING', 'check-disk-space', 'SHA256SUMS'):
             self.assertIn(required, commands)
         for step in job['steps']:
             if 'run' in step:
