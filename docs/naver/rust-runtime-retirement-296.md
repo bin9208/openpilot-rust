@@ -583,3 +583,52 @@ All15 UI library tests, strict library/tests Clippy and independent review pass.
 The maintained live-process negative control rejects false completion; exit and
 unwind controls pass. This repairs test observation and cleanup, without claiming
 the exact CI cause or device acceptance. Fresh exact-head CI remains required.
+
+## Independent Card input admission (#335)
+
+PR#311 passed all46 Rust and16 integration jobs plus fast/docs gates, then
+merged as `a271bdf5312b7c2fd214e310394c6465ce68772d`. That clean source passed
+all11 AGNOS build groups/89 executables, the static installer binding,
+63/63 manager entries,92 loader checks/115 ELF objects and a1076-file seal.
+Its locally verified archive is1155636537 bytes with SHA256
+`8a2a7421cdebc0b699514c944325aeca89a38faf9a18a5c77b60da5fe61319d2`.
+It remains unpublished: the separate dev PUSH Card gate failed an exact Nissan
+torque comparison even though both streams passed all80 packet/count checks.
+
+The [retained evidence and correction](rust-card-input-admission-335.md) show
+that the original-only runtime can produce both observed values from identical
+published bytes when its independently scheduled SubMaster admits different
+control messages. The controlled source/source comparison differs only at
+output47 torque, matching the CI failure; neither original method nor numerical
+policy was changed. This is distinct from#330's earlier publication-count gap.
+
+The comparison now records and validates all nine topics' complete observed
+admission history against immutable event identities before comparing outputs.
+Only valid but different admission histories permit another independent pair,
+with at most three pairs and every attempt retained. Malformed traces, packet
+loss, timeouts, readiness/Params/lifecycle failures and any output difference
+after matching histories fail immediately. All original exact output fields
+and independent100Hz/80-frame checks remain. Existing fenced startup CAN batch
+differences are explicit; matching post-constructor topic history does not
+prove identical initialization or all wall-clock histories.
+
+The frozen correction passed one full18-candidate/19-case invocation, all on
+attempt one, with1520 strict paired measured frames and complete nine-topic
+histories. No histories were discarded. Combined Card CI, phase-fence and
+admission tests pass39 cases; four native trace tests, strict Card Clippy and
+targeted Ruff pass. Independent final review found no Important/Critical
+findings. New validation-only Python files keep the remaining Python inventory
+explicit:3542 source files, not complete Python tooling retirement. Exact final
+PR and merged-dev PUSH gates remain required before publication or handoff.
+
+
+## Complete workspace job budget (#337)
+
+The same a271 post-merge run later cancelled its final workspace release build
+at75m26s, after all preceding workspace checks passed. The retained log reports
+cancellation with cargo/two rustc workers still active and no final-build compiler
+error. The [job budget correction](rust-workspace-ci-budget-337.md) increases only
+the workspace timeout from75 to120minutes, preserving every gate and capacity
+limit. That deadline diagnosis is inferred from timing/configuration because
+check annotations are unavailable. The cancelled build is not accepted as pass;
+fresh exact-head and post-merge execution remain required.
