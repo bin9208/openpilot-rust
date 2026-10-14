@@ -455,3 +455,13 @@ state checks and packet-byte regressions pass. Both architectures run these
 checks in the existing CI matrix. The disk guard's13 pytest-style regressions
 also now have an explicit fast-check invocation; unittest discovery alone did
 not execute them. Fresh source CI remains a merge/publication gate.
+
+The next full workspace run reached a real process-supervision race, tracked in
+[#329](rust-exec-handshake-error-329.md): a helper could queue its exec errno and
+exit between nonblocking accept and exit observation. The parent then discarded
+the queued error. A final accept after observed exit preserves the original
+errno and existing ownership/EOF behavior. Actual syscall-delay RED/GREEN,
+full affected-package tests, strict Clippy and independent review passed. The
+UI CI gate now proves the exact race ordering; the updater's strict ENOENT
+assertion remains intact. This runtime correction requires a fresh source build
+and CI before final publication.

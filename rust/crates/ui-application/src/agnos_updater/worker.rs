@@ -536,10 +536,11 @@ mod tests {
         worker.start().unwrap();
         let state = finished(&worker);
         assert_eq!(state.text, "Update failed");
-        assert!(state
-            .failure
-            .unwrap()
-            .starts_with("Unable to start updater: [Errno 2]"));
+        let failure = state.failure.unwrap();
+        assert!(
+            failure.starts_with("Unable to start updater: [Errno 2]"),
+            "actual failure: {failure}"
+        );
         assert!(!worker.take_reboot().unwrap());
         println!("owned missing executable: visible failure no reboot");
     }

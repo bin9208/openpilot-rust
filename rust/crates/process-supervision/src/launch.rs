@@ -326,6 +326,7 @@ fn wait_for_exec(
     child: &mut Child,
     lock: Option<BorrowedFd<'_>>,
 ) -> Result<(), Error> {
+    let mut exited = false;
     loop {
         match listener.accept() {
             Ok((mut stream, _)) => {
@@ -346,11 +347,14 @@ fn wait_for_exec(
                 };
             }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                if exited {
+                    return Err(Error::LaunchProtocol("helper exited before exec handshake"));
+                }
                 let pid = i32::try_from(child.id())
                     .ok()
                     .and_then(rustix::process::Pid::from_raw)
                     .ok_or(Error::PidRange)?;
-                let exited = loop {
+                let observed = loop {
                     use rustix::process::{waitid, WaitId, WaitIdOptions};
                     match waitid(
                         WaitId::Pid(pid),
@@ -360,8 +364,11 @@ fn wait_for_exec(
                         result => break result.map_err(std::io::Error::from)?,
                     }
                 };
-                if exited.is_some() {
-                    return Err(Error::LaunchProtocol("helper exited before exec handshake"));
+                if observed.is_some() {
+                    // The helper may have queued its errno report between accept
+                    // and waitid. Drain that connection before classifying its exit.
+                    exited = true;
+                    continue;
                 }
                 std::thread::sleep(Duration::from_millis(1));
             }

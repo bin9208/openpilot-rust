@@ -2432,7 +2432,7 @@ jobs:
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang cmake pkg-config libgl-dev libx11-dev xvfb xauth x11-utils mesa-utils ffmpeg
+          sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang cmake pkg-config libgl-dev libx11-dev xvfb xauth x11-utils mesa-utils ffmpeg strace
       - name: Install pinned original GUI dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2449,11 +2449,42 @@ jobs:
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/ui-native/python"
       - name: Check native application and shared UI packages
         run: |
+          set -euo pipefail
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 5120
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision --bin openpilot-process-child --locked
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked --message-format=json | tee "$RUNNER_TEMP/ui-native/unit-tests.jsonl"
+      - name: Require queued exec error after helper exit
+        run: |
+          python - <<'PYTHON'
+          import json, os, pathlib, re, subprocess
+          evidence = pathlib.Path(os.environ['RUNNER_TEMP']) / 'ui-native'
+          artifacts = []
+          for line in (evidence / 'unit-tests.jsonl').read_text().splitlines():
+            try:
+              row = json.loads(line)
+            except json.JSONDecodeError:
+              continue
+            if (isinstance(row, dict) and row.get('reason') == 'compiler-artifact'
+                and row.get('target', {}).get('name') == 'openpilot_ui_application'
+                and row.get('profile', {}).get('test') and row.get('executable')):
+              artifacts.append(row['executable'])
+          assert len(artifacts) == 1, artifacts
+          trace = evidence / 'updater-handshake.trace'
+          subprocess.run(['strace', '--kill-on-exit', '-f', '-qq', '-e', 'trace=accept4,waitid',
+                          '-e', 'inject=accept4:delay_exit=500ms:when=1', '-o', str(trace), artifacts[0],
+                          'agnos_updater::worker::tests::missing_executable_is_visible_start_failure',
+                          '--exact', '--nocapture'], check=True, timeout=20)
+          lines = trace.read_text().splitlines()
+          delayed = [(i, re.match(r'^(\d+)\s+accept4.*EAGAIN.*\(DELAYED\)', line)) for i, line in enumerate(lines)]
+          delayed = [(i, match.group(1)) for i, match in delayed if match]
+          assert len(delayed) == 1, 'expected one delayed EAGAIN in updater worker'
+          index, pid = delayed[0]
+          events = [line for line in lines[index + 1:] if re.match(r'^' + pid + r'\s+(accept4|waitid)\(', line)]
+          assert len(events) >= 2 and 'waitid(' in events[0] and 'CLD_EXITED' in events[0], events
+          assert 'accept4(' in events[1] and re.search(r'= [0-9]+$', events[1]), events
+          PYTHON
       - name: Build native UI and record current dependency outputs
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
