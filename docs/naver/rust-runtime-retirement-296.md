@@ -444,3 +444,14 @@ its own protected PUSH checks and source-matched release: normal startup
 requests `runtime-<exact-checkout-HEAD>` and will not substitute an older
 package if that release is absent. Local packages alone do not make git pull
 a usable test handoff.
+
+
+The final CI follow-up [#328](rust-radard-ipc-startup-328.md) addresses a
+first-frame receive-frequency comparison failure without changing runtime
+thresholds. Identical-clock original/native startup and deadline traces agree;
+a fixed20-frame preparation precedes all40 unchanged scenario inputs. All six
+actual IPC scenarios (240 measured pairs), eight lifecycle cases, deterministic
+state checks and packet-byte regressions pass. Both architectures run these
+checks in the existing CI matrix. The disk guard's13 pytest-style regressions
+also now have an explicit fast-check invocation; unittest discovery alone did
+not execute them. Fresh source CI remains a merge/publication gate.

@@ -12,6 +12,7 @@ import subprocess
 from typing import Final, TypedDict
 
 from check_message_state import source
+from radard_startup_state import check as check_startup
 
 TIMES: Final = (1.0, 1.499999, 1.5, 1.500001, 1.55)
 ALIVE: Final = (True, True, False, False, True)
@@ -58,6 +59,7 @@ def main() -> None:
             'epsilon_seconds': 1e-6, 'deadline_seconds': 0.5, 'simulation': False, 'command': command}
   (args.output / 'receipt.json').write_text(json.dumps(report, indent=2) + '\n')
   print(json.dumps(report))
+  print(json.dumps(check_startup(args.binary, args.output / 'startup')))
 
 
 if __name__ == '__main__':

@@ -38,3 +38,10 @@ The original179 migrated workflow calls and their complete ordered path/growth a
 Independent review reproduced a cold FIFO lock hang and unsafe local fallback warm execution. Two new contract tests observed RED before hardening. Local fallback now uses `${XDG_CACHE_HOME:-$HOME/.cache}`; CI retains RUNNER_TEMP. Before warm execution or build, existing cache parent/base/key directory, lock and executable must have the current UID, expected type, no symlink and no group/world write bits. Unsafe objects fail untouched; no chmod/chown repairs somebody else's object. Creation uses umask077, directories700 and published executable700. Cold lock opens RDWR (no FIFO partner wait), validates opened-FD regular-file ownership/mode before flock, and rechecks cache admission after acquiring it.
 
 Policy37 tests plus367 subtests passed, including unsafe base/key/binary/lock modes, symlinks, controlled wrong-owner metadata, FIFO lock, private fallback, secure warm reuse, parallel publication and interrupted publication cleanup. FIFO failures are bounded by an owned3s test deadline. Actual fresh private-cache native host bootstrap compiled only the tiny disk-space crate/dependencies in3.97s after reserve admission (397GB free); actual warm invocation emitted the same native JSON without another build. These tests do not claim resistance to arbitrary same-UID concurrent filesystem mutation or privileged tampering.
+
+
+Final CI routing audit found that the inherited unittest discovery imports but
+does not execute the new pytest-style bootstrap tests. Fast checks now invoke
+that file explicitly through pytest, with repository conftest excluded just
+as in the other focused CI suites. The exact CI invocation passes all13 tests;
+the broader37/367 local policy result above includes those same13 tests.
