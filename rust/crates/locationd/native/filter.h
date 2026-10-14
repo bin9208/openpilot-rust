@@ -11,6 +11,8 @@ class Filter {
 public:
   explicit Filter(rust::Slice<const double> x, rust::Slice<const double> covariance, rust::Slice<const double> noise);
   Snapshot snapshot() const;
+  double filter_time() const;
+  double gyro_bias_z() const;
   void reset(rust::Slice<const double> x, rust::Slice<const double> covariance, double time);
   Estimate observe(double time, int kind, rust::Slice<const double> values, rust::Slice<const double> noise);
 private:

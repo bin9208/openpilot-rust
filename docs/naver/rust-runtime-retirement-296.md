@@ -373,3 +373,34 @@ all-target Clippy pass, and the native docs gate passes with a concrete settings
 commit still needs its own target build, package seal, required exact-SHA CI
 and normal device startup/recording/upload checks. The developer Python
 inventory remains incomplete.
+
+## Source-matched package and workspace CI follow-up
+
+`7c8b2f0f05b1140d6d391275d3643ba3daa769b1` completed all 11 AGNOS build
+groups and 89 project executables. Manager readiness remained 63/63; native
+ELF closure (92 roots/115 objects), all 92 loader/static-installer checks and
+sealing of 1,076 artifacts passed. The native package builder validated and
+published its local archive atomically: 1,155,600,591 compressed bytes,
+1,708,024,389 unpacked bytes, SHA256
+`8d9c9a9f330ce8b7401b0a3ef1e49231036d5206e9331934eeb03b6334cb988d`.
+This is premerge host evidence, not a release or device result.
+
+[Integration 38560531570](https://github.com/bin9208/openpilot-rust/actions/runs/38560531570)
+passed all 16 jobs; fast checks and mapped docs also passed. The same-source
+[Rust run 38560531619](https://github.com/bin9208/openpilot-rust/actions/runs/38560531619)
+found a workspace-only model catalog serialization failure: unified
+`serde_json/preserve_order` changes index key order and generation identity.
+[#323](https://github.com/bin9208/openpilot-rust/issues/323) tracks the repair;
+original graph field ordering and sorted catalog bytes are separate contracts.
+The PR remains unmerged while required checks fail or run. A successful future
+merge still requires separate exact-merge-SHA CI and source-matched packaging.
+
+The [#323 catalog correction](rust-model-catalog-order-323.md) reproduced the
+existing byte-fixture failure with `preserve_order`, then passed all 43 model
+runtime tests and strict Clippy both with and without that feature. The
+[#325 scalar-access optimization](rust-locationd-scalar-access-325.md) removes
+unused locationd snapshots while retaining current post-rewind state. Its native
+12-test suite, original 1,073-step comparison and ASan/UBSan gates passed; full
+pre/post native trace bytes agree. These follow-ups require a new exact source
+commit and its own CI/package evidence. They do not change settings, validity
+thresholds, model math or device-test authorization.

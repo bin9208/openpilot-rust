@@ -35,7 +35,7 @@ impl Estimator {
         self.logs.push((level.into(), text.into()));
     }
     fn valid_timestamp(&mut self, time: f64) -> Result<bool, Error> {
-        let invalid = self.kf.snapshot()?.time - time > 0.8;
+        let invalid = self.kf.filter_time()? - time > 0.8;
         if invalid {
             self.log(
                 "warning",
@@ -95,7 +95,7 @@ impl Estimator {
                         0
                     }
                     Sensor::Gyroscope => {
-                        let bias = self.kf.snapshot()?.x[11];
+                        let bias = self.kf.gyro_bias_z()?;
                         let error = ((measurement[2] - bias) - self.camodo_yawrate[0]).abs();
                         let mut std = self.camodo_yawrate[1];
                         if self.car_speed < 5. && std < 0.02 {

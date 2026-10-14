@@ -23,6 +23,8 @@ pub mod ffi {
         type Filter;
         fn new_filter(x: &[f64], covariance: &[f64], noise: &[f64]) -> Result<UniquePtr<Filter>>;
         fn snapshot(self: &Filter) -> Snapshot;
+        fn filter_time(self: &Filter) -> f64;
+        fn gyro_bias_z(self: &Filter) -> f64;
         fn reset(self: Pin<&mut Filter>, x: &[f64], covariance: &[f64], time: f64) -> Result<()>;
         fn observe(
             self: Pin<&mut Filter>,

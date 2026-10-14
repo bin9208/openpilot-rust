@@ -572,7 +572,11 @@ pub fn publish(
         let descriptor = std::fs::read(destination.join("pipeline.json"))?;
         entries.push(json!({"kind":selection.kind,"camera":selection.camera,"directory":directory,"graph_sha256":format!("{:x}",Sha256::digest(graph)),"pipeline_sha256":format!("{:x}",Sha256::digest(descriptor))}));
     }
-    let index = python_pretty(&json!({"version":1,"bundles":entries}))?;
+    let mut catalog = json!({"version":1,"bundles":entries});
+    // Original catalogs use sort_keys=True, including bundle objects. Keep this
+    // explicit when workspace feature unification enables preserve_order.
+    catalog.sort_all_objects();
+    let index = python_pretty(&catalog)?;
     std::fs::write(generation.join("index.json"), &index)?;
     let digest = format!("{:x}", Sha256::digest(index));
     let destination = root.join(&digest);

@@ -562,10 +562,14 @@ remain separate gates.
 
 ### Specific storage/work candidates, without measured savings
 
-- locationd reads scalar time and gyro bias through full snapshots, copying
+- locationd previously read scalar time and gyro bias through full snapshots, copying
   18 state plus 324 covariance doubles (2,736 payload bytes) into two Rust Vecs
-  per snapshot. Scalar read-only accessors can avoid unused covariance copies
-  if numerical ordering/reset/rewind and NaN behavior remain identical.
+  per snapshot. The [#325 scalar-access change](rust-locationd-scalar-access-325.md)
+  preserves current-state reads, ordering/reset/rewind and raw floating-point bits.
+  Its measured rejection fixture drops from 400 to zero Rust allocations over
+  100 events; one Eigen state-vector copy remains in the bias accessor. Native
+  pre/post traces are byte-identical and the unchanged original comparison passes
+  1,073 steps/457,096 values. This is not a device CPU measurement.
 - CAN replaces latest raw bytes with a fresh clone on every accepted frame and
   allocates temporary signal values for each parse. Reuse must preserve failed
   checksum/counter publication state and counter side effects; shared radar
