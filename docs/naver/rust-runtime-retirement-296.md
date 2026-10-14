@@ -532,3 +532,19 @@ static QEMU, Panda, camera and encoder steps had completed without compiler
 errors. [#331](rust-arm-ci-budget-331.md) gives that existing full job120minutes
 while preserving every command, feature variant and capacity guard. The
 cancelled gate remains failed/incomplete until fresh exact-head CI succeeds.
+
+At cleand6cf1603, all11 AGNOS GNU target build groups completed:89 project
+executables have verified AArch64 ELF headers and recorded SHA256 values in
+`target-build-d6cf1603.json` under the current ignored AGNOS evidence directory.
+This includes runtime#329 and bounded diagnostic#330 changes. These are premerge
+compile results; the final merged source must still rebuild, bind the static
+installer, validate loaders, seal and publish its exact-source package.
+
+The same head's inherited APK host-toolkit integration gate reported468 passes
+and2 doctor success-assertion failures. Its abbreviated pytest output omitted
+the failed prerequisite, and the prior470-pass run used the same runner image
+and toolchain setup. [#332](rust-apk-doctor-diagnostics-332.md) preserves the
+strict checks while adding only failed requirement names and typed details to
+the existing assertion messages. The cause is not established and no toolchain
+or deadline workaround is applied. A deterministic diagnostic negative control
+still fails and now retains the reason; fresh exact-head integration is required.
