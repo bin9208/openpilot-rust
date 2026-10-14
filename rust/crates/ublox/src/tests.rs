@@ -28,7 +28,7 @@ fn source_checked_binary_frames_and_ephemeris_under_miri() -> Result<(), Error> 
             }
         }
     }
-    assert_eq!((frames, publications), (57, 17));
+    assert_eq!((frames, publications), (58, 18));
     assert_eq!(parser.framer.buffer, b"\xb5\x62\x01\x07\xff\xffincomplete");
     Ok(())
 }

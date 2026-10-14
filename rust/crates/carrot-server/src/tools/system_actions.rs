@@ -99,17 +99,19 @@ pub(super) async fn run(context: &Context, action: Action) -> Result<Reply, Fail
             ])))
         }
         Action::Rebuild => {
-            context.progress("rebuild all", 1, 1)?;
-            let script = format!(
-                "cd {} && scons -c && rm -rf prebuilt && sudo reboot",
-                super::shell::quote(&context.config.paths.repository.to_string_lossy())
-            );
-            detached(&["bash".into(), "-lc".into(), script])?;
+            let result = context.stage_update("HEAD", None, false, false).await?;
+            if result.code != 0 {
+                return context.result(result, None);
+            }
+            // Package repair completed in staging; normal reboot activates it.
+            detached(&["sudo".into(), "reboot".into()])?;
             Ok(Reply::ok(Value::object([
                 ("ok", Value::Bool(true)),
+                ("staged", Value::Bool(true)),
+                ("rebooting", Value::Bool(true)),
                 (
                     "out",
-                    Value::text("rebuild_all requested (clean + remove prebuilt + reboot)"),
+                    Value::text("Verified native package repair staged; reboot requested"),
                 ),
             ])))
         }

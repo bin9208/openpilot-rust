@@ -71,7 +71,7 @@ def test_doctor_reports_resolved_host_toolchain() -> None:
 
   # Then: exit status and clean JSON agree, with exact usable paths and versions.
   report = parse_report(process)
-  assert process.returncode == 0
+  assert process.returncode == 0, [(item["name"], item["detail"]) for item in report["requirements"] if not item["success"]]
   assert process.stderr == ""
   assert report["schema_version"] == 1
   assert report["command"] == "doctor"
@@ -106,7 +106,7 @@ def test_doctor_fails_closed_for_empty_sdk_then_recovers() -> None:
   failed_names = {item["name"] for item in failure_report["requirements"] if not item["success"]}
   assert {"aapt2", "d8", "zipalign", "apksigner", "adb", "android_platform"} <= failed_names
   assert snapshot_tree(out_path) == output_before
-  assert success.returncode == 0
+  assert success.returncode == 0, [(item["name"], item["detail"]) for item in success_report["requirements"] if not item["success"]]
   assert success_report["success"] is True
   assert snapshot_tree(out_path) == output_before
 

@@ -411,14 +411,27 @@ import { getToolCommandPreview, renderToolsMeta } from "./runtime.js";
     return result.summary_vars && typeof result.summary_vars === "object" ? result.summary_vars : {};
   }
 
+  function nativeUpdateSummary(job) {
+    const result = job?.result && typeof job.result === "object" ? job.result : {};
+    if (typeof result.staged !== "boolean") return "";
+    if (!result.staged) return uiText("git_result_native_not_staged", "Update was not staged.");
+    if (result.ok === false || job?.status === "failed" || job?.status === "running") return "";
+    if (result.rebooting) return uiText("git_result_native_staged_rebooting", "Verified package repair staged. Reboot requested.");
+    if (result.reboot_required) return uiText("git_result_native_staged", "Verified update staged. Reboot to apply.");
+    return "";
+  }
+
   function localizedResultSummary(job) {
     const result = job?.result && typeof job.result === "object" ? job.result : {};
+    if (typeof result.staged === "boolean") return nativeUpdateSummary(job);
     const key = String(result.summary_key || "").trim();
     if (!key) return "";
     return String(uiText(key, "", summaryVars(job)) || "").trim();
   }
 
   function friendlyEmptyOutput(job) {
+    const result = job?.result && typeof job.result === "object" ? job.result : {};
+    if (typeof result.staged === "boolean") return nativeUpdateSummary(job) || jobFallbackMessage(job);
     const action = String(job?.action || "").trim();
     switch (action) {
       case "git_sync":
@@ -459,7 +472,7 @@ import { getToolCommandPreview, renderToolsMeta } from "./runtime.js";
   function formatGitUpdateSummary(job, updateSummary) {
     if (!updateSummary || typeof updateSummary !== "object") return null;
     if (!updateSummary.updated) {
-      const text = uiText("git_update_up_to_date", "Already up to date");
+      const text = nativeUpdateSummary(job) || uiText("git_update_up_to_date", "Already up to date");
       return {
         card: text,
         label: text,
@@ -477,7 +490,8 @@ import { getToolCommandPreview, renderToolsMeta } from "./runtime.js";
     const shown = commits.slice(0, 3);
     const remaining = Math.max(0, commitCount - shown.length);
 
-    const lines = [uiText("git_update_new_updates", "New Updates"), ""];
+    const stagedSummary = nativeUpdateSummary(job);
+    const lines = [stagedSummary || uiText("git_update_new_updates", "New Updates"), ""];
     const messages = [];
     shown.forEach((commit) => {
       const message = String(commit?.message || commit?.hash || "").trim();
@@ -518,7 +532,7 @@ import { getToolCommandPreview, renderToolsMeta } from "./runtime.js";
     if (raw) detailParts.push("", uiText("git_update_output", "Git output"), raw);
     return {
       card,
-      label: uiText("git_update_new_updates", "New Updates"),
+      label: stagedSummary || uiText("git_update_new_updates", "New Updates"),
       messages,
       stats: {
         commits: commitText,

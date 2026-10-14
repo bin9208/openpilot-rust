@@ -15,16 +15,20 @@ import signal
 import subprocess
 import tempfile
 import time
-from typing import Final, Literal, TypedDict, assert_never
+from typing import TYPE_CHECKING, Final, Literal, TypedDict, assert_never
 
 from capnp.lib.capnp import _DynamicStructBuilder
-from openpilot.cereal import car, log, messaging
+from openpilot.cereal import car, log
 from radard_compare import differences
+
+if TYPE_CHECKING:
+  from openpilot.cereal import messaging
 
 ROOT: Final = Path(__file__).resolve().parents[2]
 type Mode = Literal['source', 'rust']
 type Topic = Literal['modelV2', 'carState', 'liveTracks', 'livePose']
 type Json = None | bool | int | float | str | list[Json] | dict[str, Json]
+WARMUP_FRAMES: Final = 20
 SERVICES: Final[list[Topic]] = ['modelV2', 'carState', 'liveTracks', 'livePose']
 
 
@@ -87,9 +91,10 @@ def environment(params: Path, prefix: str) -> Mapping[str, str]:
               LOGPRINT='info', OPENBLAS_NUM_THREADS='1', PYTHONDONTWRITEBYTECODE='1', PYTHONPATH=pythonpath)
 
 
-def packet(topic: Topic, index: int) -> _DynamicStructBuilder:
-  stamp = 5_000_000_000 + index * 50_000_000
-  event = messaging.new_message(topic, logMonoTime=stamp, valid=True)
+def packet(topic: Topic, index: int, *, stamp_index: int | None = None) -> _DynamicStructBuilder:
+  stamp = 5_000_000_000 + (index if stamp_index is None else stamp_index) * 50_000_000
+  event = log.Event.new_message(logMonoTime=stamp, valid=True)
+  event.init(topic)
   match topic:
     case 'carState':
       event.carState.vEgo = 20.0
@@ -139,7 +144,14 @@ def wait_ready(publisher: messaging.PubMaster, child: subprocess.Popen[bytes]) -
   raise TimeoutError('input subscriptions absent')
 
 
+def availability_phase(index: int) -> float:
+  # Separate margins for liveTracks (0.5 s) and carState (0.1 s) loss.
+  return (0.025 if index >= 7 else 0.0) + (0.025 if index >= 26 else 0.0)
+
+
 def run(mode: Mode, paths: Paths, scenario: Scenario) -> list[Publication]:
+  from openpilot.cereal import messaging
+
   case = paths.output / f'{scenario.brand}-{scenario.radar_mode}-{scenario.corner_mode}-{scenario.unavailable}-{mode}'
   case.mkdir(parents=True)
   with tempfile.TemporaryDirectory(prefix='msgq_radard_', dir='/dev/shm') as shared:
@@ -151,6 +163,8 @@ def run(mode: Mode, paths: Paths, scenario: Scenario) -> list[Publication]:
     (params / 'EnableCornerRadar').write_text(str(scenario.corner_mode))
     publisher = messaging.PubMaster(SERVICES)
     rows: list[Publication] = []
+    warmup: list[Publication] = []
+    timing: list[dict[str, int | float | bool]] = []
     with (case / 'stdout.log').open('wb') as stdout, (case / 'stderr.log').open('wb') as stderr:
       child = subprocess.Popen(command(mode, paths), env=environment(params, prefix), cwd=ROOT, stdout=stdout, stderr=stderr)
       try:
@@ -162,22 +176,26 @@ def run(mode: Mode, paths: Paths, scenario: Scenario) -> list[Publication]:
         (params / 'CarParams').write_bytes(cp_bytes)
         wait_ready(publisher, child)
         subscriber = messaging.sub_sock('radarState', conflate=False, timeout=0)
-        publisher.send('liveTracks', packet('liveTracks', 0))
+        publisher.send('liveTracks', packet('liveTracks', 0, stamp_index=-WARMUP_FRAMES - 1))
         time.sleep(0.12)
         assert subscriber.receive(non_blocking=True) is None, 'published without model trigger'
-        start = time.monotonic() + 0.05
-        for index in range(40):
-          # Keep live IPC samples 25 ms either side of the strict 0.5 s alive boundary.
-          phase = 0.025 if scenario.availability and index >= 7 else 0.0
+        start = time.monotonic() + 0.05 + WARMUP_FRAMES * 0.05
+        for index in range(-WARMUP_FRAMES, 40):
+          if index == 0:
+            assert len(warmup) == WARMUP_FRAMES and all(row['valid'] for row in warmup[-3:]), 'frequency preconditioning did not become valid'
+          # Keep both stopped-topic deadlines 25 ms away from live IPC samples.
+          phase = availability_phase(index) if scenario.availability else 0.0
           time.sleep(max(0.0, start + index * 0.05 + phase - time.monotonic()))
           for topic in SERVICES[1:]:
             if scenario.availability and (topic == 'livePose' or (topic == 'liveTracks' and 7 <= index < 23) or (topic == 'carState' and 26 <= index < 32)):
               continue
-            publisher.send(topic, packet(topic, index))
+            publisher.send(topic, packet(topic, max(0, index), stamp_index=index))
           if scenario.availability and index == 36:
             time.sleep(0.12)
             assert subscriber.receive(non_blocking=True) is None, 'published during model absence'
-          publisher.send('modelV2', packet('modelV2', index))
+          sent = time.monotonic()
+          timing.append({'index': index, 'scheduled': start + index * 0.05 + phase, 'model_sent': sent})
+          publisher.send('modelV2', packet('modelV2', max(0, index), stamp_index=index))
           deadline = time.monotonic() + 2.0
           raw = None
           while time.monotonic() < deadline:
@@ -190,14 +208,19 @@ def run(mode: Mode, paths: Paths, scenario: Scenario) -> list[Publication]:
           assert raw is not None, f'missing radarState at {index}'
           (case / f'{index:03}-radarState.bin').write_bytes(raw)
           with log.Event.from_bytes(raw) as event:
-            rows.append({'valid': bool(event.valid), 'data': event.radarState.to_dict()})
+            publication: Publication = {'valid': bool(event.valid), 'data': event.radarState.to_dict()}
+            (warmup if index < 0 else rows).append(publication)
+            timing[-1].update({'output_read': time.monotonic(), 'valid': bool(event.valid)})
         child.send_signal(signal.SIGTERM)
         assert child.wait(timeout=3) == -signal.SIGTERM, child.returncode
         del subscriber
       finally:
-        if child.poll() is None:
-          child.kill()
-          child.wait(timeout=3)
+        try:
+          if child.poll() is None:
+            child.kill()
+            child.wait(timeout=3)
+        finally:
+          (case / 'preconditioning.json').write_text(json.dumps({'warmup': warmup, 'timing': timing}, indent=2) + '\n')
     del publisher
     gc.collect()
   (case / 'records.json').write_text(json.dumps(rows, indent=2) + '\n')

@@ -23,6 +23,31 @@ fn newer(path: &Path, threshold: SystemTime) -> Result<bool, Error> {
 }
 
 pub fn activate(repository: &Path, staging: &Path) -> Result<Outcome, Error> {
+    let params = std::env::var_os("PARAMS_ROOT").map_or_else(
+        || {
+            repository
+                .parent()
+                .unwrap_or(Path::new("/data"))
+                .join("params")
+        },
+        std::path::PathBuf::from,
+    );
+    if openpilot_runtime_installer::transaction::activate(repository, staging, &params)
+        .map_err(|error| Error::Configuration(error.to_string()))?
+    {
+        return Ok(Outcome::Activated);
+    }
+    // Native staging can be postponed (for example ignition is on). Never let
+    // the legacy two-rename path bypass its source/package transaction gate.
+    if staging
+        .join("finalized/.runtime-update-ready.json")
+        .try_exists()?
+        || staging.join(".runtime-update-journal.json").try_exists()?
+        || (repository.join("rust/runtime-manifest.json").is_file()
+            && staging.join("finalized").try_exists()?)
+    {
+        return Ok(Outcome::Unchanged);
+    }
     let marker = repository.join(".overlay_init");
     if !marker.is_file() {
         return Ok(Outcome::Unchanged);

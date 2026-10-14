@@ -103,6 +103,19 @@ fn run(options: Options) -> Result<(), Error> {
     result
 }
 
+// A new process reloads imports and model state after the established stream changes.
+fn camera_ready(client: &VisionClient, stop: &AtomicBool) -> Result<bool, Error> {
+    if stop.load(Ordering::Relaxed) {
+        return Ok(false);
+    }
+    if !client.is_connected() {
+        return Err(Error::Contract(
+            "camera generation lost; restart dmonitoringmodeld",
+        ));
+    }
+    Ok(true)
+}
+
 fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Result<(), Error> {
     let catalog = Catalog::load(&options.catalog)?;
     let raw = env::var_os("SEND_RAW_PRED").is_some_and(|value| !value.is_empty());
@@ -169,11 +182,13 @@ fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Re
     let mut calibration = Calibration::default();
     let mut frames = 0;
     while !stop.load(Ordering::Relaxed) {
-        if !client.is_connected() {
-            thread::sleep(Duration::from_millis(100));
-            continue;
+        if !camera_ready(&client, stop)? {
+            break;
         }
         let Some(frame) = client.receive(Duration::from_millis(100))? else {
+            if !camera_ready(&client, stop)? {
+                break;
+            }
             continue;
         };
         let metadata = *frame.metadata();
@@ -216,5 +231,123 @@ fn main() -> ExitCode {
             eprintln!("dmonitoringmodeld: {error}");
             ExitCode::FAILURE
         }
+    }
+}
+
+#[cfg(all(test, not(feature = "visionipc-ion")))]
+mod camera_tests {
+    use super::*;
+    use openpilot_msgq::{VisionLayout, VisionMetadata, VisionServer};
+
+    #[test]
+    fn driver_generation_change_is_terminal_but_timeout_and_stop_are_not() {
+        if env::var_os("DRIVER_CAMERA_RESTART_CHILD").is_none() {
+            let prefix = format!("driver-restart-{}", std::process::id());
+            let directory = PathBuf::from("/dev/shm").join(format!("msgq_{prefix}"));
+            std::fs::create_dir(&directory).unwrap();
+            let status = std::process::Command::new(env::current_exe().unwrap())
+                .args(["--exact", "camera_tests::driver_generation_change_is_terminal_but_timeout_and_stop_are_not", "--nocapture"])
+                .env("DRIVER_CAMERA_RESTART_CHILD", "1")
+                .env("OPENPILOT_PREFIX", prefix)
+                .env_remove("CEREAL_FAKE")
+                .status().unwrap();
+            std::fs::remove_dir_all(directory).unwrap();
+            assert!(status.success());
+            return;
+        }
+        let layout = VisionLayout {
+            width: 8,
+            height: 8,
+            stride: 8,
+            uv_offset: 64,
+            len: 96,
+        };
+        let server = VisionServer::new("driver-restart").unwrap();
+        let images = server
+            .create_stream(VisionStream::Driver, 1, layout)
+            .unwrap();
+        server.start_listener().unwrap();
+        let mut client = VisionClient::new("driver-restart", VisionStream::Driver, true).unwrap();
+        assert!(client.connect().unwrap());
+        let stop = AtomicBool::new(false);
+        assert!(camera_ready(&client, &stop).unwrap());
+        assert!(client.receive(Duration::ZERO).unwrap().is_none());
+        assert!(camera_ready(&client, &stop).unwrap());
+        drop(images);
+        drop(server);
+        let server = VisionServer::new("driver-restart").unwrap();
+        let layout = VisionLayout {
+            width: 16,
+            height: 8,
+            stride: 16,
+            uv_offset: 128,
+            len: 192,
+        };
+        let images = server
+            .create_stream(VisionStream::Driver, 1, layout)
+            .unwrap();
+        server.start_listener().unwrap();
+        let metadata = VisionMetadata {
+            width: layout.width,
+            height: layout.height,
+            stride: layout.stride,
+            uv_offset: layout.uv_offset,
+            len: layout.len,
+            frame_id: 2,
+            timestamp_sof: 2,
+            timestamp_eof: 3,
+            valid: true,
+            received: true,
+            index: 0,
+            fd: -1,
+        };
+        // Queue publication may first expose the producer's generation reset.
+        for _ in 0..10 {
+            images[0].publish(metadata).unwrap();
+            assert!(client
+                .receive(Duration::from_millis(100))
+                .unwrap()
+                .is_none());
+            if !client.is_connected() {
+                break;
+            }
+        }
+        assert!(
+            camera_ready(&client, &stop).is_err(),
+            "new server generation must exit driver daemon"
+        );
+        stop.store(true, Ordering::Relaxed);
+        assert!(
+            !camera_ready(&client, &stop).unwrap(),
+            "shutdown must be graceful"
+        );
+        let mut fresh = VisionClient::new("driver-restart", VisionStream::Driver, true).unwrap();
+        assert!(fresh.connect().unwrap());
+        assert_eq!(fresh.layout(), Some(layout));
+        images[0].publish(metadata).unwrap();
+        assert_eq!(
+            fresh
+                .receive(Duration::from_millis(100))
+                .unwrap()
+                .unwrap()
+                .metadata()
+                .len,
+            192
+        );
+        let mut invalid =
+            Publisher::for_runtime("visionipc_driver-restart_1", 1024 * 1024).unwrap();
+        let mut packet = [0_u8; 48];
+        packet[8..16].copy_from_slice(&u64::MAX.to_le_bytes());
+        for _ in 0..10 {
+            invalid.send(&packet).unwrap();
+            assert!(fresh.receive(Duration::from_millis(100)).unwrap().is_none());
+            if !fresh.is_connected() {
+                break;
+            }
+        }
+        assert!(
+            camera_ready(&fresh, &AtomicBool::new(false)).is_err(),
+            "invalid slot must exit driver daemon"
+        );
     }
 }

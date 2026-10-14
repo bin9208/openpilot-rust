@@ -30,4 +30,6 @@ pub enum Error {
     Poisoned,
     #[error("Wi-Fi worker panicked")]
     Panicked,
+    #[error("Wi-Fi background worker stopped unexpectedly")]
+    WorkerStopped,
 }

@@ -2,10 +2,45 @@ use openpilot_process_supervision::CapturedCommand;
 use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Write},
-    os::{fd::AsFd, unix::fs::PermissionsExt},
+    os::{
+        fd::AsFd,
+        unix::{ffi::OsStringExt, net::UnixStream},
+    },
     path::Path,
-    process::Command,
+    process::{Command, Stdio},
 };
+
+fn main() {
+    if let Some(descriptor) = std::env::args_os()
+        .nth(1)
+        .filter(|path| std::path::Path::new(path).is_file())
+    {
+        let request: serde_json::Value =
+            serde_json::from_slice(&fs::read(descriptor).unwrap()).unwrap();
+        let path = |key: &str| {
+            let bytes: Vec<u8> = serde_json::from_value(request[key].clone()).unwrap();
+            std::path::PathBuf::from(std::ffi::OsString::from_vec(bytes))
+        };
+        std::env::set_current_dir(path("cwd")).unwrap();
+        let stream = UnixStream::connect(path("handshake")).unwrap();
+        rustix::process::setsid().unwrap();
+        let mut child = Command::new("/bin/sh")
+            .args(["-c", "printf R; read value < gate"])
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut ready = [0];
+        child.stdout.take().unwrap().read_exact(&mut ready).unwrap();
+        assert_eq!(ready, *b"R");
+        fs::write("descendant-pid", child.id().to_string()).unwrap();
+        drop(stream);
+        child.wait().unwrap();
+        return;
+    }
+    child_keeps_transaction_after_parent_close_until_exit();
+    exec_failure_closes_received_lock();
+    old_protocol_helper_fails_closed_and_cleans_its_session();
+}
 
 fn request(root: &Path, argv: &[&str]) -> CapturedCommand {
     CapturedCommand {
@@ -27,7 +62,6 @@ fn locked(root: &Path) -> File {
     file
 }
 
-#[test]
 fn child_keeps_transaction_after_parent_close_until_exit() {
     let directory = tempfile::tempdir().unwrap();
     assert!(Command::new("mkfifo")
@@ -65,7 +99,6 @@ fn child_keeps_transaction_after_parent_close_until_exit() {
     contender.try_lock().unwrap();
 }
 
-#[test]
 fn exec_failure_closes_received_lock() {
     let directory = tempfile::tempdir().unwrap();
     let file = locked(directory.path());
@@ -84,28 +117,9 @@ fn exec_failure_closes_received_lock() {
         .unwrap();
 }
 
-#[test]
 fn old_protocol_helper_fails_closed_and_cleans_its_session() {
     let directory = tempfile::tempdir().unwrap();
-    let helper = directory.path().join("old-helper");
-    fs::write(
-        &helper,
-        br##"#!/usr/bin/python3
-import json, os, socket, subprocess, sys
-request = json.load(open(sys.argv[1]))
-os.chdir(bytes(request['cwd']))
-stream = socket.socket(socket.AF_UNIX)
-stream.connect(bytes(request['handshake']))
-os.setsid()
-child = subprocess.Popen(['/bin/sh', '-c', 'printf R; read value < gate'], stdout=subprocess.PIPE)
-assert child.stdout.read(1) == b'R'
-open('descendant-pid', 'w').write(str(child.pid))
-stream.close()
-child.wait()
-"##,
-    )
-    .unwrap();
-    fs::set_permissions(&helper, fs::Permissions::from_mode(0o700)).unwrap();
+    let helper = std::env::current_exe().unwrap();
     assert!(Command::new("mkfifo")
         .arg(directory.path().join("gate"))
         .status()
@@ -118,13 +132,23 @@ child.wait()
         .spawn_session_merged_with_lock(&[], file.as_fd())
         .is_err());
     let pid = fs::read_to_string(directory.path().join("descendant-pid")).unwrap();
-    let output = Command::new("python3").args(["-c", "import os,select,sys\ntry: fd=os.pidfd_open(int(sys.argv[1]))\nexcept ProcessLookupError: print('exited')\nelse:\n p=select.poll();p.register(fd,select.POLLIN);assert p.poll(1000);print('exited')", &pid]).output().unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert_eq!(output.stdout, b"exited\n");
+    let pid = rustix::process::Pid::from_raw(pid.parse().unwrap()).unwrap();
+    match rustix::process::pidfd_open(pid, rustix::process::PidfdFlags::empty()) {
+        Ok(fd) => {
+            let mut poll = [rustix::event::PollFd::new(
+                &fd,
+                rustix::event::PollFlags::IN,
+            )];
+            let timeout = rustix::event::Timespec {
+                tv_sec: 1,
+                tv_nsec: 0,
+            };
+            assert_eq!(rustix::event::poll(&mut poll, Some(&timeout)).unwrap(), 1);
+            assert!(poll[0].revents().contains(rustix::event::PollFlags::IN));
+        }
+        Err(rustix::io::Errno::SRCH) => (),
+        Err(error) => panic!("descendant pidfd: {error}"),
+    }
     drop(file);
     OpenOptions::new()
         .read(true)

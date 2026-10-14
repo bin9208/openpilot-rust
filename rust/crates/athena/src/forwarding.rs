@@ -118,17 +118,35 @@ pub fn log_worker(shared: Arc<Shared>, stop: Stop) {
     };
     let mut scanned = 0_i64;
     let mut files = Vec::new();
+    log_worker_cycles(
+        &stop,
+        || {
+            let result = log_cycle(
+                &shared,
+                &stop,
+                &mut logger,
+                &mut attributes,
+                &mut scanned,
+                &mut files,
+            );
+            if let Err(error) = &result {
+                logging::failure(&mut logger, "athena.log_handler.exception", error);
+            }
+            result
+        },
+        |duration| stop.wait(duration),
+    );
+}
+fn log_worker_cycles(
+    stop: &Stop,
+    mut cycle: impl FnMut() -> Result<(), Error>,
+    mut wait: impl FnMut(Duration),
+) {
     while !stop.requested() {
-        let result = log_cycle(
-            &shared,
-            &stop,
-            &mut logger,
-            &mut attributes,
-            &mut scanned,
-            &mut files,
-        );
-        if let Err(error) = result {
-            logging::failure(&mut logger, "athena.log_handler.exception", &error);
+        if cycle().is_err() {
+            // A failed scan has not reached the ordinary response-queue wait.
+            // Yield before retrying without advancing scan or delivery state.
+            wait(Duration::from_secs(1));
         }
     }
 }
@@ -204,4 +222,169 @@ fn read_text(path: &Path) -> io::Result<String> {
     Ok(fs::read_to_string(path)?
         .replace("\r\n", "\n")
         .replace('\r', "\n"))
+}
+
+#[cfg(test)]
+mod retry_tests {
+    use super::*;
+    use std::{cell::Cell, sync::mpsc, thread, time::Instant};
+
+    #[test]
+    fn persistent_missing_log_directory_waits_between_failed_cycles() {
+        let root = tempfile::tempdir().unwrap();
+        let missing = root.path().join("missing-swaglog");
+        let stop = Stop::default();
+        let attempts = Cell::new(0);
+        let waits = Cell::new(0);
+        let mut attributes = Attributes::default();
+        log_worker_cycles(
+            &stop,
+            || {
+                let result = logs(&missing, 0, &mut attributes);
+                assert!(
+                    matches!(&result, Err(Error::Io(error)) if error.kind() == io::ErrorKind::NotFound)
+                );
+                attempts.set(attempts.get() + 1);
+                if attempts.get() == 3 {
+                    stop.request();
+                }
+                result.map(|_| ())
+            },
+            |duration| {
+                assert_eq!(duration, Duration::from_secs(1));
+                waits.set(waits.get() + 1);
+                assert_eq!(waits.get(), attempts.get(), "retry ran without yielding");
+            },
+        );
+        assert_eq!(attempts.get(), 3);
+        assert_eq!(
+            waits.get(),
+            3,
+            "persistent IO failure retried without waiting"
+        );
+        assert!(!missing.exists());
+    }
+
+    #[test]
+    fn healthy_cycles_keep_existing_cadence_without_added_waits() {
+        let stop = Stop::default();
+        let mut cycles = 0;
+        log_worker_cycles(
+            &stop,
+            || {
+                cycles += 1;
+                if cycles == 3 {
+                    stop.request();
+                }
+                Ok(())
+            },
+            |_| panic!("successful forwarding cycle received a retry delay"),
+        );
+        assert_eq!(cycles, 3);
+    }
+
+    #[test]
+    fn healthy_forwarding_keeps_order_contents_and_acknowledgement_markers() {
+        let root = tempfile::tempdir().unwrap();
+        let shared = Shared {
+            config: state::Config {
+                host: "wss://unused.invalid".into(),
+                handlers: 0,
+                log_root: root.path().join("routes"),
+                swaglog_root: root.path().join("swaglog"),
+                stats_root: root.path().join("stats"),
+                persist_root: root.path().join("persist"),
+                basedir: root.path().into(),
+                process_launcher: root.path().join("unused-launcher"),
+                pc: false,
+            },
+            params: openpilot_params::Params::open(&root.path().join("params"), "d").unwrap(),
+            uploads: Default::default(),
+            available: Default::default(),
+            factory: openpilot_logging::producer::Factory::new(format!(
+                "ipc://{}",
+                root.path().join("unused-log.sock").display()
+            ))
+            .unwrap(),
+            proxies: Default::default(),
+            requests: Default::default(),
+            replies: Default::default(),
+            low_priority: Default::default(),
+            log_responses: Default::default(),
+            upload_agent: crate::http_socket::agent(),
+            attributes: Default::default(),
+        };
+        fs::create_dir(&shared.config.swaglog_root).unwrap();
+        for name in ["log.1", "log.2", "log.3"] {
+            fs::write(shared.config.swaglog_root.join(name), b"first\r\nsecond\r").unwrap();
+        }
+        let stop = Stop::default();
+        let mut logger = shared.factory.logger();
+        let mut attributes = Attributes::default();
+        let mut scanned = i64::MIN;
+        let mut files = Vec::new();
+        for name in ["log.2", "log.1"] {
+            shared
+                .log_responses
+                .put(json!({"id":name,"result":{"success":true}}).to_string())
+                .unwrap();
+            log_cycle(
+                &shared,
+                &stop,
+                &mut logger,
+                &mut attributes,
+                &mut scanned,
+                &mut files,
+            )
+            .unwrap();
+            let packet: Value =
+                serde_json::from_str(&shared.low_priority.get(Duration::ZERO).unwrap().unwrap())
+                    .unwrap();
+            assert_eq!(
+                packet,
+                json!({"method":"forwardLogs","params":{"logs":"first\nsecond\n"},"jsonrpc":"2.0","id":name})
+            );
+            assert_eq!(
+                attributes
+                    .get(&shared.config.swaglog_root.join(name))
+                    .unwrap(),
+                Some(2147483647_u32.to_ne_bytes().to_vec())
+            );
+        }
+        assert!(files.is_empty());
+        assert!(shared.low_priority.get(Duration::ZERO).unwrap().is_none());
+        assert_eq!(
+            attributes
+                .get(&shared.config.swaglog_root.join("log.3"))
+                .unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn stop_interrupts_failure_wait_without_another_attempt() {
+        let stop = Stop::default();
+        let stopped = stop.clone();
+        let (entered, waiting) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            let mut cycles = 0;
+            log_worker_cycles(
+                &stopped,
+                || {
+                    cycles += 1;
+                    Err(Error::Contract("owned scan failure"))
+                },
+                |duration| {
+                    entered.send(()).unwrap();
+                    stopped.wait(duration);
+                },
+            );
+            cycles
+        });
+        waiting.recv_timeout(Duration::from_secs(2)).unwrap();
+        let requested = Instant::now();
+        stop.request();
+        assert_eq!(worker.join().unwrap(), 1);
+        assert!(requested.elapsed() < Duration::from_millis(500));
+    }
 }

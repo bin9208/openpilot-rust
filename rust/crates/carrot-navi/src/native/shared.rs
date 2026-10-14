@@ -60,10 +60,12 @@ impl Shared {
         &self,
         future: impl std::future::Future<Output = ()> + Send + 'static,
     ) -> Result<(), Error> {
-        self.tasks
+        let mut tasks = self
+            .tasks
             .lock()
-            .map_err(|_| Error::typed("RuntimeError", "task lock poisoned".into()))?
-            .spawn(future);
+            .map_err(|_| Error::typed("RuntimeError", "task lock poisoned".into()))?;
+        while tasks.try_join_next().is_some() {}
+        tasks.spawn(future);
         Ok(())
     }
 }

@@ -33,7 +33,12 @@ impl Framer {
                 .windows(2)
                 .position(|bytes| bytes == [0xb5, 0x62])
             else {
+                // Preserve a partial sync prefix across reads after dropping noise.
+                let trailing_sync = self.buffer.last() == Some(&0xb5);
                 self.buffer.clear();
+                if trailing_sync {
+                    self.buffer.push(0xb5);
+                }
                 break;
             };
             self.buffer.drain(..start);

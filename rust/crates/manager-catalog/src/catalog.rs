@@ -152,6 +152,7 @@ fn availability(name: &str) -> RustAvailability {
         "webrtcd" => ("openpilot-webrtc", "openpilot-webrtcd"),
         "carrot_webrtcd" => ("openpilot-webrtc", "openpilot-carrot-webrtcd"),
         "webcamerad" => ("openpilot-webcam", "openpilot-webcam"),
+        "webjoystick" => ("openpilot-webjoystick", "openpilot-webjoystick"),
         _ => return RustAvailability::NotPorted,
     };
     RustAvailability::Candidate { package, binary, limitation: "Isolated host candidate; native external dependencies remain; manager selection, complete startup/upload and AGNOS/device acceptance pending. See rust/port-status.json for component-specific limits." }

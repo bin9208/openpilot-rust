@@ -28,7 +28,8 @@ code. Python is a build/validation dependency only.
 Host staging (requires g++, GL and X11 development libraries):
 
 ```sh
-python3 rust/tools/stage_startup_ui_raylib.py --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host" --shared
+rust/tools/check-disk-space --path "${CARGO_TARGET_DIR:-rust/target}" --growth-mib 2048
+cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host" --shared
 export STARTUP_UI_RAYLIB_ROOT="$RUNNER_TEMP/startup-raylib-host"
 export STARTUP_UI_RAYLIB_LIBRARY="$STARTUP_UI_RAYLIB_ROOT/lib/libopenpilot-raylib.so"
 ```
@@ -37,7 +38,8 @@ GNU aarch64/AGNOS plugin staging uses the comma DRM backend and a matching GNU
 cross compiler with aarch64 EGL, GLESv2, DRM and GBM development libraries:
 
 ```sh
-python3 rust/tools/stage_startup_ui_raylib.py --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-arm" --shared --cxx aarch64-linux-gnu-g++
+rust/tools/check-disk-space --path "${CARGO_TARGET_DIR:-rust/target}" --growth-mib 2048
+cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-arm" --shared --cxx aarch64-linux-gnu-g++
 export STARTUP_UI_RAYLIB_ROOT="$RUNNER_TEMP/startup-raylib-arm"
 ```
 
@@ -54,7 +56,8 @@ Cargo links only its platform dynamic-loader API, not the GNU raylib archive or
 GL libraries. Header-only staging for the musl compilation gate is:
 
 ```sh
-python3 rust/tools/stage_startup_ui_raylib.py --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-headers"
+rust/tools/check-disk-space --path "${CARGO_TARGET_DIR:-rust/target}" --growth-mib 2048
+cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-headers"
 export STARTUP_UI_RAYLIB_ROOT="$RUNNER_TEMP/startup-raylib-headers"
 cargo zigbuild --manifest-path rust/Cargo.toml --workspace --release --target aarch64-unknown-linux-musl
 ```

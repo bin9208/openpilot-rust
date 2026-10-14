@@ -25,3 +25,15 @@ signal-hook = "0.3"
 [[bin]]
 name = "openpilot-process-child"
 path = "src/main.rs"
+
+[[test]]
+name = "lock_fd"
+harness = false
+
+[[test]]
+name = "helper_exit"
+harness = false
+
+[[test]]
+name = "controlling_pty"
+harness = false

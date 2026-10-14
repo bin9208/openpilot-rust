@@ -52,7 +52,15 @@ impl Pull {
             ),
             ("error".chars().map(u32::from).collect(), error.clone()),
         ];
-        fields.extend(crate::json_fields::fields(&event.fields)?.iter().cloned());
+        // Preserve the original event field order, replacing the attempt's
+        // empty error placeholders instead of writing duplicate JSON keys.
+        for (key, value) in crate::json_fields::fields(&event.fields)? {
+            if !key.iter().copied().eq("error_code".chars().map(u32::from))
+                && !key.iter().copied().eq("error".chars().map(u32::from))
+            {
+                fields.push((key.clone(), value.clone()));
+            }
+        }
         let status = if event.blocked {
             "reboot_blocked"
         } else {

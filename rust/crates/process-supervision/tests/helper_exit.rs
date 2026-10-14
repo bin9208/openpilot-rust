@@ -1,16 +1,29 @@
 use openpilot_process_supervision::CapturedCommand;
 use std::{
     fs::{self, File},
-    os::{fd::AsFd, unix::fs::PermissionsExt},
+    os::{fd::AsFd, unix::ffi::OsStringExt},
 };
 
-#[test]
+fn main() {
+    if let Some(descriptor) = std::env::args_os()
+        .nth(1)
+        .filter(|path| std::path::Path::new(path).is_file())
+    {
+        let value: serde_json::Value =
+            serde_json::from_slice(&fs::read(descriptor).unwrap()).unwrap();
+        let cwd: Vec<u8> = serde_json::from_value(value["cwd"].clone()).unwrap();
+        let cwd = std::path::PathBuf::from(std::ffi::OsString::from_vec(cwd));
+        rustix::process::setsid().unwrap();
+        fs::write(cwd.join("pid"), std::process::id().to_string()).unwrap();
+        std::process::exit(23);
+    }
+    locked_session_pre_handshake_exit_closes_and_reaps();
+}
+
 fn locked_session_pre_handshake_exit_closes_and_reaps() {
     let root = tempfile::tempdir().unwrap();
-    let helper = root.path().join("owned-helper");
+    let helper = std::env::current_exe().unwrap();
     let record = root.path().join("pid");
-    fs::write(&helper, format!("#!/usr/bin/python3\nimport os\nfrom pathlib import Path\nos.setsid()\nPath({:?}).write_text(str(os.getpid()))\nraise SystemExit(23)\n", record.to_string_lossy())).unwrap();
-    fs::set_permissions(&helper, fs::Permissions::from_mode(0o700)).unwrap();
     let lock = File::create(root.path().join("lock")).unwrap();
     lock.lock().unwrap();
     let group = rustix::process::getpgrp();

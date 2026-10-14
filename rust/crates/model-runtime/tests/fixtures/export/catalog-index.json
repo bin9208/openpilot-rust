@@ -1,0 +1,15 @@
+{
+  "bundles": [
+    {
+      "camera": [
+        1344,
+        760
+      ],
+      "directory": "driver-1344x760",
+      "graph_sha256": "eef93e1d14482804277fca0172464032d1a4fdbcc338524059fa1e861454ad4d",
+      "kind": "driver",
+      "pipeline_sha256": "23bf0d244a4cb62c85fc3aa0e8ebf8eb7eb970522a51326adf1ac015fc738c7c"
+    }
+  ],
+  "version": 1
+}

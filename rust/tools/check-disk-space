@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# CI bootstrap only: reserve before toolchain installation/build, then exec Rust.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+operation_path=.
+growth_mib=
+path_seen=false
+growth_seen=false
+fail() { printf 'disk space: %s\n' "$1" >&2; exit 1; }
+arguments=("$@")
+while (($#)); do
+  case "$1" in
+    --path)
+      $path_seen && fail 'unknown or duplicate argument'
+      (($# > 1)) || fail '--path needs a value'
+      operation_path=$2; path_seen=true; shift ;;
+    --growth-mib)
+      $growth_seen && fail 'unknown or duplicate argument'
+      (($# > 1)) || fail '--growth-mib needs a value'
+      growth_mib=$2; growth_seen=true; shift ;;
+    --help|-h) printf 'Usage: check-disk-space --path PATH --growth-mib NONNEGATIVE_INTEGER\n'; exit 0 ;;
+    *) fail 'unknown or duplicate argument' ;;
+  esac
+  shift
+done
+$path_seen || fail '--path required'
+$growth_seen || fail '--growth-mib required'
+growth_mib=${growth_mib#+}
+# GNU expr uses exact integers; do not overflow Bash's signed arithmetic.
+if [[ ! $growth_mib =~ ^[0-9]+$ ]]; then
+  printf 'disk space: invalid growth\n' >&2; exit 1
+fi
+growth_bytes=$(expr "$growth_mib" '*' 1048576) || test "$growth_bytes" = 0
+required=$(expr 26843545600 + "$growth_bytes")
+if [[ $(expr "$required" '<=' 18446744073709551615) != 1 ]]; then
+  printf 'disk space: disk reserve plus growth exceeds u64\n' >&2; exit 1
+fi
+case $(uname -m) in
+  x86_64) host=x86_64-unknown-linux-gnu ;;
+  aarch64) host=aarch64-unknown-linux-gnu ;;
+  *) printf 'disk space: unsupported bootstrap host\n' >&2; exit 1 ;;
+esac
+identity=$(sha256sum "$root/rust/Cargo.toml" "$root/rust/Cargo.lock" "$root/rust/crates/disk-space/Cargo.toml" "$root/rust/crates/disk-space/src/"*.rs | sha256sum)
+identity=${identity%% *}
+cache_parent=${RUNNER_TEMP:-${XDG_CACHE_HOME:-$HOME/.cache}}
+cache_base=$cache_parent/openpilot-disk-guard
+cache=$cache_base/$host-$identity
+binary=$cache/disk-space-guard
+# Never execute a predictable cache entry before validating its ownership/type.
+uid=$(id -u)
+validate() {
+  local path=$1 kind=$2 metadata owner mode
+  [[ $path == /proc/$$/fd/9 || ! -L $path ]] || fail "unsafe cache symlink: $path"
+  if [[ $kind == directory ]]; then [[ -d $path ]] || fail "cache is not a directory: $path"
+  else [[ -f $path ]] || fail "cache is not a regular file: $path"; fi
+  metadata=$(stat -Lc '%u %a' -- "$path")
+  read -r owner mode <<< "$metadata"
+  [[ $owner == "$uid" ]] || fail "cache owner differs: $path"
+  (( (8#$mode & 0022) == 0 )) || fail "cache is group/world writable: $path"
+}
+validate_existing() {
+  local path=$1 kind=$2
+  if [[ -e $path || -L $path ]]; then validate "$path" "$kind"; fi
+}
+validate_existing "$cache_parent" directory
+validate_existing "$cache_base" directory
+validate_existing "$cache" directory
+validate_existing "$cache_base/bootstrap.lock" file
+validate_existing "$binary" file
+if [[ -x $binary ]]; then exec "$binary" "${arguments[@]}"; fi
+reserve() {
+  local destination=$1 growth=$2 ancestor=$1 free needed
+  while [[ ! -e $ancestor ]]; do ancestor=$(dirname -- "$ancestor"); done
+  free=$(df -B1 --output=avail -- "$ancestor" | tail -n 1)
+  free=${free//[[:space:]]/}
+  [[ $free =~ ^[0-9]+$ ]] || { printf 'disk space: invalid df response\n' >&2; return 1; }
+  needed=$(expr 26843545600 + "$growth")
+  if [[ $(expr "$free" '>=' "$needed") != 1 ]]; then
+    printf '{"free_bytes":%s,"required_bytes":%s,"growth_bytes":%s}\n' "$free" "$needed" "$growth"
+    printf 'disk space: insufficient disk: retain 25 GiB plus operation growth; recover at least 35 GiB before resuming (%s)\n' "$destination" >&2
+    return 1
+  fi
+}
+# Operation filesystem may differ from toolchain/cache filesystems.
+reserve "$operation_path" "$growth_bytes"
+reserve "$cache_base" 1073741824
+reserve "${RUSTUP_HOME:-$HOME/.rustup}" 1073741824
+reserve "${CARGO_HOME:-$HOME/.cargo}" 1073741824
+umask 077
+mkdir -p -- "$cache_base"
+validate "$cache_parent" directory
+validate "$cache_base" directory
+# RDWR opens an existing FIFO without waiting for a partner. Validate the
+# opened descriptor before flock; the private parent excludes other users.
+validate_existing "$cache_base/bootstrap.lock" file
+exec 9<>"$cache_base/bootstrap.lock"
+validate "/proc/$$/fd/9" file
+flock 9
+validate_existing "$cache" directory
+validate_existing "$binary" file
+if [[ ! -x $binary ]]; then
+  # Recheck after waiting: another bootstrap may have consumed capacity.
+  reserve "$operation_path" "$growth_bytes"
+  reserve "$cache_base" 1073741824
+  reserve "${RUSTUP_HOME:-$HOME/.rustup}" 1073741824
+  reserve "${CARGO_HOME:-$HOME/.cargo}" 1073741824
+  rustup toolchain install 1.94.0 --profile minimal >&2
+  mkdir -p -- "$cache"
+  env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
+    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 build \
+    --manifest-path "$root/rust/Cargo.toml" -p openpilot-disk-space --bin disk-space-guard \
+    --locked --target "$host" --target-dir "$cache/build" >&2
+  temporary=$(mktemp "$cache/.publish.XXXXXXXX")
+  trap 'rm -f -- "$temporary"' EXIT
+  cp -- "$cache/build/$host/debug/disk-space-guard" "$temporary"
+  chmod 700 -- "$temporary"
+  mv -f -- "$temporary" "$binary"
+  trap - EXIT
+fi
+flock -u 9
+exec 9>&-
+exec "$binary" "${arguments[@]}"

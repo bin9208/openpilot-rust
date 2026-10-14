@@ -256,6 +256,16 @@ impl VisionImage {
         self.buffer.mapping.copy_into(bytes)
     }
 
+    /// Copies owned selected pixel bytes after the caller's normal completion/cache sync.
+    /// Like `copy_into`, this does not change the producer's fence or ION sync ordering.
+    pub fn copy_samples(
+        &self,
+        offsets: impl Iterator<Item = usize> + Clone,
+        bytes: &mut [u8],
+    ) -> Result<(), Error> {
+        self.buffer.mapping.copy_samples(offsets, bytes)
+    }
+
     pub fn publish(&self, metadata: VisionMetadata) -> Result<(), Error> {
         let mut state = self.owner.borrow_mut();
         self.buffer

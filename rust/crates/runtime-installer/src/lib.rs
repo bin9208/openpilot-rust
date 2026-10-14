@@ -1,6 +1,7 @@
 mod activation;
 mod archive;
 mod identity;
+pub mod transaction;
 mod transport;
 
 use identity::{Descriptor, Manifest, MAX_JSON_BYTES};

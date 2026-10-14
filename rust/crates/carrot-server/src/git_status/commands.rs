@@ -98,6 +98,37 @@ pub(super) async fn run(
     args: &[&str],
     timeout: Duration,
 ) -> Result<(i32, String), Failure> {
+    let argv = std::iter::once("git")
+        .chain(args.iter().copied())
+        .map(Into::into)
+        .collect();
+    run_program(context, argv, timeout).await
+}
+
+pub(super) async fn stage_update(
+    context: &Context<'_>,
+    target: &str,
+    timeout: Duration,
+) -> Result<(i32, String), Failure> {
+    let root = &context.service.repository.directory;
+    let argv = vec![
+        root.join("rust/bin/openpilot-runtime-install")
+            .into_os_string(),
+        "--stage-update".into(),
+        "--root".into(),
+        root.clone().into_os_string(),
+        "--target".into(),
+        target.into(),
+        "--ff-only".into(),
+    ];
+    run_program(context, argv, timeout).await
+}
+
+async fn run_program(
+    context: &Context<'_>,
+    argv: Vec<std::ffi::OsString>,
+    timeout: Duration,
+) -> Result<(i32, String), Failure> {
     let mut stopped = context.stopped.clone();
     if *stopped.borrow() {
         return Err(Failure::Cancelled);
@@ -106,10 +137,7 @@ pub(super) async fn run(
     let request = CapturedCommand {
         launcher: context.service.repository.launcher.clone(),
         cwd: context.service.repository.directory.clone(),
-        argv: std::iter::once("git")
-            .chain(args.iter().copied())
-            .map(Into::into)
-            .collect(),
+        argv,
     };
     let lock = Arc::clone(&context.lock);
     let (child, pipe) = tokio::task::spawn_blocking(move || {

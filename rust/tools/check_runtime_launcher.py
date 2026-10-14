@@ -12,6 +12,7 @@ import time
 
 
 ROLES = (
+  'openpilot-runtime-install',
   'openpilot-manager',
   'openpilot-process-child',
   'openpilot-carrot-recovery',
@@ -39,7 +40,8 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
   if shutil.disk_usage(output).free < (25 * 1024**3 + 512 * 1024**2):
     raise RuntimeError('insufficient space for owned bootstrap package')
   rows = []
-  for scenario in ('ready', 'package-corrupt', 'metadata-mismatch', 'agnos-current', 'agnos-activate', 'agnos-ui-failed'):
+  for scenario in ('ready', 'package-corrupt', 'metadata-mismatch', 'installer-unlisted', 'installer-missing',
+                   'agnos-current', 'agnos-activate', 'agnos-ui-failed'):
     root = output / scenario
     repo, data, temporary, system = [root / name for name in ('repo', 'data', 'tmp', 'system')]
     for path in (repo / 'rust/bin', data, temporary, system / 'usr/comma', system / 'sys/firmware/devicetree/base'):
@@ -59,9 +61,12 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
       'files': [
         {'path': str(path.relative_to(repo)), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'executable': True}
         for path in (repo / 'rust/bin').iterdir()
+        if scenario != 'installer-unlisted' or path.name != 'openpilot-runtime-install'
       ],
     }
     (repo / 'rust/runtime-manifest.json').write_text(json.dumps(manifest))
+    if scenario == 'installer-missing':
+      (repo / 'rust/bin/openpilot-runtime-install').unlink()
     if scenario == 'package-corrupt':
       replacement = repo / 'rust/bin/corrupt'
       replacement.write_bytes(b'wrong generation')
@@ -109,6 +114,7 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
           assert time.monotonic() < deadline, (scenario, observed, (root / 'launcher.log').read_text())
           time.sleep(0.02)
         assert all(not row.get('inherited_lock', False) for row in observed), observed
+        assert 'openpilot-runtime-install' not in roles, observed
         expected_libraries = [str(repo / 'rust/bin/lib'), *inherited_libraries]
         assert all(row['library_path'] == expected_libraries for row in observed if 'library_path' in row), (scenario, observed)
         if scenario in ('ready', 'agnos-current'):
@@ -119,6 +125,14 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
         else:
           assert 'openpilot-manager' not in roles, observed
           assert 'openpilot-usbgpu-model' not in roles, observed
+        if scenario in ('installer-unlisted', 'installer-missing'):
+          message = next(row for row in observed if row['role'] == 'openpilot-text-window')['args'][-1]
+          if scenario == 'installer-unlisted':
+            assert 'required executable absent from runtime manifest: rust/bin/openpilot-runtime-install' in message, message
+            assert (repo / 'rust/bin/openpilot-runtime-install').is_file()
+          else:
+            assert 'No such file or directory' in message, message
+            assert not (repo / 'rust/bin/openpilot-runtime-install').exists()
         if scenario == 'agnos-ui-failed':
           assert roles.count('openpilot-agnos-updater') == 3, observed
           assert next(row for row in observed if row['role'] == 'openpilot-agnos')['args'][-1].endswith('agnos-tici.json')

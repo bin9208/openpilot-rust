@@ -15,3 +15,9 @@ pub mod qcom;
 pub use cpu::CpuModel;
 pub use error::Error;
 pub use graph::{Graph, ValidatedGraph};
+
+#[cfg(feature = "native-skip-miri")]
+pub mod qcom_compiler;
+
+#[cfg(feature = "native-skip-miri")]
+pub mod export;

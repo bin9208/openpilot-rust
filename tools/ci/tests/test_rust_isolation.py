@@ -18,8 +18,8 @@ class RustIsolationTests(unittest.TestCase):
         self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
         self.assertEqual(job['env']['CARGO_PROFILE_DEV_DEBUG'], '0')
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
-        for required in ('webcam_source_requirements.txt', 'build_xiaoge_opencv.py --prepare-only',
-                         'build_webcam_opencv.py', 'build_visionipc_python.py', 'libswscale-dev=7:6.1.1-*',
+        for required in ('webcam_source_requirements.txt', 'build-xiaoge-opencv -- --prepare-only',
+                         'build-webcam-opencv', 'build_visionipc_python.py', 'libswscale-dev=7:6.1.1-*',
                          'pkg-config --modversion libswscale', 'openpilot-webcam --features native',
                          'webcam_camera_compare.py', 'webcam_worker_compare.py', 'odd-height unaligned-even',
                          'webcam_cli_compare.py', 'webcam_capture_errors.py', 'webcam_capture_fault.cc'):
@@ -231,13 +231,13 @@ class RustIsolationTests(unittest.TestCase):
                 self.assertNotIn('if', job)
                 self.assertNotIn('continue-on-error', job)
                 commands = '\n'.join(step.get('run', '') for step in job['steps'])
-                self.assertIn('card_ci_space.py', commands)
+                self.assertIn('check-disk-space', commands)
                 self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
                 self.assertTrue(any(step.get('if') == 'always()' and
                                     step.get('uses', '').startswith('actions/upload-artifact@') for step in job['steps']))
         host = '\n'.join(step.get('run', '') for step in data['jobs']['radar-runtime']['steps'])
         for required in ('build_params_python.py', 'build_msgq_python.py', 'RADAR_PARAMS_BINDING',
-                         'radarcan_prepare_assets.py', 'stage_torque_numerics.py', 'test_radarcan_ci.py',
+                         'radarcan_prepare_assets.py', '--bin stage-torque-numerics', 'test_radarcan_ci.py',
                          'check_radarcan_ci.py --phase reference', 'check_radarcan_ci.py --phase ipc',
                          '-p openpilot-radarcan -p openpilot-can', '--all-targets --locked -- -D warnings'):
             self.assertIn(required, host)
@@ -371,7 +371,7 @@ class RustIsolationTests(unittest.TestCase):
                          'webrtc_stun_checks', 'webrtc_identifiers_compare.py', 'webrtc_multicamera_compare.py', 'webrtc_fir_compare.py',
                          'webrtc_body_compare.py', 'webrtc_params_compare.py', 'webrtc_cli_compare.py', 'webrtc_srflx_compare.py',
                          'webrtc_debug_compare.py', 'source-standard-h264 native-standard-h264',
-                         'WEBRTC_PARAMS_BINDING', 'card_ci_space.py', 'SHA256SUMS'):
+                         'WEBRTC_PARAMS_BINDING', 'check-disk-space', 'SHA256SUMS'):
             self.assertIn(required, commands)
         for step in job['steps']:
             if 'run' in step:
@@ -389,7 +389,7 @@ class RustIsolationTests(unittest.TestCase):
         jobs = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
         self.assertEqual(jobs['xiaoge-runtime']['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
         required = {
-            'xiaoge-runtime': ('build_xiaoge_opencv.py', 'build_params_python.py', 'build_visionipc_python.py',
+            'xiaoge-runtime': ('build-xiaoge-opencv', 'build_params_python.py', 'build_visionipc_python.py',
                               'check_xiaoge_ci.py', '--features native-skip-miri', 'test_xiaoge_ci.py'),
             'xiaoge-memory': ('--sanitizers address,undefined', 'check_xiaoge_native_memory.py',
                              '-Zmiri-strict-provenance', '-Zmiri-symbolic-alignment-check',
@@ -415,7 +415,7 @@ class RustIsolationTests(unittest.TestCase):
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('build_visionipc_python.py', 'check_encoder_ci.py', 'test_encoder_outcomes.py',
-                         'test_encoder_target_stage.py', '--features native --bins --examples',
+                         '-p openpilot-dev-tools --locked --test encoder_stage', '--features native --bins --examples',
                          '--features openpilot-encoderd/native', '--message-format=json', 'zstandard==0.25.0'):
             self.assertIn(required, commands)
         check = next(step for step in job['steps'] if 'check_encoder_ci.py' in step.get('run', ''))

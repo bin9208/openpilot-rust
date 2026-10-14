@@ -113,6 +113,14 @@ impl ImageMapping {
         self.memory()?.copy_into(destination)
     }
 
+    pub(crate) fn copy_samples(
+        &self,
+        offsets: impl Iterator<Item = usize> + Clone,
+        destination: &mut [u8],
+    ) -> Result<(), Error> {
+        self.memory()?.copy_samples(offsets, destination)
+    }
+
     pub(crate) fn frame_id(&self) -> Result<u64, Error> {
         Ok(self.memory()?.frame_id())
     }

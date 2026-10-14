@@ -35,3 +35,8 @@ path = "src/main.rs"
 
 [dev-dependencies]
 tempfile = "3"
+
+[[test]]
+name = "staged_updates"
+path = "tests/staged_updates.rs"
+harness = false

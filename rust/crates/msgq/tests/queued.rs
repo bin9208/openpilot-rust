@@ -68,9 +68,25 @@ fn queued_poll_retains_every_packet_until_explicit_receive() {
     assert_eq!(queues.receive_one(0).unwrap(), None);
     assert!(publisher.readers_caught_up());
 
+    let mut buffer = Vec::with_capacity(128);
+    let allocation = buffer.as_ptr();
+    let capacity = buffer.capacity();
+    for value in 0_u32..1000 {
+        publisher.send(&value.to_le_bytes()).unwrap();
+        assert!(queues.receive_one_into(0, &mut buffer).unwrap());
+        assert_eq!(buffer, value.to_le_bytes());
+        assert_eq!(buffer.as_ptr(), allocation);
+        assert_eq!(buffer.capacity(), capacity);
+    }
+    assert!(!queues.receive_one_into(0, &mut buffer).unwrap());
+    assert!(buffer.is_empty());
+    assert!(publisher.readers_caught_up());
+    assert!(queues.receive_one_into(2, &mut buffer).is_err());
+
     drop(queues);
     let mut queues = MultiSubscriber::lazy_for_runtime(&specifications).unwrap();
     assert!(queues.receive_one(0).is_err());
+    assert!(queues.receive_one_into(0, &mut buffer).is_err());
     queues.set_active(0, true).unwrap();
     publisher.send(b"retained-while-other-opens").unwrap();
     queues.set_active(1, true).unwrap();

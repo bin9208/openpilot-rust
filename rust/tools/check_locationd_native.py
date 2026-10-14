@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 
@@ -19,6 +20,16 @@ def disk(path):
   if free < 27 * 1024**3:
     raise RuntimeError('25 GiB floor plus 2 GiB native build growth unavailable')
   return free
+
+
+def passed_tests(output):
+  summaries = re.findall(
+    r'^test result: (ok|FAILED)\. (\d+) passed; (\d+) failed; \d+ ignored; \d+ measured; \d+ filtered out; finished in \d+(?:\.\d+)?s$',
+    output, re.MULTILINE,
+  )
+  if len(summaries) != 1 or summaries[0][0] != 'ok' or int(summaries[0][1]) == 0 or int(summaries[0][2]) != 0:
+    raise ValueError('missing, failed or empty ownership test summary')
+  return int(summaries[0][1])
 
 
 def main():
@@ -80,7 +91,8 @@ def main():
     'ASAN_OPTIONS': 'detect_leaks=1:halt_on_error=1',
     'UBSAN_OPTIONS': 'halt_on_error=1:print_stacktrace=1',
   }
-  run([binaries[0], '--nocapture'], sanitizer_env, evidence / 'ownership-sanitizer.log')
+  ownership_output = run([binaries[0], '--nocapture'], sanitizer_env, evidence / 'ownership-sanitizer.log')
+  ownership_tests = passed_tests(ownership_output)
   free.append(disk(evidence))
   scheduler = evidence / 'scheduler-sanitizer'
   run(
@@ -102,7 +114,7 @@ def main():
   result = {
     'pass': True,
     'production_filter_ownership_and_callbacks_instrumented': True,
-    'ownership_tests': 4,
+    'ownership_tests': ownership_tests,
     'production_scheduler_instrumented': True,
     'free_bytes_before_builds': free,
     'test_executable': binaries[0],

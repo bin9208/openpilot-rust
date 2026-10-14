@@ -10,7 +10,7 @@ The manifest SHA is
 the model SHA is
 `e758b96df27858ea97122d18554930d04f9f8bda417417074edfb3a72b008d0b`.
 
-`rust/tools/stage_runtime_usbgpu.py` checks the retained manifest, every declared
+The native `stage-runtime-usbgpu` tool checks the retained manifest, every declared
 companion, both QCOM warp packages, the source-pinned firmware hashes and the
 original `CINQUE_V3_MODEL` PKL identity before copying. Existing conflicting
 files and directory symlinks fail admission. Repeated staging is idempotent.

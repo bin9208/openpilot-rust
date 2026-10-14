@@ -6,7 +6,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     let root = PathBuf::from(env::var_os("OPENPILOT_WEBCAM_OPENCV_ROOT").ok_or_else(|| {
-        io::Error::other("set OPENPILOT_WEBCAM_OPENCV_ROOT to build_webcam_opencv.py output")
+        io::Error::other("set OPENPILOT_WEBCAM_OPENCV_ROOT to build-webcam-opencv output")
     })?);
     let manifest = root.join("native-libraries.sha256");
     fs::metadata(&manifest)?;

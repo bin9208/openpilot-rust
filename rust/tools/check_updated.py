@@ -7,9 +7,28 @@ import subprocess
 import sys
 import tempfile
 
-from updated_fixtures import normalize, seed, setup
+from updated_fixtures import git, normalize, seed, setup
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def assert_equivalent(source, native):
+  # #290/#297: native initialization recreates disposable overlay directories
+  # internally, preserving the shared transaction lock and complete rollbacks.
+  # Only this exact obsolete command differs; every other field/order is strict.
+  obsolete = {'argv': ['sudo', 'rm', '-rf', '<ROOT>/data/stage'], 'cwd': None}
+  removed = sum(command == obsolete for command in source['commands'])
+  assert removed > 0, 'source fixture did not exercise staging initialization'
+  expected = dict(source, commands=[command for command in source['commands'] if command != obsolete])
+  assert native == expected, 'source/native mismatch outside preserved staging-root lifecycle'
+  return removed
+
+
+def assert_preserved(staging, lock_inode):
+  assert (staging / 'old_openpilot.fixture/owned-rollback').read_bytes() == b'complete previous source/package pair\n'
+  lock = staging / '.runtime-update.lock'
+  assert lock.read_bytes() == b'owned shared transaction lock\n'
+  assert lock.stat().st_ino == lock_inode, 'updater replaced the transaction lock inode'
 
 
 def cases():
@@ -67,6 +86,13 @@ def main():
       for implementation in ['source', 'native']:
         root = directory / f'{name}-{implementation}'
         config, env = setup(root, remote, previous, args.launcher.resolve())
+        staging = Path(config['paths']['staging'])
+        retained = staging / 'old_openpilot.fixture/owned-rollback'
+        retained.parent.mkdir(parents=True)
+        retained.write_bytes(b'complete previous source/package pair\n')
+        lock = staging / '.runtime-update.lock'
+        lock.write_bytes(b'owned shared transaction lock\n')
+        lock_inode = lock.stat().st_ino
         config.update(options, steps=steps)
         env['PYTHONPATH'] = str(ROOT)
         command = (
@@ -74,15 +100,23 @@ def main():
           if implementation == 'source'
           else [str(args.binary.resolve())]
         )
-        process = subprocess.run(command, input=json.dumps(config), env=env, capture_output=True, text=True, timeout=60)
-        output = args.output / f'{name}-{implementation}'
-        output.with_suffix('.stdout').write_text(process.stdout or '<empty>\n')
-        output.with_suffix('.stderr').write_text(process.stderr or '<empty>\n')
-        assert process.returncode == 0, (name, implementation, process.stderr)
+        # Holding a descriptor prevents unlink/recreation from recycling the
+        # original inode and concealing a replaced transaction lock.
+        with lock.open('rb'):
+          process = subprocess.run(command, input=json.dumps(config), env=env, capture_output=True, text=True, timeout=60)
+          output = args.output / f'{name}-{implementation}'
+          output.with_suffix('.stdout').write_text(process.stdout or '<empty>\n')
+          output.with_suffix('.stderr').write_text(process.stderr or '<empty>\n')
+          assert process.returncode == 0, (name, implementation, process.stderr)
+          assert git(Path(config['paths']['base']), 'rev-parse', 'HEAD') == previous, (name, implementation, 'active source changed')
+          if implementation == 'native':
+            assert_preserved(staging, lock_inode)
+          else:
+            assert not retained.exists() and not lock.exists(), 'original must exercise destructive staging cleanup'
         value = normalize(json.loads(process.stdout.splitlines()[-1]), root)
         output.with_suffix('.json').write_text(json.dumps(value, indent=2))
         pair.append(value)
-      assert pair[0] == pair[1], (name, 'source/native mismatch; inspect captured JSON')
+      lifecycle_changes = assert_equivalent(pair[0], pair[1])
       if name == 'check-fetch-metered':
         assert pair[1]['snapshots'][2]['consistent'] and pair[1]['snapshots'][4]['consistent']
         assert pair[1]['snapshots'][2]['params']['UpdateAvailable'] == b'1'.hex()
@@ -102,7 +136,8 @@ def main():
         assert 'Offroad_ConnectivityNeeded' in pair[1]['snapshots'][4]['params']
         assert 'Offroad_ConnectivityNeeded' not in pair[1]['snapshots'][5]['params']
         assert 'Offroad_UpdateFailed' in pair[1]['snapshots'][6]['params']
-      results.append({'scenario': name, 'snapshots': len(pair[0]['snapshots']), 'commands': len(pair[0]['commands']), 'passed': True})
+      results.append({'scenario': name, 'snapshots': len(pair[0]['snapshots']), 'commands': len(pair[1]['commands']),
+                      'obsolete_staging_removals': lifecycle_changes, 'rollback_and_lock_preserved': True, 'passed': True})
       print(f'PASS {name}: {results[-1]["snapshots"]} snapshots, {results[-1]["commands"]} ordered native commands')
   (args.output / 'result.json').write_text(json.dumps({'passed': True, 'scenarios': results, 'device_access': False}, indent=2) + '\n')
 

@@ -118,7 +118,7 @@ fn hardware(
     std::thread::scope(|scope| {
         let writer = scope.spawn(move || -> Result<(), Error> {
             for (key, value) in pending {
-                async_params.put(key, &value)?;
+                persist_queued(&async_params, key, &value)?;
             }
             Ok(())
         });
@@ -129,6 +129,14 @@ fn hardware(
             .map_err(|_| Error::Contract("Params writer panicked"))?;
         result.and(flushed)
     })
+}
+fn persist_queued(params: &Params, key: &str, value: &[u8]) -> Result<(), Error> {
+    // Compare the persisted value in the writer, so external changes and failed
+    // writes are retried while unchanged 2 Hz samples avoid fsync and rename.
+    if key == "NetworkMetered" && params.get(key)?.as_deref() == Some(value) {
+        return Ok(());
+    }
+    params.put(key, value)
 }
 fn queue(
     writes: &mpsc::Sender<(&'static str, Vec<u8>)>,
@@ -501,4 +509,58 @@ fn emit_stats(stats: &mut StatLog, state: &Value, network: &Value) -> Result<(),
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod persistence_tests {
+    use super::{persist_queued, Params};
+    use std::{
+        fs::{self, File},
+        os::unix::fs::MetadataExt,
+    };
+    #[test]
+    fn unchanged_metered_value_retains_file_but_external_changes_are_repaired() {
+        let root = tempfile::tempdir().unwrap();
+        let params = Params(openpilot_params::Params::open(root.path(), "d").unwrap());
+        let path = root.path().join("d/NetworkMetered");
+        persist_queued(&params, "NetworkMetered", b"0").unwrap();
+        let original = File::open(&path).unwrap();
+        let inode = original.metadata().unwrap().ino();
+        for _ in 0..100 {
+            persist_queued(&params, "NetworkMetered", b"0").unwrap();
+            assert_eq!(
+                fs::metadata(&path).unwrap().ino(),
+                inode,
+                "unchanged metering must not replace/fsync the Params file"
+            );
+        }
+        params.put("NetworkMetered", b"1").unwrap();
+        persist_queued(&params, "NetworkMetered", b"0").unwrap();
+        assert_eq!(fs::read(&path).unwrap(), b"0");
+        fs::remove_file(&path).unwrap();
+        persist_queued(&params, "NetworkMetered", b"0").unwrap();
+        assert_eq!(fs::read(&path).unwrap(), b"0");
+        persist_queued(&params, "NetworkMetered", b"1").unwrap();
+        assert_eq!(fs::read(&path).unwrap(), b"1");
+    }
+    #[test]
+    fn failed_metered_write_is_retried_and_other_keys_keep_existing_write_semantics() {
+        let root = tempfile::tempdir().unwrap();
+        let params = Params(openpilot_params::Params::open(root.path(), "d").unwrap());
+        let path = root.path().join("d/NetworkMetered");
+        fs::create_dir(&path).unwrap();
+        // The source-compatible Params boundary discards I/O write errors. No
+        // cached value may turn that failed attempt into a permanent skip.
+        persist_queued(&params, "NetworkMetered", b"1").unwrap();
+        fs::remove_dir(&path).unwrap();
+        persist_queued(&params, "NetworkMetered", b"1").unwrap();
+        assert_eq!(fs::read(&path).unwrap(), b"1");
+        params.put("IsMetric", b"1").unwrap();
+        let original = File::open(root.path().join("d/IsMetric")).unwrap();
+        persist_queued(&params, "IsMetric", b"1").unwrap();
+        assert_ne!(
+            original.metadata().unwrap().ino(),
+            fs::metadata(root.path().join("d/IsMetric")).unwrap().ino()
+        );
+    }
 }

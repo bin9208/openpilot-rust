@@ -22,28 +22,28 @@ carrot-man-runtime:
     - name: Reserve runner capacity and install pinned dependencies
       run: |
         sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
-        python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 8192
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
         sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
-        python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
         python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2
-        python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
         rustup toolchain install 1.94.0 --profile minimal
     - name: Stage exact optional GEOS provider
       run: |
-        python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
         python -m pip download --only-binary=:all: --no-deps shapely==2.1.2 --dest "$RUNNER_TEMP/carrot-man-wheels"
-        python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
         python rust/tools/carrot_man_stage_geos.py --wheel "$RUNNER_TEMP"/carrot-man-wheels/shapely-2.1.2-*.whl --output "$RUNNER_TEMP/carrot-man-geos"
-        python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 128
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
         python -m pip install --no-deps "$RUNNER_TEMP"/carrot-man-wheels/shapely-2.1.2-*.whl
         cat "$RUNNER_TEMP/carrot-man-geos/environment.txt" >> "$GITHUB_ENV"
     - name: Build owner and unchanged source bindings
       run: |
-        python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 4096
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
         cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-man --bins --examples --locked
-        python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
         python rust/tools/build_params_python.py --output "$RUNNER_TEMP/carrot-man-params"
-        python rust/tools/card_ci_space.py --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
         python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-man-msgq"
         python -c 'from pathlib import Path; import os; print("CARROT_PARAMS_BINDING="+str(next((Path(os.environ["RUNNER_TEMP"])/"carrot-man-params").glob("params_pyx*.so"))))' >> "$GITHUB_ENV"
     - name: Compare affected original policy, cereal and time boundaries

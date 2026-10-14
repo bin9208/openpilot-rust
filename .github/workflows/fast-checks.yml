@@ -31,6 +31,7 @@ jobs:
       - name: Check CI routing and upstream synchronization guards
         run: |
           python -m unittest discover -s tools/ci/tests -v
+          python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/ci/tests -q tools/ci/tests/test_native_disk_guard.py
           python -m unittest discover -s tools/naver_ci/tests -v
       - name: Fast navigation regressions
         run: |

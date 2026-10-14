@@ -55,8 +55,8 @@ pub fn cameras(
         thread::sleep(Duration::from_millis(100));
     };
     let main_wide = selected.0 == CameraStream::WideRoad;
-    let mut main = Source {
-        client: VisionClient::new(
+    let mut main = Source::new(
+        VisionClient::new(
             "camerad",
             if main_wide {
                 VisionStream::WideRoad
@@ -65,13 +65,13 @@ pub fn cameras(
             },
             true,
         )?,
-        stop: Arc::clone(stop),
-    };
+        Arc::clone(stop),
+    );
     let mut extra = if selected.1 {
-        Some(Source {
-            client: VisionClient::new("camerad", VisionStream::WideRoad, false)?,
-            stop: Arc::clone(stop),
-        })
+        Some(Source::new(
+            VisionClient::new("camerad", VisionStream::WideRoad, false)?,
+            Arc::clone(stop),
+        ))
     } else {
         None
     };

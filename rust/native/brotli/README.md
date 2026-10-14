@@ -10,7 +10,9 @@ SDK** under `rust/bin/brotli`, alongside `manifest.json`. A host fixture is not 
 Keep the SDK's Brotli MIT license and provenance in the package's native notices.
 
 ```sh
-python3 -P rust/tools/stage_brotli_provider.py \
+rust/tools/check-disk-space --path "${CARGO_TARGET_DIR:-rust/target}" --growth-mib 2048
+cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
+  --bin stage-brotli-provider -- \
   SDK/usr/lib/aarch64-linux-gnu rust/native/brotli-bundle \
   aarch64-unknown-linux-gnu 1.1.0
 ```

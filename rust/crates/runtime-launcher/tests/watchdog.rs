@@ -90,15 +90,33 @@ fn retries_current_checkout_and_preserves_pidfile_ownership() {
 }
 
 #[test]
-fn live_pid_file_refuses_duplicate_without_removing_foreign_owner() {
+fn stale_pid_file_does_not_treat_an_unrelated_live_process_as_owner() {
     let root = tempfile::tempdir().unwrap();
-    let pid = format!("{}\n", std::process::id());
+    let repo = root.path().join("repo");
+    provider(&repo, "recovered");
+    let mut unrelated = Owned(Command::new("sleep").arg("30").spawn().unwrap());
+    let pid = format!("{}\n", unrelated.0.id());
     fs::write(root.path().join("pid"), &pid).unwrap();
-    let mut child = start(root.path(), &root.path().join("missing"));
+    let mut child = start(root.path(), &repo);
+    wait(|| root.path().join("record").exists() || child.0.try_wait().unwrap().is_some());
+    assert!(
+        root.path().join("record").exists(),
+        "stale PID prevented web server startup"
+    );
+    assert_eq!(
+        fs::read_to_string(root.path().join("pid")).unwrap().trim(),
+        child.0.id().to_string()
+    );
+    assert!(unrelated.0.try_wait().unwrap().is_none());
+    rustix::process::kill_process(
+        rustix::process::Pid::from_raw(child.0.id().try_into().unwrap()).unwrap(),
+        rustix::process::Signal::TERM,
+    )
+    .unwrap();
     wait(|| child.0.try_wait().unwrap().is_some());
     assert!(child.0.wait().unwrap().success());
-    assert_eq!(fs::read_to_string(root.path().join("pid")).unwrap(), pid);
-    assert!(!root.path().join("record").exists());
+    assert!(!root.path().join("pid").exists());
+    assert!(unrelated.0.try_wait().unwrap().is_none());
 }
 
 #[test]

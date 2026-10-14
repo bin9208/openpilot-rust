@@ -45,6 +45,11 @@ pub(crate) fn poll(
     if timeout_ms < -1 {
         return Err(Error::Invalid("invalid poll timeout"));
     }
+    // A nonblocking probe cannot miss a wakeup: it never enters a wait. Avoid
+    // changing the caller's signal mask and scanning the same queues twice.
+    if timeout_ms == 0 {
+        return ready().map(|_| ());
+    }
     // Blocking before the queue check keeps an intervening SIGUSR2 pending until
     // ppoll atomically restores the caller's mask while entering its wait.
     let mask = NotificationMask::block()?;
@@ -90,13 +95,15 @@ mod tests {
         caller_mask.add(Signal::SIGUSR1);
         caller_mask.thread_set_mask().unwrap();
 
-        poll(0, || Ok(true)).unwrap();
-        assert_eq!(SigSet::thread_get_mask().unwrap(), caller_mask);
-        assert!(poll(0, || Err(Error::Invalid("fixture queue read"))).is_err());
-        assert_eq!(SigSet::thread_get_mask().unwrap(), caller_mask);
-        let panic = std::panic::catch_unwind(|| poll(0, || panic!("fixture unwind")));
-        assert!(panic.is_err());
-        assert_eq!(SigSet::thread_get_mask().unwrap(), caller_mask);
+        for timeout in [0, 1] {
+            poll(timeout, || Ok(true)).unwrap();
+            assert_eq!(SigSet::thread_get_mask().unwrap(), caller_mask);
+            assert!(poll(timeout, || Err(Error::Invalid("fixture queue read"))).is_err());
+            assert_eq!(SigSet::thread_get_mask().unwrap(), caller_mask);
+            let panic = std::panic::catch_unwind(|| poll(timeout, || panic!("fixture unwind")));
+            assert!(panic.is_err());
+            assert_eq!(SigSet::thread_get_mask().unwrap(), caller_mask);
+        }
         restore.restore().unwrap();
     }
 
@@ -109,7 +116,22 @@ mod tests {
             Ok(false)
         })
         .unwrap();
-        assert_eq!(checks, 2);
+        assert_eq!(checks, 1);
         assert!(started.elapsed() < Duration::from_millis(100));
+    }
+
+    #[test]
+    fn nonblocking_check_preserves_mask_during_callback() {
+        let original = SigSet::thread_get_mask().unwrap();
+        let restore = NotificationMask(Some(original));
+        let mut caller_mask = original;
+        caller_mask.remove(Signal::SIGUSR2);
+        caller_mask.thread_set_mask().unwrap();
+        poll(0, || {
+            assert_eq!(SigSet::thread_get_mask().unwrap(), caller_mask);
+            Ok(false)
+        })
+        .unwrap();
+        restore.restore().unwrap();
     }
 }

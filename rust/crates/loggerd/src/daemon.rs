@@ -87,6 +87,7 @@ pub fn run(environment: Environment) -> Result<(), Error> {
     params.put("CurrentRoute", logger.route.as_bytes())?;
     let mut message_count = 0_u64;
     let mut byte_count = 0_u64;
+    let mut receive_buffer = Vec::new();
     let started = clock::now()?;
     while signal.load(Ordering::Relaxed) == 0 {
         for index in subscribers.poll_ready(Duration::from_millis(1000))? {
@@ -105,9 +106,17 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                 if signal.load(Ordering::Relaxed) != 0 {
                     break;
                 }
-                let Some(bytes) = subscribers.receive_one(index)? else {
-                    break;
+                // Encoder packets can be retained across rotation; give those
+                // their own allocation. Ordinary log packets are consumed here.
+                let mut encoder_bytes = Vec::new();
+                let bytes = if states[index].encoder.is_some() {
+                    &mut encoder_bytes
+                } else {
+                    &mut receive_buffer
                 };
+                if !subscribers.receive_one_into(index, bytes)? {
+                    break;
+                }
                 if name == "rawAudioData" && record_audio {
                     let message = capnp::serialize::read_message_from_flat_slice(
                         &mut bytes.as_slice(),
@@ -139,7 +148,8 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                 match &mut state.encoder {
                     Some(encoder) => {
                         rotation.last_camera_ns = clock::now()?;
-                        let outcome = encoder.handle(&mut logger, bytes, rotation.ready)?;
+                        let outcome =
+                            encoder.handle(&mut logger, std::mem::take(bytes), rotation.ready)?;
                         byte_count = byte_count.wrapping_add(u64::try_from(outcome.bytes)?);
                         if outcome.ready_part.is_some() {
                             rotation.ready += 1;
@@ -150,7 +160,7 @@ pub fn run(environment: Environment) -> Result<(), Error> {
                             state.counter.is_multiple_of(u64::from(frequency))
                         });
                         state.counter = state.counter.wrapping_add(1);
-                        logger.write(&bytes, qlog)?;
+                        logger.write(bytes, qlog)?;
                         byte_count = byte_count.wrapping_add(u64::try_from(bytes.len())?);
                     }
                 }

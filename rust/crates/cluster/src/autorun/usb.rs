@@ -6,7 +6,6 @@ use openpilot_usbgpu::{bus_lock::BusLock, native_usb::Scanner};
 use std::path::{Path, PathBuf};
 
 pub struct Usb {
-    vendor: PathBuf,
     lock: PathBuf,
     bus: Option<BusLock>,
     scanner: Option<Scanner>,
@@ -23,9 +22,8 @@ pub fn label(product: u16) -> String {
 
 impl Usb {
     #[must_use]
-    pub fn new(root: &Path, lock: &Path) -> Self {
+    pub fn new(_root: &Path, lock: &Path) -> Self {
         Self {
-            vendor: root.join("openpilot/selfdrive/carrot/cluster/.vendor/turing-smart-screen-python-main/library"),
             lock: lock.to_owned(),
             bus: None,
             scanner: None,
@@ -54,10 +52,6 @@ impl Usb {
 
     #[must_use]
     pub fn find(&mut self, expected: u16) -> Option<u16> {
-        if !self.vendor.exists() {
-            eprintln!("TURZX vendor library not found: {}", self.vendor.display());
-            return None;
-        }
         match self.scan(expected) {
             Ok(found) => found,
             Err(error) => {
@@ -104,5 +98,31 @@ impl Usb {
                 false
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn native_scan_attempts_bus_ownership_without_a_python_vendor_tree() {
+        let directory = tempfile::tempdir().unwrap();
+        let lock = directory.path().join("bus.lock");
+        let mut usb = Usb::new(directory.path(), &lock);
+        assert_eq!(usb.find(u16::MAX), None);
+        assert!(
+            lock.is_file(),
+            "legacy Python absence must not suppress native bus scan"
+        );
+        assert!(usb.bus.is_some());
+    }
+
+    #[test]
+    fn unavailable_native_bus_remains_a_failed_scan() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut usb = Usb::new(directory.path(), &directory.path().join("absent/bus.lock"));
+        assert_eq!(usb.find(u16::MAX), None);
+        assert!(usb.bus.is_none());
     }
 }

@@ -6,6 +6,7 @@ fn package() -> tempfile::TempDir {
     fs::create_dir_all(root.path().join("rust/bin")).unwrap();
     let names = [
         "openpilot-launch",
+        "openpilot-runtime-install",
         "openpilot-manager",
         "openpilot-process-child",
         "openpilot-carrot-recovery",

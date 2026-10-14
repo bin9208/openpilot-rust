@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import selectors
+import shutil
 import signal
 import subprocess
 import sys
@@ -61,9 +62,11 @@ class Peer:
   def persistent(self, name='persistent', **policy):
     work = self.root / name
     work.mkdir()
-    identity = 'persistent-' + name + '-' + self.prefix
+    executable = self.root / ('persistent-' + name + '-' + self.prefix)
+    shutil.copy2(self.args.fixture.resolve(), executable)
+    identity = str(executable)
     return {'kind': 'persistent', 'name': name, 'identity': identity, 'param': 'AthenadPid',
-            'argv': [str(self.args.fixture.resolve()), str(work), 'normal', identity], **policy}
+            'argv': [identity, str(work), 'normal', identity], **policy}
 
   def launch(self, specs, environment=None, inherited=()):
     config = {'basedir': str(self.root), 'launcher': str(self.args.launcher.resolve()), 'params_root': str(self.root / 'params'),

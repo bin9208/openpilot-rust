@@ -1,3 +1,19 @@
+BUG_FIX_EXPECTATIONS = {
+  # #298 deliberately corrects the inherited cross-process xattr cache bug.
+  # Each row is (original output, corrected output), independently specified.
+  "late-bookmark": [
+    ({"preserved": []}, {"preserved": []}),
+    ({"preserved": []}, {"preserved": [name.hex() for name in (b"route--0", b"route--1", b"route--2")]}),
+    ({"deleted": b"route--0".hex(), "wait_ms": 100}, {"deleted": b"route--3".hex(), "wait_ms": 100}),
+  ],
+  "removed-bookmark": [
+    ({"preserved": [b"route--0".hex()]}, {"preserved": [b"route--0".hex()]}),
+    ({"preserved": [b"route--0".hex()]}, {"preserved": []}),
+    ({"deleted": b"route--1".hex(), "wait_ms": 100}, {"deleted": b"route--0".hex(), "wait_ms": 100}),
+  ],
+}
+
+
 def scenarios():
   ordinary = [("route--" + str(i)).encode() for i in (10, 2, 1, 0, 3, 4, 5)]
   yield "threshold-order", ordinary + [b"boot", b"crash", b"2024-old--10", b"2024-old--2"], [
@@ -9,9 +25,12 @@ def scenarios():
     ("lock", b"route--0"), ("attr", b"route--3", b"1"), ("preserved",),
     *[("cycle", 0, "0")] * 9,
   ]
-  yield "cached-attributes", ordinary, [
-    ("preserved",), ("attr", b"route--3", b"1"), ("preserved",),
-    ("cycle", 0, "0"), ("cycle", 0, "0"),
+  yield "late-bookmark", [b"route--0", b"route--1", b"route--2", b"route--3"], [
+    ("preserved",), ("attr", b"route--2", b"1"), ("preserved",), ("cycle", 0, "0"),
+  ]
+  yield "removed-bookmark", [b"route--0", b"route--1"], [
+    ("attr", b"route--0", b"1"), ("preserved",), ("remove_attr", b"route--0"),
+    ("preserved",), ("cycle", 0, "0"),
   ]
   names = [b"route--" + str(i).encode() for i in range(20)]
   yield "five-marked-segments", names, [

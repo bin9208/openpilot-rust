@@ -48,8 +48,16 @@ def test_arm_ui_commands_resolve_workspace_and_python_paths() -> None:
   step = next(step for step in job['steps'] if 'cargo build -p openpilot-ui-application' in step.get('run', ''))
   directory = ROOT / step.get('working-directory', job.get('defaults', {}).get('run', {}).get('working-directory', '.'))
   scripts = [shlex.split(line)[1] for line in step['run'].splitlines() if line.strip().startswith('python ')]
-  assert scripts
   for script in scripts:
     assert (directory / script).is_file(), directory / script
+  guards = [shlex.split(line) for line in step['run'].splitlines()
+            if 'check-disk-space' in line or 'card_ci_space.py' in line]
+  assert guards == [
+    ['$GITHUB_WORKSPACE/rust/tools/check-disk-space', '--path', '$GITHUB_WORKSPACE', '--growth-mib', str(growth)]
+    for growth in [2048, 256, 2048, 256]
+  ]
+  for guard in guards:
+    executable = Path(guard[0].replace('$GITHUB_WORKSPACE', str(ROOT)))
+    assert executable.is_absolute() and executable.is_file(), executable
   workspace = tomllib.loads((directory / 'Cargo.toml').read_text())
   assert 'crates/ui-application' in workspace['workspace']['members']

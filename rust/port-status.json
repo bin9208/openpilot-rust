@@ -3,7 +3,7 @@
   "source_commit": "f3a92524d87be714f6b8b5f44ecdc8319a8c53d1",
   "scope": "Registered source processes, including conditional/disabled entries. Startup entrypoints, manager and libraries are tracked separately; not a claim of runtime coverage.",
   "manager_status": "native_orchestration_host_candidate",
-  "manager_scope": "Native initialization, Params transitions, continuous messaging/process loop, cleanup and exit policy. Installed-manager startup/error/cleanup, stdout pressure, outer signals and native child-log-upload composition pass owned host controls. The normal shell entry selects the native launcher. Integrated package inspection admits 62 of 63 entries; webjoystick alone is disabled because its original module is absent. All four genuine internal GPU model catalogs pass ARM structural admission. Final release build, sealed package, exact-SHA CI and user device acceptance remain open. See docs/naver/rust-runtime-startup-integration.md.",
+  "manager_scope": "Native initialization, Params transitions, continuous messaging/process loop, cleanup and exit policy. Installed-manager startup/error/cleanup, stdout pressure, outer signals and native child-log-upload composition pass owned host controls. The normal shell entry selects the native launcher. Webjoystick now has a native HTTPS implementation and validated manager binding; the previous source-absence package exemption is removed. Complete package admission with its OpenSSL provider remains pending. All four genuine internal GPU model catalogs pass ARM structural admission. Final release build, sealed package, exact-SHA CI and user device acceptance remain open. See docs/naver/rust-runtime-startup-integration.md and docs/naver/rust-runtime-module-audit-296.md.",
   "processes": [
     {
       "name": "_pandad",
@@ -632,8 +632,11 @@
       "name": "webjoystick",
       "source_kind": "PythonProcess",
       "source_entrypoint": "openpilot.tools.bodyteleop.web",
-      "status": "not_ported",
-      "runtime_scope": "The source module is absent from this checkout, so the original conditional entry is disabled. Package admission exempts it only while both source absence and disabled status hold.",
+      "status": "native_runtime_host_validated",
+      "implementation": "rust/crates/webjoystick; native HTTPS/static server, WebRTC offer proxy, certificate creation/reuse and startup Params behavior",
+      "native_dependencies": ["Rust TLS/HTTP libraries", "native OpenSSL command and its library closure", "native Params and process-child"],
+      "runtime_scope": "Real host HTTPS, original static asset bytes, offer forwarding and upstream failures, certificate reuse and shutdown tests pass. Manager preserves NotCar and validates the native service and OpenSSL provider. Complete target package, AGNOS service execution and normal startup acceptance remain pending.",
+      "evidence": "docs/naver/rust-runtime-module-audit-296.md",
       "production_replaced": false
     },
     {

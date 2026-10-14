@@ -35,6 +35,10 @@ def scenario(binary, library, root, mode):
     environment['MIC_FIXTURE_FAIL_OPEN'] = '10' if mode == 'stop-retry' else '1'
   if mode == 'start-failed':
     environment['MIC_FIXTURE_FAIL_START'] = '1'
+  lifecycle = {'inactive': 'MIC_FIXTURE_INACTIVE', 'callback-abort': 'MIC_FIXTURE_ABORT_CALLBACK',
+               'activity-query-failed': 'MIC_FIXTURE_FAIL_ACTIVE'}
+  if mode in lifecycle:
+    environment[lifecycle[mode]] = '1'
   process = None
   subscribers = {}
   try:
@@ -53,6 +57,26 @@ def scenario(binary, library, root, mode):
         wait_for(lambda: any(row['event'] == 'open' for row in events(root / 'events.jsonl')))
         process.send_signal(signal.SIGTERM)
         assert process.wait(timeout=2) == 0
+      elif mode in lifecycle:
+        # Intentional #300 correction: the original callback boundary leaves the
+        # main loop publishing stale valid pressure after capture stops. Keep the
+        # unchanged source waveform comparison below; require failure/restart here.
+        wait_for(lambda: any(row['event'] == 'ready' for row in events(root / 'events.jsonl')))
+        subscribers = {'soundPressure': msgq.sub_sock('soundPressure', timeout=100)}
+        subscribers['soundPressure'].receive(non_blocking=True)
+        (root / 'go').touch()
+        assert process.wait(timeout=2) == 1
+        expected = 'PortAudio active: error -9985' if mode == 'activity-query-failed' else 'micd stream inactive'
+        assert expected in (root / 'stderr.log').read_text()
+        failed = [row for row in events(root / 'events.jsonl') if row['event'] == 'poll' and row['value'] <= 0]
+        assert len(failed) == 1, failed
+        while (packet := subscribers['soundPressure'].receive(non_blocking=True)) is not None:
+          with log.Event.from_bytes(packet) as event:
+            assert event.logMonoTime < failed[0]['ns'], 'pressure published after detected capture failure'
+        (root / 'intentional-correction.json').write_text(json.dumps({
+          'issue': 300, 'case': mode, 'original': 'continues stale valid pressure',
+          'corrected': 'exits with capture failure before another pressure publication',
+        }, indent=2))
       else:
         wait_for(lambda: any(row['event'] == 'ready' for row in events(root / 'events.jsonl')))
         subscribers = {topic: msgq.sub_sock(topic, timeout=100) for topic in ('rawAudioData', 'soundPressure')}
@@ -108,7 +132,8 @@ def scenario(binary, library, root, mode):
       if mode == 'retry':
         opens = [row for row in recorded if row['event'] == 'open']
         assert len(opens) == 2 and opens[1]['ns'] - opens[0]['ns'] >= 2_900_000_000, opens
-      assert 'poll' not in names
+      if mode not in ('start-failed', 'stop-retry'):
+        assert 'poll' in names
       print('PASS:', mode)
   finally:
     if process is not None and process.poll() is None:
@@ -133,7 +158,7 @@ def main():
   library = args.output / 'libmic-fixture.so'
   subprocess.run([args.cc, '-std=c11', '-shared', '-fPIC', '-Wall', '-Wextra', '-Werror', '-pthread',
                   str(Path(__file__).with_name('fixtures') / 'micd/portaudio.c'), '-o', str(library)], check=True)
-  for mode in ('live', 'retry', 'stop-retry', 'start-failed'):
+  for mode in ('live', 'retry', 'stop-retry', 'start-failed', 'inactive', 'callback-abort', 'activity-query-failed'):
     scenario(args.binary.resolve(), library, args.output / mode, mode)
 
 

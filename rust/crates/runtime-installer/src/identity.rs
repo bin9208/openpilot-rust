@@ -30,8 +30,9 @@ pub(crate) const SOURCE_ASSETS: [&str; 17] = [
     "panda/board/obj/panda.bin.signed",
     "panda/board/obj/panda_h7.bin.signed",
 ];
-const REQUIRED: [&str; 13] = [
+const REQUIRED: [&str; 14] = [
     "openpilot-launch",
+    "openpilot-runtime-install",
     "openpilot-manager",
     "openpilot-process-child",
     "openpilot-carrot-recovery",

@@ -130,6 +130,14 @@ pub fn resolve(entry: Descriptor, installation: &Installation) -> Option<Binding
     }
     match entry.name {
         "carrot_cluster" => cluster(&mut bound, installation),
+        "webjoystick" => {
+            bound.directory("--root", installation.root.clone());
+            let openssl = installation.binaries.join("openssl");
+            bound
+                .argv
+                .extend(["--openssl".into(), openssl.clone().into_os_string()]);
+            bound.requirements.push(Requirement::Executable(openssl));
+        }
         "card" => {
             bound.directory("--root", installation.root.clone());
             bound.directory("--numerics", installation.binaries.join("card-numerics"));
@@ -246,9 +254,13 @@ fn cluster(bound: &mut Binding, installation: &Installation) {
             .requirements
             .push(Requirement::File(installation.root.join(name)));
     }
-    bound
-        .requirements
-        .push(Requirement::Directory(installation.root.join(
-            "openpilot/selfdrive/carrot/cluster/.vendor/turing-smart-screen-python-main/library",
-        )));
+}
+
+/// Optional body teleoperation is available only with its real native providers.
+pub fn bodyteleop_available(installation: &Installation) -> bool {
+    crate::catalog(crate::ImportConfig::from_environment(true))
+        .into_iter()
+        .find(|entry| entry.name == "webjoystick")
+        .and_then(|entry| resolve(entry, installation))
+        .is_some_and(|bound| bound.validate().is_ok())
 }

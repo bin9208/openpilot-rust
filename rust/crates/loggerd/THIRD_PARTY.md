@@ -11,7 +11,8 @@ libraries. Generic cross-builds compile the original FFmpeg 6.1.1 release archiv
 from `https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.xz`, SHA256
 `8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968`.
 
-The reproducible recipe is `rust/tools/build_loggerd_ffmpeg.py`. It retains the
+The reproducible recipe is the `openpilot-dev-tools` Rust binary
+`build-loggerd-ffmpeg`. It retains the
 complete original source archive/tree, configuration command and build log in
 its output directory. That configuration enables neither GPL nor nonfree
 components. FFmpeg's `COPYING.LGPLv2.1` and `LICENSE.md` accompany cross-build

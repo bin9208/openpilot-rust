@@ -61,7 +61,7 @@ signing keys and the HTTP recipient were owned host fixtures. This closes that
 logging/upload connection; it does not establish the complete managed catalog
 or physical startup. The check is wired into the logger CI job.
 
-`rust/tools/seal_runtime_package.py` checks a staged `rust/bin` against the native
+The `openpilot-dev-tools` Rust binary `seal-runtime-package` checks a staged `rust/bin` against the native
 manager inventory before writing the launcher's hash manifest. Missing implementations,
 empty companions, scripts in executable slots, wrong ELF architecture and links
 outside the checkout are rejected. Only the source-absent optional webjoystick is
@@ -753,3 +753,30 @@ An existing Cap'n Proto 1.0.1 header provider resolved a local Params build
 dependency without source changes. The tail ledger is
 `.omo/evidence/269-workspace-tail/`; no production or tail-checker edits were
 needed. Card's complete cloud comparison and IPC/shutdown gate passed again.
+
+### 2026-10-14: required-installer startup fixture (#296 / #309)
+
+The [PR #311 startup-prerequisites job](https://github.com/bin9208/openpilot-rust/actions/runs/38552326535/job/115813011282)
+failed its owned `ready` fixture because the synthetic runtime manifest omitted
+`rust/bin/openpilot-runtime-install`. The production launcher correctly requires
+that executable after #309. The existing host launcher reproduced the same
+20-second timeout: recovery and the error window started, reporting the exact
+missing-required-executable message; the manager/model providers never started.
+
+`check_runtime_launcher.py` now includes the installer in its owned provider
+package/manifest. The provider is only declared and hashed, never executed.
+Two additional negative controls keep the helper present but unlisted, or listed
+but absent from disk. Both require recovery/error-window behavior and prohibit
+manager/model startup. The unlisted case checks the exact manifest-requirement
+error; the missing-file case checks the filesystem failure. Existing metadata,
+corruption, library-path, lock ownership, model-before-manager, AGNOS/reboot and
+clean child-reaping assertions remain intact. Production admission is unchanged.
+
+All eight scenarios passed through the native CLI and again through the actual
+`launch_openpilot.sh` entry (16 successful scenario executions). The launcher
+SHA256 was `11ecc4bd130ec2cd80c84a11e23007031388d007113eda0fc6f7270f6faf10de`;
+provider SHA256 was `09dc53fa77ee9ee9d6c456084f3eb08752a7e8462981bf04f95a2d8c464ce07e`.
+Python syntax and scoped diff checks passed. Existing binaries were reused;
+no Cargo build, real updater, network, GPU or device execution was performed.
+This narrowly repairs the interim Python validation fixture; its future native
+conversion and the complete target startup/upload acceptance remain separate.

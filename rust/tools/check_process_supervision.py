@@ -7,7 +7,48 @@ from supervision_cases import exec_failure, explicit_signal, kill_timeout, launc
 from supervision_peer import Peer, enable_subreaper
 from supervision_ensure_cases import dead_first, ordered_ensure, predicate_race
 from supervision_persistent_cases import (formatted_pid, identity_mismatch, inherited_descriptor, invalid_cmdline_utf8, invalid_pid, persistent_spawn_error,
-                                          path_search, pid_overflow, reusable_daemon, unreadable_pid_and_failed_write)
+                                          path_search, pid_overflow, reusable_daemon, unreadable_pid_and_failed_write, misleading_identity_argument)
+
+
+# Explicit corrected outcomes: inherited cmdline text is not native ownership.
+# Every other scenario continues to compare the complete original result/logs.
+CORRECTED = {
+  'persistent-read-write-error': {
+    'python': {'unreadable_treated_missing': True, 'source_write_error_ignored': True, 'reused_native_executable': False},
+    'rust': {'unreadable_treated_missing': True, 'source_write_error_ignored': True, 'reused_native_executable': True},
+    'python_starts': 2, 'rust_starts': 1,
+  },
+  'persistent-cmdline-utf8': {
+    'python': {'error': 'UnicodeDecodeError', 'started_owned_executable': False, 'unrelated_process_alive': True},
+    'rust': {'error': None, 'started_owned_executable': True, 'unrelated_process_alive': True},
+    'python_starts': 0, 'rust_starts': 1,
+  },
+  'persistent-misleading-argument': {
+    'python': {'reused_unrelated_process': True, 'started_owned_executable': False, 'unrelated_process_alive': True},
+    'rust': {'reused_unrelated_process': False, 'started_owned_executable': True, 'unrelated_process_alive': True},
+    'python_starts': 0, 'rust_starts': 1,
+  },
+}
+
+
+def validate_pair(name, pair):
+  if name in CORRECTED:
+    expected = CORRECTED[name]
+    for row, implementation in zip(pair, ['python', 'rust'], strict=True):
+      assert row['result'] == expected[implementation], (name, implementation, row, expected[implementation])
+      messages = [('INFO', 'starting daemon persistent')] * expected[implementation + '_starts']
+      assert row['messages'] == messages, (name, implementation, row['messages'], messages)
+  else:
+    assert pair[0]['result'] == pair[1]['result'], (name, pair)
+    assert pair[0]['messages'] == pair[1]['messages'], (name, pair)
+
+
+def rejects_inherited_as_native(name, source):
+  try:
+    validate_pair(name, [source, source])
+  except AssertionError:
+    return True
+  return False
 
 
 def main():
@@ -38,6 +79,7 @@ def main():
                 ('persistent-path-search', lambda p: path_search(p, True)),
                 ('persistent-closes-descriptors', lambda p: inherited_descriptor(p, True)),
                 ('persistent-cmdline-utf8', invalid_cmdline_utf8),
+                ('persistent-misleading-argument', misleading_identity_argument),
                 ('persistent-pid-overflow', lambda p: pid_overflow(p, b'2147483648')),
                 ('persistent-pid-wide', lambda p: pid_overflow(p, b'9' * 4300))]
   invalid = [('missing', None, False), ('empty', b'', False), ('text', b'x', True), ('nul', b'6\0tail', True),
@@ -57,9 +99,12 @@ def main():
           assert all(row['ctx']['runtime_language'] == 'rust' and len(row['ctx']['source_commit']) == 40 for row in peer.records)
           assert all('process-supervision/src/' in row['pathname'] for row in peer.records)
         pair.append({'implementation': implementation, 'result': result, 'messages': messages})
-    assert pair[0]['result'] == pair[1]['result'], (name, pair)
-    assert pair[0]['messages'] == pair[1]['messages'], (name, pair)
-    results.append({'scenario': name, 'passed': True, 'results': pair})
+    validate_pair(name, pair)
+    corrected = name in CORRECTED
+    if corrected:
+      assert rejects_inherited_as_native(name, pair[0]), ('original incorrectly accepted as corrected native', name)
+    results.append({'scenario': name, 'passed': True, 'results': pair,
+                    'corrected_native_ownership': corrected, 'original_as_native_rejected': corrected})
     (args.output / 'summary.json').write_text(json.dumps({'passed': False, 'completed': len(results), 'results': results}, indent=2) + '\n')
     print('PASS:', name, flush=True)
   (args.output / 'summary.json').write_text(json.dumps({'passed': True, 'scenarios': len(results), 'results': results}, indent=2) + '\n')

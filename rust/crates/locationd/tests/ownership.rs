@@ -78,3 +78,80 @@ fn separate_filters_keep_independent_states() -> Result<(), Box<dyn std::error::
     assert!(second.snapshot()?.time.is_nan());
     Ok(())
 }
+
+fn assert_scalar_snapshot_reads(filter: &PoseKalman) -> Result<(), Box<dyn std::error::Error>> {
+    let snapshot = filter.snapshot()?;
+    assert_eq!(filter.filter_time()?.to_bits(), snapshot.time.to_bits());
+    assert_eq!(filter.gyro_bias_z()?.to_bits(), snapshot.x[11].to_bits());
+    Ok(())
+}
+
+#[test]
+fn scalar_reads_match_owned_snapshots_through_reset_and_nonfinite_seeds(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut filter = PoseKalman::new()?;
+    let independent = PoseKalman::new()?;
+    assert_scalar_snapshot_reads(&filter)?;
+    for (time, bias) in [
+        (None, -0.0),
+        (Some(0.0), 0.25),
+        (Some(-0.0), -0.5),
+        (Some(17.25), f64::INFINITY),
+        (Some(f64::NEG_INFINITY), f64::NEG_INFINITY),
+        (
+            Some(f64::from_bits(0x7ff8_0000_0000_1234)),
+            f64::from_bits(0x7ff8_0000_0000_5678),
+        ),
+    ] {
+        let mut x = model::INITIAL_X;
+        x[11] = bias;
+        filter.reset(time, &x, &diagonal::<18, 324>(model::INITIAL_P))?;
+        assert_scalar_snapshot_reads(&filter)?;
+        assert_eq!(filter.gyro_bias_z()?.to_bits(), bias.to_bits());
+        assert_scalar_snapshot_reads(&independent)?;
+        assert!(independent.filter_time()?.is_nan());
+        assert_eq!(
+            independent.gyro_bias_z()?.to_bits(),
+            model::INITIAL_X[11].to_bits()
+        );
+    }
+    filter.reset_default(Some(200.))?;
+    assert_scalar_snapshot_reads(&filter)?;
+    Ok(())
+}
+
+#[test]
+fn scalar_reads_follow_current_state_after_delayed_replay_not_returned_estimate(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut filter = PoseKalman::new()?;
+    for i in 0..40 {
+        let time = 100. + f64::from(i) * 0.01;
+        assert!(filter.observe(time, 4, [0.2, -0.1, 0.3], None)?.observed);
+        assert!(
+            filter
+                .observe(time, 14, [0.05, -0.04, 0.08], Some([0.0001; 3]))?
+                .observed
+        );
+        assert_scalar_snapshot_reads(&filter)?;
+    }
+    let latest = filter.filter_time()?;
+    let delayed = filter.observe(100.15, 4, [0.5, 0.4, -0.2], None)?;
+    assert!(delayed.observed);
+    assert_eq!(filter.filter_time()?.to_bits(), latest.to_bits());
+    assert_ne!(
+        filter.gyro_bias_z()?.to_bits(),
+        delayed.x[11].to_bits(),
+        "fixture must distinguish the returned delayed Estimate from replayed current state"
+    );
+    assert_scalar_snapshot_reads(&filter)?;
+    let before = filter.snapshot()?;
+    assert!(!filter.observe(98., 4, [0.; 3], None)?.observed);
+    assert_eq!(filter.snapshot()?.x, before.x);
+    assert_scalar_snapshot_reads(&filter)?;
+    filter.reset_default(Some(200.))?;
+    assert!(!filter.observe(199.5, 4, [0.; 3], None)?.observed);
+    assert_scalar_snapshot_reads(&filter)?;
+    assert!(filter.observe(200., 4, [0.; 3], None)?.observed);
+    assert_scalar_snapshot_reads(&filter)?;
+    Ok(())
+}

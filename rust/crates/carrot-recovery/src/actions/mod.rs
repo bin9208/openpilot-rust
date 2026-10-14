@@ -34,7 +34,11 @@ pub fn run(
             ("ok", Value::Bool(true)),
             (
                 "command",
-                Value::text("cd /data/openpilot && scons -c && rm -rf prebuilt && sudo reboot"),
+                Value::text(&format!(
+                    "{} && sudo reboot",
+                    command::git(config, "git_rebuild", payload)?
+                        .ok_or_else(|| Error::Source("native repair command unavailable".into()))?
+                )),
             ),
         ])),
         "send_tmux_log" | "server_tmux_log" => {

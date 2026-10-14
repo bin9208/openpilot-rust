@@ -8,8 +8,9 @@ use std::{
 };
 use tempfile::TempDir;
 
-const REQUIRED: [&str; 13] = [
+const REQUIRED: [&str; 14] = [
     "openpilot-launch",
+    "openpilot-runtime-install",
     "openpilot-manager",
     "openpilot-process-child",
     "openpilot-carrot-recovery",
@@ -653,4 +654,688 @@ fn concurrent_installers_activate_one_generation() {
         1
     );
     assert!(fixture.run(&["--check"]).status.success());
+}
+
+impl Fixture {
+    fn update_target(&mut self) -> String {
+        self.archive();
+        assert!(self.install().status.success());
+        let previous = self.sha.clone();
+        assert!(Command::new("git")
+            .args([
+                "remote",
+                "add",
+                "origin",
+                "https://github.com/bin9208/openpilot-rust.git"
+            ])
+            .current_dir(self.root())
+            .status()
+            .unwrap()
+            .success());
+        fs::write(self.root().join("target-source"), "new source").unwrap();
+        for arguments in [
+            vec!["add", "target-source"],
+            vec![
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.invalid",
+                "commit",
+                "-qm",
+                "target",
+            ],
+        ] {
+            assert!(Command::new("git")
+                .args(arguments)
+                .current_dir(self.root())
+                .status()
+                .unwrap()
+                .success());
+        }
+        self.sha = String::from_utf8(
+            Command::new("git")
+                .args(["rev-parse", "HEAD"])
+                .current_dir(self.root())
+                .output()
+                .unwrap()
+                .stdout,
+        )
+        .unwrap()
+        .trim()
+        .into();
+        assert!(Command::new("git")
+            .args(["branch", "candidate", &self.sha])
+            .current_dir(self.root())
+            .status()
+            .unwrap()
+            .success());
+        assert!(Command::new("git")
+            .args(["reset", "--hard", &previous])
+            .current_dir(self.root())
+            .output()
+            .unwrap()
+            .status
+            .success());
+        self.archive();
+        fs::create_dir_all(self.dir.path().join("params/d")).unwrap();
+        fs::write(self.dir.path().join("params/d/IsOnroad"), "0").unwrap();
+        previous
+    }
+    fn stage_update(&self) -> Output {
+        Command::new(env!("CARGO_BIN_EXE_openpilot-runtime-install"))
+            .arg("--stage-update")
+            .arg("--root")
+            .arg(self.root())
+            .arg("--target")
+            .arg(&self.sha)
+            .arg("--staging")
+            .arg(self.dir.path().join("safe_staging"))
+            .arg("--params-root")
+            .arg(self.dir.path().join("params"))
+            .arg("--archive")
+            .arg(self.dir.path().join("runtime.tar.gz"))
+            .arg("--descriptor")
+            .arg(self.dir.path().join("descriptor.json"))
+            .args(["--reserve-bytes", "0"])
+            .output()
+            .unwrap()
+    }
+    fn head(&self) -> String {
+        String::from_utf8(
+            Command::new("git")
+                .args(["rev-parse", "HEAD"])
+                .current_dir(self.root())
+                .output()
+                .unwrap()
+                .stdout,
+        )
+        .unwrap()
+        .trim()
+        .into()
+    }
+}
+
+#[test]
+fn complete_update_is_staged_without_mutating_the_active_source_package_pair() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    let old_manifest = fs::read(fixture.root().join("rust/runtime-manifest.json")).unwrap();
+    let result = fixture.stage_update();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(fixture.head(), previous);
+    assert_eq!(
+        fs::read(fixture.root().join("rust/runtime-manifest.json")).unwrap(),
+        old_manifest
+    );
+    let finalized = fixture.dir.path().join("safe_staging/finalized");
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(finalized.join("rust/runtime-manifest.json")).unwrap())
+            .unwrap();
+    assert_eq!(manifest["source_commit"], fixture.sha);
+    assert!(finalized.join("target-source").is_file());
+    assert!(finalized.join(".git").is_dir());
+    assert!(!finalized.join(".git/objects/info/alternates").exists());
+    let origin = Command::new("git")
+        .args(["remote", "get-url", "origin"])
+        .current_dir(finalized)
+        .output()
+        .unwrap();
+    assert_eq!(
+        String::from_utf8(origin.stdout).unwrap().trim(),
+        "https://github.com/bin9208/openpilot-rust.git"
+    );
+}
+
+#[test]
+fn missing_target_release_keeps_old_source_package_and_user_data() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    let manifest = fs::read(fixture.root().join("rust/runtime-manifest.json")).unwrap();
+    let user_data = fixture.dir.path().join("user-route");
+    fs::write(&user_data, b"preserve route").unwrap();
+    fs::remove_file(fixture.dir.path().join("descriptor.json")).unwrap();
+    assert!(!fixture.stage_update().status.success());
+    assert_eq!(fixture.head(), previous);
+    assert_eq!(
+        fs::read(fixture.root().join("rust/runtime-manifest.json")).unwrap(),
+        manifest
+    );
+    assert_eq!(fs::read(user_data).unwrap(), b"preserve route");
+    assert!(!fixture.dir.path().join("safe_staging/finalized").exists());
+    assert!(!fixture.root().join("target-source").exists());
+}
+
+#[test]
+fn onroad_and_wrong_origin_updates_are_rejected_before_staging() {
+    for onroad in [true, false] {
+        let mut fixture = Fixture::new();
+        let previous = fixture.update_target();
+        if onroad {
+            fs::write(fixture.dir.path().join("params/d/IsOnroad"), "1").unwrap();
+        } else {
+            assert!(Command::new("git")
+                .args([
+                    "remote",
+                    "set-url",
+                    "origin",
+                    "https://github.com/ajouatom/openpilot.git"
+                ])
+                .current_dir(fixture.root())
+                .status()
+                .unwrap()
+                .success());
+        }
+        let result = fixture.stage_update();
+        assert!(!result.status.success());
+        assert!(
+            String::from_utf8_lossy(&result.stderr).contains(if onroad {
+                "offroad"
+            } else {
+                "origin"
+            }),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        assert_eq!(fixture.head(), previous);
+        assert!(!fixture.dir.path().join("safe_staging/finalized").exists());
+    }
+}
+
+#[test]
+fn startup_activates_the_complete_pair_and_retains_old_helpers() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    assert!(fixture.stage_update().status.success());
+    let stage = fixture.dir.path().join("safe_staging");
+    assert!(openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        &stage,
+        &fixture.dir.path().join("params")
+    )
+    .unwrap());
+    assert_eq!(fixture.head(), fixture.sha);
+    assert!(fixture.run(&["--check"]).status.success());
+    let backup = fs::read_dir(&stage)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .find(|path| {
+            path.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with("old_openpilot.")
+        })
+        .unwrap();
+    let old = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(&backup)
+        .output()
+        .unwrap();
+    assert_eq!(String::from_utf8(old.stdout).unwrap().trim(), previous);
+    assert!(backup.join("rust/bin/openpilot-carrot-server").is_file());
+    assert!(!stage.join(".runtime-update-journal.json").exists());
+    assert!(!openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        &stage,
+        &fixture.dir.path().join("params")
+    )
+    .unwrap());
+}
+
+#[test]
+fn crash_recovery_before_and_after_atomic_exchange_keeps_a_bootable_root() {
+    for after_exchange in [false, true] {
+        let mut fixture = Fixture::new();
+        let previous = fixture.update_target();
+        assert!(fixture.stage_update().status.success());
+        let stage = fixture.dir.path().join("safe_staging");
+        let finalized = stage.join("finalized");
+        fs::copy(
+            finalized.join(".runtime-update-ready.json"),
+            stage.join(".runtime-update-journal.json"),
+        )
+        .unwrap();
+        if after_exchange {
+            rustix::fs::renameat_with(
+                rustix::fs::CWD,
+                fixture.root(),
+                rustix::fs::CWD,
+                &finalized,
+                rustix::fs::RenameFlags::EXCHANGE,
+            )
+            .unwrap();
+        }
+        // A complete source/package pair exists at the normal boot path at both crash points.
+        assert_eq!(
+            fixture.head(),
+            if after_exchange {
+                fixture.sha.clone()
+            } else {
+                previous.clone()
+            }
+        );
+        assert!(fixture.run(&["--check"]).status.success());
+        assert!(openpilot_runtime_installer::transaction::activate(
+            &fixture.root(),
+            &stage,
+            &fixture.dir.path().join("params")
+        )
+        .unwrap());
+        assert_eq!(fixture.head(), fixture.sha);
+        assert!(fixture.run(&["--check"]).status.success());
+    }
+}
+
+#[test]
+fn same_sha_package_repair_recovers_using_the_unique_ready_marker() {
+    let mut fixture = Fixture::new();
+    fixture.update_target();
+    // Choose the active SHA to model rebuilding/repairing that package.
+    fixture.sha = fixture.head();
+    fixture.archive();
+    assert!(fixture.stage_update().status.success());
+    let stage = fixture.dir.path().join("safe_staging");
+    let finalized = stage.join("finalized");
+    fs::copy(
+        finalized.join(".runtime-update-ready.json"),
+        stage.join(".runtime-update-journal.json"),
+    )
+    .unwrap();
+    rustix::fs::renameat_with(
+        rustix::fs::CWD,
+        fixture.root(),
+        rustix::fs::CWD,
+        &finalized,
+        rustix::fs::RenameFlags::EXCHANGE,
+    )
+    .unwrap();
+    assert!(openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        &stage,
+        &fixture.dir.path().join("params")
+    )
+    .unwrap());
+    assert!(fixture.run(&["--check"]).status.success());
+    assert!(!finalized.exists());
+}
+
+#[test]
+fn changed_staged_source_and_ignition_postpone_activation_without_touching_active_pair() {
+    for tampered in [false, true] {
+        let mut fixture = Fixture::new();
+        let previous = fixture.update_target();
+        assert!(fixture.stage_update().status.success());
+        let stage = fixture.dir.path().join("safe_staging");
+        if tampered {
+            fs::write(stage.join("finalized/target-source"), "tampered source").unwrap();
+            assert!(openpilot_runtime_installer::transaction::activate(
+                &fixture.root(),
+                &stage,
+                &fixture.dir.path().join("params")
+            )
+            .is_err());
+        } else {
+            fs::write(fixture.dir.path().join("params/d/IsOnroad"), "1").unwrap();
+            assert!(!openpilot_runtime_installer::transaction::activate(
+                &fixture.root(),
+                &stage,
+                &fixture.dir.path().join("params")
+            )
+            .unwrap());
+        }
+        assert_eq!(fixture.head(), previous);
+        assert!(fixture.run(&["--check"]).status.success());
+        assert!(stage.join("finalized/rust/bin/openpilot-launch").is_file());
+    }
+}
+
+impl Fixture {
+    fn overlay_copy(&self) -> std::path::PathBuf {
+        let finalized = self.dir.path().join("safe_staging/finalized");
+        fs::create_dir_all(finalized.parent().unwrap()).unwrap();
+        assert!(Command::new("git")
+            .args(["clone", "--no-hardlinks", "--quiet", "--"])
+            .arg(self.root())
+            .arg(&finalized)
+            .status()
+            .unwrap()
+            .success());
+        assert!(Command::new("git")
+            .args(["checkout", "--quiet", "--detach", &self.sha])
+            .current_dir(&finalized)
+            .status()
+            .unwrap()
+            .success());
+        assert!(Command::new("git")
+            .args([
+                "remote",
+                "set-url",
+                "origin",
+                "https://github.com/bin9208/openpilot-rust.git"
+            ])
+            .current_dir(&finalized)
+            .status()
+            .unwrap()
+            .success());
+        finalized
+    }
+    fn adopt_update(&self) -> Output {
+        Command::new(env!("CARGO_BIN_EXE_openpilot-runtime-install"))
+            .arg("--adopt-update")
+            .arg("--root")
+            .arg(self.root())
+            .arg("--staging")
+            .arg(self.dir.path().join("safe_staging"))
+            .arg("--params-root")
+            .arg(self.dir.path().join("params"))
+            .arg("--archive")
+            .arg(self.dir.path().join("runtime.tar.gz"))
+            .arg("--descriptor")
+            .arg(self.dir.path().join("descriptor.json"))
+            .args(["--reserve-bytes", "0"])
+            .output()
+            .unwrap()
+    }
+}
+
+#[test]
+fn native_updater_overlay_copy_uses_the_same_verified_atomic_activation() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    let finalized = fixture.overlay_copy();
+    let result = fixture.adopt_update();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(fixture.head(), previous);
+    assert!(finalized.join(".runtime-update-ready.json").is_file());
+    assert!(openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        &fixture.dir.path().join("safe_staging"),
+        &fixture.dir.path().join("params")
+    )
+    .unwrap());
+    assert_eq!(fixture.head(), fixture.sha);
+    assert!(fixture.run(&["--check"]).status.success());
+}
+
+#[test]
+fn unpublished_overlay_package_cannot_keep_an_old_consistent_marker() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    let finalized = fixture.overlay_copy();
+    fs::write(finalized.join(".overlay_consistent"), "old unchecked flag").unwrap();
+    fs::remove_file(fixture.dir.path().join("descriptor.json")).unwrap();
+    assert!(!fixture.adopt_update().status.success());
+    assert_eq!(fixture.head(), previous);
+    assert!(!finalized.join(".overlay_consistent").exists());
+    assert!(!finalized.join(".runtime-update-ready.json").exists());
+    assert!(fixture.run(&["--check"]).status.success());
+}
+
+#[test]
+fn staged_checkout_preserves_other_local_branches() {
+    let mut fixture = Fixture::new();
+    fixture.update_target();
+    assert!(fixture.stage_update().status.success());
+    let result = Command::new("git")
+        .args(["rev-parse", "--verify", "refs/heads/candidate"])
+        .current_dir(fixture.dir.path().join("safe_staging/finalized"))
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "native source staging lost an existing local branch"
+    );
+    assert_eq!(
+        String::from_utf8(result.stdout).unwrap().trim(),
+        fixture.sha
+    );
+}
+
+#[test]
+fn staged_checkout_preserves_real_origin_branches_instead_of_clone_local_heads() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    for args in [
+        vec![
+            "update-ref",
+            "refs/remotes/origin/remote-only",
+            &fixture.sha,
+        ],
+        vec!["update-ref", "refs/remotes/origin/dev", &previous],
+        vec![
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD",
+            "refs/remotes/origin/dev",
+        ],
+    ] {
+        assert!(Command::new("git")
+            .args(args)
+            .current_dir(fixture.root())
+            .status()
+            .unwrap()
+            .success());
+    }
+    let result = fixture.stage_update();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let finalized = fixture.dir.path().join("safe_staging/finalized");
+    let refs = Command::new("git")
+        .args([
+            "for-each-ref",
+            "--format=%(objectname) %(refname) %(symref)",
+            "refs/remotes/origin/",
+        ])
+        .current_dir(&finalized)
+        .output()
+        .unwrap();
+    assert!(refs.status.success());
+    let refs = String::from_utf8(refs.stdout).unwrap();
+    assert!(
+        refs.contains(&format!("{} refs/remotes/origin/remote-only ", fixture.sha)),
+        "real upstream branch lost: {refs}"
+    );
+    assert!(
+        refs.contains(&format!("{previous} refs/remotes/origin/dev ")),
+        "upstream tip changed: {refs}"
+    );
+    assert!(
+        refs.contains("refs/remotes/origin/HEAD refs/remotes/origin/dev"),
+        "upstream default lost: {refs}"
+    );
+    assert!(
+        !refs.contains("refs/remotes/origin/candidate "),
+        "local branch became upstream branch: {refs}"
+    );
+}
+
+#[test]
+fn implicit_staging_preserves_the_selected_branch_upstream() {
+    let mut fixture = Fixture::new();
+    fixture.update_target();
+    let output = Command::new("git")
+        .args(["branch", "--show-current"])
+        .current_dir(fixture.root())
+        .output()
+        .unwrap();
+    let branch = String::from_utf8(output.stdout).unwrap();
+    let branch = branch.trim();
+    for (key, value) in [
+        (format!("branch.{branch}.remote"), "origin"),
+        (format!("branch.{branch}.merge"), "refs/heads/release"),
+    ] {
+        assert!(Command::new("git")
+            .args(["config", &key, value])
+            .current_dir(fixture.root())
+            .status()
+            .unwrap()
+            .success());
+    }
+    assert!(fixture.stage_update().status.success());
+    let upstream = Command::new("git")
+        .args(["config", "--get", &format!("branch.{branch}.merge")])
+        .current_dir(fixture.dir.path().join("safe_staging/finalized"))
+        .output()
+        .unwrap();
+    assert_eq!(
+        String::from_utf8(upstream.stdout).unwrap().trim(),
+        "refs/heads/release"
+    );
+}
+
+#[test]
+fn live_old_runtime_owner_requires_reboot_before_source_exchange() {
+    use std::os::unix::fs::PermissionsExt;
+    struct Live(std::process::Child);
+    impl Drop for Live {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    assert!(fixture.stage_update().status.success());
+    let directory = fixture
+        .root()
+        .join(".runtime-packages/native-fixture/rust/bin");
+    fs::create_dir_all(&directory).unwrap();
+    let helper = directory.join("openpilot-carrot-server");
+    {
+        let mut output = fs::File::create(&helper).unwrap();
+        std::io::copy(&mut fs::File::open("/bin/sleep").unwrap(), &mut output).unwrap();
+        output.sync_all().unwrap();
+    }
+    fs::set_permissions(&helper, fs::Permissions::from_mode(0o755)).unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    let child = loop {
+        match Command::new(&helper).arg("30").spawn() {
+            Ok(child) => break child,
+            Err(error)
+                if error.raw_os_error() == Some(26) && std::time::Instant::now() < deadline =>
+            {
+                std::thread::sleep(std::time::Duration::from_millis(10))
+            }
+            Err(error) => panic!("native fixture failed to start: {error}"),
+        }
+    };
+    let live = Live(child);
+    let stage = fixture.dir.path().join("safe_staging");
+    let result = openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        &stage,
+        &fixture.dir.path().join("params"),
+    );
+    assert!(result.unwrap_err().to_string().contains("reboot required"));
+    assert_eq!(fixture.head(), previous);
+    assert!(!stage.join(".runtime-update-journal.json").exists());
+    assert!(stage.join("finalized/.runtime-update-ready.json").exists());
+    drop(live);
+    assert!(openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        &stage,
+        &fixture.dir.path().join("params")
+    )
+    .unwrap());
+    assert_eq!(fixture.head(), fixture.sha);
+}
+
+#[test]
+fn interrupted_source_preparation_cleans_only_owned_pending_directories() {
+    let mut fixture = Fixture::new();
+    fixture.update_target();
+    let stage = fixture.dir.path().join("safe_staging");
+    fs::create_dir_all(stage.join(".pending-update-stale0/checkout")).unwrap();
+    fs::write(
+        stage.join(".pending-update-stale0/checkout/partial"),
+        "incomplete source",
+    )
+    .unwrap();
+    fs::create_dir_all(stage.join("old_openpilot.saved")).unwrap();
+    fs::write(
+        stage.join("old_openpilot.saved/owner"),
+        "retain old executable helpers",
+    )
+    .unwrap();
+    let outside = fixture.dir.path().join("user-data");
+    fs::create_dir(&outside).unwrap();
+    fs::write(outside.join("route"), "preserve").unwrap();
+    std::os::unix::fs::symlink(&outside, stage.join(".pending-update-link")).unwrap();
+    fs::write(stage.join(".pending-update-user-file"), "preserve").unwrap();
+    let unknown = [
+        ".pending-update-user-data",
+        ".pending-update-",
+        ".pending-update-short",
+        ".pending-update-toolong0",
+        ".pending-update-ab_cd1",
+    ];
+    for name in unknown {
+        fs::create_dir(stage.join(name)).unwrap();
+        fs::write(stage.join(name).join("user-file"), "preserve").unwrap();
+    }
+    assert!(fixture.stage_update().status.success());
+    assert!(!stage.join(".pending-update-stale0").exists());
+    for name in unknown {
+        assert_eq!(
+            fs::read_to_string(stage.join(name).join("user-file")).unwrap(),
+            "preserve"
+        );
+    }
+    assert!(stage.join(".pending-update-link").is_symlink());
+    assert_eq!(
+        fs::read_to_string(stage.join(".pending-update-user-file")).unwrap(),
+        "preserve"
+    );
+    assert_eq!(
+        fs::read_to_string(outside.join("route")).unwrap(),
+        "preserve"
+    );
+    assert!(stage.join("old_openpilot.saved/owner").is_file());
+    assert!(stage.join("finalized/.runtime-update-ready.json").is_file());
+}
+
+#[test]
+fn symlink_finalized_checkout_is_rejected_without_exchanging_active_source() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    assert!(fixture.stage_update().status.success());
+    let stage = fixture.dir.path().join("safe_staging");
+    let outside = fixture.dir.path().join("outside-ready-checkout");
+    fs::rename(stage.join("finalized"), &outside).unwrap();
+    std::os::unix::fs::symlink(&outside, stage.join("finalized")).unwrap();
+    let result = openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        &stage,
+        &fixture.dir.path().join("params"),
+    );
+    assert!(
+        result.is_err(),
+        "followed a symlink candidate into source exchange"
+    );
+    assert_eq!(fixture.head(), previous);
+    assert!(fs::symlink_metadata(fixture.root()).unwrap().is_dir());
+    assert!(stage.join("finalized").is_symlink());
+    assert!(outside.join(".runtime-update-ready.json").is_file());
+    assert!(!stage.join(".runtime-update-journal.json").exists());
+}
+
+#[test]
+fn activation_rejects_staging_that_contains_the_active_checkout() {
+    let fixture = Fixture::new();
+    assert!(openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        fixture.dir.path(),
+        &fixture.dir.path().join("params")
+    )
+    .is_err());
+    assert!(!fixture.dir.path().join(".runtime-update.lock").exists());
 }

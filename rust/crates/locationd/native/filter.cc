@@ -35,6 +35,14 @@ Snapshot Filter::snapshot() const {
   auto p = filter->covs();
   return Snapshot{filter->get_filter_time(), copy(x.data(), 18), copy(p.data(), 324)};
 }
+double Filter::filter_time() const {
+  return filter->get_filter_time();
+}
+double Filter::gyro_bias_z() const {
+  // EKFSym::state returns an owned Eigen vector; retain that external API while
+  // avoiding covariance and Rust Vec copies for this single scalar read.
+  return filter->state()(11);
+}
 void Filter::reset(rust::Slice<const double> x, rust::Slice<const double> covariance, double time) {
   size(x, 18); size(covariance, 324);
   Eigen::VectorXd state = Eigen::Map<const Eigen::VectorXd>(x.data(), 18);

@@ -137,6 +137,49 @@ impl<'a> ImageMemory<'a> {
         Ok(())
     }
 
+    pub(crate) fn copy_samples(
+        &self,
+        offsets: impl Iterator<Item = usize> + Clone,
+        destination: &mut [u8],
+    ) -> Result<(), Error> {
+        if offsets.clone().count() != destination.len()
+            || offsets.clone().any(|offset| offset >= self.data_length)
+        {
+            return Err(Error::Invalid(
+                "VisionIPC sample indices or destination length invalid",
+            ));
+        }
+        let word_end = self.data_length / 8 * 8;
+        let mut cached: Option<(usize, [u8; 8])> = None;
+        let mut offsets = offsets;
+        for value in destination {
+            // An arbitrary caller's cloned iterator need not reproduce its first pass.
+            // Recheck every index before invoking the existing unchecked atomic accessor.
+            let offset = offsets
+                .next()
+                .filter(|offset| *offset < self.data_length)
+                .ok_or(Error::Invalid("VisionIPC sample index outside buffer"))?;
+            if offset >= word_end {
+                *value = self.byte(offset).load(Relaxed);
+            } else {
+                let word_offset = offset / 8 * 8;
+                let bytes = match cached {
+                    Some((previous, bytes)) if previous == word_offset => bytes,
+                    _ => {
+                        let bytes = self.pixel_word(word_offset).load(Relaxed).to_ne_bytes();
+                        cached = Some((word_offset, bytes));
+                        bytes
+                    }
+                };
+                *value = bytes[offset % 8];
+            }
+        }
+        if offsets.next().is_some() {
+            return Err(Error::Invalid("VisionIPC sample destination too short"));
+        }
+        Ok(())
+    }
+
     fn aligned_frame_id(&self) -> Option<&AtomicU64> {
         // SAFETY: construction proves the eight-byte tail lies in this live mapping.
         let pointer = unsafe { self.base.as_ptr().add(self.data_length) }.cast::<u64>();
@@ -294,5 +337,36 @@ mod tests {
             [0x11, 0x11, 0x11, 0x11, 0xaa, 0xaa, 0xaa, 0xaa]
         );
         assert_eq!(words[1].load(Relaxed), 0);
+    }
+    #[test]
+    fn sampled_pixels_match_full_atomic_copy_including_partial_word_tails() {
+        let storage = Storage::<112>::new();
+        for length in 1..=104 {
+            // SAFETY: aligned owned initialized storage remains live for this test;
+            // ImageMemory validates the disjoint complete-word and byte-tail ranges.
+            let memory = unsafe { ImageMemory::new(storage.pointer(), length, 112) }.unwrap();
+            let bytes: Vec<_> = (0..length).map(|index| (index * 31) as u8).collect();
+            memory.write(0, &bytes).unwrap();
+            memory.set_frame_id(0x1122334455667788);
+            for skip in [1, 2, 3, 8, 17] {
+                let indices = (0..length).step_by(skip);
+                let mut sampled = vec![0; indices.clone().count()];
+                memory.copy_samples(indices.clone(), &mut sampled).unwrap();
+                assert_eq!(
+                    sampled,
+                    indices.map(|offset| bytes[offset]).collect::<Vec<_>>()
+                );
+            }
+            let mut sampled = [0xa5; 2];
+            assert!(memory
+                .copy_samples([0, length].into_iter(), &mut sampled)
+                .is_err());
+            assert_eq!(sampled, [0xa5; 2]);
+            assert!(memory.copy_samples([0].into_iter(), &mut sampled).is_err());
+            assert!(memory
+                .copy_samples([usize::MAX, 0].into_iter(), &mut sampled)
+                .is_err());
+            assert_eq!(memory.frame_id(), 0x1122334455667788);
+        }
     }
 }

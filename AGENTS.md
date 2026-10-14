@@ -1,5 +1,20 @@
 # Independent Rust port repository (2026-09-29)
 
+- On 2026-10-14 the user selected Astra for the parent agent and explicitly
+  required GPT-6.1 Sol for all separately launched sub-agents. Specify
+  `gpt-6.1-sol` when delegating; hand off prior agents rather than silently
+  inheriting the parent's model.
+
+- On 2026-10-14, after the first user drive, the user explicitly required
+  continuing through all tests and normal device boot, all-module functional
+  optimization/bug review, and removal of remaining Python source. A follow-up
+  explicitly includes development/build/test tools in the Rust conversion.
+  The connected offroad device may be inspected, updated with a verified complete
+  source-matched runtime, and rebooted to verify normal startup, recording and
+  upload. This supersedes the older no-connect/no-test restriction for this task;
+  driving acceptance remains user-owned. Do not stop merely after creating a PR
+  or queuing CI. Track the full work and outstanding evidence in issue #296.
+
 - User clarified the delivery gate on 2026-09-30: complete the entire project-owned
   runtime conversion before asking for the first device test. The dev candidate
   must run through normal startup and the existing log upload path, allowing
@@ -411,7 +426,7 @@
 - Also keep setting-level explanations in the generated GitHub Wiki workflow. Keep explanations
   specific to web-only features in the localized UI instead of duplicating web internals into
   `docs/user/`.
-- `docs/user/docs_map.json` and `tools/docs/check_user_docs.py` are validation aids, not instructions
+- `docs/user/docs_map.json` and the native `openpilot-dev-tools` `check-user-docs` command are validation aids, not instructions
   to generate documentation. For an ordinary code pull request without explicitly requested docs,
   record a concrete `Docs-Not-Needed: <reason>` in the PR body when the workflow requires it.
   For direct pushes, put the reason in each affected commit message; it only exempts that

@@ -20,6 +20,20 @@ impl PoseKalman {
             .ok_or(Error::Contract("null filter"))?
             .snapshot())
     }
+    pub fn filter_time(&self) -> Result<f64, Error> {
+        Ok(self
+            .inner
+            .as_ref()
+            .ok_or(Error::Contract("null filter"))?
+            .filter_time())
+    }
+    pub fn gyro_bias_z(&self) -> Result<f64, Error> {
+        Ok(self
+            .inner
+            .as_ref()
+            .ok_or(Error::Contract("null filter"))?
+            .gyro_bias_z())
+    }
     pub fn reset(&mut self, time: Option<f64>, x: &[f64], covariance: &[f64]) -> Result<(), Error> {
         Ok(self
             .inner

@@ -1,6 +1,9 @@
 use openpilot_camerad::{
     exposure::{CameraId, ExposureError, ExposureState, FrameMeasurement, ManualExposure},
-    geometry::{luminance, Geometry, Region, Sampling, SamplingError},
+    geometry::{
+        luminance, luminance_samples, sample_indices, Geometry, Region, SampleIndices, Sampling,
+        SamplingError,
+    },
     requests::FrameMetadata,
     sensor::{ExposureRegisters, SensorKind},
 };
@@ -107,6 +110,30 @@ impl FrameState {
             data.set_image(raw.ok_or(FrameStateError::MissingRaw)?);
         }
         Ok(capnp::serialize::write_message_to_words(&message))
+    }
+
+    pub fn sample_indices(&self, pixel_length: usize) -> Result<SampleIndices, SamplingError> {
+        sample_indices(self.region, self.sampling, pixel_length)
+    }
+
+    pub fn adjust_samples_with_manual<G: AsRef<str>, T: AsRef<str>>(
+        &mut self,
+        frame_id: u32,
+        samples: &[u8],
+        enabled: bool,
+        read_manual: impl FnOnce() -> Result<(G, T), ExposureError>,
+    ) -> Result<Option<ExposureRegisters>, FrameStateError> {
+        if samples.len() != self.sample_indices(usize::MAX)?.len() {
+            return Err(SamplingError.into());
+        }
+        Ok(self.exposure.update_with_manual(
+            FrameMeasurement {
+                frame_id,
+                grey: luminance_samples(samples),
+                enabled,
+            },
+            read_manual,
+        )?)
     }
 
     pub fn adjust(

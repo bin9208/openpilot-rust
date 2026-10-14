@@ -186,7 +186,77 @@ fn inherited(config: &Config, argv: &[OsString], lock: &File) -> Result<i32, Err
             .wait()?,
     ))
 }
+const NATIVE_ORIGIN: &str = "https://github.com/bin9208/openpilot-rust.git";
+fn native_capture(
+    config: &Config,
+    argv: &[&str],
+    timeout: u64,
+    lock: &File,
+) -> Result<process::Completed, Error> {
+    process::capture(
+        &process::request(config, argv, &config.repository),
+        timeout,
+        Some(lock.as_fd()),
+    )
+}
+fn checked_git(config: &Config, args: &[&str], lock: &File) -> Result<String, Error> {
+    let mut argv = vec!["git"];
+    argv.extend_from_slice(args);
+    let output = native_capture(config, &argv, 180, lock)?;
+    if output.code != 0 {
+        return Err(Error::Source(output.combined()));
+    }
+    Ok(output.stdout.trim().into())
+}
+fn native_origin(config: &Config, lock: &File) -> Result<(), Error> {
+    let url = checked_git(config, &["config", "--get", "remote.origin.url"], lock)?;
+    if !matches!(
+        url.as_str(),
+        NATIVE_ORIGIN
+            | "https://github.com/bin9208/openpilot-rust"
+            | "git@github.com:bin9208/openpilot-rust.git"
+            | "ssh://git@github.com/bin9208/openpilot-rust.git"
+    ) {
+        return Err(Error::Source(
+            "origin must be bin9208/openpilot-rust".into(),
+        ));
+    }
+    Ok(())
+}
+fn stage(
+    config: &Config,
+    target: &str,
+    branch: Option<&str>,
+    ff_only: bool,
+    lock: &File,
+) -> Result<i32, Error> {
+    let helper = config.repository.join("rust/bin/openpilot-runtime-install");
+    let mut argv = vec![
+        helper.to_string_lossy().into_owned(),
+        "--stage-update".into(),
+        "--root".into(),
+        config.repository.to_string_lossy().into_owned(),
+        "--target".into(),
+        target.into(),
+    ];
+    if let Some(branch) = branch {
+        argv.extend(["--branch".into(), branch.into()]);
+    } else if !ff_only {
+        argv.push("--detach".into());
+    }
+    if ff_only {
+        argv.push("--ff-only".into());
+    }
+    let borrowed: Vec<_> = argv.iter().map(String::as_str).collect();
+    let output = native_capture(config, &borrowed, 900, lock)?;
+    print!("{}", output.combined());
+    if output.code == 0 {
+        println!("Verified source/package update staged; reboot to activate.");
+    }
+    Ok(output.code)
+}
 fn pull(config: &Config, lock: &File) -> Result<i32, Error> {
+    native_origin(config, lock)?;
     let repository = git_config::Repository {
         directory: &config.repository,
         launcher: &config.launcher,
@@ -197,21 +267,74 @@ fn pull(config: &Config, lock: &File) -> Result<i32, Error> {
     if code != 0 {
         return Ok(code);
     }
-    for args in [
-        vec!["git".into(), "reset".into(), "--hard".into()],
-        vec![
-            "git".into(),
-            "merge".into(),
-            "--ff-only".into(),
-            target.into(),
-        ],
-    ] {
-        let code = inherited(config, &args, lock)?;
-        if code != 0 {
-            return Ok(code);
+    stage(config, &target, None, true, lock)
+}
+fn native_action(
+    config: &Config,
+    action: &str,
+    value: Option<&str>,
+    lock: &File,
+) -> Result<i32, Error> {
+    if action == "__stage-reset-repo" {
+        let changed = native_capture(
+            config,
+            &["git", "remote", "set-url", "origin", NATIVE_ORIGIN],
+            15,
+            lock,
+        )?;
+        if changed.code != 0 {
+            checked_git(config, &["remote", "add", "origin", NATIVE_ORIGIN], lock)?;
         }
     }
-    Ok(0)
+    native_origin(config, lock)?;
+    if action != "__stage-repair" {
+        checked_git(config, &["fetch", "origin", "--prune"], lock)?;
+    }
+    if action == "__fetch-native" {
+        return Ok(0);
+    }
+    if action == "__stage-repair" {
+        let branch = checked_git(config, &["branch", "--show-current"], lock)?;
+        return stage(
+            config,
+            "HEAD",
+            (!branch.is_empty()).then_some(branch.as_str()),
+            false,
+            lock,
+        );
+    }
+    let value = value.ok_or_else(|| Error::Source("missing native update target".into()))?;
+    if action == "__stage-commit" {
+        let target = checked_git(
+            config,
+            &[
+                "rev-parse",
+                "--verify",
+                "--end-of-options",
+                &format!("{value}^{{commit}}"),
+            ],
+            lock,
+        )?;
+        return stage(config, &target, None, false, lock);
+    }
+    let branch = value.strip_prefix("origin/").unwrap_or(value);
+    checked_git(config, &["check-ref-format", "--branch", branch], lock)?;
+    let reference = if action == "__stage-reset-repo" || value.starts_with("origin/") {
+        format!("refs/remotes/origin/{branch}")
+    } else {
+        format!("refs/heads/{branch}")
+    };
+    let target = checked_git(
+        config,
+        &[
+            "rev-parse",
+            "--verify",
+            "--end-of-options",
+            &format!("{reference}^{{commit}}"),
+        ],
+        lock,
+    )?;
+    stage(config, &target, Some(branch), false, lock)
 }
 pub(super) fn internal_command(arguments: &[OsString]) -> Result<Option<i32>, Error> {
     if arguments.first().is_none_or(|arg| arg != "__repo-update") {
@@ -238,6 +361,26 @@ pub(super) fn internal_command(arguments: &[OsString]) -> Result<Option<i32>, Er
     Ok(Some(match command {
         [] => 0,
         [action] if action == "__git-pull" => pull(&config, &lock)?,
+        [action] if matches!(action.to_str(), Some("__fetch-native" | "__stage-repair")) => {
+            native_action(&config, action.to_str().unwrap(), None, &lock)?
+        }
+        [action, value]
+            if matches!(
+                action.to_str(),
+                Some("__stage-checkout" | "__stage-commit" | "__stage-reset-repo")
+            ) =>
+        {
+            native_action(
+                &config,
+                action.to_str().unwrap(),
+                Some(
+                    value
+                        .to_str()
+                        .ok_or_else(|| Error::Source("non UTF8 update target".into()))?,
+                ),
+                &lock,
+            )?
+        }
         argv => inherited(&config, argv, &lock)?,
     }))
 }
