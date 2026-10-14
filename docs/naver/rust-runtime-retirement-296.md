@@ -525,3 +525,10 @@ batch and was rejected by the original assertion. Three focused tests, strict
 Clippy and independent review passed. This improves diagnosis; it is not a
 claimed fix for the earlier CI gap. #330 remains open and fresh full exact-head
 CI is still required before integration.
+
+The remaining19f ARM job reached the final ION UI build but was cancelled at
+90m37s, matching its90minute job deadline. Generic UI and all earlier ARM,
+static QEMU, Panda, camera and encoder steps had completed without compiler
+errors. [#331](rust-arm-ci-budget-331.md) gives that existing full job120minutes
+while preserving every command, feature variant and capacity guard. The
+cancelled gate remains failed/incomplete until fresh exact-head CI succeeds.
