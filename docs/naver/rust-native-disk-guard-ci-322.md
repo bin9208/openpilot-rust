@@ -45,3 +45,32 @@ does not execute the new pytest-style bootstrap tests. Fast checks now invoke
 that file explicitly through pytest, with repository conftest excluded just
 as in the other focused CI suites. The exact CI invocation passes all13 tests;
 the broader37/367 local policy result above includes those same13 tests.
+
+## ARM UI workflow test follow-up (2026-10-15)
+
+The complete `rust/tools/tests` suite exposed a stale assertion in
+`test_arm_ui_commands_resolve_workspace_and_python_paths`: it required Python
+commands in the ARM UI build step because the original four capacity checks
+invoked `card_ci_space.py`. The native migration correctly removed those
+commands. Before repair, the complete suite reported195 passed/1 failed,
+9 passing subtests, and no skips.
+
+The test retains its effective working-directory/Cargo workspace-membership
+checks and validates any remaining Python script paths. It now requires exactly
+four native guard argument lists, with absolute GITHUB_WORKSPACE bootstrap/path
+resolution and ordered growth values2048,256,2048,256 MiB. Each resolved
+executable must be an existing absolute file. Controlled missing-guard,
+relative-path, changed-growth and legacy-Python substitutions all fail the
+updated assertion; no production workflow or capacity policy changed.
+
+Focused UI tests:5 PASS. The complete suite then passed196 tests plus9 subtests,
+zero skips, in50.28s. Six inherited NumPy shape-assignment deprecation warnings
+remain. Execution used Python3.12.15, pytest9.0.2, numpy2.5.3, onnx1.20.1,
+pycapnp2.1.0 and pyzmq27.2.0; current-worktree source overrides and existing
+native model-run/qcom-model-run binaries. The cached ARM offline compiler used
+the pinned library SHA256
+`fb7e6390cc25700d6935b2eef3acad85a43f247206bdf84cb4d37bd48a60b093`,
+verified against its provenance and cached command. No Cargo build, install or
+device action was needed. Ignored logs/JUnit are under
+`.analysis/scratch/2026-10-15-python-workspace/`; exact final-SHA cloud CI remains
+a separate gate.

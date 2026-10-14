@@ -50,6 +50,69 @@ class ChildDiscovery(unittest.TestCase):
     with self.assertRaisesRegex(RuntimeError, 'exited.*17'):
       self.peer.child_pid(self.tracer)
 
+  def test_identity_disappearance_or_mismatch_restarts_owned_child_selection(self):
+    expected = '/owned/actual-target'
+    for first in [FileNotFoundError(), ProcessLookupError(), '/owned/startup-helper']:
+      children = Mock()
+      children.read_text.side_effect = ['123', '456']
+      with (
+        self.subTest(first=first),
+        patch.object(self.peer, 'Path', return_value=children),
+        patch.object(self.peer.os, 'readlink', side_effect=[first, expected]) as executable,
+      ):
+        self.assertEqual(self.peer.child_pid(self.tracer, expected), 456)
+      self.assertEqual(children.read_text.call_count, 2)
+      self.assertEqual([call.args for call in executable.call_args_list], [('/proc/123/exe',), ('/proc/456/exe',)])
+
+  def test_identity_permission_failure_is_not_retried(self):
+    children = Mock()
+    children.read_text.return_value = '123'
+    with (
+      patch.object(self.peer, 'Path', return_value=children),
+      patch.object(self.peer.os, 'readlink', side_effect=PermissionError('owned identity denied')),
+    ):
+      with self.assertRaisesRegex(PermissionError, 'owned identity denied'):
+        self.peer.child_pid(self.tracer, '/owned/actual-target')
+    self.assertEqual(children.read_text.call_count, 1)
+
+  def test_launch_rediscovers_target_after_transient_child_disappears(self):
+    process = Mock(pid=987654, returncode=None)
+    process.poll.return_value = None
+    original_read = Path.read_text
+    snapshots = iter(['123', '456'])
+    links = []
+    expected = '/owned/actual-target'
+    def read_children(path, *args, **kwargs):
+      if path == Path('/proc/987654/task/987654/children'):
+        return next(snapshots)
+      return original_read(path, *args, **kwargs)
+    def read_executable(path):
+      links.append(path)
+      if path == '/proc/123/exe':
+        raise ProcessLookupError('transient startup child exited')
+      if path == '/proc/456/exe':
+        return expected
+      raise AssertionError(path)
+    def bounded(predicate, timeout=5):
+      for _ in range(2):
+        value = predicate()
+        if value:
+          return value
+      raise RuntimeError('controlled discovery bound exceeded')
+    with (
+      tempfile.TemporaryDirectory() as temp,
+      patch.object(self.peer.subprocess, 'Popen', return_value=process),
+      patch.object(Path, 'read_text', read_children),
+      patch.object(self.peer.os, 'readlink', side_effect=read_executable),
+      patch.object(self.peer, 'until', side_effect=bounded),
+    ):
+      actual, pid, _, _, identity = self.peer.launch([expected], Path(temp) / 'run', {}, dict(os.environ))
+    self.assertIs(actual, process)
+    self.assertEqual(pid, 456)
+    self.assertEqual(identity, {'pid': 456, 'executable': expected})
+    self.assertEqual(links, ['/proc/123/exe', '/proc/456/exe'])
+    process.kill.assert_not_called()
+
   def test_early_real_child_failure_keeps_status_stderr_and_reaps_tracer(self):
     seen = []
     original = self.peer.subprocess.Popen
@@ -58,9 +121,9 @@ class ChildDiscovery(unittest.TestCase):
       seen.append(process)
       return process
     discover = self.peer.child_pid
-    def after_exit(process):
+    def after_exit(process, expected=None):
       process.wait(timeout=3)
-      return discover(process)
+      return discover(process, expected)
     with (
       tempfile.TemporaryDirectory() as temp,
       patch.object(self.peer.subprocess, 'Popen', side_effect=spawn),
@@ -75,8 +138,9 @@ class ChildDiscovery(unittest.TestCase):
   def test_discovery_failure_kills_only_owned_tracer_and_tracee(self):
     seen = []
     discover = self.peer.child_pid
-    def fail_after_discovery(process):
-      pid = discover(process)
+    def fail_after_discovery(process, expected=None):
+      pid = discover(process, expected)
+      self.assertEqual(os.readlink(f'/proc/{pid}/exe'), expected)
       seen.append((process, pid))
       os.kill(pid, self.peer.signal.SIGSTOP)
       self.peer.until(lambda: Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()[0] in ('T', 't'))

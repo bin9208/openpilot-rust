@@ -485,3 +485,23 @@ The original160-packet hash remains exact. Five tests pass with IPC imports
 blocked, all193 workspace tests collect, and all six actual IPC scenarios pass.
 Collection success is not a claim that all193 numerical tests executed locally;
 the existing workspace CI still runs that complete suite. No test is skipped.
+
+
+A further [#327 discovery regression](rust-upload-eintr-fixture-327.md) showed
+that a selected child could disappear before executable admission. Child
+selection and executable verification now retry together, preserving one
+children snapshot per attempt, fatal permission/exit errors and tracer-only
+cleanup. A deterministic replacement-PID control fails with the former pinned
+PID loop and passes with the correction. Eleven controls and all four actual
+EINTR comparisons pass; signals, request counts and deadlines are unchanged.
+The full workspace explicitly installs strace for these same controls.
+
+The full Python workspace suite was also executed locally with CI-pinned Python
+libraries and the cached authenticated QCOM compiler/model tools. Its first run
+passed195tests and exposed one stale #322 UI workflow assertion requiring the
+retired Python disk guards. The corrected test requires all four native guards
+with their original reserve arguments and retains cwd/Cargo and remaining
+Python path checks. The subsequent full run passed196tests and9subtests, with
+zero skips; numerical/model execution was included. Independent readback found
+no Important/Critical issue. Exact-head cloud and final merged-source package
+validation remain required.

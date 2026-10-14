@@ -58,7 +58,7 @@ class Peer:
     self.thread.join()
 
 
-def child_pid(tracer):
+def child_pid(tracer, expected_executable=None):
   children = Path(f'/proc/{tracer.pid}/task/{tracer.pid}/children')
   def attempt():
     if tracer.poll() is not None:
@@ -70,6 +70,13 @@ def child_pid(tracer):
     if value.isascii() and value.isdigit():
       pid = int(value)
       if pid > 0 and pid != tracer.pid:
+        if expected_executable is not None:
+          try:
+            actual = os.readlink(f'/proc/{pid}/exe')
+          except (FileNotFoundError, ProcessLookupError):
+            return None
+          if actual != expected_executable:
+            return None
         return pid
     return None
   return until(attempt)
@@ -111,17 +118,11 @@ def launch(command, root, request, env):
     process.stdin.write(json.dumps(request) + '\n')
     process.stdin.close()
     process.stdin = None
-    pid = child_pid(process)
     expected = str(Path(command[0]).resolve())
-    def executable():
-      if process.poll() is not None:
-        raise RuntimeError(f'owned EINTR tracer exited before executable receipt: {process.returncode}')
-      try:
-        actual = os.readlink(f'/proc/{pid}/exe')
-      except (FileNotFoundError, ProcessLookupError):
-        return None
-      return actual if actual == expected else None
-    identity = {'pid': pid, 'executable': until(executable)}
+    # A unique startup child can exit before exec. Retry selection and identity
+    # together so a vanished transient PID never pins subsequent attempts.
+    pid = child_pid(process, expected)
+    identity = {'pid': pid, 'executable': expected}
     return process, pid, trace, invocation, identity
   except BaseException as error:
     if process.stdin is not None:
