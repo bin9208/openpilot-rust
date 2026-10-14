@@ -620,3 +620,15 @@ targeted Ruff pass. Independent final review found no Important/Critical
 findings. New validation-only Python files keep the remaining Python inventory
 explicit:3542 source files, not complete Python tooling retirement. Exact final
 PR and merged-dev PUSH gates remain required before publication or handoff.
+
+
+## Complete workspace job budget (#337)
+
+The same a271 post-merge run later cancelled its final workspace release build
+at75m26s, after all preceding workspace checks passed. The retained log reports
+cancellation with cargo/two rustc workers still active and no final-build compiler
+error. The [job budget correction](rust-workspace-ci-budget-337.md) increases only
+the workspace timeout from75 to120minutes, preserving every gate and capacity
+limit. That deadline diagnosis is inferred from timing/configuration because
+check annotations are unavailable. The cancelled build is not accepted as pass;
+fresh exact-head and post-merge execution remain required.
