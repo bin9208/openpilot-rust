@@ -47,6 +47,9 @@ pub fn run(options: RunOptions) -> Result<(), Error> {
             return Err(Error::Interrupted);
         }
         initialized.card.remaining = monitor.remaining;
+        let started = frequency
+            .as_ref()
+            .map(|_| (super::io::monotonic_ns(), io.thread_cpu_ns()));
         let result =
             initialized
                 .card
@@ -56,10 +59,22 @@ pub fn run(options: RunOptions) -> Result<(), Error> {
         }
         result?;
         if let Some(trace) = &mut frequency {
+            let step_finished_ns = super::io::monotonic_ns();
+            let thread_cpu_finished_ns = io.thread_cpu_ns();
+            let (step_started_ns, thread_cpu_started_ns) =
+                started.expect("enabled trace has clocks");
             trace.record(super::frequency_trace::TraceInput {
                 state: io.subscribers(),
                 controls_ready: initialized.card.settings.get_bool("ControlsReady")?,
                 parser: initialized.vehicle.parser_readiness(),
+                timing: super::frequency_trace::Timing {
+                    step_started_ns,
+                    step_finished_ns,
+                    thread_cpu_started_ns,
+                    thread_cpu_finished_ns,
+                    receive_ns: initialized.card.diagnostics.receive,
+                    stage_us: initialized.card.diagnostics.current,
+                },
             })?;
         }
         monitor.monitor(monotonic);

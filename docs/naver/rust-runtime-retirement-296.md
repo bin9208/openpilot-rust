@@ -505,3 +505,23 @@ Python path checks. The subsequent full run passed196tests and9subtests, with
 zero skips; numerical/model execution was included. Independent readback found
 no Important/Critical issue. Exact-head cloud and final merged-source package
 validation remain required.
+
+## Card IPC scheduling evidence (#330, 2026-10-15)
+
+The full workspace gate (including complete release build) passed at19f10b83,
+along with42 other completed job successes at the later aggregate snapshot.
+Card's final independent100Hz IPC comparison failed on Volkswagen ID4:80 CAN
+packets were consumed into69 publications, with a single12-packet batch after
+a130.069808ms receive gap. Sender cadence remained near10.1ms. No CAN loss is
+shown; original and Rust both drain queued CAN. The reason for the gap is not
+established. See [retained evidence and limits](rust-card-pumped-stall-330.md).
+
+The bounded, explicitly enabled frequency trace now records step wall/thread
+CPU and existing stage clocks plus optional scheduler counters to locate a
+recurrence. Normal runtime policy, packets, cadence and strict80-frame checks
+remain unchanged. A focused final-source original/native comparison passed all
+80 frames and exact Params/fields; an intentional receiver STOP produced a
+batch and was rejected by the original assertion. Three focused tests, strict
+Clippy and independent review passed. This improves diagnosis; it is not a
+claimed fix for the earlier CI gap. #330 remains open and fresh full exact-head
+CI is still required before integration.
