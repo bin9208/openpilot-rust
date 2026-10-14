@@ -51,7 +51,30 @@ The extra initial read costs time just above the small-value boundary; this
 tradeoff is explicit. The measured target is repeated small settings. These
 numbers are isolated API timings, not whole-runtime CPU or thermal savings.
 Ten one-byte reads issued 20 value-file metadata syscalls before and zero after.
-Both probes exited zero. The original failing and corrected traces are retained.
+Both probes exited zero. The original failing and corrected traces remain in
+private local evidence; they are not part of a fresh Git clone.
+
+## Matched CarrotMan process comparison
+
+A subsequent C3X A/B/A comparison built both versions with the same GNU ARM
+package-only release configuration. Affinity stayed on cores 0-3, with
+SCHED_OTHER and nice 0. Each phase warmed up for 10 seconds and then measured
+about 60 seconds of process CPU time.
+
+| Phase | CPU, percent of one core |
+| --- | ---: |
+| Original `a3d0e3a49` | 8.051937 |
+| Candidate `87cc8dc1c` | 7.369416 |
+| Original `a3d0e3a49` | 8.218945 |
+
+The two original phases averaged 8.135441%, giving a reduction of 0.766024
+percentage points, or 9.4159% relative, for this offroad process comparison.
+All 180 compared `carrotMan` payloads were identical and valid; all 180
+`navInstructionCarrot` payloads were identical and invalid without a route.
+Publication cadence remained approximately 50 ms. The temporary child was
+stopped, both managers were resumed, and the installed original process was
+confirmed running afterwards. This does not establish total-device CPU,
+thermal stability, or driving performance.
 
 ## Validation and remaining gates
 
@@ -66,9 +89,35 @@ Both probes exited zero. The original failing and corrected traces are retained.
 - Real-surface receipts are in `.omo/evidence/params-read-286/`. Raw device
   identity and captures remain private and are not committed.
 
-The optimization is currently an isolated candidate. Review, required exact-SHA
-CI, a source-matched runtime release and installation validation remain pending.
-The installed runtime is still the verified `a3d0e3a49` release.
+An independent review approved the change and reproduced the focused checks.
+All 65 PR checks passed for `87cc8dc1c366b2eb1015fa88acb93ae218421cbc`
+([Actions](https://github.com/bin9208/openpilot-rust/actions/runs/38497987784)).
+[PR #288](https://github.com/bin9208/openpilot-rust/pull/288) merged into dev as
+`f3446f65e1cbd894aba1aac7e724c12e6d89ff61`; the complete source tree is identical
+to the reviewed PR tree.
+
+The exact merged-SHA local AGNOS pipeline passed all 13 stages: 87 binary
+builds, host startup support, staging, model staging, ABI audit, model admission,
+inventory, normal bootstrap, manager/log-upload integration, sealing, static
+installer provenance, and packaging. A fresh premerge-tree installation using
+the real ARM installer and launcher under QEMU verified 1,071 file hashes and
+162 ARM ELF headers. This is separate from physical installation acceptance.
+
+The first local build attempt used a deleted libyuv cache path. Reusing the
+existing pinned ARM provider, verified by its recorded hash, fixed the local
+environment without a source change.
+
+On 2026-10-14 the user took the C3X away and requested a Git handoff. No device
+test or installation remains running. At the last connected verification the
+installed runtime was still `a3d0e3a49`, with `DisableDM=2`, preview off and both
+managers running. A final read attempt after the departure request reported
+the device absent; current device state was not re-verified.
+
+The separate [merged-SHA Rust run](https://github.com/bin9208/openpilot-rust/actions/runs/38505272602)
+was still running at handoff. Publication and physical installation of the
+optimization remain pending. Continue from the
+[cross-computer handoff](rust-c3x-optimization-handoff-286.md); do not repeat the
+completed profiling or describe the optimized runtime as already installed.
 
 Docs-Not-Needed: internal Params I/O optimization with unchanged user-setting
 semantics; no setting addition, removal or behavior change.
