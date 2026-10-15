@@ -43,9 +43,13 @@ def test_spidev_comparison_has_a_fresh_output_separate_from_its_builder(tmp_path
     pass
 
   built = []
+  native_builds = []
   checker = check_pandad_ci.PandaCheck(tmp_path, tmp_path / 'binaries')
   monkeypatch.setattr(check_pandad_ci, 'require_space', lambda *_: None)
-  monkeypatch.setattr(check_pandad_ci, 'stage_json11', lambda *_: (tmp_path / 'json11', {}))
+  def reject_python_staging(*_):
+    pytest.fail('Panda CI must use the native JSON11 staging command')
+
+  monkeypatch.setattr(check_pandad_ci, 'stage_json11', reject_python_staging, raising=False)
   monkeypatch.setattr(checker, 'spidev', lambda: tmp_path / 'spidev-source')
   monkeypatch.setitem(sys.modules, 'usb1', SimpleNamespace(__file__=str(tmp_path / 'usb1.py')))
 
@@ -61,5 +65,19 @@ def test_spidev_comparison_has_a_fresh_output_separate_from_its_builder(tmp_path
       raise ReachedComparison
 
   monkeypatch.setattr(checker, 'python', record)
+  def record_native(name: str, arguments: list[str], growth_mib: int = 512) -> None:
+    executable = Path(arguments[0])
+    assert executable.parent == checker.binaries
+    assert arguments[1:3] == ['--root', str(check_pandad_ci.ROOT)]
+    native_builds.append(executable.name)
+    if name == 'stage-json11':
+      checker.commands.mkdir(parents=True)
+      (checker.commands / f'{name}.stdout').write_text(json.dumps({
+        'prefix': str(tmp_path / 'json11'), 'dependency': {'json11_architecture': 'x86_64'}}))
+
+  monkeypatch.setattr(checker, 'command', record_native)
   with pytest.raises(ReachedComparison):
     checker.execute(tmp_path / 'zmq')
+  assert native_builds == ['stage-json11'] + ['build-pandad-protocol-source'] * 5 + [
+    'build-pandad-peripheral-source', 'build-pandad-spi-source', 'build-pandad-usb-source']
+  assert json.loads((tmp_path / 'json11-dependency.json').read_text()) == {'json11_architecture': 'x86_64'}

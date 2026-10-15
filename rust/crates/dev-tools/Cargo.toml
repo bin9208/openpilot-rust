@@ -5,6 +5,8 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 publish = false
+# Native tool entrypoints are registered explicitly before they enter builds.
+autobins = false
 
 [lints]
 workspace = true
@@ -15,13 +17,15 @@ sha1 = "=0.10.7"
 base64 = "=0.22.1"
 openpilot-disk-space = { path = "../disk-space" }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["raw_value"] }
 sha2 = "0.10"
 tempfile = "3"
 flate2 = "1"
 tar = { version = "0.4", default-features = false }
 rustix = { version = "1", features = ["fs", "process", "event"] }
 regex = "1"
+yaml-rust2 = { version = "=0.13.0", default-features = false }
+signal-hook = "0.3"
 toml = "0.8"
 xz2 = "0.1.7"
 zip = { version = "=9.0.3", default-features = false, features = ["deflate-flate2"] }
@@ -126,3 +130,75 @@ path = "src/bin/build_runtime_panda.rs"
 [[bin]]
 name = "stage-startup-ui-raylib"
 path = "src/bin/stage_startup_ui_raylib.rs"
+
+[[bin]]
+name = "build-pandad-protocol-source"
+path = "src/bin/build_pandad_protocol_source.rs"
+
+[[bin]]
+name = "build-pandad-usb-source"
+path = "src/bin/build_pandad_usb_source.rs"
+
+[[bin]]
+name = "build-pandad-spi-source"
+path = "src/bin/build_pandad_spi_source.rs"
+
+[[bin]]
+name = "build-pandad-peripheral-source"
+path = "src/bin/build_pandad_peripheral_source.rs"
+
+[[bin]]
+name = "build-pandad-runtime-fixture"
+path = "src/bin/build_pandad_runtime_fixture.rs"
+
+[[bin]]
+name = "sync-upstream"
+path = "src/bin/sync_upstream.rs"
+
+[[bin]]
+name = "stage-json11"
+path = "src/bin/stage_json11.rs"
+
+[[bin]]
+name = "generate-services-header"
+path = "src/bin/generate_services_header.rs"
+
+[[bin]]
+name = "build-pandad-runtime-source"
+path = "src/bin/build_pandad_runtime_source.rs"
+
+[[bin]]
+name = "check-updated-process"
+path = "src/bin/check_updated_process.rs"
+
+[[bin]]
+name = "updated-process-fixture"
+path = "src/bin/updated_process_fixture.rs"
+
+[[bin]]
+name = "release-files"
+path = "src/bin/release_files.rs"
+
+[[bin]]
+name = "build-native-logging-reference"
+path = "src/bin/build_native_logging_reference.rs"
+
+[[bin]]
+name = "check-logger-identifier"
+path = "src/bin/check_logger_identifier.rs"
+
+[[bin]]
+name = "build-bootlog-source"
+path = "src/bin/build_bootlog_source.rs"
+
+[[bin]]
+name = "build-loggerd-source"
+path = "src/bin/build_loggerd_source.rs"
+
+[[bin]]
+name = "check-jpeg-sanitizers"
+path = "src/bin/check_jpeg_sanitizers.rs"
+
+[[bin]]
+name = "build-bridge-source"
+path = "src/bin/build_bridge_source.rs"

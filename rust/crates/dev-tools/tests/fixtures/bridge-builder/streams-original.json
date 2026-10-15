@@ -1,0 +1,90 @@
+[
+  {
+    "case": "success",
+    "code": 0,
+    "stdout": [
+      111,
+      117,
+      116,
+      45,
+      49,
+      10,
+      111,
+      117,
+      116,
+      45,
+      50,
+      10
+    ],
+    "stderr": [
+      101,
+      114,
+      114,
+      45,
+      49,
+      10,
+      101,
+      114,
+      114,
+      45,
+      50,
+      10,
+      255,
+      0,
+      114,
+      97,
+      119,
+      10
+    ],
+    "header_exists": true,
+    "binary_exists": true
+  },
+  {
+    "case": "compiler-failure",
+    "code": 1,
+    "stdout": [
+      111,
+      117,
+      116,
+      45,
+      49,
+      10,
+      111,
+      117,
+      116,
+      45,
+      50,
+      10
+    ],
+    "stderr": [
+      101,
+      114,
+      114,
+      45,
+      49,
+      10,
+      101,
+      114,
+      114,
+      45,
+      50,
+      10,
+      255,
+      0,
+      114,
+      97,
+      119,
+      10
+    ],
+    "header_exists": true,
+    "binary_exists": false
+  },
+  {
+    "case": "spawn-failure",
+    "code": 1,
+    "stdout": [],
+    "stderr": [],
+    "header_exists": true,
+    "binary_exists": false
+  }
+]

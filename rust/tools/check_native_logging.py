@@ -3,7 +3,8 @@
 # requires-python = ">=3.12"
 # dependencies = ["pyzmq==27.1.0"]
 # ///
-# Run: uv run rust/tools/check_native_logging.py --binary rust/target/debug/examples/native_logging_probe --output /tmp/native-logging
+# Run: uv run rust/tools/check_native_logging.py --binary rust/target/debug/examples/native_logging_probe
+#      --builder rust/target/debug/build-native-logging-reference --output /tmp/native-logging
 import argparse
 import base64
 import contextlib
@@ -18,8 +19,6 @@ import uuid
 from pathlib import Path
 
 import zmq
-
-from native_logging_build import build
 
 
 class Peer:
@@ -156,13 +155,16 @@ def compare(source: Path, native: Path, output: Path) -> dict:
 def main() -> None:
   parser = argparse.ArgumentParser()
   parser.add_argument('--binary', type=Path, required=True)
+  parser.add_argument('--builder', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
   args = parser.parse_args()
   native = args.binary.resolve()
+  builder = args.builder.resolve()
   output = args.output.resolve()
   root = Path(__file__).resolve().parents[2]
   os.chdir(root)
-  source = build(root, output / 'reference')
+  source = Path(subprocess.check_output([str(builder), '--root', str(root),
+    '--output', str(output / 'reference')], text=True).strip())
   report = compare(source, native, output)
   from native_logging_transport import check
   report['transport'] = check(source, native, output / 'transport')

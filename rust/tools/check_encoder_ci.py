@@ -11,7 +11,19 @@ import subprocess
 import sys
 
 from card_qa.ci import ROOT, TOOLS, hashes, require_space, run
-from native_logging_build import stage_json11
+
+
+def json11_dependency(prefix: Path | None, stager: Path | None, output: Path) -> Path:
+  if prefix is not None:
+    return prefix
+  if stager is None:
+    raise ValueError('--json11-stager is required unless --json11-prefix is supplied')
+  require_space(output, 256 * 1024**2)
+  run([str(stager.resolve()), '--root', str(ROOT), '--output', str(output / 'json11-dependency')],
+      output / 'commands', 'stage-json11')
+  staged = json.loads((output / 'commands/stage-json11.stdout').read_text())
+  (output / 'json11.json').write_text(json.dumps(staged['dependency']) + '\n')
+  return Path(staged['prefix'])
 
 
 def dependency_outputs(messages: Path) -> dict[str, Path]:
@@ -44,6 +56,7 @@ def main() -> None:
   parser.add_argument('--native', type=Path, default=Path('/'))
   parser.add_argument('--capnp-prefix', type=Path, default=Path('/usr'))
   parser.add_argument('--json11-prefix', type=Path, help='use an already staged native dependency')
+  parser.add_argument('--json11-stager', type=Path, help='explicit native stage-json11 executable')
   args = parser.parse_args()
   output, binaries, native = args.output.resolve(), args.binaries.resolve(), args.native.resolve()
   require_space(output, 1024**3)
@@ -73,11 +86,7 @@ def main() -> None:
               'executables': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in selected},
               'native_codec_versions': subprocess.check_output(['pkg-config', '--modversion', 'libavcodec', 'libavformat', 'libavutil'], text=True)}
   (output / 'inputs.json').write_text(json.dumps(identity, indent=2) + '\n')
-  json11 = args.json11_prefix
-  if json11 is None:
-    require_space(output, 64 * 1024**2)
-    json11, dependency = stage_json11(ROOT, output / 'json11-dependency')
-    (output / 'json11.json').write_text(json.dumps(dependency) + '\n')
+  json11 = json11_dependency(args.json11_prefix, args.json11_stager, output)
 
   def check(name: str, script: str, arguments: list[str]) -> None:
     require_space(output, 1024**3)

@@ -15,6 +15,12 @@ jobs:
     name: fast checks
     runs-on: ubuntu-24.04
     timeout-minutes: 7
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -28,11 +34,18 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python tools/ci/check_changed_files.py
+      - name: Prepare native CI validation
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
       - name: Check CI routing and upstream synchronization guards
         run: |
           python -m unittest discover -s tools/ci/tests -v
-          python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/ci/tests -q tools/ci/tests/test_native_disk_guard.py
-          python -m unittest discover -s tools/naver_ci/tests -v
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
+            --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe \
+            --test panda_oracle_build --test upstream_sync --test native_build_closure --test updated_process_check \
+            --test native_logging_build --test release_files --test logger_identifier_check --test qa_process \
+            --test logging_oracle_build --test path_resolve --test bridge_source_build --test jpeg_sanitizers_check \
+            --test ci_native_staging
       - name: Fast navigation regressions
         run: |
           python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/selfdrive/carrot/tests -q \

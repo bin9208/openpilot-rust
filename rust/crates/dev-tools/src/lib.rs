@@ -22,4 +22,19 @@ pub mod usbgpu_stage;
 
 pub mod panda_build;
 
+pub mod bridge_source_build;
+pub mod ci_policy;
+pub mod jpeg_sanitizers_check;
+pub mod json11_stage;
+pub mod logger_identifier_check;
+pub mod logging_oracle_build;
+pub mod native_logging_build;
+pub mod panda_oracle_build;
+pub mod panda_runtime_build;
+pub mod path_resolve;
 pub mod raylib_stage;
+pub mod release_files;
+pub mod services_header;
+pub mod updated_process_check;
+pub mod updated_process_fixture;
+pub mod upstream_sync;

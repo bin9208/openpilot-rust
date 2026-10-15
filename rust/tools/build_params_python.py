@@ -11,15 +11,20 @@ import subprocess
 import sys
 import sysconfig
 
-from native_logging_build import stage_json11
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def build(output: Path, capnp_prefix: Path | None = None, zmq_include: Path | None = None) -> Path:
+def stage_native_json11(stager: Path, output: Path) -> tuple[Path, dict]:
+  result = subprocess.run([str(stager.resolve()), '--root', str(ROOT), '--output', str(output)],
+                          check=True, capture_output=True, text=True)
+  staged = json.loads(result.stdout)
+  return Path(staged['prefix']), staged['dependency']
+
+
+def build(output: Path, capnp_prefix: Path | None = None, zmq_include: Path | None = None, *, json11_stager: Path) -> Path:
   output = output.resolve()
   output.mkdir(parents=True, exist_ok=True)
-  install, dependency = stage_json11(ROOT, output / 'dependencies')
+  install, dependency = stage_native_json11(json11_stager, output / 'dependencies')
   commands = []
 
   def run(command):
@@ -94,5 +99,6 @@ if __name__ == '__main__':
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--capnp-prefix', type=Path)
   parser.add_argument('--zmq-include', type=Path)
+  parser.add_argument('--json11-stager', type=Path, required=True, help='explicit native stage-json11 executable')
   args = parser.parse_args()
-  print(build(args.output, args.capnp_prefix, args.zmq_include))
+  print(build(args.output, args.capnp_prefix, args.zmq_include, json11_stager=args.json11_stager))

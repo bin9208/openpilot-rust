@@ -1,0 +1,68 @@
+[
+  {
+    "family": "spi",
+    "failed_command": 1,
+    "exit_code": 9,
+    "partial_output_preserved": true,
+    "files": [
+      "command.json"
+    ],
+    "command_count": 1
+  },
+  {
+    "family": "usb",
+    "failed_command": 2,
+    "exit_code": 9,
+    "partial_output_preserved": true,
+    "files": [
+      "command.json",
+      "pandad-usb-source"
+    ],
+    "command_count": 2
+  },
+  {
+    "family": "protocol",
+    "failed_command": 1,
+    "exit_code": 9,
+    "partial_output_preserved": true,
+    "files": [
+      "cereal",
+      "commands.json",
+      "schema"
+    ],
+    "command_count": 1
+  },
+  {
+    "family": "protocol",
+    "failed_command": 2,
+    "exit_code": 9,
+    "partial_output_preserved": true,
+    "files": [
+      "cereal",
+      "commands.json",
+      "schema"
+    ],
+    "command_count": 2
+  },
+  {
+    "family": "peripheral",
+    "failed_command": 1,
+    "exit_code": 9,
+    "partial_output_preserved": true,
+    "files": [
+      "build.json",
+      "pandad_peripheral_body.inc"
+    ],
+    "command_count": 1
+  },
+  {
+    "family": "runtime_fixture",
+    "failed_command": 1,
+    "exit_code": 9,
+    "partial_output_preserved": true,
+    "files": [
+      "command.json"
+    ],
+    "command_count": 1
+  }
+]

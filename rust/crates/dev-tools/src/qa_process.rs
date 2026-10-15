@@ -14,7 +14,10 @@ use std::{
     io::{self, Read},
     os::{
         fd::OwnedFd,
-        unix::process::{CommandExt, ExitStatusExt},
+        unix::{
+            net::UnixStream,
+            process::{CommandExt, ExitStatusExt},
+        },
     },
     path::PathBuf,
     process::{Child, Command, Stdio},
@@ -28,6 +31,11 @@ pub struct CommandSpec {
     pub timeout: Duration,
     pub stdout_limit: usize,
     pub stderr_limit: usize,
+    /// Use one child output stream, preserving stdout/stderr write order.
+    /// Merged bytes are returned in stdout; stderr is empty.
+    pub merge_output: bool,
+    /// Pass both output streams directly to the caller without capturing them.
+    pub inherit_output: bool,
 }
 impl CommandSpec {
     pub fn new(argv: Vec<String>, timeout: Duration) -> Self {
@@ -38,6 +46,8 @@ impl CommandSpec {
             timeout,
             stdout_limit: 16 * 1024 * 1024,
             stderr_limit: 16 * 1024 * 1024,
+            merge_output: false,
+            inherit_output: false,
         }
     }
 }
@@ -137,6 +147,9 @@ impl Runner for NativeRunner {
         if spec.timeout.is_zero() {
             return Err("native command timeout must be positive".into());
         }
+        if spec.merge_output && spec.inherit_output {
+            return Err("native command cannot both merge and inherit output".into());
+        }
         let (first, args) = spec.argv.split_first().ok_or("empty native command")?;
         let mut command = Command::new(first);
         command
@@ -149,29 +162,50 @@ impl Runner for NativeRunner {
         if let Some(cwd) = &spec.cwd {
             command.current_dir(cwd);
         }
+        if spec.inherit_output {
+            command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
+        }
+        let merged = if spec.merge_output {
+            let (reader, writer) = UnixStream::pair()?;
+            command
+                .stdout(Stdio::from(OwnedFd::from(writer.try_clone()?)))
+                .stderr(Stdio::from(OwnedFd::from(writer)));
+            Some(OwnedFd::from(reader))
+        } else {
+            None
+        };
         let child = command.spawn()?;
+        // Command retains supplied Stdio handles for reuse. Keeping either
+        // merged writer here would prevent EOF after the child exits.
+        drop(command);
         let pid = Pid::from_raw(i32::try_from(child.id())?).ok_or("invalid owned child PID")?;
         let mut owned = Owned {
             child,
             pid,
             reaped: false,
         };
-        let mut stdout = Pipe::new(
-            owned
+        let stdout_fd = match merged {
+            Some(fd) => fd,
+            None if spec.inherit_output => File::open("/dev/null")?.into(),
+            None => owned
                 .child
                 .stdout
                 .take()
                 .ok_or("missing native stdout")?
                 .into(),
-        )?;
-        let mut stderr = Pipe::new(
+        };
+        let stderr_fd = if spec.merge_output || spec.inherit_output {
+            File::open("/dev/null")?.into()
+        } else {
             owned
                 .child
                 .stderr
                 .take()
                 .ok_or("missing native stderr")?
-                .into(),
-        )?;
+                .into()
+        };
+        let mut stdout = Pipe::new(stdout_fd)?;
+        let mut stderr = Pipe::new(stderr_fd)?;
         let started = Instant::now();
         let mut exited = false;
         loop {

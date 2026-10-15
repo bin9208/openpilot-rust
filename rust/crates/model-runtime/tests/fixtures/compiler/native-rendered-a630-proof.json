@@ -1,0 +1,26 @@
+{
+  "status": "Exact source and genuine compiled binary equality for this bounded renderer unit; not full graph/device equivalence",
+  "input_ir": "float32[128] output = input + typed float32 literal1.0; linear index; function buffer_add",
+  "hashes": {
+    "original_source": "b9281330e4b68fe2f95aecc044d633466bb821547f5099cccaa2ac67d82ee0ff",
+    "original_binary": "fe72d39f60f599c761e5f40697380f1426c7d6ca963ae80f0232336175f12512",
+    "rendered_source": "b9281330e4b68fe2f95aecc044d633466bb821547f5099cccaa2ac67d82ee0ff",
+    "rendered_binary": "fe72d39f60f599c761e5f40697380f1426c7d6ca963ae80f0232336175f12512",
+    "provider": "fb7e6390cc25700d6935b2eef3acad85a43f247206bdf84cb4d37bd48a60b093",
+    "native_arm_helper": "dbcb525f590702fb6e18222ec65e30b1c3e5900292cfaf0d33258a7414a331ba",
+    "qemu": "e4f8d99e9ff69c3cefffab71cee358ce2af1ecba1282d04c3eeb44ef76f5a71e",
+    "loader": "142f02374792bf5f62293efc3500d472dbbe280dc658cc60480eff73ad46f33c",
+    "native_renderer_source": "8b20e9ca28962de5f79b233983385c5e14fcbbb92c40b94dfd42e5d0b299155a",
+    "native_compiler_source": "8d753323451227e4ea3bd152d73992e8acc2f4a7192c8374ef150247a047974b"
+  },
+  "binary_bytes": 2144,
+  "source_equal": true,
+  "binary_equal": true,
+  "capture_recipe": "Native compiler_onnx::render::render_elementwise emits source from typed IR (compiler_render.rs reproduces original source fixture). Execute native ARM offline-qcom-compile --library pinned libllvm-qcom.so under existing qemu-aarch64-static -cpu cortex-a57 and the aarch64 glibc loader. Feed rendered source on stdin, retain stdout. Compare all bytes with original independent buffer_add.bin. Compiler checks pinned provider SHA256 before dynamic loading. No Python, install, kernel/device execution or generated placeholder binary. Guest library path contains only native SDK aarch64 libraries; no Python executable, PythonHOME, PythonPATH or Python library directory is required.",
+  "pending": "All other renderer expressions, image descriptors/packing, reduction/fusion schedules and complete model numerical parity remain pending.",
+  "host_compiled_reference": {
+    "cases": 42,
+    "test": "compiler_render::compiled_elementwise_kernels_match_independent_original_output_captures",
+    "comparison": "Every output byte equals independent original fixture outputs. Actual rendered arithmetic/index source compiled once by host cc -shared -fPIC -O2 -ffp-contract=off, with only OpenCL address-space/work-item ABI adapted for host execution. No GPU execution claim."
+  }
+}

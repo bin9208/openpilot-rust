@@ -115,6 +115,12 @@ jobs:
   infrastructure:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -124,7 +130,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Test synchronization guards
-        run: python -m unittest discover -s tools/naver_ci/tests -v
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test upstream_sync
       - name: Check syntax of shared navigation entry points
         run: python -m py_compile openpilot/selfdrive/carrot/carrot_man.py openpilot/selfdrive/carrot/carrot_serv.py
       - name: Summarize scope

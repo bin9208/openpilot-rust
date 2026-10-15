@@ -35,6 +35,90 @@ fn raw_separate_streams_and_nonzero_status_are_preserved() {
     assert_eq!(r.stderr, b"error\r");
 }
 #[test]
+fn merged_streams_keep_write_order_raw_bytes_and_exit_status() {
+    let mut spec = command(
+        "printf 'first\\377'; printf 'second\\r' >&2; printf 'third\\n'; printf 'last' >&2; exit 7",
+        Duration::from_secs(2),
+    );
+    spec.merge_output = true;
+    let result = NativeRunner.run(&spec).unwrap();
+    assert_eq!(result.code, 7);
+    assert_eq!(result.stdout, b"first\xffsecond\rthird\nlast");
+    assert!(result.stderr.is_empty());
+}
+
+#[test]
+fn merged_timeout_keeps_partial_ordered_output_and_stops_owned_descendants() {
+    let temp = tempfile::tempdir().unwrap();
+    let pidfile = temp.path().join("worker.pid");
+    let mut spec = command(
+        &format!(
+            "printf 'one'; printf 'two' >&2; sleep 30 & printf '%s' $! > '{}'; wait",
+            pidfile.display()
+        ),
+        Duration::from_millis(200),
+    );
+    spec.merge_output = true;
+    let error = NativeRunner.run(&spec).unwrap_err();
+    let Some(CaptureError::Timeout { stdout, stderr, .. }) = error.downcast_ref::<CaptureError>()
+    else {
+        panic!("expected merged timeout: {error}");
+    };
+    assert_eq!(stdout, b"onetwo");
+    assert!(stderr.is_empty());
+    assert_terminated(fs::read_to_string(pidfile).unwrap().parse().unwrap());
+}
+
+#[test]
+fn inherited_stream_child() {
+    if std::env::var_os("OPENPILOT_QA_INHERITED_STREAM_CHILD").is_none() {
+        return;
+    }
+    let mut spec = command(
+        "printf 'inherited\\377'; printf 'diagnostic\\r' >&2; exit 7",
+        Duration::from_secs(2),
+    );
+    spec.inherit_output = true;
+    let result = NativeRunner.run(&spec).unwrap();
+    assert_eq!(result.code, 7);
+    assert!(result.stdout.is_empty());
+    assert!(result.stderr.is_empty());
+}
+
+#[test]
+fn inherited_streams_reach_the_caller_without_capture_or_translation() {
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "inherited_stream_child", "--nocapture"])
+        .env("OPENPILOT_QA_INHERITED_STREAM_CHILD", "1")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(output
+        .stdout
+        .windows(b"inherited\xff".len())
+        .any(|value| value == b"inherited\xff"));
+    assert_eq!(output.stderr, b"diagnostic\r");
+}
+
+#[test]
+fn incompatible_output_modes_fail_before_spawn_and_inherited_timeouts_stop_groups() {
+    let mut spec = command("exit 99", Duration::from_secs(2));
+    spec.inherit_output = true;
+    spec.merge_output = true;
+    assert!(NativeRunner.run(&spec).is_err());
+    spec.merge_output = false;
+    let temp = tempfile::tempdir().unwrap();
+    let pidfile = temp.path().join("worker.pid");
+    spec.argv[2] = format!("sleep 30 & printf '%s' $! > '{}'; wait", pidfile.display());
+    spec.timeout = Duration::from_millis(200);
+    let error = NativeRunner.run(&spec).unwrap_err();
+    assert!(matches!(
+        error.downcast_ref::<CaptureError>(),
+        Some(CaptureError::Timeout { .. })
+    ));
+    assert_terminated(fs::read_to_string(pidfile).unwrap().parse().unwrap());
+}
+#[test]
 fn timeout_kills_owned_descendants_and_reaps_leader() {
     let dir = tempfile::tempdir().unwrap();
     let pidfile = dir.path().join("child.pid");

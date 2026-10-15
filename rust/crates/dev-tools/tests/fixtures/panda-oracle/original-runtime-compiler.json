@@ -1,0 +1,72 @@
+{
+  "args": [
+    "--output",
+    "$OUTPUT",
+    "--json11-prefix",
+    "$DEPS/json11",
+    "--libusb-include",
+    "$DEPS/usb",
+    "--compiler",
+    "controlled-clang++"
+  ],
+  "commands": [
+    [
+      "controlled-clang++",
+      "-std=c++17",
+      "-O1",
+      "-g",
+      "-shared",
+      "-fPIC",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-Wl,-soname,libusb-1.0.so.0",
+      "-I$ROOT",
+      "-I$DEPS/json11/include",
+      "-I$DEPS/usb",
+      "$ROOT/rust/tools/pandad_runtime_usb.cc",
+      "$DEPS/json11/lib/libjson11.a",
+      "-pthread",
+      "-o",
+      "$OUTPUT/libusb-1.0.so.0"
+    ]
+  ],
+  "files": {
+    "command.json": {
+      "argv": [
+        "controlled-clang++",
+        "-std=c++17",
+        "-O1",
+        "-g",
+        "-shared",
+        "-fPIC",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wl,-soname,libusb-1.0.so.0",
+        "-I$ROOT",
+        "-I$DEPS/json11/include",
+        "-I$DEPS/usb",
+        "$ROOT/rust/tools/pandad_runtime_usb.cc",
+        "$DEPS/json11/lib/libjson11.a",
+        "-pthread",
+        "-o",
+        "$OUTPUT/libusb-1.0.so.0"
+      ],
+      "exit_code": 0,
+      "stdout": "controlled stdout\n",
+      "stderr": "controlled stderr\n"
+    },
+    "manifest.json": {
+      "result": "PASS",
+      "binary": "$OUTPUT/libusb-1.0.so.0",
+      "sha256": "3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4",
+      "source_sha256": {
+        "$ROOT/rust/tools/pandad_runtime_usb.cc": "abf81fb7b6d5a1f20a6a02cf5c7da6d16364fbd13e76f4e764a47a72e6104dab",
+        "$ROOT/panda/board/health.h": "4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c",
+        "$DEPS/usb/libusb-1.0/libusb.h": "4b7aadd0cb09611bc04b4c7827f3e90aba2255610bb0d03436c765324f842cd4"
+      },
+      "scope": "owned virtual libusb device, captured control/bulk calls, no physical USB delegation"
+    }
+  }
+}
