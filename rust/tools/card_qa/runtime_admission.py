@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import hashlib
 
-TOPICS = ('pandaStates', 'carControl', 'onroadEvents', 'carrotMan', 'longitudinalPlan', 'radarState', 'modelV2', 'drivingModelData', 'customReservedRawData0')
+TOPICS = ('pandaStates', 'carControl', 'onroadEvents', 'carrotMan', 'longitudinalPlan', 'radarState', 'modelV2', 'drivingModelData', 'liveParameters', 'livePose', 'selfdriveState', 'lateralPlan', 'customReservedRawData0')
 MAX_ATTEMPTS = 3
 MAX_TRACE_FRAMES = 2000
 

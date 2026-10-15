@@ -229,7 +229,16 @@ fn can_driven_step_publishes_previous_output_before_initializing_and_applying() 
     let mut card = Card::new(params, settings, false, true).unwrap();
     card.step(&mut driver, &mut Tail { value: 0. }, &mut io)
         .unwrap();
-    assert_eq!(io.sent, ["carParams", "carOutput", "carState", "sendcan"]);
+    assert_eq!(
+        io.sent,
+        [
+            "carParams",
+            "carOutput",
+            "customReservedRawData1",
+            "carState",
+            "sendcan"
+        ]
+    );
     assert_eq!(driver.calls, ["update", "init", "apply"]);
     let applied = card
         .last_actuators

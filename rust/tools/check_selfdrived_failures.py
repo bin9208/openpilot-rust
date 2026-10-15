@@ -44,7 +44,9 @@ def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
         (namespace / 'CarParams').unlink()
       case 'truncated-carparams':
         (namespace / 'CarParams').write_bytes(b'bad')
-      case 'fatal-integer':
+      case 'invalid-retired-disable-dm':
+        # Final SelfdriveD no longer reads DisableDM directly; malformed bytes
+        # must not abort the owner. Keep the bounded publication/exit assertions.
         (namespace / 'DisableDM').write_bytes(b'bad')
       case 'unknown-gear' | 'wrong-union' | 'truncated-carstate' | 'unknown-personality' | 'missing-alert-text' | 'bounded-frames':
         pass
@@ -55,7 +57,7 @@ def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
     topics = [*TOPICS, 'driverCameraState', 'accelerometer', 'gyroscope', 'gpsLocation', 'carState']
     publishers = messaging.PubMaster(topics)
     observed = messaging.sub_sock('selfdriveState', conflate=False, timeout=100)
-    command = [str(binary)] + (['--frames', '20'] if name == 'bounded-frames' else [])
+    command = [str(binary)] + (['--frames', '20'] if name in ('bounded-frames', 'invalid-retired-disable-dm') else [])
     process = subprocess.Popen(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     records, ready, stderr_prefix = [], False, bytearray()
     try:
@@ -64,7 +66,7 @@ def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
         wait_for_stderr(process.stderr, b'waiting for CarParams', stderr_prefix)
         assert process.poll() is None
         process.send_signal(signal.SIGTERM)
-      elif name not in ('truncated-carparams', 'fatal-integer'):
+      elif name != 'truncated-carparams':
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
           assert process.poll() is None, process.communicate()
@@ -98,7 +100,7 @@ def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
           case 'missing-alert-text':
             publishers.send('longitudinalPlan', bytes(event('longitudinalPlan', events=[{'name': 'torqueNNLoad'}])))
             fault = message.to_bytes()
-          case 'bounded-frames':
+          case 'bounded-frames' | 'invalid-retired-disable-dm':
             fault = message.to_bytes()
           case _:
             raise AssertionError(name)
@@ -119,15 +121,15 @@ def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
       (output / f'{name}.stderr').write_text(stderr or 'no stderr\n')
       (output / f'{name}.messages.jsonl').write_text(''.join(json.dumps(row)+'\n' for row in records) or 'no publication before startup rejection\n')
       match name:
-        case 'wait-sigterm' | 'bounded-frames':
+        case 'wait-sigterm' | 'bounded-frames' | 'invalid-retired-disable-dm':
           assert process.returncode == 0, (name, process.returncode, stderr)
-          if name == 'bounded-frames':
+          if name in ('bounded-frames', 'invalid-retired-disable-dm'):
             with (shm / 'selfdriveState').open('rb') as queue:
               header = queue.read(struct.calcsize('<123Q'))
               write_pointer = struct.unpack('<123Q', header)[1]
               assert write_pointer >> 32 == 0, 'bounded output queue unexpectedly wrapped'
               payload = queue.read(write_pointer & 0xffffffff)
-            (output / 'bounded-frames.queue.bin').write_bytes(header + payload)
+            (output / f'{name}.queue.bin').write_bytes(header + payload)
             position, publications = 0, []
             while position < len(payload):
               size = struct.unpack_from('<q', payload, position)[0]
@@ -137,9 +139,7 @@ def run_case(binary: Path, output: Path, name: str) -> dict[str, str | int]:
                 publications.append(state.to_dict())
               position += (8 + size + 7) & -8
             assert position == len(payload) and len(publications) == 20, len(publications)
-            (output / 'bounded-frames.queued-messages.jsonl').write_text(''.join(json.dumps(row)+'\n' for row in publications))
-        case 'fatal-integer':
-          assert process.returncode == -signal.SIGABRT, (name, process.returncode, stderr)
+            (output / f'{name}.queued-messages.jsonl').write_text(''.join(json.dumps(row)+'\n' for row in publications))
         case 'wrong-union':
           assert process.returncode == 1 and 'carState event union' in stderr, (name, process.returncode, stderr)
         case 'unknown-gear':
@@ -168,7 +168,7 @@ def main() -> None:
   args = parser.parse_args()
   resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
   args.output.mkdir(parents=True, exist_ok=False)
-  names = ('wait-sigterm', 'truncated-carparams', 'fatal-integer', 'wrong-union', 'truncated-carstate',
+  names = ('wait-sigterm', 'truncated-carparams', 'invalid-retired-disable-dm', 'wrong-union', 'truncated-carstate',
            'unknown-gear', 'unknown-personality', 'missing-alert-text', 'bounded-frames')
   results = [run_case(args.binary.resolve(), args.output, name) for name in names]
   report = {'result': 'PASS', 'scenarios': results, 'binary_sha256': hashlib.sha256(args.binary.read_bytes()).hexdigest()}

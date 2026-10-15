@@ -44,6 +44,8 @@ def main() -> None:
   if arguments.fixture_phase_fence and (arguments.frequency_trace is None or arguments.steps <= 0):
     parser.error('fixture phase fence requires frequency trace and a fixture step bound')
   load_binding(arguments.binding)
+  from card_final_source import install
+  install((arguments.frequency_trace.parent if arguments.frequency_trace else arguments.params_root) / "pinned-source")
   assert os.environ['PARAMS_ROOT'] == str(arguments.params_root)
   from openpilot.selfdrive.car.card import Car
   from openpilot.common.realtime import config_realtime_process, Priority

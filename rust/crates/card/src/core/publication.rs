@@ -10,7 +10,7 @@ fn time(io: &mut impl StepIo) -> Result<u64, Error> {
     (io.now() * 1e9).to_u64().ok_or(Error::Numeric)
 }
 pub(super) fn publish(
-    card: &Card,
+    card: &mut Card,
     state: car_state::Reader<'_>,
     io: &mut impl StepIo,
 ) -> Result<(), Error> {
@@ -37,6 +37,27 @@ pub(super) fn publish(
         "carOutput",
         &capnp::serialize::write_message_to_words(&message),
     )?;
+    let now_ns = io.monotonic_ns();
+    let sources = card.vision_sources;
+    if card.vision_sources_published != Some(sources)
+        || now_ns.saturating_sub(card.vision_sources_published_ns) >= 1_000_000_000
+    {
+        let payload = format!(
+            r#"{{"type":"xiaogeBlindspotSources","version":1,"receivedMonoTimeNanos":{now_ns},"left":{{"oem":{},"vision":{}}},"right":{{"oem":{},"vision":{}}}}}"#,
+            sources[0], sources[2], sources[1], sources[3]
+        );
+        let mut message = Builder::new_default();
+        let mut event = message.init_root::<event::Builder>();
+        event.set_valid(true);
+        event.set_log_mono_time(time(io)?);
+        event.set_custom_reserved_raw_data1(payload.as_bytes());
+        io.publish(
+            "customReservedRawData1",
+            &capnp::serialize::write_message_to_words(&message),
+        )?;
+        card.vision_sources_published = Some(sources);
+        card.vision_sources_published_ns = now_ns;
+    }
     let mut message = Builder::new_default();
     let mut event = message.init_root::<event::Builder>();
     event.set_valid(state.get_can_valid());

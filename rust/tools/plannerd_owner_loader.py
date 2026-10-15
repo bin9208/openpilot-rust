@@ -26,6 +26,34 @@ def register_solvers(native_root):
     spec.loader.exec_module(module)
 
 
+def register_final_planners():
+  # Match the verified final-owner cohort in ordinary owner/main/IPC checks.
+  for path in [
+    'openpilot/common/stopping_params.py',
+    'openpilot/selfdrive/carrot/signal_stop_prepare.py',
+    *['openpilot/selfdrive/controls/lib/' + part + '.py' for part in (
+      'cruise_coasting', 'lane_model_speed', 'longitudinal_gap_recovery',
+      'longitudinal_braking_gap', 'longitudinal_mpc_lib/long_mpc',
+      'lateral_mpc_lib/lat_mpc', 'lateral_planner', 'longitudinal_planner',
+    )],
+  ]:
+    register(path, path.removesuffix('.py').replace('/', '.'))
+
+
+def inactive_signal_carrot(original_carrot):
+  class InactiveSignalCarrot(original_carrot):
+    def __init__(self, *args, **kwargs):
+      super().__init__(*args, **kwargs)
+      self.prepare_decision = None
+      self.prepare_control_active = False
+      self.start_decision = None
+      self.signal_detection_suspended = False
+      self.signal_observation_color = 0
+      self.signal_green_active = False
+
+  return InactiveSignalCarrot
+
+
 class SourceOwners:
   def __init__(self, native_root, values):
     self.store = Store({key: value.encode() for key, value in values.items()})
@@ -49,33 +77,11 @@ class SourceOwners:
     messaging.SubMaster = scope['SubMaster']
     sys.modules[messaging.__name__] = messaging
     register_solvers(native_root)
-    # Match the verified final-owner cohort in ordinary owner/main/IPC checks.
-    for path in [
-      'openpilot/common/stopping_params.py',
-      'openpilot/selfdrive/carrot/signal_stop_prepare.py',
-      *['openpilot/selfdrive/controls/lib/' + part + '.py' for part in (
-        'cruise_coasting', 'lane_model_speed', 'longitudinal_gap_recovery',
-        'longitudinal_braking_gap', 'longitudinal_mpc_lib/long_mpc',
-        'lateral_mpc_lib/lat_mpc', 'lateral_planner', 'longitudinal_planner',
-      )],
-    ]:
-      register(path, path.removesuffix('.py').replace('/', '.'))
+    register_final_planners()
     self.long = importlib.import_module('openpilot.selfdrive.controls.lib.longitudinal_planner')
     self.lat = importlib.import_module('openpilot.selfdrive.controls.lib.lateral_planner')
     self.carrot = importlib.import_module('openpilot.selfdrive.carrot.carrot_functions')
-    original_carrot = self.carrot.CarrotPlanner
-
-    class InactiveSignalCarrot(original_carrot):
-      def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.prepare_decision = None
-        self.prepare_control_active = False
-        self.start_decision = None
-        self.signal_detection_suspended = False
-        self.signal_observation_color = 0
-        self.signal_green_active = False
-
-    self.carrot.CarrotPlanner = InactiveSignalCarrot
+    self.carrot.CarrotPlanner = inactive_signal_carrot(self.carrot.CarrotPlanner)
     self.navigation = importlib.import_module('openpilot.selfdrive.carrot.carrot_man_input')
     long_mpc = importlib.import_module('openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc')
     lat_mpc = importlib.import_module('openpilot.selfdrive.controls.lib.lateral_mpc_lib.lat_mpc')

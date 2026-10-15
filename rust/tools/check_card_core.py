@@ -46,11 +46,11 @@ def cases() -> list[dict]:
   steps=[]
   for index in range(16):
     now=10_000_000_000+index*10_000_000
-    state=car.CarState.new_message(canValid=True,vEgo=15.,steeringAngleDeg=5.)
-    messages=[event('carControl',now,dict(enabled=True,latActive=True,longActive=True,actuators=dict(accel=1.,torque=.25,steeringAngleDeg=99.,curvature=.01))),event('onroadEvents',now,[]),event('selfdriveState',now,dict(active=True,enabled=True))]
+    state=car.CarState.new_message(canValid=True,vEgo=15.,steeringAngleDeg=5.,cruiseState=dict(enabled=True))
+    messages=[event('carControl',now,dict(enabled=True,latActive=True,longActive=True,cruiseControl=dict(resume=True,override=True),actuators=dict(accel=1.,torque=.25,steeringAngleDeg=99.,curvature=.01))),event('onroadEvents',now,[]),event('selfdriveState',now,dict(active=True,enabled=True))]
     if index%5==0:
       messages += [event('modelV2',now,dict(action=dict(desiredCurvature=.01))),event('liveParameters',now,dict(valid=True,sensorValid=True,posenetValid=True,steerRatio=15.,stiffnessFactor=1.),valid=index<10),event('livePose',now,dict(inputsOK=True,posenetOK=True,sensorsOK=True))]
-    steps.append(dict(now=now,can=[event('can',now-1,[])],messages=messages,state=list(state.to_bytes()),accel=.5,settings={},remaining=0.))
+    steps.append(dict(now=now,can=[event('can',now-1,[])],messages=messages,state=list(state.to_bytes()),accel=.5,settings={'ImpactDashcamReboot':'1' if index in (4,5) else '0'},remaining=0.))
   result.append(dict(params=list(cp.to_bytes()),has_controller=True,replay=False,steps=steps))
   return result
 
@@ -71,9 +71,11 @@ def main() -> None:
   result=dict(status='pass',cases=len(request),steps=sum(len(case['steps']) for case in request),runtime_python=False,
       binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),
       observable='complete publications/Cereal, validity/order/cadence, prior actuator output, init/apply/model/radar/replay gates, modified CI state, timeout/diagnostic/toggle/Params transitions',
-      boundaries='baseline Car loop plus exact final-source startup-guard AST fragments + original SubMaster; owned CI and cruise-tail fixture, fixed source clocks, no physicalCAN',
-      source_delta=dict(fixture='rust/upstream/lateral-readiness-source.json',source_commit='e8e152dbcfd9574a1791ed12026d1880e87689b3',scope='startup readiness guard only'),
+      boundaries='pinned final Car loop (including split attribution/reboot boundary) + original SubMaster; owned CI and cruise-tail fixture, fixed source clocks, no physicalCAN',
+      source_delta=dict(fixture='rust/upstream/lateral-readiness-source.json',source_commit='e8e152dbcfd9574a1791ed12026d1880e87689b3',scope='final Card owner methods; truthful native CAN backend context is rust versus source python'),
       source_sha256={str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in [ROOT/'openpilot/selfdrive/car/card.py',ROOT/'openpilot/cereal/messaging/__init__.py',ROOT/'openpilot/selfdrive/pandad/pandad_api_impl.py']})
+  from lateral_readiness_source import source
+  result['source_sha256']['openpilot/selfdrive/car/card.py']=hashlib.sha256(source('openpilot/selfdrive/car/card.py').encode()).hexdigest()
   (args.evidence/'result.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result))
 
 

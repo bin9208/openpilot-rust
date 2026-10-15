@@ -100,3 +100,20 @@ pub fn blindspot_vision(result: Option<&VisionResult>, now: u64) -> [bool; 2] {
         result.right_blindspot && side(1),
     ]
 }
+
+/// Record final-source OEM/ONNX attribution before applying the merged warning.
+pub fn record_sources(
+    mut state: car_state::Builder<'_>,
+    result: Option<&VisionResult>,
+    now: u64,
+) -> [bool; 4] {
+    let reader = state.reborrow_as_reader();
+    let oem = [reader.get_left_blindspot(), reader.get_right_blindspot()];
+    let vision = blindspot_vision(result, now);
+    state.set_left_blindspot_oem(oem[0]);
+    state.set_right_blindspot_oem(oem[1]);
+    state.set_left_blindspot_onnx(vision[0]);
+    state.set_right_blindspot_onnx(vision[1]);
+    state.set_blindspot_split_sources_valid(true);
+    [oem[0], oem[1], vision[0], vision[1]]
+}

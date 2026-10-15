@@ -1,6 +1,7 @@
 import ast
 from contextlib import redirect_stdout
 import io
+import json
 from types import SimpleNamespace
 from can_source import ROOT
 from check_message_state import source as messaging_source
@@ -9,7 +10,7 @@ from openpilot.cereal import car,log
 from openpilot.selfdrive.pandad import can_capnp_to_list,can_list_to_can_capnp
 from openpilot.selfdrive.car.card_diagnostics import should_log_card_diagnostics
 from openpilot.selfdrive.car.openpilot_toggle import CruiseMainOpenpilotToggle
-from openpilot.selfdrive.carrot.xiaoge.xiaoge_vision import parse_xiaoge_vision_payload,apply_xiaoge_vision_result
+from openpilot.selfdrive.carrot.xiaoge.xiaoge_vision import parse_xiaoge_vision_payload,apply_xiaoge_vision_result,xiaoge_blindspot_vision
 
 SERVICES=['pandaStates','carControl','onroadEvents','carrotMan','longitudinalPlan','radarState','modelV2','drivingModelData','customReservedRawData0','liveParameters','livePose','selfdriveState','lateralPlan']
 
@@ -45,7 +46,7 @@ def trace(case: dict) -> list[dict]:
     def init(self,*args): calls.append(dict(call='init'))
     def apply(self,cc,now,model,radar):
       calls.append(dict(call='apply',now_ns=now,model=model is not None,radar=radar is not None,soft_hold=self.CS.softHoldActive,
-                        enabled=cc.enabled,lat_enabled=self.CS.out.latEnabled,activate=self.CS.out.activateCruise))
+                        enabled=cc.enabled,lat_active=cc.latActive,long_active=cc.longActive,cancel=cc.cruiseControl.cancel,resume=cc.cruiseControl.resume,override=cc.cruiseControl.override,lat_enabled=self.CS.out.latEnabled,activate=self.CS.out.activateCruise))
       actuators=cc.actuators.as_builder(); actuators.accel=current['accel']
       return actuators,[(123,bytes([1,2,3]),4)]
   class Tail:
@@ -56,7 +57,9 @@ def trace(case: dict) -> list[dict]:
   def publish(topic,message):
     publications.append(dict(topic=topic,wire=list(message if isinstance(message,bytes) else message.to_bytes())))
   def warning(message): warnings.append(message)
-  def record(**values): diagnostics.update(values)
+  def record(**values):
+    assert values.pop("context") == {"can_backend": "python"}
+    diagnostics.update(values)
   def decode(bytes):
     with log.Event.from_bytes(bytes) as message: return message
   def update(timeout):
@@ -65,16 +68,16 @@ def trace(case: dict) -> list[dict]:
       flags=iter((False,True)); runtime.params_thread(SimpleNamespace(is_set=lambda:next(flags)))
       runtime._fixture_settings_at=current['now']
   sm.update=update
-  tree=ast.parse((ROOT/'openpilot/selfdrive/car/card.py').read_text())
+  from lateral_readiness_source import source as pinned_source
+  tree=ast.parse(pinned_source('openpilot/selfdrive/car/card.py'))
   node=next(item for item in tree.body if isinstance(item,ast.ClassDef) and item.name=='Car')
   node.body=[item for item in node.body if not isinstance(item,ast.FunctionDef) or item.name in ('state_update','state_publish','controls_update','step','params_thread')]
   scope=dict(car=car,log=log,CarInterfaceBase=object,structs=car,time=clock,REPLAY=case['replay'],EventName=log.OnroadEvent.EventName,
-      XIAOGE_LANE_ERROR_LOG_INTERVAL_NS=5_000_000_000,DT_CTRL=.01,cloudlog=SimpleNamespace(warning=warning),
+      XIAOGE_LANE_ERROR_LOG_INTERVAL_NS=5_000_000_000,XIAOGE_SOURCE_HEARTBEAT_NS=1_000_000_000,CAN_BACKEND="python",json=json,DT_CTRL=.01,cloudlog=SimpleNamespace(warning=warning),
       messaging=SimpleNamespace(drain_sock_raw=lambda sock,wait_for_one: [bytes(value) for value in current['can']],new_message=messaging['new_message'],log_from_bytes=decode),
       can_capnp_to_list=can_capnp_to_list,can_list_to_can_capnp=can_list_to_can_capnp,parse_xiaoge_vision_payload=parse_xiaoge_vision_payload,
-      apply_xiaoge_vision_result=apply_xiaoge_vision_result,should_log_card_diagnostics=should_log_card_diagnostics)
-  from lateral_readiness_source import module as readiness_module, patch_card
-  patch_card(node)
+      apply_xiaoge_vision_result=apply_xiaoge_vision_result,xiaoge_blindspot_vision=xiaoge_blindspot_vision,should_log_card_diagnostics=should_log_card_diagnostics)
+  from lateral_readiness_source import module as readiness_module
   exec(compile(ast.Module(body=[node],type_ignores=[]),str(ROOT/'openpilot/selfdrive/car/card.py'),'exec'),scope)
   import openpilot.selfdrive.pandad.pandad_api_impl as can
   can.time=clock
@@ -88,6 +91,9 @@ def trace(case: dict) -> list[dict]:
   runtime.last_actuators_output=car.CarControl.Actuators.new_message(); runtime.can_rcv_cum_timeout_counter=0
   runtime.v_cruise_helper=Tail(); runtime.is_metric=False; runtime.experimental_mode=False; runtime._fixture_settings_at=None
   runtime.rk=SimpleNamespace(remaining=0.); runtime.xiaoge_vision_result=None; runtime.xiaoge_vision_error_log_at_ns=0
+  runtime.xiaoge_blindspot_sources=(False,False,False,False)
+  runtime.xiaoge_blindspot_sources_published=None
+  runtime.xiaoge_blindspot_sources_published_ns=0
   runtime.runtime_diagnostics=SimpleNamespace(record=record)
   for name in ('recv_ns','prev_recv_ns','frames','loop_max_us','process_max_us','slow_loop','slow_process','can_timeouts'):
     setattr(runtime,'card_diag_'+name,0)
@@ -118,6 +124,8 @@ def decoded(frames: list[dict]) -> list[dict]:
         value=message.to_dict()
         if publication['topic']=='sendcan':
           for can in value['sendcan']: can['dat']=list(can['dat'])
+        if publication['topic']=='customReservedRawData1':
+          value['customReservedRawData1']=list(value['customReservedRawData1'])
         publication['event']=normalize(value)
     frame['diagnostics']=[list(value) for value in frame['diagnostics']]
   return frames

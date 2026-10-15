@@ -3,7 +3,7 @@ use crate::core::{Error, StepIo};
 use openpilot_logging::{
     log_site,
     record::{Level, Record},
-    Fields, Number,
+    Number, Value,
 };
 use openpilot_messaging::state::State;
 use std::time::Duration;
@@ -70,7 +70,9 @@ impl StepIo for NativeIo {
             values
                 .iter()
                 .map(|(key, value)| (key.to_string(), Number::Float(*value))),
-            Fields::new(),
+            [("can_backend".into(), Value::Text("rust".into()))]
+                .into_iter()
+                .collect(),
         )?;
         Ok(())
     }

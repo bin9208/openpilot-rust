@@ -40,6 +40,8 @@ impl Card {
             }
         }
         let mut state = message.get_root::<car_state::Builder>()?;
+        self.vision_sources =
+            xiaoge::record_sources(state.reborrow(), self.vision.as_ref(), subscribed);
         xiaoge::apply(state.reborrow(), self.vision.as_ref(), subscribed);
         if raw.is_empty() {
             self.can_timeouts = self.can_timeouts.checked_add(1).ok_or(Error::Numeric)?;
@@ -160,17 +162,25 @@ impl Card {
                 } else {
                     publication::event_time(io)?
                 };
-                let guarded = readiness::guard(
+                let reboot = self.settings.get_bool("ImpactDashcamReboot")?;
+                let mut guarded = readiness::guard(
                     &mut self.lateral_startup,
                     io.subscribers(),
                     message.get_root_as_reader::<car_state::Reader>()?,
                 )?;
+                if reboot {
+                    guarded = Some(readiness::reboot(
+                        input::control(io.subscribers())?,
+                        message.get_root_as_reader::<car_state::Reader>()?,
+                    )?);
+                }
                 let control = if let Some(message) = &guarded {
                     message
                         .get_root_as_reader::<openpilot_cereal::car_capnp::car_control::Reader>()?
                 } else {
                     input::control(io.subscribers())?
                 };
+                let applied_enabled = control.get_enabled();
                 let result = vehicle.apply(ApplyInput {
                     control,
                     now_ns,
@@ -198,7 +208,7 @@ impl Card {
                 for line in self.diagnostics.applied() {
                     io.warning(&line)?;
                 }
-                self.previous_enabled = input::control(io.subscribers())?.get_enabled();
+                self.previous_enabled = applied_enabled;
             }
         }
         self.initialized_previous = initialized;

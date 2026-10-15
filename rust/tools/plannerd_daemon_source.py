@@ -7,7 +7,7 @@ import types
 
 from card_runtime_source import load_binding
 from generate_selfdrive_alerts import load_source
-from plannerd_owner_loader import register_solvers
+from plannerd_owner_loader import inactive_signal_carrot, register_final_planners, register_solvers
 
 
 def main():
@@ -24,6 +24,9 @@ def main():
   events.Events = load_source('tici')['Events']
   sys.modules[events.__name__] = events
   register_solvers(args.source_native.resolve())
+  register_final_planners()
+  from openpilot.selfdrive.carrot import carrot_functions
+  carrot_functions.CarrotPlanner = inactive_signal_carrot(carrot_functions.CarrotPlanner)
   from openpilot.selfdrive.controls.plannerd import main as original_main
 
   original_main()

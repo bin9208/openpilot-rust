@@ -9115,9 +9115,20 @@
     {
       "path": "openpilot/selfdrive/car/card.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/card/src/core/step.rs",
+        "rust/crates/card/src/core/publication.rs",
+        "rust/crates/card/src/core/readiness.rs",
+        "rust/crates/card/src/xiaoge.rs"
+      ],
+      "evidence": [
+        "All changed Card owner hunks are accounted for, including 13 subscriptions, lateral readiness, speedcam context, split OEM/ONNX attribution, ordered 1-second/on-change metadata, impact-reboot inhibit and applied CC history.",
+        "Pinned source core comparison: 7 existing cases / 5,928 steps and 67 ordered byte-exact metadata publications. Existing actual IPC: 19 scenarios / 18 candidates, 80 measured frames each; SIGINT and Params drain pass.",
+        "Native diagnostics record can_backend=rust truthfully; final AGNOS package and user acceptance remain separate. See docs/naver/dev-md-delivery.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "c9a82478cdf5f313a2f5621b5e3e984192ded990a9eb70bdf5d57fa84dafca5e"
     },
     {
       "path": "openpilot/selfdrive/car/cruise.py",
@@ -10649,9 +10660,17 @@
     {
       "path": "openpilot/selfdrive/carrot/xiaoge_data.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/xiaoge/src/wire.rs",
+        "rust/crates/xiaoge/src/native/broadcast.rs"
+      ],
+      "evidence": [
+        "Changed TCP geometry/probability/std bounds and controlsState subscription/telemetry are ported; final SelfdriveState vCruise absence retains the source zero fallback.",
+        "Existing 19 real source/native live phases pass with ONNX, VisionIPC, TCP/Cereal, snapshots and shutdown. Config transitions wait for both exact source confidence values. See docs/naver/dev-md-delivery.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "4db7309b86731178e7bea057d0d02d8217622f27122dfb7814ba3c674244321e"
     },
     {
       "path": "openpilot/selfdrive/carrot_settings.json",

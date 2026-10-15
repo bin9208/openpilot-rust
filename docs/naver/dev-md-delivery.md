@@ -191,3 +191,62 @@ and 24,008 runtime frames, including 74 before-update failures and 13 numeric
 failure cases, with its existing comparison rules unchanged. Receipt:
 `card-final-toyota/result.json` in the same scratch root. No further native
 runtime edits were needed for either brand.
+
+
+## Remaining Card/RadarCAN CI chain and Card owner deltas
+
+Running the remaining existing CI chain exposed stale Card IPC references: the
+source owner and admission fixture still had nine subscriptions, versus the
+final thirteen. The source owner now uses the pinned Card/cruise/lateral-readiness
+and Toyota PCM helpers, with final Hyundai/Toyota/latest Tesla packages selected
+before CAN imports. The fixture publishes and validates all thirteen topics with
+the same strict immutable-identity admission checks; no comparison was relaxed.
+
+That corrected reference exposed actual missing Card owner hunks. Native Card
+now records OEM/ONNX split fields before merging blindspots, marks the split
+valid, and publishes the source metadata on changes or the one-second heartbeat
+before carState. The final ImpactDashcamReboot application boundary clears
+engagement and actuators, clears resume/override, and cancels active stock
+cruise. Its previous-enabled state retains the inhibited command, as the source
+does. Native runtime diagnostics now report truthful `can_backend=rust` at the
+existing source diagnostic boundary; the source oracle asserts its Python
+backend context separately from the numeric metrics. Existing subscriptions,
+lateral startup latch, speed-camera context and consumed-gas hooks cover the
+other direct Card.py changed hunks.
+
+Five native core tests and strict native Card all-target Clippy pass. The same
+seven core cases / 5,928 steps compare exactly against the full pinned owner
+methods, including 67 ordered metadata publications and reboot transitions
+inside the existing sixteen startup steps. All existing remaining Card brand
+references pass, as do 182 factory constructors and the 114-case CAN catalog.
+The 10,264 checksum cases retain their declared inherited vector failure, and
+the PSA checker retains its declared source-blocked boundary; neither result
+claims new platform support. The 39 admission/phase/caller tests pass.
+
+All nineteen existing pumped IPC scenarios (eighteen candidates) pass eighty
+exact measured frames each, with shutdown and asynchronous Params drain. The
+first two Body scenarios were additionally rerun after the final guard rebuild;
+all other scenarios started after that build. Final host ELF SHA-256:
+`b4c36decbbe420c101bcb9538c99b60e0efb5e82d000746f7222e5d1114eca2d`.
+The remaining RadarCAN chain passes 23 normal, five joined and fifteen lifecycle
+scenarios without further changes.
+
+Receipts in `.analysis/scratch/2026-10-16-dev-md-scope-excluded/`:
+`card-attribution-source-core-final/result.json`,
+`card-attribution-core-tests-final.log`, `card-attribution-clippy-final.log`,
+`card-attribution-ipc/pumped/result.json`, `card-attribution-final-body/result.json`,
+`card-remaining-*/result.json`, `card-remaining-admission-tests.log`, and
+`radarcan-remaining-ipc/result.json`. Card's production binary changed and must
+be rebuilt in the final AGNOS candidate; these host results do not replace the
+final source-matched ARM package or user device acceptance.
+
+The remaining planner daemon fixture now shares the same pinned owner modules:
+four real IPC runs (121 publications each), 13 source/native lifecycle cases and
+360 owner frames compare exactly. The final selfdrived failure checker passes
+all nine cases, treating malformed retired DisableDM bytes as ignored while
+retaining exact bounded output counts and every remaining fatal-input check.
+
+Toyota/Tesla reference extraction now explicitly uses the repository root when
+invoked from the workspace's rust directory, and rejects an empty source package.
+The exact previously failing workspace invocation regenerates all 2,697 ARS510
+actions successfully with verified source/provider hashes.

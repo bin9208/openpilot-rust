@@ -145,6 +145,25 @@ pub(super) fn guard(
     Ok(Some(message))
 }
 
+/// Final source application-boundary inhibit while an impact reboot is pending.
+pub(super) fn reboot(
+    control: car_control::Reader<'_>,
+    car: car_state::Reader<'_>,
+) -> Result<Message, Error> {
+    let mut message = Message::new_default();
+    message.set_root(control)?;
+    let mut control = message.get_root::<car_control::Builder>()?;
+    control.set_enabled(false);
+    control.set_lat_active(false);
+    control.set_long_active(false);
+    control.reborrow().init_actuators();
+    let mut cruise = control.get_cruise_control()?;
+    cruise.set_resume(false);
+    cruise.set_override(false);
+    cruise.set_cancel(car.get_cruise_state()?.get_enabled());
+    Ok(message)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -67,6 +67,7 @@ fn vehicle_write_is_enqueued_before_sendcan_and_drained_on_shutdown() {
         [
             "publish:carParams",
             "publish:carOutput",
+            "publish:customReservedRawData1",
             "publish:carState",
             "put:ControlsReady",
             "put:ActivateCruiseAfterBrake",
@@ -101,6 +102,7 @@ fn vehicle_without_writes_keeps_existing_publication_order() {
         [
             "publish:carParams",
             "publish:carOutput",
+            "publish:customReservedRawData1",
             "publish:carState",
             "put:ControlsReady",
             "publish:sendcan"

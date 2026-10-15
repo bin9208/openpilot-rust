@@ -20,7 +20,7 @@ from card_runtime_source import load_binding
 from card_qa.runtime_inputs import Scenario, frames
 
 ROOT = Path(__file__).resolve().parents[2]
-SERVICES = ('pandaStates', 'carControl', 'onroadEvents', 'carrotMan', 'longitudinalPlan', 'radarState', 'modelV2', 'drivingModelData', 'customReservedRawData0')
+SERVICES = ('pandaStates', 'carControl', 'onroadEvents', 'carrotMan', 'longitudinalPlan', 'radarState', 'modelV2', 'drivingModelData', 'liveParameters', 'livePose', 'selfdriveState', 'lateralPlan', 'customReservedRawData0')
 OUTPUTS = ('carParams', 'carOutput', 'carState', 'sendcan')
 WARMUP = 250
 STEPS = WARMUP + 81

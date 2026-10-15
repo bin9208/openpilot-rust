@@ -45,7 +45,7 @@ impl Vehicle for Driver {
     }
     fn apply(&mut self, input: ApplyInput<'_>) -> Result<ApplyOutput, Error> {
         let cs = self.state.get_root_as_reader::<car_state::Reader>()?;
-        self.calls.push(json!({"call":"apply","now_ns":input.now_ns,"model":input.model.is_some(),"radar":input.radar.is_some(),"soft_hold":self.soft_hold,"enabled":input.control.get_enabled(),"lat_enabled":cs.get_lat_enabled(),"activate":cs.get_activate_cruise()}));
+        self.calls.push(json!({"call":"apply","now_ns":input.now_ns,"model":input.model.is_some(),"radar":input.radar.is_some(),"soft_hold":self.soft_hold,"enabled":input.control.get_enabled(),"lat_active":input.control.get_lat_active(),"long_active":input.control.get_long_active(),"cancel":input.control.get_cruise_control()?.get_cancel(),"resume":input.control.get_cruise_control()?.get_resume(),"override":input.control.get_cruise_control()?.get_override(),"lat_enabled":cs.get_lat_enabled(),"activate":cs.get_activate_cruise()}));
         let mut message = Builder::new_default();
         message.set_root(input.control.get_actuators()?)?;
         message
