@@ -29,3 +29,9 @@ fn missing_decimal_prefix_and_overflow_are_distinct_fatal_errors() {
         assert_eq!(integer(input), Err(IntegerError::Range));
     }
 }
+
+#[test]
+fn system_ready_chime_does_not_trigger_panda_beeper() {
+    use openpilot_cereal::car_capnp::car_control::h_u_d_control::AudibleAlert;
+    assert!(openpilot_beepd::Pattern::for_alert(u16::from(AudibleAlert::SystemReady)).is_none());
+}

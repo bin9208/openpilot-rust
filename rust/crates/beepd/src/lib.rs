@@ -114,7 +114,9 @@ impl Pattern {
             | ReverseGear => Some(Self::Dong),
             Audio1 | Audio2 | Audio3 | Audio4 | Audio5 | Audio6 | Audio7 | Audio8 | Audio9
             | Audio10 => Some(Self::Beep),
-            None | PromptRepeat | PromptDistracted | Nnff | RadarStationaryLead => Option::None,
+            None | PromptRepeat | PromptDistracted | Nnff | RadarStationaryLead | SystemReady => {
+                Option::None
+            }
         }
     }
     pub fn name(self) -> &'static str {

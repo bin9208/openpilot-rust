@@ -41,6 +41,7 @@ const SOUNDS: &[(u16, &str, Option<usize>)] = &[
     (32, "audio_9.wav", None),
     (33, "audio_10.wav", None),
     (35, "prompt.wav", Some(1)),
+    (37, "prompt.wav", Some(1)),
 ];
 pub struct Assets {
     pub root: PathBuf,

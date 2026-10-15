@@ -33,3 +33,31 @@ fn silent_buffer_retains_source_negative_volume_multiplication() {
         .iter()
         .all(|sample| sample.to_bits() == (-0_f32).to_bits()));
 }
+
+#[test]
+fn system_ready_plays_one_prompt_at_full_asset_gain() {
+    use openpilot_cereal::car_capnp::car_control::h_u_d_control::AudibleAlert;
+    use openpilot_logging::producer::Factory;
+    use openpilot_soundd::assets::Assets;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../openpilot/selfdrive/assets");
+    let mut logger = Factory::new("invalid://endpoint".into()).unwrap().logger();
+    let sounds = Assets {
+        root,
+        engage_volume: 0.25,
+        tizi: false,
+    }
+    .load("en", &mut logger)
+    .unwrap();
+    let ready = sounds
+        .iter()
+        .find(|sound| sound.alert == u16::from(AudibleAlert::SystemReady))
+        .expect("systemReady source mapping is prompt.wav");
+    let prompt = sounds
+        .iter()
+        .find(|sound| sound.alert == u16::from(AudibleAlert::Prompt))
+        .unwrap();
+    assert_eq!(ready.loops, Some(1));
+    assert!(!ready.samples.is_empty());
+    assert_eq!(ready.samples, prompt.samples);
+}

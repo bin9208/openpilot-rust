@@ -229,6 +229,11 @@ struct CarState {
   # blindspot sensors
   leftBlindspot @33 :Bool; # Is there something blocking the left lane change
   rightBlindspot @34 :Bool; # Is there something blocking the right lane change
+  leftBlindspotOem @95 :Bool; # vehicle BSD-only left source before ONNX merge
+  rightBlindspotOem @96 :Bool; # vehicle BSD-only right source before ONNX merge
+  leftBlindspotOnnx @97 :Bool; # ONNX BSD-only left source
+  rightBlindspotOnnx @98 :Bool; # ONNX BSD-only right source
+  blindspotSplitSourcesValid @99 :Bool; # split blindspot source fields are valid and should be trusted
 
   fuelGauge @41 :Float32; # battery or fuel tank level from 0.0 to 1.0
   charging @43 :Bool;
@@ -272,6 +277,22 @@ struct CarState {
   vehicleNaviSpeed @91 :Float32; # raw speed from the active stock-navigation CAN profile, kph
   vehicleNaviAvailable @92 :Bool; # stock-navigation 0x4BE has been observed during this drive
   radarInput @93 :RadarInput;
+  steeringTouch @94 :SteeringTouch;
+  leftBlinkerStalkCount @100 :UInt8;  # +1 (wrapping) on every left turn-signal lever press; the lamp-based leftBlinker cannot show a press while the lamp is already flashing
+  rightBlinkerStalkCount @101 :UInt8; # +1 (wrapping) on every right turn-signal lever press
+  blinkerLever @102 :UInt8;           # turn-signal lever position: 0 released, 1 one-touch (half) detent, 2 latched
+  blinkerLamp @103 :UInt8;            # turn-signal lamp right now (no hold): 0 dark, 1 left lit, 2 right lit
+
+  # Optional original vehicle receive signal. Separate from torque/override.
+  struct SteeringTouch {
+    available @0 :Bool;
+    valid @1 :Bool;
+    touched @2 :Bool;
+    sampleMonoTime @3 :UInt64;
+    rawStatus @4 :UInt8;
+    rawTouch1 @5 :UInt8;
+    rawTouch2 @6 :UInt8;
+  }
 
   # Bind independent radar decoding to the exact CAN batch and ego state used
   # by card. Empty batches still represent a control tick; receiveMonoTime is
@@ -360,6 +381,8 @@ struct RadarData @0x888ad6581cf0aacb {
   errors @3 :Error;
   points @1 :List(RadarPoint);
   radarTrackFlipped @4 :Bool; # frontRadar yRel/yvRel already inverted by RadarTrackFlip
+  displayPoints @5 :List(RadarPoint); # 제어 points와 분리한 전체 표시용 객체
+  hasDisplayData @6 :Bool; # 표시 스트림 지원 표지: 빈 목록·시작·오류에도 유지
 
   struct Error {
     canError @0 :Bool;
@@ -492,6 +515,8 @@ struct CarControl {
     naviEventSpeed @20: Int16;  # VW MEB cluster: 목표속도 kph (커브는 부호=방향: +우/-좌) -> ACC_Event_Wunschgeschw
     leadLimiting @21: Bool;     # VW MEB cluster: 앞차가 속도를 제한 중(xState lead) -> 앞차 하이라이트 우선
 
+    driverMonitoringAlert @22: UInt8;  # 0=none, 1=initial, 2=audible, 3=terminal; fresh enabled DM only
+
     # not used with the dash, TODO: separate structs for dash UI and device UI
     audibleAlert @5: AudibleAlert;
 
@@ -551,6 +576,7 @@ struct CarControl {
       nnff @34;
       radarCutin @35;
       radarStationaryLead @36;
+      systemReady @37;
     }
   }
 
