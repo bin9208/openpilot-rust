@@ -10,8 +10,9 @@
     "native_arm_helper": "dbcb525f590702fb6e18222ec65e30b1c3e5900292cfaf0d33258a7414a331ba",
     "qemu": "e4f8d99e9ff69c3cefffab71cee358ce2af1ecba1282d04c3eeb44ef76f5a71e",
     "loader": "142f02374792bf5f62293efc3500d472dbbe280dc658cc60480eff73ad46f33c",
-    "native_renderer_source": "22ac808379090a5f83c0b22a27aac9d5e118b54316f8c257f2b5880d5fca3ac3",
-    "native_compiler_source": "8d753323451227e4ea3bd152d73992e8acc2f4a7192c8374ef150247a047974b"
+    "native_renderer_source": "f21882ea1eb0586ff38a8b9a841504bc4f539e961d219fb463b2e0b56e5cab99",
+    "native_compiler_source": "8d753323451227e4ea3bd152d73992e8acc2f4a7192c8374ef150247a047974b",
+    "native_renderer_reduction_source": "df3e32f607ca9b99f410cd1a493509b364b336ac69e75cca6a96798f8bf92989"
   },
   "binary_bytes": 2144,
   "source_equal": true,

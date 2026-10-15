@@ -361,7 +361,13 @@ impl LoweredGraph {
 
 fn image_load(image: bool, value: ScalarExpr) -> ScalarExpr {
     if image {
-        cast(1, cast(10, value))
+        cast(
+            1,
+            ScalarExpr::StorageRound {
+                dtype: 10,
+                value: Box::new(value),
+            },
+        )
     } else {
         value
     }

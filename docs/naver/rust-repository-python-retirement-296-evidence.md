@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Twenty-three sources have locally verified replacements and migrated
-callers; 3,557 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Twenty-four sources have locally verified replacements and migrated
+callers; 3,556 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -59,7 +59,7 @@ up. Workflow callers migrated, and the old checker, source wrapper and Python
 process-probe tests were removed. The original runtime process module remains
 because other original-source comparisons still use it.
 
-After these integrations and the additions below, all 128 selected dev-tools
+After these integrations and the additions below, all 131 selected dev-tools
 tests passed together; all-target Clippy passed with warnings denied. The added
 logging-build, encoder-build, model-source and native architecture-test disk guards are asserted separately
 while preserving the exact arguments/hash of all 179 inherited ordinary guards
@@ -176,9 +176,12 @@ group cleanup. Independent review found no remaining issue in that file sink.
 
 The encoder source builder preserves all 17 C++ sources, generated schema/header
 inputs, explicit dependencies, output collisions, disk failures, raw compiler
-logs and the original 180-second timeout. Nineteen original cases additionally
+logs and the original 180-second timeout. Twenty-seven original cases additionally
 cover duplicate option last-value behavior, equals syntax, unique abbreviations,
-help ordering and parse exit code 2. Five native tests and strict Clippy pass.
+help ordering, Unicode decimal-number admission and parse exit code 2. Six native
+tests and strict Clippy pass. Review corrected superscript/circled-number
+admission and the original rejection of a trailing option terminator when no
+positional arguments are defined; observed original failures remain failures.
 Fresh original/native executables match SHA-256
 `126ed49990c66b0e93746578d5ec73f6ef582f3216e43641518cddc97fa1658a`.
 The orchestration explicitly selects the native builder and fingerprints its
@@ -197,6 +200,29 @@ queued connection. The original lifecycle assertion remains intact; the workflow
 now invokes the built native checker. This retires one embedded execution edge,
 not another source-file inventory entry. Independent review found no Important
 issue in this conversion.
+
+The Athena VisionIPC source builder now preserves all ten C++ sources, CXX as
+one executable, inherited output, lexical path behavior, overwrite/failure
+artifacts, original CLI forms/exit codes and the exact 26 GiB disk admission.
+Thirty independently executed original cases and two native tests pass. A fresh
+original/native build matches the entire executable SHA-256
+`ad6297d65986c9935923e6478691a8daf0c415646cd5da83e8350c6985887a25`,
+including stdout/stderr bytes. The real Python orchestrator was exercised with
+controlled subprocess boundaries: all 20 scenario names/order remain and only
+the builder selects the native binary. The original builder was removed; the
+remaining Athena comparisons still use Python. No peer/device/namespace was run.
+
+The portable, dependency-free `openpilot-service-tools` package replaces the ADB
+wrapper's embedded service-port generator. Exact 88-row output, eight FNV
+vectors and all eight original shell command/exit cases match without Python in
+PATH. The original process-substitution behavior still permits SSH after a
+producer failure. Sixteen native tests and strict Clippy pass, including Linux
+and macOS host selection, warm/offline toolchain reuse, pre-build disk guards,
+output separation, and combined missing-parent/symlink cache rejection before
+source mutation. A real Linux bootstrap built the current package and emitted
+88 byte-identical rows. macOS controls were simulated; real macOS execution is
+unverified. No actual ADB, SSH or device operation was performed. The shared
+Python service catalog remains because other callers still require it.
 
 Native release-file selection matches the unchanged original regular expressions,
 regular files, directory/dangling/loop symlinks and FIFO exclusion. A synthetic
@@ -262,6 +288,19 @@ conversion semantics. Independent review confirmed both fixes. Eight backend
 and six renderer tests plus strict all-target Clippy pass. The current renderer
 again produced the exact genuine 2,144-byte A630 Add binary. This validates the
 bounded preprocessing unit, not the full convolution/image/fusion compiler.
+
+The subsequent bounded CPU reduction/image-convolution unit passed all 115
+model-runtime tests and strict all-target Clippy. Twenty-eight original mean
+reductions and 14 small/pinned-weight convolution cases match exact bytes. The
+actual first driver convolution also matches all 2,764,800 output bytes, SHA-256
+`7110aa5f009b930ed61715b500c6f9c127803db7c8c1adc50a7e9a774c025e7b`.
+Explicit storage round trips, guarded padded loads, original accumulation order
+and explicit fused multiply-add preserve the inspected CPU:LLVM behavior.
+Generic/IMAGE MatMul products, nested/oversized reductions and GPU reduction
+scheduling remain rejected. Independent review found no concrete Important
+issue in this bounded unit; it does not establish arbitrary NaN-payload,
+cross-target or full-model equivalence. The genuine current A630 Add binary
+remains identical, with both renderer modules fingerprinted.
 
 Full compiled-model numeric parity remains unresolved. After preserving IMAGE
 half-storage/float32 accumulation semantics, the driver comparison still has

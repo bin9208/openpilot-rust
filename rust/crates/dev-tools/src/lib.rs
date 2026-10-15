@@ -1,4 +1,5 @@
 pub use openpilot_disk_space as disk_space;
+pub mod athena_vision_build;
 pub mod brotli_stage;
 pub mod filter_reference;
 pub mod media_validation;

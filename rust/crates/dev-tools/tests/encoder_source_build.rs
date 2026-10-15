@@ -237,10 +237,12 @@ fn original_success_prefix_resolution_and_failure_artifact_contracts() {
         if case["case"] == "services-path-collision" {
             assert!(output.join("cereal/services.h").is_dir());
         }
+        let run_cwd = std::env::current_dir().unwrap();
         let normalize = [
             (source.to_str().unwrap(), "$ROOT"),
             (output.to_str().unwrap(), "$OUTPUT"),
             (deps.to_str().unwrap(), "$DEPS"),
+            (run_cwd.to_str().unwrap(), "$RUN_CWD"),
         ];
         let expected: Vec<&Value> = case["commands"]
             .as_array()
@@ -443,5 +445,47 @@ fn original_argparse_help_abbreviation_and_missing_value_precedence() {
                 assert!(help.contains(flag), "{flag}");
             }
         }
+    }
+}
+#[test]
+fn original_unicode_option_values_and_terminator_exact_exit_codes() {
+    use std::process::Command;
+    let cases: Vec<Value> =
+        serde_json::from_slice(&fs::read(fixtures().join("original.json")).unwrap()).unwrap();
+    for case in cases.into_iter().filter(|case| {
+        ["superscript", "circled", "decimal", "terminator"]
+            .iter()
+            .any(|s| case["case"].as_str().unwrap().contains(s))
+    }) {
+        let temp = tempfile::tempdir().unwrap();
+        let output = temp.path().join("output");
+        let deps = temp.path().join("deps");
+        let source = root();
+        let real = [
+            ("$ROOT", source.to_str().unwrap()),
+            ("$OUTPUT", output.to_str().unwrap()),
+            ("$DEPS", deps.to_str().unwrap()),
+        ];
+        let args: Vec<String> = serde_json::from_value(replace(&case["args"], &real)).unwrap();
+        let commands = compiler_setup(temp.path());
+        let captured = Command::new(env!("CARGO_BIN_EXE_build-encoder-source"))
+            .args(args)
+            .current_dir(temp.path())
+            .env("PATH", commands)
+            .output()
+            .unwrap();
+        let expected = if case["error"].is_null() {
+            0
+        } else {
+            case["exit_code"].as_i64().unwrap_or(1) as i32
+        };
+        assert_eq!(
+            captured.status.code(),
+            Some(expected),
+            "{}: {}",
+            case["case"],
+            String::from_utf8_lossy(&captured.stderr)
+        );
+        assert_eq!(output.exists(), expected == 0, "{}", case["case"]);
     }
 }

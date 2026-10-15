@@ -337,3 +337,77 @@ fn preprocessing_renderer_admits_only_explicit_storage_and_arithmetic_types() {
         );
     }
 }
+
+#[test]
+fn cpu_reductions_reject_unsupported_nesting_work_and_storage_domains() {
+    let mut graph = LoweredGraph::default();
+    graph.plans.push(Plan {
+        ty: TensorType {
+            dtype: 1,
+            shape: vec![4],
+        },
+        expression: ScalarExpr::Input("a".into()),
+    });
+    let load = ScalarExpr::Load {
+        plan: 0,
+        index: IndexExpr::Reduction,
+    };
+    let reduction = |count, value| ScalarExpr::ReduceSum {
+        dtype: 1,
+        count,
+        value: Box::new(value),
+    };
+    graph.plans.push(Plan {
+        ty: TensorType {
+            dtype: 1,
+            shape: vec![1],
+        },
+        expression: reduction(0, load.clone()),
+    });
+    assert!(compiler_onnx::render::render_cpu_elementwise(&graph, 1, "empty").is_err());
+    graph.plans[1].expression = reduction(1_048_577, load.clone());
+    assert!(compiler_onnx::render::render_cpu_elementwise(&graph, 1, "large").is_err());
+    graph.plans[1].expression = reduction(4, reduction(4, load.clone()));
+    assert!(compiler_onnx::render::render_cpu_elementwise(&graph, 1, "nested").is_err());
+    graph.plans[1].expression = reduction(
+        4,
+        ScalarExpr::Binary {
+            kind: Binary::Mul,
+            dtype: 1,
+            left: Box::new(load.clone()),
+            right: Box::new(load),
+        },
+    );
+    assert!(
+        compiler_onnx::render::render_cpu_elementwise(&graph, 1, "unprofiled_product").is_err()
+    );
+    let image_load = ScalarExpr::StorageRound {
+        dtype: 10,
+        value: Box::new(ScalarExpr::Load {
+            plan: 0,
+            index: IndexExpr::Reduction,
+        }),
+    };
+    graph.plans[1].expression = reduction(
+        4,
+        ScalarExpr::Binary {
+            kind: Binary::Mul,
+            dtype: 1,
+            left: Box::new(image_load.clone()),
+            right: Box::new(image_load),
+        },
+    );
+    assert!(
+        compiler_onnx::render::render_cpu_elementwise(&graph, 1, "unprofiled_image_dot").is_err()
+    );
+    graph.plans[1].expression = ScalarExpr::PaddedLoad {
+        plan: 0,
+        coordinates: vec![(IndexExpr::Index, 0, 5)],
+    };
+    assert!(compiler_onnx::render::render_cpu_elementwise(&graph, 1, "invalid_crop").is_err());
+    graph.plans[1].expression = ScalarExpr::PaddedLoad {
+        plan: 0,
+        coordinates: vec![(IndexExpr::Constant(i64::MAX as i128 + 1), 0, 4)],
+    };
+    assert!(compiler_onnx::render::render_cpu_elementwise(&graph, 1, "large_index").is_err());
+}

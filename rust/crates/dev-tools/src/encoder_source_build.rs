@@ -55,31 +55,22 @@ struct Options {
     help: bool,
 }
 fn is_option(value: &str) -> bool {
-    if value == "-" || !value.starts_with('-') {
-        return false;
-    }
-    // argparse accepts negative-number path values without requiring '='.
-    let negative = value.strip_prefix('-').is_some_and(|number| {
-        if let Some((whole, fraction)) = number.split_once('.') {
-            !fraction.is_empty()
-                && whole.chars().all(char::is_numeric)
-                && fraction.chars().all(char::is_numeric)
-        } else {
-            !number.is_empty() && number.chars().all(char::is_numeric)
-        }
+    static NEGATIVE_NUMBER: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    // Match argparse's decimal Nd digits, not the broader Unicode Number class.
+    let negative = NEGATIVE_NUMBER.get_or_init(|| {
+        regex::Regex::new(r"^-\d+$|^-\d*\.\d+$").expect("fixed argparse negative-number pattern")
     });
-    !negative
+    value != "-" && value.starts_with('-') && !negative.is_match(value)
 }
+
 impl Options {
     fn parse(args: &[String]) -> Result<Self> {
         let mut values = BTreeMap::new();
         let mut at = 0;
         while at < args.len() {
             if args[at] == "--" {
-                if at + 1 < args.len() {
-                    return Err("unexpected positional encoder builder argument".into());
-                }
-                break;
+                // With no positional actions, argparse rejects even a trailing terminator.
+                return Err("unexpected positional encoder builder argument".into());
             }
             let (name, inline) = args[at]
                 .split_once('=')

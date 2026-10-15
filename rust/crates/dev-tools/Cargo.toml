@@ -13,6 +13,10 @@ name = "build-encoder-source"
 path = "src/bin/build_encoder_source.rs"
 
 [[bin]]
+name = "build-athena-vision-peer"
+path = "src/bin/build_athena_vision_peer.rs"
+
+[[bin]]
 name = "check-ui-updater-handshake"
 path = "src/bin/check_ui_updater_handshake.rs"
 

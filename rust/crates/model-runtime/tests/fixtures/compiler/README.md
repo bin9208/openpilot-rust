@@ -34,3 +34,22 @@ The original runner realizes each node separately to retain observable storage
 rounding. Its backend flags and source hashes are recorded in the fixture.
 These preprocessing comparisons do not establish full model or fused IMAGE
 convolution equivalence; the full-driver numerical failure remains open.
+
+`original-reduction-schedule.json` retains 28 optimized CPU:LLVM ReduceMean
+programs, 14 small/pinned-weight IMAGE convolution programs, and the pinned
+actual driver model's first padded convolution. Generated LLVM source and linear
+UOps describe original loop ranges, accumulator/register layout, reduction order
+and arithmetic contract flags; machine FMA instructions corroborate compiled
+fusion. These are independent fixture data, never native compiler inputs.
+The native backend compares exact output bytes for all small cases and all
+2,764,800 bytes of the actual first convolution by SHA256. Deterministic inputs,
+original source/host feature identities and the capture recipe are included.
+
+CPU convolution rendering uses explicit IMAGE half storage round trips, guarded
+padded loads, sequential per-output f32 FMA reductions and a final separate bias
+Add, matching this observed original target. Standard native libm supplies fmaf
+when the host compiler requires it. CPU reductions reject empty/nested/excessive
+work and unprofiled product reductions (including IMAGE MatMul); GPU reduction,
+image packing, general fusion and full model parity remain pending. Bias is
+loaded early in the original kernel but accumulators start at zero; it is not
+seeded into the reduction. No Python source or caller is removed by this unit.

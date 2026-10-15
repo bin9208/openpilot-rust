@@ -1457,7 +1457,7 @@ rust/tools/bluetooth_gesture_cases.py	c526bf0d1d1aa7a018224509fb68443b008fd420	p
 rust/tools/bluetooth_input_source.py	1922c2d0b8e1f2a4a417065f77e29641dc23f690	pending	-
 rust/tools/bluetooth_sudo_fixture.py	9002b50955f374ce1db55810a6a89390d449e494	pending	-
 rust/tools/bootlog_snapshot_source.py	071111d1b1b1b16edb03e0ad3ff5e1d397be7023	pending	-
-rust/tools/build_athena_vision_peer.py	c8de481bfd00a06514d261d2edc5796336cba21a	pending	-
+rust/tools/build_athena_vision_peer.py	c8de481bfd00a06514d261d2edc5796336cba21a	replaced-local	rust/crates/dev-tools/src/athena_vision_build.rs
 rust/tools/build_bootlog_native.py	ced69c90957ec773bbdbd153bf2ce768bd724318	replaced-local	rust/crates/dev-tools/src/logging_oracle_build.rs
 rust/tools/build_bridge_reference.py	402efde29dceac218e618441d215eaccb83ac439	replaced-local	rust/crates/dev-tools/src/bridge_source_build.rs
 rust/tools/build_encoder_source.py	aabfa66e2dd67a5c2d71442007763fa511020d5e	replaced-local	rust/crates/dev-tools/src/encoder_source_build.rs

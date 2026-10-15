@@ -73,6 +73,12 @@ pub enum ScalarExpr {
         dtype: u32,
         value: Box<Self>,
     },
+    /// An observable materialized storage conversion, unlike a target's
+    /// emulated arithmetic cast. Used by original IMAGE input/weight staging.
+    StorageRound {
+        dtype: u32,
+        value: Box<Self>,
+    },
     Binary {
         kind: Binary,
         dtype: u32,
@@ -978,7 +984,9 @@ fn eval_at(
                     .ok_or("indirect load outside storage")?,
             )
         }
-        ScalarExpr::Cast { dtype, value } => eval_at(value, index, values, reduction)?.cast(*dtype),
+        ScalarExpr::Cast { dtype, value } | ScalarExpr::StorageRound { dtype, value } => {
+            eval_at(value, index, values, reduction)?.cast(*dtype)
+        }
         ScalarExpr::Binary {
             kind,
             dtype,

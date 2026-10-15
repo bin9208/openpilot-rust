@@ -1,6 +1,7 @@
-//! Bounded OpenCL renderer for float32/float16 elementwise preprocessing.
+//! Bounded OpenCL preprocessing renderer and explicit CPU reduction renderer.
 //! This is a bounded compiler primitive, not a complete graph backend. Image
-//! packing, reductions and fused scheduling must be implemented separately.
+//! packing, GPU reductions and fused scheduling remain separate pending work.
+mod reduction;
 use super::{
     lower::{IndexExpr, LoweredGraph, ScalarExpr},
     scalar::Binary,
@@ -19,6 +20,8 @@ struct Renderer<'a> {
     inputs: Vec<usize>,
     cpu_emulated_half: bool,
     preserve_half_storage: bool,
+    reduction: Option<(String, usize)>,
+    statements: Vec<String>,
 }
 fn elements(shape: &[usize]) -> Result<usize, String> {
     shape.iter().try_fold(1usize, |n, v| {
@@ -67,7 +70,11 @@ impl Renderer<'_> {
         let result = match value {
             IndexExpr::Index => ("i".into(), 0, (self.count - 1) as i128),
             IndexExpr::Reduction => {
-                return Err("elementwise reduction index rendering not implemented".into())
+                let (name, count) = self
+                    .reduction
+                    .as_ref()
+                    .ok_or("reduction index outside a reduction")?;
+                (name.clone(), 0, (*count - 1) as i128)
             }
             IndexExpr::Constant(v) => {
                 let text = if *v == i64::MIN as i128 {
@@ -153,6 +160,22 @@ impl Renderer<'_> {
                     },
                 )
             }
+            ScalarExpr::StorageRound { dtype: 10, value } => {
+                let value = self.expression(value)?;
+                if self.cpu_emulated_half {
+                    Ok(format!(
+                        "native_half_load(native_half_store((float)({value})))"
+                    ))
+                } else {
+                    rounded(10, value)
+                }
+            }
+            ScalarExpr::ReduceSum {
+                dtype: 1,
+                count,
+                value,
+            } => self.reduce_sum(*count, value),
+            ScalarExpr::PaddedLoad { plan, coordinates } => self.padded_load(*plan, coordinates),
             ScalarExpr::FloatLiteral { dtype, value } if matches!(dtype, 1 | 10) => {
                 self.round(*dtype, float(*value)?)
             }
@@ -194,6 +217,13 @@ impl Renderer<'_> {
                         }
                         // Original late FDIV rewrite, after half ALU emulation.
                         let a = self.expression(left)?;
+                        if let ScalarExpr::Literal(constant) = value.as_ref() {
+                            let number = constant.float()? as f32;
+                            let reciprocal = 1.0f32 / number;
+                            if reciprocal.is_finite() {
+                                return Ok(format!("({a}*{})", float(reciprocal as f64)?));
+                            }
+                        }
                         let b = self.expression(value)?;
                         return Ok(format!("((float)({a})/(float)({b}))"));
                     }
@@ -289,6 +319,8 @@ fn render(
         inputs: Vec::new(),
         cpu_emulated_half,
         preserve_half_storage,
+        reduction: None,
+        statements: Vec::new(),
     };
     let mut expression = renderer.expression(&plan.expression)?;
     // Only the outermost arithmetic parentheses are redundant in the store.
@@ -319,7 +351,11 @@ fn render(
             .inputs
             .iter()
             .any(|&id| graph.plans[id].ty.dtype == 10)
-        || expression.contains("half");
+        || expression.contains("half")
+        || renderer
+            .statements
+            .iter()
+            .any(|statement| statement.contains("half"));
     let header = if cpu_emulated_half && needs_half {
         CPU_HALF
     } else if needs_half {
@@ -328,8 +364,8 @@ fn render(
         ""
     };
     let source = format!(
-        "{header}__kernel void {function}({}) {{ int i=get_global_id(0); out[i]={expression}; }}\n",
-        arguments.join(", ")
+        "{header}__kernel void {function}({}) {{ int i=get_global_id(0); {}out[i]={expression}; }}\n",
+        arguments.join(", "), renderer.statements.join(" ")
     );
     Ok(Kernel {
         function: function.into(),

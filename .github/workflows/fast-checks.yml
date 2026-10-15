@@ -45,7 +45,8 @@ jobs:
             --test panda_oracle_build --test upstream_sync --test native_build_closure --test updated_process_check \
             --test native_logging_build --test release_files --test logger_identifier_check --test qa_process \
             --test logging_oracle_build --test path_resolve --test bridge_source_build --test jpeg_sanitizers_check \
-            --test ci_native_staging --test encoder_source_build --test ui_updater_handshake
+            --test ci_native_staging --test encoder_source_build --test ui_updater_handshake --test athena_vision_build
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked
       - name: Fast navigation regressions
         run: |
           python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/selfdrive/carrot/tests -q \

@@ -486,6 +486,7 @@ pub fn compile_onnx(
     ]
     .into_iter()
     .chain(object_paths.iter().map(|v| v.as_os_str().to_owned()))
+    .chain([OsString::from("-lm")])
     .collect::<Vec<_>>();
     command(options, &args, temporary.path(), &library, 512 << 20)?;
     let library = read_bounded(&library, 512 << 20)?;

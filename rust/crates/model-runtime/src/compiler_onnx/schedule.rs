@@ -26,6 +26,7 @@ fn dependencies(expression: &ScalarExpr, ids: &mut Vec<usize>) {
             }
         }
         ScalarExpr::Cast { value, .. }
+        | ScalarExpr::StorageRound { value, .. }
         | ScalarExpr::Reciprocal { value, .. }
         | ScalarExpr::Sqrt { value, .. }
         | ScalarExpr::Exp2 { value, .. }

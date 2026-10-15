@@ -3669,6 +3669,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-service-tools"
+version = "0.1.0"
+
+[[package]]
 name = "openpilot-soundd"
 version = "0.1.0"
 dependencies = [

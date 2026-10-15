@@ -213,7 +213,7 @@ fn image_load(image: bool, value: ScalarExpr) -> ScalarExpr {
     if image {
         ScalarExpr::Cast {
             dtype: 1,
-            value: Box::new(ScalarExpr::Cast {
+            value: Box::new(ScalarExpr::StorageRound {
                 dtype: 10,
                 value: Box::new(value),
             }),
