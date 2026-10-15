@@ -1,5 +1,22 @@
 # Independent Rust port repository (2026-09-29)
 
+## dev-md upstream port isolation (2026-10-15, issue #338)
+
+- `dev-md` starts at dev `b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a`.
+  The user expressly forbids integrating any work from this track into `dev`.
+  This overrides the ordinary issue-branch -> dev routing for this track only.
+  Keep changes on `dev-md`; any supporting PR must target `dev-md`, never `dev`.
+- Port final behavior from `ajouatom/openpilot:carrot-wip`, pinned initially to
+  `e8e152dbcfd9574a1791ed12026d1880e87689b3`. Do not merge/cherry-pick the
+  original runtime wholesale. Preserve Rust-owned runtime and current fixes.
+  Record each omitted optimization with actual native-equivalence evidence.
+- Normal operation must be confirmed by the user before considering promotion
+  to `main`. This request does not authorize a main merge or device deployment.
+  Stable-dev work under #296 remains separate; its earlier device authorization
+  does not authorize testing this new candidate.
+- Track source coverage and pending work in `rust/upstream/carrot-wip.json`
+  and `docs/naver/dev-md-*`. An inventory or partial port is not completion.
+
 - On 2026-10-14 the user selected Astra for the parent agent and explicitly
   required GPT-6.1 Sol for all separately launched sub-agents. Specify
   `gpt-6.1-sol` when delegating; hand off prior agents rather than silently

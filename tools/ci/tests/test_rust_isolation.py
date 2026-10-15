@@ -295,8 +295,8 @@ class RustIsolationTests(unittest.TestCase):
 
     def test_rust_checks_cover_protected_pushes_and_prs(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
-        self.assertEqual(set(data['on']['push']['branches']), {'dev', 'main'})
-        self.assertEqual(set(data['on']['pull_request']['branches']), {'dev', 'main'})
+        self.assertEqual(set(data['on']['push']['branches']), {'dev', 'dev-md', 'main'})
+        self.assertEqual(set(data['on']['pull_request']['branches']), {'dev', 'dev-md', 'main'})
         for event in ['push', 'pull_request']:
             self.assertNotIn('paths', data['on'][event])
             self.assertNotIn('paths-ignore', data['on'][event])

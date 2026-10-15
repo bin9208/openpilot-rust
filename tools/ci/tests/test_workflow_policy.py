@@ -1,5 +1,7 @@
 """Regression guard for required-check routing and fail-closed aggregation."""
 from pathlib import Path
+import os
+import subprocess
 import unittest
 
 import yaml
@@ -15,7 +17,7 @@ class WorkflowPolicyTests(unittest.TestCase):
   def test_fast_checks_cover_all_branch_pushes_and_protected_prs(self):
     events = workflow('fast-checks.yml')['on']
     self.assertEqual(events['push']['branches'], ['**'])
-    self.assertEqual(set(events['pull_request']['branches']), {'dev', 'main'})
+    self.assertEqual(set(events['pull_request']['branches']), {'dev', 'dev-md', 'main'})
     for event in ('push', 'pull_request'):
       self.assertNotIn('paths', events[event])
       self.assertNotIn('paths-ignore', events[event])
@@ -23,7 +25,7 @@ class WorkflowPolicyTests(unittest.TestCase):
   def test_integration_runs_before_and_after_merge_without_path_skips(self):
     spec = workflow('integration.yml')
     for event in ('push', 'pull_request'):
-      self.assertEqual(spec['on'][event], {'branches': ['dev', 'main']})
+      self.assertEqual(spec['on'][event], {'branches': ['dev', 'dev-md', 'main']})
     self.assertEqual(spec['jobs']['build']['with']['run_number'], '1')
     gate = spec['jobs']['gate']
     self.assertEqual(set(gate['needs']), {'build', 'navigation', 'apk', 'jetlink'})
@@ -39,8 +41,19 @@ class WorkflowPolicyTests(unittest.TestCase):
 
   def test_documentation_check_runs_on_protected_branch_pushes(self):
     events = workflow('user-docs.yaml')['on']
-    self.assertTrue({'main', 'dev'}.issubset(events['push']['branches']))
+    self.assertTrue({'main', 'dev', 'dev-md'}.issubset(events['push']['branches']))
     self.assertIn('pull_request', events)
+
+  def test_dev_md_fast_gate_rejects_dev_target_but_allows_candidate_validation(self):
+    steps = workflow('fast-checks.yml')['jobs']['fast']['steps']
+    gate = next(step for step in steps if step.get('name') == 'Keep dev-md changes out of dev')
+    for target, expected in [('dev', 1), ('dev-md', 0), ('main', 0), ('codex/feat-338-test', 0)]:
+      with self.subTest(target=target):
+        result = subprocess.run(['bash', '-eu', '-c', gate['run']],
+                                env={**os.environ, 'TARGET_BRANCH': target},
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, expected, result.stderr)
+    self.assertEqual(gate['env']['TARGET_BRANCH'], '${{ github.base_ref || github.ref_name }}')
 
 
 if __name__ == '__main__':

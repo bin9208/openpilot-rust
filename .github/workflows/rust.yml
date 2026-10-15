@@ -1,9 +1,9 @@
 name: Rust port
 on:
   push:
-    branches: [dev, main]
+    branches: [dev, dev-md, main]
   pull_request:
-    branches: [dev, main]
+    branches: [dev, dev-md, main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -2936,7 +2936,7 @@ jobs:
         run: cargo +nightly-2026-09-29 test -p openpilot-model-runtime --test cpu --locked -Zbuild-std --target x86_64-unknown-linux-gnu
   arm64:
     name: rust aarch64 build
-    if: github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
+    if: github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/dev-md' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
