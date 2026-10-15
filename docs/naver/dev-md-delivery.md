@@ -287,3 +287,15 @@ The 1,178,558,449-byte archive has SHA-256
 Receipt: `.analysis/scratch/2026-10-16-dev-md-package/install-proof-375a.json`.
 Publication remains held until the reference repairs have their own exact-source
 CI results and rebuilt package; this earlier package is not relabelled.
+
+The startup CI's owned package copied seventeen debug providers. Its unchanged
+20-second lifecycle deadline also included authenticating 602,543,128 bytes of
+mostly debug data, repeatedly expiring before model/manager startup on CI.
+Captured CI executables with only debug sections removed retain identical
+`.text` hashes and reduce that package to 38,150,040 bytes. Package verification
+on the same host changes from 13.0667 to 0.8144 seconds, and all fourteen original
+bootstrap scenarios pass with the unchanged checker and deadline. The startup
+job now sets `CARGO_PROFILE_DEV_DEBUG=0`; runtime code, package authentication,
+assertions and all timeouts remain unchanged. Evidence is under
+`startup375a-no-debug/` and `startup375a-no-debug-bootstrap.log` in the delivery
+scratch directory. This CI build-profile repair does not convert any tool.
