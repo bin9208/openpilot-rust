@@ -233,6 +233,27 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
             unsupported_views.insert(id);
         }
     }
+    // Mixed Concat proof covers physical/virtual half storage, not inverse
+    // IMAGE matrix movement identities. Keep half operand reuse fenced even
+    // though the ordinary f32 Concat PAD barrier is independently established.
+    for node in model.graph.nodes.iter().filter(|node| node.op == "Concat") {
+        if !node
+            .outputs
+            .iter()
+            .filter_map(|name| graph.names.get(name))
+            .any(|id| live.contains(id))
+        {
+            continue;
+        }
+        if node
+            .inputs
+            .iter()
+            .filter_map(|name| graph.names.get(name))
+            .any(|id| graph.plans[*id].ty.dtype == 10 && unsupported_views.contains(id))
+        {
+            return Err("CPU IMAGE mixed half Concat operand alias is not implemented".into());
+        }
+    }
     for (id, plan) in graph.plans.iter().enumerate() {
         if live.contains(&id) && views[id].is_none() && !concat_barriers.contains(&id) {
             let mut probe = plan.expression.clone();
@@ -248,6 +269,132 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
         if views[id].is_none() && !concat_barriers.contains(&id) {
             rewrite(&mut plan.expression, &aliases, false);
         }
+    }
+    Ok(())
+}
+
+/// Fence the independently observed CPU Conv/Gelu/Mean fusion discrepancy.
+/// A separately materialized Gelu output has its own verified mean contract;
+/// otherwise an observable f32 path must cross explicit storage conversion.
+/// This is conservative admission, not an implementation of the fused schedule
+/// or an analytic proof that quantization masks differences for every input.
+pub fn admit_cpu_observable_fusion(graph: &LoweredGraph, model: &Model) -> Result<(), String> {
+    let mut held = graph.outputs.values().copied().collect::<BTreeSet<_>>();
+    for id in (0..graph.plans.len()).rev() {
+        if held.contains(&id) {
+            if let Some(parent) = view_parent(graph, id) {
+                held.insert(parent);
+            }
+        }
+    }
+    let convs = model
+        .graph
+        .nodes
+        .iter()
+        .filter(|node| node.op == "Conv")
+        .flat_map(|node| node.outputs.iter())
+        .filter_map(|name| graph.names.get(name))
+        .copied()
+        .collect::<BTreeSet<_>>();
+    // Original symbolic passes erase identity ALU as well as static views.
+    // Search unquantized scalar ancestry rather than requiring adjacent source
+    // operator spellings; real interposed f32 ALU is likewise not proved fused.
+    let unproved_gelus = model
+        .graph
+        .nodes
+        .iter()
+        .filter(|node| node.op == "Gelu")
+        .filter(|node| {
+            node.inputs
+                .iter()
+                .filter_map(|name| graph.names.get(name))
+                .any(|id| plan(*id, graph, &convs, &mut BTreeSet::new()))
+        })
+        .flat_map(|node| node.outputs.iter())
+        .filter_map(|name| graph.names.get(name))
+        .filter(|id| graph.plans[**id].ty.dtype == 1 && !held.contains(id))
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let risky = model
+        .graph
+        .nodes
+        .iter()
+        .filter(|node| node.op == "ReduceMean")
+        .filter(|node| {
+            node.inputs
+                .iter()
+                .filter_map(|name| graph.names.get(name))
+                .any(|id| plan(*id, graph, &unproved_gelus, &mut BTreeSet::new()))
+        })
+        .flat_map(|node| node.outputs.iter())
+        .filter_map(|name| graph.names.get(name))
+        .filter(|id| graph.plans[**id].ty.dtype == 1)
+        .copied()
+        .collect::<BTreeSet<_>>();
+    fn plan(
+        id: usize,
+        graph: &LoweredGraph,
+        risky: &BTreeSet<usize>,
+        seen: &mut BTreeSet<usize>,
+    ) -> bool {
+        if risky.contains(&id) {
+            return true;
+        }
+        if graph.plans[id].ty.dtype == 10 || !seen.insert(id) {
+            return false;
+        }
+        expression(&graph.plans[id].expression, graph, risky, seen)
+    }
+    fn expression(
+        value: &ScalarExpr,
+        graph: &LoweredGraph,
+        risky: &BTreeSet<usize>,
+        seen: &mut BTreeSet<usize>,
+    ) -> bool {
+        match value {
+            ScalarExpr::Load { plan: id, .. } | ScalarExpr::PaddedLoad { plan: id, .. } => {
+                plan(*id, graph, risky, seen)
+            }
+            ScalarExpr::GatherLoad { plan: id, axes, .. } => {
+                plan(*id, graph, risky, seen)
+                    || axes
+                        .iter()
+                        .any(|(e, _, _)| expression(e, graph, risky, seen))
+            }
+            ScalarExpr::StorageRound { dtype: 10, .. } => false,
+            ScalarExpr::Cast { value, .. }
+            | ScalarExpr::StorageRound { value, .. }
+            | ScalarExpr::Reciprocal { value, .. }
+            | ScalarExpr::Sqrt { value, .. }
+            | ScalarExpr::Exp2 { value, .. }
+            | ScalarExpr::Sign { value, .. }
+            | ScalarExpr::Trunc { value, .. }
+            | ScalarExpr::ReduceSum { value, .. }
+            | ScalarExpr::ReduceMax { value, .. }
+            | ScalarExpr::GreaterZero(value)
+            | ScalarExpr::BoolNot(value) => expression(value, graph, risky, seen),
+            ScalarExpr::Binary { left, right, .. } => {
+                expression(left, graph, risky, seen) || expression(right, graph, risky, seen)
+            }
+            ScalarExpr::MulAcc { a, b, c, .. } => {
+                [a, b, c].iter().any(|v| expression(v, graph, risky, seen))
+            }
+            ScalarExpr::Select { condition, yes, no } => [condition, yes, no]
+                .iter()
+                .any(|v| expression(v, graph, risky, seen)),
+            ScalarExpr::Input(_)
+            | ScalarExpr::Constant(_)
+            | ScalarExpr::Literal(_)
+            | ScalarExpr::FloatLiteral { .. }
+            | ScalarExpr::IndexLess { .. } => false,
+        }
+    }
+    if graph
+        .outputs
+        .values()
+        .any(|id| graph.plans[*id].ty.dtype == 1 && plan(*id, graph, &risky, &mut BTreeSet::new()))
+    {
+        return Err("CPU observable Conv/Gelu/ReduceMean fusion is not implemented".into());
     }
     Ok(())
 }

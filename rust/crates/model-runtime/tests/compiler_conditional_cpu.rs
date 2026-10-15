@@ -31,7 +31,7 @@ fn run(case: &serde_json::Value, memory: bool) {
         &path,
         &format!("{:x}", Sha256::digest(&bytes)),
         &CompileOptions {
-            offline_bindings: true,
+            offline_bindings: case["offline_bindings"].as_bool().unwrap_or(true),
             memory_planning: memory,
             ..CompileOptions::default()
         },
@@ -290,16 +290,28 @@ fn actual_prefix_source(case: &serde_json::Value) -> Vec<u8> {
     bytes
 }
 
-#[test]
-fn actual_driver_true_prefix_relu_matches_independent_original_export() {
-    let f = fixture();
-    let c = &f["actual_prefix100"];
+fn actual_prefix_output(c: &serde_json::Value) -> Vec<u8> {
     let temp = tempfile::tempdir().unwrap();
-    let bytes = actual_prefix_source(c);
+    let bytes = if c["whole_model"].as_bool() == Some(true) {
+        let directory = option_env!("CARGO_MANIFEST_DIR").unwrap_or("rust/crates/model-runtime");
+        let bytes = fs::read(
+            std::path::Path::new(directory)
+                .join("../../../openpilot/selfdrive/modeld/models")
+                .join(c["source_model"].as_str().unwrap()),
+        )
+        .unwrap();
+        assert_eq!(
+            format!("{:x}", Sha256::digest(&bytes)),
+            c["source_model_sha256"].as_str().unwrap()
+        );
+        bytes
+    } else {
+        actual_prefix_source(c)
+    };
     let path = temp.path().join("model.onnx");
     fs::write(&path, &bytes).unwrap();
     let dest = temp.path().join("bundle");
-    compile_onnx(
+    let compilation = compile_onnx(
         &path,
         &format!("{:x}", Sha256::digest(&bytes)),
         &CompileOptions {
@@ -310,13 +322,28 @@ fn actual_driver_true_prefix_relu_matches_independent_original_export() {
     )
     .unwrap();
     let mut model = unsafe { CpuModel::load(&dest) }.unwrap();
-    model
-        .write_input("input_img", &(0u8..=255).collect::<Vec<_>>().repeat(5400))
-        .unwrap();
+    for input in &compilation.graph.inputs {
+        let bytes = match input.name.as_str() {
+            "input_img" => (0u8..=255).collect::<Vec<_>>().repeat(5400),
+            "calib" => [1.0f32 + 2f32.powi(-11), -0.0, 0.3]
+                .into_iter()
+                .flat_map(f32::to_le_bytes)
+                .collect(),
+            _ => panic!("unknown input"),
+        };
+        model.write_input(&input.name, &bytes).unwrap();
+    }
     model.run();
     let name = c["output_name"].as_str().unwrap();
     let mut actual = vec![0; model.output_size(name).unwrap()];
     model.read_output(name, &mut actual).unwrap();
+    actual
+}
+#[test]
+fn actual_driver_true_prefix_relu_matches_independent_original_export() {
+    let f = fixture();
+    let c = &f["actual_prefix100"];
+    let actual = actual_prefix_output(c);
     assert_eq!(
         actual.len() as u64,
         c["original"]["bytes"].as_u64().unwrap()
@@ -327,23 +354,217 @@ fn actual_driver_true_prefix_relu_matches_independent_original_export() {
     );
 }
 #[test]
-fn actual_mixed_logical_half_concat_prefix_rejects_before_publication() {
+fn actual_mixed_concat_prefix_matches_original_true_float_export() {
     let f = fixture();
     let c = &f["actual_prefix98"];
-    let temp = tempfile::tempdir().unwrap();
-    let bytes = actual_prefix_source(c);
-    let path = temp.path().join("model.onnx");
-    fs::write(&path, &bytes).unwrap();
-    let dest = temp.path().join("bundle");
-    let result = compile_onnx(
-        &path,
-        &format!("{:x}", Sha256::digest(&bytes)),
-        &CompileOptions {
-            offline_bindings: true,
-            ..CompileOptions::default()
-        },
-        &dest,
+    let actual = actual_prefix_output(c);
+    assert_eq!(
+        actual.len() as u64,
+        c["original"]["bytes"].as_u64().unwrap()
     );
-    assert!(result.err().unwrap().contains("logical float32"));
-    assert!(!dest.exists());
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&actual)),
+        c["original"]["sha256"].as_str().unwrap()
+    );
+}
+#[test]
+fn original_mixed_concat_preserves_virtual_and_physical_half_storage_boundaries() {
+    let f: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-mixed-conditional-cpu.json"
+    ))
+    .unwrap();
+    for case in f["cases"].as_array().unwrap() {
+        for memory in [false, true] {
+            run(case, memory);
+        }
+    }
+}
+
+#[test]
+fn unproved_half_matrix_operand_aliases_stay_rejected_before_publication() {
+    let f: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-mixed-conditional-cpu.json"
+    ))
+    .unwrap();
+    for case in f["unproved_matrix_aliases"].as_array().unwrap() {
+        let temp = tempfile::tempdir().unwrap();
+        let bytes = decode(case["onnx_hex"].as_str().unwrap());
+        let path = temp.path().join("model.onnx");
+        fs::write(&path, &bytes).unwrap();
+        let dest = temp.path().join("bundle");
+        let result = compile_onnx(
+            &path,
+            &format!("{:x}", Sha256::digest(&bytes)),
+            &CompileOptions {
+                offline_bindings: true,
+                ..CompileOptions::default()
+            },
+            &dest,
+        );
+        assert!(result
+            .err()
+            .unwrap()
+            .contains("mixed half Concat operand alias"));
+        assert!(!dest.exists());
+    }
+}
+
+#[test]
+fn actual_compiled_driver_whole_export_matches_original_every_byte() {
+    let f: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-mixed-conditional-cpu.json"
+    ))
+    .unwrap();
+    let c = &f["actual_driver_whole_model"];
+    let actual = actual_prefix_output(c);
+    assert_eq!(c["original"]["shape"], serde_json::json!([1, 553]));
+    assert_eq!(actual, decode(c["original"]["hex"].as_str().unwrap()));
+}
+fn fusion_fixture() -> serde_json::Value {
+    serde_json::from_str(include_str!(
+        "fixtures/compiler/original-fusion-boundary.json"
+    ))
+    .unwrap()
+}
+fn fusion_source(case: &serde_json::Value) -> Vec<u8> {
+    let base = actual_prefix_source(&case["base"]);
+    let top = fields(&base);
+    let graph = fields(top.iter().find(|v| v.0 == 7).unwrap().1);
+    let mut body = Vec::new();
+    for (n, payload, raw) in &graph {
+        if *n == 12 {
+            continue;
+        }
+        let rewrite = &case["node_rewrite"];
+        if *n == 1
+            && !rewrite.is_null()
+            && fields(payload).iter().any(|(n, v, _)| {
+                *n == 2 && *v == rewrite["before_output"].as_str().unwrap().as_bytes()
+            })
+        {
+            body.extend(decode(rewrite["insert_node_hex"].as_str().unwrap()));
+            let updated = fields(payload)
+                .iter()
+                .flat_map(|(n, v, raw)| {
+                    if *n == 1 && *v == rewrite["old_input"].as_str().unwrap().as_bytes() {
+                        message(1, rewrite["new_input"].as_str().unwrap().as_bytes())
+                    } else {
+                        raw.to_vec()
+                    }
+                })
+                .collect::<Vec<_>>();
+            body.extend(message(1, &updated));
+        } else {
+            body.extend_from_slice(raw);
+        }
+    }
+    body.extend(decode(case["append_graph_hex"].as_str().unwrap()));
+    let source = top
+        .iter()
+        .flat_map(|(n, _, raw)| {
+            if *n == 7 {
+                message(7, &body)
+            } else {
+                raw.to_vec()
+            }
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&source)),
+        case["derived_sha256"].as_str().unwrap()
+    );
+    source
+}
+#[test]
+fn unproved_observable_fusion_rejects_direct_views_arithmetic_and_multiple_outputs() {
+    for case in fusion_fixture()["admission_cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|c| c["reject"] == true)
+    {
+        let temp = tempfile::tempdir().unwrap();
+        let bytes = fusion_source(case);
+        let path = temp.path().join("model.onnx");
+        fs::write(&path, &bytes).unwrap();
+        let dest = temp.path().join("bundle");
+        let result = compile_onnx(
+            &path,
+            &format!("{:x}", Sha256::digest(&bytes)),
+            &CompileOptions {
+                offline_bindings: true,
+                ..CompileOptions::default()
+            },
+            &dest,
+        );
+        assert!(
+            result.is_err(),
+            "{} published unproved fusion",
+            case["name"]
+        );
+        assert!(result
+            .err()
+            .unwrap()
+            .contains("observable Conv/Gelu/ReduceMean fusion"));
+        assert!(!dest.exists());
+    }
+}
+#[test]
+fn verified_materialization_dead_branch_and_quantized_fusion_controls_match_original() {
+    for case in fusion_fixture()["admission_cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|c| c["reject"] == false)
+    {
+        let temp = tempfile::tempdir().unwrap();
+        let bytes = fusion_source(case);
+        let path = temp.path().join("model.onnx");
+        fs::write(&path, &bytes).unwrap();
+        let dest = temp.path().join("bundle");
+        let compilation = compile_onnx(
+            &path,
+            &format!("{:x}", Sha256::digest(&bytes)),
+            &CompileOptions {
+                offline_bindings: true,
+                ..CompileOptions::default()
+            },
+            &dest,
+        )
+        .unwrap_or_else(|e| panic!("{} {e}", case["name"]));
+        let mut model = unsafe { CpuModel::load(&dest) }.unwrap();
+        for input in &compilation.graph.inputs {
+            let bytes = match input.name.as_str() {
+                "input_img" => (0u8..=255).collect::<Vec<_>>().repeat(5400),
+                "calib" => [1.0f32 + 2f32.powi(-11), -0.0, 0.3]
+                    .into_iter()
+                    .flat_map(f32::to_le_bytes)
+                    .collect(),
+                _ => panic!("unknown input"),
+            };
+            model.write_input(&input.name, &bytes).unwrap();
+        }
+        model.run();
+        for (name, expected) in case["outputs"].as_object().unwrap() {
+            let mut bytes = vec![0; model.output_size(name).unwrap()];
+            model.read_output(name, &mut bytes).unwrap();
+            assert_eq!(bytes.len() as u64, expected["bytes"].as_u64().unwrap());
+            assert_eq!(
+                format!("{:x}", Sha256::digest(&bytes)),
+                expected["sha256"].as_str().unwrap(),
+                "{} {name}",
+                case["name"]
+            );
+            if let Some(hex) = expected["hex"].as_str() {
+                assert_eq!(bytes, decode(hex));
+            }
+        }
+    }
+}
+#[test]
+fn mean_on_independently_materialized_original_gelu_remains_exact() {
+    let case = &fusion_fixture()["materialized_positive"];
+    for memory in [false, true] {
+        run(case, memory);
+    }
 }

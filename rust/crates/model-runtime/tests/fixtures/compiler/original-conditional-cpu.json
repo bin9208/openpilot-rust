@@ -3672,5 +3672,6 @@
       "native_sha256": "023ecbfb49b98cba79ccd567c13f30493ba738bb001149ccf275ab09c33b32ac"
     }
   ],
-  "full_model_status": "Prefix200 rejected because live mixed logical-half/f32 Concat remains outside this bounded unit. Knownprefix93 optimizedfusion bitdiscrepancy remains unresolved."
+  "status_at_float32_only_checkpoint": "Prefix200 rejected because live mixed logical-half/f32 Concat remains outside this bounded unit. Knownprefix93 optimizedfusion bitdiscrepancy remains unresolved.",
+  "following_mixed_unit": "original-mixed-conditional-cpu.json supersedes prefix98 rejection only after96 independent mixed f32-output captures and untouched whole-model output proof; all-half outputs remain rejected."
 }

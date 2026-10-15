@@ -2501,7 +2501,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 5120
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-dev-tools --bin openpilot-process-child --bin check-ui-updater-handshake --bin check-ui-model-adapter --bin check-ui-training-adapter --bin check-ui-native-safety --bin check-ui-native-resources --bin check-ui-qr --bin check-ui-torque-geometry --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-dev-tools --bin openpilot-process-child --bin check-ui-updater-handshake --bin check-ui-model-adapter --bin check-ui-training-adapter --bin check-ui-native-safety --bin check-ui-native-resources --bin check-ui-qr --bin check-ui-torque-geometry --bin check-ui-state --bin check-ui-scheduler --locked
           cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked --message-format=json | tee "$RUNNER_TEMP/ui-native/unit-tests.jsonl"
       - name: Require queued exec error after helper exit
         run: rust/target/debug/check-ui-updater-handshake --evidence "$RUNNER_TEMP/ui-native"
@@ -2554,6 +2554,10 @@ jobs:
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/ui-raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-raylib/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
+      - name: Build native translation checker
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --locked
       - name: Build native UI and connectivity with original Params oracle
         run: |
           cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked
@@ -2566,7 +2570,7 @@ jobs:
             python rust/tools/check_startup_ui.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/startup" --display "$DISPLAY" --raylib-root "$STARTUP_UI_RAYLIB_ROOT" --raylib-library "$STARTUP_UI_RAYLIB_LIBRARY"
           '
           python rust/tools/check_ui_emoji.py --binary "$PWD/rust/target/debug/examples/emoji_raster" --output "$RUNNER_TEMP/ui-connectivity/emoji"
-          python rust/tools/check_ui_translations.py --binary "$PWD/rust/target/debug/examples/translation_trace" --output "$RUNNER_TEMP/ui-connectivity/translations"
+          rust/target/debug/check-ui-translations --binary "$PWD/rust/target/debug/examples/translation_trace" --output "$RUNNER_TEMP/ui-connectivity/translations"
       - name: Compare Wi-Fi policy and original/native private NetworkManager protocol
         run: |
           python rust/tools/check_wifi_policy.py --binary "$PWD/rust/target/debug/examples/wifi_trace" --output "$RUNNER_TEMP/ui-connectivity/wifi-policy.json"

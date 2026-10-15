@@ -9,6 +9,18 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-ui-translations"
+path = "src/bin/check_ui_translations.rs"
+
+[[bin]]
+name = "check-ui-state"
+path = "src/bin/check_ui_state.rs"
+
+[[bin]]
+name = "check-ui-scheduler"
+path = "src/bin/check_ui_scheduler.rs"
+
+[[bin]]
 name = "check-ui-qr"
 path = "src/bin/check_ui_qr.rs"
 

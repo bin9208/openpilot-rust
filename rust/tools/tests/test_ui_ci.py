@@ -80,12 +80,16 @@ def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path:
   monkeypatch.setattr(module, 'run', native_check)
   owner = module.UiCheck(output, binaries, tmp_path / 'peer')
   owner.execute('owned-display')
-  assert old_calls == ['state', 'scheduler', 'root', 'augmented', 'camera', 'runtime', 'pages',
+  assert old_calls == ['root', 'augmented', 'camera', 'runtime', 'pages',
                        'hud-eight-modes', 'hud-traffic', 'calibration']
   assert ordered == ['state', 'scheduler', 'qr', 'root', 'augmented', 'camera', 'runtime', 'pages',
                      'hud-eight-modes', 'hud-traffic', 'calibration', 'torque', 'native-safety',
                      'native-model-adapter', 'native-training-adapter']
   assert native_calls == [
+    ([str(binaries / f'check-ui-{name}'), '--binary', str(binaries / f'examples/{binary}'),
+      '--output', str(output / name)], output / 'commands', name)
+    for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace'))
+  ] + [
     ([str(binaries / 'check-ui-qr'), '--binary', str(binaries / 'examples/qr_trace'),
       '--output', str(output / 'qr')], output / 'commands', 'qr'),
     ([str(binaries / 'check-ui-torque-geometry'), '--binary', str(binaries / 'examples/torque_geometry'),

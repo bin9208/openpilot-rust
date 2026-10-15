@@ -327,21 +327,27 @@ pub fn compile_onnx(
         {
             continue;
         }
-        if node.inputs.iter().chain(&node.outputs).any(|name| {
+        let inputs_proved = node.inputs.iter().all(|name| {
+            lowered.names.get(name).is_some_and(|id| {
+                let dtype = lowered.plans[*id].ty.dtype;
+                dtype == 1 || node.op == "Concat" && dtype == 10
+            })
+        });
+        let outputs_proved = node.outputs.iter().all(|name| {
             lowered
                 .names
                 .get(name)
-                .is_none_or(|id| lowered.plans[*id].ty.dtype != 1)
-        }) {
-            return Err(
-                "CPU conditional graph requires proved logical float32 inputs and outputs".into(),
-            );
+                .is_some_and(|id| lowered.plans[*id].ty.dtype == 1)
+        });
+        if !inputs_proved || !outputs_proved {
+            return Err("CPU conditional graph requires proved float32 output and supported logical input dtypes".into());
         }
     }
     if options.offline_bindings {
         compiler_onnx::storage::apply_cpu_image_aliases(&mut lowered, &model)?;
     }
     let physical = compiler_onnx::storage_half::physical_graph(&lowered)?;
+    compiler_onnx::storage::admit_cpu_observable_fusion(&physical, &model)?;
     let schedule = schedule::schedule_plans(&physical, "CPU", true)?;
     let memory =
         memory::plan_memory_enabled(&schedule.buffers, &schedule.calls, options.memory_planning)?;

@@ -237,3 +237,54 @@ strict all-target Clippy passed, and fresh current-renderer A630 Add source and
 2144byte binary remain exactly equal to original. This is a bounded compiler
 unit; complete model parity/backends and all remaining Python functionality are
 not retired.
+
+
+The following mixed f32-output Concat unit is captured in
+`original-mixed-conditional-cpu.json`: 96 original graphs distinguish computed
+Cast/SubMul virtual half from physical half inputs, physical versus offline
+bindings, selected half output barriers, both operand orders, four shape/axis
+layouts, signed subnormals/min-normal/ties/max-normal, zeros and quiet/signaling
+NaN payloads. Native outputs match every byte in both memory-planning modes.
+Admission permits only logical float/half inputs with a float32 Concat output;
+all-half Concat outputs and half Relu remain outside this unit. Four independently
+captured half matrix-operand reuse cases remain rejected before publication.
+
+Prefix98 now has a positive true-final export gate. More significantly, the
+untouched pinned whole `dmonitoring_model.onnx` source
+`dee5a294e8afaacc9295ac5d100e00733ecac278e79264b96331e40a3ede1b04`
+compiles and executes through the native CPU artifact/runtime with all 553 float
+outputs (2212 bytes) exactly equal to the independently compiled original:
+`28468af72225b086839c4ae5de6fa07a1d01e843d02fd915d67f810e438549d3`.
+The fixture retains every original output byte, exact names/shapes/dtypes, source
+identity, backend flags and input recipe. Both sides use the same untouched
+source; every original requested output is cast to f32 before final-only joint
+realization. The bounded input is repeating0..255 image bytes and calibration
+`[1+2^-11,-0,0.3]`. Native execution uses 406 generated calls, with no Python
+fallback or original-output lookup. This one host input is not all-input,
+driving-model, device, GPU or complete compiler acceptance.
+
+`original-fusion-boundary.json` retains the unresolved prefix93 optimized fusion
+failure: 3/960 float patterns differ at indices46/568/704. The original final
+kernel `r_15_4_16_128_24_4` uses UNROLL4/THREAD16, fuses 128-product Conv, tanh-Gelu
+and 96-value mean, and has LLVM hash
+`7ce852371c1860e4449e1da40e566f32f8485f6e6974ccfa9b4600bc31191020`.
+Its schedule/program identities and reproducible capture recipe are retained.
+A structural prepublication fence now rejects observable unquantized f32
+Conv/Gelu/Mean ancestry. It follows scalar dependencies across views and ALU,
+rather than matching node adjacency, names, constants or prefix numbers.
+The 23 independent source contexts include 15 rejected direct/view/arithmetic/
+no-op/interposed/multi-output graphs and eight accepted held/materialized/dead/
+explicit-storage controls. Holding Identity/Reshape/Transpose/partial-Slice/full-
+Slice outputs independently makes the original mean materialized, and those
+positive cases remain supported. A separate mean on the original materialized
+Gelu input also stays exact. The explicit storage boundary preserves the current
+whole-model positive; it is not an analytic proof that quantization hides fusion
+differences for every input. The actual optimized fusion implementation remains
+pending; no tolerance or output normalization was introduced.
+
+Final source validation: all 146 model-runtime package tests passed, including
+the untouched whole-model byte gate and all review controls. Fresh current-library
+A630 Add source and genuine2144byte binary remain exactly equal to original;
+strict all-target Clippy also passed on the final reviewed source.
+All model Python and broader compiler/training/development functionality remain
+pending until genuinely replaced.

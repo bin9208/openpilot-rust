@@ -52,13 +52,21 @@ pub struct Parsed {
     pub append_values: BTreeMap<String, Vec<String>>,
 }
 mod python_decimal;
-pub(crate) fn decimal(value: &str) -> bool {
-    value.chars().all(|ch| {
-        python_decimal::RANGES
-            .iter()
-            .any(|&(first, last)| (first..=last).contains(&u32::from(ch)))
+pub(crate) fn decimal_value(value: char) -> Option<u8> {
+    let point = u32::from(value);
+    python_decimal::RANGES.iter().find_map(|&(first, last)| {
+        if (first..=last).contains(&point) {
+            // Contiguous styled mathematical digit sets repeat 0..9.
+            Some(((point - first) % 10) as u8)
+        } else {
+            None
+        }
     })
 }
+pub(crate) fn decimal(value: &str) -> bool {
+    value.chars().all(|ch| decimal_value(ch).is_some())
+}
+
 fn negative_number(value: &str) -> bool {
     let value = value.strip_suffix('\n').unwrap_or(value);
     let Some(body) = value.strip_prefix('-') else {
@@ -300,4 +308,30 @@ pub fn scan_os_with_positionals(
             .map(|(key, values)| (key, values.iter().map(|value| decode(value)).collect()))
             .collect(),
     })
+}
+
+#[cfg(test)]
+mod decimal_tests {
+    #[test]
+    fn decimal_values_match_all_independent_python_312_digits() {
+        let original: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/panda-cli/python-decimal-values.json"
+        ))
+        .unwrap();
+        let rows = original["values"].as_array().unwrap();
+        assert_eq!(rows.len(), 680);
+        assert_eq!(original["unicode_version"], "15.0.0");
+        for row in rows {
+            let ch = char::from_u32(row[0].as_u64().unwrap() as u32).unwrap();
+            assert_eq!(
+                super::decimal_value(ch),
+                Some(row[1].as_u64().unwrap() as u8),
+                "U+{:X}",
+                u32::from(ch)
+            );
+        }
+        for ch in ['\u{10d40}', '\u{1ccf0}', '²', '①', '-', '.'] {
+            assert_eq!(super::decimal_value(ch), None);
+        }
+    }
 }

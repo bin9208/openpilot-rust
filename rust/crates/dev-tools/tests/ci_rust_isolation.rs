@@ -139,7 +139,8 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_ui_framework.py",
             "check_startup_ui.py",
             "check_ui_emoji.py",
-            "check_ui_translations.py",
+            "-p openpilot-dev-tools --bin check-ui-translations --locked",
+            "rust/target/debug/check-ui-translations --binary",
             "check_wifi_policy.py",
             "check_wifi_runtime.py",
             "check_cweb_policy.py",
@@ -148,7 +149,11 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_cweb_address.py",
             "build_params_python.py",
         ],
-        &["python rust/tools/check_"],
+        &[
+            "python rust/tools/check_",
+            "--bin check-ui-translations",
+            "rust/target/debug/check-ui-translations --binary",
+        ],
         true,
     );
 }

@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Thirty-four sources have locally verified replacements and migrated
-callers; 3,546 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Thirty-seven sources have locally verified replacements and migrated
+callers; 3,543 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -620,6 +620,87 @@ tests, Ruff and diff checks pass. After deleting the two source drivers, both
 native QR/torque checkers also pass with `PATH=/nonexistent` against the actual
 native examples. This proves those command boundaries do not execute Python,
 not that the remaining repository is Python-free.
+
+## Native State, Scheduler and dynamic translation gates
+
+The State and Scheduler checker drivers are replaced by `check-ui-state` and
+`check-ui-scheduler`. Independent original corpora preserve all 2,400 UI state
+frames and 160 display sweeps, including exact serialized CarParams bytes,
+source/schema/dependency pins, original flattening order, Python numeric equality
+and the unchanged absolute float bound of 1e-11. Forty-seven candidate failure
+cases and eighteen CLI cases pass. Fresh actual native examples produce identical
+25 artifacts and stdout through both unchanged original and Rust checkers;
+twelve real subprocess failure/newline comparisons also match. Raw candidate and
+output paths and inherited raw environment values are preserved. The original
+State source's raw-root Unicode schema-loader failure is recorded as a removed
+interpreter limitation, not claimed as successful source/native raw-root parity.
+
+These two fixed-input gates use frozen independent Linux x86_64 expectations,
+not dynamic original recomputation. Source or locked dependency drift fails
+closed until independent recapture. Generic `state_source.py`, UI state,
+scheduler and dependent original runtime helpers remain pending. Only the two
+fixed checker drivers are deleted. All fifteen UI-suite commands keep their
+order and disk guards; eight Python and seven native commands now remain.
+The source fingerprint includes the native tools' embedded fixture data.
+
+`check-ui-translations` instead parses current PO files dynamically with an
+independent native reference implementation; it does not call the candidate
+translation parser to construct expectations. Forty-seven original PO mutations,
+twelve catalogs, 5,733 plural-selector outputs and 58 complete original CLI cases
+cover parser semantics, language initialization, Unicode decimal/whitespace and
+filesystem ordering, output boundaries, errors and Python JSON equality.
+The actual original and native checkers produce identical source/candidate JSON
+files, stdout and stderr across all twelve current catalogs. Source receipt SHA
+is `1f3d1dec24f561a434ca6ff276db908c28bc7b19cabce1e2dd7286710a5eab3f`;
+candidate receipt SHA is
+`9ed4490f2e0b75ec63389ce6328405b56cfcd7a925e7081e7034cbfe33298aaa`.
+The source semantics are pinned; catalog edits remain supported. An explicit
+new per-entry allocation policy caps plural expansion at 1,048,576 forms with
+checked allocation; it is not a global memory cap. The original translation
+runtime and other translation tooling remain pending.
+
+The CI translation call uses the native binary and an explicit single-tool build
+with a 512 MiB growth guard. The original 179 ordinary workflow disk guards and
+their hash remain unchanged; the new guard has a separately tested category.
+All three native commands pass against actual examples with `PATH=/nonexistent`.
+The inventory now records 37 replaced sources and 3,543 pending sources; neither
+these gates nor their successful comparison establish repository-wide retirement.
+
+## Mixed CPU conditionals and the observed fusion boundary
+
+The native CPU compiler now admits independently verified mixed logical-half/f32
+Concat inputs with f32 outputs. Ninety-six original graphs pass in both memory
+planning modes; four unproved inverse-view half matrix aliases remain rejected.
+The untouched pinned driver model `dee5a294...` compiles and executes through 406
+native calls with all 553 f32 outputs (2,212 bytes) matching the original for one
+recorded host input. Output SHA-256 is
+`28468af72225b086839c4ae5de6fa07a1d01e843d02fd915d67f810e438549d3`.
+This is one whole-model input proof, not all-input, driving-model or GPU parity.
+
+The earlier true-final Conv/Gelu/ReduceMean export still differs at three of 960
+f32 positions. Its original fused schedule and the separately materialized
+comparison are retained as evidence. A structural storage-aware ancestry guard
+rejects observable unproved f32 fusion before publication, including intervening
+identity views and Add-zero/Mul-one expressions, downstream arithmetic and
+multiple outputs. It does not match model IDs or node names. Twenty-three
+independent original contexts cover rejection and materialization controls;
+held-view and quantization boundaries retain their scoped positive evidence.
+The guard does not implement the missing fused schedule or prove that half
+quantization masks every input's differences. No tolerance was relaxed and no
+model Python was removed. Final model source passes 146 tests, strict all-target
+Clippy and independent review. Fresh A630 Add source and 2,144-byte compiled
+binary remain identical to the original proof. Full compiler, GPU, training and
+development functionality remain open.
+
+Final local validation for this three-checker unit passes 274 selected dev-tools
+tests and 16 service-tools tests in the actual fast-checks routing. All-target
+dev-tools/model Clippy, workspace formatting, six UI caller tests, Ruff and diff
+checks pass. Clippy initially identified placement of the new Unicode digit test
+module before production items; moving that unchanged test module to the end
+resolved the warning without altering behavior or suppressing the lint. The
+separate reviewed model source passes all 146 model-runtime tests. Original/native
+artifacts and these results are local evidence; exact-head Actions remain a
+separate delivery gate.
 
 ## Outstanding delivery evidence
 

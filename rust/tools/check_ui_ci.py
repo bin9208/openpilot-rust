@@ -72,7 +72,9 @@ class UiCheck:
   def execute(self, display: str) -> None:
     examples = self.binaries / 'examples'
     for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace')):
-      self.check(name, f'check_ui_{name}.py', ['--binary', str(examples / binary), '--output', str(self.output / name)])
+      require_space(self.output, 3 * 1024**3)
+      run([str(self.binaries / f'check-ui-{name}'), '--binary', str(examples / binary),
+        '--output', str(self.output / name)], self.commands, name)
     require_space(self.output, 3 * 1024**3)
     run([str(self.binaries / 'check-ui-qr'), '--binary', str(examples / 'qr_trace'),
       '--output', str(self.output / 'qr')], self.commands, 'qr')
@@ -135,10 +137,12 @@ def main() -> None:
   for name in ('ui-application', 'ui-framework', 'startup-ui', 'msgq', 'params', 'hardware-info'):
     source_paths += [path for path in (ROOT / 'rust/crates' / name).rglob('*')
       if path.is_file() and path.suffix in ('.rs', '.cc', '.h', '.toml')]
+  source_paths += [path for path in (ROOT / 'rust/crates/dev-tools/tests/fixtures').rglob('*') if path.is_file()]
   executables = [binaries / 'openpilot-ui', peer, Path(os.environ['STARTUP_UI_RAYLIB_LIBRARY'])]
   executables += [binaries / 'examples' / name for name in EXAMPLES]
   executables += [binaries / f'check-ui-{kind}-adapter' for kind in ('model', 'training')]
-  executables += [binaries / name for name in ('check-ui-native-safety', 'check-ui-qr', 'check-ui-torque-geometry')]
+  executables += [binaries / name for name in ('check-ui-native-safety', 'check-ui-qr',
+    'check-ui-torque-geometry', 'check-ui-state', 'check-ui-scheduler')]
   receipt = {'argv': sys.argv, 'source_sha256': hashes(source_paths), 'python_imports': imports,
     'versions': {name: importlib.metadata.version(name) for name in ('numpy', 'pillow', 'comma-deps-raylib',
       'cffi', 'python-xlib', 'pyzmq', 'pycapnp', 'requests', 'qrcode', 'setproctitle', 'Cython', 'setuptools')},
