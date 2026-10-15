@@ -139,7 +139,7 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_ui_framework.py",
             "check_startup_ui.py",
             "check_ui_emoji.py",
-            "-p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --locked",
+            "-p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --locked",
             "rust/target/debug/check-ui-translations --binary",
             "check_wifi_policy.py",
             "check_wifi_runtime.py",
@@ -871,4 +871,45 @@ fn retired_tool_checks_require_current_native_builds_and_keep_original_consumers
     assert!(!text.contains("check_registration_vendor.py"));
     assert!(!text.contains("check_msgq_sanitizers.py"));
     assert!(!text.contains("check_control_tools_policy.py"));
+}
+
+#[test]
+fn diagnostics_family_keeps_all_three_native_consumers_mandatory() {
+    job_check(
+        "workspace",
+        &[
+            "cargo build -p openpilot-dev-tools --bin check-runtime-diagnostics --bin check-communication-snapshot --bin check-model-timing --locked",
+            "target/debug/check-runtime-diagnostics --binary target/debug/examples/diagnostics_trace",
+            "target/debug/check-communication-snapshot --binary target/debug/examples/communication_trace",
+            "cargo build -p openpilot-driving-modeld --example model_timing_trace --locked",
+            "target/debug/check-model-timing --binary target/debug/examples/model_timing_trace",
+        ],
+        &["--bin check-runtime-diagnostics", "target/debug/check-runtime-diagnostics --binary", "target/debug/check-communication-snapshot --binary", "target/debug/check-model-timing --binary"],
+        false,
+    );
+    let data = workflow();
+    let workspace = &data["jobs"]["workspace"];
+    some_artifact(workspace);
+    let evidence = workspace["steps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| {
+            step["with"]["path"]
+                .as_str()
+                .is_some_and(|path| path.contains("runtime-diagnostics/report.json"))
+        })
+        .unwrap();
+    assert!(
+        evidence.get("if").is_none(),
+        "preserve original successful-run artifact publication"
+    );
+    required(
+        evidence["with"]["path"].as_str().unwrap(),
+        &[
+            "runtime-diagnostics/report.json",
+            "communication-snapshot/report.json",
+            "model-timing/",
+        ],
+    );
 }

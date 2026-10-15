@@ -334,13 +334,16 @@ pub fn compile_onnx(
             })
         });
         let outputs_proved = node.outputs.iter().all(|name| {
-            lowered
-                .names
-                .get(name)
-                .is_some_and(|id| lowered.plans[*id].ty.dtype == 1)
+            lowered.names.get(name).is_some_and(|id| {
+                let dtype = lowered.plans[*id].ty.dtype;
+                dtype == 1 || node.op == "Concat" && dtype == 10
+            })
         });
         if !inputs_proved || !outputs_proved {
-            return Err("CPU conditional graph requires proved float32 output and supported logical input dtypes".into());
+            return Err(
+                "CPU conditional graph requires proved output and supported logical input dtypes"
+                    .into(),
+            );
         }
     }
     if options.offline_bindings {

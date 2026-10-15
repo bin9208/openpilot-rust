@@ -714,10 +714,12 @@ jobs:
         run: python tools/check_logmessaged_reference.py --binary target/debug/examples/file_probe --output "$RUNNER_TEMP/logmessaged-reference"
       - name: Compare bounded diagnostics and receiver state with original source
         run: |
-          python tools/check_runtime_diagnostics.py --binary target/debug/examples/diagnostics_trace --output "$RUNNER_TEMP/runtime-diagnostics"
-          python tools/check_communication_snapshot.py --binary target/debug/examples/communication_trace --output "$RUNNER_TEMP/communication-snapshot"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin check-runtime-diagnostics --bin check-communication-snapshot --bin check-model-timing --locked
+          target/debug/check-runtime-diagnostics --binary target/debug/examples/diagnostics_trace --output "$RUNNER_TEMP/runtime-diagnostics"
+          target/debug/check-communication-snapshot --binary target/debug/examples/communication_trace --output "$RUNNER_TEMP/communication-snapshot"
           cargo build -p openpilot-driving-modeld --example model_timing_trace --locked
-          python tools/check_model_timing.py --binary target/debug/examples/model_timing_trace --output "$RUNNER_TEMP/model-timing"
+          target/debug/check-model-timing --binary target/debug/examples/model_timing_trace --output "$RUNNER_TEMP/model-timing"
       - name: Compare driving-model input state with the original loop
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
@@ -2557,7 +2559,7 @@ jobs:
       - name: Build native UI validation checkers
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --locked
       - name: Build native UI and connectivity with original Params oracle
         run: |
           cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked

@@ -105,7 +105,7 @@ def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path:
   ]
 
 
-@pytest.mark.parametrize('failure', [None, 'stack'])
+@pytest.mark.parametrize('failure', [None, 'stack', 'scroller'])
 def test_framework_native_logic_routes_preserve_order_logs_and_failure_stop(tmp_path: Path, monkeypatch, failure) -> None:
   import os
   import runpy
@@ -146,7 +146,7 @@ def test_framework_native_logic_routes_preserve_order_logs_and_failure_stop(tmp_
     scenarios = scenarios[:next(i + 1 for i, row in enumerate(scenarios) if row[0] == failure)]
   expected = []
   for name, binary, display in scenarios:
-    command = ([str(target / f'check-ui-{name}')] if name in {'widgets', 'navigation', 'stack', 'fps'}
+    command = ([str(target / f'check-ui-{name}')] if name in {'widgets', 'scroll', 'navigation', 'stack', 'scroller', 'fps'}
                else [sys.executable, str(ROOT / f'rust/tools/check_ui_{name}.py')])
     command += ['--binary', str(target / 'examples' / binary), '--output', str(output / name)]
     if display:

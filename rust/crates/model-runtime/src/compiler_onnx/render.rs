@@ -63,6 +63,152 @@ impl Renderer<'_> {
             storage_type(dtype)
         }
     }
+    fn runtime_divisor_binding(&self, value: &ScalarExpr) -> Result<bool, String> {
+        let ScalarExpr::Load { plan, .. } = value else {
+            return Ok(false);
+        };
+        let mut id = *plan;
+        let mut path = Vec::new();
+        loop {
+            let source = self
+                .graph
+                .plans
+                .get(id)
+                .ok_or("reciprocal view plan out of range")?;
+            path.push(id);
+            let parent = match &source.expression {
+                ScalarExpr::Load { plan, .. } => Some(*plan),
+                ScalarExpr::Cast { value, .. } => match value.as_ref() {
+                    ScalarExpr::Load { plan, .. } => Some(*plan),
+                    _ => None,
+                },
+                ScalarExpr::Input(_) => {
+                    // Include every view's cardinality: Expand after a smaller
+                    // Slice must not conceal reciprocal broadcast/reuse.
+                    for id in path {
+                        if elements(&self.graph.plans[id].ty.shape)? < self.count {
+                            return Err("CPU constant-vector reciprocal dynamic broadcast context is not implemented".into());
+                        }
+                    }
+                    return Ok(true);
+                }
+                _ => None,
+            };
+            let Some(parent) = parent else {
+                return Ok(false);
+            };
+            if !self.graph.cpu_divisor_views.contains(&id) {
+                return Ok(false);
+            }
+            if parent >= id {
+                return Err("constant-vector reciprocal graph is not topological".into());
+            }
+            if elements(&self.graph.plans[parent].ty.shape)? < elements(&source.ty.shape)? {
+                return Err("CPU constant-vector reciprocal broadcast-bearing view context is not implemented".into());
+            }
+            id = parent;
+        }
+    }
+    fn normal_divisor_initializer(&self, value: &ScalarExpr) -> Result<bool, String> {
+        let ScalarExpr::Load { plan, .. } = value else {
+            return Ok(false);
+        };
+        let source = self
+            .graph
+            .plans
+            .get(*plan)
+            .ok_or("reciprocal initializer plan out of range")?;
+        let ScalarExpr::Constant(bytes) = &source.expression else {
+            return Ok(false);
+        };
+        if !matches!(source.ty.dtype, 1 | 10) || elements(&source.ty.shape)? > 4096 {
+            return Ok(false);
+        }
+        let width = super::parse::width(source.ty.dtype)?;
+        Ok(!bytes.is_empty()
+            && bytes.len() % width == 0
+            && bytes.chunks_exact(width).all(|raw| {
+                super::scalar::Scalar::read(source.ty.dtype, raw).is_ok_and(|scalar| {
+                    scalar.float().is_ok_and(|v| (v as f32).is_normal())
+                        && (source.ty.dtype != 10 || (1..31).contains(&((scalar.bits >> 10) & 31)))
+                })
+            }))
+    }
+    // Original constant propagation precedes late dynamic FDIV recognition.
+    // Fold only bounded normal finite initializer vectors; physical-half
+    // specials and shared reciprocal contexts need separate original proof.
+    fn constant_vector_reciprocal(&self, value: &ScalarExpr) -> Result<Option<String>, String> {
+        let ScalarExpr::Load { plan, index } = value else {
+            return Ok(None);
+        };
+        let source = self
+            .graph
+            .plans
+            .get(*plan)
+            .filter(|_| *plan < self.output)
+            .ok_or("kernel load must precede output")?;
+        let ScalarExpr::Constant(bytes) = &source.expression else {
+            // Computed divisors need source simplification/materialization
+            // semantics, not a growing list of neutral-expression spellings.
+            // Admit bindings/views and the independently captured single C+w
+            // form only; all deeper arithmetic remains explicitly unsupported.
+            if self.runtime_divisor_binding(value)? {
+                return Ok(None);
+            }
+            if let ScalarExpr::Binary {
+                kind: Binary::Add,
+                left,
+                right,
+                ..
+            } = &source.expression
+            {
+                for (constant, binding) in [(left, right), (right, left)] {
+                    if self.normal_divisor_initializer(constant)?
+                        && self.runtime_divisor_binding(binding)?
+                    {
+                        return Ok(None);
+                    }
+                }
+            }
+            return Err(
+                "CPU constant-vector reciprocal computed context is not implemented".into(),
+            );
+        };
+        if source.ty.shape.is_empty() || !matches!(source.ty.dtype, 1 | 10) {
+            return Ok(None);
+        }
+        let count = elements(&source.ty.shape)?;
+        if count == 0 || count > 4096 {
+            return Err("CPU constant-vector reciprocal size is not implemented".into());
+        }
+        let width = super::parse::width(source.ty.dtype)?;
+        if bytes.len() != count * width {
+            return Err("CPU constant-vector reciprocal storage mismatch".into());
+        }
+        let mut values = Vec::with_capacity(count);
+        for raw in bytes.chunks_exact(width) {
+            let scalar = super::scalar::Scalar::read(source.ty.dtype, raw)?;
+            let value = scalar.float()? as f32;
+            let reciprocal = 1.0f32 / value;
+            if !value.is_finite()
+                || !reciprocal.is_finite()
+                || source.ty.dtype == 10 && !(1..31).contains(&((scalar.bits >> 10) & 31))
+            {
+                return Err(
+                    "CPU constant-vector reciprocal special values are not implemented".into(),
+                );
+            }
+            values.push(float(reciprocal as f64)?);
+        }
+        let (mapping, low, high) = self.index(index)?;
+        if low < 0 || high >= count as i128 {
+            return Err("CPU constant-vector reciprocal index is out of bounds".into());
+        }
+        Ok(Some(format!(
+            "((const float[]){{{}}})[{mapping}]",
+            values.join(",")
+        )))
+    }
     fn round(&self, dtype: u32, expression: String) -> Result<String, String> {
         if self.cpu_emulated_half && dtype == 10 {
             Ok(expression)
@@ -181,7 +327,8 @@ impl Renderer<'_> {
     fn expression(&mut self, value: &ScalarExpr) -> Result<String, String> {
         match value {
             ScalarExpr::Select { condition, yes, no }
-                if self.cpu_emulated_half && self.graph.plans[self.output].ty.dtype == 1 =>
+                if self.cpu_emulated_half
+                    && matches!(self.graph.plans[self.output].ty.dtype, 1 | 10) =>
             {
                 let predicate = self.predicate(condition)?;
                 let yes = self.conditional_branch(condition, yes, true)?;
@@ -273,6 +420,9 @@ impl Renderer<'_> {
             }
             ScalarExpr::Reciprocal { dtype, value } if matches!(dtype, 1 | 10) => {
                 if self.cpu_emulated_half {
+                    if self.constant_vector_reciprocal(value)?.is_some() {
+                        return Err("CPU shared or standalone constant-vector reciprocal is not implemented".into());
+                    }
                     let infinite = match value.as_ref() {
                         ScalarExpr::Literal(v) => v.float()?.is_infinite(),
                         ScalarExpr::Load {
@@ -329,6 +479,11 @@ impl Renderer<'_> {
                         // Original late FDIV rewrite accepts reciprocal on either
                         // side after commutative canonicalization.
                         let a = self.expression(numerator)?;
+                        if let Some(reciprocal) = self.constant_vector_reciprocal(value)? {
+                            // Keep the constant buffer in the scheduler's stable ABI order.
+                            self.expression(value)?;
+                            return Ok(format!("({a}*{reciprocal})"));
+                        }
                         // Original constant infinity division simplifies to positive
                         // zero even for NaN/Inf/-zero numerators. Other literals
                         // retain the existing finite reciprocal fold.

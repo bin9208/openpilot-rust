@@ -10,17 +10,18 @@
     "native_arm_helper": "dbcb525f590702fb6e18222ec65e30b1c3e5900292cfaf0d33258a7414a331ba",
     "qemu": "e4f8d99e9ff69c3cefffab71cee358ce2af1ecba1282d04c3eeb44ef76f5a71e",
     "loader": "142f02374792bf5f62293efc3500d472dbbe280dc658cc60480eff73ad46f33c",
-    "native_renderer_source": "098b91b36f6f856047d8b110f49ed7d7e46daf785af0be510649434908c454b3",
-    "native_compiler_source": "5c4d02be686698ee3251a9dd369a09a604eb25ec6b04b4c0f313e89fc6fe9ba7",
+    "native_renderer_source": "5d944e59a745fceb41ccc42bae355bc2209507e385b58c0af520858c37a4d56e",
+    "native_compiler_source": "f8e2ef95eecdaef1bb59dd0e8e2a01fa264dcd7d92d77170d2cacc3029c95b15",
     "native_renderer_reduction_source": "37b5c34f865b74d52cc212a6895e1aaff5c2ae73b8e7b512a38b2df4a830ee41",
     "native_renderer_math_source": "accb8da5ecf19d57f32b1333b10ae300a4b66e026bcbc3f157bc71a83d7881d3",
     "native_storage_alias_source": "7f4091a661212b2e2cfc1962fab552e6602bdad70fd0241f8edde06e037568a6",
-    "native_half_materialization_admission_source": "cf267e1ae127e03deec6a13b309117d4132ae9aba41493d5f1d3e58c0a9273cc"
+    "native_half_materialization_admission_source": "7fe646facf5b9eeb8b6833c63746da966fb3e5a1a1a73a7feecb272809136f7d",
+    "native_lowering_source": "fd72aef04d3249d0a31c941d922c478074a868efc1483ea43bb1e3f53bf338e4"
   },
   "binary_bytes": 2144,
   "source_equal": true,
   "binary_equal": true,
-  "capture_recipe": "Native compiler_onnx::render::render_elementwise emits source from typed IR (compiler_render.rs reproduces original source fixture). Execute native ARM offline-qcom-compile --library pinned libllvm-qcom.so under existing qemu-aarch64-static -cpu cortex-a57 and the aarch64 glibc loader. Feed rendered source on stdin, retain stdout. Compare all bytes with original independent buffer_add.bin. Compiler checks pinned provider SHA256 before dynamic loading. No Python, install, kernel/device execution or generated placeholder binary. Guest library path contains only native SDK aarch64 libraries; no Python executable, PythonHOME, PythonPATH or Python library directory is required. Refreshed using the final native model-runtime library after bounded mixed f32-output Concat and observable CPU fusion admission fence. Fresh source and genuine2144byte A630 binary equal every original byte; current backend/storage source hashes include the scalar-ancestry review repair. This Add proof does not establish GPU conditional/fusion/model execution.",
+  "capture_recipe": "Native compiler_onnx::render::render_elementwise emits source from typed IR (compiler_render.rs reproduces original source fixture). Execute native ARM offline-qcom-compile --library pinned libllvm-qcom.so under existing qemu-aarch64-static -cpu cortex-a57 and the aarch64 glibc loader. Feed rendered source on stdin, retain stdout. Compare all bytes with original independent buffer_add.bin. Compiler checks pinned provider SHA256 before dynamic loading. No Python, install, kernel/device execution or generated placeholder binary. Guest library path contains only native SDK aarch64 libraries; no Python executable, PythonHOME, PythonPATH or Python library directory is required. Refreshed using the final native model-runtime library after bounded mixed f32-output Concat and observable CPU fusion admission fence. Fresh source and genuine2144byte A630 binary equal every original byte; current backend/storage source hashes include the scalar-ancestry review repair. This Add proof does not establish GPU conditional/fusion/model execution. Refreshed again from the current library after partial all-half Concat, finite-vector reciprocal propagation and source-tagged non-growing dynamic-divisor view admission. Fresh source and genuine binary remain every-byte original-equal. Current source projection includes lower.rs movement provenance; CPU-only view/reciprocal admission is not a GPU/model proof.",
   "pending": "All other renderer expressions, image descriptors/packing, reduction/fusion schedules and complete model numerical parity remain pending.",
   "host_compiled_reference": {
     "cases": 44,

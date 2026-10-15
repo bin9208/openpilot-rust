@@ -147,6 +147,8 @@ pub struct Plan {
 pub struct LoweredGraph {
     offline_images: bool,
     pub plans: Vec<Plan>,
+    // Source-operator provenance for bounded CPU dynamic-divisor movement.
+    pub(super) cpu_divisor_views: std::collections::BTreeSet<usize>,
     pub names: BTreeMap<String, usize>,
     pub outputs: BTreeMap<String, usize>,
 }
@@ -354,6 +356,21 @@ impl LoweredGraph {
         }
         for node in &model.graph.nodes {
             graph.lower_node(model, node)?;
+            if matches!(
+                node.op.as_str(),
+                "Identity"
+                    | "Cast"
+                    | "Reshape"
+                    | "Transpose"
+                    | "Slice"
+                    | "Squeeze"
+                    | "Unsqueeze"
+                    | "Expand"
+            ) {
+                for output in &node.outputs {
+                    graph.cpu_divisor_views.insert(graph.names[output]);
+                }
+            }
         }
         for output in &model.graph.outputs {
             let mut id = *graph

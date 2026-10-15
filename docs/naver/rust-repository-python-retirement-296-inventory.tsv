@@ -1906,7 +1906,7 @@ rust/tools/check_carrot_recovery_upload.py	35e4dad182b9fdf7b380b6af0586ab2898ef9
 rust/tools/check_checkout_status.py	c645a4356cca8d1341822db79b4bbf45ff662d10	pending	-
 rust/tools/check_command_json_boundary.py	372d70c6b3dfd0766e49709d7ddfbdfb2b1974ce	pending	-
 rust/tools/check_command_reference.py	08cc723e29e067e0583d4f99095ce2cf9373a3c6	pending	-
-rust/tools/check_communication_snapshot.py	8079cf67e33fc0e81a03d30eee7fef72400c2cfa	pending	-
+rust/tools/check_communication_snapshot.py	8079cf67e33fc0e81a03d30eee7fef72400c2cfa	replaced-local	rust/crates/dev-tools/src/diagnostic_check.rs
 rust/tools/check_control_failures.py	401193fafdc6636397714d03a5ac3cc30d82d835	pending	-
 rust/tools/check_control_neural.py	4adf83165988e71b806447a7f20a7a8571cc969b	pending	-
 rust/tools/check_control_policies.py	09173dd9fb9efd8f841e088461cbad2e104cd853	pending	-
@@ -1992,7 +1992,7 @@ rust/tools/check_model_logging_faults.py	fc90003b2295a4f8d0f4258f0c74e9bb3cd638b
 rust/tools/check_model_outputs.py	99e4b6d59d1101b4877a24998ee80d304e628666	pending	-
 rust/tools/check_model_reference.py	b4022153df39107308ecfbb91a6ca82a43a96bd0	pending	-
 rust/tools/check_model_startup.py	357b5bb00757fb859be33908b53c949d6a8fd2db	pending	-
-rust/tools/check_model_timing.py	2b4adb7f2f47fd9e3b9666fc238851976e4ddb07	pending	-
+rust/tools/check_model_timing.py	2b4adb7f2f47fd9e3b9666fc238851976e4ddb07	replaced-local	rust/crates/dev-tools/src/diagnostic_check.rs
 rust/tools/check_modem.py	acf3550216f59b5e31724e1aa715aa497fc0ee06	pending	-
 rust/tools/check_modem_process_boundary.py	a3b7c5d0b886c5d1e2fa996ed0894c9dbbd10ff2	pending	-
 rust/tools/check_monitoring_reference.py	d10d0decd660d1abb5e7df75354cf3f25b8bd239	pending	-
@@ -2056,7 +2056,7 @@ rust/tools/check_registration.py	cbb3b6ded74388583ef0ba05300bfed240814d52	pendin
 rust/tools/check_registration_clock.py	932374bbe4383ee1e98ae4fab314c237861d201c	pending	-
 rust/tools/check_registration_utf7.py	9bb1dd1f15e75efb58c78db603143cd17468be59	pending	-
 rust/tools/check_registration_vendor.py	dc7278a116a16e63654efbd2ee40706499d4064e	replaced-local	rust/crates/dev-tools/src/registration_vendor_check.rs
-rust/tools/check_runtime_diagnostics.py	e1b0a2f950d51b368582319c27f999cb7d3d2b35	pending	-
+rust/tools/check_runtime_diagnostics.py	e1b0a2f950d51b368582319c27f999cb7d3d2b35	replaced-local	rust/crates/dev-tools/src/diagnostic_check.rs
 rust/tools/check_runtime_launcher.py	a18592a9b8a9846777e9cdfedad5b4d7f72dde15	pending	-
 rust/tools/check_runtime_log_upload.py	8a2fee473760b01021b74179e7647f21280616d3	pending	-
 rust/tools/check_sdk_receiver.py	92ed5a900919358781a92f66311a72a3fdc285ba	pending	-
@@ -2155,8 +2155,8 @@ rust/tools/check_ui_render.py	925c68a0e862cfdd3a1ac2d11fb48713e060aae0	pending	-
 rust/tools/check_ui_root.py	30f8ff3ea5d5f7ae3b8ddbacb99691fe5ed73724	pending	-
 rust/tools/check_ui_runtime_pages.py	6cc392e1a426a1f5762f5f8a8c2a008f859621ba	pending	-
 rust/tools/check_ui_scheduler.py	0175906fc0115f2a1c5df63cf60bb18c6687e87c	replaced-local	rust/crates/dev-tools/src/ui_state_scheduler_check.rs
-rust/tools/check_ui_scroll.py	b40726dadd193f789b42494d5d566c6a8b5c06a5	pending	-
-rust/tools/check_ui_scroller.py	07ba9ed4020ec67f203768e1a7308a372bf39718	pending	-
+rust/tools/check_ui_scroll.py	b40726dadd193f789b42494d5d566c6a8b5c06a5	replaced-local	rust/crates/dev-tools/src/ui_scroll_check.rs
+rust/tools/check_ui_scroller.py	07ba9ed4020ec67f203768e1a7308a372bf39718	replaced-local	rust/crates/dev-tools/src/ui_scroll_check.rs
 rust/tools/check_ui_settings.py	6d17394d536188da51ee2de68839f2704d7e1b52	pending	-
 rust/tools/check_ui_settings_root.py	fe159eb908281eac70cc0f5c61cc9eec846aa650	pending	-
 rust/tools/check_ui_software.py	ca911964a50d3c914e65f50ad256a67fdc6e6872	pending	-

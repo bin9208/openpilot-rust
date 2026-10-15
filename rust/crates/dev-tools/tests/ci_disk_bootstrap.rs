@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 189);
+    assert_eq!(text.matches(marker).count(), 190);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -235,6 +235,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut encoder_builder = vec![];
     let mut model_source = vec![];
     let mut translation_checker = vec![];
+    let mut diagnostic_checkers = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
             if i + 1 < lines.len() && lines[i + 1].contains("--bin stage-startup-ui-raylib") {
@@ -251,12 +252,18 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 model_source.push(tail.to_owned());
             } else if i + 1 < lines.len() && lines[i + 1].contains("--bin check-ui-translations") {
                 translation_checker.push(tail.to_owned());
+            } else if i + 1 < lines.len() && lines[i + 1].contains("--bin check-runtime-diagnostics") {
+                diagnostic_checkers.push(tail.to_owned());
             } else {
                 arguments.push(tail.to_owned());
             }
         }
     }
     assert_eq!(arguments.len(), 179);
+    assert_eq!(
+        diagnostic_checkers,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+    );
     assert_eq!(
         translation_checker,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]

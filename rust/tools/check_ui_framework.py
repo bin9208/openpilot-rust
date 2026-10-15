@@ -17,10 +17,10 @@ args.output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[2]
 checks = [
   ('widgets', None, 'widget_trace', False),
-  ('scroll', 'check_ui_scroll.py', 'scroll_trace', False),
+  ('scroll', None, 'scroll_trace', False),
   ('navigation', None, 'navigation_trace', False),
   ('stack', None, 'stack_trace', False),
-  ('scroller', 'check_ui_scroller.py', 'scroller_trace', False),
+  ('scroller', None, 'scroller_trace', False),
   ('render', 'check_ui_render.py', 'ui_render', True),
   ('forms', 'check_ui_forms.py', 'form_render', True),
   ('network', 'check_ui_network.py', 'network_render', True),

@@ -97,7 +97,7 @@ fn admit(graph: &LoweredGraph, held: &[bool]) -> Result<(), String> {
 }
 
 // Only these expression families have independent CPU logical-half captures.
-// In particular, Select, general reductions and transcendental half operations
+// General reductions and transcendental half operations
 // do not acquire a new admission path through this storage projection.
 fn virtual_expression(value: &ScalarExpr) -> bool {
     use super::scalar::Binary;
@@ -108,6 +108,11 @@ fn virtual_expression(value: &ScalarExpr) -> bool {
             value,
         }
         | ScalarExpr::Reciprocal { dtype: 10, value } => virtual_expression(value),
+        ScalarExpr::Select { condition, yes, no }
+            if matches!(condition.as_ref(), ScalarExpr::IndexLess { .. }) =>
+        {
+            virtual_expression(yes) && virtual_expression(no)
+        }
         ScalarExpr::Binary {
             kind: Binary::Add | Binary::Sub | Binary::Mul,
             dtype: 10,
@@ -138,6 +143,51 @@ pub(crate) fn physical_graph(logical: &LoweredGraph) -> Result<LoweredGraph, Str
     for (id, plan) in logical.plans.iter().enumerate() {
         if plan.ty.dtype == 10 && !held[id] && virtual_expression(&plan.expression) {
             physical.plans[id].ty.dtype = 1;
+        }
+    }
+    // CPU's physical-half PAD+ADD elimination depends on optimized movement
+    // context. Its -0/sNaN effects are not reproduced by a universal +0. Admit
+    // exact uint8-derived arms and unheld virtual arms; reject ambiguous half
+    // storage contexts before rendering rather than guessing their arithmetic.
+    fn concat_sources(value: &ScalarExpr, accepted: &[bool]) -> bool {
+        match value {
+            ScalarExpr::Select { condition, yes, no }
+                if matches!(condition.as_ref(), ScalarExpr::IndexLess { .. }) =>
+            {
+                concat_sources(yes, accepted) && concat_sources(no, accepted)
+            }
+            ScalarExpr::Load { plan, .. } => accepted[*plan],
+            _ => false,
+        }
+    }
+    let mut physical_half = vec![false; logical.plans.len()];
+    let mut exact_u8 = vec![false; logical.plans.len()];
+    for (id, plan) in logical.plans.iter().enumerate() {
+        let view = identity_half_view(&plan.expression, logical);
+        physical_half[id] = physical.plans[id].ty.dtype == 10
+            || plan.ty.dtype == 10 && view.is_some_and(|source| physical_half[source]);
+        if plan.ty.dtype == 10 {
+            exact_u8[id] = view.is_some_and(|source| exact_u8[source])
+                || match &plan.expression {
+                    ScalarExpr::Cast { dtype: 10, value } => matches!(value.as_ref(),
+                        ScalarExpr::Load { plan: source, .. } if logical.plans[*source].ty.dtype == 2),
+                    ScalarExpr::Select { .. } => concat_sources(&plan.expression, &exact_u8),
+                    _ => false,
+                };
+        }
+    }
+    let safe_arms = physical_half
+        .iter()
+        .zip(&exact_u8)
+        .map(|(physical, exact)| !physical || *exact)
+        .collect::<Vec<_>>();
+    for (id, plan) in logical.plans.iter().enumerate() {
+        if plan.ty.dtype == 10
+            && matches!(plan.expression, ScalarExpr::Select { .. })
+            && (!concat_sources(&plan.expression, &safe_arms)
+                || physical.plans[id].ty.dtype == 10 && !exact_u8[id])
+        {
+            return Err("CPU physical-half Concat movement context is not implemented".into());
         }
     }
     // Preserve the existing rejection for unproved physical-half edges. This

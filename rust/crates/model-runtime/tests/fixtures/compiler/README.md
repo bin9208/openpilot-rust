@@ -180,7 +180,7 @@ exposing the half output demonstrably changes downstream float bits. The five
 formerly rejected true-export graphs now compare every byte in both binding and
 memory-planning modes. The existing four physical/storage positives, all 13
 earlier genuine F16 cases and actual image Conv/prefix30/59/97 gates still pass.
-Four original half Relu/Concat contexts remain rejected before publication;
+At that checkpoint four original half Relu/Concat contexts remained rejected;
 this profile does not admit general conditionals, half reductions or math.
 
 The earlier all-nine-node driver hash gate used per-node forced realization,
@@ -282,9 +282,73 @@ whole-model positive; it is not an analytic proof that quantization hides fusion
 differences for every input. The actual optimized fusion implementation remains
 pending; no tolerance or output normalization was introduced.
 
-Final source validation: all 146 model-runtime package tests passed, including
+Previous checkpoint validation: all 146 model-runtime package tests passed, including
 the untouched whole-model byte gate and all review controls. Fresh current-library
 A630 Add source and genuine2144byte binary remain exactly equal to original;
 strict all-target Clippy also passed on the final reviewed source.
 All model Python and broader compiler/training/development functionality remain
 pending until genuinely replaced.
+
+
+`original-half-concat-cpu.json` records the next partial compiler unit. Its 295
+independently compiled original Concat graphs distinguish true F16 outputs from
+f32 exports, physical versus virtual half, held source/result/view outputs,
+repeated/distinct operands, 1/2/3 operands, nonuniform axes and raw IEEE edges.
+197 supported cases compare every byte in both memory modes; 98 original-valid
+ambiguous physical/held contexts are separate prepublication rejection gates.
+Original physical-half PAD+ADD elimination depends on layout and shared-source
+context: a universal additive-zero rule changed -0 and signaling NaN bits and
+was discarded. These rejection cases are not equivalence positives. Admission
+is limited to independently proved virtual and exact uint8-derived half paths.
+The existing mixed/f32 Concat PAD barrier and matrix-alias fences remain.
+
+The same fixture pins true final-output-only driving-model prefixes 6/7/8/9,
+using exact source `driving_supercombo.onnx` SHA256
+`f73a9e535523d5e9acb9e642c64e33d631825dc8ba74123757d107cedd047bb5`.
+Inputs are uint8 [1,12,128,256]: img repeats0..255 1536 times, big_img repeats
+255..0 1536 times; other offline inputs are zero f32. Only each final prefix
+output is exported as f32 and realized once. Prefix source identities,
+output names/dtypes/shapes/byte counts and independent hashes are retained.
+The first Conv executes 113,246,208 products and its f32 [1,64,64,128] output
+hash is `621e5b7b9d987aa11a8c2902d918c9553cc49ab095c99ba4ccb82ee8ab92a435`.
+This fixed-input host preprocessing proof does not establish full driving-model,
+all-input, GPU, device or complete compiler equivalence.
+
+Prefix8 independently exposed constant-vector reciprocal folding before late
+FDIV: 387,072/786,432 f32 patterns differed. The failure hashes and first bits
+remain recorded. Normal finite direct initializer vectors (at most4096 values)
+now fold before FDIV; ten original f32/half cases compare every byte in both
+memory modes. Thirty-two additional positive controls cover equal-shape dynamic
+bindings, single normal C+w, shared divisors/multiple requested outputs and
+non-growing transpose/reshape/slice/reverse views. Unrelated live NaN/raw inputs
+remain exported byte-exact. The 120 reciprocal rejection controls separately
+retain special vectors, computed constants, neutral/canonicalized arithmetic,
+view aliases, broadcast reuse and unsupported movement producers. Eight of
+those use Neg, which is outside the original offline loader's27-op contract.
+No output is published for unsupported cases.
+
+Dynamic divisor admission is deliberately partial: direct runtime bindings
+through source-tagged Identity/Cast/Reshape/Transpose/Slice/Squeeze/Unsqueeze/
+Expand movements, or the independently proved single Add(normal finite nonzero
+initializer, such a binding). Every view must be non-growing and have at least
+the output cardinality. A growing Expand followed by a shrinking Slice retained
+one-byte original/native differences despite equal endpoint sizes; that proof
+is retained and the path rejects. This is not a general injectivity proof.
+Other Load-producing operators and deeper computed divisors remain unsupported
+even when the original accepts them. There is no optimizer-identity enumeration,
+fixture/name/dimension allowlist, Python fallback or output normalization.
+Embedded graph/input/output data, original source hashes and the joint-scheduling
+recipe make the independent small-graph corpus portable after source retirement.
+Full fusion/scheduling, remaining driving policy operators and broader tinygrad
+training/development functionality remain pending; no model Python is removed.
+
+Final reviewed source validation: all151 model-runtime package tests passed,
+zero failed/ignored, including the untouched553-f32 driver output gate, all
+actual driving preprocessing prefixes and all218 Concat/reciprocal rejection
+controls (including the eight operators outside the offline27-op contract).
+Strict all-target Clippy passed with warnings denied. Fresh current-library
+A630 Add source and genuine2144-byte binary remain byte-identical to original;
+all seven renderer/backend/lowering/storage source hashes match the final files.
+The earlier151-test run is explicitly pre-review-repair evidence; only the
+reviewed-final run establishes this checkpoint. Full compiler/Python retirement
+remains pending.

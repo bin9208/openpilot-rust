@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Forty-one sources have locally verified replacements and migrated
-callers; 3,539 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Forty-six sources have locally verified replacements and migrated
+callers; 3,534 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -757,6 +757,115 @@ known behavior. Compact provenance and 21 observed cases are retained in
 `rust/crates/dev-tools/tests/fixtures/ui-emoji/`; no codec dependency, Python
 removal or format-equivalence claim was introduced for that unfinished unit.
 
+## Native scroll and scroller gates
+
+The two remaining headless scroll checker drivers are replaced by
+`check-ui-scroll` and `check-ui-scroller`, preserving all 4,500 scroll frames
+and 720 scroller frames. Source/dependency-pinned independent captures preserve
+the exact discrete comparisons, strict scroll offset `< 1e-5` and velocity
+`< 1e-8` bounds, and recursive scroller float `<= 1e-4` bound with original
+key-set and sequence rules. Eighty-five unchanged-original cases include
+boundary failures, boolean/numeric quirks, malformed streams, late failures,
+stale outputs and CLI artifact phases; eighteen original CLI cases also pass.
+
+The original DEBUG_SCROLL environment contract is preserved: only the exact
+value `1` enables captured source debug output, emitted before each scene's
+input/source files and child invocation. Partial output is retained on a failed
+candidate. No child deadline or output limit was added. An explicit writer makes
+phase ordering testable without mutating the process environment in parallel
+tests. Full actual original/native runs compare every artifact and stdout byte
+under DEBUG values 0, 1, 01 and a raw non-UTF-8 value, including raw paths and
+inherited environment values. Sixteen actual comparison pairs pass; strict
+focused Clippy and four native tests pass.
+
+The framework retains all thirteen gates in order, now six native and seven
+Python commands. Its regression suite includes immediate failure at both stack
+and scroller, retaining command logs, ledger records, display arguments and the
+EGL disk guard. Nine caller tests and Ruff pass. CI explicitly builds the two
+new binaries under the existing UI-checker growth guard. After deleting the two
+original drivers, both native checks pass against fresh actual examples with
+`PATH=/nonexistent`. This does not retire the generic UI source modules or prove
+ARM equivalence. Current source inventory: 43 replaced, 3,537 pending.
+
+## Native diagnostics, communication snapshots and model timing
+
+The three native commands `check-runtime-diagnostics`,
+`check-communication-snapshot` and `check-model-timing` replace their Python
+checker drivers together. Communication imported the diagnostic comparator;
+that maintained dependency was migrated before either source file was removed.
+The native comparator retains exact JSON types, object insertion order, integer
+values and f64 bits, with the original equivalence for NaN payloads. It does not
+reuse the looser UI numeric equality rules.
+
+Independent full corpora preserve 18,314 diagnostic steps and 12,385 emissions,
+11,205 communication snapshots with exact serialized cereal inputs, and 2,053
+model-timing steps with 536 aggregates and the explicit original/native backend
+name mapping. Ninety-two unchanged-original command cases and sixteen direct
+scalar characterizations cover type/key-order/ULP/sign-zero differences, failed
+children, strict stream decoding, JSONL separators, late failures and original
+JSON nesting limits. Runtime, Communication and Timing retain their different
+input/expected/actual artifact ordering, including serialization failures and
+Timing's rejection of a pre-existing output directory.
+
+Live runtime/source helpers, actual schema imports and applicable NumPy,
+pycapnp, zstandard and pytest lock records remain pinned. Generic SubMaster,
+message-state and runtime diagnostic helpers are not retired by this change.
+The corpora are frozen independent Linux x86_64 original baselines, not dynamic
+source recomputation or ARM evidence. Source or dependency changes fail closed.
+Fresh actual native examples match all eighteen files and stdout/stderr through
+both original and Rust checker commands. Six additional raw candidate/output
+path and symlink pairs pass; no physical raw-repository-root equivalence is
+claimed for pycapnp. All three commands also pass after source deletion with
+`PATH=/nonexistent`.
+
+CI explicitly builds and requires the three native commands, while retaining
+all original model example construction and evidence publication rules. Its
+new 512 MiB build allowance is tested separately from the unchanged 179 original
+guards/hash and other added guard categories; the workflow now has 190 guards.
+The source inventory has 46 replaced and 3,534 pending baseline entries.
+
+## Bounded all-half Concat and driving preprocessing compilation
+
+The next CPU compiler unit implements verified virtual and uint8-derived
+all-half Concat paths and bounded direct finite initializer-vector reciprocal
+folding. Independent original evidence showed that general physical-half Concat
+movement and reciprocal optimization depend on scheduling context; those known
+unsupported cases reject before publication rather than changing outputs or
+relaxing comparisons. The final fixture has 239 small-graph equivalence positives
+in both memory-planning modes and 218 separate rejection controls. Eight controls
+use Neg outside the original offline loader's admitted operator set; rejected
+original-valid cases are not counted as numerical equivalence passes.
+
+A real driving preprocessing mismatch established constant-vector folding before
+FDIV: 387,072 of 786,432 f32 patterns initially differed. Direct finite initializer
+vectors of at most 4,096 values now preserve the original reciprocal-then-multiply
+semantics. Computed constants, deeper dynamic arithmetic, special vectors and
+broadcast reuse remain unsupported. The supported dynamic forms are direct
+bindings through explicitly source-tagged non-growing views/casts and a proved
+single Add of a normal nonzero initializer and such a binding. Every view edge
+is checked; an Expand followed by Slice had repeated coordinates despite equal
+endpoint cardinalities, so growth-bearing ancestry rejects. This is an explicit
+partial admission boundary, not a complete optimizer or general injectivity proof.
+
+True-final f32 exports of pinned driving-model prefixes 6, 7, 8 and 9 now match
+independent original outputs exactly. The first Conv performs 113,246,208 products
+and its f32 [1,64,64,128] output SHA-256 is
+`621e5b7b9d987aa11a8c2902d918c9553cc49ab095c99ba4ccb82ee8ab92a435`.
+The untouched driver model's existing 553-f32 whole-output gate remains exact.
+Final reviewed model source passes all 151 package tests with no failures or
+ignored tests, strict all-target Clippy and independent review. The genuine
+A630 Add source and 2,144-byte binary remain byte-identical to the original,
+and all seven source-proof hashes match current files. Earlier pre-repair test
+runs are not substituted for this final result. Full driving-model, all-input,
+GPU, device, compiler/training and Python retirement remain unfinished; no model
+Python was deleted.
+
+Combined local checks pass 290 selected dev-tools tests and 16 service-tools
+tests through the actual fast-checks routing, all-target dev-tools/model Clippy,
+workspace formatting, nine UI caller tests, Ruff and staged whitespace checks.
+The separately run final model suite passes 151 tests. Exact-head remote Actions
+remain a separate delivery gate.
+
 ## Outstanding delivery evidence
 
 Checkpoint `30866c90dc246fddf2c963b3e5f0947390bee30d` was pushed to the
@@ -785,6 +894,15 @@ Checkpoint `7668b660bc89da7cb605878d574c5d97f340bcd1` was subsequently pushed;
 its push/PR fast checks, user docs and integration pass, and its complete
 [Rust workspace/aarch64 run](https://github.com/bin9208/openpilot-rust/actions/runs/38729020029)
 also passed. No later commit inherits earlier CI evidence.
+
+Checkpoint `a4fabd5637202905e5643057aadb1dd7f5ef4659` subsequently passed
+push/PR fast checks, mapped user docs, integration, and its complete
+[Rust workspace/aarch64 run](https://github.com/bin9208/openpilot-rust/actions/runs/38744711057).
+The next verified checkpoint `38a5abc6a1e3bb0d7e3ffe7729b7fc62cc92d75c` is
+pushed to the same isolated issue branch with 41 replaced source files. Its
+exact-head Actions are pending separately; it does not inherit the earlier
+success. In-progress all-half driving-model compilation and subsequent checker
+ports are not part of that published checkpoint.
 
 Continue the [implementation plan](rust-repository-python-retirement-296-plan.md)
 through every remaining source family, actual consumer migration, a zero-Python

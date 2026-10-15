@@ -289,3 +289,23 @@ path = "src/bin/check_ui_widgets.rs"
 [[bin]]
 name = "check-ui-navigation"
 path = "src/bin/check_ui_navigation.rs"
+
+[[bin]]
+name = "check-runtime-diagnostics"
+path = "src/bin/check_runtime_diagnostics.rs"
+
+[[bin]]
+name = "check-model-timing"
+path = "src/bin/check_model_timing.rs"
+
+[[bin]]
+name = "check-ui-scroll"
+path = "src/bin/check_ui_scroll.rs"
+
+[[bin]]
+name = "check-ui-scroller"
+path = "src/bin/check_ui_scroller.rs"
+
+[[bin]]
+name = "check-communication-snapshot"
+path = "src/bin/check_communication_snapshot.rs"

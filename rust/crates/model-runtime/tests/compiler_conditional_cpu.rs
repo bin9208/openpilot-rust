@@ -26,6 +26,35 @@ fn run(case: &serde_json::Value, memory: bool) {
     let bytes = decode(case["onnx_hex"].as_str().unwrap());
     let path = temp.path().join("model.onnx");
     fs::write(&path, &bytes).unwrap();
+    if let Some(outputs) = case["outputs"].as_object() {
+        let parsed = openpilot_model_runtime::compiler_onnx::Model::parse(&bytes).unwrap();
+        let lowered = if case["offline_bindings"].as_bool().unwrap_or(true) {
+            LoweredGraph::lower_offline(&parsed)
+        } else {
+            LoweredGraph::lower(&parsed)
+        }
+        .unwrap();
+        for (name, expected) in outputs {
+            if let Some(shape) = expected["shape"].as_array() {
+                let actual = &lowered.plans[lowered.outputs[name]].ty;
+                assert_eq!(
+                    actual.shape,
+                    shape
+                        .iter()
+                        .map(|n| n.as_u64().unwrap() as usize)
+                        .collect::<Vec<_>>()
+                );
+                assert_eq!(
+                    actual.dtype,
+                    if expected["dtype"] == "dtypes.half" {
+                        10
+                    } else {
+                        1
+                    }
+                );
+            }
+        }
+    }
     let dest = temp.path().join("bundle");
     compile_onnx(
         &path,
@@ -308,6 +337,19 @@ fn actual_prefix_output(c: &serde_json::Value) -> Vec<u8> {
     } else {
         actual_prefix_source(c)
     };
+    if let Some(shape) = c["original"]["shape"].as_array() {
+        let parsed = openpilot_model_runtime::compiler_onnx::Model::parse(&bytes).unwrap();
+        let lowered = LoweredGraph::lower_offline(&parsed).unwrap();
+        let name = c["output_name"].as_str().unwrap();
+        assert_eq!(lowered.plans[lowered.outputs[name]].ty.dtype, 1);
+        assert_eq!(
+            lowered.plans[lowered.outputs[name]].ty.shape,
+            shape
+                .iter()
+                .map(|n| n.as_u64().unwrap() as usize)
+                .collect::<Vec<_>>()
+        );
+    }
     let path = temp.path().join("model.onnx");
     fs::write(&path, &bytes).unwrap();
     let dest = temp.path().join("bundle");
@@ -324,6 +366,11 @@ fn actual_prefix_output(c: &serde_json::Value) -> Vec<u8> {
     let mut model = unsafe { CpuModel::load(&dest) }.unwrap();
     for input in &compilation.graph.inputs {
         let bytes = match input.name.as_str() {
+            "img" => (0u8..=255).collect::<Vec<_>>().repeat(1536),
+            "big_img" => (0u8..=255).rev().collect::<Vec<_>>().repeat(1536),
+            "desire_pulse" => vec![0; 25 * 8 * 4],
+            "traffic_convention" | "action_t" => vec![0; 2 * 4],
+            "features_buffer" => vec![0; 24 * 512 * 4],
             "input_img" => (0u8..=255).collect::<Vec<_>>().repeat(5400),
             "calib" => [1.0f32 + 2f32.powi(-11), -0.0, 0.3]
                 .into_iter()
@@ -535,6 +582,11 @@ fn verified_materialization_dead_branch_and_quantized_fusion_controls_match_orig
         let mut model = unsafe { CpuModel::load(&dest) }.unwrap();
         for input in &compilation.graph.inputs {
             let bytes = match input.name.as_str() {
+                "img" => (0u8..=255).collect::<Vec<_>>().repeat(1536),
+                "big_img" => (0u8..=255).rev().collect::<Vec<_>>().repeat(1536),
+                "desire_pulse" => vec![0; 25 * 8 * 4],
+                "traffic_convention" | "action_t" => vec![0; 2 * 4],
+                "features_buffer" => vec![0; 24 * 512 * 4],
                 "input_img" => (0u8..=255).collect::<Vec<_>>().repeat(5400),
                 "calib" => [1.0f32 + 2f32.powi(-11), -0.0, 0.3]
                     .into_iter()
@@ -566,5 +618,150 @@ fn mean_on_independently_materialized_original_gelu_remains_exact() {
     let case = &fusion_fixture()["materialized_positive"];
     for memory in [false, true] {
         run(case, memory);
+    }
+}
+
+#[test]
+fn original_all_half_concat_physical_virtual_held_and_export_contexts_match() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-half-concat-cpu.json"
+    ))
+    .unwrap();
+    for case in fixture["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|case| case["compile_supported"] == true)
+    {
+        for memory in [false, true] {
+            run(case, memory);
+        }
+    }
+}
+
+#[test]
+fn ambiguous_original_valid_half_concat_contexts_reject_without_publication() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-half-concat-cpu.json"
+    ))
+    .unwrap();
+    for case in fixture["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|case| case["compile_supported"] == false)
+    {
+        let temp = tempfile::tempdir().unwrap();
+        let bytes = decode(case["onnx_hex"].as_str().unwrap());
+        let path = temp.path().join("model.onnx");
+        fs::write(&path, &bytes).unwrap();
+        let dest = temp.path().join("bundle");
+        let result = compile_onnx(
+            &path,
+            &format!("{:x}", Sha256::digest(&bytes)),
+            &CompileOptions {
+                offline_bindings: case["offline_bindings"].as_bool().unwrap(),
+                ..CompileOptions::default()
+            },
+            &dest,
+        );
+        assert!(
+            result
+                .err()
+                .is_some_and(|error| error.contains("physical-half Concat movement")),
+            "{}",
+            case["name"]
+        );
+        assert!(!dest.exists(), "{}", case["name"]);
+    }
+}
+
+#[test]
+fn actual_driving_true_final_half_concat_normalization_and_first_conv_match() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-half-concat-cpu.json"
+    ))
+    .unwrap();
+    for case in fixture["driving_preprocess"]["cases"].as_array().unwrap() {
+        let actual = actual_prefix_output(case);
+        assert_eq!(
+            actual.len() as u64,
+            case["original"]["bytes"].as_u64().unwrap()
+        );
+        assert_eq!(
+            format!("{:x}", Sha256::digest(&actual)),
+            case["original"]["sha256"].as_str().unwrap(),
+            "{}",
+            case["last_node"]
+        );
+    }
+}
+
+#[test]
+fn original_vector_initializer_division_folds_before_late_fdiv_rewrite() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-half-concat-cpu.json"
+    ))
+    .unwrap();
+    for case in fixture["vector_division"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|case| {
+            let name = case["name"].as_str().unwrap();
+            name.ends_with("-uniform")
+                || name.ends_with("-normal")
+                || name.starts_with("vectorDiv-1-") && name.ends_with("-small")
+        })
+        .chain(fixture["vector_dynamic_positive"].as_array().unwrap())
+    {
+        for memory in [false, true] {
+            run(case, memory);
+        }
+    }
+}
+
+#[test]
+fn unproved_vector_initializer_special_reciprocals_reject_without_publication() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-half-concat-cpu.json"
+    ))
+    .unwrap();
+    for case in fixture["vector_division"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|case| {
+            let name = case["name"].as_str().unwrap();
+            !(name.ends_with("-uniform")
+                || name.ends_with("-normal")
+                || name.starts_with("vectorDiv-1-") && name.ends_with("-small"))
+        })
+        .chain(fixture["vector_view_rejections"].as_array().unwrap())
+    {
+        let temp = tempfile::tempdir().unwrap();
+        let bytes = decode(case["onnx_hex"].as_str().unwrap());
+        let path = temp.path().join("model.onnx");
+        fs::write(&path, &bytes).unwrap();
+        let dest = temp.path().join("bundle");
+        let result = compile_onnx(
+            &path,
+            &format!("{:x}", Sha256::digest(&bytes)),
+            &CompileOptions {
+                offline_bindings: true,
+                ..CompileOptions::default()
+            },
+            &dest,
+        );
+        assert!(
+            result.err().is_some_and(|error| error.contains(
+                case["expected_error"]
+                    .as_str()
+                    .unwrap_or("constant-vector reciprocal")
+            )),
+            "{}",
+            case["name"]
+        );
+        assert!(!dest.exists());
     }
 }

@@ -126,8 +126,14 @@ fn verified_half_io_exact_casts_and_explicit_image_storage_remain_original_equiv
 }
 
 #[test]
-fn storage_profile_does_not_admit_unproved_half_conditional_graphs() {
+fn proven_half_concat_matches_original_while_half_relu_remains_rejected() {
     for case in fixture()["pending_conditional"].as_array().unwrap() {
+        if case["name"] == "Concat-held-False" {
+            for memory in [false, true] {
+                run_original(case, false, memory, true);
+            }
+            continue;
+        }
         let temp = tempfile::tempdir().unwrap();
         let bytes = decode(case["onnx_hex"].as_str().unwrap());
         let path = temp.path().join("model.onnx");

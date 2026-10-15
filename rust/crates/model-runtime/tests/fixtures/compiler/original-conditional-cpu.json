@@ -3673,5 +3673,6 @@
     }
   ],
   "status_at_float32_only_checkpoint": "Prefix200 rejected because live mixed logical-half/f32 Concat remains outside this bounded unit. Knownprefix93 optimizedfusion bitdiscrepancy remains unresolved.",
-  "following_mixed_unit": "original-mixed-conditional-cpu.json supersedes prefix98 rejection only after96 independent mixed f32-output captures and untouched whole-model output proof; all-half outputs remain rejected."
+  "following_mixed_unit": "original-mixed-conditional-cpu.json supersedes prefix98 rejection only after96 independent mixed f32-output captures and untouched whole-model output proof; all-half outputs remain rejected.",
+  "following_half_concat_unit": "original-half-concat-cpu.json records partial virtual/exact-U8 all-half admission. Unheld virtual Concat is now proved; ambiguous physical/held Concat and half Relu remain prepublication rejected. Historical rejection metadata records the prior checkpoint, not universal current rejection."
 }
