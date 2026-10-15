@@ -65,18 +65,31 @@ def test_arm_ui_commands_resolve_workspace_and_python_paths() -> None:
 
 def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path: Path, monkeypatch) -> None:
   import check_ui_ci as module
-  old_calls, native_calls = [], []
+  old_calls, native_calls, ordered = [], [], []
   binaries, output, raylib = tmp_path / 'binaries', tmp_path / 'output', tmp_path / 'raylib'
   monkeypatch.setenv('STARTUP_UI_RAYLIB_ROOT', str(raylib))
   monkeypatch.setenv('STARTUP_UI_RAYLIB_LIBRARY', str(raylib / 'lib/libopenpilot-raylib.so'))
-  monkeypatch.setattr(module.UiCheck, 'check', lambda self, name, script, arguments: old_calls.append(name))
+  def original_check(self, name, script, arguments):
+    old_calls.append(name)
+    ordered.append(name)
+  def native_check(command, directory, name):
+    native_calls.append((command, directory, name))
+    ordered.append(name)
+  monkeypatch.setattr(module.UiCheck, 'check', original_check)
   monkeypatch.setattr(module, 'require_space', lambda *args: None)
-  monkeypatch.setattr(module, 'run', lambda command, directory, name: native_calls.append((command, directory, name)))
+  monkeypatch.setattr(module, 'run', native_check)
   owner = module.UiCheck(output, binaries, tmp_path / 'peer')
   owner.execute('owned-display')
-  assert old_calls == ['state', 'scheduler', 'qr', 'root', 'augmented', 'camera', 'runtime', 'pages',
-                       'hud-eight-modes', 'hud-traffic', 'calibration', 'torque']
+  assert old_calls == ['state', 'scheduler', 'root', 'augmented', 'camera', 'runtime', 'pages',
+                       'hud-eight-modes', 'hud-traffic', 'calibration']
+  assert ordered == ['state', 'scheduler', 'qr', 'root', 'augmented', 'camera', 'runtime', 'pages',
+                     'hud-eight-modes', 'hud-traffic', 'calibration', 'torque', 'native-safety',
+                     'native-model-adapter', 'native-training-adapter']
   assert native_calls == [
+    ([str(binaries / 'check-ui-qr'), '--binary', str(binaries / 'examples/qr_trace'),
+      '--output', str(output / 'qr')], output / 'commands', 'qr'),
+    ([str(binaries / 'check-ui-torque-geometry'), '--binary', str(binaries / 'examples/torque_geometry'),
+      '--output', str(output / 'torque')], output / 'commands', 'torque'),
     ([str(binaries / 'check-ui-native-safety'), '--target', str(binaries),
       '--output', str(output / 'native-safety'), '--display', 'owned-display',
       '--raylib-root', str(raylib), '--raylib-library', str(raylib / 'lib/libopenpilot-raylib.so')],

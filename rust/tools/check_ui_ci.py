@@ -71,8 +71,11 @@ class UiCheck:
 
   def execute(self, display: str) -> None:
     examples = self.binaries / 'examples'
-    for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace'), ('qr', 'qr_trace')):
+    for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace')):
       self.check(name, f'check_ui_{name}.py', ['--binary', str(examples / binary), '--output', str(self.output / name)])
+    require_space(self.output, 3 * 1024**3)
+    run([str(self.binaries / 'check-ui-qr'), '--binary', str(examples / 'qr_trace'),
+      '--output', str(self.output / 'qr')], self.commands, 'qr')
     for name in ('root', 'augmented', 'camera'):
       self.check(name, f'check_ui_{name}.py', ['--binary', str(examples / 'product_render'),
         '--peer', str(self.peer), '--output', str(self.output / name), '--display', display])
@@ -84,8 +87,9 @@ class UiCheck:
         '--output', str(self.output / name), '--display', display, *arguments])
     self.check('calibration', 'check_ui_calibration.py',
       [str(examples / 'calibration_geometry'), str(self.output / 'calibration'), display])
-    self.check('torque', 'check_ui_torque_geometry.py',
-      ['--binary', str(examples / 'torque_geometry'), '--output', str(self.output / 'torque')])
+    require_space(self.output, 3 * 1024**3)
+    run([str(self.binaries / 'check-ui-torque-geometry'), '--binary', str(examples / 'torque_geometry'),
+      '--output', str(self.output / 'torque')], self.commands, 'torque')
     require_space(self.output, 3 * 1024**3)
     run([str(self.binaries / 'check-ui-native-safety'), '--target', str(self.binaries),
       '--output', str(self.output / 'native-safety'), '--display', display,
@@ -134,7 +138,7 @@ def main() -> None:
   executables = [binaries / 'openpilot-ui', peer, Path(os.environ['STARTUP_UI_RAYLIB_LIBRARY'])]
   executables += [binaries / 'examples' / name for name in EXAMPLES]
   executables += [binaries / f'check-ui-{kind}-adapter' for kind in ('model', 'training')]
-  executables += [binaries / 'check-ui-native-safety']
+  executables += [binaries / name for name in ('check-ui-native-safety', 'check-ui-qr', 'check-ui-torque-geometry')]
   receipt = {'argv': sys.argv, 'source_sha256': hashes(source_paths), 'python_imports': imports,
     'versions': {name: importlib.metadata.version(name) for name in ('numpy', 'pillow', 'comma-deps-raylib',
       'cffi', 'python-xlib', 'pyzmq', 'pycapnp', 'requests', 'qrcode', 'setproctitle', 'Cython', 'setuptools')},

@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Thirty-two sources have locally verified replacements and migrated
-callers; 3,548 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Thirty-four sources have locally verified replacements and migrated
+callers; 3,546 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -570,6 +570,56 @@ all 134 model-runtime tests. All-target dev-tools/model Clippy, workspace
 formatting, six remaining UI orchestration tests, Ruff and diff checks pass.
 These are exact local scope results; the newly published head needs its own
 Actions results and does not inherit earlier checkpoint success.
+
+Two fixed-input UI comparison drivers now use complete independent original
+corpora: 64 QR cases (208,400 modules) and 1,603 torque arc steps (135,829 points).
+Compressed input/expected bytes carry integrity hashes and source/dependency pins;
+expected answers never come from the native UI implementation. Thirty original
+failure/artifact cases, eighteen CLI cases, strict text/JSON admission and the
+independently measured torque serializer depth preserve the original checks.
+Original and native checkers run against freshly built current-source examples
+with identical five output files and stdout; raw Unix path comparisons also pass.
+Independent review found no Important issue. The two Python driver files are
+removed and all fifteen UI-suite commands retain their original ordering.
+
+These are frozen Linux x86_64 original baselines, not dynamic original-source
+recomputation or ARM equivalence evidence. Relevant source/dependency drift fails
+closed and requires an independent recapture. The torque source helper and runtime
+module remain tracked because other comparisons, including Miri, still use them;
+the native source-pin reads are also explicit remaining dependencies. The current
+source inventory has 34 retired files and 3,546 pending entries.
+
+The bounded native CPU conditional unit now supports verified logical-f32 Concat
+and Relu with lazy branches and checked per-branch index bounds. The source
+Concat padding boundary remains distinct from direct arithmetic alias reuse.
+Twenty independent Concat graphs cover axes, shapes, held outputs, signed zero
+and NaN payloads; original barrier/Relu cases and negative aliases remain explicit.
+Actual true-final prefixes 99/100/101/105/112 match. Mixed-half prefix 98 and the
+full model still reject before publication; prefix 93's earlier fusion mismatch
+remains unresolved. All 140 model tests pass on the final source, strict Clippy
+passes and fresh A630 Add source/binary still match. No model Python is removed.
+
+Native UI CI infrastructure is also implemented and independently tested, but
+has not replaced the remaining Python orchestrator. It preserves peer selection,
+raw filesystem paths, a separate inherited Xvfb display descriptor, command
+receipts and cleanup. The safe `command-fds` 0.3.3 dependency is pinned; parent
+descriptors remain CLOEXEC and no workspace unsafe code was added. Nineteen
+original peer cases, thirteen display cases and six collector cases are covered
+by twelve tests, including inherited stdin and unrelated-exec descriptor closure.
+A private actual Xvfb/XTEST run passed and its owned process was reaped. Explicit
+new policies bound the complete display line (15 seconds/64 KiB) and collected
+streams (64 MiB plus a caller deadline); the original partial-line/collector hangs
+are not reproduced silently. Import/version/cereal/XTEST/fingerprint gates and
+ten remaining Python comparisons are still pending. This module retires no file.
+
+Final local checks for the latest unit pass 264 selected dev-tools tests, 16
+service-tools tests and all 140 model-runtime tests. The separately invoked
+private-Xvfb integration test also passes; it remains opt-in in the ordinary
+suite. All-target dev-tools/model Clippy, workspace formatting, six UI caller
+tests, Ruff and diff checks pass. After deleting the two source drivers, both
+native QR/torque checkers also pass with `PATH=/nonexistent` against the actual
+native examples. This proves those command boundaries do not execute Python,
+not that the remaining repository is Python-free.
 
 ## Outstanding delivery evidence
 

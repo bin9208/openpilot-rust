@@ -47,6 +47,8 @@ pub mod release_files;
 pub mod services_header;
 pub mod startup_adapter_sanitizers;
 pub mod ui_adapter_sanitizers;
+pub mod ui_ci_runtime;
+pub mod ui_fixed_corpus_check;
 pub mod ui_updater_handshake;
 pub mod updated_process_check;
 pub mod updated_process_fixture;

@@ -521,6 +521,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "command-fds"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b60b5124979fccd9addd89d8b97a1d6eebb4950694520c75ddd722535ea443f"
+dependencies = [
+ "nix 0.31.3",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2727,6 +2737,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "bzip2",
+ "command-fds",
  "flate2",
  "openpilot-disk-space",
  "openpilot-log-format",

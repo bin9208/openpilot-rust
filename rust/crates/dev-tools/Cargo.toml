@@ -9,6 +9,14 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-ui-qr"
+path = "src/bin/check_ui_qr.rs"
+
+[[bin]]
+name = "check-ui-torque-geometry"
+path = "src/bin/check_ui_torque_geometry.rs"
+
+[[bin]]
 name = "check-ui-native-safety"
 path = "src/bin/check_ui_native_safety.rs"
 
@@ -71,6 +79,7 @@ sha2 = "0.10"
 tempfile = "3"
 flate2 = "1"
 bzip2 = "=0.6.1"
+command-fds = "=0.3.3"
 tar = { version = "0.4", default-features = false }
 rustix = { version = "1", features = ["fs", "process", "event"] }
 regex = "1"

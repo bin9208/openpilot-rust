@@ -209,3 +209,31 @@ along with strict all-target Clippy and fresh current-renderer genuine A630 Add
 source/binary equality. Full model parity,
 general scheduling/fusion/storage profiles, conditional rendering, other backend
 compilation, training/development functionality and Python retirement remain open.
+
+
+`original-conditional-cpu.json` retains 20 independently compiled pure-f32 ONNX
+Concat captures: distinct/repeated inputs, held source outputs, signed zeros,
+signed quiet/signaling NaNs, axes0/1/-1 and four nonuniform three-input/rank1..3
+graphs. Five further positives cover f32 Relu boundary bits and computed-matrix
+Concat with K1/3/4/8. The four paired direct-Add matrix graphs remain rejected;
+Concat's original PAD barrier does not authorize direct arithmetic alias reuse.
+The native CPU renderer evaluates only a selected branch and intersects exact
+IndexExpr subtree intervals within each IndexLess branch. Negative and oversized
+load maps still reject; no unchecked load or speculative pointer fallback is
+introduced. Branches that would hoist reduction statements reject. Logical graph
+admission is checked before physical storage projection and permits only f32
+Concat/Relu inputs and outputs; mixed/half conditionals, arbitrary Where and GPU
+conditional lowering remain unsupported and reject before publication.
+
+Fresh true-final driver prefixes99/100/101/105/112 match the independent original
+export hashes exactly. Prefix100 Relu is a portable regression gate constructed
+from the mandatory pinned source and independently captured prefix identity.
+Prefix98 combines f32 GEMM with logical-half calibration and is explicitly tested
+to reject before publication; full prefix200 has the same unproved mixed-dtype
+boundary. Prefix93's optimized Conv/Gelu/Mean discrepancy remains open. Validation:
+all 140 tests passed in the final full-package run, including both additional
+actual-prefix gates,
+strict all-target Clippy passed, and fresh current-renderer A630 Add source and
+2144byte binary remain exactly equal to original. This is a bounded compiler
+unit; complete model parity/backends and all remaining Python functionality are
+not retired.

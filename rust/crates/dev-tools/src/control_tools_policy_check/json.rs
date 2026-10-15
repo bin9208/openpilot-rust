@@ -145,7 +145,7 @@ fn int_float(integer: &str, float: f64) -> bool {
                 format!("{float:.0}")
             }
 }
-pub(super) fn equal(a: &JsonValue, b: &JsonValue) -> bool {
+pub(crate) fn equal(a: &JsonValue, b: &JsonValue) -> bool {
     // json.loads shares its NaN constant between documents. Container equality
     // uses identity before numeric equality; top-level NaN steps still differ.
     let mut pending = vec![(a.clone(), b.clone(), false)];
@@ -196,7 +196,7 @@ pub(super) fn equal(a: &JsonValue, b: &JsonValue) -> bool {
     }
     true
 }
-pub(super) fn sequence(value: &JsonValue) -> Result<Vec<JsonValue>> {
+pub(crate) fn sequence(value: &JsonValue) -> Result<Vec<JsonValue>> {
     match value.view() {
         JsonView::Array(values) => Ok(values),
         JsonView::Object(values) => values
@@ -212,7 +212,16 @@ pub(super) fn sequence(value: &JsonValue) -> Result<Vec<JsonValue>> {
         _ => Err("JSON value is not iterable and has no length".into()),
     }
 }
-pub(super) fn pretty(value: &JsonValue, initial_depth: usize) -> Result<String> {
+pub(crate) fn pretty(value: &JsonValue, initial_depth: usize) -> Result<String> {
+    // Original control CLI's captured serializer context; other fixed callers
+    // provide their independently measured limit through the shared writer.
+    pretty_with_limit(value, initial_depth, 995)
+}
+pub(crate) fn pretty_with_limit(
+    value: &JsonValue,
+    initial_depth: usize,
+    container_limit: usize,
+) -> Result<String> {
     enum Part {
         Node(JsonValue, usize),
         Text(String),
@@ -227,9 +236,7 @@ pub(super) fn pretty(value: &JsonValue, initial_depth: usize) -> Result<String> 
             }
             Part::Node(v, d) => (v, d),
         };
-        // Actual original CLI: mismatch payload depth 992 serializes; 993
-        // raises RecursionError before receipt creation. Root receipt is depth0.
-        if depth > 995 {
+        if depth > container_limit {
             return Err("Python indented JSON nesting limit exceeded".into());
         }
         let (open, close, entries) = match value.view() {
@@ -248,7 +255,7 @@ pub(super) fn pretty(value: &JsonValue, initial_depth: usize) -> Result<String> 
                 continue;
             }
         };
-        if depth == 995 {
+        if depth == container_limit {
             return Err("Python indented JSON container nesting limit exceeded".into());
         }
         out.push_str(open);

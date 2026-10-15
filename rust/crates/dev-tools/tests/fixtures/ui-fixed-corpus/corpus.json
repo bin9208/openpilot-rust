@@ -1,0 +1,38 @@
+[
+  {
+    "kind": "qr",
+    "cases": 64,
+    "input_sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639",
+    "source_sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558",
+    "input_bytes": 24816,
+    "source_bytes": 1355319,
+    "gzip_bytes": 50215,
+    "printed": "PASS: 64 source/native QR segmentation, mask selection and complete module matrices\n",
+    "command": [
+      "controlled-ui-peer"
+    ],
+    "options": {
+      "text": true,
+      "capture_output": true,
+      "check": true
+    }
+  },
+  {
+    "kind": "torque",
+    "cases": 1603,
+    "input_sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f",
+    "source_sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b",
+    "input_bytes": 245492,
+    "source_bytes": 6892817,
+    "gzip_bytes": 1401060,
+    "printed": "PASS 1603 original/native torque arcs, exact float32 points with quantized hits, ties and LRU eviction\n",
+    "command": [
+      "controlled-ui-peer"
+    ],
+    "options": {
+      "text": true,
+      "capture_output": true,
+      "check": true
+    }
+  }
+]

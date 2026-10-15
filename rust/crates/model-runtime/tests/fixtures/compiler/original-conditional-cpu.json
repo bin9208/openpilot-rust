@@ -1,0 +1,3676 @@
+{
+  "context": "CPU:LLVM original ONNX f32 Concat; all selected outputs jointly scheduled once; raw \u00b10, signed quiet/signalingNaNs and finite values, no intermediate realization",
+  "flags": {
+    "IMAGE": 1,
+    "FLOAT16": 1,
+    "NOLOCALS": 1,
+    "OPENPILOT_HACKS": 1
+  },
+  "sources": {
+    "tinygrad_repo/tinygrad/mixin/__init__.py": "1a9c8438c33a67e13c9ff684da24281f9e74e5ebbab48ce3b43731777225fb73",
+    "tinygrad_repo/tinygrad/uop/symbolic.py": "060cc88a25a746a5186b9f592e9a43ef4425e5bc37b361eec66c175e14362c39",
+    "tinygrad_repo/tinygrad/schedule/rangeify.py": "52bad522c3660171a708769999373a5177ac60d2ecde8c3db555769b677d2035",
+    "tinygrad_repo/tinygrad/nn/onnx.py": "db5d97311c3192960c9e2c501dbd546ed5b8dc4396e361e4211f7e8373556b96"
+  },
+  "cases": [
+    {
+      "name": "duplicateFalse-heldFalse-shape[8]-axis0",
+      "onnx_hex": "420210143a5d0a230a01610a016212066f75747075742206436f6e6361742a0b0a0461786973a0010218005a0f0a0161120a0a08080112040a0208085a0f0a0162120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020810",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff",
+        "b": "0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            16
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+        }
+      }
+    },
+    {
+      "name": "duplicateFalse-heldFalse-shape[2, 4]-axis0",
+      "onnx_hex": "420210143a690a230a01610a016212066f75747075742206436f6e6361742a0b0a0461786973a0010218005a130a0161120e0a0c080112080a0208020a0208045a130a0162120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208040a020804",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff",
+        "b": "0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            4,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+        }
+      }
+    },
+    {
+      "name": "duplicateFalse-heldFalse-shape[2, 4]-axis1",
+      "onnx_hex": "420210143a690a230a01610a016212066f75747075742206436f6e6361742a0b0a0461786973a0010218015a130a0161120e0a0c080112080a0208020a0208045a130a0162120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208020a020808",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff",
+        "b": "0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf0000008000000000000080bf0000803f4523c17f4523c1ff4523817f452381ff452381ff4523817f4523c1ff4523c17f"
+        }
+      }
+    },
+    {
+      "name": "duplicateFalse-heldFalse-shape[2, 4]-axis-1",
+      "onnx_hex": "420210143a720a2c0a01610a016212066f75747075742206436f6e6361742a140a0461786973a0010218ffffffffffffffffff015a130a0161120e0a0c080112080a0208020a0208045a130a0162120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208020a020808",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff",
+        "b": "0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf0000008000000000000080bf0000803f4523c17f4523c1ff4523817f452381ff452381ff4523817f4523c1ff4523c17f"
+        }
+      }
+    },
+    {
+      "name": "duplicateFalse-heldTrue-shape[8]-axis0",
+      "onnx_hex": "420210143a6e0a230a01610a016212066f75747075742206436f6e6361742a0b0a0461786973a0010218005a0f0a0161120a0a08080112040a0208085a0f0a0162120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020810620f0a0161120a0a08080112040a020808",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff",
+        "b": "0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            16
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+        },
+        "a": {
+          "dtype": "dtypes.float",
+          "shape": [
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateFalse-heldTrue-shape[2, 4]-axis0",
+      "onnx_hex": "420210143a7e0a230a01610a016212066f75747075742206436f6e6361742a0b0a0461786973a0010218005a130a0161120e0a0c080112080a0208020a0208045a130a0162120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208040a02080462130a0161120e0a0c080112080a0208020a020804",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff",
+        "b": "0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            4,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+        },
+        "a": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateFalse-heldTrue-shape[2, 4]-axis1",
+      "onnx_hex": "420210143a7e0a230a01610a016212066f75747075742206436f6e6361742a0b0a0461786973a0010218015a130a0161120e0a0c080112080a0208020a0208045a130a0162120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208020a02080862130a0161120e0a0c080112080a0208020a020804",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff",
+        "b": "0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf0000008000000000000080bf0000803f4523c17f4523c1ff4523817f452381ff452381ff4523817f4523c1ff4523c17f"
+        },
+        "a": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateFalse-heldTrue-shape[2, 4]-axis-1",
+      "onnx_hex": "420210143a87010a2c0a01610a016212066f75747075742206436f6e6361742a140a0461786973a0010218ffffffffffffffffff015a130a0161120e0a0c080112080a0208020a0208045a130a0162120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208020a02080862130a0161120e0a0c080112080a0208020a020804",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff",
+        "b": "0000008000000000000080bf0000803f452381ff4523817f4523c1ff4523c17f"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf0000008000000000000080bf0000803f4523c17f4523c1ff4523817f452381ff452381ff4523817f4523c1ff4523c17f"
+        },
+        "a": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateTrue-heldFalse-shape[8]-axis0",
+      "onnx_hex": "420210143a4c0a230a01610a016112066f75747075742206436f6e6361742a0b0a0461786973a0010218005a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020810",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            16
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateTrue-heldFalse-shape[2, 4]-axis0",
+      "onnx_hex": "420210143a540a230a01610a016112066f75747075742206436f6e6361742a0b0a0461786973a0010218005a130a0161120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208040a020804",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            4,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateTrue-heldFalse-shape[2, 4]-axis1",
+      "onnx_hex": "420210143a540a230a01610a016112066f75747075742206436f6e6361742a0b0a0461786973a0010218015a130a0161120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208020a020808",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateTrue-heldFalse-shape[2, 4]-axis-1",
+      "onnx_hex": "420210143a5d0a2c0a01610a016112066f75747075742206436f6e6361742a140a0461786973a0010218ffffffffffffffffff015a130a0161120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208020a020808",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateTrue-heldTrue-shape[8]-axis0",
+      "onnx_hex": "420210143a5d0a230a01610a016112066f75747075742206436f6e6361742a0b0a0461786973a0010218005a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020810620f0a0161120a0a08080112040a020808",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            16
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        },
+        "a": {
+          "dtype": "dtypes.float",
+          "shape": [
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateTrue-heldTrue-shape[2, 4]-axis0",
+      "onnx_hex": "420210143a690a230a01610a016112066f75747075742206436f6e6361742a0b0a0461786973a0010218005a130a0161120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208040a02080462130a0161120e0a0c080112080a0208020a020804",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            4,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        },
+        "a": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateTrue-heldTrue-shape[2, 4]-axis1",
+      "onnx_hex": "420210143a690a230a01610a016112066f75747075742206436f6e6361742a0b0a0461786973a0010218015a130a0161120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208020a02080862130a0161120e0a0c080112080a0208020a020804",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff4523c17f4523c1ff4523817f452381ff"
+        },
+        "a": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "duplicateTrue-heldTrue-shape[2, 4]-axis-1",
+      "onnx_hex": "420210143a720a2c0a01610a016112066f75747075742206436f6e6361742a140a0461786973a0010218ffffffffffffffffff015a130a0161120e0a0c080112080a0208020a02080462180a066f7574707574120e0a0c080112080a0208020a02080862130a0161120e0a0c080112080a0208020a020804",
+      "inputs": {
+        "a": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            8
+          ],
+          "hex": "00000000000000800000803f000080bf00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff4523c17f4523c1ff4523817f452381ff"
+        },
+        "a": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            4
+          ],
+          "hex": "00000000000000800000803f000080bf4523c17f4523c1ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "nonuniform3-rank1-axis0",
+      "onnx_hex": "420210143a710a260a01610a01620a016312066f75747075742206436f6e6361742a0b0a0461786973a0010218005a0f0a0161120a0a08080112040a0208015a0f0a0162120a0a08080112040a0208035a0f0a0163120a0a08080112040a02080262140a066f7574707574120a0a08080112040a020806",
+      "inputs": {
+        "a": "00000000",
+        "b": "000000804523817f452381ff",
+        "c": "4523817f452381ff"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            6
+          ],
+          "hex": "00000000000000804523817f452381ff4523817f452381ff"
+        }
+      }
+    },
+    {
+      "name": "nonuniform3-rank2-axis1",
+      "onnx_hex": "420210143a81010a260a01610a01620a016312066f75747075742206436f6e6361742a0b0a0461786973a0010218015a130a0161120e0a0c080112080a0208020a0208015a130a0162120e0a0c080112080a0208020a0208035a130a0163120e0a0c080112080a0208020a02080262180a066f7574707574120e0a0c080112080a0208020a020806",
+      "inputs": {
+        "a": "0000000000000080",
+        "b": "000000804523817f452381ff0010803f000080bf00000000",
+        "c": "4523817f452381ff0010803f000080bf"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            2,
+            6
+          ],
+          "hex": "00000000000000804523817f452381ff4523817f452381ff000000800010803f000080bf000000000010803f000080bf"
+        }
+      }
+    },
+    {
+      "name": "nonuniform3-rank3-axis-1",
+      "onnx_hex": "420210143a9a010a2f0a01610a01620a016312066f75747075742206436f6e6361742a140a0461786973a0010218ffffffffffffffffff015a170a016112120a100801120c0a0208010a0208020a0208015a170a016212120a100801120c0a0208010a0208020a0208035a170a016312120a100801120c0a0208010a0208020a020802621c0a066f757470757412120a100801120c0a0208010a0208020a020806",
+      "inputs": {
+        "a": "0000000000000080",
+        "b": "000000804523817f452381ff0010803f000080bf00000000",
+        "c": "4523817f452381ff0010803f000080bf"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            1,
+            2,
+            6
+          ],
+          "hex": "00000000000000804523817f452381ff4523817f452381ff000000800010803f000080bf000000000010803f000080bf"
+        }
+      }
+    },
+    {
+      "name": "nonuniform3-rank2-axis-2",
+      "onnx_hex": "420210143a8a010a2f0a01610a01620a016312066f75747075742206436f6e6361742a140a0461786973a0010218feffffffffffffffff015a130a0161120e0a0c080112080a0208010a0208025a130a0162120e0a0c080112080a0208030a0208025a130a0163120e0a0c080112080a0208020a02080262180a066f7574707574120e0a0c080112080a0208060a020802",
+      "inputs": {
+        "a": "0000000000000080",
+        "b": "000000804523817f452381ff0010803f000080bf00000000",
+        "c": "4523817f452381ff0010803f000080bf"
+      },
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            6,
+            2
+          ],
+          "hex": "0000000000000080000000804523817f452381ff0010803f000080bf000000004523817f452381ff0010803f000080bf"
+        }
+      }
+    }
+  ],
+  "matrix_barrier_provenance": {
+    "backend": "CPU:LLVM",
+    "flags": {
+      "IMAGE": 1,
+      "FLOAT16": 1,
+      "NOLOCALS": 1,
+      "OPENPILOT_HACKS": 1
+    },
+    "storage_barrier_proof": [
+      {
+        "k": 1,
+        "concat_tail_raw": true,
+        "add_uses_raw": true,
+        "add_uses_half": false
+      },
+      {
+        "k": 3,
+        "concat_tail_raw": true,
+        "add_uses_raw": true,
+        "add_uses_half": false
+      },
+      {
+        "k": 4,
+        "concat_tail_raw": true,
+        "add_uses_raw": false,
+        "add_uses_half": true
+      },
+      {
+        "k": 8,
+        "concat_tail_raw": true,
+        "add_uses_raw": false,
+        "add_uses_half": true
+      }
+    ]
+  },
+  "matrix_barrier_cases": [
+    {
+      "name": "Concat-computed-matrix-K1",
+      "onnx_hex": "420210143a9d010a120a01610a057363616c6512017822034d756c0a110a01780a016212017922064d61744d756c0a230a01790a017812066f75747075742206436f6e6361742a0b0a0461786973a0010218012a0f100142057363616c654a04ae47813f2a0f0801080110014201624a047b142e3e5a130a0161120e0a0c080112080a0208010a02080162180a066f7574707574120e0a0c080112080a0208010a020802",
+      "input_hex": "7b66993e",
+      "expected_hex": "38af523d2fef9a3e",
+      "original_computed_x_hex": "2fef9a3e"
+    },
+    {
+      "name": "Add-computed-matrix-K1",
+      "onnx_hex": "420210143a8d010a120a01610a057363616c6512017822034d756c0a110a01780a016212017922064d61744d756c0a130a01790a017812066f757470757422034164642a0f100142057363616c654a04ae47813f2a0f0801080110014201624a047b142e3e5a130a0161120e0a0c080112080a0208010a02080162180a066f7574707574120e0a0c080112080a0208010a020801",
+      "input_hex": "7b66993e",
+      "expected_hex": "1645b53e",
+      "original_computed_x_hex": "2fef9a3e"
+    },
+    {
+      "name": "Concat-computed-matrix-K3",
+      "onnx_hex": "420210143abd010a120a01610a057363616c6512017822034d756c0a110a01780a016212017922064d61744d756c0a230a01790a017812066f75747075742206436f6e6361742a0b0a0461786973a0010218012a0f100142057363616c654a04ae47813f2a2f0803080310014201624a247b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e5a130a0161120e0a0c080112080a0208010a02080362180a066f7574707574120e0a0c080112080a0208010a020806",
+      "input_hex": "7b66993e8577993e9088993e",
+      "expected_hex": "10241e3e10241e3e10241e3e2fef9a3e65009b3e9c119b3e",
+      "original_computed_x_hex": "2fef9a3e65009b3e9c119b3e"
+    },
+    {
+      "name": "Add-computed-matrix-K3",
+      "onnx_hex": "420210143aad010a120a01610a057363616c6512017822034d756c0a110a01780a016212017922064d61744d756c0a130a01790a017812066f757470757422034164642a0f100142057363616c654a04ae47813f2a2f0803080310014201624a247b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e5a130a0161120e0a0c080112080a0208010a02080362180a066f7574707574120e0a0c080112080a0208010a020803",
+      "input_hex": "7b66993e8577993e9088993e",
+      "expected_hex": "3701ea3e6d12ea3ea423ea3e",
+      "original_computed_x_hex": "2fef9a3e65009b3e9c119b3e"
+    },
+    {
+      "name": "Concat-computed-matrix-K4",
+      "onnx_hex": "420210143ad9010a120a01610a057363616c6512017822034d756c0a110a01780a016212017922064d61744d756c0a230a01790a017812066f75747075742206436f6e6361742a0b0a0461786973a0010218012a0f100142057363616c654a04ae47813f2a4b0804080410014201624a407b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e5a130a0161120e0a0c080112080a0208010a02080462180a066f7574707574120e0a0c080112080a0208010a020808",
+      "input_hex": "7b66993e8577993e9088993e9a99993e",
+      "expected_hex": "a2e5523ea2e5523ea2e5523ea2e5523e2fef9a3e65009b3e9c119b3ed1229b3e",
+      "original_computed_x_hex": "2fef9a3e65009b3e9c119b3ed1229b3e"
+    },
+    {
+      "name": "Add-computed-matrix-K4",
+      "onnx_hex": "420210143ac9010a120a01610a057363616c6512017822034d756c0a110a01780a016212017922064d61744d756c0a130a01790a017812066f757470757422034164642a0f100142057363616c654a04ae47813f2a4b0804080410014201624a407b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e5a130a0161120e0a0c080112080a0208010a02080462180a066f7574707574120e0a0c080112080a0208010a020804",
+      "input_hex": "7b66993e8577993e9088993e9a99993e",
+      "expected_hex": "6829023f6839023f6849023f6849023f",
+      "original_computed_x_hex": "2fef9a3e65009b3e9c119b3ed1229b3e"
+    },
+    {
+      "name": "Concat-computed-matrix-K8",
+      "onnx_hex": "420210143a9b030a120a01610a057363616c6512017822034d756c0a110a01780a016212017922064d61744d756c0a230a01790a017812066f75747075742206436f6e6361742a0b0a0461786973a0010218012a0f100142057363616c654a04ae47813f2a8c020808080810014201624a80027b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e5a130a0161120e0a0c080112080a0208010a02080862180a066f7574707574120e0a0c080112080a0208010a020810",
+      "input_hex": "7b66993e8577993e9088993e9a99993ea4aa993eaebb993eb8cc993e7b66993e",
+      "expected_hex": "d700d33ed700d33ed700d33ed700d33ed700d33ed700d33ed700d33ed700d33e2fef9a3e65009b3e9c119b3ed1229b3e07349b3e3c459b3e72569b3e2fef9a3e",
+      "original_computed_x_hex": "2fef9a3e65009b3e9c119b3ed1229b3e07349b3e3c459b3e72569b3e2fef9a3e"
+    },
+    {
+      "name": "Add-computed-matrix-K8",
+      "onnx_hex": "420210143a8b030a120a01610a057363616c6512017822034d756c0a110a01780a016212017922064d61744d756c0a130a01790a017812066f757470757422034164642a0f100142057363616c654a04ae47813f2a8c020808080810014201624a80027b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e7b142e3e5a130a0161120e0a0c080112080a0208010a02080862180a066f7574707574120e0a0c080112080a0208010a020808",
+      "input_hex": "7b66993e8577993e9088993e9a99993ea4aa993eaebb993eb8cc993e7b66993e",
+      "expected_hex": "6cf0363f6c00373f6c10373f6c10373f6c20373f6c20373f6c30373f6cf0363f",
+      "original_computed_x_hex": "2fef9a3e65009b3e9c119b3ed1229b3e07349b3e3c459b3e72569b3e2fef9a3e"
+    },
+    {
+      "name": "Relu-f32-boundaries",
+      "onnx_hex": "420210143a3a0a110a016112066f7574707574220452656c755a0f0a0161120a0a08080112040a02080e62140a066f7574707574120a0a08080112040a02080e",
+      "input_hex": "0000000000000080010000000100008000008000000080800000803f000080bf0000807f000080ff4523c17f4523c1ff4523817f452381ff",
+      "expected_hex": "0000000000000000010000000000000000008000000000000000803f000000000000807f0000000000000000000000000000000000000000"
+    }
+  ],
+  "actual_prefix98": {
+    "source_model": "dmonitoring_model.onnx",
+    "source_model_sha256": "dee5a294e8afaacc9295ac5d100e00733ecac278e79264b96331e40a3ede1b04",
+    "last_node": 98,
+    "output_name": "cat",
+    "prefix_sha256": "06a1a88343bd59cd24e72d93a11e1bbc8a2fb934845c7ecdbd7905c0fe1f872e",
+    "original": {
+      "index": 98,
+      "name": "cat",
+      "op": "Concat",
+      "shape": [
+        1,
+        515
+      ],
+      "sha256": "b3b78421568115ef898304527167a085dea6ba2b2c567e0cb4bbc8a5f8db6c34",
+      "bytes": 2060,
+      "programs": [
+        {
+          "name": "E_30_360_4_8_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "e5ce76c2c50c8bd7fdefa15494602fad9b4663fc60b2589fddf9041305160a0d",
+          "binary_sha256": "ce20618a103f7cb984655a8a1a87c3a1d4ed185768ffcde4c5aa462206d03eb9"
+        },
+        {
+          "name": "E_128_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d286abc0a107e2a1eda1d039f21298e6883fbd33c7c9be2058288671c165ec35",
+          "binary_sha256": "9ac04719557d659f5fb84b805cabe9fdf8c5674716b221a29f7a1a02260836a3"
+        },
+        {
+          "name": "E_128_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7e6fc206033f05e0c100f7d88d32df4ef5cfe85584a369d19056b700bbfe7134",
+          "binary_sha256": "b206b47241c805bb6d1fbd1ddd1cd7130dfc63411d7793ee3da497c0aa1c470e"
+        },
+        {
+          "name": "E_32_128_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "34036e9c8e68b6073e000b8b600a4d9b4ccc0686facabea815b305346c773ae5",
+          "binary_sha256": "147a738bd8a550317106cec0f2a69a976e4b4083bf2809eb45a2a3d7fbb76328"
+        },
+        {
+          "name": "E_128_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d286abc0a107e2a1eda1d039f21298e6883fbd33c7c9be2058288671c165ec35",
+          "binary_sha256": "9ac04719557d659f5fb84b805cabe9fdf8c5674716b221a29f7a1a02260836a3"
+        },
+        {
+          "name": "E_128_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7e6fc206033f05e0c100f7d88d32df4ef5cfe85584a369d19056b700bbfe7134",
+          "binary_sha256": "b206b47241c805bb6d1fbd1ddd1cd7130dfc63411d7793ee3da497c0aa1c470e"
+        },
+        {
+          "name": "E_32_128_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "34036e9c8e68b6073e000b8b600a4d9b4ccc0686facabea815b305346c773ae5",
+          "binary_sha256": "147a738bd8a550317106cec0f2a69a976e4b4083bf2809eb45a2a3d7fbb76328"
+        },
+        {
+          "name": "E_96_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "3c990254fc17f6c471c5c9dc60bd1d15bc11085c4bce42963a70918c1e9b4a1e",
+          "binary_sha256": "a91184b4f64ce5884189fa2c7147697e74b7bfd21dbccdd9193818aaaa573fe7"
+        },
+        {
+          "name": "E_96_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "812c6e46ec2902bef130a41b893524edde506c0da377997dc3afafa6f7e48e42",
+          "binary_sha256": "cb905901364dd7d74dc8bbc357144436f89bcb5a042931415eb4963c3e22640d"
+        },
+        {
+          "name": "E_32_384_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2450793acbc6aec6f8cb955dfaf1ecd332a1994237b0adcdab76ce56ee59d678",
+          "binary_sha256": "2f1e49db7ab08922395b2b2c012a3f1257860c8667630efd9df3019e507bcaa1"
+        },
+        {
+          "name": "E_128_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d286abc0a107e2a1eda1d039f21298e6883fbd33c7c9be2058288671c165ec35",
+          "binary_sha256": "9ac04719557d659f5fb84b805cabe9fdf8c5674716b221a29f7a1a02260836a3"
+        },
+        {
+          "name": "E_128_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "b8619b6d90a65432106c937f83f9ade1c09f4feb35f413773a7ca0ed5397b2b5",
+          "binary_sha256": "468ce004a4f0cefdd2bed210bfdd982f35e0767cf430c933a641ad085c35fbfd"
+        },
+        {
+          "name": "E_32_128_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "34036e9c8e68b6073e000b8b600a4d9b4ccc0686facabea815b305346c773ae5",
+          "binary_sha256": "147a738bd8a550317106cec0f2a69a976e4b4083bf2809eb45a2a3d7fbb76328"
+        },
+        {
+          "name": "E_32_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2f366001c18cc66a0e2353c4b763a87c2c835421b0f610ec9f8b74d9c421738c",
+          "binary_sha256": "b1d0a6a90948830cc5010e4c5959737c378a0472f6ea9ad32bc7eb8b8449fe13"
+        },
+        {
+          "name": "E_128_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d286abc0a107e2a1eda1d039f21298e6883fbd33c7c9be2058288671c165ec35",
+          "binary_sha256": "9ac04719557d659f5fb84b805cabe9fdf8c5674716b221a29f7a1a02260836a3"
+        },
+        {
+          "name": "E_128_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "b8619b6d90a65432106c937f83f9ade1c09f4feb35f413773a7ca0ed5397b2b5",
+          "binary_sha256": "468ce004a4f0cefdd2bed210bfdd982f35e0767cf430c933a641ad085c35fbfd"
+        },
+        {
+          "name": "E_32_128_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "34036e9c8e68b6073e000b8b600a4d9b4ccc0686facabea815b305346c773ae5",
+          "binary_sha256": "147a738bd8a550317106cec0f2a69a976e4b4083bf2809eb45a2a3d7fbb76328"
+        },
+        {
+          "name": "E_24_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f750bd6025c0a0adf1e60321c193a90e63a1fe1df49e6b696b08bfeb1eb5fa6e",
+          "binary_sha256": "6182dbd727331f3e7317fe0973efa9d2385dc8efe752f53501d6ca5cc4231535"
+        },
+        {
+          "name": "E_96_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7904766f8b0b58a76761516eeb15a7ef5c08a5b58d45e09f9fd55777f03f80b0",
+          "binary_sha256": "9ad604233084d6de429d12b8b079a49fe24688f67537120a176a0baa4cda0222"
+        },
+        {
+          "name": "E_24_384_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "472e6ba7f2a019fd58b6e6231aa2e37f70ada0988cc8af8a30d3a028d64601ee",
+          "binary_sha256": "c54e1d82f0df68fa4c0e5f3609a6a0a4b84fef50a941a699aacdabe35bd7bcb2"
+        },
+        {
+          "name": "E_48_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "fe78fcf2ec263b8cff7e1d53967cc7158889350b19dec055665a6725f7b4ef13",
+          "binary_sha256": "f9750d2b8f31932bfebba25238d0ea351b1d380f74e94d058e07d7f67ca02fec"
+        },
+        {
+          "name": "E_48_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "49b37aec5c7f775947baec35990289d0f38d21b207e9640b1e79e3506fbe10e1",
+          "binary_sha256": "069fe5f60a812af75e6e42afb62c98a24eeee7e3e933a731f7aa2a1a073c41f6"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_48_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "fe78fcf2ec263b8cff7e1d53967cc7158889350b19dec055665a6725f7b4ef13",
+          "binary_sha256": "f9750d2b8f31932bfebba25238d0ea351b1d380f74e94d058e07d7f67ca02fec"
+        },
+        {
+          "name": "E_48_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "49b37aec5c7f775947baec35990289d0f38d21b207e9640b1e79e3506fbe10e1",
+          "binary_sha256": "069fe5f60a812af75e6e42afb62c98a24eeee7e3e933a731f7aa2a1a073c41f6"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_48_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "fe78fcf2ec263b8cff7e1d53967cc7158889350b19dec055665a6725f7b4ef13",
+          "binary_sha256": "f9750d2b8f31932bfebba25238d0ea351b1d380f74e94d058e07d7f67ca02fec"
+        },
+        {
+          "name": "E_48_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "49b37aec5c7f775947baec35990289d0f38d21b207e9640b1e79e3506fbe10e1",
+          "binary_sha256": "069fe5f60a812af75e6e42afb62c98a24eeee7e3e933a731f7aa2a1a073c41f6"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_48_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "fe78fcf2ec263b8cff7e1d53967cc7158889350b19dec055665a6725f7b4ef13",
+          "binary_sha256": "f9750d2b8f31932bfebba25238d0ea351b1d380f74e94d058e07d7f67ca02fec"
+        },
+        {
+          "name": "E_48_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "49b37aec5c7f775947baec35990289d0f38d21b207e9640b1e79e3506fbe10e1",
+          "binary_sha256": "069fe5f60a812af75e6e42afb62c98a24eeee7e3e933a731f7aa2a1a073c41f6"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_8_3_4_3_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=5, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "c66eeb9b63764e24cd08b7678e146db97cf7a44e1c93a09c33b803aab380367d",
+          "binary_sha256": "198beb1ddc4fe42a087c2f43d796de48ec7c3771202fe0d0a1fe9564e652d293"
+        },
+        {
+          "name": "E_8_3_8_3_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=5, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f14fb11764d1de3373200820f9b84262266c28a88edc5d8fed155d5d86cf118a",
+          "binary_sha256": "722e473d3d51178b9ea73ec051d0c07b2ee52beb5119d0f5e988cf50c7a0fe52"
+        },
+        {
+          "name": "E_8_8_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f53eb3b854f5fc85fd61d2536a0e9c6c0e96a4714ae72805f41b6cf33060a570",
+          "binary_sha256": "873da81240d08a1798853a17adf5d7615ac7f04dcb3413bfb3ea61d215281428"
+        },
+        {
+          "name": "E_24_3_8_3_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=5, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "943f52187a2757c1e6a44f58219de3a4b49366181cd074b6239e69a126bcfe71",
+          "binary_sha256": "73a9f74dae7681db76278ef9506f5496c319199fb0f8370c9bfc8739b7baace0"
+        },
+        {
+          "name": "E_16_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "4aa820c0559eeaeee78400ddb882c44119de62f816e022a5d80c1307d708dd48",
+          "binary_sha256": "1ae2b7411ae28bb44c15640929da67b5aba15c84dfea5e33ee832d18e923061a"
+        },
+        {
+          "name": "E_16_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "1f7a85899be7df3fae53f6ab7f8b27233a55ea37bb30613130cc0d353d044ebb",
+          "binary_sha256": "209b71ea6f11476a1575befdcd344403b5a09614142855681113aa1be6460f66"
+        },
+        {
+          "name": "E_48_16_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "719406dd041dca0ca38674ffa6d4a62294bdc8b30bb87145c8655d7a36eeafc4",
+          "binary_sha256": "63fb661c62cb001a75d098e9ef8c907701d9517ebd436f3cb07afed59c82a477"
+        },
+        {
+          "name": "E_48_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "06dc07c874fb2a57e4481cd9ab4f7c8b5ef021b2b12d2ec1842571c63666d42f",
+          "binary_sha256": "d867c12e7b2007ab80021019ed8b1456f338b8f35c5e2ea0bf205a6c36f34d29"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_24_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f750bd6025c0a0adf1e60321c193a90e63a1fe1df49e6b696b08bfeb1eb5fa6e",
+          "binary_sha256": "6182dbd727331f3e7317fe0973efa9d2385dc8efe752f53501d6ca5cc4231535"
+        },
+        {
+          "name": "E_144_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "48493cec36964068f5b53b07f9db665a4fd524ab6a9dda771f4f0b17ac8b87c0",
+          "binary_sha256": "b393e1609d20fad5e1e4c8c2477abd1a286c78fb4cb8f0cf8ce5fce6acb8e91b"
+        },
+        {
+          "name": "E_144_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "4972b9b3400742a2950a2078c35b0f36a0250016610af4f84fceebbba6cdbb41",
+          "binary_sha256": "62306212769f1c0c10e2bd05c539bd9f47a2e8c1d72a3a03a5fe358edcd7d909"
+        },
+        {
+          "name": "E_32_576_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "9094dbef16bb3b77c540b520b94f724c81cba824017c2ac38d0fff6673882ae1",
+          "binary_sha256": "ca64a686576072eb63635e8dff31cefcb1e5a803ad087a9da171f027c8336662"
+        },
+        {
+          "name": "E_240_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "33e6a6278909612879fed9804b23f2660ef32a936c3aade001817cd8a12db298",
+          "binary_sha256": "b7d2457c4f26e2a67252e12cad014ffdd9cd6026d55fb58469548f3bd28f5053"
+        },
+        {
+          "name": "E_40_240_4_8_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f77cc8321eb5086938efaadea048d42133d677be7d4fd88dc1e7887d082be2c2",
+          "binary_sha256": "17dd35b0593a3d3c7c14880421ed94579660d75aa60e4bd5049b7f08b87c8dbf"
+        },
+        {
+          "name": "E_128_64_4_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.THREAD, axis=1, arg=5))",
+          "global_size": [
+            5,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "3bc8bf84a9c6176ec0ec5b2f3e88a0d1bfae0c750c18a1580eafe6bb199ca6ec",
+          "binary_sha256": "f2a64da3a50883906c06d77b5ce453554898e52ed81f978e23d1dc3deb05845b"
+        },
+        {
+          "name": "r_10_60_8_12_3_4_4_4_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=3, arg=0), Opt(op=OptOps.UNROLL, axis=2, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f5d789e5d94aea385d71dd2a01d613504aae81a97f5aa85d298ca2804ac7a38e",
+          "binary_sha256": "805b960c54daf1d2b8cd59383c4e8ec7a2afa6679ee54b220f405602bdcd8635"
+        },
+        {
+          "name": "r_5_30_8_12_3_4_8_4_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=3, arg=0), Opt(op=OptOps.UNROLL, axis=2, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "c044a4a3a4ad041c123895b632ce250931aa1bba2886e7dab8a75604d940eacf",
+          "binary_sha256": "446864a7ba78fade6b6816e488e3774f924f41ff9a3b692e46a3db1b1d544ca2"
+        },
+        {
+          "name": "r_150_8_12_3_4_32",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "a9296a6b48a8c62daf2a1f5208b12f1ff6c8a3e0cdb7e658d028e6674e738116",
+          "binary_sha256": "95cb1fa78d31e32fb926a340785eb532c53705830cd09e3ae528c6043d440c1b"
+        },
+        {
+          "name": "r_30_15_2_12_3_4_8_4_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=3, arg=0), Opt(op=OptOps.UNROLL, axis=2, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "69223a28fbe960c36fd1026d76f5dcf7c1ab5d5d15f381c44d7d6b8865e174ea",
+          "binary_sha256": "bb66e3a3155aa396702fc14a47966e2bbccfb64a37e88ad48c528a34d20a118d"
+        },
+        {
+          "name": "r_30_15_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "532299f9a86f3c259ae6e8d9b9776b98c33751388dcafa63bf8613500ba8b317",
+          "binary_sha256": "6028609c499b734acdecafb1460bcec0bf399179cf32901c7eb62e258e73f38f"
+        },
+        {
+          "name": "r_30_15_4_16_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "4fda48484d5308d7d2887fc782108835ef46c107f763ab4bff77f9b1399451ec",
+          "binary_sha256": "baf667a261f2e18894b14f57bc2f25b1e242bb80a615bd7cc1d273871fc862ca"
+        },
+        {
+          "name": "r_30_15_3_16_3_4_16_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "e74127378b4756641e1801c9e8a28238437fcd39fb012b78677ab0a5a32f8414",
+          "binary_sha256": "a1a6e6c0ec96c4f69225a7a5aa7a4b2d4ab6bcc05a69aeb6259f3032d5421f11"
+        },
+        {
+          "name": "r_5_23_4_4_12_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "03c53ee0155fe657b772f7aaedf1d3a294571f5cee9974d7f257984eecdc22df",
+          "binary_sha256": "c90057b658735cbbf3a9fe98932d617560177b3b0baffd079a56cc964f2bd568"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "4387ce8d526aff76a287dfaec05a511b4bf7e8b3c3b0653475afe1353a0f395a",
+          "binary_sha256": "80194687c05b71080664a7de47e1d6eec3387fa198b4004572a2075f26956404"
+        },
+        {
+          "name": "r_5_23_3_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "ec69487c5e0cc056870502eb00d5da75a68c94583fd7d4b3856df8649616d89d",
+          "binary_sha256": "a8e6a3c4456227689dab8fbf4317a47fa6a524fee1ef6b4ce8e64b3e8f8bcde0"
+        },
+        {
+          "name": "r_5_23_12_4_4_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=4))",
+          "global_size": [
+            4,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "450b6c3daa88cc3e84f78c4b7eca7b3fbf03ff10c5b723d30dfdbe3683a88e5d",
+          "binary_sha256": "3fcfe696b5cf63efeb29b707ca1a9172bb0ec2240890667572aa89d849ac8cb6"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7060530dc83efa221572e0411354e1187f4ca279f790ab3b882926e9a6881d2f",
+          "binary_sha256": "c11282014dabfbf93491b3bf0e557fb34feabed7c3e50aaf5950b94f85dcef30"
+        },
+        {
+          "name": "r_5_23_3_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "ec69487c5e0cc056870502eb00d5da75a68c94583fd7d4b3856df8649616d89d",
+          "binary_sha256": "a8e6a3c4456227689dab8fbf4317a47fa6a524fee1ef6b4ce8e64b3e8f8bcde0"
+        },
+        {
+          "name": "r_5_23_12_4_4_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=4))",
+          "global_size": [
+            4,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "450b6c3daa88cc3e84f78c4b7eca7b3fbf03ff10c5b723d30dfdbe3683a88e5d",
+          "binary_sha256": "3fcfe696b5cf63efeb29b707ca1a9172bb0ec2240890667572aa89d849ac8cb6"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7060530dc83efa221572e0411354e1187f4ca279f790ab3b882926e9a6881d2f",
+          "binary_sha256": "c11282014dabfbf93491b3bf0e557fb34feabed7c3e50aaf5950b94f85dcef30"
+        },
+        {
+          "name": "r_5_23_3_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "ec69487c5e0cc056870502eb00d5da75a68c94583fd7d4b3856df8649616d89d",
+          "binary_sha256": "a8e6a3c4456227689dab8fbf4317a47fa6a524fee1ef6b4ce8e64b3e8f8bcde0"
+        },
+        {
+          "name": "r_5_23_12_4_4_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=4))",
+          "global_size": [
+            4,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "450b6c3daa88cc3e84f78c4b7eca7b3fbf03ff10c5b723d30dfdbe3683a88e5d",
+          "binary_sha256": "3fcfe696b5cf63efeb29b707ca1a9172bb0ec2240890667572aa89d849ac8cb6"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7060530dc83efa221572e0411354e1187f4ca279f790ab3b882926e9a6881d2f",
+          "binary_sha256": "c11282014dabfbf93491b3bf0e557fb34feabed7c3e50aaf5950b94f85dcef30"
+        },
+        {
+          "name": "r_5_23_3_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "ec69487c5e0cc056870502eb00d5da75a68c94583fd7d4b3856df8649616d89d",
+          "binary_sha256": "a8e6a3c4456227689dab8fbf4317a47fa6a524fee1ef6b4ce8e64b3e8f8bcde0"
+        },
+        {
+          "name": "r_5_23_12_4_4_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=4))",
+          "global_size": [
+            4,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "450b6c3daa88cc3e84f78c4b7eca7b3fbf03ff10c5b723d30dfdbe3683a88e5d",
+          "binary_sha256": "3fcfe696b5cf63efeb29b707ca1a9172bb0ec2240890667572aa89d849ac8cb6"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7060530dc83efa221572e0411354e1187f4ca279f790ab3b882926e9a6881d2f",
+          "binary_sha256": "c11282014dabfbf93491b3bf0e557fb34feabed7c3e50aaf5950b94f85dcef30"
+        },
+        {
+          "name": "r_5_23_12_4_2_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d29112c17cb1f8a33bfbc21a7f07f0890f282e95f2a85b775a73da502fb0b6e8",
+          "binary_sha256": "f652d3dfd35fd8b0219d55b8df93c7b5efbcbe8b6320950c3afcd34a5ca9273a"
+        },
+        {
+          "name": "r_5_23_6_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "06cec4a06c65120d376b74d421fb8df18df0592fbbf3907e6270e925ca3180bf",
+          "binary_sha256": "e04c6209ecc5d3dc22c89a4a3c7ad10709b31d14a150269a9c6b7af0cc905bdc"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "acd527e42b7e911a161f5fcff57bc096de426bbb0ceb444ec5fd9865a911647e",
+          "binary_sha256": "2c6c6a5785e7f3f35e803ed59db8dc23e95c0d925efa54b149563fcaed451f0c"
+        },
+        {
+          "name": "r_5_23_12_4_2_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d29112c17cb1f8a33bfbc21a7f07f0890f282e95f2a85b775a73da502fb0b6e8",
+          "binary_sha256": "f652d3dfd35fd8b0219d55b8df93c7b5efbcbe8b6320950c3afcd34a5ca9273a"
+        },
+        {
+          "name": "r_5_23_9_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "8bd92ae85d733ed35abedda7fdc68c158d263ef20f0a3b445e6fb3571c52131f",
+          "binary_sha256": "ee2db9e4a30866f865b0e4eaf568e4ed6853fbb39a9499ed77728cd6b045f8be"
+        },
+        {
+          "name": "r_8_4_48_4_3_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=3))",
+          "global_size": [
+            3,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d41bedbc0c13496b83cc2c6859f5a21dd213fbb85617ec5b9e4db907f5406711",
+          "binary_sha256": "6200482b5bbb0969ba9c063b78ab48f4520f1f0da5a22aee36feebfe4daf701d"
+        },
+        {
+          "name": "r_2_32_16_3_4_144_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d8281f17a44415a99a2a6f1ace8341b486be8e0324a9801343a09f51985f71e6",
+          "binary_sha256": "0e4844fa97e6f7cede5d7dc85ccad80a6cda3b45ba7371fb1415229a69b06e5e"
+        },
+        {
+          "name": "r_4_4_32_4_2_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "03d0bba8edb26f0518dfc2153dd9790edfd4dc2a1342c93141792a1dbbb64f4d",
+          "binary_sha256": "854c1b8b543c468591fcc45dcd7c0a55a945d1ac7f0774f246b1b9b0bf70dbe6"
+        },
+        {
+          "name": "r_2_128_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "20703e1d6de266c759aff9ae38cb356d3b710a8eb6619b94ca912405229ab7d1",
+          "binary_sha256": "26777dbb2ce91a375b693a2715dc36ee7e49bcdc2bfb0867dcfb83f251474825"
+        },
+        {
+          "name": "r_4_128_4_8_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "408c702661fbffa0b4c222bac8aa967541dbd730e2f83472c379962c6a3e469d",
+          "binary_sha256": "c2274b533533a7b43e32394cc6113b8e474a1f81ba385ee3a3a3c69f15547c04"
+        },
+        {
+          "name": "r_2_32_16_3_4_128_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "e34952d89d45f852c513331d71b45e6cc2c668ad3fdac35a329b0a16790f8154",
+          "binary_sha256": "d44d382facc75880390e68fc8d2ec01891ae6778bb3bd839a27aa571aa8543ba"
+        },
+        {
+          "name": "r_2_128_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "20703e1d6de266c759aff9ae38cb356d3b710a8eb6619b94ca912405229ab7d1",
+          "binary_sha256": "26777dbb2ce91a375b693a2715dc36ee7e49bcdc2bfb0867dcfb83f251474825"
+        },
+        {
+          "name": "r_4_128_4_8_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "408c702661fbffa0b4c222bac8aa967541dbd730e2f83472c379962c6a3e469d",
+          "binary_sha256": "c2274b533533a7b43e32394cc6113b8e474a1f81ba385ee3a3a3c69f15547c04"
+        },
+        {
+          "name": "r_2_32_16_3_4_128_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2c9dd4881c5bb38ce2d0a8753d38dd845121e204faa75cb233eca56f9729682d",
+          "binary_sha256": "2a9c54f5157862826fd70851d2bd2321378c9fda1761c23fc4cb6ba8d86d600f"
+        },
+        {
+          "name": "r_2_96_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "517b14292e1e7a33b2ec6a29f4b69743cf0068359948bdcb681181148f783cb6",
+          "binary_sha256": "5afc00e9d77c7dbe883279323268bbb8fd971cd242ce6a9d544d9498fd05febc"
+        },
+        {
+          "name": "r_8_4_16_4_6_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=6))",
+          "global_size": [
+            6,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "b7854c5457173dcf11272e247069d2f572ad31a9c5719c2be26f393a7621c91e",
+          "binary_sha256": "f9771ea99664c7281c7c54fec0fc28fd8a83538ca66f9afb6ba44fbe381b3a00"
+        },
+        {
+          "name": "r_2_32_16_3_4_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "0c73e697dffb95158a159b7e5c34af9859f7b2362153e9ca86402877ce8e9c40",
+          "binary_sha256": "b4743f21eca3112a993c135bb1ffa62103748b65aa8091a093060e0cc9705c14"
+        },
+        {
+          "name": "r_2_128_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "20703e1d6de266c759aff9ae38cb356d3b710a8eb6619b94ca912405229ab7d1",
+          "binary_sha256": "26777dbb2ce91a375b693a2715dc36ee7e49bcdc2bfb0867dcfb83f251474825"
+        },
+        {
+          "name": "r_4_4_128_4_2_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "dff53d7bef32539104def05571e611035a118a730911e7f2c895e3d5aee1e90d",
+          "binary_sha256": "50b07847c3bbf36e80b5db978c2cc5f6b0176afdecbf8d490598182a402dfd6d"
+        },
+        {
+          "name": "r_2_32_16_3_4_128_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2c9dd4881c5bb38ce2d0a8753d38dd845121e204faa75cb233eca56f9729682d",
+          "binary_sha256": "2a9c54f5157862826fd70851d2bd2321378c9fda1761c23fc4cb6ba8d86d600f"
+        },
+        {
+          "name": "r_2_128_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "20703e1d6de266c759aff9ae38cb356d3b710a8eb6619b94ca912405229ab7d1",
+          "binary_sha256": "26777dbb2ce91a375b693a2715dc36ee7e49bcdc2bfb0867dcfb83f251474825"
+        },
+        {
+          "name": "r_4_4_128_4_2_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "dff53d7bef32539104def05571e611035a118a730911e7f2c895e3d5aee1e90d",
+          "binary_sha256": "50b07847c3bbf36e80b5db978c2cc5f6b0176afdecbf8d490598182a402dfd6d"
+        },
+        {
+          "name": "r_2_32_16_3_4_128_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2c9dd4881c5bb38ce2d0a8753d38dd845121e204faa75cb233eca56f9729682d",
+          "binary_sha256": "2a9c54f5157862826fd70851d2bd2321378c9fda1761c23fc4cb6ba8d86d600f"
+        },
+        {
+          "name": "r_15_4_16_128_24_4",
+          "opts": "(Opt(op=OptOps.UNROLL, axis=1, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "93634b90075b08c7c4a773d8f5345af9727d27c22d7a39196053d07d5bdc328f",
+          "binary_sha256": "ad3cf6f9a755f0538e2d0e06699012f365d059503d716309008e34c2af074a94"
+        },
+        {
+          "name": "r_40_8_4_240_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=4), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "3a83f61c708118e73b04437ac4cc952a2e2077a586185375446f7bc9931d406f",
+          "binary_sha256": "2435b5a5a87903cba01b96b838865193703116aa8404a138d021816630709502"
+        },
+        {
+          "name": "r_103_5_320_4",
+          "opts": "(Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=5))",
+          "global_size": [
+            5,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "8eb262647955f5ddcb543580ccd76cc97af2719e96db1effd7d5d672b78b5e1c",
+          "binary_sha256": "ee2b002528f34ef0c9d88b1a4632c6ca3daf866678507996556a8e8e05540c5d"
+        }
+      ],
+      "context": "true-prefix",
+      "onnx_sha256": "06a1a88343bd59cd24e72d93a11e1bbc8a2fb934845c7ecdbd7905c0fe1f872e"
+    },
+    "context": "Pinned exact source model; exact original nodes0..N plus required original initializers, final selected output only cast f32 before compilation; no forced intermediate realization."
+  },
+  "actual_prefix100": {
+    "source_model": "dmonitoring_model.onnx",
+    "source_model_sha256": "dee5a294e8afaacc9295ac5d100e00733ecac278e79264b96331e40a3ede1b04",
+    "last_node": 100,
+    "output_name": "relu",
+    "prefix_sha256": "a85feb0aedea1f7e2f11edf4f9be4e70975bdc88fafccc5be541e467dbd74bbd",
+    "original": {
+      "index": 100,
+      "name": "relu",
+      "op": "Relu",
+      "shape": [
+        1,
+        32
+      ],
+      "sha256": "353aff17978e120d54e8f127b0a22f6e9d6f9df61f10642cdbcd9a2d56e09f95",
+      "bytes": 128,
+      "programs": [
+        {
+          "name": "E_30_360_4_8_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "e5ce76c2c50c8bd7fdefa15494602fad9b4663fc60b2589fddf9041305160a0d",
+          "binary_sha256": "ce20618a103f7cb984655a8a1a87c3a1d4ed185768ffcde4c5aa462206d03eb9"
+        },
+        {
+          "name": "E_128_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d286abc0a107e2a1eda1d039f21298e6883fbd33c7c9be2058288671c165ec35",
+          "binary_sha256": "9ac04719557d659f5fb84b805cabe9fdf8c5674716b221a29f7a1a02260836a3"
+        },
+        {
+          "name": "E_128_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7e6fc206033f05e0c100f7d88d32df4ef5cfe85584a369d19056b700bbfe7134",
+          "binary_sha256": "b206b47241c805bb6d1fbd1ddd1cd7130dfc63411d7793ee3da497c0aa1c470e"
+        },
+        {
+          "name": "E_32_128_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "34036e9c8e68b6073e000b8b600a4d9b4ccc0686facabea815b305346c773ae5",
+          "binary_sha256": "147a738bd8a550317106cec0f2a69a976e4b4083bf2809eb45a2a3d7fbb76328"
+        },
+        {
+          "name": "E_128_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d286abc0a107e2a1eda1d039f21298e6883fbd33c7c9be2058288671c165ec35",
+          "binary_sha256": "9ac04719557d659f5fb84b805cabe9fdf8c5674716b221a29f7a1a02260836a3"
+        },
+        {
+          "name": "E_128_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7e6fc206033f05e0c100f7d88d32df4ef5cfe85584a369d19056b700bbfe7134",
+          "binary_sha256": "b206b47241c805bb6d1fbd1ddd1cd7130dfc63411d7793ee3da497c0aa1c470e"
+        },
+        {
+          "name": "E_32_128_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "34036e9c8e68b6073e000b8b600a4d9b4ccc0686facabea815b305346c773ae5",
+          "binary_sha256": "147a738bd8a550317106cec0f2a69a976e4b4083bf2809eb45a2a3d7fbb76328"
+        },
+        {
+          "name": "E_96_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "3c990254fc17f6c471c5c9dc60bd1d15bc11085c4bce42963a70918c1e9b4a1e",
+          "binary_sha256": "a91184b4f64ce5884189fa2c7147697e74b7bfd21dbccdd9193818aaaa573fe7"
+        },
+        {
+          "name": "E_96_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "812c6e46ec2902bef130a41b893524edde506c0da377997dc3afafa6f7e48e42",
+          "binary_sha256": "cb905901364dd7d74dc8bbc357144436f89bcb5a042931415eb4963c3e22640d"
+        },
+        {
+          "name": "E_32_384_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2450793acbc6aec6f8cb955dfaf1ecd332a1994237b0adcdab76ce56ee59d678",
+          "binary_sha256": "2f1e49db7ab08922395b2b2c012a3f1257860c8667630efd9df3019e507bcaa1"
+        },
+        {
+          "name": "E_128_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d286abc0a107e2a1eda1d039f21298e6883fbd33c7c9be2058288671c165ec35",
+          "binary_sha256": "9ac04719557d659f5fb84b805cabe9fdf8c5674716b221a29f7a1a02260836a3"
+        },
+        {
+          "name": "E_128_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "b8619b6d90a65432106c937f83f9ade1c09f4feb35f413773a7ca0ed5397b2b5",
+          "binary_sha256": "468ce004a4f0cefdd2bed210bfdd982f35e0767cf430c933a641ad085c35fbfd"
+        },
+        {
+          "name": "E_32_128_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "34036e9c8e68b6073e000b8b600a4d9b4ccc0686facabea815b305346c773ae5",
+          "binary_sha256": "147a738bd8a550317106cec0f2a69a976e4b4083bf2809eb45a2a3d7fbb76328"
+        },
+        {
+          "name": "E_32_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2f366001c18cc66a0e2353c4b763a87c2c835421b0f610ec9f8b74d9c421738c",
+          "binary_sha256": "b1d0a6a90948830cc5010e4c5959737c378a0472f6ea9ad32bc7eb8b8449fe13"
+        },
+        {
+          "name": "E_128_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d286abc0a107e2a1eda1d039f21298e6883fbd33c7c9be2058288671c165ec35",
+          "binary_sha256": "9ac04719557d659f5fb84b805cabe9fdf8c5674716b221a29f7a1a02260836a3"
+        },
+        {
+          "name": "E_128_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "b8619b6d90a65432106c937f83f9ade1c09f4feb35f413773a7ca0ed5397b2b5",
+          "binary_sha256": "468ce004a4f0cefdd2bed210bfdd982f35e0767cf430c933a641ad085c35fbfd"
+        },
+        {
+          "name": "E_32_128_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "34036e9c8e68b6073e000b8b600a4d9b4ccc0686facabea815b305346c773ae5",
+          "binary_sha256": "147a738bd8a550317106cec0f2a69a976e4b4083bf2809eb45a2a3d7fbb76328"
+        },
+        {
+          "name": "E_24_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f750bd6025c0a0adf1e60321c193a90e63a1fe1df49e6b696b08bfeb1eb5fa6e",
+          "binary_sha256": "6182dbd727331f3e7317fe0973efa9d2385dc8efe752f53501d6ca5cc4231535"
+        },
+        {
+          "name": "E_96_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7904766f8b0b58a76761516eeb15a7ef5c08a5b58d45e09f9fd55777f03f80b0",
+          "binary_sha256": "9ad604233084d6de429d12b8b079a49fe24688f67537120a176a0baa4cda0222"
+        },
+        {
+          "name": "E_24_384_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "472e6ba7f2a019fd58b6e6231aa2e37f70ada0988cc8af8a30d3a028d64601ee",
+          "binary_sha256": "c54e1d82f0df68fa4c0e5f3609a6a0a4b84fef50a941a699aacdabe35bd7bcb2"
+        },
+        {
+          "name": "E_48_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "fe78fcf2ec263b8cff7e1d53967cc7158889350b19dec055665a6725f7b4ef13",
+          "binary_sha256": "f9750d2b8f31932bfebba25238d0ea351b1d380f74e94d058e07d7f67ca02fec"
+        },
+        {
+          "name": "E_48_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "49b37aec5c7f775947baec35990289d0f38d21b207e9640b1e79e3506fbe10e1",
+          "binary_sha256": "069fe5f60a812af75e6e42afb62c98a24eeee7e3e933a731f7aa2a1a073c41f6"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_48_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "fe78fcf2ec263b8cff7e1d53967cc7158889350b19dec055665a6725f7b4ef13",
+          "binary_sha256": "f9750d2b8f31932bfebba25238d0ea351b1d380f74e94d058e07d7f67ca02fec"
+        },
+        {
+          "name": "E_48_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "49b37aec5c7f775947baec35990289d0f38d21b207e9640b1e79e3506fbe10e1",
+          "binary_sha256": "069fe5f60a812af75e6e42afb62c98a24eeee7e3e933a731f7aa2a1a073c41f6"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_48_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "fe78fcf2ec263b8cff7e1d53967cc7158889350b19dec055665a6725f7b4ef13",
+          "binary_sha256": "f9750d2b8f31932bfebba25238d0ea351b1d380f74e94d058e07d7f67ca02fec"
+        },
+        {
+          "name": "E_48_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "49b37aec5c7f775947baec35990289d0f38d21b207e9640b1e79e3506fbe10e1",
+          "binary_sha256": "069fe5f60a812af75e6e42afb62c98a24eeee7e3e933a731f7aa2a1a073c41f6"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_48_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "fe78fcf2ec263b8cff7e1d53967cc7158889350b19dec055665a6725f7b4ef13",
+          "binary_sha256": "f9750d2b8f31932bfebba25238d0ea351b1d380f74e94d058e07d7f67ca02fec"
+        },
+        {
+          "name": "E_48_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "49b37aec5c7f775947baec35990289d0f38d21b207e9640b1e79e3506fbe10e1",
+          "binary_sha256": "069fe5f60a812af75e6e42afb62c98a24eeee7e3e933a731f7aa2a1a073c41f6"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_8_3_4_3_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=5, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "c66eeb9b63764e24cd08b7678e146db97cf7a44e1c93a09c33b803aab380367d",
+          "binary_sha256": "198beb1ddc4fe42a087c2f43d796de48ec7c3771202fe0d0a1fe9564e652d293"
+        },
+        {
+          "name": "E_8_3_8_3_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=5, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f14fb11764d1de3373200820f9b84262266c28a88edc5d8fed155d5d86cf118a",
+          "binary_sha256": "722e473d3d51178b9ea73ec051d0c07b2ee52beb5119d0f5e988cf50c7a0fe52"
+        },
+        {
+          "name": "E_8_8_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f53eb3b854f5fc85fd61d2536a0e9c6c0e96a4714ae72805f41b6cf33060a570",
+          "binary_sha256": "873da81240d08a1798853a17adf5d7615ac7f04dcb3413bfb3ea61d215281428"
+        },
+        {
+          "name": "E_24_3_8_3_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=5, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "943f52187a2757c1e6a44f58219de3a4b49366181cd074b6239e69a126bcfe71",
+          "binary_sha256": "73a9f74dae7681db76278ef9506f5496c319199fb0f8370c9bfc8739b7baace0"
+        },
+        {
+          "name": "E_16_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "4aa820c0559eeaeee78400ddb882c44119de62f816e022a5d80c1307d708dd48",
+          "binary_sha256": "1ae2b7411ae28bb44c15640929da67b5aba15c84dfea5e33ee832d18e923061a"
+        },
+        {
+          "name": "E_16_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "1f7a85899be7df3fae53f6ab7f8b27233a55ea37bb30613130cc0d353d044ebb",
+          "binary_sha256": "209b71ea6f11476a1575befdcd344403b5a09614142855681113aa1be6460f66"
+        },
+        {
+          "name": "E_48_16_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "719406dd041dca0ca38674ffa6d4a62294bdc8b30bb87145c8655d7a36eeafc4",
+          "binary_sha256": "63fb661c62cb001a75d098e9ef8c907701d9517ebd436f3cb07afed59c82a477"
+        },
+        {
+          "name": "E_48_5_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "06dc07c874fb2a57e4481cd9ab4f7c8b5ef021b2b12d2ec1842571c63666d42f",
+          "binary_sha256": "d867c12e7b2007ab80021019ed8b1456f338b8f35c5e2ea0bf205a6c36f34d29"
+        },
+        {
+          "name": "E_24_192_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "53f213def28874b8f2b92da1b3ec97820b6bf2b2de670a067a73f2566c68c5db",
+          "binary_sha256": "8c90dd1f951fb9053280e21a3e8e3d8d5f1262055088309d8453c33d8e073dff"
+        },
+        {
+          "name": "E_24_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f750bd6025c0a0adf1e60321c193a90e63a1fe1df49e6b696b08bfeb1eb5fa6e",
+          "binary_sha256": "6182dbd727331f3e7317fe0973efa9d2385dc8efe752f53501d6ca5cc4231535"
+        },
+        {
+          "name": "E_144_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "48493cec36964068f5b53b07f9db665a4fd524ab6a9dda771f4f0b17ac8b87c0",
+          "binary_sha256": "b393e1609d20fad5e1e4c8c2477abd1a286c78fb4cb8f0cf8ce5fce6acb8e91b"
+        },
+        {
+          "name": "E_144_3_3_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "4972b9b3400742a2950a2078c35b0f36a0250016610af4f84fceebbba6cdbb41",
+          "binary_sha256": "62306212769f1c0c10e2bd05c539bd9f47a2e8c1d72a3a03a5fe358edcd7d909"
+        },
+        {
+          "name": "E_32_576_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=2, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "9094dbef16bb3b77c540b520b94f724c81cba824017c2ac38d0fff6673882ae1",
+          "binary_sha256": "ca64a686576072eb63635e8dff31cefcb1e5a803ad087a9da171f027c8336662"
+        },
+        {
+          "name": "E_240_32_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "33e6a6278909612879fed9804b23f2660ef32a936c3aade001817cd8a12db298",
+          "binary_sha256": "b7d2457c4f26e2a67252e12cad014ffdd9cd6026d55fb58469548f3bd28f5053"
+        },
+        {
+          "name": "E_40_240_4_8_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f77cc8321eb5086938efaadea048d42133d677be7d4fd88dc1e7887d082be2c2",
+          "binary_sha256": "17dd35b0593a3d3c7c14880421ed94579660d75aa60e4bd5049b7f08b87c8dbf"
+        },
+        {
+          "name": "E_128_64_4_5_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.THREAD, axis=1, arg=5))",
+          "global_size": [
+            5,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "3bc8bf84a9c6176ec0ec5b2f3e88a0d1bfae0c750c18a1580eafe6bb199ca6ec",
+          "binary_sha256": "f2a64da3a50883906c06d77b5ce453554898e52ed81f978e23d1dc3deb05845b"
+        },
+        {
+          "name": "E_8_128_4_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=3, arg=4),)",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7c28af706e2d427e8225dcda995d93ee7121f4307aaa3bc6d8f8f6c586b2b48e",
+          "binary_sha256": "d98f5c057f0f8285530f8017f1049bee7c0a164f5df138cc20ce53811dfde8ea"
+        },
+        {
+          "name": "r_10_60_8_12_3_4_4_4_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=3, arg=0), Opt(op=OptOps.UNROLL, axis=2, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "f5d789e5d94aea385d71dd2a01d613504aae81a97f5aa85d298ca2804ac7a38e",
+          "binary_sha256": "805b960c54daf1d2b8cd59383c4e8ec7a2afa6679ee54b220f405602bdcd8635"
+        },
+        {
+          "name": "r_5_30_8_12_3_4_8_4_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=3, arg=0), Opt(op=OptOps.UNROLL, axis=2, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "c044a4a3a4ad041c123895b632ce250931aa1bba2886e7dab8a75604d940eacf",
+          "binary_sha256": "446864a7ba78fade6b6816e488e3774f924f41ff9a3b692e46a3db1b1d544ca2"
+        },
+        {
+          "name": "r_150_8_12_3_4_32",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "a9296a6b48a8c62daf2a1f5208b12f1ff6c8a3e0cdb7e658d028e6674e738116",
+          "binary_sha256": "95cb1fa78d31e32fb926a340785eb532c53705830cd09e3ae528c6043d440c1b"
+        },
+        {
+          "name": "r_30_15_2_12_3_4_8_4_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=3, arg=0), Opt(op=OptOps.UNROLL, axis=2, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "69223a28fbe960c36fd1026d76f5dcf7c1ab5d5d15f381c44d7d6b8865e174ea",
+          "binary_sha256": "bb66e3a3155aa396702fc14a47966e2bbccfb64a37e88ad48c528a34d20a118d"
+        },
+        {
+          "name": "r_30_15_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "532299f9a86f3c259ae6e8d9b9776b98c33751388dcafa63bf8613500ba8b317",
+          "binary_sha256": "6028609c499b734acdecafb1460bcec0bf399179cf32901c7eb62e258e73f38f"
+        },
+        {
+          "name": "r_30_15_4_16_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "4fda48484d5308d7d2887fc782108835ef46c107f763ab4bff77f9b1399451ec",
+          "binary_sha256": "baf667a261f2e18894b14f57bc2f25b1e242bb80a615bd7cc1d273871fc862ca"
+        },
+        {
+          "name": "r_30_15_3_16_3_4_16_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "e74127378b4756641e1801c9e8a28238437fcd39fb012b78677ab0a5a32f8414",
+          "binary_sha256": "a1a6e6c0ec96c4f69225a7a5aa7a4b2d4ab6bcc05a69aeb6259f3032d5421f11"
+        },
+        {
+          "name": "r_5_23_4_4_12_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "03c53ee0155fe657b772f7aaedf1d3a294571f5cee9974d7f257984eecdc22df",
+          "binary_sha256": "c90057b658735cbbf3a9fe98932d617560177b3b0baffd079a56cc964f2bd568"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "4387ce8d526aff76a287dfaec05a511b4bf7e8b3c3b0653475afe1353a0f395a",
+          "binary_sha256": "80194687c05b71080664a7de47e1d6eec3387fa198b4004572a2075f26956404"
+        },
+        {
+          "name": "r_5_23_3_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "ec69487c5e0cc056870502eb00d5da75a68c94583fd7d4b3856df8649616d89d",
+          "binary_sha256": "a8e6a3c4456227689dab8fbf4317a47fa6a524fee1ef6b4ce8e64b3e8f8bcde0"
+        },
+        {
+          "name": "r_5_23_12_4_4_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=4))",
+          "global_size": [
+            4,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "450b6c3daa88cc3e84f78c4b7eca7b3fbf03ff10c5b723d30dfdbe3683a88e5d",
+          "binary_sha256": "3fcfe696b5cf63efeb29b707ca1a9172bb0ec2240890667572aa89d849ac8cb6"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7060530dc83efa221572e0411354e1187f4ca279f790ab3b882926e9a6881d2f",
+          "binary_sha256": "c11282014dabfbf93491b3bf0e557fb34feabed7c3e50aaf5950b94f85dcef30"
+        },
+        {
+          "name": "r_5_23_3_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "ec69487c5e0cc056870502eb00d5da75a68c94583fd7d4b3856df8649616d89d",
+          "binary_sha256": "a8e6a3c4456227689dab8fbf4317a47fa6a524fee1ef6b4ce8e64b3e8f8bcde0"
+        },
+        {
+          "name": "r_5_23_12_4_4_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=4))",
+          "global_size": [
+            4,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "450b6c3daa88cc3e84f78c4b7eca7b3fbf03ff10c5b723d30dfdbe3683a88e5d",
+          "binary_sha256": "3fcfe696b5cf63efeb29b707ca1a9172bb0ec2240890667572aa89d849ac8cb6"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7060530dc83efa221572e0411354e1187f4ca279f790ab3b882926e9a6881d2f",
+          "binary_sha256": "c11282014dabfbf93491b3bf0e557fb34feabed7c3e50aaf5950b94f85dcef30"
+        },
+        {
+          "name": "r_5_23_3_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "ec69487c5e0cc056870502eb00d5da75a68c94583fd7d4b3856df8649616d89d",
+          "binary_sha256": "a8e6a3c4456227689dab8fbf4317a47fa6a524fee1ef6b4ce8e64b3e8f8bcde0"
+        },
+        {
+          "name": "r_5_23_12_4_4_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=4))",
+          "global_size": [
+            4,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "450b6c3daa88cc3e84f78c4b7eca7b3fbf03ff10c5b723d30dfdbe3683a88e5d",
+          "binary_sha256": "3fcfe696b5cf63efeb29b707ca1a9172bb0ec2240890667572aa89d849ac8cb6"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7060530dc83efa221572e0411354e1187f4ca279f790ab3b882926e9a6881d2f",
+          "binary_sha256": "c11282014dabfbf93491b3bf0e557fb34feabed7c3e50aaf5950b94f85dcef30"
+        },
+        {
+          "name": "r_5_23_3_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "ec69487c5e0cc056870502eb00d5da75a68c94583fd7d4b3856df8649616d89d",
+          "binary_sha256": "a8e6a3c4456227689dab8fbf4317a47fa6a524fee1ef6b4ce8e64b3e8f8bcde0"
+        },
+        {
+          "name": "r_5_23_12_4_4_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=4))",
+          "global_size": [
+            4,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "450b6c3daa88cc3e84f78c4b7eca7b3fbf03ff10c5b723d30dfdbe3683a88e5d",
+          "binary_sha256": "3fcfe696b5cf63efeb29b707ca1a9172bb0ec2240890667572aa89d849ac8cb6"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_48_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "7060530dc83efa221572e0411354e1187f4ca279f790ab3b882926e9a6881d2f",
+          "binary_sha256": "c11282014dabfbf93491b3bf0e557fb34feabed7c3e50aaf5950b94f85dcef30"
+        },
+        {
+          "name": "r_5_23_12_4_2_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d29112c17cb1f8a33bfbc21a7f07f0890f282e95f2a85b775a73da502fb0b6e8",
+          "binary_sha256": "f652d3dfd35fd8b0219d55b8df93c7b5efbcbe8b6320950c3afcd34a5ca9273a"
+        },
+        {
+          "name": "r_5_23_6_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "06cec4a06c65120d376b74d421fb8df18df0592fbbf3907e6270e925ca3180bf",
+          "binary_sha256": "e04c6209ecc5d3dc22c89a4a3c7ad10709b31d14a150269a9c6b7af0cc905bdc"
+        },
+        {
+          "name": "r_5_23_2_12_3_4_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=12))",
+          "global_size": [
+            12,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "acd527e42b7e911a161f5fcff57bc096de426bbb0ceb444ec5fd9865a911647e",
+          "binary_sha256": "2c6c6a5785e7f3f35e803ed59db8dc23e95c0d925efa54b149563fcaed451f0c"
+        },
+        {
+          "name": "r_5_23_12_4_2_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d29112c17cb1f8a33bfbc21a7f07f0890f282e95f2a85b775a73da502fb0b6e8",
+          "binary_sha256": "f652d3dfd35fd8b0219d55b8df93c7b5efbcbe8b6320950c3afcd34a5ca9273a"
+        },
+        {
+          "name": "r_5_23_9_16_3_4_24_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=3, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=2, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "8bd92ae85d733ed35abedda7fdc68c158d263ef20f0a3b445e6fb3571c52131f",
+          "binary_sha256": "ee2db9e4a30866f865b0e4eaf568e4ed6853fbb39a9499ed77728cd6b045f8be"
+        },
+        {
+          "name": "r_8_4_48_4_3_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=3))",
+          "global_size": [
+            3,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d41bedbc0c13496b83cc2c6859f5a21dd213fbb85617ec5b9e4db907f5406711",
+          "binary_sha256": "6200482b5bbb0969ba9c063b78ab48f4520f1f0da5a22aee36feebfe4daf701d"
+        },
+        {
+          "name": "r_2_32_16_3_4_144_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "d8281f17a44415a99a2a6f1ace8341b486be8e0324a9801343a09f51985f71e6",
+          "binary_sha256": "0e4844fa97e6f7cede5d7dc85ccad80a6cda3b45ba7371fb1415229a69b06e5e"
+        },
+        {
+          "name": "r_4_4_32_4_2_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "03d0bba8edb26f0518dfc2153dd9790edfd4dc2a1342c93141792a1dbbb64f4d",
+          "binary_sha256": "854c1b8b543c468591fcc45dcd7c0a55a945d1ac7f0774f246b1b9b0bf70dbe6"
+        },
+        {
+          "name": "r_2_128_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "20703e1d6de266c759aff9ae38cb356d3b710a8eb6619b94ca912405229ab7d1",
+          "binary_sha256": "26777dbb2ce91a375b693a2715dc36ee7e49bcdc2bfb0867dcfb83f251474825"
+        },
+        {
+          "name": "r_4_128_4_8_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "408c702661fbffa0b4c222bac8aa967541dbd730e2f83472c379962c6a3e469d",
+          "binary_sha256": "c2274b533533a7b43e32394cc6113b8e474a1f81ba385ee3a3a3c69f15547c04"
+        },
+        {
+          "name": "r_2_32_16_3_4_128_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "e34952d89d45f852c513331d71b45e6cc2c668ad3fdac35a329b0a16790f8154",
+          "binary_sha256": "d44d382facc75880390e68fc8d2ec01891ae6778bb3bd839a27aa571aa8543ba"
+        },
+        {
+          "name": "r_2_128_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "20703e1d6de266c759aff9ae38cb356d3b710a8eb6619b94ca912405229ab7d1",
+          "binary_sha256": "26777dbb2ce91a375b693a2715dc36ee7e49bcdc2bfb0867dcfb83f251474825"
+        },
+        {
+          "name": "r_4_128_4_8_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "408c702661fbffa0b4c222bac8aa967541dbd730e2f83472c379962c6a3e469d",
+          "binary_sha256": "c2274b533533a7b43e32394cc6113b8e474a1f81ba385ee3a3a3c69f15547c04"
+        },
+        {
+          "name": "r_2_32_16_3_4_128_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2c9dd4881c5bb38ce2d0a8753d38dd845121e204faa75cb233eca56f9729682d",
+          "binary_sha256": "2a9c54f5157862826fd70851d2bd2321378c9fda1761c23fc4cb6ba8d86d600f"
+        },
+        {
+          "name": "r_2_96_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "517b14292e1e7a33b2ec6a29f4b69743cf0068359948bdcb681181148f783cb6",
+          "binary_sha256": "5afc00e9d77c7dbe883279323268bbb8fd971cd242ce6a9d544d9498fd05febc"
+        },
+        {
+          "name": "r_8_4_16_4_6_3_5_5",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=2, arg=6))",
+          "global_size": [
+            6,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "b7854c5457173dcf11272e247069d2f572ad31a9c5719c2be26f393a7621c91e",
+          "binary_sha256": "f9771ea99664c7281c7c54fec0fc28fd8a83538ca66f9afb6ba44fbe381b3a00"
+        },
+        {
+          "name": "r_2_32_16_3_4_96_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "0c73e697dffb95158a159b7e5c34af9859f7b2362153e9ca86402877ce8e9c40",
+          "binary_sha256": "b4743f21eca3112a993c135bb1ffa62103748b65aa8091a093060e0cc9705c14"
+        },
+        {
+          "name": "r_2_128_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "20703e1d6de266c759aff9ae38cb356d3b710a8eb6619b94ca912405229ab7d1",
+          "binary_sha256": "26777dbb2ce91a375b693a2715dc36ee7e49bcdc2bfb0867dcfb83f251474825"
+        },
+        {
+          "name": "r_4_4_128_4_2_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "dff53d7bef32539104def05571e611035a118a730911e7f2c895e3d5aee1e90d",
+          "binary_sha256": "50b07847c3bbf36e80b5db978c2cc5f6b0176afdecbf8d490598182a402dfd6d"
+        },
+        {
+          "name": "r_2_32_16_3_4_128_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2c9dd4881c5bb38ce2d0a8753d38dd845121e204faa75cb233eca56f9729682d",
+          "binary_sha256": "2a9c54f5157862826fd70851d2bd2321378c9fda1761c23fc4cb6ba8d86d600f"
+        },
+        {
+          "name": "r_2_128_16_3_4_32_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "20703e1d6de266c759aff9ae38cb356d3b710a8eb6619b94ca912405229ab7d1",
+          "binary_sha256": "26777dbb2ce91a375b693a2715dc36ee7e49bcdc2bfb0867dcfb83f251474825"
+        },
+        {
+          "name": "r_4_4_128_4_2_3_3_3",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=3), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=0, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=2))",
+          "global_size": [
+            2,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "dff53d7bef32539104def05571e611035a118a730911e7f2c895e3d5aee1e90d",
+          "binary_sha256": "50b07847c3bbf36e80b5db978c2cc5f6b0176afdecbf8d490598182a402dfd6d"
+        },
+        {
+          "name": "r_2_32_16_3_4_128_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=0, arg=3), Opt(op=OptOps.UPCAST, axis=2, arg=4), Opt(op=OptOps.UNROLL, axis=0, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "2c9dd4881c5bb38ce2d0a8753d38dd845121e204faa75cb233eca56f9729682d",
+          "binary_sha256": "2a9c54f5157862826fd70851d2bd2321378c9fda1761c23fc4cb6ba8d86d600f"
+        },
+        {
+          "name": "r_15_4_16_128_24_4",
+          "opts": "(Opt(op=OptOps.UNROLL, axis=1, arg=4), Opt(op=OptOps.THREAD, axis=0, arg=16))",
+          "global_size": [
+            16,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "93634b90075b08c7c4a773d8f5345af9727d27c22d7a39196053d07d5bdc328f",
+          "binary_sha256": "ad3cf6f9a755f0538e2d0e06699012f365d059503d716309008e34c2af074a94"
+        },
+        {
+          "name": "r_40_8_4_240_4",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=4), Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=8))",
+          "global_size": [
+            8,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "3a83f61c708118e73b04437ac4cc952a2e2077a586185375446f7bc9931d406f",
+          "binary_sha256": "2435b5a5a87903cba01b96b838865193703116aa8404a138d021816630709502"
+        },
+        {
+          "name": "r_32_4_4_320_4",
+          "opts": "(Opt(op=OptOps.UNROLL, axis=1, arg=0), Opt(op=OptOps.THREAD, axis=0, arg=4))",
+          "global_size": [
+            4,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "6e4d792510a131190f7ba6ac6aebe96958415af63c011ee9d90382715947766f",
+          "binary_sha256": "407a6bbc8bca0a6b0b869b52f501f8ead8db69d7d87d658814a4b79fb6eb6923"
+        },
+        {
+          "name": "r_8_4_128_4n1",
+          "opts": "(Opt(op=OptOps.UPCAST, axis=1, arg=0), Opt(op=OptOps.UNROLL, axis=1, arg=0))",
+          "global_size": [
+            1,
+            1,
+            1
+          ],
+          "local_size": [
+            1,
+            1,
+            1
+          ],
+          "llvm_sha256": "0e30ec47404b8471f1ce2ff62ac517eee152e14d936ae8b7fbce98d2fdb18b2f",
+          "binary_sha256": "bab479ff128a248193e8522333ad1f774ba8cc65a804fe56c1e5cdff8f931842"
+        }
+      ],
+      "context": "true-prefix",
+      "onnx_sha256": "a85feb0aedea1f7e2f11edf4f9be4e70975bdc88fafccc5be541e467dbd74bbd"
+    },
+    "context": "Pinned exact source model; exact original nodes0..N plus required original initializers, final selected output only cast f32 before compilation; no forced intermediate realization."
+  },
+  "next_prefix_survey": [
+    {
+      "index": 99,
+      "original_sha256": "e6a490fe6dd910944a124c3e566a0c9a7ca06f43645918df61b756eeebb52011",
+      "native_sha256": "e6a490fe6dd910944a124c3e566a0c9a7ca06f43645918df61b756eeebb52011"
+    },
+    {
+      "index": 100,
+      "original_sha256": "353aff17978e120d54e8f127b0a22f6e9d6f9df61f10642cdbcd9a2d56e09f95",
+      "native_sha256": "353aff17978e120d54e8f127b0a22f6e9d6f9df61f10642cdbcd9a2d56e09f95"
+    },
+    {
+      "index": 101,
+      "original_sha256": "d8bfb5082ffc9062cf217f740f25c9309712dfc6cbbce9558625c4f9be6349f8",
+      "native_sha256": "d8bfb5082ffc9062cf217f740f25c9309712dfc6cbbce9558625c4f9be6349f8"
+    },
+    {
+      "index": 105,
+      "original_sha256": "94871a9bb804039873daaaea27e0cd94fe997e9a9b1473201c375a0f6c0c1081",
+      "native_sha256": "94871a9bb804039873daaaea27e0cd94fe997e9a9b1473201c375a0f6c0c1081"
+    },
+    {
+      "index": 112,
+      "original_sha256": "023ecbfb49b98cba79ccd567c13f30493ba738bb001149ccf275ab09c33b32ac",
+      "native_sha256": "023ecbfb49b98cba79ccd567c13f30493ba738bb001149ccf275ab09c33b32ac"
+    }
+  ],
+  "full_model_status": "Prefix200 rejected because live mixed logical-half/f32 Concat remains outside this bounded unit. Knownprefix93 optimizedfusion bitdiscrepancy remains unresolved."
+}

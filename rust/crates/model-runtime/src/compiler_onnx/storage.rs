@@ -75,6 +75,17 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
     let mut aliases = BTreeSet::new();
     let mut unsupported_views = BTreeSet::new();
     let live = super::schedule::schedule_plans(graph, "CPU", true)?.live;
+    // Original Tensor.cat pads before its addition. That PAD is a barrier to
+    // moved-AFTER IMAGE alias reuse; lowered Select loads are not direct ALU
+    // reads of the packed source. Keep this source distinction explicit.
+    let concat_barriers = model
+        .graph
+        .nodes
+        .iter()
+        .filter(|node| node.op == "Concat")
+        .flat_map(|node| node.outputs.iter())
+        .filter_map(|name| graph.names.get(name).copied())
+        .collect::<BTreeSet<_>>();
     let views = (0..graph.plans.len())
         .map(|id| view_parent(graph, id))
         .collect::<Vec<_>>();
@@ -223,7 +234,7 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
         }
     }
     for (id, plan) in graph.plans.iter().enumerate() {
-        if live.contains(&id) && views[id].is_none() {
+        if live.contains(&id) && views[id].is_none() && !concat_barriers.contains(&id) {
             let mut probe = plan.expression.clone();
             rewrite(&mut probe, &unsupported_views, false);
             if probe != plan.expression {
@@ -234,7 +245,7 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
         }
     }
     for (id, plan) in graph.plans.iter_mut().enumerate() {
-        if views[id].is_none() {
+        if views[id].is_none() && !concat_barriers.contains(&id) {
             rewrite(&mut plan.expression, &aliases, false);
         }
     }

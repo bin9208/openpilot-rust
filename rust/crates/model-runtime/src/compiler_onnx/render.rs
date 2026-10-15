@@ -25,6 +25,7 @@ struct Renderer<'a> {
     statements: Vec<String>,
     cpu_math: bool,
     shared_reciprocals: Vec<ScalarExpr>,
+    branch_bounds: Vec<(IndexExpr, i128, i128)>,
 }
 fn elements(shape: &[usize]) -> Result<usize, String> {
     shape.iter().try_fold(1usize, |n, v| {
@@ -70,7 +71,7 @@ impl Renderer<'_> {
         }
     }
     fn index(&self, value: &IndexExpr) -> Result<(String, i128, i128), String> {
-        let result = match value {
+        let mut result = match value {
             IndexExpr::Index => ("i".into(), 0, (self.count - 1) as i128),
             IndexExpr::Reduction => {
                 let (name, count) = self
@@ -120,14 +121,75 @@ impl Renderer<'_> {
                 }
             }
         };
+        for (expression, low, high) in &self.branch_bounds {
+            if expression == value {
+                result.1 = result.1.max(*low);
+                result.2 = result.2.min(*high);
+            }
+        }
+        if result.1 > result.2 {
+            return Err("conditional index branch has an empty proven domain".into());
+        }
         if result.1 < i64::MIN as i128 || result.2 > i64::MAX as i128 {
             return Err("renderer index exceeds signed64".into());
         }
         Ok(result)
     }
 
+    fn predicate(&mut self, condition: &ScalarExpr) -> Result<String, String> {
+        match condition {
+            ScalarExpr::IndexLess { index, bound } => {
+                if *bound < i64::MIN as i128 || *bound > i64::MAX as i128 {
+                    return Err("conditional index bound exceeds signed64".into());
+                }
+                let (index, _, _) = self.index(index)?;
+                let (bound, _, _) = self.index(&IndexExpr::Constant(*bound))?;
+                Ok(format!("({index}<{bound})"))
+            }
+            ScalarExpr::GreaterZero(value) => Ok(format!("({}>0.0f)", self.expression(value)?)),
+            ScalarExpr::BoolNot(value) => Ok(format!("(!{})", self.predicate(value)?)),
+            _ => Err("CPU conditional predicate is not implemented".into()),
+        }
+    }
+    fn conditional_branch(
+        &mut self,
+        condition: &ScalarExpr,
+        expression: &ScalarExpr,
+        yes: bool,
+    ) -> Result<String, String> {
+        let saved = self.branch_bounds.len();
+        let before_statements = self.statements.len();
+        if let ScalarExpr::IndexLess { index, bound } = condition {
+            let (_, low, high) = self.index(index)?;
+            let (low, high) = if yes {
+                (
+                    low,
+                    high.min(bound.checked_sub(1).ok_or("conditional bound underflow")?),
+                )
+            } else {
+                (low.max(*bound), high)
+            };
+            self.branch_bounds.push((index.clone(), low, high));
+        }
+        let result = self.expression(expression);
+        self.branch_bounds.truncate(saved);
+        if self.statements.len() != before_statements {
+            return Err("CPU conditional branch cannot hoist reduction statements".into());
+        }
+        result
+    }
     fn expression(&mut self, value: &ScalarExpr) -> Result<String, String> {
         match value {
+            ScalarExpr::Select { condition, yes, no }
+                if self.cpu_emulated_half && self.graph.plans[self.output].ty.dtype == 1 =>
+            {
+                let predicate = self.predicate(condition)?;
+                let yes = self.conditional_branch(condition, yes, true)?;
+                let no = self.conditional_branch(condition, no, false)?;
+                // C's conditional evaluates only the selected branch; rejected
+                // maps never become unchecked or speculative pointer accesses.
+                Ok(format!("({predicate}?{yes}:{no})"))
+            }
             ScalarExpr::Load { plan, index } => {
                 let input = self
                     .graph
@@ -474,6 +536,7 @@ fn render(
         statements: Vec::new(),
         cpu_math: false,
         shared_reciprocals,
+        branch_bounds: Vec::new(),
     };
     let mut expression = renderer.expression(&plan.expression)?;
     // Only the outermost arithmetic parentheses are redundant in the store.

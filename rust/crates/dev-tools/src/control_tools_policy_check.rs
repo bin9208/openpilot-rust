@@ -1,5 +1,5 @@
 //! Compare native control tool states with preserved original-source fixture outputs.
-mod json;
+pub(crate) mod json;
 use crate::{
     path_resolve::resolve_non_strict,
     qa_process::{CommandSpec, Runner},

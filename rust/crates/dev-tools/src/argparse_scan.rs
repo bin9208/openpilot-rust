@@ -52,7 +52,7 @@ pub struct Parsed {
     pub append_values: BTreeMap<String, Vec<String>>,
 }
 mod python_decimal;
-fn decimal(value: &str) -> bool {
+pub(crate) fn decimal(value: &str) -> bool {
     value.chars().all(|ch| {
         python_decimal::RANGES
             .iter()

@@ -312,6 +312,32 @@ pub fn compile_onnx(
     } else {
         LoweredGraph::lower(&model)
     }?;
+    let live = schedule::schedule_plans(&lowered, "CPU", true)?.live;
+    for node in model
+        .graph
+        .nodes
+        .iter()
+        .filter(|node| matches!(node.op.as_str(), "Concat" | "Relu"))
+    {
+        if !node
+            .outputs
+            .iter()
+            .filter_map(|name| lowered.names.get(name))
+            .any(|id| live.contains(id))
+        {
+            continue;
+        }
+        if node.inputs.iter().chain(&node.outputs).any(|name| {
+            lowered
+                .names
+                .get(name)
+                .is_none_or(|id| lowered.plans[*id].ty.dtype != 1)
+        }) {
+            return Err(
+                "CPU conditional graph requires proved logical float32 inputs and outputs".into(),
+            );
+        }
+    }
     if options.offline_bindings {
         compiler_onnx::storage::apply_cpu_image_aliases(&mut lowered, &model)?;
     }

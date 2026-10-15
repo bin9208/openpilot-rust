@@ -2149,7 +2149,7 @@ rust/tools/check_ui_product_buttons.py	c84be094f6aeaa21377fbe1ce7ff4be78ba5fc22	
 rust/tools/check_ui_product_dialogs.py	21f7ba54a1cc31fb5e14c69e5b878070ef3b4d7b	pending	-
 rust/tools/check_ui_product_runtime.py	cf1d57e75633513eaa94b236f7f3b28d8a3bacd5	pending	-
 rust/tools/check_ui_product_widgets.py	ad7615a86717401008fda3eee989e9e27ccb965d	pending	-
-rust/tools/check_ui_qr.py	48751460c8589498d3b30a438fc77213940c7a02	pending	-
+rust/tools/check_ui_qr.py	48751460c8589498d3b30a438fc77213940c7a02	replaced-local	rust/crates/dev-tools/src/ui_fixed_corpus_check.rs;check-ui-qr
 rust/tools/check_ui_qr_texture.py	13166d22bc92a5a61b17a7bb6e068b6b03294295	pending	-
 rust/tools/check_ui_render.py	925c68a0e862cfdd3a1ac2d11fb48713e060aae0	pending	-
 rust/tools/check_ui_root.py	30f8ff3ea5d5f7ae3b8ddbacb99691fe5ed73724	pending	-
@@ -2163,7 +2163,7 @@ rust/tools/check_ui_software.py	ca911964a50d3c914e65f50ad256a67fdc6e6872	pending
 rust/tools/check_ui_ssh_fetch.py	33a7a797a0039e315168c1112603f1bfca72abb9	pending	-
 rust/tools/check_ui_stack.py	38dcc439cb6ae041dd3b05f82f812151a549c835	pending	-
 rust/tools/check_ui_state.py	5b9ce3fa9e34761d6f7e8f7663c6898552682228	pending	-
-rust/tools/check_ui_torque_geometry.py	b13a100747febd8c77032f3db4ad9ee6cd5e9ec3	pending	-
+rust/tools/check_ui_torque_geometry.py	b13a100747febd8c77032f3db4ad9ee6cd5e9ec3	replaced-local	rust/crates/dev-tools/src/ui_fixed_corpus_check.rs;check-ui-torque-geometry
 rust/tools/check_ui_torque_miri.py	206021f475110dcdb4b3a0f39047ef4ba50ea110	pending	-
 rust/tools/check_ui_training_adapter.py	e753b8ea4a3e203ca4e641fe1e045143f85307ab	replaced-local	rust/crates/dev-tools/src/ui_adapter_sanitizers.rs
 rust/tools/check_ui_translations.py	a003965d67a95e988b7c5525c722e87ee70fd745	pending	-

@@ -1,0 +1,349 @@
+#![cfg(feature = "native-skip-miri")]
+use openpilot_model_runtime::{
+    compiler_backend_cpu::{compile_onnx, CompileOptions},
+    compiler_onnx::{
+        lower::{IndexExpr, LoweredGraph, Plan, ScalarExpr, TensorType},
+        render,
+    },
+    CpuModel,
+};
+use sha2::{Digest, Sha256};
+use std::fs;
+fn decode(s: &str) -> Vec<u8> {
+    s.as_bytes()
+        .chunks_exact(2)
+        .map(|p| u8::from_str_radix(std::str::from_utf8(p).unwrap(), 16).unwrap())
+        .collect()
+}
+fn fixture() -> serde_json::Value {
+    serde_json::from_str(include_str!(
+        "fixtures/compiler/original-conditional-cpu.json"
+    ))
+    .unwrap()
+}
+fn run(case: &serde_json::Value, memory: bool) {
+    let temp = tempfile::tempdir().unwrap();
+    let bytes = decode(case["onnx_hex"].as_str().unwrap());
+    let path = temp.path().join("model.onnx");
+    fs::write(&path, &bytes).unwrap();
+    let dest = temp.path().join("bundle");
+    compile_onnx(
+        &path,
+        &format!("{:x}", Sha256::digest(&bytes)),
+        &CompileOptions {
+            offline_bindings: true,
+            memory_planning: memory,
+            ..CompileOptions::default()
+        },
+        &dest,
+    )
+    .unwrap_or_else(|e| panic!("{}: {e}", case["name"]));
+    let mut model = unsafe { CpuModel::load(&dest) }.unwrap();
+    if let Some(inputs) = case["inputs"].as_object() {
+        for (n, v) in inputs {
+            model.write_input(n, &decode(v.as_str().unwrap())).unwrap();
+        }
+    } else {
+        model
+            .write_input("a", &decode(case["input_hex"].as_str().unwrap()))
+            .unwrap();
+    }
+    model.run();
+    if let Some(outputs) = case["outputs"].as_object() {
+        for (n, v) in outputs {
+            let mut actual = vec![0; model.output_size(n).unwrap()];
+            model.read_output(n, &mut actual).unwrap();
+            assert_eq!(
+                actual,
+                decode(v["hex"].as_str().unwrap()),
+                "{} {n}",
+                case["name"]
+            );
+        }
+    } else {
+        let mut actual = vec![0; model.output_size("output").unwrap()];
+        model.read_output("output", &mut actual).unwrap();
+        assert_eq!(
+            actual,
+            decode(case["expected_hex"].as_str().unwrap()),
+            "{}",
+            case["name"]
+        );
+    }
+}
+#[test]
+fn original_float_concat_payloads_axes_held_outputs_and_nonuniform_branches_match() {
+    for case in fixture()["cases"].as_array().unwrap() {
+        for memory in [false, true] {
+            run(case, memory);
+        }
+    }
+}
+#[test]
+fn original_relu_and_matrix_concat_padding_barriers_match() {
+    for case in fixture()["matrix_barrier_cases"].as_array().unwrap() {
+        if !case["name"].as_str().unwrap().starts_with("Add-") {
+            for memory in [false, true] {
+                run(case, memory);
+            }
+        }
+    }
+}
+#[test]
+fn direct_matrix_arithmetic_aliases_remain_rejected_before_publication() {
+    for case in fixture()["matrix_barrier_cases"].as_array().unwrap() {
+        if !case["name"].as_str().unwrap().starts_with("Add-") {
+            continue;
+        }
+        let temp = tempfile::tempdir().unwrap();
+        let bytes = decode(case["onnx_hex"].as_str().unwrap());
+        let path = temp.path().join("model.onnx");
+        fs::write(&path, &bytes).unwrap();
+        let dest = temp.path().join("bundle");
+        assert!(compile_onnx(
+            &path,
+            &format!("{:x}", Sha256::digest(&bytes)),
+            &CompileOptions {
+                offline_bindings: true,
+                ..CompileOptions::default()
+            },
+            &dest
+        )
+        .is_err());
+        assert!(!dest.exists());
+    }
+}
+fn branch_graph() -> LoweredGraph {
+    let mut g = LoweredGraph::default();
+    for (n, count) in [("a", 2), ("b", 3)] {
+        g.plans.push(Plan {
+            ty: TensorType {
+                dtype: 1,
+                shape: vec![count],
+            },
+            expression: ScalarExpr::Input(n.into()),
+        });
+    }
+    g.plans.push(Plan {
+        ty: TensorType {
+            dtype: 1,
+            shape: vec![5],
+        },
+        expression: ScalarExpr::Select {
+            condition: Box::new(ScalarExpr::IndexLess {
+                index: IndexExpr::Index,
+                bound: 2,
+            }),
+            yes: Box::new(ScalarExpr::Load {
+                plan: 0,
+                index: IndexExpr::Index,
+            }),
+            no: Box::new(ScalarExpr::Load {
+                plan: 1,
+                index: IndexExpr::Add(
+                    Box::new(IndexExpr::Index),
+                    Box::new(IndexExpr::Constant(-2)),
+                ),
+            }),
+        },
+    });
+    g
+}
+#[test]
+fn branch_domains_prove_each_load_without_disabling_bounds_checks() {
+    let mut g = branch_graph();
+    assert!(render::render_cpu_elementwise(&g, 2, "bounded_branches").is_ok());
+    assert!(render::render_elementwise(&g, 2, "gpu_conditional").is_err());
+    if let ScalarExpr::Select { yes, .. } = &mut g.plans[2].expression {
+        **yes = ScalarExpr::Load {
+            plan: 0,
+            index: IndexExpr::Add(
+                Box::new(IndexExpr::Index),
+                Box::new(IndexExpr::Constant(-1)),
+            ),
+        };
+    }
+    assert!(render::render_cpu_elementwise(&g, 2, "negative_index").is_err());
+    let mut g = branch_graph();
+    if let ScalarExpr::Select { no, .. } = &mut g.plans[2].expression {
+        **no = ScalarExpr::Load {
+            plan: 1,
+            index: IndexExpr::Index,
+        };
+    }
+    assert!(render::render_cpu_elementwise(&g, 2, "high_index").is_err());
+}
+
+fn vi(data: &[u8], pos: &mut usize) -> usize {
+    let mut n = 0;
+    let mut shift = 0;
+    loop {
+        let b = data[*pos];
+        *pos += 1;
+        n |= ((b & 127) as usize) << shift;
+        if b < 128 {
+            return n;
+        }
+        shift += 7;
+        assert!(shift < 64);
+    }
+}
+fn fields(data: &[u8]) -> Vec<(usize, &[u8], &[u8])> {
+    let mut out = Vec::new();
+    let mut pos = 0;
+    while pos < data.len() {
+        let start = pos;
+        let tag = vi(data, &mut pos);
+        let payload = match tag & 7 {
+            2 => {
+                let len = vi(data, &mut pos);
+                let p = &data[pos..pos + len];
+                pos += len;
+                p
+            }
+            0 => {
+                vi(data, &mut pos);
+                &data[pos..pos]
+            }
+            1 => {
+                pos += 8;
+                &data[pos..pos]
+            }
+            5 => {
+                pos += 4;
+                &data[pos..pos]
+            }
+            _ => panic!("unsupported trusted fixture wire"),
+        };
+        out.push((tag >> 3, payload, &data[start..pos]));
+    }
+    out
+}
+fn varint(mut v: usize) -> Vec<u8> {
+    let mut out = Vec::new();
+    while v > 127 {
+        out.push((v as u8 & 127) | 128);
+        v >>= 7;
+    }
+    out.push(v as u8);
+    out
+}
+fn message(n: usize, data: &[u8]) -> Vec<u8> {
+    [varint(n * 8 + 2), varint(data.len()), data.to_vec()].concat()
+}
+fn actual_prefix_source(case: &serde_json::Value) -> Vec<u8> {
+    let directory = option_env!("CARGO_MANIFEST_DIR").unwrap_or("rust/crates/model-runtime");
+    let path = std::path::Path::new(directory)
+        .join("../../../openpilot/selfdrive/modeld/models")
+        .join(case["source_model"].as_str().unwrap());
+    let source = fs::read(path).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&source)),
+        case["source_model_sha256"].as_str().unwrap()
+    );
+    let top = fields(&source);
+    let graph = fields(top.iter().find(|v| v.0 == 7).unwrap().1);
+    let nodes = graph
+        .iter()
+        .filter(|v| v.0 == 1)
+        .take(case["last_node"].as_u64().unwrap() as usize + 1)
+        .collect::<Vec<_>>();
+    let required = nodes
+        .iter()
+        .flat_map(|v| fields(v.1))
+        .filter(|v| v.0 == 1)
+        .map(|v| v.1)
+        .collect::<std::collections::BTreeSet<_>>();
+    let mut prefix = nodes
+        .iter()
+        .flat_map(|v| v.2.iter().copied())
+        .collect::<Vec<_>>();
+    for (n, payload, raw) in &graph {
+        if *n == 1 || *n == 12 {
+            continue;
+        }
+        if *n == 5 {
+            let name = fields(payload).into_iter().find(|v| v.0 == 8).unwrap().1;
+            if !required.contains(name) {
+                continue;
+            }
+        }
+        prefix.extend_from_slice(raw);
+    }
+    let mut output = message(1, case["output_name"].as_str().unwrap().as_bytes());
+    output.extend(message(2, &message(1, &[8, 1])));
+    prefix.extend(message(12, &output));
+    let bytes = top
+        .iter()
+        .flat_map(|(n, _, raw)| {
+            if *n == 7 {
+                message(7, &prefix)
+            } else {
+                raw.to_vec()
+            }
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&bytes)),
+        case["prefix_sha256"].as_str().unwrap()
+    );
+    bytes
+}
+
+#[test]
+fn actual_driver_true_prefix_relu_matches_independent_original_export() {
+    let f = fixture();
+    let c = &f["actual_prefix100"];
+    let temp = tempfile::tempdir().unwrap();
+    let bytes = actual_prefix_source(c);
+    let path = temp.path().join("model.onnx");
+    fs::write(&path, &bytes).unwrap();
+    let dest = temp.path().join("bundle");
+    compile_onnx(
+        &path,
+        &format!("{:x}", Sha256::digest(&bytes)),
+        &CompileOptions {
+            offline_bindings: true,
+            ..CompileOptions::default()
+        },
+        &dest,
+    )
+    .unwrap();
+    let mut model = unsafe { CpuModel::load(&dest) }.unwrap();
+    model
+        .write_input("input_img", &(0u8..=255).collect::<Vec<_>>().repeat(5400))
+        .unwrap();
+    model.run();
+    let name = c["output_name"].as_str().unwrap();
+    let mut actual = vec![0; model.output_size(name).unwrap()];
+    model.read_output(name, &mut actual).unwrap();
+    assert_eq!(
+        actual.len() as u64,
+        c["original"]["bytes"].as_u64().unwrap()
+    );
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&actual)),
+        c["original"]["sha256"].as_str().unwrap()
+    );
+}
+#[test]
+fn actual_mixed_logical_half_concat_prefix_rejects_before_publication() {
+    let f = fixture();
+    let c = &f["actual_prefix98"];
+    let temp = tempfile::tempdir().unwrap();
+    let bytes = actual_prefix_source(c);
+    let path = temp.path().join("model.onnx");
+    fs::write(&path, &bytes).unwrap();
+    let dest = temp.path().join("bundle");
+    let result = compile_onnx(
+        &path,
+        &format!("{:x}", Sha256::digest(&bytes)),
+        &CompileOptions {
+            offline_bindings: true,
+            ..CompileOptions::default()
+        },
+        &dest,
+    );
+    assert!(result.err().unwrap().contains("logical float32"));
+    assert!(!dest.exists());
+}
