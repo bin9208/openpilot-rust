@@ -330,28 +330,172 @@ fn inherited_stdin_child() {
     }
     let mut spec = command("cat", Duration::from_secs(2));
     spec.inherit_stdin = true;
-    let result = NativeRunner.run(&spec).unwrap();
-    assert_eq!(result.stdout, b"inherited\x00\xff\r\n");
+    if std::env::var_os("OPENPILOT_QA_PREFIX_CHILD").is_some() {
+        let temp = tempfile::tempdir().unwrap();
+        let log = temp.path().join("inherited.log");
+        NativeRunner
+            .run_to_file_with_prefix(&spec, &log, b"Invocation\n")
+            .unwrap();
+        assert_eq!(fs::read(log).unwrap(), b"Invocation\ninherited\x00\xff\r\n");
+    } else {
+        let result = NativeRunner.run(&spec).unwrap();
+        assert_eq!(result.stdout, b"inherited\x00\xff\r\n");
+    }
     spec.input = Some(vec![]);
     assert!(NativeRunner.run(&spec).is_err());
 }
 #[test]
 fn inherited_stdin_reaches_child_without_translation() {
     use std::io::Write;
-    let mut child = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", "inherited_stdin_child", "--nocapture"])
-        .env("OPENPILOT_QA_INHERITED_STDIN_CHILD", "1")
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
+    for prefixed in [false, true] {
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        if prefixed {
+            command.env("OPENPILOT_QA_PREFIX_CHILD", "1");
+        }
+        let mut child = command
+            .args(["--exact", "inherited_stdin_child", "--nocapture"])
+            .env("OPENPILOT_QA_INHERITED_STDIN_CHILD", "1")
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(b"inherited\x00\xff\r\n")
+            .unwrap();
+        let result = child.wait_with_output().unwrap();
+        assert!(result.status.success(), "{:?}", result);
+    }
+}
+
+#[test]
+fn prefixed_file_keeps_raw_argv_environment_and_ordered_output() {
+    use std::{collections::BTreeMap, ffi::OsString, os::unix::ffi::OsStringExt};
+    let temp = tempfile::tempdir().unwrap();
+    let log = temp.path().join("compiler.log");
+    let mut spec = CommandSpec::new_os(
+        vec![
+            "/bin/sh".into(),
+            "-c".into(),
+            "printf '%s' \"$1\"; printf '%s' \"$QA_RAW_VALUE\" >&2; cat".into(),
+            "peer".into(),
+            OsString::from_vec(b"arg-\xff".to_vec()),
+        ],
+        Duration::from_secs(2),
+    );
+    spec.set_os_env(BTreeMap::from([(
+        "QA_RAW_VALUE".into(),
+        OsString::from_vec(b"env-\xfe".to_vec()),
+    )]));
+    spec.env
+        .insert("QA_RAW_VALUE".into(), "must-not-replace".into());
+    spec.input = Some(b"input\0\xfd".to_vec());
+    spec.inherit_output = true;
+    spec.inherit_stderr = true;
+    let result = NativeRunner
+        .run_to_file_with_prefix(&spec, &log, b"Invocation: peer\n")
         .unwrap();
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(b"inherited\x00\xff\r\n")
-        .unwrap();
-    let result = child.wait_with_output().unwrap();
-    assert!(result.status.success(), "{:?}", result);
+    assert_eq!(result.code, 0);
+    assert!(result.stdout.is_empty() && result.stderr.is_empty());
+    assert_eq!(
+        fs::read(log).unwrap(),
+        b"Invocation: peer\narg-\xffenv-\xfeinput\0\xfd"
+    );
+}
+
+#[test]
+fn prefixed_spawn_failure_and_timeout_preserve_owned_diagnostics() {
+    let temp = tempfile::tempdir().unwrap();
+    let log = temp.path().join("compiler.log");
+    fs::write(&log, b"stale success").unwrap();
+    let spec = CommandSpec::new(
+        vec!["/missing-owned-command".into()],
+        Duration::from_secs(1),
+    );
+    assert!(NativeRunner
+        .run_to_file_with_prefix(&spec, &log, b"Invocation: missing\n")
+        .is_err());
+    assert_eq!(fs::read(&log).unwrap(), b"Invocation: missing\n");
+    let spec = command(
+        "printf 'partial\\377'; printf error >&2; sleep 30",
+        Duration::from_millis(200),
+    );
+    let error = NativeRunner
+        .run_to_file_with_prefix(&spec, &log, b"Invocation: timeout\n")
+        .unwrap_err();
+    assert!(matches!(
+        error.downcast_ref::<CaptureError>(),
+        Some(CaptureError::Timeout { .. })
+    ));
+    assert_eq!(
+        fs::read(log).unwrap(),
+        b"Invocation: timeout\npartial\xfferror"
+    );
+}
+
+#[test]
+fn authoritative_empty_environment_and_invalid_environment_preserve_defaults() {
+    use std::{collections::BTreeMap, ffi::OsString, os::unix::ffi::OsStringExt};
+    let mut spec = command(
+        "printf '%s:%s' \"${OPENPILOT_QA_IGNORED_OVERLAY-unset}\" \"${PATH:+inherited}\"",
+        Duration::from_secs(2),
+    );
+    spec.set_os_env(BTreeMap::new());
+    spec.env
+        .insert("OPENPILOT_QA_IGNORED_OVERLAY".into(), "wrong".into());
+    assert_eq!(NativeRunner.run(&spec).unwrap().stdout, b"unset:inherited");
+    spec.set_os_env(BTreeMap::from([("QA_VALUE".into(), "valid".into())]));
+    assert_eq!(spec.env.get("QA_VALUE").map(String::as_str), Some("valid"));
+    spec.set_os_env(BTreeMap::from([(
+        "QA_VALUE".into(),
+        OsString::from_vec(b"bad\0value".to_vec()),
+    )]));
+    assert!(NativeRunner.run(&spec).is_err());
+}
+
+#[test]
+fn default_peer_prefix_survives_success_and_timeout() {
+    use openpilot_dev_tools::{qa_process::Captured, seal::Result};
+    struct Peer(bool);
+    impl Runner for Peer {
+        fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
+            assert!(spec.merge_output && spec.inherit_stdin);
+            assert!(!spec.inherit_output && !spec.inherit_stderr);
+            if self.0 {
+                Err(CaptureError::Timeout {
+                    timeout: spec.timeout,
+                    stdout: b"partial\xff".to_vec(),
+                    stderr: vec![],
+                }
+                .into())
+            } else {
+                Ok(Captured {
+                    code: 7,
+                    stdout: b"complete\xff".to_vec(),
+                    stderr: vec![],
+                })
+            }
+        }
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let log = temp.path().join("peer.log");
+    let mut spec = command("unused", Duration::from_secs(1));
+    spec.inherit_stdin = true;
+    spec.inherit_output = true;
+    spec.inherit_stderr = true;
+    assert_eq!(
+        Peer(false)
+            .run_to_file_with_prefix(&spec, &log, b"prefix\n")
+            .unwrap()
+            .code,
+        7
+    );
+    assert_eq!(fs::read(&log).unwrap(), b"prefix\ncomplete\xff");
+    assert!(Peer(true)
+        .run_to_file_with_prefix(&spec, &log, b"prefix\n")
+        .is_err());
+    assert_eq!(fs::read(log).unwrap(), b"prefix\npartial\xff");
 }

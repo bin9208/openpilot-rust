@@ -11,7 +11,7 @@ use std::{
     collections::BTreeMap,
     ffi::OsString,
     fmt,
-    fs::{self, File},
+    fs::File,
     io::{self, Read, Write},
     os::{
         fd::OwnedFd,
@@ -32,6 +32,9 @@ pub struct CommandSpec {
     pub os_argv: Option<Vec<OsString>>,
     pub cwd: Option<PathBuf>,
     pub env: BTreeMap<String, String>,
+    /// Authoritative environment overlay, preserving native OS bytes. The
+    /// caller's environment is still inherited; Some(empty) adds no variables.
+    pub os_env: Option<BTreeMap<OsString, OsString>>,
     pub timeout: Duration,
     pub stdout_limit: usize,
     pub stderr_limit: usize,
@@ -55,6 +58,7 @@ impl CommandSpec {
             os_argv: None,
             cwd: None,
             env: BTreeMap::new(),
+            os_env: None,
             timeout,
             stdout_limit: 16 * 1024 * 1024,
             stderr_limit: 16 * 1024 * 1024,
@@ -81,6 +85,22 @@ impl CommandSpec {
             .clone()
             .unwrap_or_else(|| self.argv.iter().map(OsString::from).collect())
     }
+    pub fn set_os_env(&mut self, env: BTreeMap<OsString, OsString>) {
+        self.env = env
+            .iter()
+            .map(|(key, value)| Some((key.to_str()?.to_owned(), value.to_str()?.to_owned())))
+            .collect::<Option<BTreeMap<_, _>>>()
+            .unwrap_or_default();
+        self.os_env = Some(env);
+    }
+    pub fn effective_env(&self) -> BTreeMap<OsString, OsString> {
+        self.os_env.clone().unwrap_or_else(|| {
+            self.env
+                .iter()
+                .map(|(key, value)| (key.into(), value.into()))
+                .collect()
+        })
+    }
 }
 #[derive(Clone, Debug)]
 pub struct Captured {
@@ -93,21 +113,33 @@ pub trait Runner {
     /// Merge both streams into an owned file. Test peers can use captured bytes;
     /// NativeRunner redirects directly, avoiding an in-memory diagnostic limit.
     fn run_to_file(&mut self, command: &CommandSpec, log: &Path) -> Result<Captured> {
-        fs::write(log, [])?;
+        self.run_to_file_with_prefix(command, log, &[])
+    }
+    /// Write and flush invocation provenance before running a child. Retain the
+    /// prefix on spawn failure or timeout, along with any partial diagnostics.
+    fn run_to_file_with_prefix(
+        &mut self,
+        command: &CommandSpec,
+        log: &Path,
+        prefix: &[u8],
+    ) -> Result<Captured> {
+        let mut log = File::create(log)?;
+        log.write_all(prefix)?;
+        log.flush()?;
         let mut command = command.clone();
         command.merge_output = true;
         command.inherit_output = false;
         command.inherit_stderr = false;
         match self.run(&command) {
             Ok(captured) => {
-                fs::write(log, &captured.stdout)?;
+                log.write_all(&captured.stdout)?;
                 Ok(captured)
             }
             Err(error) => {
                 if let Some(CaptureError::Timeout { stdout, .. }) =
                     error.downcast_ref::<CaptureError>()
                 {
-                    fs::write(log, stdout)?;
+                    log.write_all(stdout)?;
                 }
                 Err(error)
             }
@@ -200,16 +232,25 @@ impl Runner for NativeRunner {
     fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
         self.run_with_file(spec, None)
     }
-    fn run_to_file(&mut self, spec: &CommandSpec, log: &Path) -> Result<Captured> {
+    fn run_to_file_with_prefix(
+        &mut self,
+        spec: &CommandSpec,
+        log: &Path,
+        prefix: &[u8],
+    ) -> Result<Captured> {
         let mut spec = spec.clone();
         spec.merge_output = true;
         spec.inherit_output = false;
         spec.inherit_stderr = false;
-        self.run_with_file(&spec, Some(log))
+        self.run_with_file(&spec, Some((log, prefix)))
     }
 }
 impl NativeRunner {
-    fn run_with_file(&mut self, spec: &CommandSpec, log: Option<&Path>) -> Result<Captured> {
+    fn run_with_file(
+        &mut self,
+        spec: &CommandSpec,
+        log: Option<(&Path, &[u8])>,
+    ) -> Result<Captured> {
         if spec.timeout.is_zero() {
             return Err("native command timeout must be positive".into());
         }
@@ -224,7 +265,7 @@ impl NativeRunner {
         let mut command = Command::new(first);
         command
             .args(args)
-            .envs(&spec.env)
+            .envs(spec.effective_env())
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -242,8 +283,10 @@ impl NativeRunner {
         } else if spec.inherit_stderr {
             command.stderr(Stdio::inherit());
         }
-        let merged = if let Some(log) = log {
-            let file = File::create(log)?;
+        let merged = if let Some((log, prefix)) = log {
+            let mut file = File::create(log)?;
+            file.write_all(prefix)?;
+            file.flush()?;
             command
                 .stdout(Stdio::from(file.try_clone()?))
                 .stderr(Stdio::from(file));
