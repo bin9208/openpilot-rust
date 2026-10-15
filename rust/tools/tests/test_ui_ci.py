@@ -61,3 +61,23 @@ def test_arm_ui_commands_resolve_workspace_and_python_paths() -> None:
     assert executable.is_absolute() and executable.is_file(), executable
   workspace = tomllib.loads((directory / 'Cargo.toml').read_text())
   assert 'crates/ui-application' in workspace['workspace']['members']
+
+
+def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path: Path, monkeypatch) -> None:
+  import check_ui_ci as module
+  old_calls, native_calls = [], []
+  binaries, output, raylib = tmp_path / 'binaries', tmp_path / 'output', tmp_path / 'raylib'
+  monkeypatch.setenv('STARTUP_UI_RAYLIB_ROOT', str(raylib))
+  monkeypatch.setenv('STARTUP_UI_RAYLIB_LIBRARY', str(raylib / 'lib/libopenpilot-raylib.so'))
+  monkeypatch.setattr(module.UiCheck, 'check', lambda self, name, script, arguments: old_calls.append(name))
+  monkeypatch.setattr(module, 'require_space', lambda *args: None)
+  monkeypatch.setattr(module, 'run', lambda command, directory, name: native_calls.append((command, directory, name)))
+  owner = module.UiCheck(output, binaries, tmp_path / 'peer')
+  owner.execute('owned-display')
+  assert old_calls == ['state', 'scheduler', 'qr', 'root', 'augmented', 'camera', 'runtime', 'pages',
+                       'hud-eight-modes', 'hud-traffic', 'calibration', 'torque', 'native-safety']
+  assert native_calls == [
+    (['env', 'DISPLAY=owned-display', str(binaries / f'check-ui-{kind}-adapter'), '--target', str(binaries), '--raylib', str(raylib),
+      '--evidence', str(output / f'native-{kind}-adapter')], output / 'commands', f'native-{kind}-adapter')
+    for kind in ('model', 'training')
+  ]

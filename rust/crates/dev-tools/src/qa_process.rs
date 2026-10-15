@@ -9,6 +9,7 @@ use rustix::{
 };
 use std::{
     collections::BTreeMap,
+    ffi::OsString,
     fmt,
     fs::{self, File},
     io::{self, Read, Write},
@@ -26,6 +27,9 @@ use std::{
 #[derive(Clone, Debug)]
 pub struct CommandSpec {
     pub argv: Vec<String>,
+    /// Authoritative Unix argv when supplied. The String argv remains a UTF-8
+    /// peer interface; new_os leaves it empty if any argument is not Unicode.
+    pub os_argv: Option<Vec<OsString>>,
     pub cwd: Option<PathBuf>,
     pub env: BTreeMap<String, String>,
     pub timeout: Duration,
@@ -48,6 +52,7 @@ impl CommandSpec {
     pub fn new(argv: Vec<String>, timeout: Duration) -> Self {
         Self {
             argv,
+            os_argv: None,
             cwd: None,
             env: BTreeMap::new(),
             timeout,
@@ -59,6 +64,22 @@ impl CommandSpec {
             input: None,
             inherit_stdin: false,
         }
+    }
+    pub fn new_os(argv: Vec<OsString>, timeout: Duration) -> Self {
+        let mirror = argv
+            .iter()
+            .cloned()
+            .map(OsString::into_string)
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .unwrap_or_default();
+        let mut spec = Self::new(mirror, timeout);
+        spec.os_argv = Some(argv);
+        spec
+    }
+    pub fn effective_argv(&self) -> Vec<OsString> {
+        self.os_argv
+            .clone()
+            .unwrap_or_else(|| self.argv.iter().map(OsString::from).collect())
     }
 }
 #[derive(Clone, Debug)]
@@ -198,7 +219,8 @@ impl NativeRunner {
         if spec.inherit_stdin && spec.input.is_some() {
             return Err("native command cannot both pipe and inherit stdin".into());
         }
-        let (first, args) = spec.argv.split_first().ok_or("empty native command")?;
+        let argv = spec.effective_argv();
+        let (first, args) = argv.split_first().ok_or("empty native command")?;
         let mut command = Command::new(first);
         command
             .args(args)

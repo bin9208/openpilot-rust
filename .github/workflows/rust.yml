@@ -2114,7 +2114,7 @@ jobs:
           rustc --version
           cargo --version
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged --bins --examples --locked
+          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged -p openpilot-dev-tools --bins --examples --locked
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build original startup message and Params bindings
@@ -2142,7 +2142,7 @@ jobs:
       - name: Verify the exact native response detector source archive
         run: |
           curl --fail --location --retry 3 https://static.crates.io/crates/charset-norm/charset-norm-3.5.1.crate --output "$RUNNER_TEMP/charset-norm-3.5.1.crate"
-          python rust/tools/check_registration_vendor.py "$RUNNER_TEMP/charset-norm-3.5.1.crate" "$RUNNER_TEMP/startup-runtime/detector-vendor.json"
+          rust/target/debug/check-registration-vendor "$RUNNER_TEMP/charset-norm-3.5.1.crate" "$RUNNER_TEMP/startup-runtime/detector-vendor.json"
       - name: Compare registration signatures, persistence and response decoding
         run: |
           python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
@@ -2501,7 +2501,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 5120
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-dev-tools --bin openpilot-process-child --bin check-ui-updater-handshake --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-dev-tools --bin openpilot-process-child --bin check-ui-updater-handshake --bin check-ui-model-adapter --bin check-ui-training-adapter --locked
           cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked --message-format=json | tee "$RUNNER_TEMP/ui-native/unit-tests.jsonl"
       - name: Require queued exec error after helper exit
         run: rust/target/debug/check-ui-updater-handshake --evidence "$RUNNER_TEMP/ui-native"

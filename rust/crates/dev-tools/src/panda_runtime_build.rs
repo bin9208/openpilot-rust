@@ -43,52 +43,42 @@ const HEADERS: [&str; 11] = [
     "openpilot/cereal/messaging/messaging.h",
     "openpilot/system/hardware/pc/hardware.h",
 ];
+pub use crate::argparse_scan::ArgumentError;
+fn parse_arguments(
+    args: &[String],
+) -> std::result::Result<crate::argparse_scan::Parsed, ArgumentError> {
+    use crate::argparse_scan::{scan, OptionSpec as S};
+    let mut specs = [
+        "--output",
+        "--generated-root",
+        "--capnp-prefix",
+        "--json11-prefix",
+        "--libusb-include",
+        "--zmq-root",
+        "--fixture",
+    ]
+    .map(|name| S::value(name, true))
+    .to_vec();
+    specs.extend([S::flag("--sanitize", None), S::value("--root", false)]);
+    scan(args, &specs)
+}
 struct Options {
     values: BTreeMap<String, PathBuf>,
     sanitize: bool,
 }
 impl Options {
     fn parse(args: &[String]) -> Result<Self> {
-        let mut values = BTreeMap::new();
-        let mut sanitize = false;
-        let mut at = 0;
-        while at < args.len() {
-            let key = &args[at];
-            at += 1;
-            if key == "--sanitize" {
-                sanitize = true;
-                continue;
-            }
-            if ![
-                "--output",
-                "--generated-root",
-                "--capnp-prefix",
-                "--json11-prefix",
-                "--libusb-include",
-                "--zmq-root",
-                "--fixture",
-            ]
-            .contains(&key.as_str())
-            {
-                return Err(format!("unknown runtime source argument: {key}").into());
-            }
-            let value = args.get(at).ok_or("argument requires value")?;
-            at += 1;
-            values.insert(key.clone(), PathBuf::from(value));
+        let parsed = parse_arguments(args)?;
+        if parsed.help {
+            return Err(ArgumentError("help is handled by the CLI".into()).into());
         }
-        for key in [
-            "--output",
-            "--generated-root",
-            "--capnp-prefix",
-            "--json11-prefix",
-            "--libusb-include",
-            "--zmq-root",
-            "--fixture",
-        ] {
-            if !values.contains_key(key) {
-                return Err(format!("{key} required").into());
-            }
-        }
+        let sanitize = parsed.values.contains_key("--sanitize");
+        let mut values = parsed
+            .values
+            .into_iter()
+            .filter(|(key, _)| key != "--sanitize")
+            .map(|(key, value)| (key, PathBuf::from(value)))
+            .collect::<BTreeMap<_, _>>();
         values.insert(
             "--output".into(),
             crate::path_resolve::resolve_non_strict(&values["--output"])?,
@@ -199,21 +189,67 @@ pub fn run(root: &Path, args: &[String], runner: &mut dyn Runner, free_bytes: u6
     Ok(())
 }
 pub fn cli() -> Result<()> {
-    let mut args = std::env::args().skip(1).collect::<Vec<_>>();
-    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+    let args = std::env::args().skip(1).collect::<Vec<_>>();
+    let parsed = parse_arguments(&args)?;
+    if parsed.help {
         println!("Usage: build-pandad-runtime-source --output OUTPUT --generated-root ROOT --capnp-prefix PREFIX --json11-prefix PREFIX --libusb-include INCLUDE --zmq-root ROOT --fixture LIBRARY [--sanitize] [--root ROOT]");
         return Ok(());
     }
-    let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    if let Some(at) = args.iter().position(|arg| arg == "--root") {
-        if at + 1 >= args.len() {
-            return Err("--root requires value".into());
-        }
-        root = PathBuf::from(args.remove(at + 1));
-        args.remove(at);
-    }
+    let root = parsed
+        .values
+        .get("--root")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."));
     let root = root.canonicalize()?;
     let options = Options::parse(&args)?;
     let space = disk_space::inspect(options.path("--output"), 512 * 1024 * 1024)?;
     run(&root, &args, &mut NativeRunner, space.free_bytes)
+}
+
+#[cfg(test)]
+mod original_cli_interfaces {
+    #[test]
+    fn original_argparse_admission() {
+        assert!(super::Options::parse(&["--help".into()]).is_err());
+        let rows: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/panda-cli/five-interfaces.json"
+        ))
+        .unwrap();
+        for row in rows
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| ["runtime"].contains(&row["family"].as_str().unwrap()))
+        {
+            let args = row["args"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap().to_owned())
+                .collect::<Vec<_>>();
+            let result = super::parse_arguments(&args);
+            assert_eq!(result.is_ok(), row["original_exit"] == 0, "{row}");
+            if let Ok(parsed) = result {
+                assert_eq!(parsed.help, row["help"].as_bool().unwrap(), "{row}");
+                if !parsed.help {
+                    for (key, value) in &parsed.values {
+                        let name = key.trim_start_matches("--").replace('-', "_");
+                        let expected = &row["parsed"][&name];
+                        if expected.is_boolean() {
+                            assert_eq!(expected, true, "{row}");
+                        } else {
+                            assert_eq!(value, expected.as_str().unwrap(), "{row}");
+                        }
+                    }
+                    if row["family"] == "bootlog" {
+                        assert_eq!(
+                            parsed.positionals[0],
+                            row["parsed"]["output"].as_str().unwrap(),
+                            "{row}"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }

@@ -89,6 +89,11 @@ class UiCheck:
     self.check('native-safety', 'check_ui_native_safety.py', ['--target', str(self.binaries),
       '--output', str(self.output / 'native-safety'), '--display', display,
       '--raylib-root', os.environ['STARTUP_UI_RAYLIB_ROOT'], '--raylib-library', os.environ['STARTUP_UI_RAYLIB_LIBRARY']])
+    for kind in ('model', 'training'):
+      require_space(self.output, 3 * 1024**3)
+      run(['env', f'DISPLAY={display}', str(self.binaries / f'check-ui-{kind}-adapter'),
+        '--target', str(self.binaries), '--raylib', os.environ['STARTUP_UI_RAYLIB_ROOT'],
+        '--evidence', str(self.output / f'native-{kind}-adapter')], self.commands, f'native-{kind}-adapter')
 
 
 def main() -> None:
@@ -116,11 +121,17 @@ def main() -> None:
   imports['cereal'] = str(CEREAL_PATH)
   source_paths = [Path(__file__), ROOT / 'rust/Cargo.lock', ROOT / 'uv.lock']
   source_paths += list(TOOLS.glob('check_ui_*.py')) + list((TOOLS / 'ui_application_qa').glob('*.py'))
+  source_paths += [TOOLS / name for name in ('ui_model_qa/bridge_asan.cc', 'ui_home_qa/bridge_asan.cc',
+    'startup_ui_qa/cxx_runtime.rs')]
+  for name in ('dev-tools', 'log-format', 'disk-space', 'runtime-core'):
+    source_paths += list((ROOT / 'rust/crates' / name / 'src').rglob('*.rs'))
+    source_paths += [ROOT / 'rust/crates' / name / 'Cargo.toml']
   for name in ('ui-application', 'ui-framework', 'startup-ui', 'msgq', 'params', 'hardware-info'):
     source_paths += [path for path in (ROOT / 'rust/crates' / name).rglob('*')
       if path.is_file() and path.suffix in ('.rs', '.cc', '.h', '.toml')]
   executables = [binaries / 'openpilot-ui', peer, Path(os.environ['STARTUP_UI_RAYLIB_LIBRARY'])]
   executables += [binaries / 'examples' / name for name in EXAMPLES]
+  executables += [binaries / f'check-ui-{kind}-adapter' for kind in ('model', 'training')]
   receipt = {'argv': sys.argv, 'source_sha256': hashes(source_paths), 'python_imports': imports,
     'versions': {name: importlib.metadata.version(name) for name in ('numpy', 'pillow', 'comma-deps-raylib',
       'cffi', 'python-xlib', 'pyzmq', 'pycapnp', 'requests', 'qrcode', 'setproctitle', 'Cython', 'setuptools')},

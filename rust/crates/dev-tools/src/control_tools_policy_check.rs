@@ -5,7 +5,6 @@ use crate::{
     qa_process::{CommandSpec, Runner},
     seal::Result,
 };
-use openpilot_log_format::JsonValue;
 use sha2::{Digest, Sha256};
 use std::{fs, io::Write, path::Path, time::Duration};
 pub fn check(
@@ -22,8 +21,8 @@ pub fn check(
     let request = fs::read(source.join("input.json"))?;
     let expected = json::parse(&fs::read(source.join("expected.json"))?)?;
     let resolved = resolve_non_strict(binary)?;
-    let mut command = CommandSpec::new(
-        vec![resolved.to_str().ok_or("non-Unicode binary path")?.into()],
+    let mut command = CommandSpec::new_os(
+        vec![resolved.as_os_str().to_owned()],
         Duration::from_secs(300),
     );
     command.input = Some(request.clone());
@@ -80,7 +79,7 @@ pub fn check(
     } else {
         format!("[\n{}\n  ]", expanded.join(",\n"))
     };
-    let executable = JsonValue::text(&command.argv[0]).to_json()?;
+    let executable = crate::python_fs::json_string(&command.effective_argv()[0])?;
     let pretty = format!("{{\n  \"cases\": {},\n  \"steps\": {steps},\n  \"mismatch_count\": {count},\n  \"mismatches\": {pretty_mismatches},\n  \"binary_sha256\": \"{binary_hash}\",\n  \"input_sha256\": \"{input_hash}\",\n  \"command\": [\n    {executable}\n  ]\n}}\n", actual.len());
     fs::write(output.join("receipt.json"), pretty)?;
     writeln!(printed, "{{\"cases\": {}, \"steps\": {steps}, \"mismatch_count\": {count}, \"mismatches\": [{}], \"binary_sha256\": \"{binary_hash}\", \"input_sha256\": \"{input_hash}\", \"command\": [{executable}]}}", actual.len(), compact.join(", "))?;
@@ -92,11 +91,11 @@ pub fn check(
 
 pub fn cli() -> Result<()> {
     use crate::{
-        argparse_scan::{scan, OptionSpec},
+        argparse_scan::{scan_os, OptionSpec},
         qa_process::NativeRunner,
     };
-    let args = std::env::args().skip(1).collect::<Vec<_>>();
-    let parsed = scan(
+    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    let parsed = scan_os(
         &args,
         &[
             OptionSpec::value("--binary", true),

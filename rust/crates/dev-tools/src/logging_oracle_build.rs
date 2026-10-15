@@ -46,44 +46,52 @@ const PRODUCER: [&str; 4] = [
     "openpilot/cereal/messaging/socketmaster.cc",
     "rust/tools/loggerd_native_producer.cc",
 ];
+pub use crate::argparse_scan::ArgumentError;
+fn parse_arguments(
+    family: &str,
+    args: &[String],
+) -> std::result::Result<crate::argparse_scan::Parsed, ArgumentError> {
+    use crate::argparse_scan::{scan, scan_with_positionals, OptionSpec as S};
+    let mut specs = vec![
+        S::value("--root", false),
+        S::value("--capnp-prefix", false),
+        S::value("--native-prefix", false),
+    ];
+    if family == "bootlog" {
+        specs.extend([
+            S::value("--json11-prefix", false),
+            S::value("--zmq-include", false),
+            S::flag("--identifier", None),
+        ]);
+        scan_with_positionals(args, &specs, 1)
+    } else if family == "loggerd" {
+        specs.push(S::value("--output", true));
+        scan(args, &specs)
+    } else {
+        Err(ArgumentError(
+            "unknown logging source builder family".into(),
+        ))
+    }
+}
 struct Options {
     values: BTreeMap<String, PathBuf>,
     identifier: bool,
 }
 impl Options {
     fn parse(family: &str, args: &[String]) -> Result<Self> {
-        if !["bootlog", "loggerd"].contains(&family) {
-            return Err("unknown logging source builder family".into());
+        let parsed = parse_arguments(family, args)?;
+        if parsed.help {
+            return Err(ArgumentError("help is handled by the CLI".into()).into());
         }
-        let mut values = BTreeMap::new();
-        let mut identifier = false;
-        let mut at = 0;
-        while at < args.len() {
-            let key = &args[at];
-            at += 1;
-            if family == "bootlog" && key == "--identifier" {
-                identifier = true;
-                continue;
-            }
-            if family == "bootlog" && !key.starts_with('-') {
-                if values
-                    .insert("--output".into(), PathBuf::from(key))
-                    .is_some()
-                {
-                    return Err("one positional output required".into());
-                }
-                continue;
-            }
-            let allowed = matches!(key.as_str(), "--capnp-prefix" | "--native-prefix")
-                || family == "loggerd" && key == "--output"
-                || family == "bootlog"
-                    && matches!(key.as_str(), "--json11-prefix" | "--zmq-include");
-            if !allowed {
-                return Err(format!("unknown logging source builder argument: {key}").into());
-            }
-            let value = args.get(at).ok_or("argument requires a value")?;
-            at += 1;
-            values.insert(key.clone(), PathBuf::from(value));
+        let identifier = parsed.values.contains_key("--identifier");
+        let mut values = parsed
+            .values
+            .into_iter()
+            .filter(|(key, _)| key != "--identifier")
+            .map(|(key, value)| (key, PathBuf::from(value)))
+            .collect::<BTreeMap<_, _>>();
+        if family == "bootlog" {
+            values.insert("--output".into(), PathBuf::from(&parsed.positionals[0]));
         }
         let output = crate::path_resolve::resolve_non_strict(
             values.get("--output").ok_or("output required")?,
@@ -473,19 +481,17 @@ fn loggerd(
     Ok(binary)
 }
 pub fn cli(family: &str) -> Result<()> {
-    let mut args = std::env::args().skip(1).collect::<Vec<_>>();
-    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+    let args = std::env::args().skip(1).collect::<Vec<_>>();
+    let parsed = parse_arguments(family, &args)?;
+    if parsed.help {
         match family {"bootlog"=>println!("Usage: build-bootlog-source OUTPUT [--identifier] [--capnp-prefix PREFIX] [--json11-prefix PREFIX] [--native-prefix PREFIX] [--zmq-include INCLUDE] [--root ROOT]"),"loggerd"=>println!("Usage: build-loggerd-source --output OUTPUT [--capnp-prefix PREFIX] [--native-prefix PREFIX] [--root ROOT]"),_=>return Err("unknown logging source builder family".into())}
         return Ok(());
     }
-    let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    if let Some(at) = args.iter().position(|arg| arg == "--root") {
-        if at + 1 >= args.len() {
-            return Err("--root requires value".into());
-        }
-        root = PathBuf::from(args.remove(at + 1));
-        args.remove(at);
-    }
+    let root = parsed
+        .values
+        .get("--root")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."));
     let root = root.canonicalize()?;
     let target = if family == "bootlog" {
         std::env::var_os("CARGO_TARGET_DIR")
@@ -507,4 +513,52 @@ pub fn cli(family: &str) -> Result<()> {
     )?;
     println!("{}", binary.display());
     Ok(())
+}
+
+#[cfg(test)]
+mod original_cli_interfaces {
+    #[test]
+    fn original_argparse_admission() {
+        assert!(super::Options::parse("bootlog", &["--help".into()]).is_err());
+        let rows: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/panda-cli/five-interfaces.json"
+        ))
+        .unwrap();
+        for row in rows
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| ["bootlog", "loggerd"].contains(&row["family"].as_str().unwrap()))
+        {
+            let args = row["args"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap().to_owned())
+                .collect::<Vec<_>>();
+            let result = super::parse_arguments(row["family"].as_str().unwrap(), &args);
+            assert_eq!(result.is_ok(), row["original_exit"] == 0, "{row}");
+            if let Ok(parsed) = result {
+                assert_eq!(parsed.help, row["help"].as_bool().unwrap(), "{row}");
+                if !parsed.help {
+                    for (key, value) in &parsed.values {
+                        let name = key.trim_start_matches("--").replace('-', "_");
+                        let expected = &row["parsed"][&name];
+                        if expected.is_boolean() {
+                            assert_eq!(expected, true, "{row}");
+                        } else {
+                            assert_eq!(value, expected.as_str().unwrap(), "{row}");
+                        }
+                    }
+                    if row["family"] == "bootlog" {
+                        assert_eq!(
+                            parsed.positionals[0],
+                            row["parsed"]["output"].as_str().unwrap(),
+                            "{row}"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }

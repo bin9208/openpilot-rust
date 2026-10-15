@@ -207,3 +207,26 @@ fn real_cli_preserves_original_inherited_raw_streams_and_partial_files() {
         );
     }
 }
+#[test]
+fn missing_zmq_cache_preserves_original_parser_error_without_output_mutation() {
+    let temp = tempfile::tempdir().unwrap();
+    let output = temp.path().join("output");
+    let target = temp.path().join("missing-target");
+    let result = std::process::Command::new(env!("CARGO_BIN_EXE_build-bridge-source"))
+        .arg("--output")
+        .arg(&output)
+        .arg("--target")
+        .arg(&target)
+        .output()
+        .unwrap();
+    assert_eq!(
+        result.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert!(String::from_utf8_lossy(&result.stderr)
+        .contains("build openpilot-bridge first or provide --zmq-root"));
+    assert!(!output.exists());
+    assert!(!target.exists());
+}

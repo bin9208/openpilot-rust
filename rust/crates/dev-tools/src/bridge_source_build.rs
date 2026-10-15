@@ -22,6 +22,21 @@ const SOURCES: [&str; 8] = [
     "msgq_repo/msgq/impl_fake.cc",
     "msgq_repo/msgq/msgq.cc",
 ];
+pub use crate::argparse_scan::ArgumentError;
+fn parse_arguments(
+    args: &[String],
+) -> std::result::Result<crate::argparse_scan::Parsed, ArgumentError> {
+    use crate::argparse_scan::{scan, OptionSpec as S};
+    scan(
+        args,
+        &[
+            S::value("--output", true),
+            S::value("--target", false),
+            S::value("--zmq-root", false),
+            S::value("--root", false),
+        ],
+    )
+}
 struct Options {
     output: PathBuf,
     target: PathBuf,
@@ -29,33 +44,17 @@ struct Options {
 }
 impl Options {
     fn parse(root: &Path, args: &[String]) -> Result<Self> {
-        let mut output = None;
-        let mut target = None;
-        let mut zmq = None;
-        let mut at = 0;
-        while at < args.len() {
-            let slot = match args[at].as_str() {
-                "--output" => &mut output,
-                "--target" => &mut target,
-                "--zmq-root" => &mut zmq,
-                _ => return Err(format!("unknown bridge builder argument: {}", args[at]).into()),
-            };
-            if slot.is_some() {
-                return Err(format!("duplicate {}", args[at]).into());
-            }
-            let value = args
-                .get(at + 1)
-                .filter(|v| !v.starts_with("--"))
-                .ok_or_else(|| format!("{} requires a value", args[at]))?;
-            *slot = Some(PathBuf::from(value));
-            at += 2;
-        }
+        let mut values = parse_arguments(args)?.values;
         Ok(Self {
-            output: output.ok_or("--output is required")?,
-            target: target.unwrap_or_else(|| root.join("rust/target")),
-            zmq,
+            output: PathBuf::from(values.remove("--output").ok_or("--output required")?),
+            target: values
+                .remove("--target")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| root.join("rust/target")),
+            zmq: values.remove("--zmq-root").map(PathBuf::from),
         })
     }
+
     fn zmq_root(&self) -> Result<PathBuf> {
         let root = if let Some(root) = &self.zmq {
             root.clone()
@@ -68,7 +67,7 @@ impl Options {
                 .map(|entry| entry.path().join("out"))
                 .collect::<Vec<_>>();
             candidates.sort();
-            candidates.into_iter().find(|p|p.join("lib/libzmq.a").is_file()&&p.join("source/include/zmq.h").is_file()).ok_or("build openpilot-bridge first or provide --zmq-root containing lib/libzmq.a and source/include/zmq.h")?
+            candidates.into_iter().find(|p|p.join("lib/libzmq.a").is_file()&&p.join("source/include/zmq.h").is_file()).ok_or_else(|| ArgumentError("build openpilot-bridge first or provide --zmq-root containing lib/libzmq.a and source/include/zmq.h".into()))?
         };
         resolve_non_strict(&root)
     }
@@ -120,19 +119,67 @@ pub fn run(
     Ok(binary)
 }
 pub fn cli() -> Result<()> {
-    let mut args = std::env::args().skip(1).collect::<Vec<_>>();
-    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+    let args = std::env::args().skip(1).collect::<Vec<_>>();
+    let parsed = parse_arguments(&args)?;
+    if parsed.help {
         println!("Usage: build-bridge-source --output OUTPUT [--zmq-root ROOT] [--target TARGET] [--root ROOT]");
         return Ok(());
     }
-    let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    if let Some(at) = args.iter().position(|arg| arg == "--root") {
-        root = PathBuf::from(args.get(at + 1).ok_or("--root requires a value")?);
-        args.drain(at..at + 2);
-    }
+    let root = parsed
+        .values
+        .get("--root")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."));
     let root = root.canonicalize()?;
     let options = Options::parse(&root, &args)?;
     let space = disk_space::inspect(&options.output, GROWTH)?;
     run(&root, &args, &mut NativeRunner, space.free_bytes)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod original_cli_interfaces {
+    #[test]
+    fn original_argparse_admission() {
+        let rows: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/panda-cli/five-interfaces.json"
+        ))
+        .unwrap();
+        for row in rows
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| ["bridge"].contains(&row["family"].as_str().unwrap()))
+        {
+            let args = row["args"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap().to_owned())
+                .collect::<Vec<_>>();
+            let result = super::parse_arguments(&args);
+            assert_eq!(result.is_ok(), row["original_exit"] == 0, "{row}");
+            if let Ok(parsed) = result {
+                assert_eq!(parsed.help, row["help"].as_bool().unwrap(), "{row}");
+                if !parsed.help {
+                    for (key, value) in &parsed.values {
+                        let name = key.trim_start_matches("--").replace('-', "_");
+                        let expected = &row["parsed"][&name];
+                        if expected.is_boolean() {
+                            assert_eq!(expected, true, "{row}");
+                        } else {
+                            assert_eq!(value, expected.as_str().unwrap(), "{row}");
+                        }
+                    }
+                    if row["family"] == "bootlog" {
+                        assert_eq!(
+                            parsed.positionals[0],
+                            row["parsed"]["output"].as_str().unwrap(),
+                            "{row}"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }

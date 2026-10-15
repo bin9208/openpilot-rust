@@ -397,9 +397,19 @@ fn cpu_reductions_reject_unsupported_nesting_work_and_storage_domains() {
             right: Box::new(image_load),
         },
     );
-    assert!(
-        compiler_onnx::render::render_cpu_elementwise(&graph, 1, "unprofiled_image_dot").is_err()
-    );
+    let matrix =
+        compiler_onnx::render::render_cpu_elementwise(&graph, 1, "profiled_image_dot").unwrap();
+    assert!(matrix.source.contains("__builtin_fmaf"));
+    // Matrix admission requires both observable half-storage boundaries.
+    if let ScalarExpr::ReduceSum { value, .. } = &mut graph.plans[1].expression {
+        if let ScalarExpr::Binary { right, .. } = value.as_mut() {
+            **right = ScalarExpr::Load {
+                plan: 0,
+                index: IndexExpr::Reduction,
+            };
+        }
+    }
+    assert!(compiler_onnx::render::render_cpu_elementwise(&graph, 1, "mixed_image_dot").is_err());
     graph.plans[1].expression = ScalarExpr::PaddedLoad {
         plan: 0,
         coordinates: vec![(IndexExpr::Index, 0, 5)],

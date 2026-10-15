@@ -281,6 +281,8 @@
         "sha256": "7a7b146393c2b721948972508e445d7eff8e9555d5348967fd1fccb92bbfa4f6",
         "bytes": 5529600
       }
-    ]
+    ],
+    "acceptance": "diagnostic_forced_realization_only",
+    "context_correction": "Every original node separately realized before nextconsumer, forcingphysicalF16storage. These9hashes do notprove truefloat32exportequivalence. Originaltruecalibrationprefix0..2 differ; nativeadmissionnowrejectsthisjointfloat-exportgraphbeforepublication pendinglogical/physicalstorageprofile. ExistingphysicalF16cases andtruefinalimageConv/prefix30/59/97 remainpositivegates."
   }
 }

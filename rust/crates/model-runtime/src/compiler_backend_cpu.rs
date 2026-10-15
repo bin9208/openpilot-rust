@@ -312,6 +312,7 @@ pub fn compile_onnx(
     } else {
         LoweredGraph::lower(&model)
     }?;
+    compiler_onnx::storage_half::admit(&lowered)?;
     if options.offline_bindings {
         compiler_onnx::storage::apply_cpu_image_aliases(&mut lowered, &model)?;
     }

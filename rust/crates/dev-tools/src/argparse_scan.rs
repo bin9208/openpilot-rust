@@ -174,3 +174,89 @@ pub fn scan_with_positionals(
         positionals,
     })
 }
+
+/// Lossless Unix path arguments with the same grammar as `scan`.
+/// Only invalid UTF-8 bytes are encoded for scanning. The marker is chosen not
+/// to occur in any original byte string or option name and is reversed in values.
+pub struct ParsedOs {
+    pub values: BTreeMap<String, std::ffi::OsString>,
+    pub help: bool,
+    pub positionals: Vec<std::ffi::OsString>,
+}
+pub fn scan_os(
+    args: &[std::ffi::OsString],
+    specs: &[OptionSpec],
+) -> Result<ParsedOs, ArgumentError> {
+    scan_os_with_positionals(args, specs, 0)
+}
+/// Lossless Unix arguments with a fixed required positional count.
+pub fn scan_os_with_positionals(
+    args: &[std::ffi::OsString],
+    specs: &[OptionSpec],
+    required_positionals: usize,
+) -> Result<ParsedOs, ArgumentError> {
+    use std::{
+        ffi::OsString,
+        os::unix::ffi::{OsStrExt, OsStringExt},
+    };
+    let marker = (0usize..)
+        .map(|n| format!("\u{e000}{n}\u{e001}"))
+        .find(|marker| {
+            !args.iter().any(|arg| {
+                arg.as_bytes()
+                    .windows(marker.len())
+                    .any(|v| v == marker.as_bytes())
+            }) && !specs.iter().any(|spec| spec.name.contains(marker))
+        })
+        .expect("finite argument strings leave an unused marker");
+    let encode = |arg: &OsString| {
+        use std::fmt::Write;
+        let mut output = String::new();
+        let mut rest = arg.as_bytes();
+        while !rest.is_empty() {
+            match std::str::from_utf8(rest) {
+                Ok(text) => {
+                    output.push_str(text);
+                    break;
+                }
+                Err(error) => {
+                    let valid = error.valid_up_to();
+                    output.push_str(std::str::from_utf8(&rest[..valid]).expect("validated prefix"));
+                    rest = &rest[valid..];
+                    let count = error.error_len().unwrap_or(rest.len());
+                    for byte in &rest[..count] {
+                        write!(output, "{marker}{byte:02x}").expect("String write");
+                    }
+                    rest = &rest[count..];
+                }
+            }
+        }
+        output
+    };
+    let decode = |text: &str| {
+        let mut output = Vec::new();
+        let mut rest = text;
+        while let Some(at) = rest.find(&marker) {
+            output.extend_from_slice(&rest.as_bytes()[..at]);
+            rest = &rest[at + marker.len()..];
+            output.push(u8::from_str_radix(&rest[..2], 16).expect("encoded raw byte"));
+            rest = &rest[2..];
+        }
+        output.extend_from_slice(rest.as_bytes());
+        OsString::from_vec(output)
+    };
+    let parsed = scan_with_positionals(
+        &args.iter().map(encode).collect::<Vec<_>>(),
+        specs,
+        required_positionals,
+    )?;
+    Ok(ParsedOs {
+        values: parsed
+            .values
+            .into_iter()
+            .map(|(key, value)| (key, decode(&value)))
+            .collect(),
+        help: parsed.help,
+        positionals: parsed.positionals.iter().map(|v| decode(v)).collect(),
+    })
+}

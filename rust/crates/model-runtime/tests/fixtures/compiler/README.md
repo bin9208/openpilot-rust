@@ -110,3 +110,78 @@ this partial CPU backend accepts constant IMAGE weights only. A positive origina
 case with `auto_pad=VALID` and ignored negative `pads` verifies alias eligibility
 uses effective padding. These additions retain 37 positive small graphs, eight
 negative view/weight graphs, and the two actual driver-prefix gates.
+
+`original-matmul-cpu.json` retains 115 independent original CPU:LLVM IMAGE
+MatMul/Gemm captures: 32 finite dynamic-input cases across K=1..1024, rectangular
+outputs, transposed weights and bias; 80 dynamic signed-zero, subnormal,
+half-rounding/overflow, infinity and signed signaling/quiet NaN input cases.
+Each graph/input/expected output is embedded; finite schedules carry original
+LLVM and binary identities. Three original computed-weight/shared-operand cases and two nonunit Gemm
+scale cases remain negative publication gates until their storage/fusion
+semantics are proved. Explicit unit scales and both transpose flags are captured.
+The bounded native CPU domain currently requires rank-two f32/half operands,
+constant matrix weights, unit Gemm alpha/beta, and no unproved arithmetic
+reuse of packed operands.
+Generic reference lowering/import support is unchanged.
+
+The actual first driver Gemm prefix (node 97, output f32[1,512]) is reproduced
+from the mandatory pinned original LFS model using lossless protobuf field
+selection. Both the original source SHA and independently captured prefix SHA
+must match before native compilation, avoiding another copy of the large
+weights. Native artifact/runtime output matches original SHA256
+`339ef10ef2ad5ed8f898065b24f9726a68cd49ab13266f6c49d1d17730da80d1`.
+
+The retained true-final-output prefix survey covers every node 60..96. All match
+except node 93: original optimized Conv91+Gelu92+ReduceMean93 context differs in
+3/960 f32 values, maximum absolute difference 7.450580596923828e-9. Original
+ReduceMean on materialized original prefix92 matches native prefix93 exactly;
+this isolates an unresolved fusion/layout boundary rather than proving an
+incorrect standalone reduction order. Prefix94's half-storage staging erases
+that difference, so later prefix parity does not accept node93. Original full
+f32 export output SHA `28468af72225b086839c4ae5de6fa07a1d01e843d02fd915d67f810e438549d3`
+is captured, but full native model execution remains incomplete. No tolerance,
+cached original-output substitution, or Python retirement follows from these
+bounded gates.
+
+Reverse-view review adds six original Conv/MatMul descendant Identity, Reshape,
+and same-dtype Cast cases. Before repair, four Identity/Reshape graphs were
+accepted with every output value wrong; a held same-dtype Cast after computed
+Conv input also returned half-rounded bytes instead of the original raw f32
+output. Original and pre-fix native bytes/statuses and native source hashes are
+retained. The admission pass now follows view identity in both directions and
+rejects arithmetic reuse through downstream views before publication. Pure
+view outputs remain raw storage copies, including two independently captured
+jointly realized held-Cast/Conv-or-MatMul output graphs. This conservatively
+rejects unproved view-mediated arithmetic without altering Concat's separate
+padding barrier or accepting general inverse movement maps. The extended storage
+fixture has 39 positive small graphs and 14 negative admission graphs, alongside
+the two actual driver-prefix gates.
+
+`original-logical-half.json` confirms a separate CPU storage limitation using
+five minimal explicit half Cast/Sub/Mul/view-to-f32 graphs. The ONNX output and
+lowered native output both have f32 dtype; original final output is cast to f32
+before realization, matching the offline export contract. Thus the calibration
+prefix 0..2 discrepancy is not a comparison against physical F16 output. For
+input `[1+2^-11,-0,0.3]`, original prefix2 is
+`[760.93896484375,-0.9574055671691895,12.65090560913086]`, while premature native
+half stores produced `[760.5,-0.95751953125,12.6484375]`. The original prefix98
+calibration tail matches the former values; image-only prefixes prune this path.
+
+Until a complete logical/physical CPU storage profile is implemented, structural
+admission rejects unproved computed-half reads by arithmetic or float export
+before an explicit storage boundary. This applies in both binding modes and is
+not keyed to any model/name/prefix. Physical F16 input/constants, exact uint8
+casts, pure half views and direct explicit IMAGE storage conversion retain their
+verified behavior. Arithmetic inside a storage conversion does not bypass the
+guard. Five minimal negative graphs reject before publication; four independent
+positive graphs cover genuine physical F16 Cast/Sub, exact uint8 conversion and
+uint8/half-Div/IMAGE-Conv storage. All 13 earlier genuine F16/storage cases and
+actual final-only image Conv/prefix30/59/97 gates remain positive.
+
+The earlier all-nine-node driver hash gate used per-node forced realization,
+which inserts physical F16 stores. It has been corrected to reject that unproved
+joint f32-export graph; all nine original diagnostic hashes/input recipes remain
+in `original-typed-preprocess.json` with an explicit context correction. Removing
+that accepted-graph assertion does not assert a new numerical equivalence. The
+logical-half profile, node93 optimized-fusion discrepancy, conditional rendering,
+full models and Python retirement remain unfinished.

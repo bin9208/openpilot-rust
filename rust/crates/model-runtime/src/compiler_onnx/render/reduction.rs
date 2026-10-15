@@ -112,10 +112,22 @@ impl Renderer<'_> {
                     _ => false,
                 }
             }
-            if !image_operand(a) || !image_operand(b) || !convolution_input(a) {
+            fn matrix_input(value: &ScalarExpr) -> bool {
+                match value {
+                    ScalarExpr::Cast { dtype: 1, value } => matrix_input(value),
+                    ScalarExpr::StorageRound { dtype: 10, value } => {
+                        matches!(value.as_ref(), ScalarExpr::Load { .. })
+                    }
+                    _ => false,
+                }
+            }
+            if !image_operand(a)
+                || !image_operand(b)
+                || !(convolution_input(a) || matrix_input(a) && matrix_input(b))
+            {
                 self.reduction = None;
                 return Err(
-                    "CPU product reduction scheduling not implemented outside IMAGE convolution storage".into(),
+                    "CPU product reduction scheduling requires supported IMAGE convolution or matrix storage".into(),
                 );
             }
             let a = self.expression(a)?;

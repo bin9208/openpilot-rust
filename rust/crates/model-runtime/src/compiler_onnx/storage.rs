@@ -48,6 +48,24 @@ fn rewrite(expression: &mut ScalarExpr, aliases: &BTreeSet<usize>, alu: bool) {
         _ => {}
     }
 }
+// Identity and same-dtype Cast disappear in the original graph before its
+// moved-AFTER fold. Keep their native plan storage observable, but track their
+// identity in both directions before admitting arithmetic consumers.
+fn view_parent(graph: &LoweredGraph, id: usize) -> Option<usize> {
+    let plan = &graph.plans[id];
+    match &plan.expression {
+        ScalarExpr::Load { plan: parent, .. } => Some(*parent),
+        ScalarExpr::Cast { dtype, value } if *dtype == plan.ty.dtype => match value.as_ref() {
+            ScalarExpr::Load { plan: parent, .. }
+                if graph.plans.get(*parent)?.ty.dtype == *dtype =>
+            {
+                Some(*parent)
+            }
+            _ => None,
+        },
+        _ => None,
+    }
+}
 /// Reuse only computed f32 tensors with invertible full-channel IMAGE packing.
 /// Channel zero-padding is an ordinary PAD and is not stripped by the original
 /// fold; alignment's Invalid padding is stripped. Negative crop is noninvertible.
@@ -57,6 +75,9 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
     let mut aliases = BTreeSet::new();
     let mut unsupported_views = BTreeSet::new();
     let live = super::schedule::schedule_plans(graph, "CPU", true)?.live;
+    let views = (0..graph.plans.len())
+        .map(|id| view_parent(graph, id))
+        .collect::<Vec<_>>();
     for node in model.graph.nodes.iter().filter(|node| node.op == "Conv") {
         if !node
             .outputs
@@ -118,22 +139,91 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
         }
         // Movement sources require an inverse index map to the underlying computed
         // value. Do not silently treat a noninvertible view as packed value storage.
-        if matches!(plan.expression, ScalarExpr::Load { .. }) {
+        if views[id].is_some() {
             let mut source = id;
             unsupported_views.insert(source);
-            while let ScalarExpr::Load { plan: parent, .. } = &graph.plans[source].expression {
-                if *parent >= source {
+            while let Some(parent) = views[source] {
+                if parent >= source {
                     return Err("invalid inverse movement alias order".into());
                 }
-                source = *parent;
+                source = parent;
                 unsupported_views.insert(source);
             }
             continue;
         }
         aliases.insert(id);
     }
+    // IMAGE matmul is lowered through packed convolution by the original. Its
+    // shared computed operands need a separate packing/inverse-map proof. Keep
+    // isolated matrix execution available while rejecting unproved ALU reuse.
+    for node in model
+        .graph
+        .nodes
+        .iter()
+        .filter(|node| matches!(node.op.as_str(), "MatMul" | "Gemm"))
+    {
+        if !node
+            .outputs
+            .iter()
+            .filter_map(|name| graph.names.get(name))
+            .any(|id| live.contains(id))
+        {
+            continue;
+        }
+        for key in ["alpha", "beta"] {
+            if let Some(attribute) = node.attributes.get(key) {
+                if !matches!(attribute,Attribute::Float(value) if *value==1.0)
+                    && !matches!(attribute, Attribute::Integer(1))
+                {
+                    return Err("CPU IMAGE nonunit Gemm scaling is not implemented".into());
+                }
+            }
+        }
+        let weight = node
+            .inputs
+            .get(1)
+            .and_then(|name| graph.names.get(name))
+            .ok_or("matrix weight has no storage plan")?;
+        if !matches!(graph.plans[*weight].expression, ScalarExpr::Constant(_)) {
+            return Err("CPU IMAGE dynamic matrix weight storage alias is not implemented".into());
+        }
+        let input = node
+            .inputs
+            .first()
+            .and_then(|name| graph.names.get(name))
+            .ok_or("matrix input has no storage plan")?;
+        for id in [*input, *weight] {
+            let ty = &graph.plans[id].ty;
+            if ty.shape.len() != 2 || !matches!(ty.dtype, 1 | 10) {
+                return Err("CPU IMAGE matrix requires f32/half rank-two operands".into());
+            }
+        }
+        let mut source = *input;
+        unsupported_views.insert(source);
+        while let Some(parent) = views[source] {
+            if parent >= source {
+                return Err("invalid inverse movement alias order".into());
+            }
+            source = parent;
+            unsupported_views.insert(source);
+        }
+    }
+    // A view downstream of a packed root can hide that root from the ALU load.
+    // Propagate the identity closure in topological order; conservatively reject
+    // such reuse until inverse view maps are proved, including otherwise pure
+    // same-dtype Casts. Held view outputs still copy the original raw storage.
+    let mut identities = aliases
+        .union(&unsupported_views)
+        .copied()
+        .collect::<BTreeSet<_>>();
+    for (id, parent) in views.iter().enumerate() {
+        if parent.is_some_and(|parent| identities.contains(&parent)) {
+            identities.insert(id);
+            unsupported_views.insert(id);
+        }
+    }
     for (id, plan) in graph.plans.iter().enumerate() {
-        if live.contains(&id) {
+        if live.contains(&id) && views[id].is_none() {
             let mut probe = plan.expression.clone();
             rewrite(&mut probe, &unsupported_views, false);
             if probe != plan.expression {
@@ -143,8 +233,10 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
             }
         }
     }
-    for plan in &mut graph.plans {
-        rewrite(&mut plan.expression, &aliases, false);
+    for (id, plan) in graph.plans.iter_mut().enumerate() {
+        if views[id].is_none() {
+            rewrite(&mut plan.expression, &aliases, false);
+        }
     }
     Ok(())
 }

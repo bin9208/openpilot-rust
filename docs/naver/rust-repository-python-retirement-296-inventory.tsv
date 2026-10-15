@@ -2055,7 +2055,7 @@ rust/tools/check_radarcan_runtime.py	15067032bfb54e5c7214b131178f90d241eac9c5	pe
 rust/tools/check_registration.py	cbb3b6ded74388583ef0ba05300bfed240814d52	pending	-
 rust/tools/check_registration_clock.py	932374bbe4383ee1e98ae4fab314c237861d201c	pending	-
 rust/tools/check_registration_utf7.py	9bb1dd1f15e75efb58c78db603143cd17468be59	pending	-
-rust/tools/check_registration_vendor.py	dc7278a116a16e63654efbd2ee40706499d4064e	pending	-
+rust/tools/check_registration_vendor.py	dc7278a116a16e63654efbd2ee40706499d4064e	replaced-local	rust/crates/dev-tools/src/registration_vendor_check.rs
 rust/tools/check_runtime_diagnostics.py	e1b0a2f950d51b368582319c27f999cb7d3d2b35	pending	-
 rust/tools/check_runtime_launcher.py	a18592a9b8a9846777e9cdfedad5b4d7f72dde15	pending	-
 rust/tools/check_runtime_log_upload.py	8a2fee473760b01021b74179e7647f21280616d3	pending	-
@@ -2135,7 +2135,7 @@ rust/tools/check_ui_hud_presentation.py	9f1354f73de91690ad37d655b1012288b68e77d0
 rust/tools/check_ui_indicators.py	7321a498b97edb8cb255888a74cf3b4f39bf4f8e	pending	-
 rust/tools/check_ui_mici_network.py	614bc2732456c07b62f653c58c884ba0c2c446d0	pending	-
 rust/tools/check_ui_mici_offroad_alerts.py	000a39c6789b001d4cbe1966bea98ec8271b1d6e	pending	-
-rust/tools/check_ui_model_adapter.py	3c06ce95033cf53255349790b2b956192f54f524	pending	-
+rust/tools/check_ui_model_adapter.py	3c06ce95033cf53255349790b2b956192f54f524	replaced-local	rust/crates/dev-tools/src/ui_adapter_sanitizers.rs
 rust/tools/check_ui_model_geometry.py	95b173320e2116bdec39b529ce6906d8648e6807	pending	-
 rust/tools/check_ui_model_render.py	945ac4b797722c858744d866e9eeee6aabaed80f	pending	-
 rust/tools/check_ui_native_resources.py	28a96b6c76051a055609a0d9c436bc0e1cb6f28d	pending	-
@@ -2165,7 +2165,7 @@ rust/tools/check_ui_stack.py	38dcc439cb6ae041dd3b05f82f812151a549c835	pending	-
 rust/tools/check_ui_state.py	5b9ce3fa9e34761d6f7e8f7663c6898552682228	pending	-
 rust/tools/check_ui_torque_geometry.py	b13a100747febd8c77032f3db4ad9ee6cd5e9ec3	pending	-
 rust/tools/check_ui_torque_miri.py	206021f475110dcdb4b3a0f39047ef4ba50ea110	pending	-
-rust/tools/check_ui_training_adapter.py	e753b8ea4a3e203ca4e641fe1e045143f85307ab	pending	-
+rust/tools/check_ui_training_adapter.py	e753b8ea4a3e203ca4e641fe1e045143f85307ab	replaced-local	rust/crates/dev-tools/src/ui_adapter_sanitizers.rs
 rust/tools/check_ui_translations.py	a003965d67a95e988b7c5525c722e87ee70fd745	pending	-
 rust/tools/check_ui_updater_signal.py	3ad62badba20752d8758bdec8c93d10239efe423	pending	-
 rust/tools/check_ui_vision.py	9c56587aa9311f24a4a4d00834f3da5e9772d9d1	pending	-

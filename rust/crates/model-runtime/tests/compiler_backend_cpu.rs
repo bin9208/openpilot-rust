@@ -340,18 +340,24 @@ fn typed_preprocessing_matches_independent_original_compiled_captures() {
 }
 
 #[test]
-fn actual_driver_first_nine_nodes_match_independent_compiled_output_hashes() {
+fn forced_node_driver_hashes_do_not_authorize_unproved_float_exports() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "fixtures/compiler/original-typed-preprocess.json"
     ))
     .unwrap();
     let prefix = &fixture["driver_prefix"];
+    assert_eq!(prefix["acceptance"], "diagnostic_forced_realization_only");
+    // These hashes were captured after separately realizing every original
+    // node. That forces F16 storage and is not the offline f32-export context.
+    // Retain the diagnostic evidence; do not publish that graph using it as an
+    // equivalence oracle. True final-only image prefixes have separate gates.
+    assert_eq!(prefix["outputs"].as_array().unwrap().len(), 9);
     let directory = tempfile::tempdir().unwrap();
     let onnx = directory.path().join("driver-first-nine.onnx");
     let bytes = decode(prefix["onnx_hex"].as_str().unwrap());
     fs::write(&onnx, &bytes).unwrap();
     let bundle = directory.path().join("bundle");
-    compile_onnx(
+    let result = compile_onnx(
         &onnx,
         &format!("{:x}", Sha256::digest(&bytes)),
         &CompileOptions {
@@ -359,32 +365,8 @@ fn actual_driver_first_nine_nodes_match_independent_compiled_output_hashes() {
             ..CompileOptions::default()
         },
         &bundle,
-    )
-    .unwrap();
-    let mut model = unsafe { CpuModel::load(&bundle) }.unwrap();
-    model
-        .write_input(
-            "input_img",
-            &decode(prefix["input_img"]["repeat_hex"].as_str().unwrap())
-                .repeat(prefix["input_img"]["repetitions"].as_u64().unwrap() as usize),
-        )
-        .unwrap();
-    model
-        .write_input(
-            "calib",
-            &decode(prefix["calib"]["data_hex"].as_str().unwrap()),
-        )
-        .unwrap();
-    model.run();
-    for expected in prefix["outputs"].as_array().unwrap() {
-        let name = expected["name"].as_str().unwrap();
-        let mut output = vec![0; model.output_size(name).unwrap()];
-        model.read_output(name, &mut output).unwrap();
-        assert_eq!(output.len() as u64, expected["bytes"].as_u64().unwrap());
-        assert_eq!(
-            format!("{:x}", Sha256::digest(output)),
-            expected["sha256"].as_str().unwrap(),
-            "actual original driver node {name}"
-        );
-    }
+    );
+    assert!(result.is_err());
+    assert!(!bundle.exists());
+    assert!(result.err().unwrap().contains("logical-half"));
 }

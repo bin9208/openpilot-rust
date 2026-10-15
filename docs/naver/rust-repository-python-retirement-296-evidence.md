@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Twenty-seven sources have locally verified replacements and migrated
-callers; 3,553 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Thirty sources have locally verified replacements and migrated
+callers; 3,550 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -411,6 +411,106 @@ log-format codepoint tests pass, strict all-target Clippy passes for both change
 tool/JSON packages, and workspace formatting/diff checks pass. The model package
 separately passes all 124 tests and strict Clippy. This checkpoint is local
 validation; its exact remote CI remains required.
+
+The native registration-vendor verifier replaces the Python archive checker and
+its CI invocation. Thirty-seven independently captured archive/filesystem cases
+and five CLI probes pass. Raw/gzip/bzip2/xz inputs, member ordering/duplicates,
+path normalization, non-UTF-8 filenames, local symlink behavior, changed-file
+policy and error artifacts are preserved without extracting archive members.
+The exact published charset-norm 3.5.1 archive verifies 28 files; original/native
+reports are byte-identical, SHA-256
+`7f3513df8861b8f46d317ee6a6c9efb1c4fd717d4654e6ce072d59db822b70c7`.
+Both reject a mutated archive with no output file. The narrow empty GNU-sparse
+header compatibility preserves original acceptance only after archive SHA and
+raw header checksum checks. Independent review found no Important issue; strict
+Clippy passes. bzip2 reuses the already locked/cached 0.6.1 package.
+
+Five further builder/checker CLIs migrate through 73 independent original parser
+captures: bootlog, loggerd, Panda runtime, bridge and JPEG. Their 83 focused tests,
+25 real safe CLI probes and strict Clippy pass. A separate actual bridge missing-
+dependency regression now preserves original exit 2 and creates neither output
+nor target cache; all four bridge tests pass. Build/check implementation remains
+unchanged by these parser repairs.
+
+The two UI model/training adapter sanitizer drivers now have native commands.
+Twenty-six independent original cases preserve newest-artifact selection,
+filesystem-order ties, commands, raw logs, missing artifacts and partial failures.
+Twelve additional original cases preserve arbitrary Unix filename bytes in the
+root, target, header, library, raylib and evidence paths. Thirteen original parser
+cases and actual native raw-argv/CLI tests cover the lossless optional process
+interface; old UTF-8 callers retain their existing behavior. Native compilation
+checks disk before each compiler, with explicit 1,200-second build and 300-second
+probe bounds added to the original unbounded orchestration.
+
+Both original and native UI adapters passed on private owned Xvfb displays.
+The runtime archive, both ASan/UBSan executables, PNG captures, all three command
+logs and driver streams match byte-for-byte. Complete receipts and commands match
+after normalizing only their evidence directories. Model capture: 5,626 bytes;
+training capture: 208,080 bytes. The UI CI suite now calls both native validators
+on its owned display, records their source/binary fingerprints and retains every
+existing source comparison. The two Python drivers are removed. Independent
+review found no Important issue in the native commands or byte-path support.
+
+The subsequent CPU IMAGE MatMul/Gemm unit initially passed all 127 model-runtime tests and
+strict all-target Clippy. All 115 independent original shape/numeric cases and
+actual driver prefix 97 match exact bytes; five unproved alias/weight/scaling
+cases reject before publication. Generic non-IMAGE products and nonunit Gemm
+alpha/beta remain unimplemented. Independent review found no Important issue in
+this bounded unit. A final-output-only survey of driver prefixes 60–96 found
+one remaining fusion mismatch at prefix 93: 3/960 float32 values differ by at
+most 7.450580596923828e-9. Its materialized-input mean matches the original, so
+this is retained as an optimized fusion/layout issue, without relaxing tolerance.
+Later half-storage rounding hides those differences in prefixes 94–97; those
+successes do not complete prefix-93 or full-model equivalence. Full current CPU
+compilation still rejects an unsupported shared matrix operand/view alias.
+
+Further original graph checks exposed reverse view aliasing: an arithmetic
+consumer could read Identity/Reshape views of a packed operand without the
+required storage treatment. Four initial original/native probes reproduced
+wrong accepted outputs; same-dtype Cast siblings were then included. The repaired
+identity graph tracks both ancestors and descendants, rejects unproved arithmetic
+reuse before publication, and leaves held raw outputs unchanged. Six negative
+view cases and two positive held-Cast cases are retained. All 129 model-runtime
+tests and strict all-target Clippy now pass, with independent scoped review
+finding no remaining Important issue. This fix was completed before publishing
+the local alias/compiler checkpoint.
+
+A subsequent cross-check found six original-successful raw-path invocations
+that still failed in the registration-vendor and control-policy CLIs. Both now
+use lossless positional/option parsing; control executes the canonical binary
+path as native OS bytes and writes the same surrogateescaped command receipt.
+All six actual original/native comparisons now exit successfully with identical
+receipts, streams and artifact sets, including an ASCII symlink resolving to a
+non-UTF-8 binary. Forty focused tests and strict Clippy pass; independent review
+found no Important issue. Broader byte-path migration for older native tools
+remains part of the outstanding execution audit.
+
+The latest actual fast-checks routing step passes 232 dev-tools tests and 16
+service-tools tests, plus its remaining Python policy test. All-target dev-tools
+Clippy passes. The UI orchestration's six tests and Ruff checks also pass. These
+local results are scoped to the current tools; model checkpoint admission review
+and exact-commit Actions remain separate.
+
+Further original final-export checks found that CPU:LLVM keeps some logically
+half-typed arithmetic in float32 until a physical storage boundary. Native
+materialization introduced rounding absent from the original. Five independently
+captured float32-export graphs now reject before publication in both binding
+modes; four physical-F16, exact-U8 and IMAGE positives remain accepted. The old
+first-nine forced-node hashes remain diagnostic data, but are no longer treated
+as final-export equivalence. All 131 model-runtime tests and strict all-target
+Clippy pass. Independent admission review found no Important issue. Proper
+virtual-half storage profiles, the prefix-93 fusion difference and full-model
+compilation remain pending; no compiler Python has been removed. Fresh current
+A630 Add source and its 2,144-byte genuine binary still match the original.
+
+An additional 18-case original UI artifact-glob capture exposed six native
+ENOTDIR failures when an intermediate path is a regular file or file symlink.
+The native candidate lookup now skips NotADirectory like the original glob.
+Dangling final headers and dependency candidates still fail on their original
+stat operation. All 18 actual CLI outcomes match, the five focused tests and
+strict Clippy pass, and independent review found no Important issue. The final
+routing run includes this repair; workspace formatting, diff checks and all six
+UI orchestration tests pass.
 
 ## Outstanding delivery evidence
 

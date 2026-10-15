@@ -342,7 +342,7 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
             "check_registration.py",
             "check_registration_clock.py",
             "check_registration_utf7.py",
-            "check_registration_vendor.py",
+            "rust/target/debug/check-registration-vendor",
             "check_manager_catalog.py",
             "check_checkout_status.py",
             "--timeouts",
@@ -715,11 +715,13 @@ fn encoder_requires_source_runtime_and_pinned_arm_artifacts() {
     );
 }
 #[test]
-fn ui_handshake_requires_current_native_checker_after_test_receipt() {
+fn ui_checks_require_current_native_tools_after_test_receipt() {
     job_check(
         "ui-runtime",
         &[
             "--bin check-ui-updater-handshake",
+            "--bin check-ui-model-adapter",
+            "--bin check-ui-training-adapter",
             "rust/target/debug/check-ui-updater-handshake --evidence \"$RUNNER_TEMP/ui-native\"",
             "unit-tests.jsonl",
         ],
@@ -850,7 +852,18 @@ fn retired_tool_checks_require_current_native_builds_and_keep_original_consumers
             .count(),
         2
     );
+    let startup = &data["jobs"]["startup-runtime"];
+    required(
+        &commands(startup),
+        &[
+            "-p openpilot-logmessaged -p openpilot-dev-tools --bins --examples",
+            "rust/target/debug/check-registration-vendor",
+            "check_registration.py",
+        ],
+    );
+    mandatory(startup, &["check-registration-vendor"]);
     let text = read(".github/workflows/rust.yml");
+    assert!(!text.contains("check_registration_vendor.py"));
     assert!(!text.contains("check_msgq_sanitizers.py"));
     assert!(!text.contains("check_control_tools_policy.py"));
 }

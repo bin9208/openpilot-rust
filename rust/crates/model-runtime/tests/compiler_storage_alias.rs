@@ -139,3 +139,42 @@ fn underlying_view_consumers_and_dynamic_weights_reject_without_publication() {
         );
     }
 }
+#[test]
+fn downstream_identity_views_cannot_evade_storage_alias_admission() {
+    for case in fixture()["unsupported_descendants"].as_array().unwrap() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = decode(case["onnx_hex"].as_str().unwrap());
+        let path = temp.path().join("model.onnx");
+        fs::write(&path, &source).unwrap();
+        let dest = temp.path().join("bundle");
+        let result = compile_onnx(
+            &path,
+            &format!("{:x}", Sha256::digest(&source)),
+            &CompileOptions {
+                offline_bindings: true,
+                ..CompileOptions::default()
+            },
+            &dest,
+        );
+        assert!(
+            result.is_err(),
+            "{} accepted view-mediated alias reuse",
+            case["name"]
+        );
+        assert!(!dest.exists());
+        assert!(result.err().unwrap().contains("inverse movement"));
+    }
+}
+#[test]
+fn held_same_dtype_cast_outputs_preserve_original_raw_storage() {
+    for case in fixture()["held_identity_casts"].as_array().unwrap() {
+        for (name, bytes) in run(case, false) {
+            assert_eq!(
+                bytes,
+                decode(case["outputs"][&name].as_str().unwrap()),
+                "{} {name}",
+                case["name"]
+            );
+        }
+    }
+}

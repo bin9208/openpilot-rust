@@ -172,35 +172,25 @@ pub fn check(
     println!("{SUCCESS}");
     Ok(())
 }
+pub use crate::argparse_scan::ArgumentError;
+fn parse_arguments(
+    args: &[String],
+) -> std::result::Result<crate::argparse_scan::Parsed, ArgumentError> {
+    use crate::argparse_scan::{scan, OptionSpec as S};
+    scan(
+        args,
+        &[S::value("--target-dir", true), S::value("--output", true)],
+    )
+}
 pub fn cli() -> Result<()> {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
-    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+    let parsed = parse_arguments(&args)?;
+    if parsed.help {
         println!("Usage: check-jpeg-sanitizers --target-dir TARGET --output OUTPUT");
         return Ok(());
     }
-    let mut target = None;
-    let mut output = None;
-    let mut at = 0;
-    while at < args.len() {
-        let (key, value, consumed) = if let Some((key, value)) = args[at].split_once('=') {
-            (key, value, 1)
-        } else {
-            (
-                args[at].as_str(),
-                args.get(at + 1).ok_or("option requires value")?.as_str(),
-                2,
-            )
-        };
-        let destination = match key {
-            "--target-dir" => &mut target,
-            "--output" => &mut output,
-            _ => return Err(format!("unknown option {key}").into()),
-        };
-        *destination = Some(PathBuf::from(value));
-        at += consumed;
-    }
-    let target = target.ok_or("--target-dir required")?;
-    let output = output.ok_or("--output required")?;
+    let target = PathBuf::from(&parsed.values["--target-dir"]);
+    let output = PathBuf::from(&parsed.values["--output"]);
     // Original tool inspects its Rust workspace, then builds into the supplied target.
     let rust = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
@@ -208,4 +198,51 @@ pub fn cli() -> Result<()> {
     fs::create_dir_all(&output)?;
     let free = disk_space::inspect(&rust, 1024 * 1024 * 1024)?.free_bytes;
     check(&rust, &target, &output, &mut NativeRunner, free)
+}
+
+#[cfg(test)]
+mod original_cli_interfaces {
+    #[test]
+    fn original_argparse_admission() {
+        let rows: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/panda-cli/five-interfaces.json"
+        ))
+        .unwrap();
+        for row in rows
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| ["jpeg"].contains(&row["family"].as_str().unwrap()))
+        {
+            let args = row["args"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap().to_owned())
+                .collect::<Vec<_>>();
+            let result = super::parse_arguments(&args);
+            assert_eq!(result.is_ok(), row["original_exit"] == 0, "{row}");
+            if let Ok(parsed) = result {
+                assert_eq!(parsed.help, row["help"].as_bool().unwrap(), "{row}");
+                if !parsed.help {
+                    for (key, value) in &parsed.values {
+                        let name = key.trim_start_matches("--").replace('-', "_");
+                        let expected = &row["parsed"][&name];
+                        if expected.is_boolean() {
+                            assert_eq!(expected, true, "{row}");
+                        } else {
+                            assert_eq!(value, expected.as_str().unwrap(), "{row}");
+                        }
+                    }
+                    if row["family"] == "bootlog" {
+                        assert_eq!(
+                            parsed.positionals[0],
+                            row["parsed"]["output"].as_str().unwrap(),
+                            "{row}"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }
