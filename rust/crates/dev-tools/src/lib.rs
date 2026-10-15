@@ -25,6 +25,7 @@ pub mod encoder_stage;
 
 pub mod ffmpeg_build;
 pub mod hardware_command_check;
+pub mod image_array_math;
 pub mod qcom_compiler_stage;
 pub mod torque_stage;
 

@@ -93,3 +93,42 @@ Files: complete tracked source/dependency inventory; per-family native replaceme
 Remaining large units are decomposed from inspected contracts as their prerequisite families become available. Completing Tasks1–3 alone does not complete Task4 or this project.
 
 Docs-Not-Needed: internal engineering plan; no user setting changes.
+
+### Follow-up compiler unit: pinned native LLVM provider and IMAGE scheduling
+
+Additional independent IMAGE controls found output-layout-dependent signed-zero
+behavior in the original LLVM optimization pipeline. Original emitted IR starts
+at +0 and uses `nsz arcp contract afn`; unrolling/SLP sometimes removes that initial
+zero and sometimes retains it. A channel/count-based C accumulator shortcut is
+not equivalent and remains uncommitted. Existing positive tests stay intact.
+
+- [ ] Add an isolated `offline-llvm-compile` native worker using the existing
+  libloading dependency, explicit library SHA, target triple/CPU/features,
+  pass pipeline and unroll/vectorization/SLP/verification configuration.
+- [ ] Verify module admission, per-instance ownership/cleanup, bounded child
+  execution, failed-output cleanup and source/object/optimized-IR receipts against
+  independent original CPULLVMCompiler results for configured LLVM18 and20.1.
+  Same-version/context equality is required; cross-version equality is not claimed.
+- [ ] Port parameterized IMAGE packing and reduction/output loop scheduling from
+  the retained source algorithms, preserving four-lane layout, padding/undo and
+  initial +0. Emit LLVM with the original flags and let the configured optimizer
+  make its decisions; do not select behavior from observed channel/width lists.
+- [ ] Integrate objects through the existing artifact ABI only after reference
+  cases, earlier positive coverage, actual model prefixes and full model checks
+  pass. Keep generic normalization, other schedulers and full compiler removal
+  explicitly pending. Wire mandatory CI provider validation before publication.
+
+### Follow-up UI units: source polygon reference and image comparison
+
+The independent Rust polygon reference uses a narrow raw raylib ABI and preserves
+editable scenes, frame order, shader policy, state artifacts and failure phases.
+Actual original/native host PNG/state comparisons are intermediate evidence;
+source-helper retirement still requires review repairs and caller migration.
+
+A separate decoder unit preserves `PIL.Image.open`/NumPy raw modes, dimensions,
+palette indexes, integer conversion and broadcasting. The original checker accepts
+non-PNG content under `.png` names, including TIFF/TGA/DDS/GIF/SGI/IM, and some
+palette/16-bit broadcasting inputs. RGBA normalization or PNG-only decoding does
+not preserve those admitted cases. Independent codec arrays and comparisons must
+close proven gaps before retiring the checker. No Python wrapper or discarded
+format coverage counts as a native replacement.

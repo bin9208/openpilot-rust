@@ -1175,3 +1175,17 @@ and dev-tools Clippy invocations pass with warnings denied, and independent revi
 is clear. This is the sixth embedded Python command replaced; baseline source
 retirement remains 51 / 3,529 pending. No full model compiler, Python removal,
 training, GPU or device completion is implied by metadata-only validation.
+
+### Native image-array comparison foundation
+
+`image_array_math::compare` matches 97 independently captured NumPy 2.5.3 cases:
+91 successful comparisons and six shape/empty/dimension failures. Dense i64 input
+samples retain trailing-axis broadcasting, last-axis any/sum grouping, and
+wrapping subtraction/absolute value, including negative INT64_MIN differences.
+The native implementation streams coordinates instead of allocating a broadcast
+or difference image. Its source-corpus test and strict scoped Clippy pass;
+independent read-only review is clear. Fast routing includes this regression.
+
+This is a comparison primitive only. Image decoding/modes, original pixel-warning
+thresholds and full checker/caller migration remain pending. No additional Python
+source is retired by this helper.
