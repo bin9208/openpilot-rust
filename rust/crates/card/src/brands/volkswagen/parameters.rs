@@ -130,12 +130,8 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Message, Error> {
         cp.set_longitudinal_actuator_delay(0.5);
         cp.set_radar_delay(0.8);
         let mut tuning = cp.reborrow().get_longitudinal_tuning()?;
-        let mut bp = tuning.reborrow().init_ki_b_p(2);
-        bp.set(0, 0.);
-        bp.set(1, 30.);
-        let mut values = tuning.init_ki_v(2);
-        values.set(0, 0.4);
-        values.set(1, 0.);
+        tuning.reborrow().init_ki_b_p(1).set(0, 0.);
+        tuning.init_ki_v(1).set(0, 0.);
     }
     cp.set_flags(flags);
     let mut safety = cp.reborrow().init_safety_configs(1).get(0);

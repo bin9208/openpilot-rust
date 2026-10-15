@@ -163,6 +163,10 @@ Carrot Web 설정 화면에서는 다음 기능을 사용할 수 있습니다.
 
 `SteerRatioRate`의 기본값 `100%`는 학습된 조향비를 그대로 적용합니다. `CustomSR=0`일 때 사용되며, 저장된 비율이 허용 범위(`30~200%`)를 벗어나면 안전하게 `100%`로 대체됩니다.
 
+VW MEB(ID.4 포함)에도 수동 조향비와 학습 비율이 적용됩니다. `CustomSR=159`는 조향비 `15.9`를 사용하며 학습 비율보다 우선합니다. `CustomSR=0`, `SteerRatioRate=100%`로 설정하면 학습된 조향비를 그대로 사용하며, 변경은 제어 중 다시 읽어 반영합니다. 수동 조향비는 학습 자체를 중지하지 않고 제어에 사용할 값을 선택합니다.
+
+이전에 ID.4에서 무시되던 저장값도 이제 적용됩니다. 예를 들어 `CustomSR=0`에서 저장된 비율이 `30%`이면 학습값의 `0.3배`가 사용되므로, 학습값 그대로 사용하려면 비율을 `100%`로 설정하세요.
+
 `LateralTorqueCustom`과 `CustomSteer*` 계열은 차량의 기본 조향 튜닝과 안전 제한에 영향을 줄 수 있는 고급 항목입니다. 차종별 검증값과 복구 방법이 없으면 변경하지 마세요.
 
 ### 속도·감속 — 23개
@@ -196,7 +200,7 @@ Carrot Web 설정 화면에서는 다음 기능을 사용할 수 있습니다.
 | [가속 성향·드라이브 모드](cruise-gap.md#driving-mode) | `MyDrivingMode`, `MyDrivingModeAuto` | 연비, 안전, 일반, 고속 모드와 자동 전환 |
 | [가속 성향·속도별 가속값](cruise-gap.md#acceleration-table) | `CruiseMaxVals0`, `CruiseMaxVals1`, `CruiseMaxVals2`, `CruiseMaxVals3`, `CruiseMaxVals4`, `CruiseMaxVals5`, `CruiseMaxVals6` | 속도 구간별 최대 가속 성향 |
 | [정차·재출발](cruise-gap.md#stop-resume) | `StopDistanceCarrot`, `StoppingAccel`, `VEgoStopping`, `AChangeCostStarting` | 정지 위치, 정지 진입과 재출발 특성 |
-| [가감속 튜닝](cruise-gap.md#longitudinal-tuning) | `LongTuningKpV`, `LongTuningKiV`, `LongTuningKf`, `LongActuatorDelay` | 현기차는 Kp/Ki/Kf `100/0/100` 고정·숨김, 다른 브랜드는 조정 가능 |
+| [가감속 튜닝](cruise-gap.md#longitudinal-tuning) | `LongTuningKpV`, `LongTuningKiV`, `LongTuningKf`, `LongActuatorDelay` | 현기차는 Kp/Ki/Kf `100/0/100` 고정·숨김; VW MEB(ID.4 포함)는 저장 게인 적용, 다른 브랜드는 기본 튜닝에 따라 조정 가능 |
 | [차간거리](cruise-gap.md#following-gap) | `TFollowGap1`, `TFollowGap2`, `TFollowGap3`, `TFollowGap4`, `DynamicTFollowLC`, `SpeedTFFactor`, `TFollowDecelBoost` | 차간 단계별 시간, 정상 선택 앞차 기준 차로 변경 완화와 감속 여유(기본 0%) |
 | [추종응답성](cruise-gap.md#lead-response) | `LeadAccelResponse`, `LeadAccelResponseTF1`–`LeadAccelResponseTF4` | 모든 차간 단계의 앞차 출발·가속 추종과 접근 반응 |
 | [당근 크루즈](cruise-gap.md#carrot-cruise) | `CruiseEcoControl`, `CruiseCoastingPercent`, `CarrotCruiseDecel`, `CarrotCruiseAtcDecel` | 연비 제어, 코스팅 여유(기본 0%: 기존 제어), 당근 크루즈 감속 특성 |

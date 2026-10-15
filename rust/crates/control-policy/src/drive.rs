@@ -40,11 +40,8 @@ pub const TIMES: [f64; 33] = [
     10.,
 ];
 
-pub fn steer_ratio(live: f64, rate: f64, custom: f64, meb: bool) -> f64 {
+pub fn steer_ratio(live: f64, rate: f64, custom: f64) -> f64 {
     let live = maximum(live, 0.1);
-    if meb {
-        return live;
-    }
     let custom = custom * 0.1;
     if custom.is_finite() && custom > 1. {
         return custom;

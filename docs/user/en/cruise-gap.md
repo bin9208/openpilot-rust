@@ -167,6 +167,8 @@ Range 0–200, step 10, catalog default 10. Zero permits the quickest accelerati
 
 Hyundai, Kia, and Genesis do not read the stored `LongTuningKpV`, `LongTuningKiV`, or `LongTuningKf` values. On other brands, the overrides apply only when the vehicle's base longitudinal tune has a single Kp point and a single Ki point. Multi-point vehicle tunes retain their defaults. These gains are also not the primary controller when stock SCC controls acceleration and braking.
 
+Volkswagen MEB vehicles, including ID.4, have single-point Kp and Ki tunes, so saved Kp/Ki/Kf settings apply. Updating does not reset previously saved values.
+
 - Raising Kp corrects present speed error more strongly; too much can oscillate.
 - Raising Ki removes persistent error faster; too much can accumulate into overshoot.
 - Raising Kf commands more for the same target acceleration in both acceleration and braking directions.

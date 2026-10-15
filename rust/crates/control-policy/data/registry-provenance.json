@@ -20,7 +20,7 @@
     "opendbc_repo/opendbc/car/tesla/values.py": "6027321c0be5847494f7062f0b2be0a09595d5b94c4d482a01f176545fde7bb4",
     "opendbc_repo/opendbc/car/body/interface.py": "f809213f68e05372ef6806fbbdb6475700ec5e84596f97e22377d4f01f2062ab",
     "opendbc_repo/opendbc/car/subaru/interface.py": "bd5d97706c2f9b76832242ac8781714b36f682e252d051b83046bf58cb593fe3",
-    "opendbc_repo/opendbc/car/volkswagen/interface.py": "6c78f1c7f34ecf9db116531f16aadec8a0f17a6d1d435017406a893e0a34e3eb",
+    "opendbc_repo/opendbc/car/volkswagen/interface.py": "a9ba2b0bdc936dda531b72711adbd4e9a254d3808b44fe70a0447f07bd7ced8c",
     "opendbc_repo/opendbc/car/rivian/interface.py": "53fff131a47f6287f6567a5da3930c4f03fd1567667c485fb4df90d6d2c9fd76",
     "opendbc_repo/opendbc/car/chrysler/interface.py": "a0ce39f8f3d19781e2e21b16bb83e96dee2f83c64414a0b9bade85d28d37bff0",
     "opendbc_repo/opendbc/car/psa/interface.py": "248812cef77d3ad6fbf93a4db8f58c55e5fa54614f765da0434ddcab7ee5ea0d",

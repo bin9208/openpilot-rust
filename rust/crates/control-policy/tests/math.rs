@@ -50,9 +50,9 @@ fn saturation_blocks_integral_growth_and_recovers() {
 }
 #[test]
 fn steer_ratio_and_curvature_do_not_weaken_limits() {
-    assert_eq!(drive::steer_ratio(15., 29., 0., false), 15.);
-    assert_eq!(drive::steer_ratio(15., 30., 0., false), 4.5);
-    assert_eq!(drive::steer_ratio(15., 100., 200., true), 15.);
+    assert_eq!(drive::steer_ratio(15., 29., 0.), 15.);
+    assert_eq!(drive::steer_ratio(15., 30., 0.), 4.5);
+    assert_eq!(drive::steer_ratio(15., 100., 200.), 20.);
     let (limited, flag) = drive::clip_curvature(1., 1., 2., 0.).unwrap();
     assert_eq!(limited, 0.2);
     assert!(flag);
@@ -64,4 +64,25 @@ fn model_selection_preserves_first_tie_and_identity_guard() {
     assert_eq!(similarity::select(&files, "MISSING", ""), None);
     assert_eq!(similarity::ratio("", ""), 1.);
     assert_eq!(similarity::ratio("abcd", "bc"), 2. / 3.);
+}
+
+#[test]
+fn meb_steering_ratio_honors_live_settings_and_invalid_fallbacks() {
+    for (custom, rate, learned, expected) in [
+        (0., 100., 14.97, 14.97),
+        (159., 30., 14.97, 15.9),
+        (200., 30., 14.97, 20.),
+        (0., 30., 14.97, 4.491),
+        (0., 200., 14.75, 29.5),
+        (0., 100., 15.1, 15.1),
+        (0., 0., 15.1, 15.1),
+    ] {
+        assert!((drive::steer_ratio(learned, rate, custom) - expected).abs() < 1e-12);
+    }
+    for rate in [f64::NEG_INFINITY, f64::NAN, 0., 29., 201., f64::INFINITY] {
+        assert_eq!(drive::steer_ratio(14.75, rate, 0.), 14.75);
+    }
+    for custom in [f64::NEG_INFINITY, f64::NAN, -10., 0., 10., f64::INFINITY] {
+        assert!((drive::steer_ratio(14.75, 80., custom) - 11.8).abs() < 1e-12);
+    }
 }
