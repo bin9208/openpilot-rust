@@ -65,7 +65,7 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-37 sources are retired; remaining families and final delivery gates stay open.
+41 sources are retired; remaining families and final delivery gates stay open.
 
 ### Task3: native model compiler operations, then the full compiler chain
 

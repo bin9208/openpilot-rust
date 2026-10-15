@@ -1,0 +1,899 @@
+{
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "sources": {
+    "widgets": {
+      "openpilot/system/ui/widgets/__init__.py": "2089c705e90238bc152c24646434df7a7318d1e6923336b4d2ced252e556490a"
+    },
+    "navigation": {
+      "openpilot/system/ui/widgets/__init__.py": "2089c705e90238bc152c24646434df7a7318d1e6923336b4d2ced252e556490a",
+      "openpilot/system/ui/widgets/nav_widget.py": "26b034a25e549c6f6777eed7b455e008bb7b08b8b1d650481cdcf1b90321dab1",
+      "openpilot/common/filter_simple.py": "38d315a00635c4093cf6cbc3ed46a90d0f1708daf7662cba8a00d069c20dbfb3"
+    }
+  },
+  "cases": [
+    {
+      "family": "widgets",
+      "name": "pass",
+      "reply_sha256": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 0,
+      "stdout": "PASS: 800 source/native widget frames; clipping, multitouch, wake, disabled, hidden and invalid-touch transitions\n",
+      "error": [],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "crlf",
+      "reply_sha256": "ac33a2cbad0a9ac5ed5b6aafda67079c4e26aef259c4c56b3bb5d0d1faa045c7",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 0,
+      "stdout": "PASS: 800 source/native widget frames; clipping, multitouch, wake, disabled, hidden and invalid-touch transitions\n",
+      "error": [],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "stderr",
+      "reply_sha256": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59",
+      "status": 0,
+      "stderr_hex": "69676e6f7265640d0a",
+      "exit": 0,
+      "stdout": "PASS: 800 source/native widget frames; clipping, multitouch, wake, disabled, hidden and invalid-touch transitions\n",
+      "error": [],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "bad-stderr",
+      "reply_sha256": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59",
+      "status": 0,
+      "stderr_hex": "ff",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "nonzero",
+      "reply_sha256": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59",
+      "status": 7,
+      "stderr_hex": "6661696c757265",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "subprocess.CalledProcessError: Command '['/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-15-ui-headless/peer-v2.py']' returned non-zero exit status 7."
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "bad-utf8",
+      "reply_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "bom",
+      "reply_sha256": "da8f243b9b893e851e3818d7e4f90096025a2e0d35e08d749498c7f29fced3f5",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "json.decoder.JSONDecodeError: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "da8f243b9b893e851e3818d7e4f90096025a2e0d35e08d749498c7f29fced3f5",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "invalid",
+      "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "null",
+      "reply_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "TypeError: 'NoneType' object is not iterable"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "empty",
+      "reply_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "ValueError: zip() argument 2 is longer than argument 1"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "missing",
+      "reply_sha256": "8a27c160a6ae50fb9360e8c3bfe3c5601d5866d81b13aebea12e9d646e6146cd",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "ValueError: zip() argument 2 is longer than argument 1"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "8a27c160a6ae50fb9360e8c3bfe3c5601d5866d81b13aebea12e9d646e6146cd",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "extra",
+      "reply_sha256": "e4c35b7687feee0981674051cd42e0f858b627cc2a9319c9fe4f8e5efb93fb69",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "ValueError: zip() argument 2 is shorter than argument 1"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "e4c35b7687feee0981674051cd42e0f858b627cc2a9319c9fe4f8e5efb93fb69",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "unknown",
+      "reply_sha256": "4999c0bcefa4c30fe312b0c52ef8b1f518f459f5127a5dc09a76cc9c6c75ff6e",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "AssertionError: (0, {'calls': ['paint:false'], 'pressed': False, 'extra': 'ignored'}, {'calls': ['paint:false'], 'pressed': False})"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "4999c0bcefa4c30fe312b0c52ef8b1f518f459f5127a5dc09a76cc9c6c75ff6e",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "missing-field",
+      "reply_sha256": "c07a5e9aeca50212e88f66257e9894273c2bda743c4619d1ec99d0dbc3383db6",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "AssertionError: (0, {'pressed': False}, {'calls': ['paint:false'], 'pressed': False})"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "c07a5e9aeca50212e88f66257e9894273c2bda743c4619d1ec99d0dbc3383db6",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "number",
+      "reply_sha256": "b04561e7b450991eccbaacda605cba81e6b5be61bfa97f43b3a3fddcd588c913",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 0,
+      "stdout": "PASS: 800 source/native widget frames; clipping, multitouch, wake, disabled, hidden and invalid-touch transitions\n",
+      "error": [],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "b04561e7b450991eccbaacda605cba81e6b5be61bfa97f43b3a3fddcd588c913",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "wrong",
+      "reply_sha256": "1d4ed171b63ac48eb68a38b1284d9ed28d2eabdcc583f28d738db93532e43c56",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "AssertionError: (0, {'calls': ['paint:false', 'wrong'], 'pressed': False}, {'calls': ['paint:false'], 'pressed': False})"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "1d4ed171b63ac48eb68a38b1284d9ed28d2eabdcc583f28d738db93532e43c56",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "nan",
+      "reply_sha256": "42c1d71450647420d2f780ddeeec7061c9c1f4083eb51663a7365f6ac5614a8b",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "AssertionError: (0, {'calls': ['paint:false'], 'pressed': nan}, {'calls': ['paint:false'], 'pressed': False})"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-native.json": "42c1d71450647420d2f780ddeeec7061c9c1f4083eb51663a7365f6ac5614a8b",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "pass",
+      "reply_sha256": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 0,
+      "stdout": "PASS: 480 source/native navigation frames; show/swipe/cancel/blocked/programmatic dismiss and callback counts\n",
+      "error": [],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "crlf",
+      "reply_sha256": "be0d20aee988b1d6c558ebd62c41afd00aab5fcc169304045d082343bae83643",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 0,
+      "stdout": "PASS: 480 source/native navigation frames; show/swipe/cancel/blocked/programmatic dismiss and callback counts\n",
+      "error": [],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "stderr",
+      "reply_sha256": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+      "status": 0,
+      "stderr_hex": "69676e6f7265640d0a",
+      "exit": 0,
+      "stdout": "PASS: 480 source/native navigation frames; show/swipe/cancel/blocked/programmatic dismiss and callback counts\n",
+      "error": [],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "bad-stderr",
+      "reply_sha256": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+      "status": 0,
+      "stderr_hex": "ff",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "nonzero",
+      "reply_sha256": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+      "status": 7,
+      "stderr_hex": "6661696c757265",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "subprocess.CalledProcessError: Command '['/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-15-ui-headless/peer-v2.py']' returned non-zero exit status 7."
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "bad-utf8",
+      "reply_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "bom",
+      "reply_sha256": "59dc51f5a6542d4b56c9e7b600bf7f115ae0bae17d9aa675f5a464ec8cff3a3b",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "json.decoder.JSONDecodeError: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "59dc51f5a6542d4b56c9e7b600bf7f115ae0bae17d9aa675f5a464ec8cff3a3b",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "invalid",
+      "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "null",
+      "reply_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "TypeError: 'NoneType' object is not iterable"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "empty",
+      "reply_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "ValueError: zip() argument 2 is longer than argument 1"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "missing",
+      "reply_sha256": "83b2e561a29879639697869bed6b289be2bfd40a1ba5ff9026b269f503eb3924",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "ValueError: zip() argument 2 is longer than argument 1"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "83b2e561a29879639697869bed6b289be2bfd40a1ba5ff9026b269f503eb3924",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "extra",
+      "reply_sha256": "ec68f4d3a5ebf325b79a589c1534908914d53a74a1a4acf0e5c9699d60675e7b",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "ValueError: zip() argument 2 is shorter than argument 1"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "ec68f4d3a5ebf325b79a589c1534908914d53a74a1a4acf0e5c9699d60675e7b",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "unknown",
+      "reply_sha256": "2f84db733798e92c0376e1050fc8f575dffa53edcbf08e1e74fceb959db1b6fc",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 0,
+      "stdout": "PASS: 480 source/native navigation frames; show/swipe/cancel/blocked/programmatic dismiss and callback counts\n",
+      "error": [],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "2f84db733798e92c0376e1050fc8f575dffa53edcbf08e1e74fceb959db1b6fc",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "missing-field",
+      "reply_sha256": "5aab3025e63f155ec5dbc949be0a471c0a668aed9f59a6a5355f5e80cd3a01e1",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "KeyError: 'y'"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "5aab3025e63f155ec5dbc949be0a471c0a668aed9f59a6a5355f5e80cd3a01e1",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "inside",
+      "reply_sha256": "904dd744296a44bf5f7377696603de79b8f85d1ebad45ce0ffa103c86555ce0d",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 0,
+      "stdout": "PASS: 480 source/native navigation frames; show/swipe/cancel/blocked/programmatic dismiss and callback counts\n",
+      "error": [],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "904dd744296a44bf5f7377696603de79b8f85d1ebad45ce0ffa103c86555ce0d",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "boundary",
+      "reply_sha256": "50d5fbaee891520fb2f32b95e4ed527bc5a97c082c11d2465d98e4dc3d5587a8",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "AssertionError: (0, 'pops', {'y': 142.0, 'position': 142.00000000000003, 'velocity': -18.000000000000007, 'bar_y': -14, 'bar_alpha': 1.0, 'dragging': False, 'playing': False, 'pops': 1e-06, 'back': 0, 'shown': 0, 'dismissed': 0}, {'y': 142.0, 'position': 142.00000000000003, 'velocity': -18.000000000000007, 'bar_y': -14, 'bar_alpha': 1.0, 'dragging': False, 'playing': False, 'pops': 0, 'back': 0, 'shown': 0, 'dismissed': 0})"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "50d5fbaee891520fb2f32b95e4ed527bc5a97c082c11d2465d98e4dc3d5587a8",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "outside",
+      "reply_sha256": "e33f54b7833d91ab7144fa36a8358b017567d3ce81bb69ea3f2d880dc7c79d35",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "AssertionError: (0, 'pops', {'y': 142.0, 'position': 142.00000000000003, 'velocity': -18.000000000000007, 'bar_y': -14, 'bar_alpha': 1.0, 'dragging': False, 'playing': False, 'pops': 1.0000001e-06, 'back': 0, 'shown': 0, 'dismissed': 0}, {'y': 142.0, 'position': 142.00000000000003, 'velocity': -18.000000000000007, 'bar_y': -14, 'bar_alpha': 1.0, 'dragging': False, 'playing': False, 'pops': 0, 'back': 0, 'shown': 0, 'dismissed': 0})"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "e33f54b7833d91ab7144fa36a8358b017567d3ce81bb69ea3f2d880dc7c79d35",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "bool",
+      "reply_sha256": "f11582b6d17cf0d59155d47e5558deda4be0395226ef25c402941289b47d189d",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 0,
+      "stdout": "PASS: 480 source/native navigation frames; show/swipe/cancel/blocked/programmatic dismiss and callback counts\n",
+      "error": [],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "f11582b6d17cf0d59155d47e5558deda4be0395226ef25c402941289b47d189d",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "string",
+      "reply_sha256": "dcc3a4d84a3db8e1836fa40fb48eef1119e8d19c5e398bed233b791576bcbaaa",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "TypeError: unsupported operand type(s) for -: 'str' and 'int'"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "dcc3a4d84a3db8e1836fa40fb48eef1119e8d19c5e398bed233b791576bcbaaa",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "nan",
+      "reply_sha256": "82b8254e573d33f9fccc8f392c07f0f2ffebd4efdaecb4d7c131131e6dc75028",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "AssertionError: (0, 'pops', {'y': 142.0, 'position': 142.00000000000003, 'velocity': -18.000000000000007, 'bar_y': -14, 'bar_alpha': 1.0, 'dragging': False, 'playing': False, 'pops': nan, 'back': 0, 'shown': 0, 'dismissed': 0}, {'y': 142.0, 'position': 142.00000000000003, 'velocity': -18.000000000000007, 'bar_y': -14, 'bar_alpha': 1.0, 'dragging': False, 'playing': False, 'pops': 0, 'back': 0, 'shown': 0, 'dismissed': 0})"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "82b8254e573d33f9fccc8f392c07f0f2ffebd4efdaecb4d7c131131e6dc75028",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "inf",
+      "reply_sha256": "47bb67d49ba09bd0011a2ea59452fc14b054c2ae435fa9e516642cacc0a3b788",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "AssertionError: (0, 'pops', {'y': 142.0, 'position': 142.00000000000003, 'velocity': -18.000000000000007, 'bar_y': -14, 'bar_alpha': 1.0, 'dragging': False, 'playing': False, 'pops': inf, 'back': 0, 'shown': 0, 'dismissed': 0}, {'y': 142.0, 'position': 142.00000000000003, 'velocity': -18.000000000000007, 'bar_y': -14, 'bar_alpha': 1.0, 'dragging': False, 'playing': False, 'pops': 0, 'back': 0, 'shown': 0, 'dismissed': 0})"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "47bb67d49ba09bd0011a2ea59452fc14b054c2ae435fa9e516642cacc0a3b788",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "ignored-nan",
+      "reply_sha256": "beb3ae938e149bbcc6ffc4132adc876440992f40bbd5650a4b21bf92b14ded71",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 0,
+      "stdout": "PASS: 480 source/native navigation frames; show/swipe/cancel/blocked/programmatic dismiss and callback counts\n",
+      "error": [],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "beb3ae938e149bbcc6ffc4132adc876440992f40bbd5650a4b21bf92b14ded71",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "depth9995",
+      "reply_sha256": "8b9626aa7fddfb0e04d349ab7ae6ff04b05c08c942a04241801dbb1e394f2b8c",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "KeyError: 'y'"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "8b9626aa7fddfb0e04d349ab7ae6ff04b05c08c942a04241801dbb1e394f2b8c",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "depth9996",
+      "reply_sha256": "2a0c2f29e622d243ee26a38393fd21ef24b03202bcccb9a58055d465b7a54439",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "2a0c2f29e622d243ee26a38393fd21ef24b03202bcccb9a58055d465b7a54439",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "depth9997",
+      "reply_sha256": "7e623cd8ea1f7134340377bb51ce44af3b12d130380168777b235811c439f3e3",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-native.json": "7e623cd8ea1f7134340377bb51ce44af3b12d130380168777b235811c439f3e3",
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    },
+    {
+      "family": "widgets",
+      "name": "spawn-error",
+      "spawn_error": true,
+      "reply_sha256": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "FileNotFoundError: [Errno 2] No such file or directory: '/definitely-missing-native-checker'"
+      ],
+      "input_sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "files": {
+        "widget-input.json": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+        "widget-source.json": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59"
+      }
+    },
+    {
+      "family": "navigation",
+      "name": "spawn-error",
+      "spawn_error": true,
+      "reply_sha256": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+      "status": 0,
+      "stderr_hex": "",
+      "exit": 1,
+      "stdout": "",
+      "error": [
+        "FileNotFoundError: [Errno 2] No such file or directory: '/definitely-missing-native-checker'"
+      ],
+      "input_sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "files": {
+        "navigation-source.json": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+        "navigation-input.json": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1"
+      }
+    }
+  ],
+  "corpora": {
+    "widget-source.json.gz": {
+      "sha256": "0459348187ee0c96c1c14a2eb1a81d5c2d6542aa95089afb456ae0f6464b2b59",
+      "bytes": 65050,
+      "gzip_sha256": "13482d015278c38109cae6c9854ad088ebeb8506393ef61818e8dabbaa9b6886"
+    },
+    "widget-input.json.gz": {
+      "sha256": "c79c54507dd562dcfdf51393bc0c642281841c5d3a1dbc31bec0463a2608cc07",
+      "bytes": 192934,
+      "gzip_sha256": "5c2164664923edb647da8fb8bda3062c322c570b1493e9d65e6801ab056a0070"
+    },
+    "navigation-source.json.gz": {
+      "sha256": "a79384d9dd3bbd38a5c3b7ff21c3da9c31fae4be90c9d46ea381313d95a7c501",
+      "bytes": 120330,
+      "gzip_sha256": "8b774bb430db65b6ee3346e1817eb0aa944c6767f8ee1fe6d9613cdbb54ba9fa"
+    },
+    "navigation-input.json.gz": {
+      "sha256": "da9cdf25b299ea1a5eccfd30cd926ee3088d516c9547b552e3a733fd125937a1",
+      "bytes": 47145,
+      "gzip_sha256": "150c29f84901dc4d0de17149bedae365194593c45b49cadffc5048590cbbbcfe"
+    }
+  },
+  "numpy_lock": [
+    {
+      "name": "numpy",
+      "version": "2.5.3",
+      "source": {
+        "registry": "https://pypi.org/simple"
+      },
+      "sdist": {
+        "url": "https://files.pythonhosted.org/packages/13/01/11703282db468b85f6f7b8c7f22d058de5970d5c7e60a3a8aaa313c3de36/numpy-2.5.3.tar.gz",
+        "hash": "sha256:df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563",
+        "size": 20791231,
+        "upload-time": "2026-09-06T16:27:47.073Z"
+      },
+      "wheels": [
+        {
+          "url": "https://files.pythonhosted.org/packages/d6/50/8fdbb16af64895706a45f06a4068e29db732ec180f3c1375f14123359138/numpy-2.5.3-cp312-cp312-macosx_10_13_x86_64.whl",
+          "hash": "sha256:cb189f09db39283b26bfd061ec16189e14f71c6755207f72a0f7540867afe5b9",
+          "size": 16994982,
+          "upload-time": "2026-09-06T16:24:29.244Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/60/39/789131c1188c078dcb3a1692e72e1e050c68b88ffe72c9ccaac9bcd7a9cd/numpy-2.5.3-cp312-cp312-macosx_11_0_arm64.whl",
+          "hash": "sha256:f59a878c33d6b88122d80d239bb3b845d58708750b0cb06a09aebb9b18ec696c",
+          "size": 12009327,
+          "upload-time": "2026-09-06T16:24:32.491Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/9c/59/a312e95696e5f601914dd8b6dd844692ba61670807417e24b68e337b5c70/numpy-2.5.3-cp312-cp312-macosx_14_0_arm64.whl",
+          "hash": "sha256:a72f874bc9e10e4b8f80426fb49716d5141f64442a0c8418065093ec8017fbb0",
+          "size": 5445405,
+          "upload-time": "2026-09-06T16:24:35.071Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/30/d0/5623a1707ed4fe16e3909fe3cf5ee3da004ae677ad23d83bbf3adf1a6faf/numpy-2.5.3-cp312-cp312-macosx_14_0_x86_64.whl",
+          "hash": "sha256:fc36dc566135b5eceec4cf89758fcb719266a019ef07dae1754ae7c9f617ef3e",
+          "size": 6783213,
+          "upload-time": "2026-09-06T16:24:37.253Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/f1/32/84146fc020ad3c25f805f70ab60da46fe3c540a21369754a7e4369754b6f/numpy-2.5.3-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+          "hash": "sha256:76c2c1e6bfa5c84adc6434dfbf013aa92096a7985221762c8f11fedfd20fff58",
+          "size": 15687872,
+          "upload-time": "2026-09-06T16:24:39.751Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/65/af/aa78d1a88805456e212b65461354cd943197fb9acecc4c90fd12295123a3/numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "hash": "sha256:b7e18c623bb5c95acb3b3328861272816ba199fb531921c5d6d0b675f1fde9e3",
+          "size": 16717410,
+          "upload-time": "2026-09-06T16:24:42.745Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/3b/24/faa79d865e69a97ba17473b23a1b74094b2259c03e820c70297293b9ea49/numpy-2.5.3-cp312-cp312-musllinux_1_2_aarch64.whl",
+          "hash": "sha256:4f8929ee6c96bfbd7b4ed2032e0c03af86fe1826740ab61ddabf9072d06e57ff",
+          "size": 17040975,
+          "upload-time": "2026-09-06T16:24:45.961Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/62/4a/8877e629445a7176297dffcaf9c485faa96a95d81728a62521ad55bd4c0f/numpy-2.5.3-cp312-cp312-musllinux_1_2_x86_64.whl",
+          "hash": "sha256:b5d93cf48f687479941d12b69c873ad2cc76bbd487f0091c2200636497f34034",
+          "size": 18476479,
+          "upload-time": "2026-09-06T16:24:49.35Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/c8/db/35e1c2d38b04cbd5b731f9d71495e055e813197669d22b612f11748d2ff9/numpy-2.5.3-cp312-cp312-win32.whl",
+          "hash": "sha256:bf63afbe037eb5d2fe87fbcc7778e61da53ebaf21d938a4515aa73b62532a5d4",
+          "size": 6133378,
+          "upload-time": "2026-09-06T16:24:51.915Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/3c/a1/accf6d4f0c80c5d9ba9735d6b1550e444180599f34dec69ca01360f717ad/numpy-2.5.3-cp312-cp312-win_amd64.whl",
+          "hash": "sha256:0a59a421a32580a009e8a1751345bf829631b990dc1794b80514ab722b435def",
+          "size": 12567828,
+          "upload-time": "2026-09-06T16:24:54.255Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/22/43/1764aff32e4652526ae2f71fa8b3efd8d25c8a3d6926914454e47138ed1e/numpy-2.5.3-cp312-cp312-win_arm64.whl",
+          "hash": "sha256:ccb32e0525d29e8b0572eb84c9a57af0e7a4e615726927506f55063c62414034",
+          "size": 10485432,
+          "upload-time": "2026-09-06T16:24:57.278Z"
+        }
+      ]
+    }
+  ],
+  "oracle_sources": {
+    "rust/tools/check_ui_widgets.py": "bc9f5fa93b123e64ca9d2199974778790f562a3aca9cc86ba5e0897a58545b50",
+    "rust/tools/check_ui_navigation.py": "8119b8d6520bac8451b239127887b5ed1f2ab665c7418618eec2a7c828fcaf6f"
+  },
+  "dependency_versions": {
+    "numpy": "2.5.3"
+  },
+  "command_schema": [
+    "PYTHON3.12.15",
+    "ROOT/rust/tools/check_ui_{family}.py",
+    "--binary",
+    "controlled-peer",
+    "--output",
+    "OUTPUT"
+  ]
+}

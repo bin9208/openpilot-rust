@@ -103,3 +103,64 @@ def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path:
       '--evidence', str(output / f'native-{kind}-adapter')], output / 'commands', f'native-{kind}-adapter')
     for kind in ('model', 'training')
   ]
+
+
+@pytest.mark.parametrize('failure', [None, 'stack'])
+def test_framework_native_logic_routes_preserve_order_logs_and_failure_stop(tmp_path: Path, monkeypatch, failure) -> None:
+  import os
+  import runpy
+  import shutil
+  import subprocess
+  import sys
+  from types import SimpleNamespace
+  target, output = tmp_path / 'target', tmp_path / 'output'
+  monkeypatch.setattr(sys, 'argv', ['check_ui_framework.py', '--target', str(target), '--output', str(output), '--display', ':owned'])
+  guards, calls = [], []
+  def space(path):
+    guards.append(path)
+    return SimpleNamespace(free=26 * 1024**3)
+  def execute(command, cwd, env, stdout, stderr):
+    name = Path(command[command.index('--output') + 1]).name
+    stdout.flush()
+    assert Path(stdout.name).read_text() == 'Invocation: ' + json.dumps(command) + '\n'
+    assert cwd == ROOT and env is os.environ and stderr == subprocess.STDOUT
+    calls.append((name, command))
+    return SimpleNamespace(returncode=7 if name == failure else 0)
+  monkeypatch.setattr(shutil, 'disk_usage', space)
+  monkeypatch.setattr(subprocess, 'run', execute)
+  if failure:
+    with pytest.raises(SystemExit) as caught:
+      runpy.run_path(str(ROOT / 'rust/tools/check_ui_framework.py'), run_name='__main__')
+    assert caught.value.code == 7
+  else:
+    runpy.run_path(str(ROOT / 'rust/tools/check_ui_framework.py'), run_name='__main__')
+  scenarios = [
+    ('widgets', 'widget_trace', False), ('scroll', 'scroll_trace', False),
+    ('navigation', 'navigation_trace', False), ('stack', 'stack_trace', False),
+    ('scroller', 'scroller_trace', False), ('render', 'ui_render', True),
+    ('forms', 'form_render', True), ('network', 'network_render', True),
+    ('polygon', 'polygon_render', True), ('diagnostics', 'diagnostic_render', True),
+    ('application', 'application_run', True), ('fps', 'fps_trace', False), ('egl', 'egl_trace', False),
+  ]
+  if failure:
+    scenarios = scenarios[:next(i + 1 for i, row in enumerate(scenarios) if row[0] == failure)]
+  expected = []
+  for name, binary, display in scenarios:
+    command = ([str(target / f'check-ui-{name}')] if name in {'widgets', 'navigation', 'stack', 'fps'}
+               else [sys.executable, str(ROOT / f'rust/tools/check_ui_{name}.py')])
+    command += ['--binary', str(target / 'examples' / binary), '--output', str(output / name)]
+    if display:
+      command += ['--display', ':owned']
+    expected.append((name, command))
+  assert calls == expected
+  assert guards == ([] if failure else [output])
+  ledger = json.loads((output / 'invocations.json').read_text())
+  assert ledger == [
+    {'scenario': name, 'invocation': command, 'exit_code': 7 if name == failure else 0,
+     'artifact': str(output / f'{name}.log')}
+    for name, command in expected
+  ]
+  if not failure:
+    assert json.loads((output / 'egl-build-disk.json').read_text()) == {
+      'available_bytes': 26 * 1024**3, 'required_bytes': 26 * 1024**3,
+    }

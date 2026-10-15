@@ -2127,7 +2127,7 @@ rust/tools/check_ui_egpu.py	c11678c29f528383ea55390c973b871ac85efa5d	pending	-
 rust/tools/check_ui_emoji.py	8f7c4da7d0b2a2696a5f9756b8c339a95a49dde1	pending	-
 rust/tools/check_ui_exp_button.py	69ee76edb29b58699121243ee6fa68440efcf0e1	pending	-
 rust/tools/check_ui_forms.py	d633463e35d266b612b07ee99ff18d41610bc5a5	pending	-
-rust/tools/check_ui_fps.py	f0a46ef2877faf2480fe3f6bd1cd912885504c02	pending	-
+rust/tools/check_ui_fps.py	f0a46ef2877faf2480fe3f6bd1cd912885504c02	replaced-local	rust/crates/dev-tools/src/ui_application_logic_check.rs
 rust/tools/check_ui_framework.py	093087bcc5f2f8704b62b7f1cb696134aa3bc4c2	pending	-
 rust/tools/check_ui_home.py	be4e84cdc95e7bc2e6f636e084cbcaed5c607638	pending	-
 rust/tools/check_ui_hud.py	04b422b39052b620e429e3d6f45410bf39209041	pending	-
@@ -2140,7 +2140,7 @@ rust/tools/check_ui_model_geometry.py	95b173320e2116bdec39b529ce6906d8648e6807	p
 rust/tools/check_ui_model_render.py	945ac4b797722c858744d866e9eeee6aabaed80f	pending	-
 rust/tools/check_ui_native_resources.py	28a96b6c76051a055609a0d9c436bc0e1cb6f28d	replaced-local	rust/crates/dev-tools/src/startup_adapter_sanitizers.rs;check-ui-native-resources
 rust/tools/check_ui_native_safety.py	7026cc048cf5e7cc7119cd72494368aa4c5cc407	replaced-local	rust/crates/dev-tools/src/startup_adapter_sanitizers.rs;check-ui-native-safety
-rust/tools/check_ui_navigation.py	d1f15851260ed84c58d360e76b70d9df5024b099	pending	-
+rust/tools/check_ui_navigation.py	d1f15851260ed84c58d360e76b70d9df5024b099	replaced-local	rust/crates/dev-tools/src/ui_headless_check.rs
 rust/tools/check_ui_network.py	fffbc51ffe8cc096159e07c873dfaf99d3a75594	pending	-
 rust/tools/check_ui_onboarding_cards.py	91f99692279cd91099e723a26baa0e3933d3a0b9	pending	-
 rust/tools/check_ui_plot_samples.py	fd0f328e12cab3a3de3c7d6d64883b48b291dc0b	pending	-
@@ -2161,7 +2161,7 @@ rust/tools/check_ui_settings.py	6d17394d536188da51ee2de68839f2704d7e1b52	pending
 rust/tools/check_ui_settings_root.py	fe159eb908281eac70cc0f5c61cc9eec846aa650	pending	-
 rust/tools/check_ui_software.py	ca911964a50d3c914e65f50ad256a67fdc6e6872	pending	-
 rust/tools/check_ui_ssh_fetch.py	33a7a797a0039e315168c1112603f1bfca72abb9	pending	-
-rust/tools/check_ui_stack.py	38dcc439cb6ae041dd3b05f82f812151a549c835	pending	-
+rust/tools/check_ui_stack.py	38dcc439cb6ae041dd3b05f82f812151a549c835	replaced-local	rust/crates/dev-tools/src/ui_application_logic_check.rs
 rust/tools/check_ui_state.py	5b9ce3fa9e34761d6f7e8f7663c6898552682228	replaced-local	rust/crates/dev-tools/src/ui_state_scheduler_check.rs
 rust/tools/check_ui_torque_geometry.py	b13a100747febd8c77032f3db4ad9ee6cd5e9ec3	replaced-local	rust/crates/dev-tools/src/ui_fixed_corpus_check.rs;check-ui-torque-geometry
 rust/tools/check_ui_torque_miri.py	206021f475110dcdb4b3a0f39047ef4ba50ea110	pending	-
@@ -2170,7 +2170,7 @@ rust/tools/check_ui_translations.py	a003965d67a95e988b7c5525c722e87ee70fd745	rep
 rust/tools/check_ui_updater_signal.py	3ad62badba20752d8758bdec8c93d10239efe423	pending	-
 rust/tools/check_ui_vision.py	9c56587aa9311f24a4a4d00834f3da5e9772d9d1	pending	-
 rust/tools/check_ui_vision_status.py	e7afde08bd366ca72e389cee2a463b1d3ba0450d	pending	-
-rust/tools/check_ui_widgets.py	ec6c4d34d81266e561aae2a555d4baaefa6d60dc	pending	-
+rust/tools/check_ui_widgets.py	ec6c4d34d81266e561aae2a555d4baaefa6d60dc	replaced-local	rust/crates/dev-tools/src/ui_headless_check.rs
 rust/tools/check_updated.py	cd08ceec7fc71f91169bba73d7ee6237ea7a8d7d	pending	-
 rust/tools/check_updated_agnos.py	c594f4eaeb1abaa093274f284aeea260e5667580	pending	-
 rust/tools/check_updated_daemon.py	34854dbebdb832812654eb0d8dcb546bc6e468b4	pending	-

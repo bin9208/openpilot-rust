@@ -2554,10 +2554,10 @@ jobs:
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/ui-raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-raylib/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
-      - name: Build native translation checker
+      - name: Build native UI validation checkers
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --locked
       - name: Build native UI and connectivity with original Params oracle
         run: |
           cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked

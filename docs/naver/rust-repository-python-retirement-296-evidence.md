@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Thirty-seven sources have locally verified replacements and migrated
-callers; 3,543 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Forty-one sources have locally verified replacements and migrated
+callers; 3,539 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -701,6 +701,61 @@ resolved the warning without altering behavior or suppressing the lint. The
 separate reviewed model source passes all 146 model-runtime tests. Original/native
 artifacts and these results are local evidence; exact-head Actions remain a
 separate delivery gate.
+
+## Native FPS, stack, widget and navigation gates
+
+Four more fixed-input checker drivers are replaced by `check-ui-fps`,
+`check-ui-stack`, `check-ui-widgets` and `check-ui-navigation`. Their independent
+original corpora preserve 112 ordered FPS samples, 19 stack operations, 800
+widget frames and 480 navigation frames. No candidate implementation generates
+expected values. Original runtime/helper sources remain tracked and source pins
+fail closed on drift; navigation also pins its NumPy dependency record.
+These are Linux x86_64 baseline gates, not generic arbitrary-input helper
+replacements, dynamic original recomputation or ARM numerical proof.
+
+FPS and stack checks retain their distinct process/artifact semantics. FPS
+inherits raw stderr and parses stdout before writing any of its three artifacts;
+stack writes input/source before running the child and preserves raw native text
+and the stderr fallback after successful strict decoding. Exact Python JSON
+equality, nesting boundaries and the original FPS pretty-serializer limit remain.
+Forty-two unchanged-original subprocess cases, eighteen CLI cases and explicit
+source/depth tests pass. Both actual native examples match all eight output files
+and stdout through original and native checkers. Physical raw-byte roots, binary
+and output paths, inherited environment values and raw FPS stderr also match.
+
+Widget comparison retains exact Python JSON equality. Navigation compares only
+expected keys, including booleans and counts, with the unchanged strict absolute
+bound `< 1e-6`; extra candidate keys remain admitted, and NaN remains rejected.
+Forty-four original cases preserve malformed/mismatched output, child failures,
+UTF-8/newline handling and partial artifacts. Source/dependency drift tests pass.
+Fresh actual `widget_trace` and `navigation_trace` examples produce identical
+three artifacts per checker and identical stdout/stderr through both drivers.
+Raw path and symlink cases also match. Independent reviews found no Important
+or Critical issues in either pair.
+
+The shared framework still executes all thirteen original gates in order, now
+with four native and nine Python commands. Caller regression tests execute the
+orchestrator against controlled processes and retain invocation logs, complete
+ledger values, display arguments, the existing EGL disk boundary and immediate
+failure propagation. CI explicitly builds the five required UI checker binaries
+including translations under its existing 512 MiB growth guard; it does not
+build every dev-tools binary. All four replacements pass against actual examples
+with `PATH=/nonexistent` after deleting their Python drivers. Eight UI caller
+tests and Ruff pass. The source inventory now has 41 replaced and 3,539 pending
+entries; no broader UI component is marked complete.
+
+Current local validation for this four-checker unit passes 281 selected dev-tools
+tests and 16 service-tools tests in the actual fast-checks routing. Strict
+all-target dev-tools Clippy and package formatting pass; the eight UI caller
+tests, Ruff and complete staged whitespace checks are separate integration checks.
+Ongoing model compiler changes are excluded from this UI checkpoint.
+
+The emoji checker remains pending after independent original probes identified
+Pillow's acceptance of lossless TGA/TIFF/WebP and 16-bit PNG under `.png` filenames,
+as well as mode-dependent NumPy broadcasting. A PNG-only replacement would remove
+known behavior. Compact provenance and 21 observed cases are retained in
+`rust/crates/dev-tools/tests/fixtures/ui-emoji/`; no codec dependency, Python
+removal or format-equivalence claim was introduced for that unfinished unit.
 
 ## Outstanding delivery evidence
 

@@ -273,3 +273,19 @@ path = "src/bin/check_jpeg_sanitizers.rs"
 [[bin]]
 name = "build-bridge-source"
 path = "src/bin/build_bridge_source.rs"
+
+[[bin]]
+name = "check-ui-fps"
+path = "src/bin/check_ui_fps.rs"
+
+[[bin]]
+name = "check-ui-stack"
+path = "src/bin/check_ui_stack.rs"
+
+[[bin]]
+name = "check-ui-widgets"
+path = "src/bin/check_ui_widgets.rs"
+
+[[bin]]
+name = "check-ui-navigation"
+path = "src/bin/check_ui_navigation.rs"

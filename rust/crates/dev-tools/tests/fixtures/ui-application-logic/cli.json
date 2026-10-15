@@ -1,0 +1,210 @@
+[
+  {
+    "kind": "fps",
+    "args": [],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_ui_fps.py [-h] --binary BINARY --output OUTPUT\ncheck_ui_fps.py: error: the following arguments are required: --binary, --output\n"
+  },
+  {
+    "kind": "fps",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_fps.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "fps",
+    "args": [
+      "--help",
+      "--b"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_fps.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "fps",
+    "args": [
+      "-hhh",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_fps.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "fps",
+    "args": [
+      "--binary",
+      "-unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_ui_fps.py [-h] --binary BINARY --output OUTPUT\ncheck_ui_fps.py: error: argument --binary: expected one argument\n"
+  },
+  {
+    "kind": "fps",
+    "args": [
+      "--binary=candidate",
+      "--output"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_ui_fps.py [-h] --binary BINARY --output OUTPUT\ncheck_ui_fps.py: error: argument --output: expected one argument\n"
+  },
+  {
+    "kind": "fps",
+    "args": [
+      "--binary",
+      "a",
+      "--binary",
+      "b",
+      "--output",
+      "x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_fps.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "fps",
+    "args": [
+      "--bin=a",
+      "--out=x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_fps.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "fps",
+    "args": [
+      "--output",
+      "-unknown value",
+      "--binary",
+      "a",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_fps.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "stack",
+    "args": [],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_ui_stack.py [-h] --binary BINARY --output OUTPUT\ncheck_ui_stack.py: error: the following arguments are required: --binary, --output\n"
+  },
+  {
+    "kind": "stack",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_stack.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "stack",
+    "args": [
+      "--help",
+      "--b"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_stack.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "stack",
+    "args": [
+      "-hhh",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_stack.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "stack",
+    "args": [
+      "--binary",
+      "-unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_ui_stack.py [-h] --binary BINARY --output OUTPUT\ncheck_ui_stack.py: error: argument --binary: expected one argument\n"
+  },
+  {
+    "kind": "stack",
+    "args": [
+      "--binary=candidate",
+      "--output"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_ui_stack.py [-h] --binary BINARY --output OUTPUT\ncheck_ui_stack.py: error: argument --output: expected one argument\n"
+  },
+  {
+    "kind": "stack",
+    "args": [
+      "--binary",
+      "a",
+      "--binary",
+      "b",
+      "--output",
+      "x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_stack.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "stack",
+    "args": [
+      "--bin=a",
+      "--out=x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_stack.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "stack",
+    "args": [
+      "--output",
+      "-unknown value",
+      "--binary",
+      "a",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_stack.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  }
+]

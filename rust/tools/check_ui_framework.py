@@ -16,10 +16,10 @@ args = parser.parse_args()
 args.output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[2]
 checks = [
-  ('widgets', 'check_ui_widgets.py', 'widget_trace', False),
+  ('widgets', None, 'widget_trace', False),
   ('scroll', 'check_ui_scroll.py', 'scroll_trace', False),
-  ('navigation', 'check_ui_navigation.py', 'navigation_trace', False),
-  ('stack', 'check_ui_stack.py', 'stack_trace', False),
+  ('navigation', None, 'navigation_trace', False),
+  ('stack', None, 'stack_trace', False),
   ('scroller', 'check_ui_scroller.py', 'scroller_trace', False),
   ('render', 'check_ui_render.py', 'ui_render', True),
   ('forms', 'check_ui_forms.py', 'form_render', True),
@@ -27,7 +27,7 @@ checks = [
   ('polygon', 'check_ui_polygon.py', 'polygon_render', True),
   ('diagnostics', 'check_ui_diagnostics.py', 'diagnostic_render', True),
   ('application', 'check_ui_application.py', 'application_run', True),
-  ('fps', 'check_ui_fps.py', 'fps_trace', False),
+  ('fps', None, 'fps_trace', False),
   ('egl', 'check_ui_egl.py', 'egl_trace', False),
 ]
 ledger = []
@@ -37,7 +37,8 @@ for name, script, binary, display in checks:
     required = 26 * 1024**3
     assert available >= required, 'requires 25GiB floor plus 1GiB fixture build allowance'
     (args.output / 'egl-build-disk.json').write_text(json.dumps({'available_bytes': available, 'required_bytes': required}, indent=2))
-  command = [sys.executable, str(root / 'rust/tools' / script), '--binary', str(args.target / 'examples' / binary), '--output', str(args.output / name)]
+  command = [sys.executable, str(root / 'rust/tools' / script)] if script else [str(args.target / f'check-ui-{name}')]
+  command += ['--binary', str(args.target / 'examples' / binary), '--output', str(args.output / name)]
   if display:
     command += ['--display', args.display]
   with (args.output / f'{name}.log').open('w') as log:
