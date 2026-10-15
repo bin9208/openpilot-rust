@@ -47,7 +47,8 @@ class WikiSettingsCiCheckTest(unittest.TestCase):
       self.assertTrue((output / "summary.md").is_file())
       self.assertTrue((output / "pages.diff").is_file())
       stored = json.loads((output / "summary.json").read_text(encoding="utf-8"))
-      self.assertEqual(stored["result"]["settings"], 184)
+      expected = {item["name"] for item in json.loads(CI_CHECK.DEFAULT_CATALOG.read_text())["params"]}
+      self.assertEqual(stored["result"]["settings"], len(expected))
       self.assertEqual(stored["validationIssues"], [])
       self.assertIn("Settings-Catalog.md", (output / "pages.diff").read_text(encoding="utf-8"))
 
