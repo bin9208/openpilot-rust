@@ -1,5 +1,5 @@
 use openpilot_proclogd::wire::encode_snapshot;
-use openpilot_runtime_core::procfs::Collector;
+use openpilot_runtime_core::procfs::{Collector, SamplingClock};
 use std::{
     env,
     error::Error,
@@ -24,8 +24,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
     let mut stdout = io::stdout().lock();
     for line in io::stdin().lock().lines() {
-        let timestamp: u64 = line?.parse()?;
-        let bytes = encode_snapshot(&collector.snapshot()?, timestamp)?;
+        let line = line?;
+        let mut fields = line.split_whitespace();
+        let timestamp: u64 = fields.next().ok_or("missing timestamp")?.parse()?;
+        struct Clock(u64);
+        impl SamplingClock for Clock {
+            fn monotonic_ns(&self) -> u64 {
+                self.0
+            }
+            fn thread_cpu_ns(&self) -> u64 {
+                0
+            }
+        }
+        if fields.next() == Some("step") {
+            collector.smaps_step(&Clock(timestamp));
+        }
+        let bytes = encode_snapshot(&collector.snapshot_at(timestamp)?, timestamp)?;
         stdout.write_all(&u64::try_from(bytes.len())?.to_le_bytes())?;
         stdout.write_all(&bytes)?;
         stdout.flush()?;

@@ -3,10 +3,13 @@ use crate::proc_stat::ProcessStat;
 use std::{
     collections::{HashMap, HashSet},
     fs::{self, File},
-    io::{self, BufRead, BufReader, Read},
+    io::{self, Read},
     num::NonZeroU64,
     path::{Path, PathBuf},
 };
+
+mod smaps;
+pub use smaps::SamplingClock;
 
 const MAX_RECORD_BYTES: u64 = 2 * 1024 * 1024;
 const SMAPS_MIN_BYTES: u64 = 5 * 1024 * 1024;
@@ -38,6 +41,8 @@ pub struct ProportionalMemory {
     pub pss: u64,
     pub anon: u64,
     pub shared: u64,
+    /// Monotonic scan start in nanoseconds; zero means unavailable.
+    pub mono_time_ns: u64,
 }
 
 /// A process record and metadata belonging to the same observed identity.
@@ -86,9 +91,7 @@ pub struct Collector {
     ticks: NonZeroU64,
     page_size: NonZeroU64,
     metadata: HashMap<Identity, Metadata>,
-    smaps: HashMap<Identity, ProportionalMemory>,
-    smaps_cycle: u8,
-    smaps_file: Option<&'static str>,
+    smaps: smaps::Sampler,
 }
 
 impl Collector {
@@ -100,9 +103,7 @@ impl Collector {
             ticks,
             page_size,
             metadata: HashMap::new(),
-            smaps: HashMap::new(),
-            smaps_cycle: 0,
-            smaps_file: None,
+            smaps: smaps::Sampler::new(root.to_path_buf()),
         }
     }
 
@@ -111,7 +112,26 @@ impl Collector {
     /// # Errors
     /// Returns the directory error if the procfs root cannot be enumerated.
     /// Individual process races are skipped; CPU/memory failures are warnings.
-    pub fn snapshot(&mut self) -> io::Result<Snapshot> {
+    pub fn snapshot_at(&mut self, now_ns: u64) -> io::Result<Snapshot> {
+        self.collect(|| now_ns)
+    }
+
+    /// Sample cache freshness after ordinary process enumeration, as upstream does.
+    pub fn snapshot_with_clock(&mut self, clock: &impl SamplingClock) -> io::Result<Snapshot> {
+        self.collect(|| clock.monotonic_ns())
+    }
+
+    /// Advance at most one paced PSS read. Never called by snapshot collection.
+    pub fn smaps_step(&mut self, clock: &impl SamplingClock) {
+        self.smaps.step(clock);
+    }
+
+    #[must_use]
+    pub fn smaps_next_step_ns(&self) -> u64 {
+        self.smaps.next_step
+    }
+
+    fn collect(&mut self, now: impl FnOnce() -> u64) -> io::Result<Snapshot> {
         let entries = fs::read_dir(&self.root)?;
         let mut processes = Vec::new();
         let mut seen = HashSet::new();
@@ -156,22 +176,6 @@ impl Collector {
                 self.metadata
                     .insert(identity, read_metadata(&dir, &stat.name));
             }
-            let proportional = if resident_bytes > SMAPS_MIN_BYTES {
-                let file = *self.smaps_file.get_or_insert_with(|| {
-                    if dir.join("smaps_rollup").exists() {
-                        "smaps_rollup"
-                    } else {
-                        "smaps"
-                    }
-                });
-                if self.smaps_cycle == 0 || !self.smaps.contains_key(&identity) {
-                    let value = read_smaps(&dir.join(file)).unwrap_or_default();
-                    self.smaps.insert(identity, value);
-                }
-                self.smaps.get(&identity).cloned().unwrap_or_default()
-            } else {
-                ProportionalMemory::default()
-            };
             let stable = read_record(&dir.join("stat"))
                 .ok()
                 .and_then(|bytes| {
@@ -187,23 +191,31 @@ impl Collector {
             if !stable {
                 seen.remove(&identity);
                 self.metadata.remove(&identity);
-                self.smaps.remove(&identity);
                 continue;
             }
             if let Some(metadata) = self.metadata.get(&identity) {
                 processes.push(Process {
                     stat,
                     resident_bytes,
-                    proportional,
+                    proportional: ProportionalMemory::default(),
                     exe: metadata.exe.clone(),
                     cmdline: metadata.cmdline.clone(),
                 });
             }
         }
         self.metadata.retain(|identity, _| seen.contains(identity));
-        self.smaps.retain(|identity, _| seen.contains(identity));
-        self.smaps_cycle = self.smaps_cycle.wrapping_add(1) % 20;
         processes.sort_by_key(|p| p.stat.pid);
+        self.smaps.update(&processes);
+        let now = now();
+        for process in &mut processes {
+            process.proportional = self.smaps.get(
+                Identity {
+                    pid: process.stat.pid,
+                    start_ticks: process.stat.start_ticks,
+                },
+                now,
+            );
+        }
 
         let mut warnings = Vec::new();
         let cpu_times = read_cpu_times(&self.root.join("stat")).unwrap_or_else(|e| {
@@ -313,30 +325,6 @@ fn read_memory(path: &Path) -> io::Result<Memory> {
             _ => continue,
         };
         *target = kilobytes(fields.next())?;
-    }
-    Ok(memory)
-}
-
-fn read_smaps(path: &Path) -> io::Result<ProportionalMemory> {
-    let mut memory = ProportionalMemory::default();
-    for line in BufReader::new(File::open(path)?).split(b'\n') {
-        let line = line?;
-        let mut fields = line
-            .split(u8::is_ascii_whitespace)
-            .filter(|field| !field.is_empty());
-        let target = match fields.next() {
-            Some(b"Pss:") => &mut memory.pss,
-            Some(b"Pss_Anon:") => &mut memory.anon,
-            Some(b"Pss_Shmem:") => &mut memory.shared,
-            _ => continue,
-        };
-        *target = target
-            .checked_add(kilobytes(
-                fields
-                    .next()
-                    .and_then(|value| std::str::from_utf8(value).ok()),
-            )?)
-            .ok_or_else(invalid_record)?;
     }
     Ok(memory)
 }

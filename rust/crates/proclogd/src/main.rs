@@ -1,8 +1,9 @@
 use openpilot_cereal::log_capnp::event;
 use openpilot_msgq::{Publisher, Subscriber};
 use openpilot_params::{Params, CLEAR_ON_MANAGER_START};
+use openpilot_proclogd::clock::Clock;
 use openpilot_proclogd::{wire::encode_snapshot, PROC_LOG_QUEUE_SIZE};
-use openpilot_runtime_core::procfs::Collector;
+use openpilot_runtime_core::procfs::{Collector, SamplingClock};
 use std::{
     env,
     error::Error,
@@ -115,7 +116,7 @@ fn self_test(root: &std::path::Path) -> Result<(), Box<dyn Error>> {
     let mut publisher = Publisher::with_capacity("rustSelfTest", PROC_LOG_QUEUE_SIZE)?;
     let mut subscriber = Subscriber::with_capacity("rustSelfTest", false, PROC_LOG_QUEUE_SIZE)?;
     let timestamp = timestamp()?;
-    let snapshot = collector(root)?.snapshot()?;
+    let snapshot = collector(root)?.snapshot_with_clock(&Clock)?;
     let bytes = encode_snapshot(&snapshot, timestamp)?;
     publisher.send(&bytes)?;
     let received = subscriber
@@ -164,9 +165,22 @@ fn run() -> Result<(), Box<dyn Error>> {
     let mut output = io::stdout().lock();
     let mut deadline = Instant::now();
     for frame in 0..options.frames {
-        thread::sleep(deadline.saturating_duration_since(Instant::now()));
+        while Instant::now() < deadline {
+            collector.smaps_step(&Clock);
+            let sampling_wait = Duration::from_nanos(
+                collector
+                    .smaps_next_step_ns()
+                    .saturating_sub(Clock.monotonic_ns()),
+            );
+            thread::sleep(
+                deadline
+                    .saturating_duration_since(Instant::now())
+                    .min(sampling_wait),
+            );
+        }
+        let publication_started = Instant::now();
         let timestamp = timestamp()?;
-        let snapshot = collector.snapshot()?;
+        let snapshot = collector.snapshot_with_clock(&Clock)?;
         if !snapshot.warnings.is_empty() {
             eprintln!("collection warnings: {:?}", snapshot.warnings);
         }
@@ -190,7 +204,7 @@ fn run() -> Result<(), Box<dyn Error>> {
                 .send(&bytes)?,
             Mode::SelfTest => unreachable!(),
         }
-        deadline += options.interval;
+        deadline = publication_started + options.interval;
     }
     Ok(())
 }

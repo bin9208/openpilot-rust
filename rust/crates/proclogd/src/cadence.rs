@@ -1,19 +1,11 @@
-//! Deadline progression from common/realtime.py Ratekeeper(0.5).
+//! Final upstream procLog schedules each publication from its current loop time.
 use std::time::Duration;
-
 const INTERVAL: Duration = Duration::from_secs(2);
-
 #[derive(Default)]
-pub struct Cadence {
-    next: Option<Duration>,
-}
-
+pub struct Cadence;
 impl Cadence {
-    /// Called after publication, including when collection overruns its deadline.
-    /// The source initializes its first deadline on the first keep_time call.
+    /// Schedule from publication start; never replay slots missed during a stall.
     pub fn deadline(&mut self, now: Duration) -> Duration {
-        let deadline = self.next.unwrap_or(now + INTERVAL);
-        self.next = Some(deadline + INTERVAL);
-        deadline
+        now + INTERVAL
     }
 }

@@ -15,7 +15,7 @@ fn pid_reuse_during_metadata_read_does_not_publish_mixed_identity() {
         .success());
     let mut reader = collector(root.path());
     thread::scope(|scope| {
-        let snapshot = scope.spawn(move || reader.snapshot().unwrap());
+        let snapshot = scope.spawn(move || reader.snapshot_at(10_000_000_000).unwrap());
         let mut writer = fs::OpenOptions::new().write(true).open(&cmdline).unwrap();
         fs::write(
             root.path().join("123/stat"),
@@ -97,7 +97,7 @@ fn snapshot_preserves_process_identity_counters_and_memory_units() {
     let root = fixture();
     let mut reader = collector(root.path());
 
-    let snapshot = reader.snapshot().unwrap();
+    let snapshot = scanned_snapshot(&mut reader);
 
     assert_eq!(snapshot.cpu_times.len(), 2);
     assert_eq!(snapshot.cpu_times[1].cpu, 7);
@@ -126,7 +126,7 @@ fn disappeared_malformed_and_mismatched_pid_records_are_skipped() {
     fs::write(root.path().join("5/stat"), "5 (bad) S 1").unwrap();
     fs::write(root.path().join("6/stat"), stat(7, "wrong identity", 1, 3)).unwrap();
 
-    let snapshot = collector(root.path()).snapshot().unwrap();
+    let snapshot = collector(root.path()).snapshot_at(10_000_000_000).unwrap();
 
     assert_eq!(
         snapshot
@@ -144,7 +144,7 @@ fn negative_or_overflowing_resident_memory_does_not_wrap() {
     process(root.path(), 4, "negative", 1, -1, b"x");
     process(root.path(), 5, "overflow", 2, i64::MAX, b"x");
 
-    let snapshot = collector(root.path()).snapshot().unwrap();
+    let snapshot = collector(root.path()).snapshot_at(10_000_000_000).unwrap();
 
     assert_eq!(
         snapshot
@@ -160,11 +160,11 @@ fn negative_or_overflowing_resident_memory_does_not_wrap() {
 fn reused_pid_with_same_name_refreshes_metadata_and_smaps() {
     let root = fixture();
     let mut reader = collector(root.path());
-    reader.snapshot().unwrap();
+    reader.snapshot_at(10_000_000_000).unwrap();
     process(root.path(), 123, "worker ) (a", 900, 2000, b"replacement\0");
     fs::write(root.path().join("123/smaps_rollup"), "Pss: 99 kB\n").unwrap();
 
-    let snapshot = reader.snapshot().unwrap();
+    let snapshot = scanned_snapshot(&mut reader);
 
     assert_eq!(snapshot.processes[0].stat.start_ticks, 900);
     assert_eq!(snapshot.processes[0].cmdline, ["replacement"]);
@@ -172,30 +172,19 @@ fn reused_pid_with_same_name_refreshes_metadata_and_smaps() {
 }
 
 #[test]
-fn smaps_refreshes_on_the_twentieth_subsequent_cycle() {
-    let root = fixture();
-    let mut reader = collector(root.path());
-    reader.snapshot().unwrap();
-    fs::write(root.path().join("123/smaps_rollup"), "Pss: 99 kB\n").unwrap();
-
-    let observed: Vec<_> = (0..20)
-        .map(|_| reader.snapshot().unwrap().processes[0].proportional.pss)
-        .collect();
-
-    assert_eq!(&observed[..19], &[51200; 19]);
-    assert_eq!(observed[19], 101376);
-}
-
-#[test]
 fn exited_process_cache_is_evicted_even_if_identity_returns() {
     let root = fixture();
     let mut reader = collector(root.path());
-    reader.snapshot().unwrap();
+    reader.snapshot_at(10_000_000_000).unwrap();
     fs::remove_dir_all(root.path().join("123")).unwrap();
-    assert!(reader.snapshot().unwrap().processes.is_empty());
+    assert!(reader
+        .snapshot_at(10_000_000_000)
+        .unwrap()
+        .processes
+        .is_empty());
     process(root.path(), 123, "worker ) (a", 500, 2000, b"reappeared\0");
 
-    let snapshot = reader.snapshot().unwrap();
+    let snapshot = reader.snapshot_at(10_000_000_000).unwrap();
 
     assert_eq!(snapshot.processes[0].cmdline, ["reappeared"]);
 }
@@ -206,7 +195,7 @@ fn per_mapping_smaps_fallback_sums_only_supported_counters() {
     fs::remove_file(root.path().join("123/smaps_rollup")).unwrap();
     fs::write(root.path().join("123/smaps"), "map one\nPss: 3 kB\nPss_Anon: 2 kB\nPss_Dirty: 8 kB\nmap two\nPss: 4 kB\nPss_Shmem: 1 kB\n").unwrap();
 
-    let snapshot = collector(root.path()).snapshot().unwrap();
+    let snapshot = scanned_snapshot(&mut collector(root.path()));
 
     assert_eq!(snapshot.processes[0].proportional.pss, 7168);
     assert_eq!(snapshot.processes[0].proportional.anon, 2048);
@@ -219,7 +208,7 @@ fn non_utf8_mapping_names_do_not_discard_valid_smaps_counters() {
     fs::remove_file(root.path().join("123/smaps_rollup")).unwrap();
     fs::write(root.path().join("123/smaps"), b"1000-2000 r--p 00000000 00:00 0 /synthetic/\xff\nPss: 50 kB\nPss_Anon: 30 kB\nPss_Shmem: 10 kB\n").unwrap();
 
-    let snapshot = collector(root.path()).snapshot().unwrap();
+    let snapshot = scanned_snapshot(&mut collector(root.path()));
 
     assert_eq!(snapshot.processes[0].proportional.pss, 51200);
     assert_eq!(snapshot.processes[0].proportional.anon, 30720);
@@ -232,7 +221,7 @@ fn missing_system_files_leave_explicit_warnings_and_do_not_hide_processes() {
     fs::remove_file(root.path().join("stat")).unwrap();
     fs::remove_file(root.path().join("meminfo")).unwrap();
 
-    let snapshot = collector(root.path()).snapshot().unwrap();
+    let snapshot = collector(root.path()).snapshot_at(10_000_000_000).unwrap();
 
     assert_eq!(snapshot.processes.len(), 1);
     assert!(snapshot.cpu_times.is_empty());
@@ -245,7 +234,30 @@ fn small_processes_do_not_read_smaps() {
     let root = fixture();
     process(root.path(), 123, "small", 500, 1280, b"small\0");
 
-    let snapshot = collector(root.path()).snapshot().unwrap();
+    let snapshot = collector(root.path()).snapshot_at(10_000_000_000).unwrap();
 
     assert_eq!(snapshot.processes[0].proportional.pss, 0);
+}
+
+#[test]
+fn publication_never_reads_smaps_or_exposes_unscanned_pss() {
+    let root = fixture();
+    let snapshot = collector(root.path()).snapshot_at(10_000_000_000).unwrap();
+    assert_eq!(snapshot.processes[0].proportional.pss, 0);
+}
+
+fn scanned_snapshot(reader: &mut Collector) -> openpilot_runtime_core::procfs::Snapshot {
+    struct Clock(u64);
+    impl openpilot_runtime_core::procfs::SamplingClock for Clock {
+        fn monotonic_ns(&self) -> u64 {
+            self.0
+        }
+        fn thread_cpu_ns(&self) -> u64 {
+            0
+        }
+    }
+    reader.snapshot_at(10_000_000_000).unwrap();
+    reader.smaps_step(&Clock(10_000_000_000));
+    reader.smaps_step(&Clock(10_005_000_000));
+    reader.snapshot_at(10_005_000_000).unwrap()
 }

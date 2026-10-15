@@ -1,6 +1,7 @@
 use openpilot_msgq::Publisher;
+use openpilot_proclogd::clock::Clock;
 use openpilot_proclogd::{cadence::Cadence, wire::encode_snapshot, PROC_LOG_QUEUE_SIZE};
-use openpilot_runtime_core::procfs::Collector;
+use openpilot_runtime_core::procfs::{Collector, SamplingClock};
 use std::{
     env,
     num::NonZeroU64,
@@ -11,7 +12,7 @@ use std::{
         Arc,
     },
     thread,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 struct Options {
@@ -93,41 +94,35 @@ fn run(options: Options) -> Result<(), EntryError> {
         NonZeroU64::new(u64::try_from(rustix::param::page_size())?)
             .ok_or(EntryError::Arguments("invalid page size"))?,
     );
-    let epoch = Instant::now();
-    let mut cadence = Cadence::default();
+    let clock = Clock;
+    let mut next_publish = 0;
+    let mut cadence = Cadence;
     let mut remaining = options.frames.map(NonZeroU64::get);
     while !stop.load(Ordering::Relaxed) {
         let timestamp = timestamp()?;
-        let snapshot = collector.snapshot()?;
-        if !snapshot.warnings.is_empty() {
-            eprintln!("proclogd: collection warnings: {:?}", snapshot.warnings);
-        }
-        if stop.load(Ordering::Relaxed) {
-            break;
-        }
-        publisher.send(&encode_snapshot(&snapshot, timestamp)?)?;
-        if let Some(frames) = &mut remaining {
-            *frames -= 1;
-            if *frames == 0 {
+        if timestamp >= next_publish {
+            let snapshot = collector.snapshot_with_clock(&clock)?;
+            if !snapshot.warnings.is_empty() {
+                eprintln!("proclogd: collection warnings: {:?}", snapshot.warnings);
+            }
+            if stop.load(Ordering::Relaxed) {
                 break;
             }
-        }
-        let now = epoch.elapsed();
-        let deadline = cadence.deadline(now);
-        if now > deadline {
-            eprintln!(
-                "proclogd lagging by {:.2} ms",
-                (now - deadline).as_secs_f64() * 1000.0
-            );
-        }
-        while !stop.load(Ordering::Relaxed) {
-            let wait = deadline.saturating_sub(epoch.elapsed());
-            if wait.is_zero() {
-                break;
+            publisher.send(&encode_snapshot(&snapshot, timestamp)?)?;
+            if let Some(frames) = &mut remaining {
+                *frames -= 1;
+                if *frames == 0 {
+                    break;
+                }
             }
-            // Bound shutdown latency without moving the source's absolute deadline.
-            thread::sleep(wait.min(Duration::from_millis(20)));
+            next_publish =
+                u64::try_from(cadence.deadline(Duration::from_nanos(timestamp)).as_nanos())?;
         }
+        collector.smaps_step(&clock);
+        let wait = next_publish
+            .min(collector.smaps_next_step_ns())
+            .saturating_sub(clock.monotonic_ns());
+        thread::sleep(Duration::from_nanos(wait).min(Duration::from_millis(20)));
     }
     Ok(())
 }

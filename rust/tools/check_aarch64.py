@@ -31,6 +31,7 @@ def check(binary: Path, runner: Path, report: Path) -> None:
     subprocess.run([*command, "--self-test"], check=True, timeout=15)
     subscriber = messaging.sub_sock("procLog", timeout=100)
     frames = 0
+    sampled = False
     with subprocess.Popen([*command, "--publish", "--frames", "3", "--interval-ms", "100"]) as producer:
       try:
         deadline = time.monotonic() + 10
@@ -45,10 +46,17 @@ def check(binary: Path, runner: Path, report: Path) -> None:
           assert len(message.procLog.procs) == 1
           process = message.procLog.procs[0]
           assert process.pid == 123 and process.memRss == 2000 * 4096
-          assert process.memPss == 50 * 1024 and process.nice == -5
+          assert process.nice == -5
+          if frames == 0:
+            assert process.memPss == 0 and process.memPssMonoTime == 0
+          if process.memPssMonoTime:
+            assert process.memPss == 50 * 1024
+            assert process.memPssMonoTime <= message.logMonoTime
+            sampled = True
           assert process.name == "worker ) (a"
           frames += 1
         assert frames == 3, frames
+        assert sampled, "bounded incremental sampler never published completed PSS"
         assert producer.wait(timeout=5) == 0
       finally:
         if producer.poll() is None:

@@ -49,6 +49,7 @@ fn snapshot() -> Snapshot {
                 pss: 51200,
                 anon: 30720,
                 shared: 10240,
+                mono_time_ns: 100_000_000,
             },
         }],
         warnings: vec![],
@@ -85,6 +86,7 @@ fn roundtrip_preserves_canonical_event_fields_and_signed_process_values() {
     assert_eq!(p.get_nice(), -5);
     assert_eq!(p.get_mem_rss(), 8192000);
     assert_eq!(p.get_mem_pss(), 51200);
+    assert_eq!(p.get_mem_pss_mono_time(), 100_000_000);
     assert_eq!(
         p.get_cmdline().unwrap().get(1).unwrap().to_str().unwrap(),
         "--test"
@@ -115,4 +117,19 @@ fn out_of_schema_integer_ranges_return_an_error_without_wrapping() {
     let result = encode_snapshot(&sample, 1);
 
     assert!(result.is_err());
+}
+
+#[test]
+fn unavailable_pss_roundtrips_with_zero_timestamp() {
+    let mut sample = snapshot();
+    sample.processes[0].proportional = ProportionalMemory::default();
+    let bytes = encode_snapshot(&sample, 123456789).unwrap();
+    let message = capnp::serialize::read_message(bytes.as_slice(), Default::default()).unwrap();
+    let event = message.get_root::<event::Reader>().unwrap();
+    let event::ProcLog(log) = event.which().unwrap() else {
+        panic!("wrong event");
+    };
+    let process = log.unwrap().get_procs().unwrap().get(0);
+    assert_eq!(process.get_mem_pss(), 0);
+    assert_eq!(process.get_mem_pss_mono_time(), 0);
 }

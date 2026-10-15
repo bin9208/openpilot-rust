@@ -6,7 +6,7 @@ use std::{
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut cadence = Cadence::default();
+    let mut cadence = Cadence;
     for line in io::stdin().lock().lines() {
         let now = Duration::from_nanos(line?.parse()?);
         let deadline = cadence.deadline(now);

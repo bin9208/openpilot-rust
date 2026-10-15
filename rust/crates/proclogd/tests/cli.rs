@@ -101,3 +101,52 @@ fn isolated_self_test_exercises_ipc_and_temporary_params() {
     assert!(output.status.success(), "{:?}", output);
     assert!(String::from_utf8_lossy(&output.stdout).contains("PASS"));
 }
+
+#[test]
+fn synthetic_pss_is_initially_unavailable_then_publishes_scan_start() {
+    let root = tempfile::tempdir().unwrap();
+    let process = root.path().join("123");
+    fs::create_dir(&process).unwrap();
+    let mut fields = vec!["0".to_owned(); 50];
+    fields[0] = "S".into();
+    fields[19] = "501".into();
+    fields[21] = "2000".into();
+    fs::write(
+        process.join("stat"),
+        format!("123 (fixture) {}", fields.join(" ")),
+    )
+    .unwrap();
+    fs::write(process.join("smaps_rollup"), b"Pss: 50 kB\n").unwrap();
+    let output = tempfile::tempdir().unwrap();
+    let result = command()
+        .args(["--frames", "3", "--interval-ms", "100", "--proc-root"])
+        .arg(root.path())
+        .arg("--output-dir")
+        .arg(output.path())
+        .output()
+        .unwrap();
+    assert!(result.status.success(), "{result:?}");
+    let mut completed = false;
+    for frame in 0..3 {
+        let bytes = fs::read(output.path().join(format!("procLog-{frame:04}.capnp"))).unwrap();
+        let message = capnp::serialize::read_message(bytes.as_slice(), Default::default()).unwrap();
+        let event = message.get_root::<event::Reader>().unwrap();
+        let event::ProcLog(log) = event.which().unwrap() else {
+            panic!("wrong event");
+        };
+        let sample = log.unwrap().get_procs().unwrap().get(0);
+        if frame == 0 {
+            assert_eq!(sample.get_mem_pss(), 0);
+            assert_eq!(sample.get_mem_pss_mono_time(), 0);
+        }
+        if sample.get_mem_pss_mono_time() != 0 {
+            assert_eq!(sample.get_mem_pss(), 51200);
+            assert!(sample.get_mem_pss_mono_time() <= event.get_log_mono_time());
+            completed = true;
+        }
+    }
+    assert!(
+        completed,
+        "no completed PSS scan within three bounded frames"
+    );
+}
