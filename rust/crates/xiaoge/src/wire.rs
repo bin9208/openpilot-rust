@@ -1,6 +1,6 @@
 use openpilot_cereal::{
     car_capnp::car_state,
-    log_capnp::{model_data_v2, selfdrive_state},
+    log_capnp::{controls_state, model_data_v2, selfdrive_state, x_y_z_t_data},
 };
 use openpilot_logging::{Fields, Value};
 
@@ -62,6 +62,34 @@ fn first(values: capnp::primitive_list::Reader<'_, f32>) -> f64 {
     }
 }
 
+fn numbers(values: capnp::primitive_list::Reader<'_, f32>, limit: usize) -> Value {
+    Value::Array(
+        values
+            .iter()
+            .take(limit)
+            .map(|value| Value::Float(f64::from(value)))
+            .collect(),
+    )
+}
+
+fn geometry(
+    values: capnp::struct_list::Reader<'_, x_y_z_t_data::Owned>,
+    limit: usize,
+) -> Result<Value, capnp::Error> {
+    values
+        .iter()
+        .take(limit)
+        .map(|line| {
+            Ok(object([
+                ("x", numbers(line.get_x()?, 33)),
+                ("y", numbers(line.get_y()?, 33)),
+                ("z", numbers(line.get_z()?, 33)),
+            ]))
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(Value::Array)
+}
+
 pub fn model(reader: model_data_v2::Reader<'_>) -> Result<Fields, capnp::Error> {
     let leads = reader.get_leads_v3()?;
     let lead = if leads.is_empty() {
@@ -81,11 +109,6 @@ pub fn model(reader: model_data_v2::Reader<'_>) -> Result<Fields, capnp::Error> 
         ])
     };
     let probabilities = reader.get_lane_line_probs()?;
-    let lanes = if probabilities.len() >= 3 {
-        [probabilities.get(1), probabilities.get(2)]
-    } else {
-        [0.0; 2]
-    };
     let meta = reader.get_meta()?;
     let yaw = reader.get_orientation_rate()?.get_z()?;
     let mut curvature = first(yaw);
@@ -96,15 +119,11 @@ pub fn model(reader: model_data_v2::Reader<'_>) -> Result<Fields, capnp::Error> 
     }
     Ok(fields([
         ("lead0", lead),
-        (
-            "laneLineProbs",
-            Value::Array(
-                lanes
-                    .into_iter()
-                    .map(|value| Value::Float(f64::from(value)))
-                    .collect(),
-            ),
-        ),
+        ("laneLineProbs", numbers(probabilities, 4)),
+        ("laneLineStds", numbers(reader.get_lane_line_stds()?, 4)),
+        ("laneLines", geometry(reader.get_lane_lines()?, 4)?),
+        ("roadEdgeStds", numbers(reader.get_road_edge_stds()?, 2)),
+        ("roadEdges", geometry(reader.get_road_edges()?, 2)?),
         (
             "meta",
             object([
@@ -130,6 +149,42 @@ pub fn system(reader: selfdrive_state::Reader<'_>) -> Fields {
         ("enabled", Value::Bool(reader.get_enabled())),
         ("active", Value::Bool(reader.get_active())),
     ])
+}
+
+pub fn controls(
+    reader: controls_state::Reader<'_>,
+    system: Option<selfdrive_state::Reader<'_>>,
+) -> Result<Fields, capnp::Error> {
+    use selfdrive_state::OpenpilotState;
+    let state = match system
+        .map(|value| value.get_state())
+        .transpose()
+        .map_err(capnp::Error::from)?
+    {
+        None => "",
+        Some(OpenpilotState::Disabled) => "disabled",
+        Some(OpenpilotState::PreEnabled) => "preEnabled",
+        Some(OpenpilotState::Enabled) => "enabled",
+        Some(OpenpilotState::SoftDisabling) => "softDisabling",
+        Some(OpenpilotState::Overriding) => "overriding",
+    };
+    Ok(fields([
+        (
+            "enabled",
+            Value::Bool(system.is_some_and(|value| value.get_enabled())),
+        ),
+        (
+            "active",
+            Value::Bool(system.is_some_and(|value| value.get_active())),
+        ),
+        ("vCruise", Value::Float(0.)),
+        ("curvature", Value::Float(f64::from(reader.get_curvature()))),
+        ("state", Value::Text(state.to_owned())),
+        (
+            "experimentalMode",
+            Value::Bool(system.is_some_and(|value| value.get_experimental_mode())),
+        ),
+    ]))
 }
 
 pub fn packet(

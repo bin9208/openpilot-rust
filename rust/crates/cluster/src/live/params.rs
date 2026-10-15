@@ -2,8 +2,10 @@ use super::{projection::Data, Input};
 use crate::models::EnergyGaugeLabel;
 use capnp::{message::ReaderOptions, serialize};
 use openpilot_cereal::{car_capnp::car_params, log_capnp::event};
+use openpilot_jetlink::status;
 use openpilot_params::Params;
 use openpilot_ui_application::params::numeric;
+use std::path::Path;
 
 pub(super) struct Settings {
     pub persistent: Params,
@@ -25,8 +27,6 @@ impl Settings {
     pub fn refresh_egpu(&mut self, now: f64) {
         if now >= self.next_egpu {
             self.egpu = self.persistent.get_bool("UsbGpuActive").unwrap_or(false);
-            use openpilot_jetlink::status;
-            use std::path::Path;
             let saved = status::read_json(Path::new(status::LINK_STATUS));
             let link = status::read_fresh(Path::new(status::LINK_STATUS), now);
             let model = status::read_fresh(Path::new(status::MODEL_STATUS), now);

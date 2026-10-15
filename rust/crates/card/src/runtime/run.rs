@@ -15,7 +15,7 @@ pub fn run(options: RunOptions) -> Result<(), Error> {
         &mut io,
         Params::for_runtime()?,
         Params::for_runtime()?,
-        &options.root.join("opendbc_repo/opendbc/dbc"),
+        &options.dbc,
         &options.root.join("opendbc_repo/opendbc/car/torque_data"),
         &options.numerics,
     );

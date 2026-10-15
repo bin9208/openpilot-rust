@@ -23,6 +23,16 @@ def stable_status(status):
   del lane["lastFrameAgeSeconds"]
   del lane["result"]["updatedMonoTimeNanos"]
   lane.pop("inference")
+  for group in ("imageSide", "vehicleSide"):
+    for side in result[group].values():
+      del side["updatedMonoTimeNanos"]
+  if not result["camera"]["available"]:
+    gate = result["gate"]
+    eligible = gate["eligibleSides"]
+    assert gate["side"] in eligible if eligible else gate["side"] == ""
+    # Source selects its round-robin cursor even without camera input. No
+    # inference advances it while stale; its retained phase is asynchronous.
+    gate["side"] = eligible[0] if eligible else ""
   return result
 
 
@@ -30,7 +40,14 @@ def stable_publication(payload):
   result = copy.deepcopy(payload)
   del result["lane"]["latencyMs"]
   del result["lane"]["receivedMonoTimeNanos"]
-  del result["blindspot"]["receivedMonoTimeNanos"]
+  blindspot = result["blindspot"]
+  del blindspot["receivedMonoTimeNanos"]
+  del blindspot["receivedMonoTimeNanosBySide"]
+  valid_sides = blindspot["validSides"]
+  assert blindspot["side"] in valid_sides if valid_sides else blindspot["side"] == ""
+  # Both eligible sides are inferred in round-robin order. The selected display
+  # side can change between status and publication; retain its admissibility.
+  blindspot["side"] = valid_sides[0] if valid_sides else ""
   return result
 
 
@@ -53,6 +70,17 @@ class Probe:
         now = time.monotonic_ns()
         for name in ["lane", "blindspot"]:
           assert 0 < payload[name]["receivedMonoTimeNanos"] <= now
+        blindspot = payload["blindspot"]
+        timestamps = blindspot["receivedMonoTimeNanosBySide"]
+        assert set(timestamps) == {"left", "right"}
+        assert all(type(stamp) is int and 0 <= stamp <= now for stamp in timestamps.values())
+        if max(timestamps.values()) > 0:
+          assert blindspot["receivedMonoTimeNanos"] == max(timestamps.values())
+        else:
+          assert not blindspot["valid"]
+        assert blindspot["validSides"] == [side for side in ("left", "right") if side in blindspot["validSides"]]
+        assert blindspot["valid"] == bool(blindspot["validSides"])
+        assert all(timestamps[side] > 0 for side in blindspot["validSides"])
         trace.write(json.dumps({"phase": self.phase, "mono_time": event.logMonoTime, "payload": payload}) + "\n")
         self.publications.append(payload)
 
@@ -90,6 +118,7 @@ class Probe:
                "valid": status["lane"]["resultFresh"]},
       "blindspot": {"left": sides["left"]["active"], "right": sides["right"]["active"],
                     "valid": any(side["valid"] for side in sides.values()),
+                    "validSides": [name for name in ("left", "right") if sides[name]["valid"]],
                     "side": next((name for name in ["left", "right"] if sides[name]["valid"]), "")}}
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
@@ -110,7 +139,7 @@ def tcp_values(port: int, empty: bool = False, tesla: bool = True, speed: float 
       values = packet["data"]
       if empty and not values:
         return values
-      if (not empty and set(values) == {"carState", "modelV2", "systemState"} and
+      if (not empty and set(values) == {"carState", "modelV2", "systemState", "controlsState"} and
           ("stopLineDist" in values["carState"]) == tesla and values["carState"]["vEgo"] == speed):
         return values
   raise TimeoutError("Xiaoge TCP values did not settle")
@@ -128,4 +157,5 @@ def snapshots(connection: httpx2.Client, output: Path) -> None:
 def side_ready(status, side: Literal["left", "right"], minimum: int = 2) -> bool:
   return (status["model"]["loaded"] and status["lane"]["loaded"] and status["camera"]["available"] and
           status["lane"]["cameraAvailable"] and status["inference"]["count"] >= minimum and status["lane"]["resultFresh"] and
-          status["gate"]["active"] and status["gate"]["side"] == side and status["vehicleSide"][side]["valid"])
+          status["gate"]["active"] and status["gate"]["side"] == side and status["vehicleSide"][side]["valid"] and
+          all(status["vehicleSide"][name]["valid"] for name in status["gate"]["eligibleSides"]))

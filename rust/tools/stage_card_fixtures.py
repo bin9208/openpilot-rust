@@ -19,7 +19,7 @@ def stage(fixtures: Path, dbc: Path) -> None:
   dbc.parent.mkdir(parents=True, exist_ok=True)
   commands = fixtures / 'commands'
   run([sys.executable, str(TOOLS / 'card_prepare_assets.py'), str(ROOT), str(dbc)], commands, 'assets')
-  sources = [TOOLS / 'card_prepare_assets.py', Path(__file__).resolve(), TOOLS / 'card_qa/ci.py']
+  sources = [TOOLS / 'card_prepare_assets.py', Path(__file__).resolve(), TOOLS / 'card_qa/ci.py', TOOLS / 'card_hyundai_final_source.py']
   for suffix, needs_dbc in GENERATORS:
     script = TOOLS / f'card_hyundai_{suffix}.py'
     sources.append(script)

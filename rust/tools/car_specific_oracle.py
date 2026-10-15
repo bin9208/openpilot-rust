@@ -62,7 +62,10 @@ def load(params):
   exec(compile(ast.Module(body=[cls], type_ignores=[]), str(SOURCE), 'exec'), namespace)
   add_lines = {node.lineno for node in ast.walk(cls) if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
                and node.func.attr == 'add' and isinstance(node.func.value, ast.Name) and node.func.value.id == 'events'}
-  conditions = [(node.lineno, node.test.end_lineno, node.body[0].lineno) for node in ast.walk(cls) if isinstance(node, ast.If)]
+  # CPython enters a multiline assignment at its RHS before emitting its target line.
+  conditions = [(node.lineno, node.test.end_lineno,
+                 node.body[0].value.lineno if isinstance(node.body[0], ast.Assign) else node.body[0].lineno)
+                for node in ast.walk(cls) if isinstance(node, ast.If)]
   return SimpleNamespace(source_commit='e8e152dbcfd9574a1791ed12026d1880e87689b3', source_sha256=hashlib.sha256(source.encode()).hexdigest(), cls=namespace['CarSpecificEvents'], add_lines=add_lines, conditions=conditions,
                          constants={'DT_CTRL': DT_CTRL, 'MAX_CTRL_SPEED': MAX_CTRL_SPEED,
                                     'VW_DEFAULT_MIN_STEER_SPEED': CarControllerParams.DEFAULT_MIN_STEER_SPEED,

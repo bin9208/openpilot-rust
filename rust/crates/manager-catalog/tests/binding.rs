@@ -97,7 +97,7 @@ fn encoder_binding_preserves_modes_when_one_binary_serves_variants() {
 }
 
 #[test]
-fn card_binding_requires_checkout_and_numerical_companion_when_selected() {
+fn card_binding_requires_checkout_and_dbc_and_numerical_companions_when_selected() {
     let installation = Installation {
         root: PathBuf::from("/owned/repo"),
         binaries: PathBuf::from("/owned/repo/rust/bin"),
@@ -113,10 +113,14 @@ fn card_binding_requires_checkout_and_numerical_companion_when_selected() {
             "/owned/repo/rust/bin/openpilot-card",
             "--root",
             "/owned/repo",
+            "--dbc",
+            "/owned/repo/rust/bin/radarcan-dbc",
             "--numerics",
             "/owned/repo/rust/bin/card-numerics"
         ]
     );
+    assert!(bound.requirements.iter().any(|requirement| matches!(requirement,
+        binding::Requirement::Directory(path) if path == &installation.binaries.join("radarcan-dbc"))));
     assert!(bound.validate().is_err());
 }
 

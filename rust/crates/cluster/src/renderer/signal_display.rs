@@ -15,13 +15,10 @@ impl ClusterUiRenderer {
             .live
             .as_ref()
             .and_then(|camera| camera.input.display_frame());
-        let tracks = self.camera_resources.signal.read(now, camera, || {
-            openpilot_params::Params::for_runtime()
-                .ok()
-                .and_then(|params| params.get("SignalAssistMode").ok().flatten())
-                .and_then(|bytes| openpilot_ui_application::params::numeric::integer(&bytes))
-                .is_some_and(|mode| matches!(mode, 1 | 2))
-        });
+        let tracks = self
+            .camera_resources
+            .signal
+            .read(now, camera, signal_assist_enabled);
         if !self.camera_resources.signal.enabled {
             return Ok(());
         }
@@ -113,4 +110,12 @@ impl ClusterUiRenderer {
             .record_draw(now, camera, visible);
         Ok(())
     }
+}
+
+fn signal_assist_enabled() -> bool {
+    openpilot_params::Params::for_runtime()
+        .ok()
+        .and_then(|params| params.get("SignalAssistMode").ok().flatten())
+        .and_then(|bytes| openpilot_ui_application::params::numeric::integer(&bytes))
+        .is_some_and(|mode| matches!(mode, 1 | 2))
 }

@@ -68,7 +68,11 @@ def main():
     assert source == native, 'lifecycle hooks changed source order or Params'
     trace = native['trace']
     assert trace.index(['lifecycle', 'start']) < trace.index(['put', 'RecordAudio', '0'])
-    assert trace.index(['stop', 'dmonitoringd', False]) < trace.index(['stop', 'dmonitoringd', True]) < trace.index(['lifecycle', 'cleanup_finished']) < trace.index(['exit', 'uninstall'])
+    # Ignition transitions also join the old monitor before resetting its session.
+    # Match the cleanup pair after its nonblocking stop, not those earlier joins.
+    cleanup_stop = trace.index(['stop', 'dmonitoringd', False])
+    cleanup_join = trace.index(['stop', 'dmonitoringd', True], cleanup_stop)
+    assert cleanup_stop < cleanup_join < trace.index(['lifecycle', 'cleanup_finished']) < trace.index(['exit', 'uninstall'])
     (args.output / 'summary.json').write_text(json.dumps({'records': messages, 'source_order': True, 'synthetic_environment_only': True}, indent=2))
     print('PASS manager lifecycle/default collector: 4 matching records, daemon context, full synthetic environment and exact transition/cleanup order')
 

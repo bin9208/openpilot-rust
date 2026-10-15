@@ -40,10 +40,13 @@ dependencies. Repairs keep runtime behavior and strict comparisons intact:
   the packaged signal daemon still selects its required native features.
 - Align Panda's isolated child firmware fixture, DM timing schema and manager
   stop-trace assertions with the changed producer contracts.
-- Account for the 22 remaining V4L cases after source YouTube removal; each case
+- Account for the 22 remaining V4L and six runtime cases after source YouTube removal; each case
   retains its source/native comparison.
 - Preserve the inherited unknown-road HUD display, align stale HUD test setup,
   and bind startup graphics references to the selected source.
+- Select the final overlay owner for existing root/augmented scene comparisons;
+  compact transitions (100 frames) and augmented (32 frames) retain exact pixels
+  and state. Install the missing host GLES development library for renderer CI.
 - Apply Rust formatting and store the unpublished Wiki patch with zero context
   (`git apply --unidiff-zero`) so patch context spaces do not fail whitespace CI.
 
@@ -57,3 +60,65 @@ recorded in issue #338 after publication, without changing the sealed source.
 Repository-wide tool retirement remains excluded. Hardware startup, GPU
 inference and driving acceptance remain user-owned and are not claimed from
 host/QEMU packaging checks.
+
+## Fresh-install CAN assets
+
+Card previously selected `ROOT/opendbc_repo/opendbc/dbc` even in an installed
+runtime. The repository tracks only seven generated DBC files, while the sealed
+`rust/bin/radarcan-dbc` companion supplies the complete 103-file set. A fresh
+installation must not depend on ignored generator output left in a developer's
+source checkout.
+
+Card now accepts an optional explicit `--dbc` directory. Standalone use retains
+the existing source-directory default; the manager supplies and requires the
+sealed companion. Three parser checks and the selected binding check pass on
+host and actual ARM/QEMU. The final package rebuild includes both the changed
+Card and manager bindings before sealing.
+
+## CI reference reconciliation and Xiaoge telemetry
+
+The Hyundai fixture stages now install the existing pinned reference package before
+CAN imports, so state, controller and packet fixtures share the final stopping and
+blinker behavior. All eight existing stages generate successfully; the fresh host
+controller test and postcheck match 35,520 actuator schemas and 91,271 CAN messages.
+The five fixture-caller checks pass. Production Hyundai behavior is unchanged.
+
+The original ARS510 private jerk-state fixture was captured with NumPy 2.5.3's
+OpenBLAS SkylakeX kernel. Another CPU kernel can produce a roughly 4e-14 difference
+in private filtered jerk despite identical library bytes. CI now replays the same
+2,697 checked actions through the pinned original receiver on its actual CPU.
+The reference refresh verifies shared source hashes and equality of source NumPy
+and sealed native numerical-library hashes, and records the selected CPU kernel.
+No native output constructs expectations; public and private comparisons retain
+exact floating-point bits. Local reconstruction reproduces all 2,707 original
+rows and 1,561,339 numeric comparisons exactly; both fresh native receiver tests
+pass against that independent reference. Production arithmetic is unchanged.
+
+The car-specific coverage check now identifies a multiline assignment's executed
+RHS line rather than its later target line. The unchanged corpus passes 29,787
+steps, all 162 outcomes of 81 source conditions, 51 event branches and eleven
+invalid-input checks; no condition was exempted.
+
+The corrected Xiaoge live reference exposed an actual omitted upstream telemetry
+change. Native packets now include up to four lane probabilities/stds/lines, two
+road-edge stds/lines and 33 coordinates per axis, plus the live controlsState
+packet and subscription. The pinned SelfdriveState schema lacks vCruise, so its
+source fallback remains zero. Existing live inputs supply nonempty geometry and
+controls data. Nineteen source/native phases pass with actual ONNX, VisionIPC,
+TCP, Cereal, snapshots and reconnect/shutdown. The probe validates per-side
+publication timestamps and validSides; it removes elapsed timestamps and checks
+round-robin display-side admissibility before comparing stable phase results.
+When the camera is unavailable, the probe asserts the retained scheduler cursor
+belongs to eligibleSides before canonicalizing that asynchronous cursor; reasons
+and all per-side fields remain compared. Freshness waits require every eligible
+side to be valid; the Params refresh
+explicitly waits for the requested inference side, lane threshold 0.73 and BSD interval 0.6 seconds before
+subsequent phases. The final receipt uses the freshly rebuilt telemetry binary.
+Xiaoge native all-target strict Clippy passes. These are host checks; the final
+AGNOS package rebuild and user device acceptance remain separate.
+
+Receipts: `.analysis/scratch/2026-10-16-dev-md-scope-excluded/` contains
+`card-controller-final-{native,postcheck}.log`, `card-fixture-caller-tests.log`,
+`ars510-source-reconstruction-check.log`, `ars510-local-reference-native.log`,
+`car-specific-coverage-final/manifest.json`, `xiaoge-live-final8/result.json` and
+`xiaoge-telemetry-clippy.log`.

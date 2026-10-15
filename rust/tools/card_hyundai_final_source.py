@@ -15,6 +15,9 @@ PREFIX = 'opendbc_repo/opendbc/car/hyundai/'
 
 
 def install(root: Path) -> dict:
+    previous = sys.modules.get('opendbc.car.hyundai')
+    if getattr(previous, '__oracle_pin__', None) == PIN:
+        return previous.__oracle_report__
     loaded = [name for name in sys.modules if name.startswith('opendbc.car.hyundai.')]
     if loaded:
         raise RuntimeError(f'Pinned Hyundai source must be installed before imports: {loaded}')
@@ -51,5 +54,7 @@ def install(root: Path) -> dict:
     opendbc.car.hyundai.__path__ = [str(package.resolve())]
     report = dict(source_commit=PIN, files=hashes, runtime_python=False,
                   boundary='Params, deterministic clock and synthetic CAN input only')
+    opendbc.car.hyundai.__oracle_pin__ = PIN
+    opendbc.car.hyundai.__oracle_report__ = report
     (root / 'hyundai-source-manifest.json').write_text(json.dumps(report, indent=2) + '\n')
     return report

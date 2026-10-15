@@ -62,7 +62,7 @@ class Inputs:
       self.pool.shutdown(wait=True)
 
   def run(self) -> int:
-    publishers = messaging.PubMaster(["carState", "modelV2", "selfdriveState", "can"])
+    publishers = messaging.PubMaster(["carState", "modelV2", "selfdriveState", "controlsState", "can"])
     packer = CANPacker("tesla_model3_party")
     server = None
     generation = -1
@@ -100,6 +100,13 @@ class Inputs:
           model.modelV2.meta.distanceToRoadEdgeLeft = 2.75
           model.modelV2.meta.distanceToRoadEdgeRight = 4.25
           model.modelV2.laneLineProbs = [0.1, 0.7, 0.8, 0.2]
+          model.modelV2.laneLineStds = [0.3, 0.2, 0.1, 0.4]
+          model.modelV2.roadEdgeStds = [0.7, 0.8]
+          for group, count in (("laneLines", 4), ("roadEdges", 2)):
+            for index, line in enumerate(model.modelV2.init(group, count)):
+              line.x = [0.0, 10.0, 20.0]
+              line.y = [float(index), float(index + 1)]
+              line.z = [0.0]
           model.modelV2.orientationRate.z = [0.03, -0.12, 0.1]
           model.modelV2.init("leadsV3", 1)
           model.modelV2.leadsV3[0].x = [18.5]
@@ -110,7 +117,12 @@ class Inputs:
           system = messaging.new_message("selfdriveState", valid=phase.valid)
           system.selfdriveState.enabled = True
           system.selfdriveState.active = False
+          system.selfdriveState.state = "preEnabled"
+          system.selfdriveState.experimentalMode = True
           publishers.send("selfdriveState", system)
+          controls = messaging.new_message("controlsState", valid=phase.valid)
+          controls.controlsState.curvature = 0.0125
+          publishers.send("controlsState", controls)
         if phase.can:
           address, payload, bus = packer.make_can_msg("DAS_road", 2, {"DAS_stopLineDist": 42.5, "DAS_trafficLightColor": 3})
           packet = messaging.new_message("can", 1, valid=True)

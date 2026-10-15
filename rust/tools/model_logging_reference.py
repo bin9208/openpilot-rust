@@ -108,7 +108,13 @@ def driver(records: list[dict], scenario: tuple[int, int]) -> dict:
   expected = [source.expected('connecting to driver stream'),
               source.expected('connected with buffer size', {'vipc_client': SimpleNamespace(buffer_len=size)}),
               source.expected('models loaded, dmonitoringmodeld starting')]
-  actual = [(record['levelnum'], record['msg']) for record in records if record['process'] == pid]
+  # RuntimeTiming's structured schema is checked by Capture.finish before this
+  # startup-expression comparison, just as for the driving daemon above.
+  selected = [record for record in records if record['process'] == pid]
+  assert all(isinstance(record['msg'], str) or
+             (isinstance(record['msg'], dict) and record['msg'].get('event') == 'runtimeTiming'
+              and record['msg'].get('component') == 'dmonitoringmodeld') for record in selected)
+  actual = [(record['levelnum'], record['msg']) for record in selected if isinstance(record['msg'], str)]
   assert actual == expected, (actual, expected)
   other = [(record['levelnum'], record['msg']) for record in records if record['process'] != pid]
   assert other == [source.expected('connecting to driver stream'), source.expected('got SIGINT')]

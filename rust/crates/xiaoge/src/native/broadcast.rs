@@ -52,6 +52,28 @@ pub fn run(options: Options) -> Result<(), Error> {
     }
 }
 
+fn controls_packet(subscriber: &SubMaster) -> Result<Option<Fields>, Error> {
+    let controls = subscriber.state.topic("controlsState")?;
+    if !controls.alive {
+        return Ok(None);
+    }
+    let event::ControlsState(reader) = controls.event()?.which().map_err(capnp::Error::from)?
+    else {
+        return Err(Error::Contract("unexpected controlsState event"));
+    };
+    let system = subscriber.state.topic("selfdriveState")?;
+    let state = if system.alive {
+        let event::SelfdriveState(reader) = system.event()?.which().map_err(capnp::Error::from)?
+        else {
+            return Err(Error::Contract("unexpected selfdriveState event"));
+        };
+        Some(reader?)
+    } else {
+        None
+    };
+    Ok(Some(wire::controls(reader?, state)?))
+}
+
 fn owner(options: Options, interrupted: &Arc<AtomicBool>) -> Result<(), Error> {
     let ip = match &options.device_ip {
         Some(ip) => ip.clone(),
@@ -59,7 +81,7 @@ fn owner(options: Options, interrupted: &Arc<AtomicBool>) -> Result<(), Error> {
     };
     let params = Params::for_runtime()?;
     let mut subscriber = SubMaster::for_runtime(
-        &["carState", "modelV2", "selfdriveState"],
+        &["carState", "modelV2", "selfdriveState", "controlsState"],
         SubscriptionOptions::default(),
     )?;
     let running = Arc::new(AtomicBool::new(true));
@@ -127,6 +149,9 @@ fn owner(options: Options, interrupted: &Arc<AtomicBool>) -> Result<(), Error> {
                     "systemState".to_owned(),
                     Value::Object(wire::system(reader?)),
                 );
+            }
+            if let Some(controls) = controls_packet(&subscriber)? {
+                data.insert("controlsState".to_owned(), Value::Object(controls));
             }
             tcp::broadcast(
                 &clients,

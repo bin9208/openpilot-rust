@@ -9,11 +9,14 @@ use openpilot_radarcan::{
 };
 use serde_json::{json, Value};
 type RawPackets = Vec<(u64, Vec<(u32, Vec<u8>, u8)>)>;
-fn fixture() -> &'static [u8] {
+fn fixture() -> Vec<u8> {
+    if let Some(path) = std::env::var_os("RADARCAN_ARS510_REFERENCE") {
+        return std::fs::read(path).expect("original-source receiver reference");
+    }
     if cfg!(target_arch = "aarch64") {
-        include_bytes!("fixtures/ars510-receiver-final-arm.jsonl.zst")
+        include_bytes!("fixtures/ars510-receiver-final-arm.jsonl.zst").to_vec()
     } else {
-        include_bytes!("fixtures/ars510-receiver-final.jsonl.zst")
+        include_bytes!("fixtures/ars510-receiver-final.jsonl.zst").to_vec()
     }
 }
 fn number(v: &Value) -> f64 {
@@ -71,7 +74,8 @@ fn full_receiver_cold_fault_recovery_display_namespace_and_real_mytrack_states_m
     let dir = std::env::var("RADARCAN_NUMERICS_DIR")
         .expect("explicit verified ILP64 provider directory required");
     let mut numerics = Numerics::load(std::path::Path::new(&dir)).unwrap();
-    let decoder = zstd::stream::read::Decoder::new(fixture()).unwrap();
+    let bytes = fixture();
+    let decoder = zstd::stream::read::Decoder::new(bytes.as_slice()).unwrap();
     let rows = serde_json::Deserializer::from_reader(std::io::BufReader::new(decoder))
         .into_iter::<Value>();
     let mut interface = interface();
@@ -223,7 +227,8 @@ fn production_engine_preserves_display_support_and_recovery_namespace_on_batch_f
             Ok(())
         }
     }
-    let decoder = zstd::stream::read::Decoder::new(fixture()).unwrap();
+    let bytes = fixture();
+    let decoder = zstd::stream::read::Decoder::new(bytes.as_slice()).unwrap();
     let rows = serde_json::Deserializer::from_reader(std::io::BufReader::new(decoder))
         .into_iter::<Value>();
     let mut batches = vec![];

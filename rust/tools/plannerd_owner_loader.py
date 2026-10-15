@@ -9,6 +9,7 @@ from check_message_state import source
 from controlsd_parameters import Store
 from generate_selfdrive_alerts import load_source
 from plannerd_policy_source import source_modules
+from check_planner_owner_final import register
 
 
 def register_solvers(native_root):
@@ -48,9 +49,33 @@ class SourceOwners:
     messaging.SubMaster = scope['SubMaster']
     sys.modules[messaging.__name__] = messaging
     register_solvers(native_root)
+    # Match the verified final-owner cohort in ordinary owner/main/IPC checks.
+    for path in [
+      'openpilot/common/stopping_params.py',
+      'openpilot/selfdrive/carrot/signal_stop_prepare.py',
+      *['openpilot/selfdrive/controls/lib/' + part + '.py' for part in (
+        'cruise_coasting', 'lane_model_speed', 'longitudinal_gap_recovery',
+        'longitudinal_braking_gap', 'longitudinal_mpc_lib/long_mpc',
+        'lateral_mpc_lib/lat_mpc', 'lateral_planner', 'longitudinal_planner',
+      )],
+    ]:
+      register(path, path.removesuffix('.py').replace('/', '.'))
     self.long = importlib.import_module('openpilot.selfdrive.controls.lib.longitudinal_planner')
     self.lat = importlib.import_module('openpilot.selfdrive.controls.lib.lateral_planner')
     self.carrot = importlib.import_module('openpilot.selfdrive.carrot.carrot_functions')
+    original_carrot = self.carrot.CarrotPlanner
+
+    class InactiveSignalCarrot(original_carrot):
+      def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.prepare_decision = None
+        self.prepare_control_active = False
+        self.start_decision = None
+        self.signal_detection_suspended = False
+        self.signal_observation_color = 0
+        self.signal_green_active = False
+
+    self.carrot.CarrotPlanner = InactiveSignalCarrot
     self.navigation = importlib.import_module('openpilot.selfdrive.carrot.carrot_man_input')
     long_mpc = importlib.import_module('openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc')
     lat_mpc = importlib.import_module('openpilot.selfdrive.controls.lib.lateral_mpc_lib.lat_mpc')

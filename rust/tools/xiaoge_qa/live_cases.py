@@ -10,6 +10,8 @@ from typing import Final
 from openpilot.cereal import car
 from openpilot.common.params import Params
 from openpilot.selfdrive.carrot.xiaoge.nv12 import pack_nv12
+from xiaoge_final_source import load as load_final_source
+load_final_source()
 from openpilot.selfdrive.carrot.xiaoge.v_asm_inference import VASMInference
 
 from xiaoge_qa.live_input import HEIGHT, PIXELS, STRIDE, UV_OFFSET, WIDTH, Inputs, Phase
@@ -27,7 +29,7 @@ def exercise(probe: Probe, inputs: Inputs, tcp_port: int, output: Path):
     model = VASMInference(Path(status["model"]["path"]))
     assert model.load(), model.error
     model.load_config(config)
-    model.update(pack_nv12(PIXELS, WIDTH, HEIGHT, STRIDE, UV_OFFSET), WIDTH, HEIGHT, "left", .45, .2, 1.0)
+    model.update(pack_nv12(PIXELS, WIDTH, HEIGHT, STRIDE, UV_OFFSET), WIDTH, HEIGHT, "left", status["threshold"], .2, 1.0)
     return model.confidence["left"]
 
   def record(name: str, status, *, publish: bool = True, empty: bool = False, tesla: bool = True):
@@ -60,10 +62,10 @@ def exercise(probe: Probe, inputs: Inputs, tcp_port: int, output: Path):
   for phase, reason in [
       (Phase("right", direction="right"), ""),
       (Phase("invalid", valid=False), "carState or modelV2 is unavailable"),
-      (Phase("narrow", direction="right", lane_width=2.75), "target lane width below 3.0 m"),
-      (Phase("negative-speed", speed=-3.0), "speed outside 30-120 km/h"),
-      (Phase("high-speed", speed=34.0), "speed outside 30-120 km/h"),
-      (Phase("no-direction", direction="none"), "no lane-change direction")]:
+      (Phase("narrow", direction="right", lane_width=1.75), "configured lane widths below 2.0 m"),
+      (Phase("negative-speed", speed=-3.0), ""),
+      (Phase("high-speed", speed=34.0), ""),
+      (Phase("no-direction", direction="none"), "")]:
     publication_start = len(probe.publications)
     inputs.select(phase)
     if reason:
@@ -92,7 +94,7 @@ def exercise(probe: Probe, inputs: Inputs, tcp_port: int, output: Path):
   record("recovered", status)
   Params().put("OnnxLaneThreshold", 73)
   Params().put("OnnxBsdIntervalMs", 600)
-  status = probe.await_status("params-refresh", lambda value: value["lane"]["threshold"] == .73 and value["baseIntervalSeconds"] == .6)
+  status = probe.await_status("params-refresh", lambda value: side_ready(value, "left") and value["lane"]["threshold"] == .73 and value["baseIntervalSeconds"] == .6)
   record("params-refresh", status)
   response = probe.connection.delete("/api/config")
   response.raise_for_status()

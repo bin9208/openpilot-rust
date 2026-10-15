@@ -147,6 +147,8 @@ wifi_module.Network = SimpleNamespace
 wifi_module.normalize_ssid = lambda ssid: ssid.replace('’', "'")
 sys.modules[wifi_module.__name__] = wifi_module
 import pyray as rl
+from ui_application_qa.final_graphics_source import install as install_final_graphics
+install_final_graphics(widgets=True)
 from openpilot.system.ui.lib.application import gui_app, MouseEvent, MousePos
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.network import WifiManagerUI, NetworkUI, AdvancedNetworkSettings

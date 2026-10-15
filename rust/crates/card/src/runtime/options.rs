@@ -4,6 +4,7 @@ use std::{ffi::OsString, num::NonZeroU64, path::PathBuf};
 pub struct RunOptions {
     pub root: PathBuf,
     pub numerics: PathBuf,
+    pub dbc: PathBuf,
     pub max_steps: Option<NonZeroU64>,
     pub frequency_trace: Option<PathBuf>,
     pub fixture_phase_fence: Option<PathBuf>,
@@ -18,6 +19,7 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Result<Command, E
     let mut arguments = arguments.into_iter();
     let mut root = None;
     let mut numerics = None;
+    let mut dbc = None;
     let mut max_steps = None;
     let mut frequency_trace = None;
     let mut fixture_phase_fence = None;
@@ -27,11 +29,11 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Result<Command, E
             .ok_or(Error::Arguments("flag is not Unicode"))?;
         match flag {
             "--help" => return Ok(Command::Help),
-            "--root" | "--numerics" => {
-                let target = if flag == "--root" {
-                    &mut root
-                } else {
-                    &mut numerics
+            "--root" | "--numerics" | "--dbc" => {
+                let target = match flag {
+                    "--root" => &mut root,
+                    "--dbc" => &mut dbc,
+                    _ => &mut numerics,
                 };
                 if target.is_some() {
                     return Err(Error::Arguments("directory supplied twice"));
@@ -86,8 +88,11 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Result<Command, E
             "fixture phase fence requires frequency trace and a fixture step bound",
         ));
     }
+    let root = root.ok_or(Error::Arguments("--root is required"))?;
+    let dbc = dbc.unwrap_or_else(|| root.join("opendbc_repo/opendbc/dbc"));
     Ok(Command::Run(RunOptions {
-        root: root.ok_or(Error::Arguments("--root is required"))?,
+        root,
+        dbc,
         numerics: numerics.ok_or(Error::Arguments("--numerics is required"))?,
         max_steps,
         frequency_trace,
@@ -117,6 +122,10 @@ mod tests {
         };
         assert_eq!(options.root, PathBuf::from("/owned checkout"));
         assert_eq!(options.numerics, PathBuf::from("/owned numerics"));
+        assert_eq!(
+            options.dbc,
+            PathBuf::from("/owned checkout/opendbc_repo/opendbc/dbc")
+        );
         assert_eq!(options.max_steps.unwrap().get(), 5);
         for args in [
             vec![],
@@ -126,6 +135,23 @@ mod tests {
             vec!["--unknown"],
         ] {
             assert!(parse(args.into_iter().map(OsString::from)).is_err());
+        }
+    }
+
+    #[test]
+    fn explicit_dbc_companion_is_retained_and_duplicate_or_missing_paths_rejected() {
+        let base = ["--root", "/r", "--numerics", "/n"];
+        let Command::Run(options) = parse(
+            base.into_iter()
+                .chain(["--dbc", "/sealed binaries/radarcan-dbc"])
+                .map(OsString::from),
+        )
+        .unwrap() else {
+            panic!("run")
+        };
+        assert_eq!(options.dbc, PathBuf::from("/sealed binaries/radarcan-dbc"));
+        for tail in [vec!["--dbc"], vec!["--dbc", "/a", "--dbc", "/b"]] {
+            assert!(parse(base.into_iter().chain(tail).map(OsString::from)).is_err());
         }
     }
 

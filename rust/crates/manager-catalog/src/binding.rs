@@ -140,6 +140,7 @@ pub fn resolve(entry: Descriptor, installation: &Installation) -> Option<Binding
         }
         "card" => {
             bound.directory("--root", installation.root.clone());
+            bound.directory("--dbc", installation.binaries.join("radarcan-dbc"));
             bound.directory("--numerics", installation.binaries.join("card-numerics"));
         }
         "xiaoge_data" => {

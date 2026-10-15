@@ -137,14 +137,7 @@ pub fn run(
                 println!("[cluster_autorun] cluster HUD exited; retrying in 5s");
             }
             Err(error) => {
-                if let Some(reason) = entry::s3_transport_failure_reason(&error) {
-                    println!("[cluster_autorun] S3 Wi-Fi disconnected ({reason}); retrying in 5s");
-                } else if entry::disconnected(&error) {
-                    println!("[cluster_autorun] USB display disconnected; retrying in 5s");
-                } else {
-                    eprintln!("[cluster_autorun] cluster HUD failed: {error}; retrying in 5s");
-                    eprintln!("{error}");
-                }
+                log_retry_failure(&error);
             }
         }
         platform.sleep(Duration::from_secs(5))?;
@@ -153,4 +146,15 @@ pub fn run(
 
 fn orientation_name(value: Option<u8>) -> String {
     value.map_or_else(|| "None".into(), |value| value.to_string())
+}
+
+fn log_retry_failure(error: &entry::Failure) {
+    if let Some(reason) = entry::s3_transport_failure_reason(error) {
+        println!("[cluster_autorun] S3 Wi-Fi disconnected ({reason}); retrying in 5s");
+    } else if entry::disconnected(error) {
+        println!("[cluster_autorun] USB display disconnected; retrying in 5s");
+    } else {
+        eprintln!("[cluster_autorun] cluster HUD failed: {error}; retrying in 5s");
+        eprintln!("{error}");
+    }
 }

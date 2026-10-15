@@ -76,6 +76,7 @@ def main() -> None:
         base = {'frame': 0, 'messages': messages(20.0, False), 'started': False, 'status': 0}
         scene = {
           'kind': 'main-root',
+          'final_source': True,
           'config': {'big': big, 'large_viewport': big, 'pc': True, 'scale': 1.0},
           'language': language,
           'rect': {'x': 0, 'y': 0, 'width': 2160 if big else 536, 'height': 1080 if big else 240},

@@ -75,7 +75,8 @@ class UiCheck:
       self.check(name, f'check_ui_{name}.py', ['--binary', str(examples / binary), '--output', str(self.output / name)])
     for name in ('root', 'augmented', 'camera'):
       self.check(name, f'check_ui_{name}.py', ['--binary', str(examples / 'product_render'),
-        '--peer', str(self.peer), '--output', str(self.output / name), '--display', display])
+        '--peer', str(self.peer), '--output', str(self.output / name), '--display', display,
+        *(['--final-source'] if name == 'augmented' else [])])
     for name, script in (('runtime', 'check_ui_product_runtime.py'), ('pages', 'check_ui_runtime_pages.py')):
       self.check(name, script, [str(examples / 'product_runtime'), str(self.output / name), display, str(self.peer)])
     for name, arguments in (('hud-eight-modes', ['--large', '--filter', 'plot-modes']),

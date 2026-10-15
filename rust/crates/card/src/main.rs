@@ -5,7 +5,7 @@ fn main() -> ExitCode {
     let result = openpilot_managed_entry::runtime("openpilot.selfdrive.car.card", "card", || {
         match runtime::parse(std::env::args_os().skip(1)).and_then(|command| match command {
         Command::Help => {
-            println!("openpilot-card --root CHECKOUT --numerics VERIFIED_DIRECTORY [--max-steps N] [--frequency-trace PATH] [--fixture-phase-fence PATH]\nNative CAN-driven card runtime. The phase fence is only available with bounded fixture frequency diagnostics.");
+            println!("openpilot-card --root CHECKOUT --numerics VERIFIED_DIRECTORY [--dbc DIRECTORY] [--max-steps N] [--frequency-trace PATH] [--fixture-phase-fence PATH]\nNative CAN-driven card runtime. The phase fence is only available with bounded fixture frequency diagnostics.");
             Ok(())
         }
         Command::Run(options) => runtime::run(options),

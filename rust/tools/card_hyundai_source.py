@@ -140,6 +140,7 @@ def main() -> None:
     scenarios = []
     for scenario in range(10):
         controller = CanfdStopping()
+        previous_value = 0.0
         steps = []
         for tick in range(500):
             speed = (0.3, max(0., 0.6 - tick * 0.008), 0.07, 4., 0.,
@@ -147,9 +148,11 @@ def main() -> None:
                 max(0., 0.8 - tick * 0.002), 0.12, 0.3)[scenario]
             input_values = dict(active=scenario != 9 or tick < 200,
                 requested=scenario != 8 or tick < 300, speed=speed, held=scenario in (4, 5, 6),
-                accel=-2. if scenario == 3 else -0.5, value=-0.3,
-                previous_value=controller.last_value, jerk_u=2., jerk_l=1.)
+                accel=-2. if scenario == 3 else -0.5,
+                previous_value=previous_value, jerk_u=2., jerk_l=1.)
             command = controller.update(**input_values)
+            if command is not None:
+                previous_value = command.value
             steps.append(dict(input=input_values, expected=dict(controller=vars(controller).copy(),
                 command=asdict(command) if command is not None else None)))
         scenarios.append(steps)
