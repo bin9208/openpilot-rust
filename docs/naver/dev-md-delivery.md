@@ -334,6 +334,32 @@ synthetic model to a custom manifest. Previous-only state follows the source's
 current selection rules. Authentic default MD v3 admission and its runtime guards
 remain unchanged; no synthetic model is represented as the production model.
 Receipt: `.analysis/scratch/2026-10-16-dev-md-package/usbgpu-status-final-pin.json`.
-No downstream functional check remains unrun. The final workspace release build
-and CPU sample remain assigned to exact-source CI; these host receipts do not
-establish device startup or driving acceptance.
+No downstream functional check remains unrun. On `7b2b7e4144a03b73a70d86a7ba30ef54251a10de`,
+the complete workspace job, release build and CPU sample passed in
+[Rust CI run 38807666068](https://github.com/bin9208/openpilot-rust/actions/runs/38807666068).
+Forty-five jobs passed; the separate static ARM build exposed a MUSL ABI
+initialization error. These results do not establish device startup or driving
+acceptance.
+
+## Static ARM libc compatibility
+
+Three scheduling boundaries now initialize the complete `libc::sched_param`
+before setting the original priority, including MUSL's additional fields.
+Recovery, signal observation and encoder scheduling policies, affinity and nice
+values remain unchanged. Two native encoder ioctl calls infer the libc request
+type, preserving the same Linux UAPI low 32 bits for GNU and MUSL signatures.
+No development tool conversion is included.
+
+The complete static AArch64 MUSL workspace release build passed in 22m29s with
+the authentic FFmpeg 6.1.1 MUSL provider. The native encoder feature separately
+linked statically with its real FFmpeg/swscale provider and original AArch64
+C-ABI libyuv archive; ELF inspection found neither an interpreter nor dynamic
+dependencies. The existing QEMU synthetic-proc probe passed three frames.
+Six recovery tests and strict all-target Clippy for the three affected crates,
+including the native encoder feature, passed on HOST and AGNOS GNU targets.
+Receipts are `musl-workspace-fixed.log`, `musl-native-encoder-v2.log`,
+`musl-probe-fixed.json`, `musl-fix-host-recovery.log`,
+`musl-fix-host-clippy.log` and `musl-fix-gnu-clippy.log` under
+`.analysis/scratch/2026-10-16-dev-md-package/`.
+The resulting clean commit requires its own CI and rebuilt AGNOS package before
+publication; the earlier verified `7b2b` package is not relabelled.

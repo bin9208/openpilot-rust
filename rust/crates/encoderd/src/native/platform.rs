@@ -30,9 +30,10 @@ pub fn close() {
 pub fn schedule(mode: Mode) -> Result<(), Error> {
     let policy = mode.schedule(!cfg!(feature = "visionipc-ion"));
     if let Some(priority) = policy.priority {
-        let parameter = libc::sched_param {
-            sched_priority: priority,
-        };
+        // SAFETY: GNU/MUSL sched_param contains only C integers, integer timespecs,
+        // and reserved storage; all-zero is valid for every field.
+        let mut parameter: libc::sched_param = unsafe { std::mem::zeroed() };
+        parameter.sched_priority = priority;
         // SAFETY: the initialized scheduling parameter is borrowed only by this syscall.
         if unsafe { libc::sched_setscheduler(0, libc::SCHED_FIFO, &parameter) } != 0 {
             return Err(std::io::Error::last_os_error().into());

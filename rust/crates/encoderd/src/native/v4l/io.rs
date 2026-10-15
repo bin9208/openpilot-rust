@@ -41,8 +41,9 @@ pub unsafe fn ioctl<T>(fd: &OwnedFd, request: u64, value: &mut T) -> Result<(), 
     loop {
         // SAFETY: [FFI boundary] callers pair the generated kernel request and
         // its C-layout argument, including live nested buffers where required.
-        let result =
-            unsafe { libc::ioctl(fd.as_raw_fd(), request as libc::c_ulong, value as *mut T) };
+        // GNU takes c_ulong and MUSL takes c_int; Linux UAPI requests retain
+        // the same low 32 bits in either libc signature.
+        let result = unsafe { libc::ioctl(fd.as_raw_fd(), request as _, value as *mut T) };
         if result >= 0 {
             return Ok(());
         }

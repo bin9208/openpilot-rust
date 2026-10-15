@@ -215,7 +215,7 @@ impl Device {
         let result = unsafe {
             libc::ioctl(
                 self.fd.as_raw_fd(),
-                abi::ENCODER_VIDIOC_G_CTRL,
+                abi::ENCODER_VIDIOC_G_CTRL as _,
                 &mut control,
             )
         };

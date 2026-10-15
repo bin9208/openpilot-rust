@@ -235,7 +235,10 @@ impl<T: Candidate> Drop for Task<T> {
     }
 }
 fn background_scheduling() -> std::io::Result<()> {
-    let settings = libc::sched_param { sched_priority: 0 };
+    // SAFETY: GNU/MUSL sched_param contains only C integers, integer timespecs,
+    // and reserved storage; all-zero is valid for every field.
+    let mut settings: libc::sched_param = unsafe { std::mem::zeroed() };
+    settings.sched_priority = 0;
     // SAFETY: the current thread drops inherited realtime scheduling before
     // spawning inference. The parameter points to initialized storage.
     if unsafe { libc::sched_setscheduler(0, libc::SCHED_OTHER, &settings) } != 0 {

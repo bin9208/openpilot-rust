@@ -6,7 +6,10 @@ use rustix::{
 use std::{fs, io};
 #[allow(unsafe_code)]
 fn set_other(tid: i32) -> io::Result<()> {
-    let param = libc::sched_param { sched_priority: 0 };
+    // SAFETY: GNU/MUSL sched_param contains only C integers, integer timespecs,
+    // and reserved storage; all-zero is valid for every field.
+    let mut param: libc::sched_param = unsafe { std::mem::zeroed() };
+    param.sched_priority = 0;
     // SAFETY: tid is a parsed positive Linux task ID; the initialized parameter
     // is borrowed for this synchronous syscall and contains no pointers.
     if unsafe { libc::sched_setscheduler(tid, libc::SCHED_OTHER, &param) } < 0 {
