@@ -7,6 +7,10 @@ import subprocess
 
 import pytest
 
+from radar_final_source import load, provenance, source, tests
+
+load()
+
 from openpilot.selfdrive.carrot.radar_motion import controller, predictor
 from plannerd_owner_source import difference
 from radard_cache_source import CacheObserver
@@ -70,8 +74,8 @@ def main():
     controller.DPathRadarController.update = controller_context
     predictor.RadarMotionPredictor.update = record
     status = pytest.main(  # noqa: TID251
-      ["-o", "addopts=", "-q", "--confcutdir=openpilot/selfdrive/carrot/tests",
-       *[str(ROOT / "openpilot/selfdrive/carrot/tests" / name) for name in TESTS]]
+      ["-o", "addopts=", "-q", "--confcutdir=" + str(tests(args.output)),
+       *[str(tests(args.output) / name) for name in TESTS]]
     )
     assert status == 0, status
     encoded = json.dumps({"actions": actions, "cache": cache.table()}, allow_nan=False) + "\n"
@@ -79,7 +83,7 @@ def main():
     (args.output / "expected.json").write_text(json.dumps(expected, allow_nan=False) + "\n")
     receipt = {"status": "SOURCE_ONLY", "actions": len(actions), "owners": len(owners),
                "input_sha256": hashlib.sha256(encoded.encode()).hexdigest(),
-               "source_sha256": hashlib.sha256(Path(predictor.__file__).read_bytes()).hexdigest()}
+               "source_sha256": hashlib.sha256(source("openpilot/selfdrive/carrot/radar_motion/predictor.py").encode()).hexdigest()}
   if args.binary is not None:
     binary_sha256 = hashlib.sha256(args.binary.read_bytes()).hexdigest()
     child = subprocess.run([str(args.binary.resolve())], input=encoded, text=True, capture_output=True, check=False)
@@ -90,6 +94,8 @@ def main():
     receipt.update(status="PASS" if not mismatches else "FAIL", differences=len(mismatches), first_differences=mismatches[:100])
     assert hashlib.sha256(args.binary.read_bytes()).hexdigest() == binary_sha256, "binary changed during replay"
     receipt["binary_sha256"] = binary_sha256
+  if args.fixture is None:
+    receipt.update(provenance())
   (args.output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
   assert receipt["status"] != "FAIL", receipt
   print(json.dumps(receipt))

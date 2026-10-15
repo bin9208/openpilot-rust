@@ -11,7 +11,7 @@ from radarcan_settings_source import settings
 def constructor(case):
   from opendbc.car import structs
   from opendbc.car.car_helpers import interfaces
-  cp = structs.CarParams(carFingerprint=case['candidate'], radarDelay=case['delay'], radarTimeStep=case['period'],
+  cp = structs.CarParams(brand=case.get('brand', ''), carFingerprint=case['candidate'], radarDelay=case['delay'], radarTimeStep=case['period'],
     radarUnavailable=case['unavailable'], flags=case.get('flags', 0), extFlags=case.get('ext_flags', 0),
     safetyConfigs=[{} for _ in range(case.get('safety_count', 1))])
   return interfaces[cp.carFingerprint].RadarInterface(cp)

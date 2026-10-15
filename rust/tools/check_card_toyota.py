@@ -32,6 +32,8 @@ def main() -> None:
   args.evidence.mkdir(parents=True, exist_ok=True)
   (args.evidence / 'result.json').unlink(missing_ok=True)
   (args.evidence / 'failure.txt').unlink(missing_ok=True)
+  from card_toyota_final_source import install
+  closure = install(args.evidence)
   load()
   import numpy
   import Crypto
@@ -111,6 +113,8 @@ def main() -> None:
             'source_sha256': {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in files},
             'rust_sha256': {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in rust},
             'dbc_sha256': {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in dbc.glob('toyota*.dbc')}}
+  report['source_commit'] = closure['source_commit']
+  report['source_sha256'].update(closure['files'])
   (args.evidence / 'result.json').write_text(json.dumps(report, indent=2) + '\n')
   print(json.dumps(report))
 

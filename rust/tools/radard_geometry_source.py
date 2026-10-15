@@ -8,6 +8,10 @@ import random
 import subprocess
 import struct
 
+from radar_final_source import load, provenance, source
+
+load()
+
 from openpilot.selfdrive.carrot.radar_motion.predictor import model_path_point_at_s, project_to_model_path, radar_target_velocity_in_ego_frame
 from openpilot.selfdrive.carrot.radar_motion.primary import FrontRadarKinematicAssociator, RadarPointSnapshot
 from plannerd_owner_source import difference
@@ -81,6 +85,7 @@ def main():
   mismatches = difference(expected, json.loads(child.stdout))
   receipt = {"cases": len(requests), "differences": len(mismatches), "first_differences": mismatches[:100],
              "binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest()}
+  receipt.update(provenance())
   (args.output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
   assert not mismatches, receipt
   print(json.dumps(receipt))

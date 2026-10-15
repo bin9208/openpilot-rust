@@ -25,12 +25,13 @@ CONFIG: Final = {"width": 128, "height": 80,
 def exercise(probe: Probe, inputs: Inputs, tcp_port: int, output: Path):
   records = []
 
-  def expected_confidence(status, config):
+  def expected_confidences(status, config):
     model = VASMInference(Path(status["model"]["path"]))
     assert model.load(), model.error
     model.load_config(config)
-    model.update(pack_nv12(PIXELS, WIDTH, HEIGHT, STRIDE, UV_OFFSET), WIDTH, HEIGHT, "left", status["threshold"], .2, 1.0)
-    return model.confidence["left"]
+    for side in ("left", "right"):
+      model.update(pack_nv12(PIXELS, WIDTH, HEIGHT, STRIDE, UV_OFFSET), WIDTH, HEIGHT, side, status["threshold"], .2, 1.0)
+    return model.confidence.copy()
 
   def record(name: str, status, *, publish: bool = True, empty: bool = False, tesla: bool = True):
     row = {"name": name, "status": stable_status(status), "tcp": tcp_values(tcp_port, empty, tesla, max(inputs.phase.speed, 0.0))}
@@ -101,16 +102,16 @@ def exercise(probe: Probe, inputs: Inputs, tcp_port: int, output: Path):
   default = probe.connection.get("/api/config")
   default.raise_for_status()
   assert default.json() != CONFIG and not (output / "config.json").exists()
-  confidence = expected_confidence(status, default.json())
+  confidences = expected_confidences(status, default.json())
   publication_start = len(probe.publications)
-  status = probe.await_status("config-cleared", lambda value: side_ready(value, "left") and value["vehicleSide"]["left"]["confidence"] == confidence)
+  status = probe.await_status("config-cleared", lambda value: side_ready(value, "left") and all(value["vehicleSide"][side]["confidence"] == confidence for side, confidence in confidences.items()))
   record("config-cleared", status)
   response = probe.connection.post("/api/config", json=CONFIG)
   response.raise_for_status()
   minimum = status["inference"]["count"] + 1
-  confidence = expected_confidence(status, CONFIG)
+  confidences = expected_confidences(status, CONFIG)
   publication_start = len(probe.publications)
-  status = probe.await_status("config-reloaded", lambda value: side_ready(value, "left", minimum) and value["vehicleSide"]["left"]["confidence"] == confidence)
+  status = probe.await_status("config-reloaded", lambda value: side_ready(value, "left", minimum) and all(value["vehicleSide"][side]["confidence"] == confidence for side, confidence in confidences.items()))
   record("config-reloaded", status)
   inputs.select(Phase("camera-stale", camera=False))
   status = probe.await_status("camera-stale", lambda value: not value["camera"]["available"] and not value["lane"]["cameraAvailable"])

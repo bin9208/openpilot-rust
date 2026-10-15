@@ -120,6 +120,20 @@ class SourceRun:
     source.messaging.PubMaster = Publisher
     diagnostics = importlib.import_module('openpilot.common.runtime_diagnostics')
     diagnostics.time = types.SimpleNamespace(monotonic=lambda: source.now)
+    # The retained inactive Carrot fixture omits the final signal runtime's
+    # constructor lookup. Execute its verified policy at the same owner boundary.
+    from signal_source import source as signal_source
+    mode_path = 'openpilot/selfdrive/carrot/signal_mode.py'
+    mode = types.ModuleType('planner_constructor_signal_mode')
+    exec(compile(signal_source(mode_path), 'e8e152db:' + mode_path, 'exec'), mode.__dict__)
+    original_carrot = source.carrot.CarrotPlanner
+
+    class ConstructorCarrot(original_carrot):
+      def __init__(self, *args, **kwargs):
+        mode.read_mode(source.store)
+        super().__init__(*args, **kwargs)
+
+    source.carrot.CarrotPlanner = ConstructorCarrot
     self.original = importlib.import_module('openpilot.selfdrive.controls.plannerd')
     self.original.time = types.SimpleNamespace(monotonic=lambda: source.now, thread_time=lambda: 0.0)
 

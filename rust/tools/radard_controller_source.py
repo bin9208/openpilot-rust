@@ -9,6 +9,10 @@ import subprocess
 
 import pytest
 
+from radar_final_source import load, provenance, source, tests
+
+load()
+
 from openpilot.selfdrive.carrot.radar_motion import controller as original
 from radard_compare import differences as difference
 from radard_source_values import model, number, plain, point
@@ -89,8 +93,8 @@ def main():
     original.DPathRadarController.update = recorded_update
     original.VisionRadarMatcher.reset = recorded_reset
     status = pytest.main(  # noqa: TID251 - One isolated recorder runs the original regression suite once.
-      ["-o", "addopts=", "-q", "--confcutdir=openpilot/selfdrive/carrot/tests",
-       *[str(ROOT / "openpilot/selfdrive/carrot/tests" / name) for name in (args.test or TESTS)]]
+      ["-o", "addopts=", "-q", "--confcutdir=" + str(tests(args.output)),
+       *[str(tests(args.output) / name) for name in (args.test or TESTS)]]
     )
     assert status == 0, status
     actions, expected = normalized(actions), normalized(expected)
@@ -115,6 +119,8 @@ def main():
     receipt.update(status="PASS" if not mismatches else "FAIL", differences=len(mismatches), first_differences=mismatches[:100])
     assert hashlib.sha256(args.binary.read_bytes()).hexdigest() == binary_sha256, "binary changed during replay"
     receipt["binary_sha256"] = binary_sha256
+  if args.fixture is None:
+    receipt.update(provenance())
   (args.output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
   assert receipt["status"] != "FAIL", receipt
   print(json.dumps(receipt))

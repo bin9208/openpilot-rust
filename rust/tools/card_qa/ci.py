@@ -34,6 +34,11 @@ def source_command(script: Path, arguments: list[str], dbc: Path) -> list[str]:
     bootstrap += ['import os', 'from pathlib import Path',
       'from card_hyundai_final_source import install', 'install(Path(sys.argv[3]).resolve())',
       'os.environ["HYUNDAI_FINAL_SOURCE"] = "1"']
+  for brand in ('tesla', 'toyota'):
+    if script.name.startswith('check_card_' + brand):
+      evidence = Path(arguments[arguments.index('--evidence') + 1]).resolve()
+      bootstrap += ['from pathlib import Path',
+        f'from card_{brand}_final_source import install', f'install(Path({str(evidence)!r}))']
   bootstrap += ['from can_source import load', 'load()', 'import opendbc.can.dbc as dbc',
     'dbc.DBC_PATH = sys.argv[1]', 'dbc.DBC.cache_clear()', 'sys.argv = sys.argv[2:]',
     'runpy.run_path(sys.argv[0], run_name="__main__")']

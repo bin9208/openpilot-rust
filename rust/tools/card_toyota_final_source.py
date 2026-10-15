@@ -7,6 +7,9 @@ import sys
 PIN='e8e152dbcfd9574a1791ed12026d1880e87689b3'
 PREFIX='opendbc_repo/opendbc/car/toyota/'
 def install(root:Path)->dict:
+    previous = sys.modules.get('opendbc.car.toyota')
+    if getattr(previous, '__oracle_pin__', None) == PIN:
+        return previous.__oracle_report__
     if any(name.startswith('opendbc.car.toyota.') for name in sys.modules):
         raise RuntimeError('Toyota source modules must be selected before loading the baseline package')
     package=root/'pinned-toyota';package.mkdir(parents=True,exist_ok=True)
@@ -18,5 +21,7 @@ def install(root:Path)->dict:
     import opendbc.car.toyota
     opendbc.car.toyota.__path__=[str(package.resolve())]
     result=dict(source_commit=PIN,files=hashes,runtime_python=False,boundary='isolated Toyota source oracle only')
+    opendbc.car.toyota.__oracle_pin__ = PIN
+    opendbc.car.toyota.__oracle_report__ = result
     (root/'toyota-source-manifest.json').write_text(json.dumps(result,indent=2)+'\n')
     return result

@@ -24,7 +24,12 @@ def trace(case):
       common = {name: getattr(state, name) for name in ('frame', 'v_ego_hist', 'a_ego_hist', 'v_ego', 'a_ego',
         'last_timestamp', 'dt', 'init_samples', 'init_done')}
       common.update(pts={}, pts_order=[], tracks={}, tracks_order=[], history_maxlen=state.v_ego_hist.maxlen)
-      value = normalized({'common': common, 'bits': floating_bits(common), 'backend': {}, 'parser': parser_snapshot(state.rcp)})
+      backend = {}
+      if hasattr(state, 'display_decoder'):
+        from stage_ars510_receiver_reference import encode
+        excluded = {*common, 'CP', 'rcp', 'pts', 'tracks'}
+        backend = encode({key: value for key, value in vars(state).items() if key not in excluded})
+      value = normalized({'common': common, 'bits': floating_bits(common), 'backend': backend, 'parser': parser_snapshot(state.rcp)})
     return {'outcome': 'ok', 'state': value, 'warnings': [], 'parameter_reads': reads}
 
 
@@ -36,7 +41,7 @@ def cases(directory):
     platform = PLATFORMS[candidate]
     for unavailable in (False, True):
       output.append({'name': f'constructor-{candidate}-unavailable{unavailable}', 'op': 'constructor',
-        'candidate': candidate, 'delay': .02, 'period': .05, 'unavailable': unavailable,
+        'candidate': candidate, 'brand': interfaces[candidate].__module__.split('.')[-2], 'delay': .02, 'period': .05, 'unavailable': unavailable,
         'flags': int(platform.config.flags), 'ext_flags': 0, 'safety_count': 1,
         'constructor_ns': 1_000_000_000, 'dbc_root': str(directory.resolve()),
         'params': {'EnableRadarTracks': '1', 'EnableCornerRadar': '0', 'HyundaiCameraSCC': '0'}})

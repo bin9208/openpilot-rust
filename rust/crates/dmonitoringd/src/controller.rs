@@ -343,7 +343,7 @@ impl Controller {
         let mut blank = DriverMonitoring2::new(self.rhd_saved, false, self.monitoring.experimental);
         blank.monitor.active_policy = openpilot_monitoring::Policy::Wheeltouch;
         blank.monitor.wheel_on_right = blank.monitor.wheel_on_right_default;
-        let packet_monitor = if !self.enabled && !(self.demo && camera_ok) {
+        let packet_monitor = if !(self.enabled || self.demo && camera_ok) {
             &blank
         } else {
             &self.monitoring

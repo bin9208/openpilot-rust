@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypedDict, assert_never
 
 from capnp.lib.capnp import _DynamicStructBuilder
 from openpilot.cereal import car, log
+from radar_final_source import provenance
 from radard_compare import differences
 
 if TYPE_CHECKING:
@@ -78,7 +79,7 @@ def command(mode: Mode, paths: Paths) -> list[str]:
     case 'source':
       return [str(paths.python), '-P', '-c',
               f'from pathlib import Path; from card_runtime_source import load_binding; load_binding(Path({str(paths.binding)!r})); '
-              'from openpilot.selfdrive.carrot.radar.radard_dpath import main; main()']
+              'from radar_final_source import daemon; daemon()']
     case 'rust':
       return [str(paths.binary)]
     case unreachable:
@@ -230,6 +231,7 @@ def run(mode: Mode, paths: Paths, scenario: Scenario) -> list[Publication]:
 def main() -> None:
   paths, selected = arguments(tuple(SCENARIOS))
   paths.output.mkdir(parents=True)
+  (paths.output / "source-provenance.json").write_text(json.dumps(provenance(), indent=2) + "\n")
   results = []
   for name in ([selected] if selected is not None else SCENARIOS):
     scenario = SCENARIOS[name]

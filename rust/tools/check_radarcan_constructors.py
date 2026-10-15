@@ -21,7 +21,7 @@ def compare(actual, expected):
     assert_exact(native['stdout'], source['stdout'])
     assert_exact(native['stderr'], source['stderr'])
     left, right = native['result'], source['result']
-    assert left['outcome'] == right['outcome']
+    assert left['outcome'] == right['outcome'], (native['name'], left, right)
     if right['outcome'] == 'ok':
       assert_exact(left, right)
       continue
@@ -58,6 +58,8 @@ def main() -> None:
   growth = 512 * 2**20
   assert free >= 25 * 2**30 + growth, (free, growth)
   args.evidence.mkdir(parents=True)
+  from card_toyota_final_source import install
+  closure = install(args.evidence)
   load_binding(args.binding)
   if args.reuse_source is None:
     requests = cases(args.dbc)
@@ -67,7 +69,7 @@ def main() -> None:
   else:
     requests = json.loads((args.reuse_source / 'input.json').read_text())
     expected = json.loads((args.reuse_source / 'source.json').read_text())
-  identity = {'source_cases': len(requests), 'free_before': free, 'growth_bound': growth,
+  identity = {'pinned_toyota': closure, 'source_cases': len(requests), 'free_before': free, 'growth_bound': growth,
     'source_reused': str(args.reuse_source) if args.reuse_source else None,
     'params_binding_sha256': hashlib.sha256(args.binding.read_bytes()).hexdigest()}
   source_paths = [*ROOT.glob('opendbc_repo/opendbc/car/*/radar_interface.py'),
@@ -77,7 +79,7 @@ def main() -> None:
     'opendbc_repo/opendbc/car/car_helpers.py', 'rust/tools/radarcan_decoder_source.py', 'rust/tools/radarcan_settings_source.py',
     'openpilot/common/params.h', 'openpilot/common/params_pyx.pyx'])
   (args.evidence / 'sources.json').write_text(json.dumps({str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
-    for p in source_paths}, indent=2))
+    for p in source_paths} | closure['files'], indent=2))
   if args.binary is None:
     identity.update(status='source_only_native_pending', successful=sum(row['result']['outcome'] == 'ok' for row in expected))
     (args.evidence / 'result.json').write_text(json.dumps(identity, indent=2))

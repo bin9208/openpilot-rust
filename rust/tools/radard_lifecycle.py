@@ -14,6 +14,7 @@ import time
 from typing import Final
 
 from openpilot.cereal import car
+from radar_final_source import provenance
 from radard_ipc import ROOT, Mode, Paths, arguments, command, environment
 
 EXPECTED_EXITS: Final = {
@@ -60,6 +61,7 @@ def run(mode: Mode, paths: Paths, case: str) -> int:
 def main() -> None:
   paths, selected = arguments(tuple(EXPECTED_EXITS))
   paths.output.mkdir(parents=True)
+  (paths.output / "source-provenance.json").write_text(json.dumps(provenance(), indent=2) + "\n")
   resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
   rows = []
   for mode in ('source', 'rust'):

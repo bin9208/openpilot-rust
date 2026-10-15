@@ -51,6 +51,8 @@ def compare(left,right,path='root'):
 def main()->None:
     parser=argparse.ArgumentParser();parser.add_argument('--binary',type=Path,required=True);parser.add_argument('--numerics',type=Path,required=True);parser.add_argument('--evidence',type=Path,required=True);parser.add_argument('--op',choices=['params','runtime'])
     args=parser.parse_args();args.evidence.mkdir(parents=True,exist_ok=True);(args.evidence/'result.json').unlink(missing_ok=True);(args.evidence/'failure.txt').unlink(missing_ok=True)
+    from card_tesla_final_source import install
+    closure = install(args.evidence)
     request=[c for c in cases() if args.op is None or c['op']==args.op];assert request
     source_log=io.StringIO()
     with contextlib.redirect_stdout(source_log),contextlib.redirect_stderr(source_log):expected=[trace(case) for case in request]
@@ -68,6 +70,8 @@ def main()->None:
     except AssertionError as error:(args.evidence/'failure.txt').write_text(str(error)+'\n');raise
     files=list((ROOT/'opendbc_repo/opendbc/car/tesla').glob('*.py'))+[ROOT/'opendbc_repo/opendbc/car/interfaces.py',ROOT/'opendbc_repo/opendbc/car/vehicle_model.py',ROOT/'opendbc_repo/opendbc/car/__init__.py',ROOT/'opendbc_repo/opendbc/dbc/tesla_model3_party.dbc',ROOT/'opendbc_repo/opendbc/dbc/tesla_model3_vehicle.dbc']
     report=dict(status='pass',cases=len(request),frames=sum(len(c['steps']) for c in request),observable='full CarParams/CarState/Actuator wire fields; exact CAN frames and cadence; temporal Tesla/cooperative/speed-wheel state; severity/order of logs; lifecycle/constructor Params effects',runtime_python=False,binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in files})
+    report['source_commit'] = closure['source_commit']
+    report['source_sha256'].update(closure['files'])
     (args.evidence/'result.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report))
 
 

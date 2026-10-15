@@ -44,7 +44,8 @@ def main():
     shm = Path(resources.enter_context(tempfile.TemporaryDirectory(prefix='msgq_selfdrive_ipc_', dir='/dev/shm')))
     prefix = shm.name.removeprefix('msgq_')
     os.environ['OPENPILOT_PREFIX'] = prefix
-    topics = [*TOPICS, 'driverCameraState', 'accelerometer', 'gyroscope', 'gpsLocation', 'carState']
+    # Final DM2 owns driver-camera health; selfdrived subscribes only road cameras.
+    topics = [*TOPICS, 'accelerometer', 'gyroscope', 'gpsLocation', 'carState']
     publishers = messaging.PubMaster(topics)
     output = messaging.sub_sock('selfdriveState', conflate=False, timeout=100)
     onroad = messaging.sub_sock('onroadEvents', conflate=False, timeout=100)

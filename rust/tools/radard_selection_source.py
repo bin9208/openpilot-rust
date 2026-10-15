@@ -7,6 +7,10 @@ import subprocess
 
 import pytest
 
+from radar_final_source import load, provenance, source, tests
+
+load()
+
 from openpilot.selfdrive.carrot.radar_motion import lead_selection, trajectory_cutout
 from plannerd_owner_source import difference
 from radard_source_values import plain
@@ -89,8 +93,8 @@ def main():
                     ("cutout", trajectory_cutout.TrajectoryCutOutTracker)):
     install(kind, cls)
   status = pytest.main(  # noqa: TID251 - A single fresh process observes unchanged source-state regression cases.
-    ["-o", "addopts=", "-q", "--confcutdir=openpilot/selfdrive/carrot/tests",
-     "openpilot/selfdrive/carrot/tests/test_radar_motion_predictor.py", "openpilot/selfdrive/carrot/tests/test_trajectory_cutout.py"]
+    ["-o", "addopts=", "-q", "--confcutdir=" + str(tests(args.output)),
+     str(tests(args.output) / "test_radar_motion_predictor.py"), str(tests(args.output) / "test_trajectory_cutout.py")]
   )
   assert status == 0, status
   actions, expected = normalized(actions), normalized(expected)
@@ -106,6 +110,7 @@ def main():
     mismatches = difference(expected, json.loads(child.stdout))
     receipt.update(status="PASS" if not mismatches else "FAIL", differences=len(mismatches), first_differences=mismatches[:100])
     receipt["binary_sha256"] = hashlib.sha256(args.binary.read_bytes()).hexdigest()
+  receipt.update(provenance())
   (args.output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
   assert receipt["status"] != "FAIL", receipt
   print(json.dumps(receipt))

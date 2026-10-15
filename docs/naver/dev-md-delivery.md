@@ -122,3 +122,72 @@ Receipts: `.analysis/scratch/2026-10-16-dev-md-scope-excluded/` contains
 `ars510-source-reconstruction-check.log`, `ars510-local-reference-native.log`,
 `car-specific-coverage-final/manifest.json`, `xiaoge-live-final8/result.json` and
 `xiaoge-telemetry-clippy.log`.
+
+
+## Radar reference cohort reconciliation after CI 6007
+
+The radard geometry CI reference imported the retained baseline predictor while
+Rust implements the pinned terminal-path tangent. The existing hash-verified
+radar source snapshot now supplies the six existing recorders, their unchanged
+pinned tests, replay metadata helper, and the source IPC/lifecycle daemon.
+Unchanged modules that capture predictor imports are reloaded in dependency
+order; the package exports refer to that same cohort. Source receipts retain the
+pin and content hashes. No native arithmetic or comparison tolerance changed.
+
+Host comparisons pass exactly: 128 geometry cases; 23,126 selection, 14,329
+primary, 10,742 trajectory, 5,524 cutout-predictor and 5,579 controller actions.
+The existing six actual IPC scenarios compare all 240 publications exactly;
+eight source/native lifecycle exits and six preconditioning tests pass.
+Receipts are under `.analysis/scratch/2026-10-16-dev-md-scope-excluded/`:
+`radard-cohort-final-geometry/receipt.json`, `radard-cohort4-*/receipt.json`,
+`radard-cohort-final-ipc/receipt.json`, `radard-cohort-lifecycle/receipt.json`
+and `radard-cohort-preconditioning.log`. These reference-only repairs require
+CI confirmation on its host and ARM runners; they do not establish device use.
+
+
+The RadarCAN constructor reference had the same retained Toyota-module mismatch
+and omitted the production CarParams brand. The source fixture now selects the
+pinned Toyota modules before interface discovery, supplies the real candidate
+brand, and records the final ARS510 receiver-owned constructor state. All 558
+existing constructor cases pass with exact native/source state and parameter
+reads; receipt: `radarcan-constructor-final2/result.json` in the same scratch
+root. No production code or input case count changed.
+
+## Remaining existing-gate repairs after 6007
+
+- The hardware source job now fetches the exact source pin. With that object
+  available, all 15 existing hardware worker cases and continuous hardwared IPC
+  transitions pass locally, including Params, logs, stats and SIGTERM.
+- The planner main fixture executes the verified final signal-mode constructor
+  lookup. All 712 Params rows and 1,080 publications match the ARM artifact.
+- Selfdrived IPC no longer waits for a driverCameraState reader removed by the
+  pinned DM2 camera policy. Two startup/restart runs, two nonconflated bursts and
+  two Params refreshes pass through real IPC (206 observed messages).
+- The DM2 boolean expression is simplified for strict Clippy; all eight Boolean
+  combinations retain the same result.
+- The Jetlink ASan fixture step runs serially so instrumented socket fixtures do
+  not compete for the unchanged 50 ms production RPC deadline. The isolated host
+  test and all 35 library tests under the same nightly ASan/build-std flags pass
+  serially; production deadline and protocol checks remain unchanged.
+- Xiaoge configuration-transition fixtures wait for both sides' exact new source
+  confidence values before recording. This removes stale right-side snapshots;
+  the existing 19 real source/native phases pass with unchanged comparisons.
+
+These repairs do not authorize a new broad runtime or development-tool port.
+Final publication still requires the exact clean source commit and its gate results.
+
+
+Card's later Tesla comparison likewise imported baseline EPS-inhibit behavior.
+The Tesla oracle now selects the complete latest `8e7eec04` package before CAN
+imports capture checksum helpers. All 137 existing cases / 4,960 frames match
+fresh native output exactly; the corrected source fields also match the actual
+CI 6007 native capture exactly. Receipt: `card-final-tesla/result.json` in the
+same scratch root. The five existing card CI caller tests pass. This changes
+validation source selection only; EPS/controller behavior remains unchanged.
+
+The following existing Toyota comparison also selects its pinned package before
+CAN helper imports and records those actual source hashes. It passes 1,348 cases
+and 24,008 runtime frames, including 74 before-update failures and 13 numeric
+failure cases, with its existing comparison rules unchanged. Receipt:
+`card-final-toyota/result.json` in the same scratch root. No further native
+runtime edits were needed for either brand.
