@@ -1,12 +1,12 @@
 use super::{
-    Frame, Matcher, VisionMatch,
     constants::*,
     source::{position_continuous, stationary_source_rank},
     stationary_geometry::{
         corroborating_fronts, cross_front_support, cross_position_cost, front_corner_pairs,
         vision_base_cost, vision_cost,
     },
-    stationary_support::{Candidate, radar_only_support, vision_path_compatible},
+    stationary_support::{radar_only_support, vision_path_compatible, Candidate},
+    Frame, Matcher, VisionMatch,
 };
 use crate::{
     math::{maximum, minimum},

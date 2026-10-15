@@ -6,6 +6,8 @@
 import itertools
 import json
 from pathlib import Path
+import subprocess
+from types import ModuleType
 import sys
 from types import SimpleNamespace as NS
 
@@ -15,7 +17,27 @@ from can_source import load
 def main() -> None:
     DBC,CANPacker,_ = load()
     from opendbc.car.hyundai import hyundaicanfd,hyundaican
-    from opendbc.car.hyundai.stopping import CanfdStopping
+    # The checkout retains the independent baseline source; this regression targets
+    # the upstream zero-aReq/no-release stopping change selected by dev-md.
+    pin = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
+    path = 'opendbc_repo/opendbc/car/hyundai/stopping.py'
+    source = subprocess.check_output(['git', 'show', f'{pin}:{path}'],
+                                     cwd=Path(__file__).resolve().parents[2], text=True)
+    module = ModuleType('opendbc.car.hyundai.stopping')
+    sys.modules[module.__name__] = module
+    exec(compile(source, f'{pin}:{path}', 'exec'), module.__dict__)
+    CanfdStopping = module.CanfdStopping
+    path = 'opendbc_repo/opendbc/car/hyundai/scalar.py'
+    source = subprocess.check_output(['git', 'show', f'{pin}:{path}'],
+                                     cwd=Path(__file__).resolve().parents[2], text=True)
+    scalar = ModuleType('opendbc.car.hyundai.scalar')
+    sys.modules[scalar.__name__] = scalar
+    exec(compile(source, f'{pin}:{path}', 'exec'), scalar.__dict__)
+    path = 'opendbc_repo/opendbc/car/hyundai/hyundaicanfd.py'
+    source = subprocess.check_output(['git', 'show', f'{pin}:{path}'],
+                                     cwd=Path(__file__).resolve().parents[2], text=True)
+    hyundaicanfd = ModuleType('card_acc_final_canfd')
+    exec(compile(source, f'{pin}:{path}', 'exec'), hyundaicanfd.__dict__)
     fixture=Path(sys.argv[1])
     dbcs=Path(sys.argv[2])
     fd_path=str(dbcs / "hyundai_canfd_generated.dbc")

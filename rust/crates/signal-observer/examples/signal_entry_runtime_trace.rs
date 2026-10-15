@@ -8,13 +8,13 @@ use openpilot_signal_observer::{
     entry::Entry,
     runtime::{self, Config, Error},
 };
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     env, fs,
     io::Write,
     path::{Path, PathBuf},
     process::Command,
-    sync::{Arc, atomic::AtomicBool},
+    sync::{atomic::AtomicBool, Arc},
     thread,
     time::{Duration, Instant},
 };
@@ -161,11 +161,9 @@ fn controller(root: &Path) -> Result<(), Error> {
     let prepare = root.join("prepare");
     setup(&prepare, 2, "invalid selection must not be read", true)?;
     let events = run_entry(&prepare, None, None, true)?;
-    assert!(
-        events
-            .iter()
-            .any(|event| event["event"] == "signalTrackingShadowLoaded")
-    );
+    assert!(events
+        .iter()
+        .any(|event| event["event"] == "signalTrackingShadowLoaded"));
     let cpu = root.join("cpu");
     setup(&cpu, 1, "cpu", false)?;
     assert_eq!(
@@ -214,10 +212,8 @@ fn controller(root: &Path) -> Result<(), Error> {
         "signal backend qcom exited: 1"
     );
     reaped(&parent_events(&qcom)?)?;
-    assert!(
-        fs::read_to_string(qcom.join("child.jsonl"))?
-            .contains("auto neural mode requires locally validated QCOM caches")
-    );
+    assert!(fs::read_to_string(qcom.join("child.jsonl"))?
+        .contains("auto neural mode requires locally validated QCOM caches"));
     println!(
         "{}",
         json!({"mode2_forces_classical":true,"explicit_cpu_provider_required":true,"automatic_classical_child":true,"ordinary_child_return_is_fault":true,"missing_qcom_is_fault":true,"cpu_neural_fallback":false,"gpu_access":false})

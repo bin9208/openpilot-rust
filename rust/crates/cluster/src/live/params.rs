@@ -1,4 +1,4 @@
-use super::{Input, projection::Data};
+use super::{projection::Data, Input};
 use crate::models::EnergyGaugeLabel;
 use capnp::{message::ReaderOptions, serialize};
 use openpilot_cereal::{car_capnp::car_params, log_capnp::event};

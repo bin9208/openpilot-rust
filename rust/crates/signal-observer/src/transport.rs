@@ -1,5 +1,5 @@
 //! Separate bounded observation publications; display is never a control input.
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{fs, path::Path};
 pub const START_PATH: &str = "/dev/shm/carrot_signal_start_observation.json";
 pub const PREPARE_PATH: &str = "/dev/shm/carrot_signal_prepare_observation.json";

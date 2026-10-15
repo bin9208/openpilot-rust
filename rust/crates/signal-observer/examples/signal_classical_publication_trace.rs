@@ -2,7 +2,7 @@
 use openpilot_plannerd::signal::transport::Mode;
 use openpilot_signal_observer::runtime::{self, Config, DIRECTORY};
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     env, fs,
     io::{self, Read},
@@ -41,7 +41,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut mode = || {
             let enabled = case.modes[calls.len()];
             calls.push(enabled);
-            if enabled { Mode::Observe } else { Mode::Off }
+            if enabled {
+                Mode::Observe
+            } else {
+                Mode::Off
+            }
         };
         let flag = runtime::observation_requested(&config, "start_guard_enabled", &mut mode)?;
         let record = json!({"timestamp_eof":10_000_000_000u64,"frame_id":20,"session":"phase","revalidated":true,"start_guard_transport":flag,"tracks":if case.malformed{Value::Null}else{json!([{"id":1,"box":[600.,200.,640.,220.],"state":"red","age":0.,"observations":3,"seen_red":true,"evidence":{"raw":"red"}}])}});

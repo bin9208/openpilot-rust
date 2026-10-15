@@ -2,7 +2,7 @@ use openpilot_camera_kernel::{
     CallResult, Device, DeviceHandle, DeviceOperation, MemoryPool, Session,
 };
 use openpilot_camerad::{
-    packet::{COMMAND_SIZE, PACKET_SIZE, PacketError},
+    packet::{PacketError, COMMAND_SIZE, PACKET_SIZE},
     sensor::{Register, SensorKind},
     sensor_packets,
 };

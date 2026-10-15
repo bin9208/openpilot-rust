@@ -105,3 +105,21 @@ Dispatcher audit correction: production mode 2 always selects the classical meas
 Pixel-stage preparation: extending the existing OpenCV boundary only with RGB gray/HSV conversion, connected-component stats, morphology, external contours, and normalized template matching. Selection, color evidence, geometry and control remain Rust-owned. Twelve exact OpenCV4.13 source primitive cases are captured. The host provider rebuild uses the existing native builder with cached archive, two CMake workers and 8 GiB growth reserve; the first build failed at zlib headers. A rerun supplies explicit native SDK C/C++ include paths; no Cargo runs during another owner's slot.
 
 Signal state follow-up: expanded source/native host+ARM comparison passed 2,880 complete stopped-guard frames including internal state (31,692 floating fields), 7,680 complete preparation frames/3,767 active outputs including internal histories/night anchors/cadence (74,301 fields), and 297 percentile/median cases (594 fields). All floats in these state/statistic comparisons were bit-exact on both architectures. Four lib regressions and all-targets clippy passed. Source symbols `SignalStopPrepare` and `central_red_priority` now have actual component evidence; production geometry/context/observer/Carrot/longitudinal hooks and final active owner corpus still remain open.
+
+## CI repair at486df478 (2026-10-16)
+
+Run38770312946 planner jobs116544084650/116544085027 failed at the retained
+Python coasting oracle, after12 solver ABI comparisons passed. Artifact inspection
+found43 differences only in the old coasting target-drift reset. The policy oracle
+now binds this helper through the existing SHA-verified `planner_source` fixture.
+The actual updated Python generator's384 frames (departure17/coasting322/lead-tau15/
+geometry30) exactly match the failed CI run's native artifact; no runtime policy or
+numerical tolerance changed. Other planner CI stages were skipped after that first
+failure and are not claimed to have passed.
+
+Control job116544085228 similarly imported baseline angle control rather than the
+latest8e7eec0 changed hunk. All151 violations at the existing CI tolerance were
+internal saturation counters; publications matched. The oracle now loads only the
+pinned latest angle module, preserving its controls-limited flag. The native
+controller is unchanged. Full corrected control-loop CI remains pending; Python
+syntax checks pass. No Cargo or new tool/converter was run for this repair.

@@ -6,7 +6,7 @@ use crate::{
 use openpilot_opencv_runtime as cv;
 use openpilot_plannerd::signal::tracker::overlap;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 pub type Error = Box<dyn std::error::Error>;
 #[derive(Clone, Deserialize, Serialize)]

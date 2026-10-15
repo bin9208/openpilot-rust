@@ -1,5 +1,5 @@
 use super::{Buffer, Error};
-use openpilot_camerad::ioctl::{CONTROL_IOCTL, ControlEnvelope, SyscallResult, retry_interrupted};
+use openpilot_camerad::ioctl::{retry_interrupted, ControlEnvelope, SyscallResult, CONTROL_IOCTL};
 use std::ffi::CString;
 use std::os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, OwnedFd};
 

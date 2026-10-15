@@ -1,5 +1,5 @@
 use crate::scalar::{clamp, max, min};
-use crate::{DT_DMON, DriverMonitoring, Input, InputError, Policy};
+use crate::{DriverMonitoring, Input, InputError, Policy, DT_DMON};
 
 /// Original leveled driver camera geometry (tici/ar0231, 1928 x 1208).
 pub fn face_orientation(

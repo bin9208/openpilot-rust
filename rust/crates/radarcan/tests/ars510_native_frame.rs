@@ -36,7 +36,8 @@ fn pinned_complete_native_frames_preserve_all_state_fields_points_errors_and_bit
         include_bytes!("fixtures/ars510-native-frame-final.jsonl.zst").as_slice(),
     )
     .unwrap();
-    let rows = serde_json::Deserializer::from_reader(std::io::BufReader::new(decoder)).into_iter::<serde_json::Value>();
+    let rows = serde_json::Deserializer::from_reader(std::io::BufReader::new(decoder))
+        .into_iter::<serde_json::Value>();
     let mut count = 0;
     for (index, row) in rows.enumerate() {
         let row = row.unwrap();

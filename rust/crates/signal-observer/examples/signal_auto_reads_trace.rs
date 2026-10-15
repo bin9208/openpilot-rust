@@ -1,7 +1,7 @@
 use openpilot_plannerd::signal::transport::Mode;
 use openpilot_signal_observer::backend;
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     collections::BTreeMap,
     io::{self, Read},

@@ -120,9 +120,7 @@ impl MirrorBirth {
             .hist
             .iter()
             .flat_map(|(_, pts)| pts.iter())
-            .filter(|(_, y, id)| {
-                !excluded.contains(id) && low < side * y.0 && side * y.0 < high
-            })
+            .filter(|(_, y, id)| !excluded.contains(id) && low < side * y.0 && side * y.0 < high)
             .map(|(x, y, _)| (x.0, y.0))
             .collect();
         if pts.is_empty() {

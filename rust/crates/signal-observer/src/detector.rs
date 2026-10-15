@@ -1,5 +1,5 @@
 //! Current image proposals; a housing is never an ego-lane assignment.
-use crate::pixels::{Evidence, Rgb, lamp_evidence_with};
+use crate::pixels::{lamp_evidence_with, Evidence, Rgb};
 use openpilot_opencv_runtime as cv;
 use openpilot_plannerd::signal::{statistics::median, tracker::overlap};
 use serde::Serialize;

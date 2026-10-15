@@ -14,8 +14,8 @@ use crate::frame_wait::AsyncFrameWait;
 use std::{os::fd::BorrowedFd, sync::Arc};
 
 use crate::{
-    IspConfig, IspPort, IspPortError, OutputMode, SensorError, SensorPort, images::FrameImages,
-    phy::PhyPort,
+    images::FrameImages, phy::PhyPort, IspConfig, IspPort, IspPortError, OutputMode, SensorError,
+    SensorPort,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -476,7 +476,7 @@ impl CameraIo<'_, '_> {
 
     fn enqueue(&mut self, request: u64) -> Result<(), CameraError> {
         let slot = (request % self.config.depth as u64) as usize;
-        if self.fences[slot].0.0 != 0 {
+        if self.fences[slot].0 .0 != 0 {
             return Err(CameraError::Occupied(slot));
         }
         let bps = self
@@ -519,8 +519,8 @@ impl CameraIo<'_, '_> {
             FrameBuffers {
                 raw,
                 yuv,
-                ife_fence: self.fences[slot].0.0,
-                bps_fence: self.fences[slot].1.0,
+                ife_fence: self.fences[slot].0 .0,
+                bps_fence: self.fences[slot].1 .0,
             },
         )?;
         Ok(())
@@ -620,7 +620,7 @@ impl<Clock: FrameClock> RequestIo for ClockedIo<'_, '_, '_, Clock> {
         self.io.enqueue(request)
     }
     fn fences(&self, slot: usize) -> (i32, i32) {
-        (self.io.fences[slot].0.0, self.io.fences[slot].1.0)
+        (self.io.fences[slot].0 .0, self.io.fences[slot].1 .0)
     }
     fn wait_for_sync(&mut self, fence: i32, timeout_ms: u32) -> bool {
         self.io

@@ -20,7 +20,10 @@ def source_modules():
     if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name) and node.targets[0].id.startswith('DT_'):
       setattr(realtime, node.targets[0].id, ast.literal_eval(node.value))
   sys.modules[realtime.__name__] = realtime
-  return tuple(importlib.import_module('openpilot.selfdrive.controls.lib.' + name) for name in ('ldw', 'cruise_coasting', 'longitudinal_cutout'))
+  from planner_source import module as verified_module
+  return (importlib.import_module('openpilot.selfdrive.controls.lib.ldw'),
+          verified_module('openpilot/selfdrive/controls/lib/cruise_coasting.py'),
+          importlib.import_module('openpilot.selfdrive.controls.lib.longitudinal_cutout'))
 
 
 @dataclasses.dataclass(frozen=True)

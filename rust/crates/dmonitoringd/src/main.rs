@@ -1,6 +1,6 @@
 use openpilot_dmonitoringd::{
-    Error,
     controller::{Controller, TOPICS},
+    Error,
 };
 use openpilot_messaging::{
     runtime::{PubMaster, SubMaster},
@@ -11,8 +11,8 @@ use std::{
     env,
     process::ExitCode,
     sync::{
-        Arc,
         atomic::{AtomicBool, Ordering},
+        Arc,
     },
     time::{Duration, Instant},
 };

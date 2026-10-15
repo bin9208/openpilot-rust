@@ -13,15 +13,15 @@ use openpilot_messaging::{
 use openpilot_msgq::{VisionLayout, VisionMetadata, VisionServer, VisionStream};
 use openpilot_params::Params;
 use openpilot_plannerd::{
-    Error,
     config::Config,
     native_parameters,
     parameters::Parameters,
     platform::{Clock, SystemClock},
-    runtime::{Output, Planner, SERVICES, SignalInputs},
+    runtime::{Output, Planner, SignalInputs, SERVICES},
+    Error,
 };
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     cell::RefCell,
     collections::BTreeMap,

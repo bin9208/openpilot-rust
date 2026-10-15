@@ -12,13 +12,17 @@ import threading
 from types import SimpleNamespace
 
 import numpy as np
+from xiaoge_final_source import HASHES, PIN, load as load_final_source
+load_final_source(server=True)
+
 from openpilot.selfdrive.carrot.xiaoge import v_asm_server as original
 from openpilot.selfdrive.carrot.xiaoge.nv12 import pack_nv12, nv12_y_plane
 from openpilot.selfdrive.carrot.xiaoge.v_asm_inference import VASMInference
 
 FIELDS = ('threshold', 'smoothingSeconds', 'baseIntervalSeconds', 'laneThreshold', 'laneIntervalSeconds')
 ATTRIBUTES = ('threshold', 'smoothing_seconds', 'base_interval_seconds', 'lane_threshold', 'lane_interval_seconds')
-DEFAULTS = (0.45, 0.2, 0.25, 0.25, 0.4)
+DEFAULTS = tuple(value / scale for value, scale in
+                 zip(original.PARAM_SETTING_DEFAULTS.values(), (100, 1000, 1000, 100, 1000), strict=True))
 KEYS = tuple(original.PARAM_SETTING_DEFAULTS)
 
 
@@ -52,9 +56,11 @@ def expected(request):
       case 'gate':
         target = service()
         value = request['input']
-        direction = getattr(original.log.LaneChangeDirection, value['direction'])
+        target.inference = SimpleNamespace(configured_sides=tuple(side for side, configured in
+            zip(('left', 'right'), value['configured'], strict=True) if configured))
+        target.next_side = value['next_side']
         messages = {'carState': SimpleNamespace(vEgo=value['speed']),
-                    'modelV2': SimpleNamespace(meta=SimpleNamespace(laneChangeDirection=direction,
+                    'modelV2': SimpleNamespace(meta=SimpleNamespace(laneChangeDirection=value['direction'],
                         laneWidthLeft=value['left_width'], laneWidthRight=value['right_width']))}
         class Inputs(dict):
           def update(self, timeout):
@@ -114,7 +120,7 @@ def cases():
     result.append({'op': 'params', 'values': [None if raw is None else list(raw)] * 5})
   for alive, direction, speed, width in itertools.product((False, True), ('none', 'left', 'right'),
       (0, 29.9 / 3.6, 30 / 3.6, 20, 120 / 3.6, 120.1 / 3.6), (0, 2.99, 3, 3.01)):
-    result.append({'op': 'gate', 'input': {'alive_valid': alive, 'direction': direction, 'speed': speed, 'left_width': width, 'right_width': width + .01}})
+    result.append({'op': 'gate', 'input': {'alive_valid': alive, 'direction': direction, 'speed': speed, 'left_width': width, 'right_width': width + .01, 'configured': [True, True], 'next_side': 'left'}})
   rng = random.Random(200)
   result.append({'op': 'smoothing', 'steps': [{'side': rng.choice(('left', 'right')), 'confidence': rng.choice((0, .25, .45, .65, 1)),
       'threshold': rng.choice((.25, .45, 1)), 'smoothing': rng.choice((0, .1, .2, .5)), 'dt': rng.choice((0, .05, .1, .25, 1))} for _ in range(400)]})
@@ -149,7 +155,7 @@ def main():
     assert wanted == got, (index, inputs[index], wanted, got)
   result = {'status': 'PASS', 'cases': len(inputs), 'source': str(Path(original.__file__).resolve()),
     'binary_sha256': hashlib.sha256(args.binary.read_bytes()).hexdigest(),
-    'source_sha256': hashlib.sha256(Path(original.__file__).read_bytes()).hexdigest()}
+    'source_commit': PIN, 'pinned_source_sha256': HASHES, 'source_sha256': original.__source_sha256__}
   (args.output / 'receipt.json').write_text(json.dumps(result, indent=2) + '\n')
   print(json.dumps(result))
 

@@ -10,7 +10,7 @@ publish = false
 unsafe_code = "deny"
 
 [features]
-default = ["native-skip-miri"]
+default = []
 native-skip-miri = ["openpilot-opencv-runtime/native-skip-miri"]
 
 neural-numerics = ["dep:openpilot-signal-numerics", "openpilot-signal-numerics/native-skip-miri"]

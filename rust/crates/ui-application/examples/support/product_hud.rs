@@ -73,11 +73,20 @@ pub fn before(
         hud.set_can_draw_top_icons(step.top_icons);
     }
     if options.overlay {
-        let state = std::rc::Rc::new(std::cell::RefCell::new(openpilot_ui_application::overlay_state::State {
-            key: None, enabled: index % 19 != 18, urgent: index % 11 == 7,
-        }));
-        if context.big { widget.get_mut::<openpilot_ui_application::onroad::hud::Hud>()?.set_overlay_state(state); }
-        else { widget.get_mut::<Hud>()?.set_overlay_state(state); }
+        let state = std::rc::Rc::new(std::cell::RefCell::new(
+            openpilot_ui_application::overlay_state::State {
+                key: None,
+                enabled: index % 19 != 18,
+                urgent: index % 11 == 7,
+            },
+        ));
+        if context.big {
+            widget
+                .get_mut::<openpilot_ui_application::onroad::hud::Hud>()?
+                .set_overlay_state(state);
+        } else {
+            widget.get_mut::<Hud>()?.set_overlay_state(state);
+        }
     }
     context
         .messages

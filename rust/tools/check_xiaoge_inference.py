@@ -17,6 +17,9 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
+from xiaoge_final_source import HASHES, PIN, load as load_final_source
+load_final_source()
+
 from openpilot.selfdrive.carrot.xiaoge.lane_inference import LaneInference, prepare_lane_image
 from openpilot.selfdrive.carrot.xiaoge.nv12 import nv12_y_plane, pack_nv12
 from openpilot.selfdrive.carrot.xiaoge.v_asm_inference import VASMInference
@@ -125,6 +128,7 @@ def main() -> None:
       compared_files += 1
   receipt = {"status": "PASS", "frames": len(inputs), "exact_images_and_tensors": compared_files,
     "binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest(),
+    "source_commit": PIN, "pinned_source_sha256": HASHES,
     "scope": "host original vs Rust complete NV12 preprocessing, actual ONNX inference, lane and blindspot decisions"}
   (args.output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
   print(json.dumps(receipt))

@@ -4,12 +4,12 @@ use openpilot_signal_observer::{
     auto_process::ProcessOwner,
     backend::{Backend, Request},
 };
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     env, fs,
     path::{Path, PathBuf},
     process::Command,
-    sync::{Arc, atomic::AtomicBool},
+    sync::{atomic::AtomicBool, Arc},
     thread,
     time::{Duration, Instant},
 };

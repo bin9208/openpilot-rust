@@ -1,11 +1,11 @@
-use crate::{Error, wire};
+use crate::{wire, Error};
 use openpilot_cereal::{
     car_capnp::{car_params, car_state::GearShifter},
     log_capnp::event,
 };
 use openpilot_desire::command::CommandReader;
 use openpilot_messaging::state::State;
-use openpilot_monitoring::{DriverMonitoring2, context::*};
+use openpilot_monitoring::{context::*, DriverMonitoring2};
 use openpilot_params::Params;
 
 pub const TOPICS: &[&str] = &[

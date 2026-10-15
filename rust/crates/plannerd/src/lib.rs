@@ -1,6 +1,5 @@
 //! Project-owned planning policies derived from the original planning daemon.
 
-pub mod signal;
 pub mod braking_gap;
 pub mod car_state;
 pub mod car_state_decode;
@@ -48,6 +47,7 @@ pub mod radar;
 pub mod radar_decode;
 #[cfg(feature = "native-skip-miri")]
 pub mod runtime;
+pub mod signal;
 pub mod stopping_lead;
 pub mod traffic_stop;
 pub mod turn_accel;

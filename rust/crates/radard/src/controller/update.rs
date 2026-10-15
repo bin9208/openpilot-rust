@@ -1,6 +1,6 @@
-use super::{Controller, Input, Output, constants::*, range::central_vision, scc};
+use super::{constants::*, range::central_vision, scc, Controller, Input, Output};
 use crate::{
-    Error, Lead, association,
+    association,
     lead::{self, Entry},
     math::maximum,
     path::Path,
@@ -9,7 +9,7 @@ use crate::{
     primary::{self, constants::*, source, stationary_geometry::cross_position_cost},
     scope,
     selection::{Candidate, Identity as CandidateIdentity},
-    trajectory_cutin, trajectory_cutout,
+    trajectory_cutin, trajectory_cutout, Error, Lead,
 };
 use std::collections::HashSet;
 

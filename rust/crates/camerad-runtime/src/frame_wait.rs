@@ -3,7 +3,7 @@ use std::{
     any::Any,
     io,
     os::fd::{AsFd, BorrowedFd, OwnedFd},
-    panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
+    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
     sync::mpsc::{self, Receiver, SyncSender},
     thread::{self, JoinHandle},
 };

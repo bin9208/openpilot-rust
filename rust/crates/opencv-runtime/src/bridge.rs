@@ -113,43 +113,37 @@ mod tests {
         assert!(ffi::rgb_gray(&[0; 23], size()).is_err());
         assert!(ffi::rgb_hsv(&[0; 23], size()).is_err());
         assert!(ffi::components(&[0; 7], size()).is_err());
-        assert!(
-            ffi::morphology_open(
-                &[0; 8],
-                size(),
-                ffi::Dimensions {
-                    width: 0,
-                    height: 1
-                }
-            )
-            .is_err()
-        );
-        assert!(
-            ffi::match_template(
-                &[0; 8],
-                size(),
-                &[0; 3],
-                ffi::Dimensions {
-                    width: 2,
-                    height: 2
-                },
-                &[]
-            )
-            .is_err()
-        );
-        assert!(
-            ffi::match_template(
-                &[0; 8],
-                size(),
-                &[0; 4],
-                ffi::Dimensions {
-                    width: 2,
-                    height: 2
-                },
-                &[0; 3]
-            )
-            .is_err()
-        );
+        assert!(ffi::morphology_open(
+            &[0; 8],
+            size(),
+            ffi::Dimensions {
+                width: 0,
+                height: 1
+            }
+        )
+        .is_err());
+        assert!(ffi::match_template(
+            &[0; 8],
+            size(),
+            &[0; 3],
+            ffi::Dimensions {
+                width: 2,
+                height: 2
+            },
+            &[]
+        )
+        .is_err());
+        assert!(ffi::match_template(
+            &[0; 8],
+            size(),
+            &[0; 4],
+            ffi::Dimensions {
+                width: 2,
+                height: 2
+            },
+            &[0; 3]
+        )
+        .is_err());
         let pixels = [0_u8; 8];
         let _ = ffi::external_contours(&pixels, size()).unwrap();
         assert_eq!(pixels, [0; 8]);
@@ -161,58 +155,48 @@ mod tests {
             width: 4,
             height: 2,
         };
-        assert!(
-            ffi::resize(
-                &[0; 7],
-                ffi::Layout {
-                    size: valid(),
-                    channels: 1
-                },
-                valid()
-            )
-            .is_err()
-        );
-        assert!(
-            ffi::resize(
-                &[],
-                ffi::Layout {
-                    size: valid(),
-                    channels: 2
-                },
-                valid()
-            )
-            .is_err()
-        );
+        assert!(ffi::resize(
+            &[0; 7],
+            ffi::Layout {
+                size: valid(),
+                channels: 1
+            },
+            valid()
+        )
+        .is_err());
+        assert!(ffi::resize(
+            &[],
+            ffi::Layout {
+                size: valid(),
+                channels: 2
+            },
+            valid()
+        )
+        .is_err());
         assert!(ffi::nv12_rgb(&[0; 11], valid()).is_err());
-        assert!(
-            ffi::nv12_rgb(
-                &[0; 12],
-                ffi::Dimensions {
-                    width: 3,
-                    height: 2
-                }
-            )
-            .is_err()
-        );
-        assert!(
-            ffi::mask_image(
-                &[0; 24],
-                &[0; 7],
-                ffi::Layout {
-                    size: valid(),
-                    channels: 3
-                }
-            )
-            .is_err()
-        );
+        assert!(ffi::nv12_rgb(
+            &[0; 12],
+            ffi::Dimensions {
+                width: 3,
+                height: 2
+            }
+        )
+        .is_err());
+        assert!(ffi::mask_image(
+            &[0; 24],
+            &[0; 7],
+            ffi::Layout {
+                size: valid(),
+                channels: 3
+            }
+        )
+        .is_err());
         assert!(ffi::bounds(&[]).is_err());
-        assert!(
-            ffi::bounds(&[
-                ffi::Point { x: i32::MIN, y: 0 },
-                ffi::Point { x: i32::MAX, y: 0 }
-            ])
-            .is_err()
-        );
+        assert!(ffi::bounds(&[
+            ffi::Point { x: i32::MIN, y: 0 },
+            ffi::Point { x: i32::MAX, y: 0 }
+        ])
+        .is_err());
         assert!(ffi::mask_polygon(&[ffi::Point { x: 1, y: 1 }], valid()).is_err());
     }
 

@@ -1,9 +1,9 @@
+#[cfg(feature = "native-skip-miri")]
+mod blocking;
 #[cfg(any(feature = "native-skip-miri", test))]
 mod callback;
 #[cfg(feature = "native-skip-miri")]
 mod native;
-#[cfg(feature = "native-skip-miri")]
-mod blocking;
 #[cfg(feature = "native-skip-miri")]
 pub use blocking::play as play_blocking;
 #[cfg(feature = "native-skip-miri")]

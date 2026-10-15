@@ -2,7 +2,7 @@ use openpilot_radard::{
     in_lane::InLaneCornerTracker,
     model::{Model, Position, VisionLead},
     point::{Point, TrackId},
-    stationary_lane::{StoppingLaneCornerTracker, confident_ego_lane},
+    stationary_lane::{confident_ego_lane, StoppingLaneCornerTracker},
 };
 fn model() -> Model {
     let xs = vec![0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.];
@@ -67,11 +67,9 @@ fn stationary_corner_cannot_admit_adjacent_or_currently_ambiguous_return() {
     assert!(result.is_some());
     let mut second = p.clone();
     second.track_id = TrackId(2);
-    assert!(
-        tracker
-            .update(0.6, 15., &m, &[p.clone(), second], Some(vision))
-            .is_none()
-    );
+    assert!(tracker
+        .update(0.6, 15., &m, &[p.clone(), second], Some(vision))
+        .is_none());
     p.y_rel = 3.;
     assert!(tracker.update(0.65, 15., &m, &[p], Some(vision)).is_none());
 }
@@ -100,17 +98,15 @@ fn repeating_measurement_never_acquires_in_lane_braking_lead() {
         ..VisionLead::default()
     };
     for i in 0..20 {
-        assert!(
-            tracker
-                .update(
-                    f64::from(i) * 0.05,
-                    20.,
-                    &m,
-                    std::slice::from_ref(&p),
-                    Some(vision),
-                    Some(0.)
-                )
-                .is_none()
-        );
+        assert!(tracker
+            .update(
+                f64::from(i) * 0.05,
+                20.,
+                &m,
+                std::slice::from_ref(&p),
+                Some(vision),
+                Some(0.)
+            )
+            .is_none());
     }
 }

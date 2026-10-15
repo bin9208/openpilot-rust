@@ -1,7 +1,7 @@
 //! Source manager-entry latch actions; injected sleep never delays the test.
 use openpilot_signal_observer::lifecycle;
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     cell::RefCell,
     io::{self, Read},

@@ -4,7 +4,7 @@ use crate::neural;
 use crate::{
     backend::Request,
     neural_sequence::Sequence,
-    runtime::{self, Config, DIRECTORY, Error},
+    runtime::{self, Config, Error, DIRECTORY},
     scheduling, transport,
     worker::{self, Capture, CapturePolicy},
 };
@@ -12,7 +12,7 @@ use openpilot_msgq::{VisionClient, VisionStream};
 #[cfg(feature = "neural-ort")]
 use openpilot_onnx_runtime::Provider;
 use openpilot_plannerd::signal::transport::Mode;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     fs::{self, OpenOptions},
     io,

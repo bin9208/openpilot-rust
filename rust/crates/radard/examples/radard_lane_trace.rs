@@ -27,10 +27,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut moving = std::collections::HashMap::<usize, InLaneCornerTracker>::new();
     let mut output = Vec::<Value>::new();
     for raw in serde_json::from_str::<Vec<Value>>(&bytes)? {
-        if raw.get("reset").and_then(Value::as_bool)==Some(true) {
-            let id=usize::try_from(raw["owner"].as_u64().ok_or("owner")?)?;
-            if raw["kind"]=="stopping" {stopping.entry(id).or_default().reset();} else {moving.entry(id).or_default().reset();}
-            output.push(Value::Null);continue;
+        if raw.get("reset").and_then(Value::as_bool) == Some(true) {
+            let id = usize::try_from(raw["owner"].as_u64().ok_or("owner")?)?;
+            if raw["kind"] == "stopping" {
+                stopping.entry(id).or_default().reset();
+            } else {
+                moving.entry(id).or_default().reset();
+            }
+            output.push(Value::Null);
+            continue;
         }
         let a: Action = serde_json::from_value(raw)?;
         if a.kind == "stopping" {

@@ -43,7 +43,10 @@ pub fn create(
         });
     }
     let widget = if scene.kind == "driver-preview" {
-        WidgetHandle::new(super::product_preview::Preview::new(context.clone(),canvas)?)
+        WidgetHandle::new(super::product_preview::Preview::new(
+            context.clone(),
+            canvas,
+        )?)
     } else if scene.road.is_some() {
         WidgetHandle::new(
             openpilot_ui_application::onroad::augmented::Road::with_camera(

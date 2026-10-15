@@ -2,6 +2,13 @@
 
 ## dev-md upstream port isolation (2026-10-15, issue #338)
 
+- On 2026-10-16 the user clarified that this track must deliver an installable
+  real-device test candidate, including the exact-source AGNOS runtime release,
+  not stop at a source commit. Build, seal, publish and verify the dev-md
+  prerelease through the existing installer path. Device installation/testing
+  remains user-owned; this does not authorize dev/main integration or the
+  separate #296 development-tool conversion.
+
 - Scope clarified on 2026-10-16: this track only ports upstream commit changes
   into the existing Rust runtime, retaining applicable native optimizations.
   Repository-wide development/build/test-tool conversion belongs to the other

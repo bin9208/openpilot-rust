@@ -1,9 +1,6 @@
 --- a/EN-Enable-Driver-Monitoring-(Exception).md
 +++ b/EN-Enable-Driver-Monitoring-(Exception).md
-@@ -26,7 +26,25 @@
- <!-- CARROT:AUTO:END DriverMonitoringEnabled -->
- 
- <!-- CARROT:MANUAL:BEGIN DriverMonitoringEnabled -->
+@@ -29 +29,19 @@
 -<!-- CARROT:REVIEW reviewed-for="" -->
 +<!-- CARROT:REVIEW reviewed-for="75de16e159e826f4dfe20f040bbaada4fc65960b24b5d45781569bb9bb118027" reviewed-at="2026-10-15T00:00:00+09:00" -->
 +<!-- CARROT:SECTION:BEGIN BEHAVIOR -->
@@ -24,15 +21,9 @@
 +Backup, QR and profiles do not transfer this setting. A normal restore preserves the current device value; resetting defaults restores monitoring. The vehicle CANCEL gesture changes only temporary session state.
 +<!-- CARROT:SECTION:END REFERENCE -->
 +
- <!-- CARROT:MANUAL:END DriverMonitoringEnabled -->
- 
- <!-- CARROT:SETTING:END DriverMonitoringEnabled -->
 --- a/KO-운전자-감시-사용-(예외-설정).md
 +++ b/KO-운전자-감시-사용-(예외-설정).md
-@@ -26,7 +26,25 @@
- <!-- CARROT:AUTO:END DriverMonitoringEnabled -->
- 
- <!-- CARROT:MANUAL:BEGIN DriverMonitoringEnabled -->
+@@ -29 +29,19 @@
 -<!-- CARROT:REVIEW reviewed-for="" -->
 +<!-- CARROT:REVIEW reviewed-for="75de16e159e826f4dfe20f040bbaada4fc65960b24b5d45781569bb9bb118027" reviewed-at="2026-10-15T00:00:00+09:00" -->
 +<!-- CARROT:SECTION:BEGIN BEHAVIOR -->
@@ -53,15 +44,9 @@
 +백업·QR·프로필로 이 설정을 옮기지 않습니다. 일반 복원은 현재 기기의 값을 유지하고 기본값 초기화는 감시를 다시 켭니다. 차량 CANCEL 조작은 임시 세션 상태만 바꿉니다.
 +<!-- CARROT:SECTION:END REFERENCE -->
 +
- <!-- CARROT:MANUAL:END DriverMonitoringEnabled -->
- 
- <!-- CARROT:SETTING:END DriverMonitoringEnabled -->
 --- a/ZH-启用驾驶员监控(例外设置).md
 +++ b/ZH-启用驾驶员监控(例外设置).md
-@@ -26,7 +26,25 @@
- <!-- CARROT:AUTO:END DriverMonitoringEnabled -->
- 
- <!-- CARROT:MANUAL:BEGIN DriverMonitoringEnabled -->
+@@ -29 +29,19 @@
 -<!-- CARROT:REVIEW reviewed-for="" -->
 +<!-- CARROT:REVIEW reviewed-for="75de16e159e826f4dfe20f040bbaada4fc65960b24b5d45781569bb9bb118027" reviewed-at="2026-10-15T00:00:00+09:00" -->
 +<!-- CARROT:SECTION:BEGIN BEHAVIOR -->
@@ -82,105 +67,51 @@
 +备份、QR 和配置文件不会传输此设置。普通恢复保留当前设备的值，恢复默认值会重新开启监控。车辆 CANCEL 操作仅改变临时会话状态。
 +<!-- CARROT:SECTION:END REFERENCE -->
 +
- <!-- CARROT:MANUAL:END DriverMonitoringEnabled -->
- 
- <!-- CARROT:SETTING:END DriverMonitoringEnabled -->
 --- a/EN-Enable-Carrot-Vision.md
 +++ b/EN-Enable-Carrot-Vision.md
-@@ -28,23 +28,23 @@
- <!-- CARROT:AUTO:END CarrotVisionEnabled -->
- 
- <!-- CARROT:MANUAL:BEGIN CarrotVisionEnabled -->
+@@ -31 +31 @@
 -<!-- CARROT:REVIEW reviewed-for="196e1f296cc743239e491c11d519cea88fbf7bde06ad6f1fe40b377fe6758e07" reviewed-at="2026-09-28T07:45:02.976276+00:00" -->
 +<!-- CARROT:REVIEW reviewed-for="e44548dcc33c5c03136a6ec755ff93c32d4a8becacf30be976f2bcd36f1a52e1" reviewed-at="2026-10-15T00:00:00+09:00" -->
- <!-- CARROT:SECTION:BEGIN BEHAVIOR -->
- ### Behavior
- 
+@@ -35 +35 @@
 -Enabling permits web road-camera streaming; disabling stops it. This setting is independent of driver monitoring.
 +Enabling permits web road-camera streaming independently of driver monitoring. It can run while the external HUD is enabled.
- <!-- CARROT:SECTION:END BEHAVIOR -->
- 
- <!-- CARROT:SECTION:BEGIN USAGE -->
- ### Usage
- 
+@@ -41 +41 @@
 -Enable when using web road video. Carrot Vision is unavailable while the USB cluster is enabled.
 +Enable this setting before starting web video. Simultaneous video use may increase device load.
- <!-- CARROT:SECTION:END USAGE -->
- 
- <!-- CARROT:SECTION:BEGIN REFERENCE -->
- ### Reference
- 
+@@ -47 +47 @@
 -The old DisableDM streaming choice is migrated to this setting once. Migration does not disable monitoring or enable experimental mode.
 +Only the video choice of the old DisableDM setting is migrated once. Migration does not disable monitoring or select experimental monitoring.
- <!-- CARROT:SECTION:END REFERENCE -->
- 
- <!-- CARROT:MANUAL:END CarrotVisionEnabled -->
 --- a/KO-Carrot-Vision-사용.md
 +++ b/KO-Carrot-Vision-사용.md
-@@ -28,23 +28,23 @@
- <!-- CARROT:AUTO:END CarrotVisionEnabled -->
- 
- <!-- CARROT:MANUAL:BEGIN CarrotVisionEnabled -->
+@@ -31 +31 @@
 -<!-- CARROT:REVIEW reviewed-for="196e1f296cc743239e491c11d519cea88fbf7bde06ad6f1fe40b377fe6758e07" reviewed-at="2026-09-28T07:45:02.991356+00:00" -->
 +<!-- CARROT:REVIEW reviewed-for="e44548dcc33c5c03136a6ec755ff93c32d4a8becacf30be976f2bcd36f1a52e1" reviewed-at="2026-10-15T00:00:00+09:00" -->
- <!-- CARROT:SECTION:BEGIN BEHAVIOR -->
- ### 동작
- 
+@@ -35 +35 @@
 -켜면 웹 도로 영상 스트리밍을 사용할 수 있고 끄면 중지합니다. 운전자 감시 모드와 독립적입니다.
 +운전자 감시와 독립적으로 웹 도로 영상 스트리밍을 허용합니다. 외부 HUD가 켜져 있을 때도 함께 사용할 수 있습니다.
- <!-- CARROT:SECTION:END BEHAVIOR -->
- 
- <!-- CARROT:SECTION:BEGIN USAGE -->
- ### 사용
- 
+@@ -41 +41 @@
 -웹 도로 영상을 사용할 때 켜세요. USB 계기판 사용 중에는 Carrot Vision을 사용할 수 없습니다.
 +웹 영상을 시작하기 전에 이 설정을 켭니다. 영상을 동시에 사용하면 기기 부하가 증가할 수 있습니다.
- <!-- CARROT:SECTION:END USAGE -->
- 
- <!-- CARROT:SECTION:BEGIN REFERENCE -->
- ### 참고
- 
+@@ -47 +47 @@
 -기존 DisableDM의 영상 활성화 값은 최초 전환 시 이 설정으로 옮깁니다. 이 승계로 운전자 감시가 꺼지거나 실험 모드가 켜지지 않습니다.
 +기존 DisableDM 설정의 영상 선택만 최초 한 번 이전합니다. 이전 과정은 운전자 감시를 끄거나 실험 감시를 선택하지 않습니다.
- <!-- CARROT:SECTION:END REFERENCE -->
- 
- <!-- CARROT:MANUAL:END CarrotVisionEnabled -->
 --- a/ZH-启用-Carrot-Vision.md
 +++ b/ZH-启用-Carrot-Vision.md
-@@ -28,23 +28,23 @@
- <!-- CARROT:AUTO:END CarrotVisionEnabled -->
- 
- <!-- CARROT:MANUAL:BEGIN CarrotVisionEnabled -->
+@@ -31 +31 @@
 -<!-- CARROT:REVIEW reviewed-for="196e1f296cc743239e491c11d519cea88fbf7bde06ad6f1fe40b377fe6758e07" reviewed-at="2026-09-28T07:45:03.024967+00:00" -->
 +<!-- CARROT:REVIEW reviewed-for="e44548dcc33c5c03136a6ec755ff93c32d4a8becacf30be976f2bcd36f1a52e1" reviewed-at="2026-10-15T00:00:00+09:00" -->
- <!-- CARROT:SECTION:BEGIN BEHAVIOR -->
- ### 行为
- 
+@@ -35 +35 @@
 -启用后可使用网页道路视频，关闭后停止。此设置独立于驾驶员监控。
 +独立于驾驶员监控启用网页道路视频流。外部 HUD 开启时也可同时使用。
- <!-- CARROT:SECTION:END BEHAVIOR -->
- 
- <!-- CARROT:SECTION:BEGIN USAGE -->
- ### 使用
- 
+@@ -41 +41 @@
 -需要网页道路视频时启用。启用USB仪表盘时无法使用Carrot Vision。
 +开始网页视频前启用此设置。同时使用视频可能增加设备负载。
- <!-- CARROT:SECTION:END USAGE -->
- 
- <!-- CARROT:SECTION:BEGIN REFERENCE -->
- ### 参考
- 
+@@ -47 +47 @@
 -旧DisableDM的视频选择仅迁移一次到此设置。迁移不会关闭驾驶员监控或开启实验模式。
 +旧 DisableDM 设置仅迁移一次视频选项。迁移不会关闭驾驶员监控，也不会选择实验监控。
- <!-- CARROT:SECTION:END REFERENCE -->
- 
- <!-- CARROT:MANUAL:END CarrotVisionEnabled -->
 --- a/EN-Jetlink-mode-(off-by-default).md
 +++ b/EN-Jetlink-mode-(off-by-default).md
-@@ -27,7 +27,28 @@
- <!-- CARROT:AUTO:END JetlinkMode -->
- 
- <!-- CARROT:MANUAL:BEGIN JetlinkMode -->
+@@ -30 +30,22 @@
 -<!-- CARROT:REVIEW reviewed-for="" -->
 +<!-- CARROT:REVIEW reviewed-for="7baeab4f703180ea074d497a8d97056c0963117d05ac8d1bcb780d5e3cd21274" reviewed-at="2026-10-15T00:00:00+09:00" -->
 +<!-- CARROT:SECTION:BEGIN BEHAVIOR -->
@@ -204,15 +135,9 @@
 +Model generation and wire protocol are separate: the source Cinque v2 graph is distinct from the retained native Cinque v3 compatibility option. Readiness and host/ARM tests do not supply device or numerical acceptance.
 +<!-- CARROT:SECTION:END REFERENCE -->
 +
- <!-- CARROT:MANUAL:END JetlinkMode -->
- 
- <!-- CARROT:SETTING:END JetlinkMode -->
 --- a/KO-Jetlink-모드-(기본-꺼짐).md
 +++ b/KO-Jetlink-모드-(기본-꺼짐).md
-@@ -27,7 +27,28 @@
- <!-- CARROT:AUTO:END JetlinkMode -->
- 
- <!-- CARROT:MANUAL:BEGIN JetlinkMode -->
+@@ -30 +30,22 @@
 -<!-- CARROT:REVIEW reviewed-for="" -->
 +<!-- CARROT:REVIEW reviewed-for="7baeab4f703180ea074d497a8d97056c0963117d05ac8d1bcb780d5e3cd21274" reviewed-at="2026-10-15T00:00:00+09:00" -->
 +<!-- CARROT:SECTION:BEGIN BEHAVIOR -->
@@ -236,6 +161,3 @@
 +모델 세대와 통신 프로토콜은 별개이며 원본 Cinque v2 그래프와 유지된 네이티브 Cinque v3 호환 옵션은 서로 다릅니다. 준비 완료와 호스트·ARM 테스트는 실기·수치 검증을 대신하지 않습니다.
 +<!-- CARROT:SECTION:END REFERENCE -->
 +
- <!-- CARROT:MANUAL:END JetlinkMode -->
- 
- <!-- CARROT:SETTING:END JetlinkMode -->

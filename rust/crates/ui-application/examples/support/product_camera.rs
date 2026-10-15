@@ -119,7 +119,9 @@ pub fn snapshot(
     scene: &Scene,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     if scene.kind == "driver-preview" {
-        return Ok(serde_json::json!({"driverView":context.params.boolean("IsDriverViewEnabled")?}));
+        return Ok(
+            serde_json::json!({"driverView":context.params.boolean("IsDriverViewEnabled")?}),
+        );
     }
     if let Some(driver) = &scene.driver {
         return super::product_driver::snapshot(

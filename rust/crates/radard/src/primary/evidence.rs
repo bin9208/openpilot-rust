@@ -1,6 +1,6 @@
 use super::{
-    Matcher, PositionEvidence, constants::*, source::position_continuous,
-    stationary_geometry::front_corner_pairs,
+    constants::*, source::position_continuous, stationary_geometry::front_corner_pairs, Matcher,
+    PositionEvidence,
 };
 use crate::{
     math::{maximum, minimum},

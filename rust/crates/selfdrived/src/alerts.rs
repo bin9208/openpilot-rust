@@ -100,7 +100,10 @@ impl AlertManager {
     pub fn current(&self) -> &Alert {
         &self.current
     }
-    pub fn remove(&mut self, alert_type:&str) { self.entries.retain(|entry|entry.alert.alert_type!=alert_type); }
+    pub fn remove(&mut self, alert_type: &str) {
+        self.entries
+            .retain(|entry| entry.alert.alert_type != alert_type);
+    }
     pub fn entries(&self) -> &[AlertEntry] {
         &self.entries
     }

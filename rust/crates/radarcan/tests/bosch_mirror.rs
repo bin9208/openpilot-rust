@@ -99,9 +99,10 @@ fn operation(row: &Value, index: &str) {
             );
             Ok(Value::Null)
         }
-        "publication_view" => Ok(json!(
-            mirror.publication_by(&decode::<Vec<Value>>(&input["objects"]), |o| decode(&o["physical_track_id"]))
-        )),
+        "publication_view" => Ok(json!(mirror
+            .publication_by(&decode::<Vec<Value>>(&input["objects"]), |o| decode(
+                &o["physical_track_id"]
+            )))),
         "update" => {
             let objects: Vec<Object> = decode(&input["objects"]);
             let raw: Vec<Track> = decode(&input["raw_tracks"]);

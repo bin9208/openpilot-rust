@@ -1,7 +1,7 @@
 #[path = "common/release.rs"]
 mod release;
 use openpilot_dev_tools::{
-    publish::{publish, Github},
+    publish::{publish, publish_for_branch, Github},
     seal::{digest, Result},
 };
 use release::{git, Fixture};
@@ -187,6 +187,35 @@ fn draft_then_publish_and_download_every_byte() {
     assert_eq!(g.release["assets"].as_array().unwrap().len(), 6);
     assert_eq!(g.mutations.first().unwrap(), "POST releases");
     assert_eq!(g.mutations.last().unwrap(), "PATCH releases/10");
+}
+#[test]
+fn dev_md_publishes_only_after_its_own_exact_source_push_gates() {
+    let (f, mut g) = prepared();
+    for run in &mut g.runs {
+        run["head_branch"] = "dev-md".into();
+    }
+    assert!(publish(&f.root, &f.output, &mut g, true).is_err());
+    assert!(g.mutations.is_empty());
+    let r = publish_for_branch(&f.root, &f.output, &mut g, false, "dev-md").unwrap();
+    assert_eq!(r["ci"]["branch"], "dev-md");
+    assert_eq!(r["download_verified"], true);
+    assert_eq!(g.release["prerelease"], true);
+    assert_eq!(g.release["make_latest"], "false");
+}
+#[test]
+fn dev_md_cannot_borrow_dev_checks_or_publish_from_another_branch() {
+    for branch in ["dev-md", "main", "carrot-wip", "dev&head_sha=other"] {
+        let (f, mut g) = prepared();
+        assert!(publish_for_branch(&f.root, &f.output, &mut g, false, branch).is_err());
+        assert!(g.mutations.is_empty());
+    }
+    let (f, mut g) = prepared();
+    for run in &mut g.runs {
+        run["head_branch"] = "dev-md".into();
+    }
+    g.checks[0]["conclusion"] = "failure".into();
+    assert!(publish_for_branch(&f.root, &f.output, &mut g, false, "dev-md").is_err());
+    assert!(g.mutations.is_empty());
 }
 #[test]
 fn failures_prevent_remote_writes() {

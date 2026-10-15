@@ -1,4 +1,4 @@
-use super::{Matcher, constants::*, source::position_continuous};
+use super::{constants::*, source::position_continuous, Matcher};
 use crate::{
     math::{maximum, minimum},
     model::VisionLead,

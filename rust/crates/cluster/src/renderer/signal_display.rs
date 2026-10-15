@@ -1,6 +1,6 @@
 //! Added source signal candidate overlay, confined to the live camera image.
 use super::{
-    ClusterUiRenderer, Rect, Result, StrokeStyle, camera_overlay::CameraOverlayProjection,
+    camera_overlay::CameraOverlayProjection, ClusterUiRenderer, Rect, Result, StrokeStyle,
 };
 use openpilot_ui_application::signal_display::project_box;
 

@@ -3,7 +3,7 @@ use openpilot_signal_observer::{
     neural::{Inference, Neural, SourceSort, Tensor},
     neural_sequence::Error,
 };
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{cell::RefCell, rc::Rc};
 struct Session {

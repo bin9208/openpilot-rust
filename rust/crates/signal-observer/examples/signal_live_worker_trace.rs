@@ -10,7 +10,7 @@ use std::{
     env, fs,
     io::Write,
     path::PathBuf,
-    sync::{Arc, atomic::AtomicBool},
+    sync::{atomic::AtomicBool, Arc},
     time::Duration,
 };
 fn main() -> Result<(), Error> {

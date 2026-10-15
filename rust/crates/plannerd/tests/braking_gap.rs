@@ -1,4 +1,4 @@
-use openpilot_plannerd::braking_gap::{ComfortInput, LeadComfortState, Observation, has_reserve};
+use openpilot_plannerd::braking_gap::{has_reserve, ComfortInput, LeadComfortState, Observation};
 
 #[test]
 fn stable_braking_lead_relief_ramps_then_withdraws_immediately() {
@@ -28,21 +28,17 @@ fn stable_braking_lead_relief_ramps_then_withdraws_immediately() {
         times: &times,
         stop_distance: 6.,
     };
-    assert!(
-        state
-            .comfort_relief(input)
-            .iter()
-            .all(|v| (*v - 0.8).abs() < 1e-12)
-    );
+    assert!(state
+        .comfort_relief(input)
+        .iter()
+        .all(|v| (*v - 0.8).abs() < 1e-12));
     input.enabled = false;
     assert_eq!(state.comfort_relief(input), [0.; 3]);
     input.enabled = true;
-    assert!(
-        state
-            .comfort_relief(input)
-            .iter()
-            .all(|v| (*v - 0.8).abs() < 1e-12)
-    );
+    assert!(state
+        .comfort_relief(input)
+        .iter()
+        .all(|v| (*v - 0.8).abs() < 1e-12));
     state.update(Observation {
         enabled: true,
         track_id: 2,

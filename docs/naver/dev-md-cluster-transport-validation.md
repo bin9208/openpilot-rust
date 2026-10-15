@@ -326,3 +326,29 @@ changes remain mapped in their existing ledgers):
 Focused test fixture: `cluster/tests/data/wifi_lifecycle.json`; inline tests live
 in the runtime modules above. No development-tool/converter/provisioning/replay
 caller was changed after the user's scope correction.
+
+CI run38770312946 at486df478 follow-up: UI job116544085302 reported a single
+nonminimal-bool Clippy error in the added display reader. A named finite geometry
+predicate preserves its guard semantics. UI connectivity116544085353's render
+failure was an unavailable exact source Git path, not a pixel mismatch; the parent
+owns pinned-object fetching. Startup-services116544084791's Korean text pixel
+mismatch used retained baseline graphics helpers; its source renderer now installs
+the existing pinned final graphics loader before importing startup widgets. Pixel
+checks are unchanged and their corrected CI execution remains pending.
+
+Inherited navigation integration tests mixed the final upstream HUD renderer with
+dev-base test setup. The Python reference's unknown-road `--` guard was restored
+from dev-base to preserve the same existing Rust behavior. Animation/cache tests
+now follow the pinned final sampling/reuse contract and initialize its actual clock
+state. All36 targeted HUD/navigation tests pass. No Rust HUD behavior was reverted.
+
+Startup render follow-up: local existing `debug/examples/startup_ui_render` was
+built2026-10-15 21:48, before the font fix. Its actual font log requests38,851
+Korean codepoints (38,788found); pinned Python source requests39,228 (39,158found).
+Current Rust `renderer::fonts::font_points` and tracked `ui-font-final.json` both
+specify the exact39,228 codepoints. Thus the local rerun used a demonstrably stale
+font atlas. Its layout/scroll JSON already matches source; all2,706 remaining
+pixel differences have maximum channel delta1. No tolerance was changed and no
+runtime fix was added for this stale-binary result. The parent explicitly deferred
+local rebuilding to avoid interrupting the87-binary AGNOS candidate build; fresh
+CI will verify the unchanged exact-pixel gate with the corrected source binding.

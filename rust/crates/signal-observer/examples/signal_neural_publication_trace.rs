@@ -1,10 +1,10 @@
 //! Production record/publication phase regression; no camera/control access.
 use openpilot_signal_observer::{
     neural_runtime,
-    runtime::{Config, DIRECTORY, Error},
+    runtime::{Config, Error, DIRECTORY},
 };
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     env, fs,
     io::{self, Read},

@@ -1,6 +1,5 @@
 use super::super::inputs::Decoded;
-use super::super::{Output, Planner, views::Views};
-use crate::{Error, parameters::Parameters, platform::Clock};
+use super::super::{views::Views, Output, Planner};
 use crate::{
     fast_radar::{FastInput, FastReason},
     publication::{self, Metadata},
@@ -9,6 +8,7 @@ use crate::{
     stopping_lead::StopInput,
     types::PlannerMode,
 };
+use crate::{parameters::Parameters, platform::Clock, Error};
 use openpilot_cereal::{
     car_capnp::car_control::actuators::LongControlState,
     log_capnp::longitudinal_plan::PlanningTrigger,

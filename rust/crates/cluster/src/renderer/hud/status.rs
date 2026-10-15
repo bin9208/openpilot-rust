@@ -7,7 +7,7 @@ use crate::renderer::tokens::{
     TOP_ICON_SIZE, TOP_STATUS_CENTER_Y, WIFI_STATUS_CENTER_X, WIFI_STATUS_ICON_SIZE,
 };
 use crate::renderer::{
-    Anchor, ClusterUiRenderer, Point, Rect, Result, StaticImage, TextureView, with_alpha,
+    with_alpha, Anchor, ClusterUiRenderer, Point, Rect, Result, StaticImage, TextureView,
 };
 
 #[derive(Clone, Copy)]

@@ -1,7 +1,7 @@
 //! Apply source scheduling to all currently existing observer threads.
 use rustix::{
-    process::{Pid, setpriority_process},
-    thread::{CpuSet, sched_getaffinity, sched_setaffinity},
+    process::{setpriority_process, Pid},
+    thread::{sched_getaffinity, sched_setaffinity, CpuSet},
 };
 use std::{fs, io};
 #[allow(unsafe_code)]

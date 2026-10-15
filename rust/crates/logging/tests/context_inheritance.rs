@@ -88,15 +88,13 @@ fn exec_child_inherits_original_context_and_names_its_actual_implementation() {
 #[test]
 fn invalid_inherited_context_does_not_silently_lose_diagnostics() {
     for value in ["broken", "[]", "null"] {
-        assert!(
-            owned_child()
-                .args(["--exact", "context_child", "--ignored"])
-                .env("OPENPILOT_LOG_CONTEXT", value)
-                .env("OWNED_CONTEXT_INVALID", "1")
-                .stdout(Stdio::null())
-                .status()
-                .unwrap()
-                .success()
-        );
+        assert!(owned_child()
+            .args(["--exact", "context_child", "--ignored"])
+            .env("OPENPILOT_LOG_CONTEXT", value)
+            .env("OWNED_CONTEXT_INVALID", "1")
+            .stdout(Stdio::null())
+            .status()
+            .unwrap()
+            .success());
     }
 }

@@ -1,6 +1,5 @@
 mod assets;
 mod background;
-mod signal_display;
 pub mod camera_overlay;
 mod core;
 pub mod display;
@@ -23,6 +22,7 @@ mod panels;
 mod replay_input;
 mod route_video;
 mod scene_cache;
+mod signal_display;
 mod stats;
 mod system_panel;
 mod text;

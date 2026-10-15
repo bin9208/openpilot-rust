@@ -6,7 +6,7 @@ use crate::{
 };
 use openpilot_msgq::{VisionClient, VisionStream};
 use openpilot_plannerd::signal::transport::Mode;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     fs::{self, OpenOptions},
     path::{Path, PathBuf},

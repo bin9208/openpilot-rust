@@ -1,4 +1,4 @@
-use crate::{Error, Lead, math::finite, model::VisionLead, path::Path, point::Point};
+use crate::{math::finite, model::VisionLead, path::Path, point::Point, Error, Lead};
 
 pub fn from_point(point: &Point, d_path: f64, probability: f64, score: f64) -> Result<Lead, Error> {
     Ok(Lead {

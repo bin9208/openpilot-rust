@@ -44,16 +44,12 @@ fn context_and_edges_reject_held_and_automatic_button_credit() {
     assert!(!edges.update(0.05, true, false, false, &[]));
     let mut filter = AutomaticCancelFilter::default();
     filter.record(1., true);
-    assert!(
-        filter
-            .filter_buttons(1.1, vec![("cancel".into(), true)])
-            .is_empty()
-    );
-    assert!(
-        filter
-            .filter_buttons(1.2, vec![("cancel".into(), false)])
-            .is_empty()
-    );
+    assert!(filter
+        .filter_buttons(1.1, vec![("cancel".into(), true)])
+        .is_empty());
+    assert!(filter
+        .filter_buttons(1.2, vec![("cancel".into(), false)])
+        .is_empty());
     let mut camera = CameraAvailability::default();
     assert!(!camera.update(0., true));
     assert!(camera.update(2., true));

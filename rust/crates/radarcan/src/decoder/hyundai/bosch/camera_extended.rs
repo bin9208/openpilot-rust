@@ -1113,7 +1113,12 @@ impl Extended {
                     && members.iter().all(|p| by_pid[p].timestamp_ns == timestamp);
                 if self.mode == 3 && fresh {
                     let state = self.maturity(
-                        &members, (episode, class), timestamp, &by_pid, yaw, (true, None),
+                        &members,
+                        (episode, class),
+                        timestamp,
+                        &by_pid,
+                        yaw,
+                        (true, None),
                     )?;
                     let prior = self.histories.get(&members);
                     let mut required = 2;

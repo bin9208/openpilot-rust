@@ -1,4 +1,4 @@
-use super::{Error, Input, Projection, navigation, projection::Data};
+use super::{navigation, projection::Data, Error, Input, Projection};
 use crate::models::{ClusterUiState, NaviLiveState};
 use num_traits::ToPrimitive;
 

@@ -1,7 +1,8 @@
 use openpilot_logging::{
-    Fields, Value, log_site,
+    log_site,
     producer::Factory,
     record::{Level, Record},
+    Fields, Value,
 };
 use openpilot_plannerd::signal::transport::{Mode, ModeCache};
 use openpilot_signal_observer::{
@@ -12,7 +13,7 @@ use openpilot_signal_observer::{
 use std::{
     env, io,
     process::ExitCode,
-    sync::{Arc, atomic::AtomicBool},
+    sync::{atomic::AtomicBool, Arc},
     time::Duration,
 };
 fn run() -> Result<(), Error> {

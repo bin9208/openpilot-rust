@@ -1,9 +1,9 @@
 //! Native startup surfaces and owning process wrappers; source MIT provenance retained.
 pub mod camera;
 pub mod config;
-pub mod recovery;
-pub mod overlay_cache;
 mod digits;
+pub mod overlay_cache;
+pub mod recovery;
 pub use digits::decimal as decimal_digit;
 pub use digits::is_digit;
 pub mod draw;

@@ -1,4 +1,4 @@
-use super::{Controller, constants::*, scc};
+use super::{constants::*, scc, Controller};
 use crate::{
     model::{Model, VisionLead},
     path::Path,

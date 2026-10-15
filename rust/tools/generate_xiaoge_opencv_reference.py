@@ -16,6 +16,9 @@ from typing import Literal, TypeAlias, TypedDict
 import cv2
 import numpy as np
 from numpy.typing import NDArray
+from xiaoge_final_source import HASHES, PIN, load as load_final_source
+load_final_source()
+
 from openpilot.selfdrive.carrot.xiaoge.lane_inference import LaneInference, prepare_lane_image
 from openpilot.selfdrive.carrot.xiaoge.v_asm_inference import VASMInference
 
@@ -167,6 +170,7 @@ def main() -> None:
   paths = [path for path in args.output.iterdir() if path.is_file()]
   paths += [args.models / 'lane.onnx', args.models / 'v_asm_model.onnx', *Path(cv2.__file__).parent.glob('*.so')]
   (args.output / 'fixtures.json').write_text(json.dumps({'cases': oracle.cases, 'wheel_defaults_preserved': True,
+    'source_commit': PIN, 'pinned_source_sha256': HASHES,
     'sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}}, indent=2) + '\n')
 
 

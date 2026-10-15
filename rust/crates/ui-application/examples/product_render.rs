@@ -29,10 +29,10 @@ mod product_input;
 mod product_network;
 #[path = "support/product_plot.rs"]
 mod product_plot;
-#[path = "support/product_probe.rs"]
-mod product_probe;
 #[path = "support/product_preview.rs"]
 mod product_preview;
+#[path = "support/product_probe.rs"]
+mod product_probe;
 #[path = "support/product_road.rs"]
 mod product_road;
 #[path = "support/product_root.rs"]

@@ -5,14 +5,14 @@ use openpilot_signal_observer::{
     entry::Entry,
     runtime::{self, Config, Error},
 };
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     env, fs,
     io::Write,
     path::{Path, PathBuf},
     process::{Child, Command},
-    sync::{Arc, atomic::AtomicBool},
+    sync::{atomic::AtomicBool, Arc},
     thread,
     time::{Duration, Instant},
 };

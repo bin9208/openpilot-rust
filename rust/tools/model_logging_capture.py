@@ -75,18 +75,26 @@ class Collector:
     timing = [record for record in records if isinstance(record['msg'], dict) and record['msg'].get('event') == 'runtimeTiming']
     for record in timing:
       message = record['msg']
-      assert set(message) == {'event', 'component', 'pid', 'mono_time', 'seconds', 'frames', 'metrics',
-                              'scheduler', 'schedstats_enabled', 'backend', 'usbgpu', 'frame_id'}
-      assert record['levelnum'] == 20 and message['component'] == 'modeld'
-      assert message['pid'] == record['process'] and message['usbgpu'] is False
-      assert message['backend'] == "openpilot_driving_modeld::runtime::DrivingRuntime<'_>"
+      common = {'event', 'component', 'pid', 'mono_time', 'seconds', 'frames', 'metrics',
+                'scheduler', 'schedstats_enabled', 'frame_id'}
+      assert record['levelnum'] == 20 and message['component'] == component
+      assert message['pid'] == record['process']
       metrics = message['metrics']
-      assert list(metrics) == ['camera_wait_ms', 'camera_age_at_run_ms', 'inference_ms', 'inference_thread_cpu_ms',
-                               'postprocess_ms', 'loop_ms', 'thread_cpu_ms', 'dropped_frames', 'published']
+      if component == 'modeld':
+        assert set(message) == common | {'backend', 'usbgpu'}
+        assert message['usbgpu'] is False
+        assert message['backend'] == "openpilot_driving_modeld::runtime::DrivingRuntime<'_>"
+        assert list(metrics) == ['camera_wait_ms', 'camera_age_at_run_ms', 'inference_ms', 'inference_thread_cpu_ms',
+                                 'postprocess_ms', 'loop_ms', 'thread_cpu_ms', 'dropped_frames', 'published']
+        assert type(metrics['published']['max']) is int and metrics['published']['max'] in (0, 1)
+        assert type(metrics['dropped_frames']['max']) is int and metrics['dropped_frames']['max'] >= 0
+      else:
+        assert component == 'dmonitoringmodeld' and set(message) == common
+        assert list(metrics) == ['camera_wait_ms', 'phase_wait_ms', 'inference_ms', 'inference_thread_cpu_ms',
+                                 'postprocess_ms', 'loop_ms', 'thread_cpu_ms']
+        assert metrics['phase_wait_ms']['max'] >= 0
       assert all(value['count'] == message['frames'] for value in metrics.values())
       assert all(list(value) == ['mean', 'max', 'count'] for value in metrics.values())
-      assert type(metrics['published']['max']) is int and metrics['published']['max'] in (0, 1)
-      assert type(metrics['dropped_frames']['max']) is int and metrics['dropped_frames']['max'] >= 0
       assert 0 <= metrics['inference_thread_cpu_ms']['max'] <= metrics['inference_ms']['max'] + 1
       assert 0 <= metrics['thread_cpu_ms']['max'] <= metrics['loop_ms']['max'] + 1
       assert 'communication' not in message
@@ -97,7 +105,7 @@ class Collector:
         assert any(record['levelnum'] == 40 and record['msg'].startswith('camera dropped ') for record in records)
         assert any(record['levelnum'] == 20 and record['msg'].startswith('modeld got CarParams:') for record in records if isinstance(record['msg'], str))
       case 'dmonitoringmodeld':
-        assert not timing and not errors, 'the driver source has no runtimeTiming or error callsites on this path'
+        assert not errors, 'the driver fixture must complete without runtime errors'
         for text in ['connecting to driver stream', 'models loaded, dmonitoringmodeld starting', 'got SIGINT']:
           assert any(record['msg'] == text and record['levelnum'] == 30 for record in records), text
       case _:

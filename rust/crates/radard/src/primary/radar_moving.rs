@@ -1,8 +1,8 @@
 use super::{
-    Matcher, VisionMatch,
     constants::*,
     source::{position_continuous, stationary_source_rank},
     stationary_support::Candidate,
+    Matcher, VisionMatch,
 };
 use crate::{
     association::prefer_front_current,

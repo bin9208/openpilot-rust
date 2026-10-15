@@ -1,4 +1,4 @@
-use crate::{Error, parameters::Parameters};
+use crate::{parameters::Parameters, Error};
 use openpilot_params::Params;
 
 pub struct RuntimeParameters(pub Params);

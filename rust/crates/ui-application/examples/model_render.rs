@@ -68,7 +68,10 @@ impl Model {
         }
     }
     fn overlay(&mut self, state: openpilot_ui_application::overlay_state::Shared) {
-        match self { Self::Big(r) => r.set_overlay_state(state), Self::Small(r) => r.set_overlay_state(state) }
+        match self {
+            Self::Big(r) => r.set_overlay_state(state),
+            Self::Small(r) => r.set_overlay_state(state),
+        }
     }
     fn transform(&mut self, t: [[f64; 3]; 3]) {
         match self {
@@ -107,15 +110,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             (&suite, &output.join(format!("{}-owned", scene.name))),
         )?;
         let fixture_clock = std::rc::Rc::new(std::cell::Cell::new(0.));
-        context.now_monotonic = { let clock = fixture_clock.clone(); std::rc::Rc::new(move || clock.get()) };
+        context.now_monotonic = {
+            let clock = fixture_clock.clone();
+            std::rc::Rc::new(move || clock.get())
+        };
         std::io::stderr().write_all(format!("MODEL_PARAMS_BEGIN {}\n", scene.name).as_bytes())?;
         let mut model = if suite.config.big {
             Model::Big(Box::new(Big::new(context.clone())?))
         } else {
             Model::Small(Box::new(Small::new(context.clone())?))
         };
-        let overlay = std::rc::Rc::new(std::cell::RefCell::new(openpilot_ui_application::overlay_state::State::default()));
-        if suite.overlay { model.overlay(overlay.clone()); }
+        let overlay = std::rc::Rc::new(std::cell::RefCell::new(
+            openpilot_ui_application::overlay_state::State::default(),
+        ));
+        if suite.overlay {
+            model.overlay(overlay.clone());
+        }
         model.widget().set_rect(scene.rect);
         let mut rows = Vec::new();
         for (index, step) in scene.steps.iter().enumerate() {

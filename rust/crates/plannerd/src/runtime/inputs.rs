@@ -1,6 +1,5 @@
 use super::views::Views;
 use crate::{
-    Error,
     car_state::CarState,
     car_state_decode,
     carrot::{self, Navigation},
@@ -9,6 +8,7 @@ use crate::{
     model_decode,
     radar::Radar,
     types::Personality,
+    Error,
 };
 
 pub struct Decoded {

@@ -21,13 +21,17 @@ class ComposedPeer(RuntimePeer):
     self.root = output / 'root'
     (self.root / 'data/params').mkdir(parents=True)
     (self.root / 'data/params/d').symlink_to(self.params.resolve(), target_is_directory=True)
-    self.basedir = output / 'basedir' if args.default_firmware else ROOT
-    if args.default_firmware:
-      (self.basedir / 'openpilot/selfdrive/pandad').mkdir(parents=True)
+    self.basedir = output / 'basedir'
+    (self.basedir / 'openpilot/selfdrive/pandad').mkdir(parents=True)
     self.firmware = self.basedir / 'panda/board/obj' if args.default_firmware else output / 'firmware'
     self.firmware.mkdir(parents=True)
+    # The source now clears the inherited skip flag for stock firmware. Both
+    # supervisor and child must see the same signature through their own paths.
+    stock = self.basedir / 'panda/board/obj'
+    stock.mkdir(parents=True, exist_ok=True)
     for name in ('panda.bin.signed', 'panda_h7.bin.signed'):
-      (self.firmware / name).write_bytes(bytes([0x42]) * 128)
+      for directory in {self.firmware, stock}:
+        (directory / name).write_bytes(bytes([0x42]) * 128)
     self.children = []
 
   def launch(self, command, environment, cwd, stdout, stderr):
@@ -51,7 +55,8 @@ class ComposedPeer(RuntimePeer):
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
       self.poll()
-      assert self.process.poll() is None, ('supervisor exited', self.process.returncode)
+      assert self.process.poll() is None, ('supervisor exited', self.process.returncode,
+                                           (self.output / 'stderr.log').read_text())
       path = Path(f'/proc/{self.process.pid}/task/{self.process.pid}/children')
       for value in path.read_text().split():
         pid = int(value)
@@ -158,7 +163,7 @@ def main():
   report = {'result': 'PASS', 'scenarios': results, 'sha256': {str(path): sha256(path.read_bytes()).hexdigest() for path in paths},
             'runner': args.runner, 'cli': args.cli, 'default_firmware': args.default_firmware,
             'limits': 'Actual native supervisor, core, process launcher, log collector and original Cereal/msgq. ' +
-            'Owned USB ABI and firmware files; core compile-time firmware check bypassed for owned signature. ' +
+            'Owned USB ABI and firmware files; supervisor and child independently verify matching owned stock signatures. ' +
             'Exercises restart, CAN and state IPC, Params signatures and SIGINT cleanup; no physical transport or device acceptance.'}
   (args.output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
   print(json.dumps(report))

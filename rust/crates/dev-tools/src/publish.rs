@@ -1,4 +1,4 @@
-//! Publish only verified exact-source assets after protected dev push gates.
+//! Publish verified exact-source assets after the selected branch's push gates.
 use crate::{
     package::{clean_source, disk_guard, validate_assets},
     seal::{digest, Result},
@@ -208,6 +208,13 @@ fn rows(g: &mut impl Github, endpoint: &str, key: Option<&str>) -> Result<Vec<Va
     Ok(out)
 }
 pub fn ci_evidence(g: &mut impl Github, commit: &str) -> Result<Value> {
+    ci_evidence_for_branch(g, commit, "dev")
+}
+pub fn ci_evidence_for_branch(g: &mut impl Github, commit: &str, branch: &str) -> Result<Value> {
+    require(
+        matches!(branch, "dev" | "dev-md"),
+        "unsupported runtime release branch",
+    )?;
     require(
         g.api(BASE, "GET", None, false, false)?["full_name"] == REPOSITORY,
         "wrong GitHub repository identity",
@@ -236,7 +243,7 @@ pub fn ci_evidence(g: &mut impl Github, commit: &str) -> Result<Value> {
     )?;
     let runs = rows(
         g,
-        &format!("{BASE}/actions/runs?event=push&branch=dev&head_sha={commit}&per_page=100"),
+        &format!("{BASE}/actions/runs?event=push&branch={branch}&head_sha={commit}&per_page=100"),
         Some("workflow_runs"),
     )?;
     let mut urls = Vec::new();
@@ -252,14 +259,14 @@ pub fn ci_evidence(g: &mut impl Github, commit: &str) -> Result<Value> {
         let run = candidates
             .into_iter()
             .max_by_key(|v| v["id"].as_u64())
-            .ok_or_else(|| format!("missing exact-SHA dev push workflow: {path}"))?;
+            .ok_or_else(|| format!("missing exact-SHA {branch} push workflow: {path}"))?;
         require(
             run["head_sha"] == commit
-                && run["head_branch"] == "dev"
+                && run["head_branch"] == branch
                 && run["event"] == "push"
                 && run["repository"]["full_name"] == REPOSITORY
                 && succeeded(run),
-            format!("incomplete/failed dev push workflow: {path}"),
+            format!("incomplete/failed {branch} push workflow: {path}"),
         )?;
         let jobs = rows(
             g,
@@ -331,7 +338,7 @@ pub fn ci_evidence(g: &mut impl Github, commit: &str) -> Result<Value> {
             )?;
         }
     }
-    Ok(json!({"required_checks":required,"dev_push_runs":urls}))
+    Ok(json!({"required_checks":required,"branch":branch,"dev_push_runs":urls}))
 }
 fn tag_commit(g: &mut impl Github, tag: &str) -> Result<Option<String>> {
     let reference = g.api(
@@ -459,6 +466,15 @@ fn validate_frozen_assets(
     )
 }
 pub fn publish(root: &Path, assets: &Path, g: &mut impl Github, check_only: bool) -> Result<Value> {
+    publish_for_branch(root, assets, g, check_only, "dev")
+}
+pub fn publish_for_branch(
+    root: &Path,
+    assets: &Path,
+    g: &mut impl Github,
+    check_only: bool,
+    branch: &str,
+) -> Result<Value> {
     let local = asset_identity(assets)?;
     let descriptor = validate_assets(root, assets)?;
     require(
@@ -466,7 +482,7 @@ pub fn publish(root: &Path, assets: &Path, g: &mut impl Github, check_only: bool
         "local assets changed during initial publication validation",
     )?;
     let commit = hex(&descriptor["source_commit"])?;
-    let ci = ci_evidence(g, commit)?;
+    let ci = ci_evidence_for_branch(g, commit, branch)?;
     let tag = format!("runtime-{commit}");
     require(
         tag_commit(g, &tag)?.is_none_or(|s| s == commit),
@@ -549,7 +565,7 @@ pub fn publish(root: &Path, assets: &Path, g: &mut impl Github, check_only: bool
         "source changed before publishing verified draft",
     )?;
     // Upload/download verification can outlive a check rerun or protection change.
-    let ci = ci_evidence(g, commit)?;
+    let ci = ci_evidence_for_branch(g, commit, branch)?;
     validate_frozen_assets(root, assets, &descriptor, &local)?;
     let published = g.api(
         &format!("{BASE}/releases/{id}"),

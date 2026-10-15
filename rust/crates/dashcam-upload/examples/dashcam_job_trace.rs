@@ -33,7 +33,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         let mut response = Value::Null;
         match command.op.as_str() {
-            "create" => jobs.create_scoped(command.id, command.segments, clock, command.include_all_files),
+            "create" => jobs.create_scoped(
+                command.id,
+                command.segments,
+                clock,
+                command.include_all_files,
+            ),
             "expire" => jobs.expire(command.now, clock),
             "cancel" => {
                 response = if let Some(job) = jobs.get_mut(&command.id) {

@@ -1,6 +1,6 @@
 //! S3 adapter uses the same native TURZX packet builder as USB. It owns a
 //! separately authenticated stream and never drains arbitrary TCP bytes.
-use super::{Runtime, packet};
+use super::{packet, Runtime};
 use crate::Error;
 use openpilot_cluster_wifi::{Channel, Connection, Queue, Registration, TcpSocket};
 use std::{io, time::Duration};
@@ -100,7 +100,7 @@ impl Wifi<Connection<TcpSocket>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{Value, json};
+    use serde_json::{json, Value};
     use std::{cell::RefCell, rc::Rc};
     fn hex(payload: &[u8]) -> String {
         use std::fmt::Write;

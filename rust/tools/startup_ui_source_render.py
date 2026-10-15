@@ -20,6 +20,8 @@ paths = ModuleType('openpilot.system.hardware.hw')
 paths.Paths = SimpleNamespace(swaglog_ipc=lambda: 'inproc://startup-ui-source', swaglog_root=lambda: str(output.parent / 'source-logs'))
 sys.modules[paths.__name__] = paths
 import pyray as rl
+from ui_application_qa.final_graphics_source import install as install_final_graphics
+install_final_graphics(widgets=True)
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MouseEvent, MousePos
 from openpilot.system.ui.lib.multilang import multilang
 multilang._language = scene.get('language', 'en')

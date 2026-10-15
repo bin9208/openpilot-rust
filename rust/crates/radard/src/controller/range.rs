@@ -1,9 +1,9 @@
-use super::{Controller, constants::*};
+use super::{constants::*, Controller};
 use crate::{
     math::{maximum, minimum},
     model::VisionLead,
     path::Path,
-    primary::{VisionMatch, constants::*, source::position_continuous},
+    primary::{constants::*, source::position_continuous, VisionMatch},
 };
 
 pub fn central_vision(vision: Option<VisionLead>, path: &Path) -> bool {

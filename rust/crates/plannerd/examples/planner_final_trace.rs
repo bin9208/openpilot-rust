@@ -6,7 +6,7 @@ use openpilot_plannerd::{
     lane_model_speed::LaneModelSpeedGuard,
 };
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::io::{self, Read};
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]

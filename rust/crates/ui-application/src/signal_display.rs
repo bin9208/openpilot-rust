@@ -1,5 +1,5 @@
 //! Display-only signal memory from carrot-wip signal_display.py (MIT).
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{collections::BTreeMap, fs, io::Read, path::Path};
 
 pub const DISPLAY_PATH: &str = "/dev/shm/carrot_signal_display.json";
@@ -71,10 +71,14 @@ fn visible(record: &Value, now: f64, camera: CameraFrame, hold: bool) -> Vec<Tra
                 .ok()?;
             let [x1, y1, x2, y2] = bounds;
             let id = value["id"].as_i64()?;
-            if !bounds.iter().all(|v| v.is_finite())
-                || !(0. <= x1 && x1 < x2 && x2 <= 1344. && 0. <= y1 && y1 < y2 && y2 <= 760.)
-                || value["age"].as_f64() != Some(0.)
-                || !(1..1_000_000).contains(&id)
+            let valid_geometry = bounds.iter().all(|v| v.is_finite())
+                && 0. <= x1
+                && x1 < x2
+                && x2 <= 1344.
+                && 0. <= y1
+                && y1 < y2
+                && y2 <= 760.;
+            if !valid_geometry || value["age"].as_f64() != Some(0.) || !(1..1_000_000).contains(&id)
             {
                 return None;
             }
@@ -329,11 +333,9 @@ mod tests {
         assert!(held[0].held && !held[0].confirmed);
         let expired = memory.update(&next, 12.01, Some((140, 12.01, 1344, 760, false)));
         assert_eq!(expired[0].state, "unknown");
-        assert!(
-            memory
-                .update(&next, 12.51, Some((140, 12.51, 1344, 760, false)))
-                .is_empty()
-        );
+        assert!(memory
+            .update(&next, 12.51, Some((140, 12.51, 1344, 760, false)))
+            .is_empty());
     }
     #[test]
     fn stale_or_wide_camera_resets_memory_and_boxes_follow_full_image_mapping() {
@@ -345,17 +347,13 @@ mod tests {
                 .len(),
             1
         );
-        assert!(
-            memory
-                .update(&current, 10.1, Some((100, 10., 1344, 760, true)))
-                .is_empty()
-        );
+        assert!(memory
+            .update(&current, 10.1, Some((100, 10., 1344, 760, true)))
+            .is_empty());
         assert!(memory.tracks.is_empty());
-        assert!(
-            memory
-                .update(&current, 10.36, Some((100, 10., 1344, 760, false)))
-                .is_empty()
-        );
+        assert!(memory
+            .update(&current, 10.36, Some((100, 10., 1344, 760, false)))
+            .is_empty());
         assert_eq!(
             project_box([0., 0., 1344., 760.], [12., 20., 672., 380.]),
             [12., 20., 672., 380.]

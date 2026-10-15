@@ -1,13 +1,13 @@
 use super::{
-    AUTO_SPEED_LIMIT, Error, FSD_14,
-    parameters::{ParamsInput, parameters},
+    parameters::{parameters, ParamsInput},
     speed_limit::SpeedLimit,
     state::State,
     steering::{self, Coop, SteeringInput},
+    Error, AUTO_SPEED_LIMIT, FSD_14,
 };
 use crate::core::{ApplyInput, ApplyOutput, Message};
 use num_traits::ToPrimitive;
-use openpilot_can::{Frame, packer::Packer};
+use openpilot_can::{packer::Packer, Frame};
 use openpilot_cereal::car_capnp::{car_control, car_params, car_state};
 use openpilot_control_policy::{
     math::clip,

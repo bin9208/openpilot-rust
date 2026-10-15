@@ -1,12 +1,13 @@
 //! Managed child diagnostic boundary, called inside the translated daemon.
 #![forbid(unsafe_code)]
 mod runtime;
-pub use runtime::{RuntimeError, runtime};
+pub use runtime::{runtime, RuntimeError};
 
 use openpilot_crash_reporting::{Inputs, NativeException, Reporter, Sdk};
 use openpilot_logging::{
-    Fields, Value, log_site,
+    log_site,
     record::{Level, Record},
+    Fields, Value,
 };
 use openpilot_logmessaged::JsonValue;
 use std::{
@@ -15,8 +16,8 @@ use std::{
     fmt,
     io::Write,
     sync::{
-        Arc,
         atomic::{AtomicBool, Ordering},
+        Arc,
     },
 };
 

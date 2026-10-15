@@ -16,6 +16,8 @@ def main() -> None:
   parser.add_argument("--http-port", type=int, required=True)
   args = parser.parse_args()
   load_binding(args.binding)
+  from xiaoge_final_source import load as load_final_source
+  load_final_source(producer=True)
   from openpilot.system.hardware.hw import Paths
   Paths.swaglog_root = staticmethod(lambda: str(args.log_root))
   from openpilot.selfdrive.carrot import xiaoge_data

@@ -3,10 +3,10 @@ use crate::{
     auto::{self, Runtime},
     auto_process::ProcessOwner,
     backend::{Backend, Request},
-    runtime::{self, Config, DIRECTORY, Error},
+    runtime::{self, Config, Error, DIRECTORY},
 };
 use openpilot_plannerd::signal::transport::Mode;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     fs, io,
     path::Path,

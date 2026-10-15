@@ -8,6 +8,7 @@ import math
 from numbers import Number
 from pathlib import Path
 import sys
+import subprocess
 import types
 
 import numpy as np
@@ -49,7 +50,15 @@ def load(store):
   from openpilot.common.constants import CV
   from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature, get_lag_adjusted_curvature, is_volkswagen_meb, CONTROL_N
   from openpilot.selfdrive.controls.lib.latcontrol import LatControl, MIN_LATERAL_CONTROL_SPEED
-  from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, STEER_ANGLE_SATURATION_THRESHOLD
+  # The selected latest-range hunk propagates the controls-limited flag.
+  # The retained baseline Python angle module intentionally remains unchanged.
+  angle_path = 'openpilot/selfdrive/controls/lib/latcontrol_angle.py'
+  angle_pin = '8e7eec049241b6ba384e9197aacdfb01f7d88ed3'
+  angle = types.ModuleType('verified_final_latcontrol_angle')
+  exec(compile(subprocess.check_output(['git', 'show', angle_pin + ':' + angle_path]),
+               angle_pin + ':' + angle_path, 'exec'), angle.__dict__)
+  LatControlAngle = angle.LatControlAngle
+  STEER_ANGLE_SATURATION_THRESHOLD = angle.STEER_ANGLE_SATURATION_THRESHOLD
   from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
   from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
   from openpilot.selfdrive.controls.lib.longcontrol import LongControl

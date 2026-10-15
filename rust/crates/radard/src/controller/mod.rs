@@ -6,7 +6,6 @@ mod scc;
 mod update;
 
 use crate::{
-    Lead,
     association::Associator,
     model::Model,
     point::{Identity, Point},
@@ -14,7 +13,7 @@ use crate::{
     primary::{self, Matcher},
     selection::{self, LeadTwoTracker, PrimaryHandoff, StationaryShadow},
     trajectory_cutin::Detector,
-    trajectory_cutout,
+    trajectory_cutout, Lead,
 };
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};

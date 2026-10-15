@@ -141,12 +141,19 @@ impl Events {
     }
 
     pub fn clear(&mut self) {
-        if self.events.iter().any(|e| matches!(e, EventName::SteerTempUnavailable | EventName::SteerTempUnavailableSilent)) {
-            self.steer_warning_fault_frames=(self.steer_warning_fault_frames+1).min(12);
-            self.steer_warning_clear_frames=0;
+        if self.events.iter().any(|e| {
+            matches!(
+                e,
+                EventName::SteerTempUnavailable | EventName::SteerTempUnavailableSilent
+            )
+        }) {
+            self.steer_warning_fault_frames = (self.steer_warning_fault_frames + 1).min(12);
+            self.steer_warning_clear_frames = 0;
         } else {
-            self.steer_warning_clear_frames=(self.steer_warning_clear_frames+1).min(100);
-            if self.steer_warning_clear_frames>=100 {self.steer_warning_fault_frames=0;}
+            self.steer_warning_clear_frames = (self.steer_warning_clear_frames + 1).min(100);
+            if self.steer_warning_clear_frames >= 100 {
+                self.steer_warning_fault_frames = 0;
+            }
         }
         for (event, counter) in &mut self.counters {
             *counter = if self.events.iter().any(|item| u16::from(*item) == *event) {
@@ -198,10 +205,16 @@ impl Events {
                         callback: definition,
                     } => callback(definition).map_err(CreateAlertError::Callback)?,
                 };
-                if matches!(event,EventName::SteerTempUnavailable|EventName::SteerTempUnavailableSilent)
-                    && matches!(category,EventType::SoftDisable|EventType::Warning)
-                    && alert.alert_status != openpilot_cereal::log_capnp::selfdrive_state::AlertStatus::Critical
-                    && self.steer_warning_fault_frames<12 {continue;}
+                if matches!(
+                    event,
+                    EventName::SteerTempUnavailable | EventName::SteerTempUnavailableSilent
+                ) && matches!(category, EventType::SoftDisable | EventType::Warning)
+                    && alert.alert_status
+                        != openpilot_cereal::log_capnp::selfdrive_state::AlertStatus::Critical
+                    && self.steer_warning_fault_frames < 12
+                {
+                    continue;
+                }
                 alert.alert_text_1 = translate(&alert.alert_text_1);
                 alert.alert_text_2 = alert.alert_text_2.as_deref().map(&mut translate);
                 if 0.01 * (self.counters[&u16::from(*event)] + 1) as f64 >= alert.creation_delay {

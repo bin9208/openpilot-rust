@@ -1,11 +1,11 @@
 //! Causal image correspondence; previous pixels establish identity, never color.
 use crate::{
-    detector::{Detection, detect, gray_view, roi},
-    pixels::{Rgb, illuminated_green, lamp_evidence_with},
+    detector::{detect, gray_view, roi, Detection},
+    pixels::{illuminated_green, lamp_evidence_with, Rgb},
 };
 use openpilot_opencv_runtime as cv;
-use openpilot_plannerd::signal::tracker::{Frame, Tracker, overlap};
-use serde_json::{Value, json};
+use openpilot_plannerd::signal::tracker::{overlap, Frame, Tracker};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

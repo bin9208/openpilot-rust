@@ -1,5 +1,5 @@
 use openpilot_calibrationd::orientation::{compose, rotation};
-use openpilot_locationd::orientation::{IDENTITY, Matrix, apply, rotate_std};
+use openpilot_locationd::orientation::{apply, rotate_std, Matrix, IDENTITY};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Deserialize, Serialize)]

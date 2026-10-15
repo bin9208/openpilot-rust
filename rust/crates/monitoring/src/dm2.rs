@@ -1,5 +1,5 @@
 //! Final carrot-wip DM2 policy, source e8e152dbcfd9574a1791ed12026d1880e87689b3 (dm2.py).
-use crate::{AlertLevel, DT_DMON, DriverMonitoring, Input, InputError, Policy};
+use crate::{AlertLevel, DriverMonitoring, Input, InputError, Policy, DT_DMON};
 
 pub struct DriverMonitoring2 {
     pub monitor: DriverMonitoring,
@@ -78,7 +78,11 @@ impl DriverMonitoring2 {
         };
         let wheel_factor = if empty { 2. } else { 1. };
         let vision_factor = if experimental {
-            if empty { 4. } else { 2. }
+            if empty {
+                4.
+            } else {
+                2.
+            }
         } else {
             1.
         };

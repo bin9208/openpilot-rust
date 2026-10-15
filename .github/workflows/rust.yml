@@ -526,6 +526,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -823,6 +825,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -889,6 +893,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1010,6 +1016,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1126,6 +1134,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1212,6 +1222,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1328,6 +1340,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
           cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
+          printf 'RADARCAN_NUMERICS_DIR=%s/radar-native/numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Require RadarCAN and CAN tests, native build and Clippy
         working-directory: rust
         run: |
@@ -1400,6 +1413,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
           cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
+          printf 'RADARCAN_NUMERICS_DIR=%s/radar-native/numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build and execute generic ARM RadarCAN tests and artifacts
         working-directory: rust
         run: |
@@ -1988,6 +2002,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2159,6 +2175,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2311,6 +2329,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2434,6 +2454,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2532,6 +2554,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2641,6 +2665,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2804,6 +2830,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2899,6 +2927,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Fetch exact upstream reference commits
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
       - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev g++-aarch64-linux-gnu
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
       - name: Check Rust allocation and aliasing on ARM with Miri

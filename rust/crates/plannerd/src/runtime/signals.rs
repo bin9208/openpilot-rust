@@ -1,7 +1,6 @@
 //! Fresh observer inputs acquired at final Carrot owner phases.
-use super::{Output, views::Views};
+use super::{views::Views, Output};
 use crate::{
-    Error,
     carrot::{PrepareRead, SignalSource, StartRead},
     model::Model,
     platform::Clock,
@@ -13,6 +12,7 @@ use crate::{
         road_policy::RoadPolicy,
         transport::{self, Mode, ModeCache, Reader, Service, VehicleContext},
     },
+    Error,
 };
 use openpilot_cereal::{
     car_capnp::car_state::GearShifter,
@@ -431,16 +431,14 @@ impl<C: Clock, O: Output> SignalSource for Source<'_, '_, C, O> {
 // replay instead of replacing freshness with a synthetic latest value.
 #[cfg(feature = "signal-validation")]
 fn validation_services(state: &State) -> serde_json::Value {
-    serde_json::json!(
-        state
-            .topics()
-            .iter()
-            .map(|topic| serde_json::json!({
-                "name":topic.service.name,"seen":topic.seen,"valid":topic.valid,
-                "alive":topic.alive,"receive_time":topic.receive_time,
-            }))
-            .collect::<Vec<_>>()
-    )
+    serde_json::json!(state
+        .topics()
+        .iter()
+        .map(|topic| serde_json::json!({
+            "name":topic.service.name,"seen":topic.seen,"valid":topic.valid,
+            "alive":topic.alive,"receive_time":topic.receive_time,
+        }))
+        .collect::<Vec<_>>())
 }
 
 #[cfg(test)]

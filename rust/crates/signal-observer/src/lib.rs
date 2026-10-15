@@ -29,7 +29,10 @@ pub mod numpy_exp;
 
 pub mod lifecycle;
 
-#[cfg(all(feature = "daemon", any(feature = "neural-ort", feature = "neural-qcom")))]
+#[cfg(all(
+    feature = "daemon",
+    any(feature = "neural-ort", feature = "neural-qcom")
+))]
 pub mod neural_runtime;
 
 pub mod auto;

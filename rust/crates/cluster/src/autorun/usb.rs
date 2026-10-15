@@ -1,6 +1,6 @@
 use crate::{
-    Error,
     usb::{Display, Options, ParamsRuntime},
+    Error,
 };
 use openpilot_usbgpu::{bus_lock::BusLock, native_usb::Scanner};
 use std::path::{Path, PathBuf};

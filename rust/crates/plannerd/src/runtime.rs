@@ -1,8 +1,8 @@
 use crate::{
-    Error, carrot::CarrotPlanner, config::Config, fast_radar::FastRadarOverlay,
+    carrot::CarrotPlanner, config::Config, fast_radar::FastRadarOverlay,
     lane_departure::LaneDeparture, lateral_planner::LateralPlanner,
     longitudinal_planner::LongitudinalPlanner, parameters::Parameters,
-    stopping_lead::StoppingLeadFilter,
+    stopping_lead::StoppingLeadFilter, Error,
 };
 use openpilot_logging::{producer::Logger, runtime::RuntimeDiagnostics};
 use openpilot_messaging::{

@@ -1,6 +1,6 @@
 use openpilot_signal_observer::{auto_runtime, backend::Request, runtime::Config};
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     env, fs,
     io::{self, Read},

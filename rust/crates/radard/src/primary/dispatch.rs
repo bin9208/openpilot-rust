@@ -1,4 +1,4 @@
-use super::{Frame, Matcher, VisionMatch, constants::*, stationary_geometry::equivalent};
+use super::{constants::*, stationary_geometry::equivalent, Frame, Matcher, VisionMatch};
 use crate::{point::Point, scope::turning_entry_allowed};
 use std::collections::HashSet;
 
