@@ -222,6 +222,16 @@ original corpora are consumed without Python. No model Python source was removed
 
 ## Outstanding delivery evidence
 
+Checkpoint `30866c90dc246fddf2c963b3e5f0947390bee30d` was pushed to the
+isolated issue branch. Its [Fast checks run](https://github.com/bin9208/openpilot-rust/actions/runs/38716577954)
+failed in the logging-builder fixture: it froze the capture machine's unsorted
+filesystem order for schema/generated files. The same failure was reproduced
+locally on tmpfs. The repaired test uses the current directory enumeration order
+while requiring the exact original file multiset, argument slots, fixed source
+order and all other command/artifact fields. All five logging tests pass and the
+eight-case original comparison also passes on tmpfs. Production enumeration is
+unchanged; no source/flag checks were removed. A new exact-SHA cloud run is needed.
+
 Continue the [implementation plan](rust-repository-python-retirement-296-plan.md)
 through every remaining source family, actual consumer migration, a zero-Python
 execution audit, independent review, exact-commit PR and merged-dev checks,

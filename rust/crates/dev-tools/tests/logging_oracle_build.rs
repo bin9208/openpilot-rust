@@ -40,6 +40,68 @@ fn replace(value: &Value, pairs: &[(&str, &str)]) -> Value {
         _ => value.clone(),
     }
 }
+// Original Path.glob and native read_dir both preserve the current filesystem's
+// order. Frozen captures establish membership and argument positions, not the
+// directory ordering of the machine on which the capture was produced.
+fn original_globs_on_current_filesystem(value: &Value, output: &Path) -> Value {
+    match value {
+        Value::Array(values) => {
+            let mut values: Vec<_> = values
+                .iter()
+                .map(|value| original_globs_on_current_filesystem(value, output))
+                .collect();
+            for (directory, suffix) in [("schema", ".capnp"), ("cereal/gen/cpp", ".capnp.c++")] {
+                let prefix = format!("$OUTPUT/{directory}/");
+                let slots: Vec<_> = values
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(at, value)| {
+                        value
+                            .as_str()
+                            .filter(|s| s.starts_with(&prefix) && s.ends_with(suffix))
+                            .map(|_| at)
+                    })
+                    .collect();
+                if slots.is_empty() {
+                    continue;
+                }
+                let live: Vec<_> = fs::read_dir(output.join(directory))
+                    .unwrap()
+                    .map(|entry| entry.unwrap().file_name().to_str().unwrap().to_owned())
+                    .filter(|name| name.ends_with(suffix))
+                    .map(|name| format!("{prefix}{name}"))
+                    .collect();
+                let mut frozen: Vec<_> = slots
+                    .iter()
+                    .map(|at| values[*at].as_str().unwrap().to_owned())
+                    .collect();
+                let mut membership = live.clone();
+                frozen.sort();
+                membership.sort();
+                assert_eq!(
+                    frozen, membership,
+                    "original glob membership must remain exact"
+                );
+                for (at, path) in slots.into_iter().zip(live) {
+                    values[at] = json!(path);
+                }
+            }
+            Value::Array(values)
+        }
+        Value::Object(values) => Value::Object(
+            values
+                .iter()
+                .map(|(key, value)| {
+                    (
+                        key.clone(),
+                        original_globs_on_current_filesystem(value, output),
+                    )
+                })
+                .collect(),
+        ),
+        _ => value.clone(),
+    }
+}
 fn setup(source: &Path) {
     fs::create_dir_all(source.join("rust/tools")).unwrap();
     for name in ["openpilot", "msgq_repo", "opendbc_repo"] {
@@ -185,8 +247,14 @@ fn eight_original_bootlog_identifier_loggerd_cases_match_compiler_and_source_con
             .filter(|command| command[0] != "python3")
             .cloned()
             .collect();
-        assert_eq!(normalize(&json!(peer.commands)), json!(expected_commands));
-        assert_eq!(normalize(&json!(peer.compiler_env)), case["compiler_env"]);
+        assert_eq!(
+            normalize(&json!(peer.commands)),
+            original_globs_on_current_filesystem(&json!(expected_commands), &output)
+        );
+        assert_eq!(
+            normalize(&json!(peer.compiler_env)),
+            original_globs_on_current_filesystem(&case["compiler_env"], &output)
+        );
         for (name, expected) in case["files"].as_object().unwrap() {
             let text = fs::read_to_string(output.join(name)).unwrap();
             let value = if name.ends_with(".json") {
@@ -196,7 +264,7 @@ fn eight_original_bootlog_identifier_loggerd_cases_match_compiler_and_source_con
             };
             assert_eq!(
                 normalize(&value),
-                *expected,
+                original_globs_on_current_filesystem(expected, &output),
                 "{} variant{} {name}",
                 case["family"],
                 case["variant"]
