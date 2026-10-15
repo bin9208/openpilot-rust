@@ -54,6 +54,7 @@ pub struct Bundle {
 }
 
 pub struct Catalog {
+    generation: String,
     bundles: Vec<Bundle>,
 }
 
@@ -145,7 +146,15 @@ impl Catalog {
                 backend: backend.backend,
             });
         }
-        Ok(Self { bundles })
+        Ok(Self {
+            generation: pointer.generation,
+            bundles,
+        })
+    }
+
+    /// Identity of the verified index loaded with these bundles.
+    pub fn generation(&self) -> &str {
+        &self.generation
     }
 
     pub fn bundles(&self) -> &[Bundle] {

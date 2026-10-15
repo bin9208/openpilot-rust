@@ -958,3 +958,34 @@ fn dynamic_cpp_params_interoperability_gate_keeps_native_build_and_execution() {
     assert!(!commands(&workflow()["jobs"]["workspace"])
         .contains("python tools/check_params_reference.py"));
 }
+
+#[test]
+fn model_publication_comparison_reads_generation_through_verified_native_catalog() {
+    let data = workflow();
+    let steps = data["jobs"]["model-pipelines"]["steps"].as_array().unwrap();
+    let validated = steps
+        .iter()
+        .position(|step| step["name"] == "Build and validate immutable native pipeline catalog")
+        .unwrap();
+    let compared = steps
+        .iter()
+        .position(|step| {
+            step["name"] == "Compare model publications with the original Python implementations"
+        })
+        .unwrap();
+    assert!(validated < compared);
+    assert!(steps[validated]["run"]
+        .as_str()
+        .unwrap()
+        .contains("model-run --check-catalog \"$RUNNER_TEMP/native-catalog\""));
+    let run = steps[compared]["run"].as_str().unwrap();
+    let generation = run.find("generation=$(rust/target/debug/model-run --catalog-generation \"$RUNNER_TEMP/native-catalog\")").unwrap();
+    let compare = run
+        .find("python rust/tools/check_model_outputs.py")
+        .unwrap();
+    assert!(generation < compare);
+    assert!(run.contains("for resolution in '1928 1208' '1344 760'"));
+    assert!(run.contains("--driving-pipeline \"$RUNNER_TEMP/native-catalog/$generation/driving-${1}x${2}/pipeline.json\""));
+    assert!(run.contains("--driver-pipeline \"$RUNNER_TEMP/native-catalog/$generation/driver-${1}x${2}/pipeline.json\""));
+    assert!(!run.contains("python -c"));
+}

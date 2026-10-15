@@ -1153,3 +1153,25 @@ source-matched binary's real Miri hash output remains unchanged.
 
 Final scoped Clippy passes with warnings denied after both review repairs. The
 independent Miri review is closed with no remaining actionable findings.
+
+### Native validated catalog generation selection
+
+`model-run --catalog-generation ROOT` replaces the workflow's embedded Python
+`current.json` read. It reuses `Catalog::load`, retains the verified index identity
+and prints it without loading executable kernels. The existing `--check-catalog`
+output remains unchanged. The workflow still builds the tool first, validates the
+whole catalog and runs both camera-resolution publication comparisons.
+
+Independent original Python output and complete non-executable catalog metadata
+are retained for x86_64 and aarch64. The host CLI matches the original generation
+bytes with Python absent from PATH; the fixture for the executing architecture is
+selected by the test. A tampered index produces no successful metadata output.
+Repeating validation intentionally prevents stale/tampered catalog metadata use;
+this command is not a general replacement for Python printing arbitrary JSON
+values. The previous workflow already required a valid catalog before this step.
+
+Four catalog tests and 32 workflow-isolation tests pass. Both focused model-runtime
+and dev-tools Clippy invocations pass with warnings denied, and independent review
+is clear. This is the sixth embedded Python command replaced; baseline source
+retirement remains 51 / 3,529 pending. No full model compiler, Python removal,
+training, GPU or device completion is implied by metadata-only validation.

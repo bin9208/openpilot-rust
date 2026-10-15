@@ -2875,7 +2875,7 @@ jobs:
           done
       - name: Compare model publications with the original Python implementations
         run: |
-          generation=$(python -c 'import json, os; print(json.load(open(os.environ["RUNNER_TEMP"] + "/native-catalog/current.json"))["generation"])')
+          generation=$(rust/target/debug/model-run --catalog-generation "$RUNNER_TEMP/native-catalog")
           for resolution in '1928 1208' '1344 760'; do
             set -- $resolution
             python rust/tools/check_model_outputs.py --binary rust/target/debug/examples/output_probe --output "$RUNNER_TEMP/model-outputs-$1" \
