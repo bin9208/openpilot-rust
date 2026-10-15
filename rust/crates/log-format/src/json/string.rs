@@ -19,6 +19,14 @@ impl Parser<'_> {
         self.offset += 1;
         let mut output = Vec::new();
         loop {
+            if let Ok(index) = self
+                .raw_surrogates
+                .binary_search_by_key(&self.offset, |(offset, _)| *offset)
+            {
+                output.push(self.raw_surrogates[index].1);
+                self.offset += 1;
+                continue;
+            }
             match self.peek() {
                 None => return Err(self.error("unterminated string")),
                 Some(b'"') => {

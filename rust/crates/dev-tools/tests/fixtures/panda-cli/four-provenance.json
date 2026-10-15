@@ -1,0 +1,22 @@
+{
+  "encoder": {
+    "source": "rust/tools/build_encoder_source.py",
+    "revision": "30866c90",
+    "sha256": "f9de8259b088c11f180781221dd455b7e8ba8678aad99f3d536725db27bc62e3"
+  },
+  "athena": {
+    "source": "rust/tools/build_athena_vision_peer.py",
+    "revision": "777bd1c7",
+    "sha256": "25373e966c948a5dfce5ee301305771f4f8fe4dcac6a2296af53a9fd4146cc8a"
+  },
+  "firmware": {
+    "source": "rust/tools/build_pandad_firmware_spi_fixture.py",
+    "revision": "a1ddbf7d",
+    "sha256": "138b4610e768c5f55b0ee9406500bf4987ee1d88be552a42e9cb07fe5b110c88"
+  },
+  "msgq": {
+    "source": "rust/tools/check_msgq_sanitizers.py",
+    "revision": "7668b660bc89da7cb605878d574c5d97f340bcd1",
+    "sha256": "4533611f5fdeca25d7f0bd740cf7d0e35894005eee95ccfce3ca43fd809b9d7d"
+  }
+}

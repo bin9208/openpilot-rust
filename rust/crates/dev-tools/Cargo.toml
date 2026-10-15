@@ -9,6 +9,14 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-control-tools-policy"
+path = "src/bin/check_control_tools_policy.rs"
+
+[[bin]]
+name = "check-msgq-sanitizers"
+path = "src/bin/check_msgq_sanitizers.rs"
+
+[[bin]]
 name = "build-encoder-source"
 path = "src/bin/build_encoder_source.rs"
 

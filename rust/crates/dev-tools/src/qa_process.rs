@@ -11,7 +11,7 @@ use std::{
     collections::BTreeMap,
     fmt,
     fs::{self, File},
-    io::{self, Read},
+    io::{self, Read, Write},
     os::{
         fd::OwnedFd,
         unix::{
@@ -36,6 +36,13 @@ pub struct CommandSpec {
     pub merge_output: bool,
     /// Pass both output streams directly to the caller without capturing them.
     pub inherit_output: bool,
+    /// Inherit only stderr, retaining captured stdout (e.g. Cargo JSON output).
+    pub inherit_stderr: bool,
+    /// Feed these raw bytes through a pipe while concurrently draining outputs.
+    /// None preserves the existing null-stdin behavior; Some(empty) sends EOF.
+    pub input: Option<Vec<u8>>,
+    /// Pass the caller's stdin through unchanged; incompatible with explicit input.
+    pub inherit_stdin: bool,
 }
 impl CommandSpec {
     pub fn new(argv: Vec<String>, timeout: Duration) -> Self {
@@ -48,6 +55,9 @@ impl CommandSpec {
             stderr_limit: 16 * 1024 * 1024,
             merge_output: false,
             inherit_output: false,
+            inherit_stderr: false,
+            input: None,
+            inherit_stdin: false,
         }
     }
 }
@@ -66,6 +76,7 @@ pub trait Runner {
         let mut command = command.clone();
         command.merge_output = true;
         command.inherit_output = false;
+        command.inherit_stderr = false;
         match self.run(&command) {
             Ok(captured) => {
                 fs::write(log, &captured.stdout)?;
@@ -172,6 +183,7 @@ impl Runner for NativeRunner {
         let mut spec = spec.clone();
         spec.merge_output = true;
         spec.inherit_output = false;
+        spec.inherit_stderr = false;
         self.run_with_file(&spec, Some(log))
     }
 }
@@ -180,8 +192,11 @@ impl NativeRunner {
         if spec.timeout.is_zero() {
             return Err("native command timeout must be positive".into());
         }
-        if spec.merge_output && spec.inherit_output {
+        if spec.merge_output && (spec.inherit_output || spec.inherit_stderr) {
             return Err("native command cannot both merge and inherit output".into());
+        }
+        if spec.inherit_stdin && spec.input.is_some() {
+            return Err("native command cannot both pipe and inherit stdin".into());
         }
         let (first, args) = spec.argv.split_first().ok_or("empty native command")?;
         let mut command = Command::new(first);
@@ -195,8 +210,15 @@ impl NativeRunner {
         if let Some(cwd) = &spec.cwd {
             command.current_dir(cwd);
         }
+        if spec.input.is_some() {
+            command.stdin(Stdio::piped());
+        } else if spec.inherit_stdin {
+            command.stdin(Stdio::inherit());
+        }
         if spec.inherit_output {
             command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
+        } else if spec.inherit_stderr {
+            command.stderr(Stdio::inherit());
         }
         let merged = if let Some(log) = log {
             let file = File::create(log)?;
@@ -223,6 +245,12 @@ impl NativeRunner {
             pid,
             reaped: false,
         };
+        let mut input = owned.child.stdin.take();
+        if let Some(pipe) = &input {
+            fcntl_setfl(pipe, fcntl_getfl(pipe)? | OFlags::NONBLOCK)?;
+        }
+        let input_bytes = spec.input.as_deref().unwrap_or_default();
+        let mut input_written = 0;
         let stdout_fd = match merged {
             Some(fd) => fd,
             None if spec.inherit_output || log.is_some() => File::open("/dev/null")?.into(),
@@ -233,7 +261,7 @@ impl NativeRunner {
                 .ok_or("missing native stdout")?
                 .into(),
         };
-        let stderr_fd = if spec.merge_output || spec.inherit_output {
+        let stderr_fd = if spec.merge_output || spec.inherit_output || spec.inherit_stderr {
             File::open("/dev/null")?.into()
         } else {
             owned
@@ -262,6 +290,31 @@ impl NativeRunner {
             };
             stdout.drain(spec.stdout_limit, "stdout")?;
             stderr.drain(spec.stderr_limit, "stderr")?;
+            // One bounded write per iteration prevents a continuously reading
+            // child from starving output drainage or the deadline check.
+            if let Some(pipe) = &mut input {
+                if input_written < input_bytes.len() {
+                    let end = input_bytes.len().min(input_written.saturating_add(65536));
+                    match pipe.write(&input_bytes[input_written..end]) {
+                        Ok(0) => return Err(io::Error::from(io::ErrorKind::WriteZero).into()),
+                        Ok(count) => input_written += count,
+                        Err(error) if error.kind() == io::ErrorKind::BrokenPipe => {
+                            // subprocess.communicate likewise tolerates early
+                            // closure and returns the child's actual status.
+                            input_written = input_bytes.len();
+                        }
+                        Err(error)
+                            if matches!(
+                                error.kind(),
+                                io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted
+                            ) => {}
+                        Err(error) => return Err(error.into()),
+                    }
+                }
+                if input_written == input_bytes.len() {
+                    input = None;
+                }
+            }
             if !exited {
                 match waitid(
                     WaitId::Pid(pid),
@@ -295,6 +348,9 @@ impl NativeRunner {
             }
             if !stderr.eof {
                 fds.push(PollFd::new(&stderr.file, PollFlags::IN));
+            }
+            if let Some(pipe) = &input {
+                fds.push(PollFd::new(pipe, PollFlags::OUT));
             }
             let timeout = Timespec::try_from(remaining.min(Duration::from_millis(20)))?;
             match poll(&mut fds, Some(&timeout)) {

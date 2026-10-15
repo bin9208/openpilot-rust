@@ -236,3 +236,122 @@ fn file_backed_spawn_failure_truncates_owned_log_and_bad_log_prevents_execution(
     assert!(NativeRunner.run_to_file(&spec, temp.path()).is_err());
     assert!(!marker.exists());
 }
+
+#[test]
+fn piped_input_is_fed_while_both_output_streams_are_drained() {
+    let mut spec = command(
+        "head -c 1048576 /dev/zero; head -c 1048576 /dev/zero >&2; cat; printf 'done' >&2",
+        Duration::from_secs(5),
+    );
+    let input = (0..1_048_576).map(|i| (i % 256) as u8).collect::<Vec<_>>();
+    spec.input = Some(input.clone());
+    let result = NativeRunner.run(&spec).unwrap();
+    assert_eq!(result.code, 0);
+    assert_eq!(result.stdout.len(), 2_097_152);
+    assert!(result.stdout[..1_048_576].iter().all(|&byte| byte == 0));
+    assert_eq!(&result.stdout[1_048_576..], input);
+    assert_eq!(result.stderr.len(), 1_048_580);
+    assert_eq!(&result.stderr[1_048_576..], b"done");
+}
+
+#[test]
+fn empty_and_early_closed_input_preserve_eof_and_child_status() {
+    let mut spec = command("cat; printf 'eof'", Duration::from_secs(2));
+    spec.input = Some(vec![]);
+    let result = NativeRunner.run(&spec).unwrap();
+    assert_eq!(result.stdout, b"eof");
+    assert_eq!(result.code, 0);
+    spec.argv[2] = "exec 0<&-; printf 'closed'; exit 7".into();
+    spec.input = Some(vec![42; 1_048_576]);
+    let result = NativeRunner.run(&spec).unwrap();
+    assert_eq!(result.stdout, b"closed");
+    assert_eq!(result.code, 7);
+}
+
+#[test]
+fn blocked_input_remains_subject_to_deadline_and_group_cleanup() {
+    let temp = tempfile::tempdir().unwrap();
+    let pidfile = temp.path().join("worker.pid");
+    let mut spec = command(
+        &format!(
+            "printf 'waiting'; sleep 30 & printf '%s' $! > '{}'; wait",
+            pidfile.display()
+        ),
+        Duration::from_millis(200),
+    );
+    spec.input = Some(vec![42; 1_048_576]);
+    let error = NativeRunner.run(&spec).unwrap_err();
+    let Some(CaptureError::Timeout { stdout, .. }) = error.downcast_ref::<CaptureError>() else {
+        panic!("expected timeout while input is blocked: {error}");
+    };
+    assert_eq!(stdout, b"waiting");
+    assert_terminated(fs::read_to_string(pidfile).unwrap().parse().unwrap());
+}
+
+#[test]
+fn inherited_stderr_child() {
+    if std::env::var_os("OPENPILOT_QA_INHERITED_STDERR_CHILD").is_none() {
+        return;
+    }
+    let mut spec = command(
+        "printf 'captured\\377'; printf 'inherited-error\\r' >&2; exit 7",
+        Duration::from_secs(2),
+    );
+    spec.inherit_stderr = true;
+    let result = NativeRunner.run(&spec).unwrap();
+    assert_eq!(result.code, 7);
+    assert_eq!(result.stdout, b"captured\xff");
+    assert!(result.stderr.is_empty());
+}
+
+#[test]
+fn separately_inherited_stderr_keeps_stdout_captured() {
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "inherited_stderr_child", "--nocapture"])
+        .env("OPENPILOT_QA_INHERITED_STDERR_CHILD", "1")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(!output
+        .stdout
+        .windows(b"captured\xff".len())
+        .any(|v| v == b"captured\xff"));
+    assert_eq!(output.stderr, b"inherited-error\r");
+    let mut spec = command("exit 99", Duration::from_secs(2));
+    spec.inherit_stderr = true;
+    spec.merge_output = true;
+    assert!(NativeRunner.run(&spec).is_err());
+}
+
+#[test]
+fn inherited_stdin_child() {
+    if std::env::var_os("OPENPILOT_QA_INHERITED_STDIN_CHILD").is_none() {
+        return;
+    }
+    let mut spec = command("cat", Duration::from_secs(2));
+    spec.inherit_stdin = true;
+    let result = NativeRunner.run(&spec).unwrap();
+    assert_eq!(result.stdout, b"inherited\x00\xff\r\n");
+    spec.input = Some(vec![]);
+    assert!(NativeRunner.run(&spec).is_err());
+}
+#[test]
+fn inherited_stdin_reaches_child_without_translation() {
+    use std::io::Write;
+    let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "inherited_stdin_child", "--nocapture"])
+        .env("OPENPILOT_QA_INHERITED_STDIN_CHILD", "1")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"inherited\x00\xff\r\n")
+        .unwrap();
+    let result = child.wait_with_output().unwrap();
+    assert!(result.status.success(), "{:?}", result);
+}

@@ -307,11 +307,14 @@ pub fn compile_onnx(
     if model.graph.nodes.iter().any(|node| node.op == "Gelu" && node.attributes.get("approximate").is_none_or(|attribute| matches!(attribute, compiler_onnx::Attribute::String(value) if value == "none"))) {
         return Err("CPU Gelu approximate=none layout-sensitive NaN propagation is not implemented".into());
     }
-    let lowered = if options.offline_bindings {
+    let mut lowered = if options.offline_bindings {
         LoweredGraph::lower_offline(&model)
     } else {
         LoweredGraph::lower(&model)
     }?;
+    if options.offline_bindings {
+        compiler_onnx::storage::apply_cpu_image_aliases(&mut lowered, &model)?;
+    }
     let schedule = schedule::schedule_plans(&lowered, "CPU", true)?;
     let memory =
         memory::plan_memory_enabled(&schedule.buffers, &schedule.calls, options.memory_planning)?;

@@ -7,12 +7,36 @@ use crate::{
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::BTreeMap,
     fs,
     path::{Path, PathBuf},
     time::Duration,
 };
 
+pub use crate::argparse_scan::ArgumentError;
+fn specs(family: &str) -> Vec<crate::argparse_scan::OptionSpec> {
+    use crate::argparse_scan::OptionSpec as S;
+    let mut specs = vec![
+        S::value("--output", true),
+        S::value("--json11-prefix", true),
+        S::value("--root", false),
+    ];
+    if family == "protocol" {
+        specs.push(S::value("--capnp-prefix", true));
+        specs.extend(
+            ["--safety", "--device", "--state", "--can-io"].map(|name| S::flag(name, Some("mode"))),
+        );
+    }
+    if matches!(family, "usb" | "runtime-fixture") {
+        specs.push(S::value("--libusb-include", true));
+    }
+    if matches!(family, "usb" | "spi" | "runtime-fixture") {
+        specs.push(S::value("--compiler", false));
+    }
+    if family != "runtime-fixture" {
+        specs.push(S::flag("--sanitize", None));
+    }
+    specs
+}
 struct Options {
     output: PathBuf,
     json11: PathBuf,
@@ -27,39 +51,12 @@ impl Options {
         if !["protocol", "usb", "spi", "peripheral", "runtime-fixture"].contains(&family) {
             return Err("unknown Panda build family".into());
         }
-        let mut values = BTreeMap::new();
-        let mut mode = None;
-        let mut sanitize = false;
-        let mut i = 0;
-        while i < args.len() {
-            let key = args[i].as_str();
-            i += 1;
-            if key == "--sanitize" && family != "runtime-fixture" {
-                sanitize = true;
-                continue;
-            }
-            if ["--safety", "--device", "--state", "--can-io"].contains(&key)
-                && family == "protocol"
-            {
-                if mode.replace(key[2..].to_owned()).is_some() {
-                    return Err("Panda protocol modes are mutually exclusive".into());
-                }
-                continue;
-            }
-            let allowed = matches!(key, "--output" | "--json11-prefix")
-                || key == "--capnp-prefix" && family == "protocol"
-                || key == "--libusb-include" && matches!(family, "usb" | "runtime-fixture")
-                || key == "--compiler" && matches!(family, "usb" | "spi" | "runtime-fixture");
-            if !allowed {
-                return Err(format!("unknown argument: {key}").into());
-            }
-            let value = args
-                .get(i)
-                .ok_or_else(|| format!("{key} requires a value"))?
-                .clone();
-            i += 1;
-            values.insert(key.to_owned(), value);
-        }
+        let mut values = crate::argparse_scan::scan(args, &specs(family))?.values;
+        let sanitize = values.remove("--sanitize").is_some();
+        let mode = ["--safety", "--device", "--state", "--can-io"]
+            .into_iter()
+            .find(|key| values.contains_key(*key))
+            .map(|key| key[2..].to_owned());
         let mut take = |key: &str| -> Result<String> {
             values
                 .remove(key)
@@ -599,8 +596,9 @@ fn protocol(root: &Path, o: &Options, runner: &mut dyn Runner) -> Result<()> {
 }
 /// CLI shared by the five build entrypoints. `--root` adds explicit checkout selection.
 pub fn cli(family: &str) -> Result<()> {
-    let mut args = std::env::args().skip(1).collect::<Vec<_>>();
-    if args.iter().any(|a| a == "--help" || a == "-h") {
+    let args = std::env::args().skip(1).collect::<Vec<_>>();
+    let parsed = crate::argparse_scan::scan(&args, &specs(family))?;
+    if parsed.help {
         let name = if family == "runtime-fixture" {
             "build-pandad-runtime-fixture".to_owned()
         } else {
@@ -619,14 +617,11 @@ pub fn cli(family: &str) -> Result<()> {
         println!("Usage: {name} --output OUTPUT --json11-prefix PREFIX [--root ROOT]{extra}");
         return Ok(());
     }
-    let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    if let Some(at) = args.iter().position(|a| a == "--root") {
-        if at + 1 >= args.len() {
-            return Err("--root requires value".into());
-        }
-        root = PathBuf::from(args.remove(at + 1));
-        args.remove(at);
-    }
+    let root = parsed
+        .values
+        .get("--root")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."));
     let root = root.canonicalize()?;
     let options = Options::parse(family, &args)?;
     let space = disk_space::inspect(&options.output, 256 * 1024 * 1024)?;

@@ -1,4 +1,5 @@
 pub use openpilot_disk_space as disk_space;
+pub mod argparse_scan;
 pub mod athena_vision_build;
 pub mod brotli_stage;
 pub mod filter_reference;
@@ -27,10 +28,12 @@ pub mod panda_build;
 
 pub mod bridge_source_build;
 pub mod ci_policy;
+pub mod control_tools_policy_check;
 pub mod jpeg_sanitizers_check;
 pub mod json11_stage;
 pub mod logger_identifier_check;
 pub mod logging_oracle_build;
+pub mod msgq_sanitizers_check;
 pub mod native_logging_build;
 pub mod panda_oracle_build;
 pub mod panda_runtime_build;

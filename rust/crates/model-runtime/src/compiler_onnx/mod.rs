@@ -10,6 +10,7 @@ mod protobuf;
 pub mod render;
 pub mod scalar;
 pub mod schedule;
+pub mod storage;
 use std::{collections::BTreeMap, path::Path};
 pub const STATIC_OPERATORS: &[&str] = &[
     "Identity",

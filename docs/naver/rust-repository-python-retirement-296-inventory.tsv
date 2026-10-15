@@ -1910,7 +1910,7 @@ rust/tools/check_communication_snapshot.py	8079cf67e33fc0e81a03d30eee7fef72400c2
 rust/tools/check_control_failures.py	401193fafdc6636397714d03a5ac3cc30d82d835	pending	-
 rust/tools/check_control_neural.py	4adf83165988e71b806447a7f20a7a8571cc969b	pending	-
 rust/tools/check_control_policies.py	09173dd9fb9efd8f841e088461cbad2e104cd853	pending	-
-rust/tools/check_control_tools_policy.py	6f931ced55cd4dc1eb2573c3126416e85f5e253b	pending	-
+rust/tools/check_control_tools_policy.py	6f931ced55cd4dc1eb2573c3126416e85f5e253b	replaced-local	rust/crates/dev-tools/src/control_tools_policy_check.rs
 rust/tools/check_controlsd.py	75b142eaed2bce5d1ea908d83ea3e59ac397c03f	pending	-
 rust/tools/check_controlsd_daemon.py	b81a46e2f50e4ab3097bab1e587c6c4aa156b4bb	pending	-
 rust/tools/check_crash_sdk_transport.py	640f56cf3f0f5702737f188cdb445c61b2bbd1a4	pending	-
@@ -1997,7 +1997,7 @@ rust/tools/check_modem.py	acf3550216f59b5e31724e1aa715aa497fc0ee06	pending	-
 rust/tools/check_modem_process_boundary.py	a3b7c5d0b886c5d1e2fa996ed0894c9dbbd10ff2	pending	-
 rust/tools/check_monitoring_reference.py	d10d0decd660d1abb5e7df75354cf3f25b8bd239	pending	-
 rust/tools/check_msgq_ion.py	7008f9446509ef08e027560d547bf88d58256923	pending	-
-rust/tools/check_msgq_sanitizers.py	50efd27009fbf18125f9ce6c820a5f9f381ee607	pending	-
+rust/tools/check_msgq_sanitizers.py	50efd27009fbf18125f9ce6c820a5f9f381ee607	replaced-local	rust/crates/dev-tools/src/msgq_sanitizers_check.rs
 rust/tools/check_native_logging.py	b306fad8a037aa0454740c2101e7c4ff4dfd0a5a	pending	-
 rust/tools/check_navd_config.py	23aa01ccf0fc199c5b35813a1fdc7195ea6da300	pending	-
 rust/tools/check_navd_destination.py	d2cd458007e0adc14d79ab21bb5c08bd1963bba9	pending	-

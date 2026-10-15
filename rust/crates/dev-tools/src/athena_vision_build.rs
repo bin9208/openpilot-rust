@@ -21,14 +21,7 @@ const SOURCES: [&str; 9] = [
     "visionipc/visionipc_server.cc",
     "visionipc/visionbuf.cc",
 ];
-#[derive(Debug)]
-pub struct ArgumentError(String);
-impl std::fmt::Display for ArgumentError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-impl std::error::Error for ArgumentError {}
+pub use crate::argparse_scan::ArgumentError;
 struct Options {
     output: PathBuf,
     root: Option<PathBuf>,
@@ -52,92 +45,18 @@ fn output_path(value: &str) -> PathBuf {
     let path = format!("{prefix}{tail}");
     PathBuf::from(if path.is_empty() { ".".into() } else { path })
 }
-fn is_option(value: &str) -> bool {
-    static NEGATIVE_NUMBER: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-    // Match argparse's decimal Nd digits, not the broader Unicode Number class.
-    let negative = NEGATIVE_NUMBER.get_or_init(|| {
-        regex::Regex::new(r"^-\d+$|^-\d*\.\d+$").expect("fixed argparse negative-number pattern")
-    });
-    value != "-" && value.starts_with('-') && !negative.is_match(value)
-}
-
 impl Options {
     fn parse(args: &[String]) -> Result<Self> {
-        let mut output = Vec::new();
-        let mut root = None;
-        let mut unknown = Vec::new();
-        let mut at = 0;
-        while at < args.len() {
-            let arg = &args[at];
-            if arg == "--" {
-                output.extend_from_slice(&args[at + 1..]);
-                break;
-            }
-            let (name, inline) = arg
-                .split_once('=')
-                .map_or((arg.as_str(), None), |(name, value)| (name, Some(value)));
-            if name == "-h" || name.starts_with("--") {
-                let known = ["--help", "--root"];
-                let flag = if name == "-h" {
-                    Some("--help")
-                } else if known.contains(&name) {
-                    Some(name)
-                } else {
-                    let matches = known
-                        .iter()
-                        .copied()
-                        .filter(|flag| flag.starts_with(name))
-                        .collect::<Vec<_>>();
-                    match matches.as_slice() {
-                        [flag] => Some(*flag),
-                        [] => None,
-                        _ => return Err(format!("ambiguous argument: {name}").into()),
-                    }
-                };
-                match flag {
-                    Some("--help") => {
-                        if inline.is_some() {
-                            return Err("--help does not accept a value".into());
-                        }
-                        return Ok(Self {
-                            output: PathBuf::new(),
-                            root,
-                            help: true,
-                        });
-                    }
-                    Some("--root") => {
-                        let value = if let Some(value) = inline {
-                            value
-                        } else {
-                            at += 1;
-                            args.get(at)
-                                .filter(|value| !is_option(value))
-                                .ok_or("--root requires a value")?
-                        };
-                        root = Some(PathBuf::from(value));
-                    }
-                    _ => unknown.push(arg.clone()),
-                }
-            } else if name.starts_with("-h") {
-                return Err("-h does not accept a value".into());
-            } else if is_option(arg) {
-                unknown.push(arg.clone());
-            } else {
-                output.push(arg.clone());
-            }
-            at += 1;
-        }
-        // argparse diagnoses deferred unknown/extra arguments only after help actions.
-        if !unknown.is_empty() {
-            return Err(format!("unknown arguments: {}", unknown.join(" ")).into());
-        }
-        if output.len() != 1 {
-            return Err("exactly one output path is required".into());
-        }
+        use crate::argparse_scan::{scan_with_positionals, OptionSpec};
+        let parsed = scan_with_positionals(args, &[OptionSpec::value("--root", false)], 1)?;
         Ok(Self {
-            output: output_path(&output[0]),
-            root,
-            help: false,
+            output: parsed
+                .positionals
+                .first()
+                .map(|value| output_path(value))
+                .unwrap_or_default(),
+            root: parsed.values.get("--root").map(PathBuf::from),
+            help: parsed.help,
         })
     }
 }
@@ -191,7 +110,7 @@ pub fn run(
 }
 pub fn cli() -> Result<()> {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
-    let options = Options::parse(&args).map_err(|e| ArgumentError(e.to_string()))?;
+    let options = Options::parse(&args)?;
     if options.help {
         println!("Usage: build-athena-vision-peer [-h|--help] [--root ROOT] OUTPUT");
         return Ok(());
@@ -208,4 +127,40 @@ pub fn cli() -> Result<()> {
         output.display()
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod original_cli_interfaces {
+    #[test]
+    fn original_argparse_admission() {
+        let rows: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/panda-cli/four-interfaces.json"
+        ))
+        .unwrap();
+        for row in rows
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["family"] == "athena")
+        {
+            let args = row["args"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap().to_owned())
+                .collect::<Vec<_>>();
+            let parsed = super::Options::parse(&args);
+            assert_eq!(parsed.is_ok(), row["exit"] == 0, "{}", row);
+            if let Ok(parsed) = parsed {
+                assert_eq!(parsed.help, row["help"].as_bool().unwrap(), "{}", row);
+                if !parsed.help {
+                    assert_eq!(
+                        parsed.output.to_string_lossy(),
+                        row["parsed"]["output"].as_str().unwrap(),
+                        "{row}"
+                    );
+                }
+            }
+        }
+    }
 }

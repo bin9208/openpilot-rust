@@ -42,87 +42,24 @@ const REQUIRED: [&str; 6] = [
     "--jpeg-build",
 ];
 /// Distinguish argparse-compatible input failures from runtime build failures.
-#[derive(Debug)]
-pub struct ArgumentError(String);
-impl std::fmt::Display for ArgumentError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-impl std::error::Error for ArgumentError {}
+pub use crate::argparse_scan::ArgumentError;
 struct Options {
     values: BTreeMap<String, PathBuf>,
     help: bool,
 }
-fn is_option(value: &str) -> bool {
-    static NEGATIVE_NUMBER: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-    // Match argparse's decimal Nd digits, not the broader Unicode Number class.
-    let negative = NEGATIVE_NUMBER.get_or_init(|| {
-        regex::Regex::new(r"^-\d+$|^-\d*\.\d+$").expect("fixed argparse negative-number pattern")
-    });
-    value != "-" && value.starts_with('-') && !negative.is_match(value)
-}
-
 impl Options {
     fn parse(args: &[String]) -> Result<Self> {
-        let mut values = BTreeMap::new();
-        let mut at = 0;
-        while at < args.len() {
-            if args[at] == "--" {
-                // With no positional actions, argparse rejects even a trailing terminator.
-                return Err("unexpected positional encoder builder argument".into());
-            }
-            let (name, inline) = args[at]
-                .split_once('=')
-                .map_or((args[at].as_str(), None), |(name, value)| {
-                    (name, Some(value))
-                });
-            let known = REQUIRED
-                .into_iter()
-                .chain(["--root", "--help"])
-                .collect::<Vec<_>>();
-            let flag = if name == "-h" {
-                "--help"
-            } else if known.contains(&name) {
-                name
-            } else {
-                let candidates = known
-                    .iter()
-                    .copied()
-                    .filter(|flag| name.starts_with("--") && flag.starts_with(name))
-                    .collect::<Vec<_>>();
-                match candidates.as_slice() {
-                    [flag] => *flag,
-                    [] => return Err(format!("unknown encoder builder argument: {name}").into()),
-                    _ => return Err(format!("ambiguous encoder builder argument: {name}").into()),
-                }
-            };
-            if flag == "--help" {
-                if inline.is_some() {
-                    return Err("--help does not accept a value".into());
-                }
-                return Ok(Self { values, help: true });
-            }
-            let value = if let Some(value) = inline {
-                value
-            } else {
-                at += 1;
-                args.get(at)
-                    .filter(|value| !is_option(value))
-                    .ok_or_else(|| format!("{flag} requires a value"))?
-            };
-            // argparse's store action intentionally lets the last occurrence win.
-            values.insert(flag.to_owned(), PathBuf::from(value));
-            at += 1;
-        }
-        for flag in REQUIRED {
-            if !values.contains_key(flag) {
-                return Err(format!("{flag} is required").into());
-            }
-        }
+        use crate::argparse_scan::{scan, OptionSpec};
+        let mut specs = REQUIRED.map(|name| OptionSpec::value(name, true)).to_vec();
+        specs.push(OptionSpec::value("--root", false));
+        let parsed = scan(args, &specs)?;
         Ok(Self {
-            values,
-            help: false,
+            values: parsed
+                .values
+                .into_iter()
+                .map(|(key, value)| (key, PathBuf::from(value)))
+                .collect(),
+            help: parsed.help,
         })
     }
     fn path(&self, key: &str) -> &Path {
@@ -301,7 +238,7 @@ pub fn run(
 }
 pub fn cli() -> Result<()> {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
-    let options = Options::parse(&args).map_err(|error| ArgumentError(error.to_string()))?;
+    let options = Options::parse(&args)?;
     if options.help {
         println!("Usage: build-encoder-source --output OUTPUT --native-prefix PREFIX --capnp-prefix PREFIX --json11-prefix PREFIX --zmq-include INCLUDE --jpeg-build BUILD [--root ROOT]");
         return Ok(());
@@ -316,4 +253,43 @@ pub fn cli() -> Result<()> {
     let binary = run(&root, &args, &mut NativeRunner, space.free_bytes)?;
     println!("{}", binary.display());
     Ok(())
+}
+
+#[cfg(test)]
+mod original_cli_interfaces {
+    #[test]
+    fn original_argparse_admission() {
+        let rows: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/panda-cli/four-interfaces.json"
+        ))
+        .unwrap();
+        for row in rows
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["family"] == "encoder")
+        {
+            let args = row["args"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap().to_owned())
+                .collect::<Vec<_>>();
+            let parsed = super::Options::parse(&args);
+            assert_eq!(parsed.is_ok(), row["exit"] == 0, "{}", row);
+            if let Ok(parsed) = parsed {
+                assert_eq!(parsed.help, row["help"].as_bool().unwrap(), "{}", row);
+                if !parsed.help {
+                    for (name, value) in row["parsed"].as_object().unwrap() {
+                        let key = format!("--{}", name.replace('_', "-"));
+                        assert_eq!(
+                            parsed.values[&key].to_string_lossy(),
+                            value.as_str().unwrap(),
+                            "{row}"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }

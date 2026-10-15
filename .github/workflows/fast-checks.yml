@@ -40,13 +40,13 @@ jobs:
       - name: Check CI routing and upstream synchronization guards
         run: |
           python -m unittest discover -s tools/ci/tests -v
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --lib \
             --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe \
             --test panda_oracle_build --test upstream_sync --test native_build_closure --test updated_process_check \
             --test native_logging_build --test release_files --test logger_identifier_check --test qa_process \
             --test logging_oracle_build --test path_resolve --test bridge_source_build --test jpeg_sanitizers_check \
             --test ci_native_staging --test encoder_source_build --test ui_updater_handshake --test athena_vision_build \
-            --test hardware_command_check --test pandad_firmware_spi_build
+            --test hardware_command_check --test pandad_firmware_spi_build --test panda_cli --test msgq_sanitizers_check --test control_tools_policy_check
           cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked
       - name: Fast navigation regressions
         run: |

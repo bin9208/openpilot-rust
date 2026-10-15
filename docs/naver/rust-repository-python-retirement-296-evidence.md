@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Twenty-five sources have locally verified replacements and migrated
-callers; 3,555 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Twenty-seven sources have locally verified replacements and migrated
+callers; 3,553 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -349,6 +349,69 @@ complete typed code generation, CPU/QCOM/AMD export, actual full-model outputs
 and tinygrad training/development functionality remain pending. The portable
 original corpora are consumed without Python. No model Python source was removed.
 
+The native msgq sanitizer checker replaces its Python driver and its CI call.
+Eighteen independent original cases preserve four-artifact emission order/count,
+malformed JSON rejection, strict captured UTF-8/universal newlines, inherited raw
+stderr/stdin, ASan lookup and early failure. Three native tests include actual
+controlled CLI stream/ordering comparisons. The original and native checker both
+passed the four actual ASan/UBSan/leak-detection test executables; all four binary
+hashes remained identical and native peers retain sanitizer symbols. Concurrent
+nested test output interleaves, so raw logs/line counts are not byte-identical;
+all test-name occurrence counts match. Four-GiB disk admission, two Cargo jobs,
+disabled incremental compilation, bounded preparation and owned process cleanup
+are explicit execution-policy additions; the original per-test 60-second timeout
+and assertions remain. No device operations were performed.
+
+The five Panda builders now share a tested opt-in argparse scanner. Independent
+original capture exposed accepted-option and failure-effect regressions, including
+creating an output directory for a missing value. All 123 original CLI cases and
+eight existing builder tests pass after repair. Exact/abbreviated/attached flags,
+ambiguity before help, repeated identical mode flags, Unicode negative values,
+space-containing values and exit status 2 are preserved. No actual build semantics
+were changed. Other command families require their own migration evidence.
+
+The shared native process runner now supports concurrently fed piped input,
+separately inherited stderr and explicitly inherited stdin. Twenty focused tests
+cover raw bytes, backpressure on both output pipes, early input closure, empty
+input EOF, incompatible modes and timeout/descendant cleanup. Existing defaults
+are unchanged. Independent review found no concrete Important issue.
+
+The control-tools policy comparator is now native and both CI consumers migrate.
+Fifty-five independent original cases preserve numeric/NaN equality, UTF-8/16/32
+input, raw-versus-escaped surrogate identity, distinct object keys, deep JSON
+admission and receipt-serialization boundaries, exact partial artifacts and
+failure ordering. Actual original joystick/input producers generated 11 cases /
+4,216 steps: both native probes pass with byte-identical original/native output
+and receipts. Two deliberately corrupted expectation sets reject with identical
+mismatch receipts. Independent review found and verified fixes for surrogate
+pair conversion, receipt key collapse and empty-container depth limits. Native
+comparison uses iterative traversal and a documented 300-second owned-process
+deadline. Source producers, Python bindings and their compilers remain pending.
+
+The encoder, Athena, firmware SPI and msgq command interfaces also use the
+shared scanner after 82 independent original parser captures. Existing behavior
+fixtures still pass, as do 34 real native help/error invocations. This includes
+ambiguity before help and Athena's required positional destination, without
+changing build/check logic. The focused 83-test set and strict Clippy pass.
+
+The CPU model compiler's IMAGE storage-alias unit passed all 124 package tests
+and strict all-target Clippy. Thirty-seven independent positive graphs and eight
+rejection graphs preserve computed-input half storage, runtime-input handling,
+padded channels and retained full-precision graph outputs. Actual final-output-
+only driver prefixes 30 and 59 match original bytes; forcing every intermediate
+to materialize is explicitly a different diagnostic context. Independent review
+found unsupported view-ancestor ALU consumers and dynamic weight aliasing;
+regressions reproduce the original behavior and now reject unsupported graphs
+before artifact publication. Effective auto_pad overrides are preserved. These
+are bounded CPU scheduling results, not full-model or GPU equivalence.
+
+The current combined local tool routing step passes 211 dev-tools tests
+(including all 58 library tests) and 16 service-tools tests. Two additional
+log-format codepoint tests pass, strict all-target Clippy passes for both changed
+tool/JSON packages, and workspace formatting/diff checks pass. The model package
+separately passes all 124 tests and strict Clippy. This checkpoint is local
+validation; its exact remote CI remains required.
+
 ## Outstanding delivery evidence
 
 Checkpoint `30866c90dc246fddf2c963b3e5f0947390bee30d` was pushed to the
@@ -372,8 +435,11 @@ its remaining Python policy test. All 120 model-runtime tests pass; strict
 all-target Clippy, workspace formatting and diff checks pass. Original/native
 hardware fixture and SPI library comparisons are recorded above. These are local
 results; the latest remote checkpoint `777bd1c7cd4830d28bd426154eb302d0e156a06e`
-has passed push/PR fast checks, user docs and integration, while its full Rust
-workspace job is still running. No later commit inherits that CI evidence.
+has passed push/PR fast checks, user docs and integration, and its complete [Rust workspace/aarch64 run](https://github.com/bin9208/openpilot-rust/actions/runs/38719609086) passed.
+Checkpoint `7668b660bc89da7cb605878d574c5d97f340bcd1` was subsequently pushed;
+its push/PR fast checks, user docs and integration pass, with the
+[new Rust run](https://github.com/bin9208/openpilot-rust/actions/runs/38729020029)
+still running. No later commit inherits earlier CI evidence.
 
 Continue the [implementation plan](rust-repository-python-retirement-296-plan.md)
 through every remaining source family, actual consumer migration, a zero-Python

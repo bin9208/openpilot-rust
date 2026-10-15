@@ -818,3 +818,39 @@ fn every_gate_dependency_and_result_binding_is_required() {
         );
     }
 }
+
+#[test]
+fn retired_tool_checks_require_current_native_builds_and_keep_original_consumers() {
+    let data = workflow();
+    let workspace = &data["jobs"]["workspace"];
+    required(
+        &commands(workspace),
+        &[
+            "cargo build --workspace --examples --locked",
+            "target/debug/check-msgq-sanitizers --target-dir",
+        ],
+    );
+    mandatory(workspace, &["check-msgq-sanitizers"]);
+    let joystick = &data["jobs"]["joystickd-runtime"];
+    required(
+        &commands(joystick),
+        &[
+            "-p openpilot-control-tools -p openpilot-dev-tools --bins --examples",
+            "rust/target/debug/check-control-tools-policy",
+            "joystickd_source.py",
+            "control_tools_policy_source.py",
+            "check_joystickd_runtime.py",
+            "check_joystick_input_runtime.py",
+        ],
+    );
+    mandatory(joystick, &["check-control-tools-policy"]);
+    assert_eq!(
+        commands(joystick)
+            .matches("rust/target/debug/check-control-tools-policy")
+            .count(),
+        2
+    );
+    let text = read(".github/workflows/rust.yml");
+    assert!(!text.contains("check_msgq_sanitizers.py"));
+    assert!(!text.contains("check_control_tools_policy.py"));
+}

@@ -73,3 +73,40 @@ different original NaN operand selection in unrolled layouts. No universal NaN
 guard, payload normalization or tolerance was accepted. General importing and
 reference lowering remain available; half activation math, GPU transcendental
 rendering and full-model numerical parity remain pending.
+
+`original-storage-alias.json` captures original CPU:LLVM IMAGE/FLOAT16 driver
+prefixes 9..59 in two explicitly separate contexts: final-output-only compilation
+and per-node forced-realization diagnostics. Prefixes 9..29 agree across contexts;
+prefix 30 first differs (33,097/33,120 f32 values, maximum absolute difference
+0.0038442611694335938). Its residual reads the earlier computed tensor through
+packed half storage. Independently rounding the diagnostic skip tensor through
+half storage, then adding the diagnostic Conv output, exactly reproduces original
+prefix 30 SHA256 `9cc51a37e9a64eb55709871df15ef0873ab112b9eb23d0f634e605445376b45d`.
+The fixture embeds exact prefix 30/59 ONNX bytes and original output hashes, plus
+36 small original ONNX graphs covering computed versus external input, ordinary
+channel padding versus invertible packing, and jointly realized intermediate
+outputs. An intermediate graph output retains f32 bytes while its ALU consumer
+may use the half alias. Original source hashes and capture/input recipes accompany
+all cases. Four original shared-view captures remain explicit negative backend
+admission cases until inverse movement alias maps are implemented. The production
+CPU pass handles live direct computed f32 IMAGE inputs only; it preserves generic
+lowering, graph-output storage, and explicit existing conversion boundaries.
+
+Native final-output-only prefixes 30 and 59 now match their original hashes;
+forced-intermediate-only parity is not used as their acceptance criterion.
+This establishes bounded prefix equivalence, not full-driver/driving-model,
+GPU scheduling, arbitrary view/fusion, or complete compiler equivalence. Historical
+full-model numerical mismatch evidence remains unresolved. No Python originals
+are retired by this unit.
+
+Review captures extend this evidence with same-shape Reshape, nontrivial
+channel/spatial permutation, and chained movement whose Conv consumes the view
+while the residual consumes the underlying computed tensor. Before repair, the
+same-shape Reshape case compiled and disagreed with the independent original
+48-value capture. Admission now traces every pure-load view ancestor and rejects
+arithmetic consumers of any affected ancestor before publication. A computed
+Conv-weight consumer is independently captured and remains explicitly rejected;
+this partial CPU backend accepts constant IMAGE weights only. A positive original
+case with `auto_pad=VALID` and ignored negative `pads` verifies alias eligibility
+uses effective padding. These additions retain 37 positive small graphs, eight
+negative view/weight graphs, and the two actual driver-prefix gates.

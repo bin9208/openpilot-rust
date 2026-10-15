@@ -3,6 +3,7 @@ use super::{insert, Document, Error, Text, Value};
 pub(super) struct Parser<'a> {
     pub source: &'a str,
     pub offset: usize,
+    pub raw_surrogates: &'a [(usize, u32)],
 }
 enum Frame {
     Array(Vec<usize>),
@@ -125,7 +126,17 @@ impl Parser<'_> {
 }
 
 pub(crate) fn parse(source: &str) -> Result<Document, Error> {
-    let mut parser = Parser { source, offset: 0 };
+    parse_with_raw(source, &[])
+}
+pub(super) fn parse_with_raw(
+    source: &str,
+    raw_surrogates: &[(usize, u32)],
+) -> Result<Document, Error> {
+    let mut parser = Parser {
+        source,
+        offset: 0,
+        raw_surrogates,
+    };
     let mut document = Document {
         values: Vec::new(),
         root: 0,

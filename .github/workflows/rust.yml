@@ -327,7 +327,7 @@ jobs:
         uses: ./.github/actions/native-json11
       - name: Build joystickd and unchanged source boundary bindings
         run: |
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-control-tools --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-control-tools -p openpilot-dev-tools --bins --examples --locked
           cargo test --manifest-path rust/Cargo.toml -p openpilot-control-tools --locked
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/joystickd/params-binding"
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/joystickd/msgq-binding"
@@ -336,10 +336,10 @@ jobs:
         run: |
           export PYTHONPATH="$RUNNER_TEMP/joystickd/msgq-binding:$PYTHONPATH"
           python rust/tools/joystickd_source.py --binding "$JOYSTICKD_PARAMS_BINDING" --output "$RUNNER_TEMP/joystickd/source"
-          python rust/tools/check_control_tools_policy.py --binary "$PWD/rust/target/debug/examples/joystickd_policy" --source "$RUNNER_TEMP/joystickd/source" --output "$RUNNER_TEMP/joystickd/compare"
+          rust/target/debug/check-control-tools-policy --binary "$PWD/rust/target/debug/examples/joystickd_policy" --source "$RUNNER_TEMP/joystickd/source" --output "$RUNNER_TEMP/joystickd/compare"
           python rust/tools/check_joystickd_runtime.py --binary "$PWD/rust/target/debug/openpilot-joystickd" --binding "$JOYSTICKD_PARAMS_BINDING" --source "$RUNNER_TEMP/joystickd/source" --output "$RUNNER_TEMP/joystickd/runtime"
           python rust/tools/control_tools_policy_source.py --binding "$JOYSTICKD_PARAMS_BINDING" --joystick-only --output "$RUNNER_TEMP/joystickd/input-source"
-          python rust/tools/check_control_tools_policy.py --binary "$PWD/rust/target/debug/examples/joystick_input_policy" --source "$RUNNER_TEMP/joystickd/input-source" --output "$RUNNER_TEMP/joystickd/input-compare"
+          rust/target/debug/check-control-tools-policy --binary "$PWD/rust/target/debug/examples/joystick_input_policy" --source "$RUNNER_TEMP/joystickd/input-source" --output "$RUNNER_TEMP/joystickd/input-compare"
           python rust/tools/check_joystick_input_runtime.py --binding "$JOYSTICKD_PARAMS_BINDING" --binary "$PWD/rust/target/debug/openpilot-joystick-control" --fixture "$PWD/rust/target/debug/examples/joystick_input_fixture" --output "$RUNNER_TEMP/joystickd/input-runtime"
           python rust/tools/longitudinal_maneuvers_source.py --binding "$JOYSTICKD_PARAMS_BINDING" --output "$RUNNER_TEMP/joystickd/longitudinal-source"
           python rust/tools/check_longitudinal_maneuvers.py --binding "$JOYSTICKD_PARAMS_BINDING" --trace "$PWD/rust/target/debug/examples/longitudinal_maneuvers_trace" --daemon "$PWD/rust/target/debug/openpilot-longitudinal-maneuversd" --source "$RUNNER_TEMP/joystickd/longitudinal-source" --output "$RUNNER_TEMP/joystickd/longitudinal-runtime"
@@ -766,7 +766,7 @@ jobs:
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/device_probe.py \
             --binary target/debug/openpilot-proclogd --frames 3 --interval-ms 100 --report "$RUNNER_TEMP/host-probe.json"
-      - run: python tools/check_msgq_sanitizers.py --target-dir "$RUNNER_TEMP/rust-msgq-asan"
+      - run: target/debug/check-msgq-sanitizers --target-dir "$RUNNER_TEMP/rust-msgq-asan"
       - run: cargo build --workspace --release --locked
       - run: target/release/cpu-sample 1000 > cpu-sample.tsv
       - uses: actions/upload-artifact@v6
