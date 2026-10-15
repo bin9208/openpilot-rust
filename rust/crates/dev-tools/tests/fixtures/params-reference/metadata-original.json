@@ -1,0 +1,42 @@
+{
+  "top_xattr_copied": false,
+  "include_xattr": "696e636c756465",
+  "top_source_mode": 384,
+  "top_destination_mode": 436,
+  "top_source_mtime_ns": 1234000000000,
+  "top_mtime_copied": false,
+  "include_file_mode": 384,
+  "include_file_mtime_ns": 1234000000000,
+  "symlink_file_followed": true,
+  "symlink_directory_followed": true,
+  "commands": [
+    [
+      "capnp",
+      "compile",
+      "-IOUTPUT/schema",
+      "--src-prefix=OUTPUT/schema",
+      "-oc++:OUTPUT/cereal/gen/cpp",
+      "OUTPUT/schema/custom.capnp",
+      "OUTPUT/schema/car.capnp",
+      "OUTPUT/schema/log.capnp",
+      "OUTPUT/schema/deprecated.capnp"
+    ],
+    [
+      "g++",
+      "-std=c++17",
+      "-pthread",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Wl,--gc-sections",
+      "-IROOT/openpilot",
+      "-IOUTPUT",
+      "-IOUTPUT/cereal/gen/cpp",
+      "-Irelative-prefix/include",
+      "ROOT/openpilot/common/params.cc",
+      "ROOT/openpilot/common/util.cc",
+      "ROOT/rust/tools/params_reference.cc",
+      "-o",
+      "OUTPUT/params-reference"
+    ]
+  ]
+}

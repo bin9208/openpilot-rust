@@ -8,7 +8,7 @@
       "openpilot/selfdrive/modeld/modeld.py": "3bdd6ca3bfe8fae1a4637b76dc264c94ad74a3a236538b8f1c8a134dadee13d2"
     },
     "communication": {
-      "rust/tools/check_message_state.py": "ab282d0071d0c0e43944aa6d50b8faf7b0e90fbe3b5017484f46d5c372e717e7",
+      "rust/tools/check_message_state.py": "928e7cf946a1fbf3c6c0bc9135c580e8f108179cfe78349956eb895f6d0c710a",
       "openpilot/cereal/__init__.py": "c8e54d7417631916d8c5842d0d509d8c573ca8089e9cad6fc7acad849503fb60",
       "openpilot/cereal/messaging/__init__.py": "1938c80c71dba0855700015bc03371786a711c67bfe3a0c5e073ed790d5e10a9",
       "openpilot/cereal/services.py": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb",
@@ -419,5 +419,18 @@
         }
       ]
     }
-  ]
+  ],
+  "message_state_helper_retirement": {
+    "original_sha256": "ab282d0071d0c0e43944aa6d50b8faf7b0e90fbe3b5017484f46d5c372e717e7",
+    "remaining_helper_sha256": "928e7cf946a1fbf3c6c0bc9135c580e8f108179cfe78349956eb895f6d0c710a",
+    "unchanged_fragments": {
+      "source": "05814746178d7df0f46064a42670e9ba8c2a2e3b1bfac80b6719313158a3cd61",
+      "compare": "f9f098bdf0b0047199bc954fe169ec4ca9780bce5fe7968efd52f5398190220a"
+    },
+    "removed_functions": [
+      "fixtures",
+      "main"
+    ],
+    "status": "CLI replaced; source and compare helpers remain pending"
+  }
 }

@@ -913,3 +913,204 @@ savings. Issues #296 and #1 remain open.
 
 Docs-Not-Needed: internal implementation and validation records; no setting or
 user-guide behavior change.
+
+## Native embedded Cargo test-artifact listing (2026-10-16)
+
+The Radar ARM workflow now uses `list-cargo-tests` instead of its embedded Python
+JSONL expression. This is a fourth retired embedded command, separate from the
+46 retired source files. The native command preserves eager JSON decoding before
+selection, ordered duplicates, Python truthiness and short-circuit lookup errors,
+string-only selected executables, UTF-8/universal-newline input, Linux
+surrogateescape output, and the independently observed decoder nesting limit.
+Empty selection still emits a newline; the existing workflow nonempty-file
+check, per-artifact execution/hashes and always-published evidence remain.
+
+The unchanged original expression was run independently on 57 cases. Every
+native API and actual CLI result matches original acceptance and stdout bytes,
+including malformed records and later JSON failures that must publish no earlier
+path. The native CLI runs with an empty PATH. A fresh Cargo service-tools
+`--no-run --message-format=json` stream selected the same four executables;
+original/native stdout SHA-256 is
+`73d47bef87e5e649c79c8d2ac76d08febd614bfc2fd8c316e720f61d2490885e`.
+The new native build has its own 512 MiB growth guard. All 179 original ordinary
+reserve invocations remain unchanged. Full integration checks for this pending
+checkpoint remain a separate gate.
+
+The program text, SHA-256, interpreter version and all independent cases are in
+`rust/crates/dev-tools/tests/fixtures/ci-artifact-list/`. Scratch captures and
+RED/GREEN logs are under `.analysis/scratch/2026-10-16-ci-artifact-list/`.
+The separate lazy recovery selector and other inline interpreter commands remain
+pending; this change does not retire those or the generic Cargo toolchain.
+
+## Native message-state CLI with retained shared helpers (2026-10-16)
+
+`check-message-state` replaces the complete message-state checker CLI. Its
+independent original corpus contains 11,205 SubMaster updates with actual cereal
+message bytes. Forty-one complete original CLI cases pass, preserving 1e-12
+inclusive float error, Python numeric equality, key-order independence, the real
+maximum error report, all five original outcome assertions, child-owned output,
+raw inherited stdin/stdout/stderr, and strict UTF-8/universal-newline reads.
+
+Review found and fixed two meaningful parity defects before migration: the
+original rereads expected.jsonl after the child, and its report counts those
+post-child paired lines independently of the original generation outcomes.
+Matched zero/one/extra-line edits therefore retain their original acceptance and
+report counts. Both files are opened before decoding either, matching original
+failure ordering. The final 41-case suite, focused outcome assertions and strict
+Clippy pass; fresh real state_probe comparisons match all four files and stdout/
+stderr for normal paths, raw-byte paths and symlinks. Actual CLI probes also
+preserve raw FF child streams and 5e-13/exact 1e-12 error reports. Receipts are in
+`tests/fixtures/message-state/actual-proof.json`.
+
+Twenty maintained files still import source()/compare(). Those two function
+source fragments remain byte-identical to the independent capture; only the
+unused fixture generator/main CLI and their unused imports were removed.
+The remaining Python module explicitly fails direct invocation with the native
+command name. Its live hash is
+`928e7cf946a1fbf3c6c0bc9135c580e8f108179cfe78349956eb895f6d0c710a`;
+original whole-file/function hashes remain immutable provenance. The messaging
+and communication guards now pin that remaining helper while preserving every
+other source/schema/package guard. A direct import, SubMaster update and comparator
+smoke check pass after trimming. The file remains **pending** in the inventory;
+this is not generic helper retirement and does not increase the 46-file count.
+
+The workflow builds the new CLI under a separate 512 MiB growth reservation,
+keeps the service catalog check and message-state artifact publication, and
+calls the native checker. Fast routing covers caller/build/evidence selection;
+the full 41-case suite remains mandatory in workspace tests. Post-migration
+integration validation is recorded separately before the next checkpoint.
+
+## Independent native EGL reference and checker (2026-10-16)
+
+`check-ui-egl` and its fresh `ui-egl-reference` child replace the original checker
+and helper. The reference policy is Rust and independently implements the source
+initialization, symbol fallback, retry, NV12 attribute and descriptor behavior.
+A separate raw ABI adapter uses the existing audited startup-ui CXX boundary for
+individual typed library calls and checked opaque handles. It never calls the
+candidate EGL lifecycle implementation. Generic runtime `egl.py` remains pending.
+
+A fixed canonical trace was insufficient: the original keeps an existing GLES
+library, including valid alternatives and a preexisting invalid file. The native
+reference therefore executes the actual supplied private libraries. Independent
+proof includes 56 original executions (seven baseline, 35 ABI variants, 14 cases
+where the foreign library closes a descriptor). Partial EGL library ownership
+survives a failed GLES load through the final FD count. Review exposed a real
+native SIGABRT when the foreign library had already closed a duplicate; a checked
+ownership-transfer close now preserves the original distinction between ignored
+destroy-close errors and propagated rejected-create close errors, without unsafe
+Rust or public arbitrary-FD close operations.
+
+Six focused tests and strict feature-enabled Clippy pass, including unknown/stale
+handle and malformed attribute rejection. Forty-one whole original checker cases
+and nine CLI captures preserve compile logs, relative symlinks, streams, error
+artifacts, delayed assertions and JSON limits. Twelve whole original/native runs
+using fresh real compiler output and the current native candidate match all 46
+artifacts plus stdout/stderr byte-for-byte. They cover borrowed/owned modes,
+canonical/existing-invalid/alternate-valid GLES, raw paths and raw inherited
+environment. Two native runs pass with only a compiler shim on PATH. Immutable
+source provenance and receipts are in `tests/fixtures/ui-egl/`; retained egl.py
+and complete cffi/pycparser lock records have a fail-closed drift guard.
+
+The shared UI caller now selects the native checker while retaining its 26 GiB
+fixture admission, ordered logs, per-child ledger and first-failure exit. Ten
+caller tests pass, including failure at the final EGL stage. The UI job explicitly
+builds both commands and runs both optional-feature test targets under the pinned
+raylib environment. Default dev-tools builds remain independent of raylib. The
+native UI checker build reserve is increased to 2 GiB for the new dependency
+closure, with a separate 512 MiB test-build guard; all 179 original ordinary
+reserve invocations remain unchanged.
+
+The two replaced Python files were removed after actual comparison and independent
+review. Inventory now records **48 retired source files / 3,532 pending**, plus
+four separately retired embedded commands. This host evidence does not establish
+ARM, real display or vehicle validation. The remaining UI runtime and orchestration
+families, model compiler and repository-wide conversion remain open.
+
+## Native Bluetooth command-reader comparison gates (2026-10-16)
+
+`check-command-reference` and `check-command-json-boundary` replace their two
+Python CLI drivers. The independent source corpus preserves 1,026 ordered reads,
+381 returned commands and all 23 JSON-boundary cases. Native replay retains every
+source journal/request write and its order; the candidate still owns its separate
+journal directory. Generic Bluetooth model.py and arbitrary runtime behavior remain
+pending, guarded by original model/package hashes and namespace-package absence.
+
+Sixty-nine whole original cases and 18 CLI cases pass, preserving Python JSON
+numeric equality, lone-surrogate handling, malformed/deep JSON behavior, raw
+inherited streams and cached expected values. The boundary gate rereads source
+and binary hashes after the child, preserves the imported source-root symlink
+alias, writes/prints the difference receipt before failing, and retains the
+original JSON serialization failure phase. A child editing reference.json does
+not replace the reference checker's in-memory expectations.
+
+Strict Clippy and six real original/native comparisons with fresh command_probe
+pass. All files, directories, stdout and stderr match for both gates across normal
+paths, raw byte paths and an ASCII alias to a raw source root. Both native commands
+run with PATH=/nonexistent; repeated checks still pass after the Python drivers
+were removed (1,026 reads/381 commands and 23 cases with no differences).
+Provenance, corpus integrity and actual receipts are in
+`tests/fixtures/command-reference/`.
+
+The workspace gate now builds both native checkers under a 512 MiB growth guard,
+retains the preceding desire-state check and existing command report publication,
+and runs both native consumers. The full fixed-case tests are added to fast
+routing. This raises the source inventory to **50 retired / 3,530 pending**;
+four retired embedded commands remain counted separately. Generic Bluetooth,
+desire-state tooling and repository-wide completion are still open.
+
+## Dynamic native Params interoperability checker (2026-10-16)
+
+`check-params-reference` replaces its Python driver while still compiling and
+executing the unchanged C++ Params implementation against the current Rust store.
+The catalog is dynamic; no expected key snapshot replaces the original oracle.
+Fresh normal/raw-path original/native runs match all stdout/stderr for 367 keys,
+both-direction 256 KiB binary and empty writes, remove/clear behavior and both
+real advisory-lock checks. The native-only PATH contains compiler tools but no
+Python, and each isolated temporary parent is empty afterward. A repeat after
+Python deletion passes the same gate.
+
+Twenty-two whole original cases, ten copy-failure cases, metadata/umask captures,
+ten CLI cases, temporary fallback captures and cleanup behavior informed eight
+integration tests plus two cleanup unit tests. All pass with strict Clippy.
+Review repairs preserve source-open/target-open/stream-copy order and empty partial
+files, copyfile versus copy2 mode/time/xattr semantics, source symlink handling,
+continued sibling copies before aggregate failure, path-based utime for write-only
+files, original temporary-root fallback, and Path.exists' ignored errno set.
+Owned readonly cleanup never follows external symlinks. Cleanup errors override
+body errors, and the successful PASS line remains observable before a subsequent
+cleanup error, matching the original output phase.
+
+One explicit cleanup correction is intentional: the original Popen context can
+wait indefinitely after its ten-second post-unlock timeout. Independent evidence
+records that source hang under an external harness deadline. The native tool keeps
+the 0.1-second blocked probe and ten-second release wait, then kills/reaps its owned
+child on failure. This is not reported as source exit-status equivalence. Ordinary
+compiler/store operations retain their original unbounded timing behavior.
+
+The current workflow builds the native checker with its own 512 MiB reservation;
+real compiler calls also check their operation filesystem. Fast routing now includes
+the complete focused Params tests. Developer reproduction instructions point to
+the native command. The original Python driver was removed after independent review
+and actual C++/Rust validation. Inventory is **51 retired / 3,529 pending**, with
+four embedded commands retired separately. Linux host results do not establish
+ARM/device acceptance or complete repository conversion.
+
+### Native tools checkpoint validation
+
+The final integrated fast-routing command passes 310 dev-tools tests and 16
+service-tools tests. Six optional EGL feature tests pass. Default dev-tools
+all-target Clippy and the explicit EGL-feature Clippy invocation pass with warnings
+denied. Native-tool/startup-UI formatting, ten Python caller tests, Ruff and diff
+whitespace checks pass. Inventory was reconciled against actual tracked source:
+51 removed entries, 3,529 still-present pending entries, and no unindexed sources.
+All 179 original ordinary disk guards remain unchanged; the current workflow has
+195 guards including the independently admitted new build/test operations.
+
+Remote commit `38a5abc6a1e3bb0d7e3ffe7729b7fc62cc92d75c` completed all 46 Rust CI
+jobs successfully at
+https://github.com/bin9208/openpilot-rust/actions/runs/38759226239 . Its Fast,
+documentation and integration gates also passed. Those results do not validate
+this subsequent tools checkpoint; its exact-head CI is a separate required gate.
+The model compiler still has incomplete driving-model numerical/scheduling
+coverage and remains a separate unfinished implementation unit. No model Python
+was removed, and these tooling checks do not complete repository-wide conversion.

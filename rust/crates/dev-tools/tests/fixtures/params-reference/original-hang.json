@@ -1,0 +1,9 @@
+{
+  "source": "whole unchanged check_params_reference.py with controlled compiler/store replies and real owned child sleeping after stdin EOF",
+  "external_harness_deadline_seconds": 12,
+  "elapsed_seconds": 12.013131595995219,
+  "forced_process_group_cleanup": true,
+  "not_original_exit_status_parity": true,
+  "stdout_hex": "",
+  "stderr_hex": ""
+}

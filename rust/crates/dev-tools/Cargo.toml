@@ -9,6 +9,43 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-command-reference"
+path = "src/bin/check_command_reference.rs"
+
+[[bin]]
+name = "check-command-json-boundary"
+path = "src/bin/check_command_json_boundary.rs"
+
+[[bin]]
+name = "check-params-reference"
+path = "src/bin/check_params_reference.rs"
+
+[[bin]]
+name = "list-cargo-tests"
+path = "src/bin/list_cargo_tests.rs"
+
+[features]
+egl-reference = ["dep:openpilot-startup-ui"]
+
+[[bin]]
+name = "check-ui-egl"
+path = "src/bin/check_ui_egl.rs"
+required-features = ["egl-reference"]
+
+[[bin]]
+name = "ui-egl-reference"
+path = "src/bin/ui_egl_reference.rs"
+required-features = ["egl-reference"]
+
+[[test]]
+name = "ui_egl_reference"
+required-features = ["egl-reference"]
+
+[[test]]
+name = "ui_egl_check"
+required-features = ["egl-reference"]
+
+[[bin]]
 name = "check-ui-translations"
 path = "src/bin/check_ui_translations.rs"
 
@@ -85,6 +122,7 @@ sha1 = "=0.10.7"
 base64 = "=0.22.1"
 openpilot-disk-space = { path = "../disk-space" }
 openpilot-log-format = { path = "../log-format" }
+openpilot-startup-ui = { path = "../startup-ui", optional = true, default-features = false, features = ["native"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
 sha2 = "0.10"
@@ -309,3 +347,7 @@ path = "src/bin/check_ui_scroller.rs"
 [[bin]]
 name = "check-communication-snapshot"
 path = "src/bin/check_communication_snapshot.rs"
+
+[[bin]]
+name = "check-message-state"
+path = "src/bin/check_message_state.rs"

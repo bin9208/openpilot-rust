@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 190);
+    assert_eq!(text.matches(marker).count(), 195);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -236,6 +236,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut model_source = vec![];
     let mut translation_checker = vec![];
     let mut diagnostic_checkers = vec![];
+    let mut artifact_list = vec![];
+    let mut message_state = vec![];
+    let mut egl_reference = vec![];
+    let mut command_checkers = vec![];
+    let mut params_reference = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
             if i + 1 < lines.len() && lines[i + 1].contains("--bin stage-startup-ui-raylib") {
@@ -254,6 +259,18 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 translation_checker.push(tail.to_owned());
             } else if i + 1 < lines.len() && lines[i + 1].contains("--bin check-runtime-diagnostics") {
                 diagnostic_checkers.push(tail.to_owned());
+            } else if i + 1 < lines.len() && lines[i + 1].contains("--bin list-cargo-tests") {
+                artifact_list.push(tail.to_owned());
+            } else if i + 1 < lines.len() && lines[i + 1].contains("--bin check-message-state") {
+                message_state.push(tail.to_owned());
+            } else if i + 1 < lines.len()
+                && lines[i + 1].contains("--features egl-reference --test ui_egl_reference")
+            {
+                egl_reference.push(tail.to_owned());
+            } else if i + 1 < lines.len() && lines[i + 1].contains("--bin check-command-reference") {
+                command_checkers.push(tail.to_owned());
+            } else if i + 1 < lines.len() && lines[i + 1].contains("--bin check-params-reference") {
+                params_reference.push(tail.to_owned());
             } else {
                 arguments.push(tail.to_owned());
             }
@@ -261,12 +278,32 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     }
     assert_eq!(arguments.len(), 179);
     assert_eq!(
+        params_reference,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+    );
+    assert_eq!(
+        command_checkers,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+    );
+    assert_eq!(
+        egl_reference,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+    );
+    assert_eq!(
+        message_state,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+    );
+    assert_eq!(
+        artifact_list,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+    );
+    assert_eq!(
         diagnostic_checkers,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
     );
     assert_eq!(
         translation_checker,
-        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"]
     );
     assert_eq!(
         model_source,

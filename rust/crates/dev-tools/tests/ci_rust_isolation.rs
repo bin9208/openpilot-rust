@@ -139,7 +139,7 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_ui_framework.py",
             "check_startup_ui.py",
             "check_ui_emoji.py",
-            "-p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --locked",
+        "-p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference --bin check-ui-egl --bin ui-egl-reference --locked",
             "rust/target/debug/check-ui-translations --binary",
             "check_wifi_policy.py",
             "check_wifi_runtime.py",
@@ -912,4 +912,49 @@ fn diagnostics_family_keeps_all_three_native_consumers_mandatory() {
             "model-timing/",
         ],
     );
+}
+
+#[test]
+fn command_reader_gates_keep_both_native_consumers_and_desire_check_mandatory() {
+    job_check(
+        "workspace",
+        &[
+            "python tools/check_desire_reference.py --binary target/debug/examples/desire_probe",
+            "cargo build -p openpilot-dev-tools --bin check-command-reference --bin check-command-json-boundary --locked",
+            "target/debug/check-command-reference --binary target/debug/examples/command_probe",
+            "target/debug/check-command-json-boundary --binary target/debug/examples/command_probe",
+        ],
+        &["--bin check-command-reference", "target/debug/check-command-reference --binary", "target/debug/check-command-json-boundary --binary"],
+        false,
+    );
+    let data = workflow();
+    let job = &data["jobs"]["workspace"];
+    let run = commands(job);
+    assert!(!run.contains("python tools/check_command_reference.py"));
+    assert!(!run.contains("python tools/check_command_json_boundary.py"));
+    assert!(job["steps"].as_array().unwrap().iter().any(|step| {
+        step["uses"] == "actions/upload-artifact@v6"
+            && step.get("if").is_none()
+            && step["with"]["path"]
+                .as_str()
+                .is_some_and(|path| path.contains("model-commands/report.json"))
+    }));
+}
+
+#[test]
+fn dynamic_cpp_params_interoperability_gate_keeps_native_build_and_execution() {
+    job_check(
+        "workspace",
+        &[
+            "cargo build -p openpilot-dev-tools --bin check-params-reference --locked",
+            "target/debug/check-params-reference",
+        ],
+        &[
+            "--bin check-params-reference",
+            "target/debug/check-params-reference",
+        ],
+        false,
+    );
+    assert!(!commands(&workflow()["jobs"]["workspace"])
+        .contains("python tools/check_params_reference.py"));
 }

@@ -1904,8 +1904,8 @@ rust/tools/check_card_volkswagen.py	35f21ac55bc1b55595743f7f97b53e27e9b5b977	pen
 rust/tools/check_card_xiaoge.py	b2a2d48eeaac4a469b6db6477a5ab92381ac0423	pending	-
 rust/tools/check_carrot_recovery_upload.py	35e4dad182b9fdf7b380b6af0586ab2898ef924c	pending	-
 rust/tools/check_checkout_status.py	c645a4356cca8d1341822db79b4bbf45ff662d10	pending	-
-rust/tools/check_command_json_boundary.py	372d70c6b3dfd0766e49709d7ddfbdfb2b1974ce	pending	-
-rust/tools/check_command_reference.py	08cc723e29e067e0583d4f99095ce2cf9373a3c6	pending	-
+rust/tools/check_command_json_boundary.py	372d70c6b3dfd0766e49709d7ddfbdfb2b1974ce	replaced-local	openpilot-dev-tools check-command-json-boundary; independent 23-case source corpus, dynamic provenance and actual CLI parity
+rust/tools/check_command_reference.py	08cc723e29e067e0583d4f99095ce2cf9373a3c6	replaced-local	openpilot-dev-tools check-command-reference; independent 1026-read source corpus, journals and actual CLI parity
 rust/tools/check_communication_snapshot.py	8079cf67e33fc0e81a03d30eee7fef72400c2cfa	replaced-local	rust/crates/dev-tools/src/diagnostic_check.rs
 rust/tools/check_control_failures.py	401193fafdc6636397714d03a5ac3cc30d82d835	pending	-
 rust/tools/check_control_neural.py	4adf83165988e71b806447a7f20a7a8571cc969b	pending	-
@@ -1984,7 +1984,7 @@ rust/tools/check_manager.py	b380fe81d306c5a7bc15a88966281717558d7417	pending	-
 rust/tools/check_manager_catalog.py	24f327c8d76b409461fd0fdfc25b4df2e4404a68	pending	-
 rust/tools/check_manager_log_upload.py	99ef640d320ac7b88459b02b9bbc18d8638fa793	pending	-
 rust/tools/check_manager_logging.py	4b311746c8b24c37be499a44fd4b34806b658e88	pending	-
-rust/tools/check_message_state.py	6f2a3f9b26ad8e529180b4234daf88437afd044d	pending	-
+rust/tools/check_message_state.py	6f2a3f9b26ad8e529180b4234daf88437afd044d	pending	Partial: native check-message-state CLI; shared source()/compare() retained for 20 maintained importing files
 rust/tools/check_micd_analysis.py	08a6ccc4870a71e6a93448d669be8903b3b0112f	pending	-
 rust/tools/check_micd_daemon.py	45eb9518f181d693a94eedeb8d7d6151098eb5fd	pending	-
 rust/tools/check_model_inputs.py	02e7b518b82a443904ceb9b00d87203aee42100f	pending	-
@@ -2027,7 +2027,7 @@ rust/tools/check_pandad_supervisor_signals.py	457eab7176c03e195d3b37377a91479273
 rust/tools/check_pandad_usb.py	428c2a7a0f739a123e65f3045ee4f76791a7d806	pending	-
 rust/tools/check_pandad_usb_policy.py	3b3f2ceb255914f79b8577f2c5c42d7891edd3af	pending	-
 rust/tools/check_pandad_usb_raw.py	fc35658376e4e537558292b46b17ef862f189151	pending	-
-rust/tools/check_params_reference.py	9391d1c7f1333e767eb5f5359121671addffaf19	pending	-
+rust/tools/check_params_reference.py	9391d1c7f1333e767eb5f5359121671addffaf19	replaced-local	openpilot-dev-tools check-params-reference; dynamic original C++ build, 367-key store interoperability, copy/cleanup/lock failure parity
 rust/tools/check_params_string.py	b4cbdadb45a5850c9d7ccbedcd08c964ccc1c040	pending	-
 rust/tools/check_params_string_uploader.py	b02b74f336e9562f7a97406a1fa82c280d14b58d	pending	-
 rust/tools/check_paramsd.py	7ed9f2d6d026b225cee5fe84a9b62fbfc1af5dbc	pending	-
@@ -2122,7 +2122,7 @@ rust/tools/check_ui_device.py	933092f7ad299c1dddc93ae25756a5439fb90275	pending	-
 rust/tools/check_ui_diagnostics.py	5069c53ca5cc047af6b1a8daaa7b6397539f6fe2	pending	-
 rust/tools/check_ui_dm_progress.py	af8e4a11e3625e6ce33c9cb4657193032920305f	pending	-
 rust/tools/check_ui_driver_geometry.py	9ee298d3aac5423cc6095529c26b9b89c57d9e59	pending	-
-rust/tools/check_ui_egl.py	f30fd54da47ed445cebd2c22cffffddf00496363	pending	-
+rust/tools/check_ui_egl.py	f30fd54da47ed445cebd2c22cffffddf00496363	replaced-local	openpilot-dev-tools check-ui-egl; independent dynamic Rust EGL reference and original whole-CLI comparisons
 rust/tools/check_ui_egpu.py	c11678c29f528383ea55390c973b871ac85efa5d	pending	-
 rust/tools/check_ui_emoji.py	8f7c4da7d0b2a2696a5f9756b8c339a95a49dde1	pending	-
 rust/tools/check_ui_exp_button.py	69ee76edb29b58699121243ee6fa68440efcf0e1	pending	-
@@ -2623,7 +2623,7 @@ rust/tools/ui_model_qa/source.py	0e747ba2c357696b776c5ce7e263187bdfdf78e2	pendin
 rust/tools/ui_network_source.py	40050895abbb4f87cc10ce6ebfaf92f9cba66333	pending	-
 rust/tools/ui_qa/application_source.py	54680daa0751838dc9cbafe1492a11fa933e3f0b	pending	-
 rust/tools/ui_qa/diagnostic_source.py	78f6b3a75b9087d890618da80bda755891e3138f	pending	-
-rust/tools/ui_qa/egl_source.py	aac7607d8abb62ab53a753fb048aa7d364375cff	pending	-
+rust/tools/ui_qa/egl_source.py	aac7607d8abb62ab53a753fb048aa7d364375cff	replaced-local	openpilot-dev-tools ui-egl-reference; Rust policy with separate checked raw startup-ui ABI adapter
 rust/tools/ui_qa/polygon_source.py	a66ada40b61786fab5f88846af560ae2b6ae296d	pending	-
 rust/tools/updated_fixtures.py	62eb7688c4cfc0bb26189518072a21ad4da88d1a	pending	-
 rust/tools/updated_process_source.py	be91545fcb87da2ecf987e12dabab3fcec7889db	replaced-local	rust/crates/dev-tools/tests/fixtures/updated-process/original.json

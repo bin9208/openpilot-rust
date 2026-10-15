@@ -2741,6 +2741,7 @@ dependencies = [
  "flate2",
  "openpilot-disk-space",
  "openpilot-log-format",
+ "openpilot-startup-ui",
  "openpilot-usbgpu",
  "regex",
  "rsa",

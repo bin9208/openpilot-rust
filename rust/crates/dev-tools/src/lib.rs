@@ -4,12 +4,18 @@ pub mod athena_vision_build;
 pub mod brotli_stage;
 pub mod filter_reference;
 pub mod media_validation;
+pub mod message_state_check;
 pub mod opencv_build;
 pub mod opencv_stage;
 pub mod package;
+pub mod params_reference_check;
 pub mod publish;
 pub mod qa_process;
 pub mod seal;
+#[cfg(feature = "egl-reference")]
+pub mod ui_egl_check;
+#[cfg(feature = "egl-reference")]
+pub mod ui_egl_reference;
 pub mod user_docs;
 
 pub mod elf_audit;
@@ -27,7 +33,9 @@ pub mod usbgpu_stage;
 pub mod panda_build;
 
 pub mod bridge_source_build;
+pub mod ci_artifact_list;
 pub mod ci_policy;
+pub mod command_reference_check;
 pub mod control_tools_policy_check;
 pub mod diagnostic_check;
 pub mod jpeg_sanitizers_check;

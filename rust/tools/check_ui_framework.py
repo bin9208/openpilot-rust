@@ -28,7 +28,7 @@ checks = [
   ('diagnostics', 'check_ui_diagnostics.py', 'diagnostic_render', True),
   ('application', 'check_ui_application.py', 'application_run', True),
   ('fps', None, 'fps_trace', False),
-  ('egl', 'check_ui_egl.py', 'egl_trace', False),
+  ('egl', None, 'egl_trace', False),
 ]
 ledger = []
 for name, script, binary, display in checks:

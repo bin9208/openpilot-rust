@@ -691,7 +691,9 @@ jobs:
       - name: Compare message state and service catalog with original source
         run: |
           python tools/check_services.py
-          python tools/check_message_state.py --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin check-message-state --locked
+          target/debug/check-message-state --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
       - name: Stage pinned native torque numerical dependency and compare original estimator
         run: |
           cargo build -p openpilot-torqued --bins --examples --locked
@@ -706,8 +708,10 @@ jobs:
       - name: Compare model desire state and Bluetooth command consumption with original source
         run: |
           python tools/check_desire_reference.py --binary target/debug/examples/desire_probe --output "$RUNNER_TEMP/model-desire"
-          python tools/check_command_reference.py --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-commands"
-          python tools/check_command_json_boundary.py --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-command-json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin check-command-reference --bin check-command-json-boundary --locked
+          target/debug/check-command-reference --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-commands"
+          target/debug/check-command-json-boundary --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-command-json"
       - name: Compare driver monitoring policy and complete cereal packets with original source
         run: python tools/check_monitoring_reference.py --binary target/debug/monitoring-probe --output "$RUNNER_TEMP/monitoring-policy"
       - name: Compare diagnostic log formatting and rotation with original source
@@ -723,7 +727,11 @@ jobs:
       - name: Compare driving-model input state with the original loop
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
-      - run: python tools/check_params_reference.py
+      - name: Compare Params storage with the original C++ implementation
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin check-params-reference --locked
+          target/debug/check-params-reference
       - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
       - name: Exercise structured log producers with original and Rust collectors
         run: |
@@ -1434,7 +1442,9 @@ jobs:
           cargo build -p openpilot-radarcan --bins --examples --release --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/radar-arm/build.log" | tee "$RUNNER_TEMP/radar-arm/build.jsonl"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo test -p openpilot-radarcan -p openpilot-can --no-run --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/radar-arm/tests-build.log" | tee "$RUNNER_TEMP/radar-arm/tests-build.jsonl"
-          python -c 'import json, sys; rows=[json.loads(line) for line in open(sys.argv[1])]; print("\n".join(row["executable"] for row in rows if row.get("reason")=="compiler-artifact" and row.get("profile",{}).get("test") and row.get("executable")))' "$RUNNER_TEMP/radar-arm/tests-build.jsonl" > "$RUNNER_TEMP/radar-arm/tests.txt"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin list-cargo-tests --locked
+          target/debug/list-cargo-tests "$RUNNER_TEMP/radar-arm/tests-build.jsonl" > "$RUNNER_TEMP/radar-arm/tests.txt"
           test -s "$RUNNER_TEMP/radar-arm/tests.txt"
           while IFS= read -r radar_test; do
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
@@ -2558,8 +2568,10 @@ jobs:
         uses: ./.github/actions/native-json11
       - name: Build native UI validation checkers
         run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference --bin check-ui-egl --bin ui-egl-reference --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features egl-reference --test ui_egl_reference --test ui_egl_check --locked
       - name: Build native UI and connectivity with original Params oracle
         run: |
           cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked

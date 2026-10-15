@@ -1,0 +1,20 @@
+[
+  {
+    "mode": "TEMP-fallback",
+    "exit": 1,
+    "reached_compiler": true,
+    "selected_base": "TEMP",
+    "selected_cleaned": true,
+    "TEMP_empty": true,
+    "TMP_empty": true
+  },
+  {
+    "mode": "system-fallback",
+    "exit": 1,
+    "reached_compiler": true,
+    "selected_base": "/tmp",
+    "selected_cleaned": true,
+    "TEMP_empty": true,
+    "TMP_empty": true
+  }
+]

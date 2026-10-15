@@ -1,0 +1,210 @@
+[
+  {
+    "kind": "reference",
+    "args": [],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_command_reference.py [-h] --binary BINARY --output OUTPUT\ncheck_command_reference.py: error: the following arguments are required: --binary, --output\n"
+  },
+  {
+    "kind": "reference",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_reference.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "reference",
+    "args": [
+      "--help",
+      "--b"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_reference.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "reference",
+    "args": [
+      "-hhh",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_reference.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "reference",
+    "args": [
+      "--binary",
+      "-unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_command_reference.py [-h] --binary BINARY --output OUTPUT\ncheck_command_reference.py: error: argument --binary: expected one argument\n"
+  },
+  {
+    "kind": "reference",
+    "args": [
+      "--binary=candidate",
+      "--output"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_command_reference.py [-h] --binary BINARY --output OUTPUT\ncheck_command_reference.py: error: argument --output: expected one argument\n"
+  },
+  {
+    "kind": "reference",
+    "args": [
+      "--binary",
+      "a",
+      "--binary",
+      "b",
+      "--output",
+      "x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_reference.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "reference",
+    "args": [
+      "--bin=a",
+      "--out=x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_reference.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "reference",
+    "args": [
+      "--output",
+      "-unknown value",
+      "--binary",
+      "a",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_reference.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "json-boundary",
+    "args": [],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_command_json_boundary.py [-h] --binary BINARY --output OUTPUT\ncheck_command_json_boundary.py: error: the following arguments are required: --binary, --output\n"
+  },
+  {
+    "kind": "json-boundary",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_json_boundary.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "json-boundary",
+    "args": [
+      "--help",
+      "--b"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_json_boundary.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "json-boundary",
+    "args": [
+      "-hhh",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_json_boundary.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "json-boundary",
+    "args": [
+      "--binary",
+      "-unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_command_json_boundary.py [-h] --binary BINARY --output OUTPUT\ncheck_command_json_boundary.py: error: argument --binary: expected one argument\n"
+  },
+  {
+    "kind": "json-boundary",
+    "args": [
+      "--binary=candidate",
+      "--output"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_command_json_boundary.py [-h] --binary BINARY --output OUTPUT\ncheck_command_json_boundary.py: error: argument --output: expected one argument\n"
+  },
+  {
+    "kind": "json-boundary",
+    "args": [
+      "--binary",
+      "a",
+      "--binary",
+      "b",
+      "--output",
+      "x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_json_boundary.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "json-boundary",
+    "args": [
+      "--bin=a",
+      "--out=x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_json_boundary.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "json-boundary",
+    "args": [
+      "--output",
+      "-unknown value",
+      "--binary",
+      "a",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_command_json_boundary.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  }
+]
