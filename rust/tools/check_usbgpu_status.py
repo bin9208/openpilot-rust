@@ -11,6 +11,7 @@ import argparse
 import ast
 from dataclasses import asdict
 import json
+import os
 import pathlib
 import shutil
 import subprocess
@@ -19,9 +20,11 @@ import tempfile
 import types
 from typing import TypedDict
 
-from usbgpu_status_fixture import Case, Fixture, create, hardware, mutate, sha256
+from usbgpu_status_fixture import MANIFEST_URL, Case, Fixture, create, hardware, mutate, sha256
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+SOURCE_COMMIT = json.loads((ROOT / 'rust/upstream/carrot-wip.json').read_text())['source_commit']
+SOURCE_FILES = ['big_model.py', 'precompiled_model.py', 'precompiled_artifact.py', 'helpers.py']
 
 
 class Status(TypedDict):
@@ -48,12 +51,18 @@ def run_native(binary: str, paths: list[str]) -> NativeRun:
           'status': {'compiled': value['compiled'], 'compile_pending': value['compile_pending']}}
 
 
+def source_bytes(path: pathlib.Path) -> bytes:
+  return subprocess.check_output(['git', 'show', f'{SOURCE_COMMIT}:{path.relative_to(ROOT).as_posix()}'], cwd=ROOT)
+
+
 def source(name, path, selected=None):
-  tree = ast.parse(path.read_text())
+  tree = ast.parse(source_bytes(path))
   tree.body = [
     node
     for node in tree.body
     if not (isinstance(node, ast.ImportFrom) and node.module and node.module.startswith('openpilot.'))
+    # The status oracle does not instantiate the separate startup UI adapter.
+    and not (isinstance(node, ast.ClassDef) and node.name == 'StartupModelStatusReporter')
     and (selected is None or isinstance(node, (ast.Import, ast.ImportFrom)) or isinstance(node, ast.FunctionDef) and node.name in selected)
   ]
   module = types.ModuleType(name)
@@ -69,8 +78,10 @@ def main():
   parser.add_argument('--fresh-firmware', action='store_true', help='fetch pinned firmware into a fresh owned cache, ignoring local packages')
   args = parser.parse_args()
   base = ROOT / 'openpilot/selfdrive/modeld'
+  os.environ['CARROT_BIG_MODEL_MANIFEST'] = MANIFEST_URL
   big = source('big_model_status_oracle', base / 'big_model.py')
   pre = source('openpilot.selfdrive.modeld.precompiled_model', base / 'precompiled_model.py')
+  pre.SERIALIZATIONS = source('precompiled_artifact_status_oracle', base / 'precompiled_artifact.py').SERIALIZATIONS
   helper = source('helper_status_oracle', base / 'helpers.py', {
     'modeld_pkl_path', 'active_usbgpu_compiled_path', 'usbgpu_compile_pending', 'usbgpu_compiled_path', 'usbgpu_compiled',
   })
@@ -92,7 +103,7 @@ def main():
       cache.mkdir(parents=True)
       models.mkdir()
       manifest = {'model_id': 'fixture', 'filename': filename, 'size': 3, 'sha256': 'a' * 64, 'url': 'https://models.test/model.onnx'}
-      state = {'active': None if previous else manifest, 'previous': manifest if previous else None}
+      state = {'active': None if previous else manifest, 'previous': manifest if previous else None, 'manifest_url': MANIFEST_URL}
       (cache / 'state.json').write_text('{' if corrupt == 'state' else json.dumps(state))
       (cache / f'model-aaaaaaaaaaaaaaaa{pathlib.Path(filename).suffix}').write_bytes(b'x' if corrupt == 'size' else b'abc')
       if local:
@@ -126,7 +137,7 @@ def main():
         if rejected:
           (dest / 'rejected').touch()
       big.model_cache_dir = lambda cache=cache: cache
-      helper.active_manifest = big.active_manifest
+      helper.selected_manifest = big.selected_manifest
       helper.MODELS_DIR = models
       pre.active_manifest = big.active_manifest
       pre.model_cache_dir = lambda cache=cache: cache
@@ -156,14 +167,14 @@ def main():
   cases: list[tuple[Case, Status, Status]] = [
     ('chunked', {'compiled': True, 'compile_pending': False}, {'compiled': True, 'compile_pending': False}),
     ('flat', {'compiled': True, 'compile_pending': False}, {'compiled': False, 'compile_pending': True}),
-    ('previous', {'compiled': True, 'compile_pending': False}, {'compiled': True, 'compile_pending': False}),
+    ('previous', {'compiled': False, 'compile_pending': False}, {'compiled': False, 'compile_pending': False}),
     ('precompiled_selection', {'compiled': False, 'compile_pending': True}, {'compiled': False, 'compile_pending': False}),
     *[(case, {'compiled': False, 'compile_pending': True}, {'compiled': True, 'compile_pending': False}) for case in (
       'missing_package', 'missing_pointer', 'bad_pointer', 'pointer_identity', 'missing_camera', 'selected_identity',
       'source_hash', 'missing_chunk', 'chunk_count', 'manifest_hash', 'kernel_hash', 'weights_hash', 'graph_layout',
       'unlisted_graph_file', 'firmware_pin', 'symlink', 'rejected',
     )],
-    ('previous_rejected', {'compiled': False, 'compile_pending': False}, {'compiled': True, 'compile_pending': False}),
+    ('previous_rejected', {'compiled': False, 'compile_pending': False}, {'compiled': False, 'compile_pending': False}),
     ('bad_state', {'compiled': False, 'compile_pending': False}, {'compiled': False, 'compile_pending': False}),
     ('missing_original', {'compiled': False, 'compile_pending': False}, {'compiled': False, 'compile_pending': False}),
   ]
@@ -176,7 +187,7 @@ def main():
       shutil.copytree(baseline.root, fixture.root)
       mutate(fixture, case)
       big.model_cache_dir = lambda cache=fixture.cache: cache
-      helper.active_manifest = big.active_manifest
+      helper.selected_manifest = big.selected_manifest
       helper.read_state = big.read_state
       helper.MODELS_DIR = fixture.models
       pre.active_manifest = big.active_manifest
@@ -191,10 +202,12 @@ def main():
   divergences = sum(not result['passed'] for result in results)
   document = {
     'invocation': sys.argv, 'binary_sha256': sha256(pathlib.Path(args.binary).read_bytes()),
-    'source_sha256': {name: sha256((base / name).read_bytes()) for name in ['big_model.py', 'precompiled_model.py', 'helpers.py']},
+    'source_commit': SOURCE_COMMIT,
+    'source_sha256': {name: sha256(source_bytes(base / name)) for name in SOURCE_FILES},
     'scope': {'legacy_source': 'original active_usbgpu_compiled_path and usbgpu_compile_pending function bodies',
-              'native_fixture_source': 'original usbgpu_compiled and usbgpu_compile_pending function bodies, including previous fallback',
+              'native_fixture_source': 'pinned usbgpu_compiled and usbgpu_compile_pending bodies with source selected_manifest',
               'native_fixture': 'synthetic PKL, model graph and probe; genuine pinned firmware and license; structural admission only, no GPU execution',
+              'native_selection': 'explicit custom manifest bound in state; previous-only state does not select a historical model',
               'policy': 'native status requires a validated local or installed native package; ' +
                         'Python entry placeholders and presence-only chunk markers do not qualify'},
     'summary': {'legacy_cases': len(results), 'legacy_parity': len(results) - divergences, 'strict_policy_divergences': divergences,

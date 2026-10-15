@@ -299,3 +299,41 @@ job now sets `CARGO_PROFILE_DEV_DEBUG=0`; runtime code, package authentication,
 assertions and all timeouts remain unchanged. Evidence is under
 `startup375a-no-debug/` and `startup375a-no-debug-bootstrap.log` in the delivery
 scratch directory. This CI build-profile repair does not convert any tool.
+
+The recovery fixture exposed an accidentally tracked absolute `node_modules`
+symlink to the developer's private dependency cache. It is removed from Git while
+the local dependency directory is preserved. The web ignore rule now covers
+both directories and symlinks; the minimal recovery package excludes build-only
+dependencies. All remaining tracked symlinks are relative. The eight existing
+recovery checks pass, including standalone HTTP, terminal/lifecycle, support,
+shutdown, 24 action scenarios, upload comparisons and fourteen CWP scenarios.
+Receipts: `recovery-http-existing.log` and `recovery-existing-chain.log` in the
+delivery scratch directory.
+
+After the e9e6 workspace recovery-copy failure, all 36 existing downstream
+functional checks were completed using the current host executables. Evidence
+is indexed by checker name in
+`.analysis/scratch/2026-10-16-dev-md-delivery/workspace-tail-checks/*.log`.
+This covers USB transport/ASM, retention (including an actual private low-space
+filesystem), Jetlink policy/RPC, service/message state, torque, calibration,
+desire/commands, monitoring, diagnostics, model inputs/timing, procLog, Params,
+logging producers/collectors and continuous daemon IPC. Monitoring compared
+209,144 source states and complete packets exactly; dmonitoringd compared 329
+complete packets. The four existing msgq ASan/UBSan harnesses rebuilt their
+native boundary and exited successfully (`msgq-sanitizers.log`). Original Python
+IPC bindings were reused for the daemon checks; the low-space check used its
+supported unprivileged mount namespace. The consumer probe was local host IPC.
+
+The service checker still classified `customReservedRawData1` as absent despite
+its final schema definition. Removing that stale exclusion restores the existing
+88-service catalog check; generated definitions and native wire/order assertions
+are unchanged (`services-final.log`). The model owner's final-pinned USB status
+fixture repair separately passes all 192 existing cases and 24 native controls.
+That fixture now reads the final upstream Git pin and explicitly binds its
+synthetic model to a custom manifest. Previous-only state follows the source's
+current selection rules. Authentic default MD v3 admission and its runtime guards
+remain unchanged; no synthetic model is represented as the production model.
+Receipt: `.analysis/scratch/2026-10-16-dev-md-package/usbgpu-status-final-pin.json`.
+No downstream functional check remains unrun. The final workspace release build
+and CPU sample remain assigned to exact-source CI; these host receipts do not
+establish device startup or driving acceptance.

@@ -5,4 +5,4 @@
 
 # Local web build dependencies. Generated browser bundles are committed because
 # the device serves this source tree directly and does not run Node at startup.
-node_modules/
+node_modules

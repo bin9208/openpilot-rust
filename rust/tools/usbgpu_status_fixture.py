@@ -25,6 +25,7 @@ FIRMWARE: Final = (
 CAMERAS: Final = ((1928, 1208, 4804608), (1344, 760, 2428928))
 KERNEL: Final = b'owned-test-code!'
 SELECTED: Final = b'synthetic-selected-ONNX-for-status-only'
+MANIFEST_URL: Final = 'https://models.test/status-manifest.json'
 PICKLE: Final = b'synthetic-local-PKL-for-status-only'
 Case: TypeAlias = Literal[
   'chunked', 'flat', 'previous', 'precompiled_selection', 'missing_package', 'missing_pointer', 'bad_pointer',
@@ -142,7 +143,7 @@ def create(root: Path, firmware: Path) -> Fixture:
   fixture.package.mkdir(parents=True)
   manifest = {'model_id': 'synthetic-status', 'filename': 'model.onnx', 'size': len(SELECTED),
               'sha256': fixture.model_sha256, 'url': 'https://models.test/model.onnx'}
-  write_json(fixture.cache / 'state.json', {'active': manifest, 'previous': None})
+  write_json(fixture.cache / 'state.json', {'active': manifest, 'previous': None, 'manifest_url': MANIFEST_URL})
   (fixture.cache / f'model-{fixture.model_sha256[:16]}.onnx').write_bytes(SELECTED)
   Path(str(fixture.model) + '.chunkmanifest').write_text('1')
   Path(str(fixture.model) + '.chunk01of01').write_bytes(PICKLE)

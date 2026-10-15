@@ -27,7 +27,7 @@ def main():
         path = Path(__file__).resolve().parents[1] / "crates/messaging/src/services_generated.rs"
         assert path.read_text() == source, "Rust service catalog differs from source; regenerate with --emit-rust"
         assert [name for name in SERVICE_LIST if name not in log.Event.schema.fields] == [
-            "navModel", "customReservedRawData1", "customReservedRawData2",
+            "navModel", "customReservedRawData2",
         ], "source schema availability changed; update the explicit Rust default-payload parity cases"
         print(f"{len(SERVICE_LIST)} service definitions match original source")
 

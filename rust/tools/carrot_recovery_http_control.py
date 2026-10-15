@@ -68,7 +68,7 @@ async def run(args: argparse.Namespace) -> None:
     for binary in [native_binary, helper]:
       shutil.copy2(binary, package / 'bin' / binary.name)
     native_repository = package / 'repository'
-    shutil.copytree(assets, native_repository / 'openpilot/selfdrive/carrot/web', ignore=shutil.ignore_patterns('*.py', '__pycache__'))
+    shutil.copytree(assets, native_repository / 'openpilot/selfdrive/carrot/web', ignore=shutil.ignore_patterns('*.py', '__pycache__', 'node_modules'))
     native_binary = package / 'bin' / native_binary.name
     dynamic = subprocess.run(['readelf', '-d', str(native_binary)], check=True, capture_output=True, text=True).stdout
     needed = re.findall(r'\(NEEDED\).*\[(.*?)\]', dynamic)
