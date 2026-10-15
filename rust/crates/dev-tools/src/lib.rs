@@ -11,6 +11,7 @@ pub mod seal;
 pub mod user_docs;
 
 pub mod elf_audit;
+pub mod encoder_source_build;
 pub mod encoder_stage;
 
 pub mod ffmpeg_build;
@@ -35,6 +36,7 @@ pub mod path_resolve;
 pub mod raylib_stage;
 pub mod release_files;
 pub mod services_header;
+pub mod ui_updater_handshake;
 pub mod updated_process_check;
 pub mod updated_process_fixture;
 pub mod upstream_sync;

@@ -8,6 +8,14 @@ publish = false
 # Native tool entrypoints are registered explicitly before they enter builds.
 autobins = false
 
+[[bin]]
+name = "build-encoder-source"
+path = "src/bin/build_encoder_source.rs"
+
+[[bin]]
+name = "check-ui-updater-handshake"
+path = "src/bin/check_ui_updater_handshake.rs"
+
 [lints]
 workspace = true
 
@@ -16,6 +24,7 @@ rsa = "=0.9.10"
 sha1 = "=0.10.7"
 base64 = "=0.22.1"
 openpilot-disk-space = { path = "../disk-space" }
+openpilot-log-format = { path = "../log-format" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
 sha2 = "0.10"

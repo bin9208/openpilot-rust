@@ -311,7 +311,7 @@ pub fn compile_onnx(
         memory::plan_memory_enabled(&schedule.buffers, &schedule.calls, options.memory_planning)?;
     let mut kernels = Vec::new();
     for (index, call) in schedule.calls.iter().enumerate() {
-        let kernel = render::render_elementwise(
+        let kernel = render::render_cpu_elementwise(
             &lowered,
             call.buffers[0],
             &format!("native_elementwise_{index}"),
@@ -428,9 +428,23 @@ pub fn compile_onnx(
     let mut object_paths = Vec::new();
     let mut source_bytes = 0usize;
     for (index, kernel) in kernels.iter().enumerate() {
-        let mut args = vec!["(float*)buffers[0]".to_string()];
-        args.extend((0..kernel.inputs.len()).map(|i| format!("(const float*)buffers[{}]", i + 1)));
-        let wrapper=format!("#include <stddef.h>\n/* ONNX SHA256 {identity}; offline_bindings={}; memory_planning={} */\n#define __kernel\n#define __global\nstatic _Thread_local size_t native_index;\n#define get_global_id(axis) native_index\n{}\n__attribute__((visibility(\"default\"))) void op_kernel_{index}(void *const *buffers,const int *scalars){{(void)scalars;for(native_index=0;native_index<{};native_index++){}({});}}\n",options.offline_bindings,options.memory_planning,kernel.source,kernel.global[0],kernel.function,args.join(","));
+        let cpu_storage = |dtype| {
+            if dtype == 10 {
+                Ok("ushort")
+            } else {
+                render::storage_type(dtype)
+            }
+        };
+        let output_type = cpu_storage(lowered.plans[schedule.calls[index].buffers[0]].ty.dtype)?;
+        let mut args = vec![format!("({output_type}*)buffers[0]")];
+        for (slot, &input) in kernel.inputs.iter().enumerate() {
+            args.push(format!(
+                "(const {}*)buffers[{}]",
+                cpu_storage(lowered.plans[input].ty.dtype)?,
+                slot + 1
+            ));
+        }
+        let wrapper=format!("#include <stddef.h>\ntypedef unsigned short ushort; typedef unsigned char uchar;\n/* ONNX SHA256 {identity}; offline_bindings={}; memory_planning={} */\n#define __kernel\n#define __global\nstatic _Thread_local size_t native_index;\n#define get_global_id(axis) native_index\n{}\n__attribute__((visibility(\"default\"))) void op_kernel_{index}(void *const *buffers,const int *scalars){{(void)scalars;for(native_index=0;native_index<{};native_index++){}({});}}\n",options.offline_bindings,options.memory_planning,kernel.source,kernel.global[0],kernel.function,args.join(","));
         source_bytes = source_bytes
             .checked_add(wrapper.len())
             .filter(|v| *v <= 64 * 1024 * 1024)

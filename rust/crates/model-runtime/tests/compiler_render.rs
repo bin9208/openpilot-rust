@@ -198,6 +198,10 @@ fn compiled_elementwise_kernels_match_independent_original_output_captures() {
         let mut inputs = Vec::new();
         let mut valid = true;
         for &input in &kernel.inputs {
+            if graph.plans[input].ty.dtype != 1 {
+                valid = false;
+                break;
+            }
             let bytes = match &graph.plans[input].expression {
                 ScalarExpr::Constant(bytes) => bytes.clone(),
                 ScalarExpr::Input(name) => {
@@ -297,5 +301,39 @@ fn compiled_elementwise_kernels_match_independent_original_output_captures() {
             .flat_map(|v| v.to_le_bytes())
             .collect::<Vec<_>>();
         assert_eq!(&actual, expected, "compiled original capture {name}");
+    }
+}
+
+#[test]
+fn preprocessing_renderer_admits_only_explicit_storage_and_arithmetic_types() {
+    for (source, target) in [(2, 10), (1, 10), (10, 1)] {
+        let mut graph = LoweredGraph::default();
+        graph.plans.push(Plan {
+            ty: TensorType {
+                dtype: source,
+                shape: vec![4],
+            },
+            expression: ScalarExpr::Input("input".into()),
+        });
+        graph.plans.push(Plan {
+            ty: TensorType {
+                dtype: target,
+                shape: vec![4],
+            },
+            expression: ScalarExpr::Cast {
+                dtype: target,
+                value: Box::new(ScalarExpr::Load {
+                    plan: 0,
+                    index: IndexExpr::Index,
+                }),
+            },
+        });
+        let kernel = compiler_onnx::render::render_elementwise(&graph, 1, "typed_cast").unwrap();
+        assert_eq!(kernel.inputs, vec![0]);
+        assert!(kernel.source.contains("half"));
+        graph.plans[1].ty.dtype = 16;
+        assert!(
+            compiler_onnx::render::render_elementwise(&graph, 1, "unsupported_bfloat").is_err()
+        );
     }
 }

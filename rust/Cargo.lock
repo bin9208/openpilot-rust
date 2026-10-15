@@ -2728,6 +2728,7 @@ dependencies = [
  "base64 0.22.1",
  "flate2",
  "openpilot-disk-space",
+ "openpilot-log-format",
  "openpilot-usbgpu",
  "regex",
  "rsa",

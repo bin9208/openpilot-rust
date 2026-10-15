@@ -301,6 +301,16 @@ fn workspace_checks_run_without_waiting_for_runtime_jobs() {
     );
     assert_eq!(data["jobs"]["fast"]["name"], "rust checks");
     assert_eq!(data["jobs"]["fast"]["steps"].as_array().unwrap().len(), 1);
+    let script = commands(job);
+    assert!(
+        script
+            .find(
+                "git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx"
+            )
+            .unwrap()
+            < script.find("cargo test --workspace").unwrap(),
+        "native compiler tests require the actual pinned model before execution"
+    );
 }
 #[test]
 fn hardware_runtime_requires_source_and_native_boundaries() {
@@ -661,6 +671,7 @@ fn encoder_requires_source_runtime_and_pinned_arm_artifacts() {
     job_check(
         "encoder-runtime",
         &[
+            "--bin build-encoder-source",
             "build_visionipc_python.py",
             "check_encoder_ci.py",
             "test_encoder_outcomes.py",
@@ -701,6 +712,38 @@ fn encoder_requires_source_runtime_and_pinned_arm_artifacts() {
         arm["env"]["ENCODER_LIBYUV_LIB"].as_str().unwrap(),
         &["ENCODER_ARM_LIBYUV"],
     );
+}
+#[test]
+fn ui_handshake_requires_current_native_checker_after_test_receipt() {
+    job_check(
+        "ui-runtime",
+        &[
+            "--bin check-ui-updater-handshake",
+            "rust/target/debug/check-ui-updater-handshake --evidence \"$RUNNER_TEMP/ui-native\"",
+            "unit-tests.jsonl",
+        ],
+        &["check-ui-updater-handshake"],
+        true,
+    );
+    let data = workflow();
+    let steps = data["jobs"]["ui-runtime"]["steps"].as_array().unwrap();
+    let build = steps
+        .iter()
+        .position(|step| {
+            step["run"]
+                .as_str()
+                .is_some_and(|run| run.contains("--bin check-ui-updater-handshake"))
+        })
+        .unwrap();
+    let check = steps
+        .iter()
+        .position(|step| step["name"] == "Require queued exec error after helper exit")
+        .unwrap();
+    assert!(build < check);
+    assert!(steps[build]["run"]
+        .as_str()
+        .unwrap()
+        .contains("unit-tests.jsonl"));
 }
 #[test]
 fn camera_requires_source_driver_fixture_and_visionipc_checks() {

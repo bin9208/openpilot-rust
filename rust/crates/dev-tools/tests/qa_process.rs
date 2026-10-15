@@ -177,3 +177,62 @@ fn failed_spawn_closed_pipes_and_signal_status_are_bounded() {
         .unwrap();
     assert_eq!(r.code, -15);
 }
+
+#[test]
+fn file_backed_logs_preserve_large_raw_output_order_without_capture_limits() {
+    let temp = tempfile::tempdir().unwrap();
+    let log = temp.path().join("compiler.log");
+    let mut spec = command(
+        "printf 'first\\377'; head -c 17825792 /dev/zero; printf 'last\\r' >&2; exit 7",
+        Duration::from_secs(5),
+    );
+    spec.stdout_limit = 1;
+    spec.stderr_limit = 1;
+    let captured = NativeRunner.run_to_file(&spec, &log).unwrap();
+    assert_eq!(captured.code, 7);
+    assert!(captured.stdout.is_empty() && captured.stderr.is_empty());
+    let bytes = fs::read(log).unwrap();
+    assert_eq!(bytes.len(), 17_825_792 + 11);
+    assert_eq!(&bytes[..6], b"first\xff");
+    assert!(bytes[6..bytes.len() - 5].iter().all(|byte| *byte == 0));
+    assert_eq!(&bytes[bytes.len() - 5..], b"last\r");
+}
+
+#[test]
+fn file_backed_timeout_preserves_partial_log_and_reaps_owned_workers() {
+    let temp = tempfile::tempdir().unwrap();
+    let log = temp.path().join("compiler.log");
+    let pidfile = temp.path().join("worker.pid");
+    let spec = command(
+        &format!(
+            "printf 'partial\\377'; printf 'error' >&2; sleep 30 & printf '%s' $! > '{}'; wait",
+            pidfile.display()
+        ),
+        Duration::from_millis(200),
+    );
+    let error = NativeRunner.run_to_file(&spec, &log).unwrap_err();
+    assert!(matches!(
+        error.downcast_ref::<CaptureError>(),
+        Some(CaptureError::Timeout { .. })
+    ));
+    assert_eq!(fs::read(log).unwrap(), b"partial\xfferror");
+    assert_terminated(fs::read_to_string(pidfile).unwrap().parse().unwrap());
+}
+
+#[test]
+fn file_backed_spawn_failure_truncates_owned_log_and_bad_log_prevents_execution() {
+    let temp = tempfile::tempdir().unwrap();
+    let log = temp.path().join("compiler.log");
+    fs::write(&log, b"stale success").unwrap();
+    let mut spec = command("exit 0", Duration::from_secs(2));
+    spec.argv = vec!["/missing-owned-native-command".into()];
+    assert!(NativeRunner.run_to_file(&spec, &log).is_err());
+    assert!(fs::read(log).unwrap().is_empty());
+    let marker = temp.path().join("spawned");
+    let spec = command(
+        &format!("touch '{}'", marker.display()),
+        Duration::from_secs(2),
+    );
+    assert!(NativeRunner.run_to_file(&spec, temp.path()).is_err());
+    assert!(!marker.exists());
+}

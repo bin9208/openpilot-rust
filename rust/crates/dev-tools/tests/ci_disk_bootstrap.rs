@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 186);
+    assert_eq!(text.matches(marker).count(), 188);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -232,6 +232,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut raylib = vec![];
     let mut logging_builder = vec![];
     let mut native_architecture = vec![];
+    let mut encoder_builder = vec![];
+    let mut model_source = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
             if i + 1 < lines.len() && lines[i + 1].contains("--bin stage-startup-ui-raylib") {
@@ -242,12 +244,24 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 logging_builder.push(tail.to_owned());
             } else if i + 1 < lines.len() && lines[i + 1].contains("--test native_build_closure") {
                 native_architecture.push(tail.to_owned());
+            } else if i + 1 < lines.len() && lines[i + 1].contains("--bin build-encoder-source") {
+                encoder_builder.push(tail.to_owned());
+            } else if i + 1 < lines.len() && lines[i + 1].contains("git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx") {
+                model_source.push(tail.to_owned());
             } else {
                 arguments.push(tail.to_owned());
             }
         }
     }
     assert_eq!(arguments.len(), 179);
+    assert_eq!(
+        model_source,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 128"]
+    );
+    assert_eq!(
+        encoder_builder,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"]
+    );
     assert_eq!(
         native_architecture,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"]

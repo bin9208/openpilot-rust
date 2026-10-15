@@ -10,7 +10,7 @@ use rustix::{
 use std::{
     collections::BTreeMap,
     fmt,
-    fs::File,
+    fs::{self, File},
     io::{self, Read},
     os::{
         fd::OwnedFd,
@@ -19,7 +19,7 @@ use std::{
             process::{CommandExt, ExitStatusExt},
         },
     },
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     time::{Duration, Instant},
 };
@@ -59,6 +59,28 @@ pub struct Captured {
 }
 pub trait Runner {
     fn run(&mut self, command: &CommandSpec) -> Result<Captured>;
+    /// Merge both streams into an owned file. Test peers can use captured bytes;
+    /// NativeRunner redirects directly, avoiding an in-memory diagnostic limit.
+    fn run_to_file(&mut self, command: &CommandSpec, log: &Path) -> Result<Captured> {
+        fs::write(log, [])?;
+        let mut command = command.clone();
+        command.merge_output = true;
+        command.inherit_output = false;
+        match self.run(&command) {
+            Ok(captured) => {
+                fs::write(log, &captured.stdout)?;
+                Ok(captured)
+            }
+            Err(error) => {
+                if let Some(CaptureError::Timeout { stdout, .. }) =
+                    error.downcast_ref::<CaptureError>()
+                {
+                    fs::write(log, stdout)?;
+                }
+                Err(error)
+            }
+        }
+    }
 }
 #[derive(Debug)]
 pub enum CaptureError {
@@ -144,6 +166,17 @@ impl Pipe {
 pub struct NativeRunner;
 impl Runner for NativeRunner {
     fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
+        self.run_with_file(spec, None)
+    }
+    fn run_to_file(&mut self, spec: &CommandSpec, log: &Path) -> Result<Captured> {
+        let mut spec = spec.clone();
+        spec.merge_output = true;
+        spec.inherit_output = false;
+        self.run_with_file(&spec, Some(log))
+    }
+}
+impl NativeRunner {
+    fn run_with_file(&mut self, spec: &CommandSpec, log: Option<&Path>) -> Result<Captured> {
         if spec.timeout.is_zero() {
             return Err("native command timeout must be positive".into());
         }
@@ -165,7 +198,13 @@ impl Runner for NativeRunner {
         if spec.inherit_output {
             command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
         }
-        let merged = if spec.merge_output {
+        let merged = if let Some(log) = log {
+            let file = File::create(log)?;
+            command
+                .stdout(Stdio::from(file.try_clone()?))
+                .stderr(Stdio::from(file));
+            None
+        } else if spec.merge_output {
             let (reader, writer) = UnixStream::pair()?;
             command
                 .stdout(Stdio::from(OwnedFd::from(writer.try_clone()?)))
@@ -186,7 +225,7 @@ impl Runner for NativeRunner {
         };
         let stdout_fd = match merged {
             Some(fd) => fd,
-            None if spec.inherit_output => File::open("/dev/null")?.into(),
+            None if spec.inherit_output || log.is_some() => File::open("/dev/null")?.into(),
             None => owned
                 .child
                 .stdout

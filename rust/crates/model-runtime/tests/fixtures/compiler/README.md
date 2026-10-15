@@ -16,3 +16,21 @@
 Full model numerical parity, backend scheduling/rendering, image packing and fusion, training/nested graphs, all other tinygrad development/test responsibilities and consumer migration remain pending. Native offline mode currently rejects boolean image operands explicitly; the original often rejects these through Invalid padding, while potentially aligned boolean-image cases still need exact admission/packing coverage. None of this evidence authorizes removing the original Python compiler or tinygrad source.
 
 The initial `compiler_backend_cpu` now exercises ONNX import, conservative typed-plan scheduling, native C compilation/linking, real object/library emission, and existing `CpuModel`/`model-run` execution for the supported float32 elementwise/view subset. Independent Add, symbolic/half external binding and three-node Transpose/Add/Mul captures match byte-for-byte with planning enabled and disabled. Pinned source SHA256 is checked before parsing the same bytes and retained in emitted source. Native compiler exit/timeout/empty output/fake ELF/oversized diagnostics and unsupported IR publish no destination; existing destinations are preserved. This is not a complete CPU model compiler: the full image/reduction/fusion and numerical gates above remain open.
+
+`original-typed-preprocess.json` retains thirteen independent unmodified original
+CPU:LLVM compiled cases for uint8/float32/half casts and half Add/Sub/Mul/Div,
+including every uint8 value, all 65,536 half storage patterns, and half subnormal/tie/overflow boundaries.
+The CPU backend explicitly reproduces original CPU:LLVM half emulation: float32
+ALU, denormal-zero numeric conversion, and late division rewriting for both
+float32 and half. Pure half Identity/same-type Cast/Reshape/Transpose preserve
+raw storage bits, including subnormals and signaling NaNs; these copies do not
+perform numeric conversion. Dynamic float32 division probes include 7/3 rounding
+and reciprocal-overflow with a finite quotient. The OpenCL renderer
+retains separate native-half storage/ALU semantics; no device comparison is implied. It also
+contains the exact pinned driver's first nine ONNX nodes, their required
+original constants, deterministic repeating 0..255 image input and calibration
+half ties, and original SHA256s of every intermediate after float32 export.
+The original runner realizes each node separately to retain observable storage
+rounding. Its backend flags and source hashes are recorded in the fixture.
+These preprocessing comparisons do not establish full model or fused IMAGE
+convolution equivalence; the full-driver numerical failure remains open.

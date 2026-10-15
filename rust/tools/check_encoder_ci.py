@@ -48,6 +48,14 @@ def dependency_outputs(messages: Path) -> dict[str, Path]:
   return result
 
 
+def build_source(binaries: Path, output: Path, native: Path, capnp: Path, json11: Path, dependencies: dict[str, Path]) -> None:
+  require_space(output, 1024**3)
+  run([str(binaries / 'build-encoder-source'), '--root', str(ROOT), '--output', str(output / 'source'),
+       '--native-prefix', str(native / 'usr'), '--capnp-prefix', str(capnp.resolve()),
+       '--json11-prefix', str(json11.resolve()), '--zmq-include', str(dependencies['zmq'] / 'source/include'),
+       '--jpeg-build', str(dependencies['jpeg'])], output / 'commands', 'source-build')
+
+
 def main() -> None:
   parser = argparse.ArgumentParser(description='Run the complete encoder host comparison against current Cargo artifacts')
   parser.add_argument('--binaries', type=Path, required=True)
@@ -75,9 +83,13 @@ def main() -> None:
   imports['cereal'] = str(CEREAL_PATH)
   source_files = [ROOT / 'rust/Cargo.lock', ROOT / 'uv.lock', Path(__file__)]
   source_files += list(TOOLS.glob('*encoder*.py')) + list((TOOLS / 'encoder_oracle').glob('*'))
+  source_files += [ROOT / 'rust/crates/dev-tools/src' / name for name in
+                   ('encoder_source_build.rs', 'qa_process.rs', 'services_header.rs', 'path_resolve.rs', 'bin/build_encoder_source.rs')]
+  source_files += [ROOT / 'rust/crates/messaging/src/services_generated.rs', ROOT / 'rust/crates/dev-tools/Cargo.toml']
   for name in ('encoderd', 'msgq', 'jpeg'):
     source_files += [path for path in (ROOT / 'rust/crates' / name).rglob('*') if path.is_file()]
   selected = [binaries / 'openpilot-encoderd', *(binaries / 'examples' / name for name in ('encoder_codec_trace', 'encoder_v4l_trace'))]
+  selected.append(binaries / 'build-encoder-source')
   identity = {'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
               'sources': hashes(source_files), 'imports': imports,
               'python_packages': {name: importlib.metadata.version(name) for name in ('pycapnp', 'pyzmq')},
@@ -92,9 +104,7 @@ def main() -> None:
     require_space(output, 1024**3)
     run([sys.executable, str(TOOLS / script), *arguments], output / 'commands', name)
 
-  check('source-build', 'build_encoder_source.py', ['--output', str(output / 'source'), '--native-prefix', str(native / 'usr'),
-    '--capnp-prefix', str(args.capnp_prefix.resolve()), '--json11-prefix', str(json11.resolve()),
-    '--zmq-include', str(dependencies['zmq'] / 'source/include'), '--jpeg-build', str(dependencies['jpeg'])])
+  build_source(binaries, output, native, args.capnp_prefix, json11, dependencies)
   check('codecs', 'check_encoder_codecs.py', ['--rust', str(selected[1]), '--output', str(output / 'codecs'),
     '--jpeg-build', str(dependencies['jpeg']), '--native', str(native)])
   check('v4l', 'check_encoder_v4l.py', ['--rust', str(selected[2]), '--output', str(output / 'v4l'), '--native', str(native)])

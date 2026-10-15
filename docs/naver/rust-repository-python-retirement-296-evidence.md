@@ -10,10 +10,22 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Twenty-two sources have locally verified replacements and migrated
-callers; 3,558 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Twenty-three sources have locally verified replacements and migrated
+callers; 3,557 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
+
+The first execution-edge audit scanned 12,700 tracked entries and 11,965 text
+files, recording seven symlink aliases without following them. The
+[reviewed edge inventory](rust-repository-python-retirement-296-execution-edges.tsv)
+records 27 concrete findings with source blob identities. It identified 48
+literal embedded command sites: 29 in the Rust workflow, one in the carrot-man
+template, one in the route-vault workflow and 17 in other shell/Jenkins/vendor
+files. Six Python source generators emit extensionless Python fixture commands.
+Dynamic interpreter variables and embedded C interpreter calls remain pending.
+No additional tracked Python shebang entrypoint outside the baseline was found;
+this scan is not a completeness proof. The selected native launcher remains
+Python-free; retained legacy launch paths are accounted for separately.
 
 ## CI and synchronization
 
@@ -47,11 +59,13 @@ up. Workflow callers migrated, and the old checker, source wrapper and Python
 process-probe tests were removed. The original runtime process module remains
 because other original-source comparisons still use it.
 
-After these integrations and the additions below, all 117 selected dev-tools
+After these integrations and the additions below, all 128 selected dev-tools
 tests passed together; all-target Clippy passed with warnings denied. The added
-logging-build and native architecture-test disk guards are asserted separately
+logging-build, encoder-build, model-source and native architecture-test disk guards are asserted separately
 while preserving the exact arguments/hash of all 179 inherited ordinary guards
-and all five raylib guards (186 markers in the Rust workflow).
+and all five raylib guards (188 markers in the Rust workflow). The original model
+LFS fetch now precedes workspace tests because the new compiler corpus requires
+actual model bytes; it does not accept an LFS pointer or skip that validation.
 
 ## Panda source-oracle builders
 
@@ -155,7 +169,34 @@ initial attempt omitted the local Cap'n Proto include prefix and failed to find
 `generated-header-support.h`; supplying the existing `--capnp-prefix` resolved
 that environment failure without source changes or a skipped check.
 Native process support preserves ordered merged raw output and inherited
-streams; ten tests cover errors, timeouts and process-group cleanup.
+streams. File-backed compiler logging additionally preserves raw ordered output
+above the old 16 MiB memory-capture cap without buffering it in memory. Thirteen
+process tests cover large logs, errors, timeout partial files and owned process
+group cleanup. Independent review found no remaining issue in that file sink.
+
+The encoder source builder preserves all 17 C++ sources, generated schema/header
+inputs, explicit dependencies, output collisions, disk failures, raw compiler
+logs and the original 180-second timeout. Nineteen original cases additionally
+cover duplicate option last-value behavior, equals syntax, unique abbreviations,
+help ordering and parse exit code 2. Five native tests and strict Clippy pass.
+Fresh original/native executables match SHA-256
+`126ed49990c66b0e93746578d5ec73f6ef582f3216e43641518cddc97fa1658a`.
+The orchestration explicitly selects the native builder and fingerprints its
+source/executable; ten orchestration tests pass, including real command-boundary
+success/failure without Python in PATH. The workflow builds the current builder,
+and the replaced Python source was removed.
+
+The embedded UI updater handshake checker is now native. Two tests preserve 32
+independent original receipt/trace cases, Python JSON admission, exact strace
+arguments/deadline, raw inherited output and failure ordering. Both the original
+heredoc and native CLI passed real strace fault injection against the same freshly
+built UI test executable, SHA-256
+`3cd04b4dd936c50e93791c050b27283a74b34e0d2554519f080dc9c6ef82d50d`.
+Each trace has one delayed EAGAIN, then same-worker CLD_EXITED waitid and accepted
+queued connection. The original lifecycle assertion remains intact; the workflow
+now invokes the built native checker. This retires one embedded execution edge,
+not another source-file inventory entry. Independent review found no Important
+issue in this conversion.
 
 Native release-file selection matches the unchanged original regular expressions,
 regular files, directory/dangling/loop symlinks and FIFO exclusion. A synthetic
@@ -190,7 +231,7 @@ The compiler-specific memory planner preserves the original 256/32 TLSF
 configuration. Its 109 generic cases and two captured full-model schedules
 match offsets/arenas: 20,293,376 bytes for driver and 69,575,168 for driving.
 These are captured schedules; this does not establish native fusion/scheduling.
-The bounded f32 renderer matches 42 host-compiled original cases. The genuine
+The bounded generic renderer matches 44 host-compiled original cases. The genuine
 A630 offline QCOM compiler under QEMU produces byte-identical buffer-add kernel
 bytes. This does not validate GPU execution or the full image renderer.
 
@@ -208,6 +249,19 @@ regression first reproduced publication with the old boundary, then verified
 rejection with unchanged protobuf SHA and two different weight payloads, plus
 a missing payload, without publishing artifacts. All six backend tests, the
 generic external-data import test and all-target Clippy pass after this repair.
+
+The next typed preprocessing unit preserves CPU:LLVM's emulated half arithmetic
+separately from native OpenCL half operations. Thirteen independent CPU:LLVM
+cases include all 65,536 half bit patterns and actual dynamic inputs; the first
+nine driver-model preprocessing output hashes match. Review exposed two real
+differences: f32 reciprocal multiplication changed 7/3 and overflowed a finite
+tiny-input quotient, and numeric half load/store changed raw Identity/view bits.
+CPU division now follows original FDIV rewriting for both admitted float types;
+pure half storage views copy raw words, while numeric conversions retain their
+conversion semantics. Independent review confirmed both fixes. Eight backend
+and six renderer tests plus strict all-target Clippy pass. The current renderer
+again produced the exact genuine 2,144-byte A630 Add binary. This validates the
+bounded preprocessing unit, not the full convolution/image/fusion compiler.
 
 Full compiled-model numeric parity remains unresolved. After preserving IMAGE
 half-storage/float32 accumulation semantics, the driver comparison still has
@@ -230,7 +284,11 @@ locally on tmpfs. The repaired test uses the current directory enumeration order
 while requiring the exact original file multiset, argument slots, fixed source
 order and all other command/artifact fields. All five logging tests pass and the
 eight-case original comparison also passes on tmpfs. Production enumeration is
-unchanged; no source/flag checks were removed. A new exact-SHA cloud run is needed.
+unchanged; no source/flag checks were removed. The repair commit
+`c8db3627a4d2296af01a5a9b4694a3f655061dad` passed its complete
+[Fast checks run](https://github.com/bin9208/openpilot-rust/actions/runs/38717608255).
+This is push-check evidence for that checkpoint, not PR/integration/device or
+subsequent uncommitted source validation.
 
 Continue the [implementation plan](rust-repository-python-retirement-296-plan.md)
 through every remaining source family, actual consumer migration, a zero-Python

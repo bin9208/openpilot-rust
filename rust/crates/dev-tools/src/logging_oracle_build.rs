@@ -1,7 +1,7 @@
 //! Build unchanged bootlog/loggerd source oracles without Python generators.
 use crate::{
     disk_space, json11_stage,
-    qa_process::{CaptureError, CommandSpec, Runner},
+    qa_process::{CommandSpec, Runner},
     seal::{digest, Result},
     services_header,
 };
@@ -190,25 +190,11 @@ fn schema(root: &Path, output: &Path, strict: bool) -> Result<(PathBuf, PathBuf)
     )?;
     Ok((schema, generated))
 }
-fn execute(mut spec: CommandSpec, log: Option<&Path>, runner: &mut dyn Runner) -> Result<()> {
-    if let Some(log) = log {
-        fs::write(log, [])?;
-        spec.merge_output = true;
-    }
-    let captured = match runner.run(&spec) {
-        Ok(captured) => captured,
-        Err(error) => {
-            if let (Some(log), Some(CaptureError::Timeout { stdout, .. })) =
-                (log, error.downcast_ref::<CaptureError>())
-            {
-                fs::write(log, stdout)?;
-            }
-            return Err(error);
-        }
+fn execute(spec: CommandSpec, log: Option<&Path>, runner: &mut dyn Runner) -> Result<()> {
+    let captured = match log {
+        Some(log) => runner.run_to_file(&spec, log)?,
+        None => runner.run(&spec)?,
     };
-    if let Some(log) = log {
-        fs::write(log, &captured.stdout)?;
-    }
     if captured.code != 0 {
         return Err(format!(
             "logging source compiler exited {}: {}",

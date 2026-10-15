@@ -298,3 +298,93 @@ fn protobuf_pin_cannot_authorize_changed_external_weights() {
     assert!(error.contains("external_data"), "{error}");
     assert!(!destination.exists());
 }
+
+#[test]
+fn typed_preprocessing_matches_independent_original_compiled_captures() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-typed-preprocess.json"
+    ))
+    .unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    for (index, case) in fixture["cases"].as_array().unwrap().iter().enumerate() {
+        let bytes = decode(case["onnx_hex"].as_str().unwrap());
+        let onnx = directory.path().join(format!("model-{index}.onnx"));
+        fs::write(&onnx, &bytes).unwrap();
+        let bundle = directory.path().join(format!("bundle-{index}"));
+        compile_onnx(
+            &onnx,
+            &format!("{:x}", Sha256::digest(&bytes)),
+            &CompileOptions::default(),
+            &bundle,
+        )
+        .unwrap();
+        let mut model = unsafe { CpuModel::load(&bundle) }.unwrap();
+        for input in case["inputs"].as_array().unwrap() {
+            model
+                .write_input(
+                    input["name"].as_str().unwrap(),
+                    &decode(input["data_hex"].as_str().unwrap()),
+                )
+                .unwrap();
+        }
+        model.run();
+        let mut output = vec![0; model.output_size("output").unwrap()];
+        model.read_output("output", &mut output).unwrap();
+        assert_eq!(
+            output,
+            decode(case["expected_hex"].as_str().unwrap()),
+            "{}",
+            case["name"]
+        );
+    }
+}
+
+#[test]
+fn actual_driver_first_nine_nodes_match_independent_compiled_output_hashes() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-typed-preprocess.json"
+    ))
+    .unwrap();
+    let prefix = &fixture["driver_prefix"];
+    let directory = tempfile::tempdir().unwrap();
+    let onnx = directory.path().join("driver-first-nine.onnx");
+    let bytes = decode(prefix["onnx_hex"].as_str().unwrap());
+    fs::write(&onnx, &bytes).unwrap();
+    let bundle = directory.path().join("bundle");
+    compile_onnx(
+        &onnx,
+        &format!("{:x}", Sha256::digest(&bytes)),
+        &CompileOptions {
+            offline_bindings: true,
+            ..CompileOptions::default()
+        },
+        &bundle,
+    )
+    .unwrap();
+    let mut model = unsafe { CpuModel::load(&bundle) }.unwrap();
+    model
+        .write_input(
+            "input_img",
+            &decode(prefix["input_img"]["repeat_hex"].as_str().unwrap())
+                .repeat(prefix["input_img"]["repetitions"].as_u64().unwrap() as usize),
+        )
+        .unwrap();
+    model
+        .write_input(
+            "calib",
+            &decode(prefix["calib"]["data_hex"].as_str().unwrap()),
+        )
+        .unwrap();
+    model.run();
+    for expected in prefix["outputs"].as_array().unwrap() {
+        let name = expected["name"].as_str().unwrap();
+        let mut output = vec![0; model.output_size(name).unwrap()];
+        model.read_output(name, &mut output).unwrap();
+        assert_eq!(output.len() as u64, expected["bytes"].as_u64().unwrap());
+        assert_eq!(
+            format!("{:x}", Sha256::digest(output)),
+            expected["sha256"].as_str().unwrap(),
+            "actual original driver node {name}"
+        );
+    }
+}

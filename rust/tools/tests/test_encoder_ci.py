@@ -78,3 +78,30 @@ def test_encoder_stager_receipt_and_prestaged_bypass(tmp_path: Path, monkeypatch
   assert invocation['argv'] == [str(binary), '--root', str(check_encoder_ci.ROOT), '--output', str(tmp_path / 'json11-dependency')]
   binary.unlink()
   assert check_encoder_ci.json11_dependency(prefix, binary, tmp_path) == prefix
+
+
+@pytest.mark.parametrize('exit_code', [0, 9])
+def test_native_encoder_builder_boundary_preserves_arguments_and_failures(tmp_path: Path, monkeypatch, exit_code: int) -> None:
+  monkeypatch.setattr(check_encoder_ci, 'require_space', lambda *_: None)
+  binaries = tmp_path / 'bin'
+  binaries.mkdir()
+  builder = binaries / 'build-encoder-source'
+  builder.write_text(f'#!/bin/sh\nprintf "%s\\n" "$@"\nprintf diagnostic >&2\nexit {exit_code}\n')
+  builder.chmod(0o755)
+  monkeypatch.setenv('PATH', str(binaries))
+  output = tmp_path / 'owned output'
+  dependencies = {'zmq': tmp_path / 'current-zmq', 'jpeg': tmp_path / 'current-jpeg'}
+  arguments = (binaries, output, tmp_path / 'native', tmp_path / 'capnp', tmp_path / 'json11', dependencies)
+  if exit_code:
+    with pytest.raises(subprocess.CalledProcessError):
+      check_encoder_ci.build_source(*arguments)
+  else:
+    check_encoder_ci.build_source(*arguments)
+  invocation = json.loads((output / 'commands/source-build.command.json').read_text())
+  assert invocation['argv'] == [str(builder), '--root', str(check_encoder_ci.ROOT), '--output', str(output / 'source'),
+    '--native-prefix', str(tmp_path / 'native/usr'), '--capnp-prefix', str(tmp_path / 'capnp'),
+    '--json11-prefix', str(tmp_path / 'json11'), '--zmq-include', str(dependencies['zmq'] / 'source/include'),
+    '--jpeg-build', str(dependencies['jpeg'])]
+  assert (output / 'commands/source-build.stdout').read_text().splitlines() == invocation['argv'][1:]
+  assert (output / 'commands/source-build.stderr').read_text() == 'diagnostic'
+  assert json.loads((output / 'commands/source-build.exit.json').read_text()) == {'returncode': exit_code}
