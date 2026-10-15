@@ -167,21 +167,45 @@ input `[1+2^-11,-0,0.3]`, original prefix2 is
 half stores produced `[760.5,-0.95751953125,12.6484375]`. The original prefix98
 calibration tail matches the former values; image-only prefixes prune this path.
 
-Until a complete logical/physical CPU storage profile is implemented, structural
-admission rejects unproved computed-half reads by arithmetic or float export
-before an explicit storage boundary. This applies in both binding modes and is
-not keyed to any model/name/prefix. Physical F16 input/constants, exact uint8
-casts, pure half views and direct explicit IMAGE storage conversion retain their
-verified behavior. Arithmetic inside a storage conversion does not bypass the
-guard. Five minimal negative graphs reject before publication; four independent
-positive graphs cover genuine physical F16 Cast/Sub, exact uint8 conversion and
-uint8/half-Div/IMAGE-Conv storage. All 13 earlier genuine F16/storage cases and
-actual final-only image Conv/prefix30/59/97 gates remain positive.
+The bounded CPU physical storage profile now separates the logical ONNX graph
+from its buffer projection. Unheld computed half Cast/static views/Add/Sub/Mul/
+Div use f32 scratch; real F16 inputs/constants/selected outputs and their view
+ancestors remain physical half. Semantic IMAGE alias analysis uses the logical
+graph first. Schedule byte counts, renderer loads/stores and generated wrapper
+pointer types all use the same physical projection; manifest I/O stays unchanged.
+The original cast clamp, storage flush, signed-zero and NaN payload rules remain
+separate. Thirteen independently compiled held/unheld cases cover Identity,
+Sub/Mul/Add/Div and selected Identity/Reshape/same-half-Cast view ancestors;
+exposing the half output demonstrably changes downstream float bits. The five
+formerly rejected true-export graphs now compare every byte in both binding and
+memory-planning modes. The existing four physical/storage positives, all 13
+earlier genuine F16 cases and actual image Conv/prefix30/59/97 gates still pass.
+Four original half Relu/Concat contexts remain rejected before publication;
+this profile does not admit general conditionals, half reductions or math.
 
 The earlier all-nine-node driver hash gate used per-node forced realization,
-which inserts physical F16 stores. It has been corrected to reject that unproved
-joint f32-export graph; all nine original diagnostic hashes/input recipes remain
-in `original-typed-preprocess.json` with an explicit context correction. Removing
-that accepted-graph assertion does not assert a new numerical equivalence. The
-logical-half profile, node93 optimized-fusion discrepancy, conditional rendering,
-full models and Python retirement remain unfinished.
+which inserts physical F16 stores. Those nine diagnostic hashes/input recipes
+remain in `original-typed-preprocess.json` with the context correction. A new
+independent capture casts all nine selected outputs to f32 and jointly realizes
+them once; the native gate now matches all nine true-export hashes exactly.
+The scalar initializer divisor255 revealed a formerly hidden FDIV versus
+constant-reciprocal multiplication difference. Normal finite scalar initializer
+reciprocals now fold like the original. A subsequent independent same-context
+infinity probe found that both scalar initializer and literal ±Inf division
+simplify to positive zero, including NaN/Inf/signed-zero numerators. The former
+native FDIV or numerator-times-zero output was not equivalent. Eight ONNX cases
+in `original-infinite-divisors.json` cover f32/physical-F16 and both bindings;
+two direct literal cases cover the source scalar-IR rule. Every byte now agrees
+in both memory-planning modes. Dynamic denominators retain FDIV behavior;
+shared/standalone constant-infinity reciprocal forms reject until their context
+is proved. This is an original-backed constant-expression rule, not payload
+normalization or a universal NaN guard.
+
+Fresh original/native true-final prefixes0/1/2/8/9 are exact. The known prefix93
+optimized Conv/Gelu/Mean fusion discrepancy retains the same hashes and 3/960
+bit differences; no tolerance was changed. Prefix30/59/97 remain positive in the
+full package gate. Validation: all 134 tests passed in the final full-package run,
+along with strict all-target Clippy and fresh current-renderer genuine A630 Add
+source/binary equality. Full model parity,
+general scheduling/fusion/storage profiles, conditional rendering, other backend
+compilation, training/development functionality and Python retirement remain open.

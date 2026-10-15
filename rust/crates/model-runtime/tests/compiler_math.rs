@@ -87,6 +87,27 @@ fn native_math_primitives_match_original_dynamic_float32_bits() {
                 b: load(1),
                 c: load(2),
             },
+            name @ ("DivLiteralPositiveInfinity" | "DivLiteralNegativeInfinity") => {
+                ScalarExpr::Binary {
+                    kind: openpilot_model_runtime::compiler_onnx::scalar::Binary::Mul,
+                    dtype: 1,
+                    left: load(0),
+                    right: Box::new(ScalarExpr::Reciprocal {
+                        dtype: 1,
+                        value: Box::new(ScalarExpr::Literal(
+                            openpilot_model_runtime::compiler_onnx::scalar::Scalar::from_float(
+                                1,
+                                if name == "DivLiteralPositiveInfinity" {
+                                    f64::INFINITY
+                                } else {
+                                    f64::NEG_INFINITY
+                                },
+                            )
+                            .unwrap(),
+                        )),
+                    }),
+                }
+            }
             _ => unreachable!(),
         };
         graph.plans.push(Plan {
@@ -300,4 +321,31 @@ fn math_rendering_keeps_unproved_dtypes_and_gpu_targets_fail_closed() {
         graph.plans[1].expression = expression;
         assert!(render::render_cpu_elementwise(&graph, 1, "unproved_half_math").is_err());
     }
+    let product = ScalarExpr::Binary {
+        kind: openpilot_model_runtime::compiler_onnx::scalar::Binary::Mul,
+        dtype: 1,
+        left: load(),
+        right: Box::new(ScalarExpr::Reciprocal {
+            dtype: 1,
+            value: Box::new(ScalarExpr::Literal(
+                openpilot_model_runtime::compiler_onnx::scalar::Scalar::from_float(
+                    1,
+                    f64::INFINITY,
+                )
+                .unwrap(),
+            )),
+        }),
+    };
+    graph.plans[1].ty.dtype = 1;
+    graph.plans[1].expression = ScalarExpr::Binary {
+        kind: openpilot_model_runtime::compiler_onnx::scalar::Binary::Add,
+        dtype: 1,
+        left: Box::new(product.clone()),
+        right: Box::new(product),
+    };
+    assert!(
+        render::render_cpu_elementwise(&graph, 1, "shared_infinite_reciprocal")
+            .unwrap_err()
+            .contains("infinite scalar reciprocal")
+    );
 }

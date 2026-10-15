@@ -63,26 +63,28 @@ fn unsafe_read(
 /// Accept physical F16 bindings/constants, exact uint8 conversions and direct
 /// explicit IMAGE storage boundaries. Defer unproved logical-half materializing
 /// paths rather than publishing rounded results for float exports or later ALU.
-pub(crate) fn admit(graph: &LoweredGraph) -> Result<(), String> {
+fn admit(graph: &LoweredGraph, held: &[bool]) -> Result<(), String> {
     let live = schedule::schedule_plans(graph, "CPU", true)?.live;
     let mut exact = vec![false; graph.plans.len()];
     for (id, plan) in graph.plans.iter().enumerate() {
         if plan.ty.dtype == 10 {
-            exact[id] = match &plan.expression {
-                ScalarExpr::Input(_)
-                | ScalarExpr::Constant(_)
-                | ScalarExpr::StorageRound { dtype: 10, .. } => true,
-                ScalarExpr::Cast { dtype: 10, value } => match value.as_ref() {
-                    ScalarExpr::Load { plan: source, .. } if graph.plans[*source].ty.dtype == 2 => {
-                        true
-                    }
+            exact[id] = held[id] && virtual_expression(&plan.expression)
+                || match &plan.expression {
+                    ScalarExpr::Input(_)
+                    | ScalarExpr::Constant(_)
+                    | ScalarExpr::StorageRound { dtype: 10, .. } => true,
+                    ScalarExpr::Cast { dtype: 10, value } => match value.as_ref() {
+                        ScalarExpr::Load { plan: source, .. }
+                            if graph.plans[*source].ty.dtype == 2 =>
+                        {
+                            true
+                        }
+                        _ => identity_half_view(&plan.expression, graph)
+                            .is_some_and(|source| exact[source]),
+                    },
                     _ => identity_half_view(&plan.expression, graph)
                         .is_some_and(|source| exact[source]),
-                },
-                _ => {
-                    identity_half_view(&plan.expression, graph).is_some_and(|source| exact[source])
-                }
-            };
+                };
         }
         if live.contains(&id)
             && !(plan.ty.dtype == 10 && identity_half_view(&plan.expression, graph).is_some())
@@ -92,4 +94,54 @@ pub(crate) fn admit(graph: &LoweredGraph) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+// Only these expression families have independent CPU logical-half captures.
+// In particular, Select, general reductions and transcendental half operations
+// do not acquire a new admission path through this storage projection.
+fn virtual_expression(value: &ScalarExpr) -> bool {
+    use super::scalar::Binary;
+    match value {
+        ScalarExpr::Load { .. } | ScalarExpr::Literal(_) | ScalarExpr::FloatLiteral { .. } => true,
+        ScalarExpr::Cast {
+            dtype: 1 | 10,
+            value,
+        }
+        | ScalarExpr::Reciprocal { dtype: 10, value } => virtual_expression(value),
+        ScalarExpr::Binary {
+            kind: Binary::Add | Binary::Sub | Binary::Mul,
+            dtype: 10,
+            left,
+            right,
+        } => virtual_expression(left) && virtual_expression(right),
+        _ => false,
+    }
+}
+/// A CPU storage projection, separate from the logical graph used by ONNX
+/// validation and IMAGE alias analysis. The expression dtypes remain logical:
+/// half casts clamp, whereas the projected buffer dtype controls conversion at
+/// actual loads/stores. Inputs, constants, selected half outputs and their view
+/// ancestors retain physical half storage.
+pub(crate) fn physical_graph(logical: &LoweredGraph) -> Result<LoweredGraph, String> {
+    let mut held = vec![false; logical.plans.len()];
+    for &id in logical.outputs.values() {
+        held[id] = logical.plans[id].ty.dtype == 10;
+    }
+    for id in (0..logical.plans.len()).rev() {
+        if held[id] {
+            if let Some(source) = identity_half_view(&logical.plans[id].expression, logical) {
+                held[source] = true;
+            }
+        }
+    }
+    let mut physical = logical.clone();
+    for (id, plan) in logical.plans.iter().enumerate() {
+        if plan.ty.dtype == 10 && !held[id] && virtual_expression(&plan.expression) {
+            physical.plans[id].ty.dtype = 1;
+        }
+    }
+    // Preserve the existing rejection for unproved physical-half edges. This
+    // projection is not permission to compile arbitrary half scalar IR.
+    admit(&physical, &held)?;
+    Ok(physical)
 }

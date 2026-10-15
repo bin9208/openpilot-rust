@@ -307,5 +307,427 @@
     ],
     "actual_prefix98_tail_hex": "183c3e44881875bf1c6a4a41",
     "pending": "Noacceptance. Imageprefix9..97 prune calibrationbranch; forcednodepreprocessproof is differentcontext. Mustreplace prematurehalf materialization with faithfulCPUlogical/physicalstorage profile beforefullmodelparity."
-  }
+  },
+  "physical_profile": {
+    "backend": "CPU:LLVM",
+    "flags": {
+      "IMAGE": 1,
+      "FLOAT16": 1,
+      "NOLOCALS": 1,
+      "OPENPILOT_HACKS": 1
+    },
+    "context": "Fresh graph; all declared selected outputs jointly scheduled once, no forced intermediate realization; explicit f32 export Cast. held=True additionally declares physical F16 h output.",
+    "sources": {
+      "tinygrad_repo/tinygrad/uop/decompositions.py": "907e0660b37758b3dea3324c99292ad73590ea09fdefd1bbd831c4e78068c7e3",
+      "tinygrad_repo/tinygrad/renderer/llvmir.py": "34fc242484fed32a645fac6ad855064081ac0de5b01a291a071c1bbc92cdf29e",
+      "tinygrad_repo/tinygrad/schedule/rangeify.py": "52bad522c3660171a708769999373a5177ac60d2ecde8c3db555769b677d2035",
+      "tinygrad_repo/tinygrad/mixin/__init__.py": "1a9c8438c33a67e13c9ff684da24281f9e74e5ebbab48ce3b43731777225fb73"
+    },
+    "records": [
+      {
+        "name": "Identity-held-False",
+        "onnx_hex": "420210143a700a170a01611201682204436173742a090a02746fa00102180a0a100a016812017822084964656e746974790a1c0a017812066f75747075742204436173742a090a02746fa0010218015a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "0010803f9a99993effff7f380000807f000000804523c17f4523817f003080bf"
+          }
+        }
+      },
+      {
+        "name": "Identity-held-True",
+        "onnx_hex": "420210143a81010a170a01611201682204436173742a090a02746fa00102180a0a100a016812017822084964656e746974790a1c0a017812066f75747075742204436173742a090a02746fa0010218015a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808620f0a0168120a0a08080a12040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "0000803f00a0993e000000000000807f000000800020c17f0020817f004080bf"
+          },
+          "h": {
+            "dtype": "dtypes.half",
+            "shape": [
+              8
+            ],
+            "hex": "003ccd340000007c0080097e097c02bc"
+          }
+        }
+      },
+      {
+        "name": "Sub-held-False",
+        "onnx_hex": "420210143a790a170a01611201682204436173742a090a02746fa00102180a0a0e0a01680a016212017822035375620a1c0a017812066f75747075742204436173742a090a02746fa0010218012a09100a4201624a02cd345a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "0050333f00c04cb8009899be0000807f00a099be4523c17f4523c17f0098a6bf"
+          }
+        }
+      },
+      {
+        "name": "Sub-held-True",
+        "onnx_hex": "420210143a8a010a170a01611201682204436173742a090a02746fa00102180a0a0e0a01680a016212017822035375620a1c0a017812066f75747075742204436173742a090a02746fa0010218012a09100a4201624a02cd345a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808620f0a0168120a0a08080a12040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "0030333f0000000000a099be0000807f00a099be0020c17f0020c17f00a8a6bf"
+          },
+          "h": {
+            "dtype": "dtypes.half",
+            "shape": [
+              8
+            ],
+            "hex": "003ccd340000007c0080097e097c02bc"
+          }
+        }
+      },
+      {
+        "name": "Mul-held-False",
+        "onnx_hex": "420210143a790a170a01611201682204436173742a090a02746fa00102180a0a0e0a01680a016212017822034d756c0a1c0a017812066f75747075742204436173742a090a02746fa0010218012a09100a4201624a02cd345a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "34b3993e9a59b83dff9f99370000807f000000804523c17f4523c17f9cd999be"
+          }
+        }
+      },
+      {
+        "name": "Mul-held-True",
+        "onnx_hex": "420210143a8a010a170a01611201682204436173742a090a02746fa00102180a0a0e0a01680a016212017822034d756c0a1c0a017812066f75747075742204436173742a090a02746fa0010218012a09100a4201624a02cd345a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808620f0a0168120a0a08080a12040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "00a0993e4861b83d000000000000807f000000800020c17f0020c17fd0ec99be"
+          },
+          "h": {
+            "dtype": "dtypes.half",
+            "shape": [
+              8
+            ],
+            "hex": "003ccd340000007c0080097e097c02bc"
+          }
+        }
+      },
+      {
+        "name": "Add-held-False",
+        "onnx_hex": "420210143a790a170a01611201682204436173742a090a02746fa00102180a0a0e0a01680a016212017822034164640a1c0a017812066f75747075742204436173742a090a02746fa0010218012a09100a4201624a02cd345a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "0078a63fcd9c193f00a8993e0000807f00a0993e4523c17f4523c17f009033bf"
+          }
+        }
+      },
+      {
+        "name": "Add-held-True",
+        "onnx_hex": "420210143a8a010a170a01611201682204436173742a090a02746fa00102180a0a0e0a01680a016212017822034164640a1c0a017812066f75747075742204436173742a090a02746fa0010218012a09100a4201624a02cd345a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808620f0a0168120a0a08080a12040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "0068a63f00a0193f00a0993e0000807f00a0993e0020c17f0020c17f00b033bf"
+          },
+          "h": {
+            "dtype": "dtypes.half",
+            "shape": [
+              8
+            ],
+            "hex": "003ccd340000007c0080097e097c02bc"
+          }
+        }
+      },
+      {
+        "name": "Div-held-False",
+        "onnx_hex": "420210143a790a170a01611201682204436173742a090a02746fa00102180a0a0e0a01680a016212017822034469760a1c0a017812066f75747075742204436173742a090a02746fa0010218012a09100a4201624a02cd345a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "1c67554056f57f3f714c55390000807f000000804523c17f4523c17f6f9c55c0"
+          }
+        }
+      },
+      {
+        "name": "Div-held-True",
+        "onnx_hex": "420210143a8a010a170a01611201682204436173742a090a02746fa00102180a0a0e0a01680a016212017822034469760a1c0a017812066f75747075742204436173742a090a02746fa0010218012a09100a4201624a02cd345a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808620f0a0168120a0a08080a12040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "724c55400000803f000000000000807f000000800020c17f0020c17f18b755c0"
+          },
+          "h": {
+            "dtype": "dtypes.half",
+            "shape": [
+              8
+            ],
+            "hex": "003ccd340000007c0080097e097c02bc"
+          }
+        }
+      },
+      {
+        "name": "held-Identity-root-float-export",
+        "onnx_hex": "420210143a87010a170a01611201682204436173742a090a02746fa00102180a0a130a0168120468656c6422084964656e746974790a1c0a016812066f75747075742204436173742a090a02746fa0010218015a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a02080862120a0468656c64120a0a08080a12040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "0000803f00a0993e000000000000807f000000800020c17f0020817f004080bf"
+          },
+          "held": {
+            "dtype": "dtypes.half",
+            "shape": [
+              8
+            ],
+            "hex": "003ccd340000007c0080097e097c02bc"
+          }
+        }
+      },
+      {
+        "name": "held-Reshape-root-float-export",
+        "onnx_hex": "420210143aa4010a170a01611201682204436173742a090a02746fa00102180a0a190a01680a057368617065120468656c642207526573686170650a1c0a016812066f75747075742204436173742a090a02746fa0010218012a1508011007420573686170654a0808000000000000005a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a02080862120a0468656c64120a0a08080a12040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "0000803f00a0993e000000000000807f000000800020c17f0020817f004080bf"
+          },
+          "held": {
+            "dtype": "dtypes.half",
+            "shape": [
+              8
+            ],
+            "hex": "003ccd340000007c0080097e097c02bc"
+          }
+        }
+      },
+      {
+        "name": "held-Cast-root-float-export",
+        "onnx_hex": "420210143a8e010a170a01611201682204436173742a090a02746fa00102180a0a1a0a0168120468656c642204436173742a090a02746fa00102180a0a1c0a016812066f75747075742204436173742a090a02746fa0010218015a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a02080862120a0468656c64120a0a08080a12040a020808",
+        "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+        "outputs": {
+          "output": {
+            "dtype": "dtypes.float",
+            "shape": [
+              8
+            ],
+            "hex": "0000803f00a0993e000000000000807f000000800020c17f0020817f004080bf"
+          },
+          "held": {
+            "dtype": "dtypes.half",
+            "shape": [
+              8
+            ],
+            "hex": "003ccd340000007c0080097e097c02bc"
+          }
+        }
+      }
+    ],
+    "recipe": "probe_virtual_half_profile.py plus capture_held_half_views.py in migration scratch. Reconstruct graph from embedded protobuf/input hex; unmodified original OnnxRunner, selected outputs jointly scheduled once. No forced intermediate realization. Identity/Sub/Mul/Add/Div held pairs plus held Identity/Reshape/same-half Cast root-consumer cases.",
+    "actual_prefix_validation": [
+      {
+        "index": 0,
+        "context": "true-prefix",
+        "shape": [
+          1,
+          3
+        ],
+        "dtype": "float32",
+        "onnx_sha256": "ce5c0d70b5bae23fc9048a9a8f68f0107436a0d08f63040175ac914474d517d9",
+        "original_sha256": "0f436d29efd7246550768d81db42d04abcd675646f7d4350f8014172513f3c24",
+        "native_sha256": "0f436d29efd7246550768d81db42d04abcd675646f7d4350f8014172513f3c24",
+        "equal": true,
+        "status": "exact"
+      },
+      {
+        "index": 1,
+        "context": "true-prefix",
+        "shape": [
+          1,
+          3
+        ],
+        "dtype": "float32",
+        "onnx_sha256": "e201ecbc50ad9be72277f2ecbb83383a894de3b540f1b4aae74fa69d257f6d72",
+        "original_sha256": "61a6e99471b47e66d3aa17c059af89fa69d881e0866954e274874de8e8e6cecd",
+        "native_sha256": "61a6e99471b47e66d3aa17c059af89fa69d881e0866954e274874de8e8e6cecd",
+        "equal": true,
+        "status": "exact"
+      },
+      {
+        "index": 2,
+        "context": "true-prefix",
+        "shape": [
+          1,
+          3
+        ],
+        "dtype": "float32",
+        "onnx_sha256": "8c46451f9f56497bffc598c2eed9b185653ffd80800d8174e91bf38deaf41f3a",
+        "original_sha256": "0a7b21eea38eb2ea29293c2862d8ecb6681ced9c6ae5dacab1f9688ae427a326",
+        "native_sha256": "0a7b21eea38eb2ea29293c2862d8ecb6681ced9c6ae5dacab1f9688ae427a326",
+        "equal": true,
+        "status": "exact"
+      },
+      {
+        "index": 8,
+        "context": "true-prefix",
+        "shape": [
+          1,
+          16,
+          240,
+          360
+        ],
+        "dtype": "float32",
+        "onnx_sha256": "0c8ff7e34e02b70e14b876b36a3d617a6a0b480da52127524530dc1a87e642b8",
+        "original_sha256": "996dbe7fef9c5a3c137e4dfd8f18bd2c7c32662f0ce6e0bfb422e626fab5caab",
+        "native_sha256": "996dbe7fef9c5a3c137e4dfd8f18bd2c7c32662f0ce6e0bfb422e626fab5caab",
+        "equal": true,
+        "status": "exact"
+      },
+      {
+        "index": 9,
+        "context": "true-prefix",
+        "shape": [
+          1,
+          32,
+          120,
+          180
+        ],
+        "dtype": "float32",
+        "onnx_sha256": "2ba41b1e471416b13287be280398a8f1e4a3dcc0c5c9a352edda80428b5383e9",
+        "original_sha256": "7110aa5f009b930ed61715b500c6f9c127803db7c8c1adc50a7e9a774c025e7b",
+        "native_sha256": "7110aa5f009b930ed61715b500c6f9c127803db7c8c1adc50a7e9a774c025e7b",
+        "equal": true,
+        "status": "exact"
+      },
+      {
+        "index": 93,
+        "context": "true-prefix",
+        "shape": [
+          1,
+          960,
+          1,
+          1
+        ],
+        "dtype": "float32",
+        "onnx_sha256": "d9bf497acb1c940894b6af5570c23ac24b9c69ed8774603a7221df8d895e6c17",
+        "original_sha256": "7307a9b9129f7650c5793a6098dfb30f1830699e24f7a94c3936d6d6c9b57ee5",
+        "native_sha256": "1501e1ae205dc74df89d5e25df0f7b8b8b67dcdbeda85a90b36ed529831e10b9",
+        "equal": false,
+        "status": "known unresolved optimized Conv/Gelu/Mean fusion;3of960f32 differ"
+      }
+    ]
+  },
+  "pending_conditional": [
+    {
+      "name": "Relu-held-False",
+      "onnx_hex": "420210143a6c0a170a01611201682204436173742a090a02746fa00102180a0a0c0a0168120178220452656c750a1c0a017812066f75747075742204436173742a090a02746fa0010218015a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808",
+      "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            8
+          ],
+          "hex": "0010803f9a99993effff7f380000807f00000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "Relu-held-True",
+      "onnx_hex": "420210143a7d0a170a01611201682204436173742a090a02746fa00102180a0a0c0a0168120178220452656c750a1c0a017812066f75747075742204436173742a090a02746fa0010218015a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020808620f0a0168120a0a08080a12040a020808",
+      "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            8
+          ],
+          "hex": "0000803f00a0993e000000000000807f00000000000000000000000000000000"
+        },
+        "h": {
+          "dtype": "dtypes.half",
+          "shape": [
+            8
+          ],
+          "hex": "003ccd340000007c0080097e097c02bc"
+        }
+      }
+    },
+    {
+      "name": "Concat-held-False",
+      "onnx_hex": "420210143a7e0a170a01611201682204436173742a090a02746fa00102180a0a1e0a01680a01681201782206436f6e6361742a0b0a0461786973a0010218000a1c0a017812066f75747075742204436173742a090a02746fa0010218015a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020810",
+      "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            16
+          ],
+          "hex": "0010803f9a99993effff7f380000807f000000804523c17f4523817f003080bf0010803f9a99993effff7f380000807f000000804523c17f4523817f003080bf"
+        }
+      }
+    },
+    {
+      "name": "Concat-held-True",
+      "onnx_hex": "420210143a8f010a170a01611201682204436173742a090a02746fa00102180a0a1e0a01680a01681201782206436f6e6361742a0b0a0461786973a0010218000a1c0a017812066f75747075742204436173742a090a02746fa0010218015a0f0a0161120a0a08080112040a02080862140a066f7574707574120a0a08080112040a020810620f0a0168120a0a08080a12040a020808",
+      "input_hex": "0010803f9a99993effff7f3800f07f47000000804523c17f4523817f003080bf",
+      "outputs": {
+        "output": {
+          "dtype": "dtypes.float",
+          "shape": [
+            16
+          ],
+          "hex": "0000803f00a0993e000000000000807f000000000020c17f0020c17f004080bf0000803f00a0993e000000000000807f000000000020c17f0020c17f004080bf"
+        },
+        "h": {
+          "dtype": "dtypes.half",
+          "shape": [
+            8
+          ],
+          "hex": "003ccd340000007c0080097e097c02bc"
+        }
+      }
+    }
+  ],
+  "current_admission": "Captured simple logical-half paths now accepted by bounded physical profile. cases[].reject records prior conservative rejection only; pending_conditional remains rejected."
 }

@@ -10,17 +10,17 @@
     "native_arm_helper": "dbcb525f590702fb6e18222ec65e30b1c3e5900292cfaf0d33258a7414a331ba",
     "qemu": "e4f8d99e9ff69c3cefffab71cee358ce2af1ecba1282d04c3eeb44ef76f5a71e",
     "loader": "142f02374792bf5f62293efc3500d472dbbe280dc658cc60480eff73ad46f33c",
-    "native_renderer_source": "0273900bfedc7904e62699fed1dec6696d414989a2c3e1d5ffb327318ad9b9b4",
-    "native_compiler_source": "059313352e917765cfad9c24859cca8e0049a09fdba51fbd74cf5db19f8ad26c",
+    "native_renderer_source": "e8e6f4585736697d8e0d0a4953ba0dbe4a9a3e625d940036c569cd31431df7f4",
+    "native_compiler_source": "f8f57b69b18c8bdbb534e361c6b0902e2b8672815d74c0f3b83a619c15161ac4",
     "native_renderer_reduction_source": "37b5c34f865b74d52cc212a6895e1aaff5c2ae73b8e7b512a38b2df4a830ee41",
     "native_renderer_math_source": "accb8da5ecf19d57f32b1333b10ae300a4b66e026bcbc3f157bc71a83d7881d3",
     "native_storage_alias_source": "76de05c15831194b88361be9e3f8636b27990e9959ac8767202a1181410e7620",
-    "native_half_materialization_admission_source": "be249e3ced080e2c506a1ec3b8f1dc2ddc9d3483515c7fa5ca9bf55569d46eb6"
+    "native_half_materialization_admission_source": "cf267e1ae127e03deec6a13b309117d4132ae9aba41493d5f1d3e58c0a9273cc"
   },
   "binary_bytes": 2144,
   "source_equal": true,
   "binary_equal": true,
-  "capture_recipe": "Native compiler_onnx::render::render_elementwise emits source from typed IR (compiler_render.rs reproduces original source fixture). Execute native ARM offline-qcom-compile --library pinned libllvm-qcom.so under existing qemu-aarch64-static -cpu cortex-a57 and the aarch64 glibc loader. Feed rendered source on stdin, retain stdout. Compare all bytes with original independent buffer_add.bin. Compiler checks pinned provider SHA256 before dynamic loading. No Python, install, kernel/device execution or generated placeholder binary. Guest library path contains only native SDK aarch64 libraries; no Python executable, PythonHOME, PythonPATH or Python library directory is required. Refreshed using current cached native model-runtime renderer after IMAGE matrix execution and conservative logical-half materialization admission. Newly generated source and genuine A630 binary both compared byte-for-byte to independent original fixtures; all current helper/admission source hashes retained.",
+  "capture_recipe": "Native compiler_onnx::render::render_elementwise emits source from typed IR (compiler_render.rs reproduces original source fixture). Execute native ARM offline-qcom-compile --library pinned libllvm-qcom.so under existing qemu-aarch64-static -cpu cortex-a57 and the aarch64 glibc loader. Feed rendered source on stdin, retain stdout. Compare all bytes with original independent buffer_add.bin. Compiler checks pinned provider SHA256 before dynamic loading. No Python, install, kernel/device execution or generated placeholder binary. Guest library path contains only native SDK aarch64 libraries; no Python executable, PythonHOME, PythonPATH or Python library directory is required. Refreshed using the current cached native model-runtime renderer after bounded CPU physical storage projection and independently captured infinity-divisor closure. Fresh source and genuine A630 binary each equal every byte of the independent original fixtures. Current renderer/compiler/projection source hashes retained.",
   "pending": "All other renderer expressions, image descriptors/packing, reduction/fusion schedules and complete model numerical parity remain pending.",
   "host_compiled_reference": {
     "cases": 44,

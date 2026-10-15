@@ -340,7 +340,7 @@ fn typed_preprocessing_matches_independent_original_compiled_captures() {
 }
 
 #[test]
-fn forced_node_driver_hashes_do_not_authorize_unproved_float_exports() {
+fn actual_driver_joint_first_nine_matches_independent_true_float_export() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "fixtures/compiler/original-typed-preprocess.json"
     ))
@@ -349,15 +349,15 @@ fn forced_node_driver_hashes_do_not_authorize_unproved_float_exports() {
     assert_eq!(prefix["acceptance"], "diagnostic_forced_realization_only");
     // These hashes were captured after separately realizing every original
     // node. That forces F16 storage and is not the offline f32-export context.
-    // Retain the diagnostic evidence; do not publish that graph using it as an
-    // equivalence oracle. True final-only image prefixes have separate gates.
+    // Retain the diagnostic evidence separately. The numerical gate below uses
+    // a fresh original joint-final f32 export, not these forced-node hashes.
     assert_eq!(prefix["outputs"].as_array().unwrap().len(), 9);
     let directory = tempfile::tempdir().unwrap();
     let onnx = directory.path().join("driver-first-nine.onnx");
     let bytes = decode(prefix["onnx_hex"].as_str().unwrap());
     fs::write(&onnx, &bytes).unwrap();
     let bundle = directory.path().join("bundle");
-    let result = compile_onnx(
+    compile_onnx(
         &onnx,
         &format!("{:x}", Sha256::digest(&bytes)),
         &CompileOptions {
@@ -365,8 +365,26 @@ fn forced_node_driver_hashes_do_not_authorize_unproved_float_exports() {
             ..CompileOptions::default()
         },
         &bundle,
-    );
-    assert!(result.is_err());
-    assert!(!bundle.exists());
-    assert!(result.err().unwrap().contains("logical-half"));
+    )
+    .unwrap();
+    let mut model = unsafe { CpuModel::load(&bundle) }.unwrap();
+    let image = (0..1382400).map(|i| (i % 256) as u8).collect::<Vec<_>>();
+    model.write_input("input_img", &image).unwrap();
+    let calibration = [1.0f32 + 2.0f32.powi(-11), -0.0, 0.3]
+        .into_iter()
+        .flat_map(f32::to_le_bytes)
+        .collect::<Vec<_>>();
+    model.write_input("calib", &calibration).unwrap();
+    model.run();
+    for output in prefix["true_export"]["records"].as_array().unwrap() {
+        let name = output["name"].as_str().unwrap();
+        let mut actual = vec![0; model.output_size(name).unwrap()];
+        model.read_output(name, &mut actual).unwrap();
+        assert_eq!(actual.len() as u64, output["bytes"].as_u64().unwrap());
+        assert_eq!(
+            format!("{:x}", Sha256::digest(&actual)),
+            output["sha256"].as_str().unwrap(),
+            "{name}"
+        );
+    }
 }

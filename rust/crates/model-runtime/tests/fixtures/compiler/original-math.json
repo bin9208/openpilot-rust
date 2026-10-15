@@ -36220,6 +36220,24 @@
       ],
       "onnx_hex": "420210143a4c0a290a016112066f7574707574220447656c752a160a0b617070726f78696d617465a0010322046e6f6e655a0f0a0161120a0a08080112040a020840620e0a066f757470757412040a020801",
       "cpu_admission": "pending_layout_sensitive_nan"
+    },
+    {
+      "name": "DivLiteralPositiveInfinity",
+      "inputs": [
+        {
+          "data_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f"
+        }
+      ],
+      "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "DivLiteralNegativeInfinity",
+      "inputs": [
+        {
+          "data_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f"
+        }
+      ],
+      "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
     }
   ],
   "pending_none": "Native finite/infinite cases match the realized-float32 original oracle, but five NaN sign/payload cases differ in the3686case layout. Original byte-export and realized-float32 output materialization contexts can select different NaN payloads (especially unrolled shape4/5). CPU graph admission explicitly rejects all Gelu-none/default until backend context/layout semantics are genuinely replaced; no universal guard, tolerance or payload normalization accepted.",
@@ -38644,5 +38662,20 @@
       "expected_hex": "4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff4523c17f4523c1ff"
     }
   ],
-  "pending_tensor_export_recipe": "Fresh unmodified CPU:LLVM process; for n=[1,2,3,4,5,7,8,16,32,64], then approximate=[none,tanh], evaluate Tensor(raw,dtype=float32).gelu(approximate).bitcast(uint8).data() directly without realizing float32 output first. NaN payloads cycle [+quiet,-quiet,+signaling,-signaling]. This byte-export materialization context has different original NaN operand selection from the realized-float32 OnnxRunner captures; neither context is normalized/accepted as interchangeable."
+  "pending_tensor_export_recipe": "Fresh unmodified CPU:LLVM process; for n=[1,2,3,4,5,7,8,16,32,64], then approximate=[none,tanh], evaluate Tensor(raw,dtype=float32).gelu(approximate).bitcast(uint8).data() directly without realizing float32 output first. NaN payloads cycle [+quiet,-quiet,+signaling,-signaling]. This byte-export materialization context has different original NaN operand selection from the realized-float32 OnnxRunner captures; neither context is normalized/accepted as interchangeable.",
+  "infinite_literal_provenance": {
+    "context": "CPU:LLVM unmodified original Tensor dynamic f32 input / signedInf; final output only",
+    "records": [
+      {
+        "sign": 1,
+        "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+        "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "sign": -1,
+        "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+        "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  }
 }

@@ -210,6 +210,29 @@ impl Renderer<'_> {
                 }
             }
             ScalarExpr::Reciprocal { dtype, value } if matches!(dtype, 1 | 10) => {
+                if self.cpu_emulated_half {
+                    let infinite = match value.as_ref() {
+                        ScalarExpr::Literal(v) => v.float()?.is_infinite(),
+                        ScalarExpr::Load {
+                            plan,
+                            index: IndexExpr::Constant(0),
+                        } if self.graph.plans[*plan].ty.shape.is_empty() => {
+                            let source = &self.graph.plans[*plan];
+                            match &source.expression {
+                                ScalarExpr::Constant(bytes) => {
+                                    super::scalar::Scalar::read(source.ty.dtype, bytes)?
+                                        .float()?
+                                        .is_infinite()
+                                }
+                                _ => false,
+                            }
+                        }
+                        _ => false,
+                    };
+                    if infinite {
+                        return Err("CPU shared or standalone infinite scalar reciprocal is not implemented".into());
+                    }
+                }
                 let value = self.expression(value)?;
                 // Original half reciprocal rounds before the following multiply.
                 self.round(*dtype, format!("(1.0f/(float)({value}))"))
@@ -244,14 +267,53 @@ impl Renderer<'_> {
                         // Original late FDIV rewrite accepts reciprocal on either
                         // side after commutative canonicalization.
                         let a = self.expression(numerator)?;
+                        // Original constant infinity division simplifies to positive
+                        // zero even for NaN/Inf/-zero numerators. Other literals
+                        // retain the existing finite reciprocal fold.
                         if let ScalarExpr::Literal(constant) = value {
                             let number = constant.float()? as f32;
+                            if number.is_infinite() {
+                                return Ok("0.0f".into());
+                            }
                             let reciprocal = 1.0f32 / number;
                             if reciprocal.is_finite() {
                                 return Ok(format!("({a}*{})", float(reciprocal as f64)?));
                             }
                         }
+                        let scalar = match value {
+                            ScalarExpr::Load {
+                                plan,
+                                index: IndexExpr::Constant(0),
+                            } if self.graph.plans[*plan].ty.shape.is_empty() => {
+                                let source = &self.graph.plans[*plan];
+                                if let ScalarExpr::Constant(bytes) = &source.expression {
+                                    let constant =
+                                        super::scalar::Scalar::read(source.ty.dtype, bytes)?;
+                                    // Keep physical half special-value/load semantics out of
+                                    // this normal finite scalar constant-folding rule.
+                                    let normal = source.ty.dtype != 10
+                                        || (1..31).contains(&((constant.bits >> 10) & 31))
+                                        || constant.bits & 32767 == 31744;
+                                    normal
+                                        .then(|| constant.float())
+                                        .transpose()?
+                                        .map(|v| v as f32)
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None,
+                        };
                         let b = self.expression(value)?;
+                        if let Some(number) = scalar {
+                            if number.is_infinite() {
+                                return Ok("0.0f".into());
+                            }
+                            let reciprocal = 1.0f32 / number;
+                            if number.is_finite() && reciprocal.is_finite() {
+                                return Ok(format!("({a}*{})", float(reciprocal as f64)?));
+                            }
+                        }
                         return Ok(format!("((float)({a})/(float)({b}))"));
                     }
                 }

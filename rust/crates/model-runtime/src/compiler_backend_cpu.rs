@@ -312,17 +312,17 @@ pub fn compile_onnx(
     } else {
         LoweredGraph::lower(&model)
     }?;
-    compiler_onnx::storage_half::admit(&lowered)?;
     if options.offline_bindings {
         compiler_onnx::storage::apply_cpu_image_aliases(&mut lowered, &model)?;
     }
-    let schedule = schedule::schedule_plans(&lowered, "CPU", true)?;
+    let physical = compiler_onnx::storage_half::physical_graph(&lowered)?;
+    let schedule = schedule::schedule_plans(&physical, "CPU", true)?;
     let memory =
         memory::plan_memory_enabled(&schedule.buffers, &schedule.calls, options.memory_planning)?;
     let mut kernels = Vec::new();
     for (index, call) in schedule.calls.iter().enumerate() {
         let kernel = render::render_cpu_elementwise(
-            &lowered,
+            &physical,
             call.buffers[0],
             &format!("native_elementwise_{index}"),
         )?;
@@ -445,12 +445,12 @@ pub fn compile_onnx(
                 render::storage_type(dtype)
             }
         };
-        let output_type = cpu_storage(lowered.plans[schedule.calls[index].buffers[0]].ty.dtype)?;
+        let output_type = cpu_storage(physical.plans[schedule.calls[index].buffers[0]].ty.dtype)?;
         let mut args = vec![format!("({output_type}*)buffers[0]")];
         for (slot, &input) in kernel.inputs.iter().enumerate() {
             args.push(format!(
                 "(const {}*)buffers[{}]",
-                cpu_storage(lowered.plans[input].ty.dtype)?,
+                cpu_storage(physical.plans[input].ty.dtype)?,
                 slot + 1
             ));
         }

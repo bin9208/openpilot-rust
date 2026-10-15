@@ -16,43 +16,73 @@ fn fixture() -> serde_json::Value {
     serde_json::from_str(include_str!("fixtures/compiler/original-logical-half.json")).unwrap()
 }
 #[test]
-fn unproved_logical_half_to_float_export_rejects_before_publication() {
+fn logical_half_float_exports_match_independent_original_without_extra_rounding() {
     for case in fixture()["cases"]
         .as_array()
         .unwrap()
         .iter()
         .filter(|v| v["reject"] == true)
     {
-        let temp = tempfile::tempdir().unwrap();
         let bytes = decode(case["onnx_hex"].as_str().unwrap());
         let parsed = Model::parse(&bytes).unwrap();
         assert_eq!(parsed.graph.outputs[0].dtype, 1);
         let lowered = LoweredGraph::lower_offline(&parsed).unwrap();
         assert_eq!(lowered.plans[lowered.outputs["output"]].ty.dtype, 1);
-        assert_eq!(case["export_output_dtype"], "dtypes.float");
-        assert_eq!(decode(case["expected_hex"].as_str().unwrap()).len(), 64);
-        let path = temp.path().join("model.onnx");
-        fs::write(&path, &bytes).unwrap();
         for offline in [false, true] {
-            let dest = temp
-                .path()
-                .join(if offline { "offline" } else { "physical" });
-            let result = compile_onnx(
-                &path,
-                &format!("{:x}", Sha256::digest(&bytes)),
-                &CompileOptions {
-                    offline_bindings: offline,
-                    ..CompileOptions::default()
-                },
-                &dest,
-            );
-            assert!(
-                result.is_err(),
-                "{} offline={offline} accepted unproved virtual-half export",
-                case["name"]
-            );
-            assert!(!dest.exists());
-            assert!(result.err().unwrap().contains("logical-half"));
+            for memory in [false, true] {
+                run_original(case, offline, memory, false);
+            }
+        }
+    }
+}
+fn run_original(case: &serde_json::Value, offline: bool, memory: bool, multiple: bool) {
+    let temp = tempfile::tempdir().unwrap();
+    let bytes = decode(case["onnx_hex"].as_str().unwrap());
+    let path = temp.path().join("model.onnx");
+    fs::write(&path, &bytes).unwrap();
+    let dest = temp.path().join("bundle");
+    compile_onnx(
+        &path,
+        &format!("{:x}", Sha256::digest(&bytes)),
+        &CompileOptions {
+            offline_bindings: offline,
+            memory_planning: memory,
+            ..CompileOptions::default()
+        },
+        &dest,
+    )
+    .unwrap_or_else(|e| panic!("{}: {e}", case["name"]));
+    let mut model = unsafe { CpuModel::load(&dest) }.unwrap();
+    model
+        .write_input("a", &decode(case["input_hex"].as_str().unwrap()))
+        .unwrap();
+    model.run();
+    let outputs = if multiple {
+        case["outputs"]
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(n, v)| (n.as_str(), v["hex"].as_str().unwrap()))
+            .collect::<Vec<_>>()
+    } else {
+        vec![("output", case["expected_hex"].as_str().unwrap())]
+    };
+    for (name, expected) in outputs {
+        let mut actual = vec![0; model.output_size(name).unwrap()];
+        model.read_output(name, &mut actual).unwrap();
+        assert_eq!(
+            actual,
+            decode(expected),
+            "{} {name} offline={offline} memory={memory}",
+            case["name"]
+        );
+    }
+}
+#[test]
+fn selected_physical_half_output_changes_downstream_float_reads_like_original() {
+    for case in fixture()["physical_profile"]["records"].as_array().unwrap() {
+        for memory in [false, true] {
+            run_original(case, false, memory, true);
         }
     }
 }
@@ -92,5 +122,45 @@ fn verified_half_io_exact_casts_and_explicit_image_storage_remain_original_equiv
             "{}",
             case["name"]
         );
+    }
+}
+
+#[test]
+fn storage_profile_does_not_admit_unproved_half_conditional_graphs() {
+    for case in fixture()["pending_conditional"].as_array().unwrap() {
+        let temp = tempfile::tempdir().unwrap();
+        let bytes = decode(case["onnx_hex"].as_str().unwrap());
+        let path = temp.path().join("model.onnx");
+        fs::write(&path, &bytes).unwrap();
+        let dest = temp.path().join("bundle");
+        let result = compile_onnx(
+            &path,
+            &format!("{:x}", Sha256::digest(&bytes)),
+            &CompileOptions {
+                offline_bindings: false,
+                ..CompileOptions::default()
+            },
+            &dest,
+        );
+        assert!(result.is_err(), "{}", case["name"]);
+        assert!(!dest.exists());
+    }
+}
+
+#[test]
+fn infinite_scalar_divisors_preserve_original_onnx_export_zero_bits() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/compiler/original-infinite-divisors.json"
+    ))
+    .unwrap();
+    for case in fixture["cases"].as_array().unwrap() {
+        for memory in [false, true] {
+            run_original(
+                case,
+                case["offline_bindings"].as_bool().unwrap(),
+                memory,
+                false,
+            );
+        }
     }
 }
