@@ -250,3 +250,40 @@ Toyota/Tesla reference extraction now explicitly uses the repository root when
 invoked from the workspace's rust directory, and rejects an empty source package.
 The exact previously failing workspace invocation regenerates all 2,697 ARS510
 actions successfully with verified source/provider hashes.
+
+## Final workspace references and installation proof
+
+The existing workspace gate also contained stale fixtures for the new empty
+`external_compute_label`, Card's sealed DBC requirement, and the firmware content
+identity after the latest Tesla safety change. Both cluster default fixtures now
+include and explicitly check the empty label. The installed Card fixture checks
+the DBC directory before its existing numerical-provider requirement. Original
+`panda/firmware_version.py` independently produces `DEV-d48f6455ef1d-DEBUG`;
+the version/header fixtures and their hashes now record that identity. No build
+tool implementation changed. The six staged firmware files already match this
+identity, and all 252 recorded firmware source inputs remain unchanged.
+
+Workspace feature unification enables JSON insertion order. RadarCAN comparisons
+now compare object key sets, retaining exact numeric bits and all array ordering,
+including explicitly recorded source-order arrays. This corrects comparison of
+equivalent JSON objects; no runtime output or expected numerical value changes.
+
+One existing workspace `--no-fail-fast` run collected all remaining failures.
+All 19 failed targets subsequently passed: three stale-fixture targets, ten
+RadarCAN targets with explicit `serde_json/preserve_order`, and six targets whose
+local SDK libraries or FFmpeg path were missing. The latter were rerun using the
+original workspace test executables and the required local library/encoder paths.
+No second full workspace run or expanded test corpus was added. Receipts are
+`workspace-final-no-fail-fast.log`, `workspace-failed-targets-recheck.log`, and
+`workspace-environment-targets-recheck.log` under the delivery scratch directory.
+Formatting, whitespace and the mapped user-docs check also pass.
+
+The first complete package for `375a0ac960c27498a83335679586768b92f1598b`
+passed the native seal (1,082 artifacts), actual static ARM offline installation
+into an independent checkout, and the installed ARM launcher's package check
+under QEMU with the AGNOS 19.8-carrot-bt1 SDK. No hardware child was started.
+The 1,178,558,449-byte archive has SHA-256
+`9a8715bc1837082c6838a018b8f0861a96828cdc9d44599c9404e649e4b57096`.
+Receipt: `.analysis/scratch/2026-10-16-dev-md-package/install-proof-375a.json`.
+Publication remains held until the reference repairs have their own exact-source
+CI results and rebuilt package; this earlier package is not relabelled.

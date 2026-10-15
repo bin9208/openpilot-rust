@@ -21,7 +21,7 @@ fn repository() -> PathBuf {
 #[test]
 fn native_headers_and_version_match_original_public_oracles() {
     let identity = firmware_identity(&repository()).unwrap();
-    assert_eq!(identity, "DEV-0914fbcd5f62-DEBUG");
+    assert_eq!(identity, "DEV-d48f6455ef1d-DEBUG");
     assert_eq!(
         identity.as_bytes(),
         include_bytes!("fixtures/panda/version")

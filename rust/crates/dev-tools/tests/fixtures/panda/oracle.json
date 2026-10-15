@@ -1,7 +1,7 @@
 {
   "scope": "Independent original Python signer + public header arithmetic fixtures, no firmware compilation",
   "source_commit": "7c8b2f0f05b1140d6d391275d3643ba3daa769b1",
-  "version": "1de1c7b1f187",
+  "version": "d48f6455ef1d",
   "inputs": {
     "panda/SConscript": "44521b59c3f0f781c67e8e4b94d6703c8f4b08d193ed2904a2be690d08d36d5b",
     "panda/firmware_version.py": "37be0788651d800e4f1dc9fbd0616bfef5007e0702dd814fa88bfd611bb7bfae",
@@ -12,8 +12,14 @@
   "files": {
     "signed.bin": "fbfa07728000fae82ced49c20320940e0e3bc91f1b5310405f7cc285782fae35",
     "unsigned.bin": "fdeab9acf3710362bd2658cdc9a29e8f9c757fcf9811603a8c447cd1d9151108",
-    "version": "22d7d25bcfc31c2c9f93f112d83d917e7dc49a5fe282cb71e462cd1c9c5d8f81",
+    "version": "90470696011c3da4cefc802962e2636b68b1842f31f4a9c6e14d6d98d9ade788",
     "cert.h": "baa137cc7dd5705fa3dd9234d69fe9a737d5168ef07b6ebad5391236bad7cba4",
-    "gitversion.h": "100a644a5daaab55ee62f80b79c155a7ec4e7c6a381faf6824aa9a4c0af58319"
+    "gitversion.h": "90df21dd2c8c1ff0d6aa4e7da27adb6641b2051ed18c46ad0a9786479f39e024"
+  },
+  "version_refresh": {
+    "source_commit": "375a0ac960c27498a83335679586768b92f1598b",
+    "reason": "Latest upstream Tesla safety change alters firmware content identity; signer and certificate fixtures are unchanged.",
+    "generator": "Original panda/firmware_version.py and panda/SConscript get_version/header formatting",
+    "tesla_safety_sha256": "2d8af53185ce2cb55c9a1516dc300803391715127a6c7dfa1115d36e426f1b28"
   }
 }

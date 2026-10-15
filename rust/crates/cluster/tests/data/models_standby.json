@@ -161,6 +161,7 @@
   "network_address": null,
   "network_connected": false,
   "egpu_active": false,
+  "external_compute_label": "",
   "external_nav_active": false,
   "navi_owner": "",
   "navi_lifecycle": "",

@@ -21,8 +21,8 @@ fn compare(a: &Value, b: &Value, path: &str) {
         }
         (Value::Object(a), Value::Object(b)) => {
             assert_eq!(
-                a.keys().collect::<Vec<_>>(),
-                b.keys().collect::<Vec<_>>(),
+                a.keys().collect::<std::collections::BTreeSet<_>>(),
+                b.keys().collect::<std::collections::BTreeSet<_>>(),
                 "{path}"
             );
             for (k, a) in a {

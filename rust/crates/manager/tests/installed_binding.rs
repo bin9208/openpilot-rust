@@ -36,6 +36,10 @@ fn native_card_requires_companion_even_when_executable_exists() {
     executable(root, "openpilot-process-child");
     let binding = bound(root, "card");
     assert!(
+        matches!(binding.validate(),Err(binding::Error::Directory(path)) if path.ends_with("radarcan-dbc"))
+    );
+    std::fs::create_dir_all(root.join("rust/bin/radarcan-dbc")).unwrap();
+    assert!(
         matches!(binding.validate(),Err(binding::Error::Directory(path)) if path.ends_with("card-numerics"))
     );
     std::fs::create_dir_all(root.join("rust/bin/card-numerics")).unwrap();

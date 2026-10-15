@@ -40,5 +40,6 @@ fn all_source_record_defaults_match() {
     .collect();
     let expected: serde_json::Value =
         serde_json::from_str(include_str!("data/models_defaults.json")).unwrap();
+    assert_eq!(actual["ClusterUiState"]["external_compute_label"], "");
     assert_eq!(serde_json::Value::Object(actual), expected);
 }
