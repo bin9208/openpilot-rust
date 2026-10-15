@@ -21,7 +21,7 @@ from openpilot.selfdrive.selfdrived.camera_config import get_camera_packets
 from openpilot.selfdrive.selfdrived.events import Events, ET
 from openpilot.selfdrive.selfdrived.helpers import ExcessiveActuationCheck
 from openpilot.selfdrive.selfdrived.state import StateMachine
-from openpilot.selfdrive.selfdrived.alertmanager import AlertManager, set_offroad_alert
+from openpilot.selfdrive.selfdrived.alertmanager import AlertManager, EmptyAlert, set_offroad_alert
 from openpilot.selfdrive.controls.lib.cutin_alert import (
   CutinAlertCandidate,
   CutinAlertTracker,
@@ -137,6 +137,7 @@ class SelfdriveD:
     self.cutin_audio_tracker = CutinAlertTracker()
     self.dm_uncertain_alerted = False
     self.update_reboot_alerted = False
+    self.nnff_alerted = False
     self.big_model_loading = False
     self.big_model_active = False
     self.big_model_ready_t = 0.0
@@ -508,8 +509,6 @@ class SelfdriveD:
 
       if self.sm['modelV2'].frameDropPerc > 20:
         self.events.add(EventName.modeldLagging)
-    if self.sm.frame == 550 and Params().get("NNFFModelName") is not None:
-      self.events.add(EventName.torqueNNLoad)
     # decrement personality on distance button press
     #if self.CP.openpilotLongitudinalControl:
     #  if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
@@ -586,6 +585,23 @@ class SelfdriveD:
     self.AM.add_many(self.sm.frame, alerts)
     self.AM.process_alerts(self.sm.frame, clear_event_types)
 
+  def update_nnff_alert(self, CS):
+    # Retry after startup instead of losing the notice when initialization takes
+    # longer than 5.5 seconds. Poll at 2 Hz, including a late model-name write.
+    if self.nnff_alerted or self.sm.frame < 550 or self.sm.frame % 50:
+      return
+    if (not self.initialized or self.CP.passive or not self.sm['deviceState'].started
+        or not CS.canValid or CS.canTimeout or not self.sm.all_checks()
+        or self.events.contains(ET.NO_ENTRY) or self.AM.current_alert is not EmptyAlert):
+      return
+    if self.params.get("NNFFModelName") is None:
+      return
+    # Called after this frame's alert selection and readiness chime, so neither
+    # an existing warning nor a new warning can consume the one-shot notice.
+    self.events.add(EventName.torqueNNLoad)
+    self.update_alerts(CS)
+    self.nnff_alerted = True
+
   def publish_selfdriveState(self, CS):
     # selfdriveState
     ss_msg = messaging.new_message('selfdriveState')
@@ -624,6 +640,7 @@ class SelfdriveD:
     if not self.CP.passive and self.initialized:
       self.enabled, self.active = self.state_machine.update(self.events)
     self.update_alerts(CS)
+    self.update_nnff_alert(CS)
 
     self.publish_selfdriveState(CS)
 

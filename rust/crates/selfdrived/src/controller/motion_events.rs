@@ -45,7 +45,7 @@ impl Controller {
         &mut self,
         cs: car_state::Reader<'_>,
         state: &State,
-        effects: &mut impl Effects,
+        _effects: &mut impl Effects,
     ) -> Result<(), Error> {
         let views = Views { state };
         if !self.config.not_car {
@@ -134,9 +134,40 @@ impl Controller {
                 self.events.add(E::ModeldLagging, false);
             }
         }
-        if state.frame() == 550 && effects.presence("NNFFModelName")? {
-            self.events.add(E::TorqueNNLoad, false);
+        Ok(())
+    }
+
+    pub(super) fn update_nnff_alert(
+        &mut self,
+        cs: car_state::Reader<'_>,
+        state: &State,
+        effects: &mut impl Effects,
+    ) -> Result<(), Error> {
+        // Startup can outlast 5.5 seconds, and the model name can arrive late.
+        // Poll only at 2 Hz after ordinary alerts have been selected this frame.
+        if self.nnff_alerted || state.frame() < 550 || state.frame() % 50 != 0 {
+            return Ok(());
         }
+        if !self.initialized
+            || self.config.passive
+            || !(Views { state }).device()?.get_started()
+            || !cs.get_can_valid()
+            || cs.get_can_timeout()
+            || !state.all_checks(&[])?
+            || self.events.contains(crate::state::EventType::NoEntry)
+            || !self.alerts.current().alert_type.is_empty()
+        {
+            return Ok(());
+        }
+        if !effects.presence("NNFFModelName")? {
+            return Ok(());
+        }
+        self.events.add(E::TorqueNNLoad, false);
+        self.update_alerts(cs, state, effects)?;
+        self.nnff_alerted = true;
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;

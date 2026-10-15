@@ -92,6 +92,7 @@ pub struct Controller {
     pub(crate) cutin_tracker: Tracker,
     pub(crate) dm_uncertain_alerted: bool,
     pub(crate) update_reboot_alerted: bool,
+    pub(crate) nnff_alerted: bool,
     pub(crate) big_model_loading: bool,
     pub(crate) big_model_active: bool,
     pub(crate) big_model_ready_time: f64,
@@ -146,6 +147,7 @@ impl Controller {
             self.active = flags.active;
         }
         self.update_alerts(cs, state, effects)?;
+        self.update_nnff_alert(cs, state, effects)?;
         self.publish(state, effects, publications)?;
         self.previous = CarFrame::read(car.bytes.clone())?;
         Ok(())

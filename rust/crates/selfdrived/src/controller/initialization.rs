@@ -102,6 +102,7 @@ impl Controller {
             cutin_tracker: Tracker::default(),
             dm_uncertain_alerted: false,
             update_reboot_alerted: false,
+            nnff_alerted: false,
             big_model_loading: false,
             big_model_active: false,
             big_model_ready_time: 0.0,
