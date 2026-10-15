@@ -85,7 +85,12 @@ fn worker(root: &Path, lock_only: bool, startup: bool) -> Result<(), Error> {
             if root.join("mode-off").exists() {
                 Mode::Off
             } else {
-                Mode::from_parameter(i64::from(selected.load(Ordering::Relaxed)))
+                Mode::from_parameter(
+                    fs::read_to_string(root.join("mode"))
+                        .ok()
+                        .and_then(|value| value.parse().ok())
+                        .unwrap_or_else(|| i64::from(selected.load(Ordering::Relaxed))),
+                )
             }
         },
         &mut |name, fields| {
@@ -257,6 +262,16 @@ fn controller(root: &Path) -> Result<(), Error> {
             .iter()
             .any(|v| v["event"] == "signalTrackingShadowLoaded")
     })?;
+    // The same production owner must survive both enabled-mode transitions.
+    // Mode zero below remains the explicit shutdown boundary.
+    for mode in [1, 2, 1, 2] {
+        fs::write(root.join("mode"), mode.to_string())?;
+        thread::sleep(Duration::from_millis(300));
+        if switched.0.try_wait()?.is_some() {
+            return Err("enabled mode transition restarted classical observer".into());
+        }
+    }
+    fs::remove_file(root.join("mode"))?;
     fs::write(root.join("mode-off"), b"1")?;
     let deadline = Instant::now() + Duration::from_secs(5);
     while switched.0.try_wait()?.is_none() {
@@ -297,7 +312,7 @@ fn controller(root: &Path) -> Result<(), Error> {
     })?;
     thread::sleep(Duration::from_millis(100));
     if startup.0.try_wait()?.is_some() {
-        return Err("initial mode was frozen before Loaded instead of after it".into());
+        return Err("enabled startup mode transition stopped observer".into());
     }
     fs::write(root.join("mode-off"), b"1")?;
     let deadline = Instant::now() + Duration::from_secs(5);
@@ -312,7 +327,7 @@ fn controller(root: &Path) -> Result<(), Error> {
     }
     println!(
         "{}",
-        json!({"frames":2,"stale_input":true,"duplicate_rejected":true,"rollback_reset":true,"exclusive_lock":true,"backend_kill_join":true,"mode_exit":true,"comparison_exit":true,"atomic_latest":true,"startup_mode_snapshot":true,"publications":3,"control_permission":false})
+        json!({"frames":2,"stale_input":true,"duplicate_rejected":true,"rollback_reset":true,"exclusive_lock":true,"backend_kill_join":true,"mode_exit":true,"comparison_exit":true,"atomic_latest":true,"enabled_mode_lifetime":true,"startup_enabled_transition":true,"publications":3,"control_permission":false})
     );
     Ok(())
 }

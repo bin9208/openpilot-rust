@@ -7,6 +7,12 @@ pub struct Status {
     pub paused: bool,
     pub color: u8,
     pub action: u8,
+    #[serde(skip)]
+    pub held: bool,
+    #[serde(skip)]
+    pub visible: bool,
+    #[serde(skip)]
+    pub requested: bool,
 }
 impl Status {
     pub fn new(valid: bool, alive: bool, suspended: bool, color: u8, action: u8) -> Self {
@@ -14,26 +20,33 @@ impl Status {
         if !valid || !alive || paused {
             return Self {
                 paused,
-                color: 0,
+                color: if (1..=3).contains(&color) { color } else { 0 },
                 action: 0,
+                ..Self::default()
             };
         }
         Self {
             paused,
             color: if (1..=3).contains(&color) { color } else { 0 },
             action: if (1..=3).contains(&action) { action } else { 0 },
+            ..Self::default()
         }
     }
     pub fn from_messages(state: &State) -> Result<Self, Error> {
         let topic = state.topic("longitudinalPlan")?;
         let plan = messages::longitudinal_plan(state)?;
-        Ok(Self::new(
+        let (color, held, online) = crate::signal_display::signal_display_status();
+        let mut result = Self::new(
             topic.valid,
             topic.alive,
             plan.get_signal_detection_suspended(),
-            plan.get_signal_observation_color(),
+            color,
             plan.get_signal_assist_action(),
-        ))
+        );
+        result.held = held;
+        result.requested = crate::signal_display::display_requested();
+        result.visible = display_visible(topic.valid, topic.alive, result.requested, online);
+        Ok(result)
     }
     pub fn assisted(self) -> bool {
         self.color != 0 || self.action != 0
@@ -45,7 +58,7 @@ impl Status {
         cy: f64,
         radius: f64,
     ) -> Result<(), openpilot_ui_framework::Error> {
-        if !self.assisted() {
+        if !self.requested || !(self.assisted() || self.visible) {
             return Ok(());
         }
         use num_traits::ToPrimitive;
@@ -61,12 +74,9 @@ impl Status {
             color(60, 255, 120, 255),
             color(255, 185, 40, 255),
         ];
+        let [r, g, b] = crate::signal_display::ring_rgb(self.color, self.held);
         for offset in [-3., -2., -1.] {
-            draw.circle_lines(
-                center,
-                float(radius + offset),
-                colors[usize::from(self.color)],
-            )?;
+            draw.circle_lines(center, float(radius + offset), color(r, g, b, 255))?;
         }
         if self.action != 0 {
             let center = Point {
@@ -86,6 +96,9 @@ impl Status {
         }
         Ok(())
     }
+}
+pub fn display_visible(valid: bool, alive: bool, requested: bool, online: bool) -> bool {
+    requested && ((valid && alive) || online)
 }
 pub fn draw_pause(
     draw: &mut dyn Draw,

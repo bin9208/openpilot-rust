@@ -3,9 +3,9 @@
 Issue: https://github.com/bin9208/openpilot-rust/issues/338
 
 Source: `ajouatom/openpilot:carrot-wip` at
-`8e7eec049241b6ba384e9197aacdfb01f7d88ed3`. This adds nine commits after
-`e8e152dbcfd9574a1791ed12026d1880e87689b3`, covering 49 changed paths.
-The cumulative source inventory contains 380 commits. Inventory counts do not
+`8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8`. This adds ten commits after
+`e8e152dbcfd9574a1791ed12026d1880e87689b3`, covering 64 changed paths.
+The cumulative source inventory contains 381 commits. Inventory counts do not
 mean every baseline API, external service or development tool must be rewritten.
 
 ## Latest changed behavior
@@ -27,9 +27,58 @@ mean every baseline API, external service or development tool must be rewritten.
   errors do not retain Python frames. This is ownership evidence, not measured
   memory or CPU savings.
 
-The ledger records a disposition for every one of the 49 latest paths, including
+The ledger records a disposition for every one of the 64 latest paths, including
 source tests/docs, upstream publication workflows and off-device installer/NAS
 tools that are outside the runtime port. No upstream publication job is enabled.
+
+## Final signal delta (`8cf5570f`)
+
+The final remote check found one additional source commit after `8e7eec04`.
+Its observation HUD now reads the display transport independently of planner
+intervention and longitudinal-control activation. Current colors, dim previous
+colors and unknown gray follow a two-second capture-based lifetime; repeated
+packets and later unknown packets cannot extend a previous color. Session or
+sequence rollback clears that memory. It remains display-only. The main UI,
+overlay invalidation and USB cluster ring/caption share this summary.
+
+Preparation entry and the final acceleration cap both exclude either active
+lead at or below 50m or with a non-finite range. Far leads remain MPC obstacles.
+Soft hold prevents entry, and the final cap independently requires no soft hold
+and speed strictly above 5km/h and below 82km/h. These conditions do not issue a
+full stop or a departure command. Classical observation survives mode 1/2 changes;
+mode 0 still stops it. The unchanged neural owner and automatic backend policy
+retain their source behavior.
+
+The setting catalog and paired Korean/English guide describe these exact trial
+semantics. Existing Wiki generation consumes the updated localized catalog;
+no stable Wiki is published from this candidate. Source-reference snapshots and
+the CI fetch list include the new pinned commit, without converting any tool.
+
+Focused planner checks pass on HOST and actual ARM/QEMU: eleven signal tests,
+48 longitudinal cases / 5,760 frames with 44,385 exact floating comparisons,
+and 360 full Carrot/MPC owner frames including both near/far leads and soft hold.
+Strict planner library Clippy passes. Receipts are under
+`.analysis/scratch/2026-10-16-dev-md-delivery/planner-8cf-*`.
+
+HOST and actual ARM/QEMU display comparisons also pass: seventeen summary
+sequences (capture expiry, repeats, unknowns, session/sequence reset and off),
+sixteen visibility combinations, 288 existing signal combinations and 384
+unchanged-input overlay snapshots with the added summary tuple. Cluster ring
+colors are compared with the actual new source renderer method. The existing
+mode-0 indicator regression still matches all 160 frames, using its prior
+render executable only for that unchanged mode. Newly built display probes
+cover changed behavior; affected UI examples and the cluster library link for
+ARM and strict Clippy passes. Receipt: `signal-8cf-receipt.json` under the same
+delivery scratch directory. The final package rebuild includes actual UI and
+cluster executables; these checks do not claim vehicle execution.
+
+The existing classical-owner lifecycle probe passes on HOST and actual
+ARM/QEMU: the same worker survives `1→2→1→2`, then exits on mode 0. Its existing
+comparison-selection exit, exclusive lock, stale/duplicate input rejection and
+backend kill/join checks remain active. Observer all-target strict Clippy passes
+on HOST and AGNOS GNU. Logs: `signal-8cf-{host,arm}{,-build,-clippy}.log` under
+`.analysis/scratch/2026-10-16-dev-md-package/`. The runtime change removes only
+the classical mode snapshot and equality check; the neural owner is unchanged.
 
 ## Scope correction and checks
 

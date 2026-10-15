@@ -45,6 +45,9 @@ def preserve_fixes(scene,ui,module):
 def create(scene, ui):
   import openpilot.selfdrive.ui.ui_state as state
   state.UIStatus = SimpleNamespace(DISENGAGED=0, ENGAGED=1, OVERRIDE=2)
+  if not scene['config']['big']:
+    from final_graphics_source import install_traffic_light
+    install_traffic_light()
   sys.modules['openpilot.system.hardware'].__path__ = [str(Path(__file__).resolve().parents[3] / 'openpilot/system/hardware')]
   if scene['config']['big']:
     import openpilot.selfdrive.ui.onroad.hud_renderer as module

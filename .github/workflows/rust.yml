@@ -206,7 +206,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
@@ -529,7 +529,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -832,7 +832,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -900,7 +900,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1023,7 +1023,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1141,7 +1141,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1229,7 +1229,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1320,7 +1320,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1397,7 +1397,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1611,7 +1611,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
@@ -2021,7 +2021,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2197,7 +2197,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2351,7 +2351,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2476,7 +2476,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2576,7 +2576,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2636,7 +2636,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2689,7 +2689,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2854,7 +2854,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2951,7 +2951,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch exact upstream reference commits
-        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3
+        run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8
       - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev g++-aarch64-linux-gnu
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
       - name: Check Rust allocation and aliasing on ARM with Miri

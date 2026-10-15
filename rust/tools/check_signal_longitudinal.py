@@ -4,8 +4,10 @@ import ast
 import json
 from pathlib import Path
 import subprocess
+import sys
+import types
 from types import SimpleNamespace as NS
-from signal_source import classes,compare
+from signal_source import classes,compare,source as signal_source
 from planner_source import source
 
 
@@ -13,11 +15,14 @@ def main():
   parser=argparse.ArgumentParser();parser.add_argument('--binary',type=Path);parser.add_argument('--output',type=Path,required=True)
   args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=False)
   helper=classes('openpilot/selfdrive/carrot/signal_stop_prepare.py',['SignalStopPrepare','PrepareAccel'])
+  prepare_module=types.ModuleType('openpilot.selfdrive.carrot.signal_stop_prepare')
+  exec(compile(signal_source('openpilot/selfdrive/carrot/signal_stop_prepare.py'),'8cf5570:signal_stop_prepare','exec'),prepare_module.__dict__)
+  sys.modules[prepare_module.__name__]=prepare_module
   owner=next(n for n in ast.parse(source('openpilot/selfdrive/controls/lib/longitudinal_planner.py')).body if isinstance(n,ast.ClassDef) and n.name=='LongitudinalPlanner')
   methods=[n for n in owner.body if isinstance(n,ast.FunctionDef) and n.name in ['apply_signal_stop_prepare','apply_signal_start_guard']]
-  scope={};exec(compile(ast.fix_missing_locations(ast.Module(body=[ast.ClassDef(name='Owner',bases=[],keywords=[],body=methods,decorator_list=[])],type_ignores=[])),'e8e152db:signal_longitudinal','exec'),scope)
+  scope={};exec(compile(ast.fix_missing_locations(ast.Module(body=[ast.ClassDef(name='Owner',bases=[],keywords=[],body=methods,decorator_list=[])],type_ignores=[])),'8cf5570f:signal_longitudinal','exec'),scope)
   cases=[];expected=[]
-  for variant in range(32):
+  for variant in range(48):
     native=scope['Owner']();native._signal_prepare_time=None;native._signal_prepare_previous=None;native._signal_prepare_accel=helper['PrepareAccel']()
     frames=[];outputs=[]
     for index in range(120):
@@ -26,14 +31,17 @@ def main():
       if variant==17 and index>=35:now+=.3
       context={'now':now,'dt':.05,'prepare_active':index>5,'control_active':variant!=1,'hold':index>80 and variant%2==0,
         'reset':variant==2 and index>35,'gas':variant==3 and index>35,'brake':variant==4 and index>35,'acc':variant!=5,
-        'lead_one':variant==6 and index>35,'lead_two':variant==7 and index>35,'ego_speed':10.,'ego_accel':.1}
+        'lead_one':(variant==6 or 32<=variant<40) and index>35,'lead_two':(variant==7 or 40<=variant<44) and index>35,
+        'lead_one_distance':[4.,50.,50.01,80.][variant%4],'lead_two_distance':[4.,50.,50.01,80.][variant%4],
+        'soft_hold_active':1 if variant==44 and index>35 else 0,
+        'ego_speed':([0.,5/3.6,82/3.6][variant-45] if variant>=45 and index>35 else 10.),'ego_accel':.1}
       output={'should_stop':variant==8 and index>35,'speed':11.,'accel':[-2.,-.25,0.,.3][variant%4],'jerk':[-1.,0.,1.][variant%3],
               'a_desired':[-2.,0.,.5][variant%3],'coasting':10.}
       native.dt=context['dt'];native.mpc=NS(mode='acc' if context['acc'] else 'blended')
       native.output_should_stop=output['should_stop'];native.output_v_target_now=output['speed'];native.output_a_target=output['accel']
       native.output_j_target_now=output['jerk'];native.a_desired=output['a_desired'];native.coasting_target=output['coasting']
-      sm={'carState':NS(gasPressed=context['gas'],brakePressed=context['brake'],vEgo=context['ego_speed'],aEgo=context['ego_accel']),
-          'radarState':NS(leadOne=NS(status=context['lead_one']),leadTwo=NS(status=context['lead_two']))}
+      sm={'carState':NS(gasPressed=context['gas'],brakePressed=context['brake'],vEgo=context['ego_speed'],aEgo=context['ego_accel'],softHoldActive=context['soft_hold_active']),
+          'radarState':NS(leadOne=NS(status=context['lead_one'],dRel=context['lead_one_distance']),leadTwo=NS(status=context['lead_two'],dRel=context['lead_two_distance']))}
       carrot=NS(prepare_decision=NS(active=context['prepare_active']),prepare_control_active=context['control_active'],start_decision=NS(hold=context['hold']))
       native.apply_signal_stop_prepare(sm,carrot,context['reset'],now=now);native.apply_signal_start_guard(carrot)
       outputs.append({'output':{'should_stop':native.output_should_stop,'speed':native.output_v_target_now,'accel':native.output_a_target,

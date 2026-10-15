@@ -47,6 +47,14 @@ def main():
     packets['carControl'].carControl.longActive=True;packets['selfdriveState'].selfdriveState.enabled=True;packets['selfdriveState'].selfdriveState.experimentalMode=False
     fixtures.model(packets['modelV2'].modelV2,1000,20.);packets['modelV2'].modelV2.meta.laneChangeState='off';packets['modelV2'].modelV2.meta.desire='none'
     radar=packets['radarState'].radarState;radar.leadOne.status=radar.leadTwo.status=radar.leadCutInRisk.status=False
+    # Moving preparation permits far MPC leads, then immediately yields to
+    # either nearby lead and soft hold without removing those MPC obstacles.
+    if 130 <= index < 220:
+      lead = radar.leadOne if index < 175 else radar.leadTwo
+      lead.status = True
+      lead.dRel = 80. if index < 155 or 175 <= index < 200 else 50.
+    if 225 <= index < 240:
+      car.softHoldActive = 1
     nav=packets['carrotMan'].carrotMan;nav.vTurnSpeed=0;nav.trafficState=0;nav.atcType=''
     packet=factory('carrotNavi');packet.logMonoTime=int(now*1e9);packet.valid=True;navi=packet.carrotNavi;navi.schemaVersion=1;navi.connected=True;navi.sessionId='owner-route';navi.laneCurrent.meta.present=True;navi.laneCurrent.meta.receivedMonoTimeNanos=int(now*1e9);navi.laneCurrent.roadCategoryValid=True;navi.laneCurrent.roadCategory=0 if 320<=index<340 else 2
     packets['carrotNavi']=packet;return packets
@@ -98,7 +106,7 @@ def main():
     if args.wire:frame['wire']=WIRE_REQUESTS[index]
   (out/'input.json').write_text(json.dumps(request)+'\n')
   active={'hold':sum(v['signal_owner']['start']['hold'] for v in expected),'prepare':sum(v['signal_owner']['control_active'] for v in expected),'green':sum(v['signal_owner']['green'] for v in expected),'suspended':sum(v['signal_owner']['suspended'] for v in expected)}
-  receipt={'source_commit':'e8e152dbcfd9574a1791ed12026d1880e87689b3','frames':len(expected),'active':active,'source_owner':'final-full-Carrot-and-MPC','geometry':'explicit callback fixture; separate source geometry gate','native_compared':False,'wire_publication':args.wire,'wire_timing':'explicit zero diagnostic durations' if args.wire else None}
+  receipt={'source_commit':'8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8','frames':len(expected),'active':active,'source_owner':'final-full-Carrot-and-MPC','geometry':'explicit callback fixture; separate source geometry gate','native_compared':False,'wire_publication':args.wire,'wire_timing':'explicit zero diagnostic durations' if args.wire else None}
   if args.binary:
     raw=subprocess.check_output([str(args.binary.resolve())],input=json.dumps(request).encode());(out/'actual.json').write_bytes(raw);mismatches=difference(expected,json.loads(raw));receipt.update(native_compared=True,mismatch_count=len(mismatches),first_mismatches=mismatches[:100],binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest())
     (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n');assert not mismatches,mismatches[:2]

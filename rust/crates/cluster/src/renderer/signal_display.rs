@@ -97,6 +97,7 @@ impl ClusterUiRenderer {
             }
             .into();
         }
+        caption.push_str(&summary_caption(korean));
         self.draw_text_with_stroke(
             &caption,
             dest.x + 12.,
@@ -118,4 +119,18 @@ fn signal_assist_enabled() -> bool {
         .and_then(|params| params.get("SignalAssistMode").ok().flatten())
         .and_then(|bytes| openpilot_ui_application::params::numeric::integer(&bytes))
         .is_some_and(|mode| matches!(mode, 1 | 2))
+}
+
+fn summary_caption(korean: bool) -> String {
+    let (color, held, online) = openpilot_ui_application::signal_display::signal_display_status();
+    let result = ["?", "R", "G", "R+G"][usize::from(color)];
+    let status = match (korean, held, online) {
+        (true, true, _) => "이전 판독",
+        (true, false, true) => "판독 중",
+        (true, false, false) => "입력 대기",
+        (false, true, _) => "PREVIOUS",
+        (false, false, true) => "LIVE",
+        (false, false, false) => "WAITING",
+    };
+    format!(" | {result} {status}")
 }

@@ -191,6 +191,9 @@ impl LongitudinalPlanner {
                 acc: self.mpc.mode == PlannerMode::Acc,
                 lead_one: input.carrot.radar.lead_one.status,
                 lead_two: input.carrot.radar.lead_two.status,
+                lead_one_distance: input.carrot.radar.lead_one.d_rel,
+                lead_two_distance: input.carrot.radar.lead_two.d_rel,
+                soft_hold_active: car.soft_hold_active,
                 ego_speed: car.v_ego,
                 ego_accel: car.a_ego,
             });

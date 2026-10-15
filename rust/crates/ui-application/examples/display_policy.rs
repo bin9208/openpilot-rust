@@ -10,6 +10,15 @@ enum Case {
         color: u8,
         action: u8,
     },
+    Visibility {
+        valid: bool,
+        alive: bool,
+        requested: bool,
+        online: bool,
+    },
+    Summary {
+        steps: Vec<SummaryStep>,
+    },
     Clock {
         times: Vec<f64>,
         retention: f64,
@@ -29,12 +38,26 @@ enum Case {
         sources: [[bool; 2]; 2],
     },
 }
+#[derive(Deserialize)]
+struct SummaryStep {
+    now: f64,
+    requested: bool,
+    record: serde_json::Value,
+}
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cases: Vec<Case> = serde_json::from_reader(std::io::stdin())?;
     let mut output = Vec::new();
     for case in cases {
         output.push(match case {
             Case::Signal { valid,alive,suspended,color,action } => serde_json::to_value(openpilot_ui_application::signal_status::Status::new(valid,alive,suspended,color,action))?,
+            Case::Visibility { valid, alive, requested, online } => serde_json::json!(openpilot_ui_application::signal_status::display_visible(valid, alive, requested, online)),
+            Case::Summary { steps } => {
+                let mut reader = openpilot_ui_application::signal_display::StatusReader::default();
+                serde_json::Value::Array(steps.into_iter().map(|step| {
+                    let status = reader.read_record(step.now, step.requested, &step.record);
+                    serde_json::json!({"status":status,"rgb":openpilot_ui_application::signal_display::ring_rgb(status.0,status.1)})
+                }).collect())
+            }
             Case::Clock { times,retention } => {
                 let mut clock = openpilot_ui_application::display_clock::DisplayClock::default();
                 serde_json::to_value(times.iter().map(|time| { clock.tick(*time); [clock.frames,clock.retention(retention)] }).collect::<Vec<_>>())?

@@ -6,7 +6,7 @@
   "rust_base": "b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a",
   "source_repo": "https://github.com/ajouatom/openpilot",
   "source_branch": "carrot-wip",
-  "source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+  "source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
   "common_ancestor": "43203371004e035bdb70a00a8dad29a4b657c6c3",
   "coverage_complete": false,
   "commits": [
@@ -6292,6 +6292,32 @@
       ],
       "disposition": "pending",
       "evidence": []
+    },
+    {
+      "sha": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "subject": "fix: separate signal observation display from moving preparation",
+      "paths": [
+        "AGENTS.md",
+        "docs/signal_modes_display_20261016.md",
+        "openpilot/selfdrive/carrot/carrot_functions.py",
+        "openpilot/selfdrive/carrot/cluster/cluster_renderer.py",
+        "openpilot/selfdrive/carrot/signal_display.py",
+        "openpilot/selfdrive/carrot/signal_stop_prepare.py",
+        "openpilot/selfdrive/carrot/tests/test_signal_display.py",
+        "openpilot/selfdrive/carrot/tests/test_signal_prepare_lead_distance.py",
+        "openpilot/selfdrive/carrot/tests/test_signal_stop_prepare.py",
+        "openpilot/selfdrive/carrot_settings.json",
+        "openpilot/selfdrive/controls/lib/longitudinal_planner.py",
+        "openpilot/selfdrive/modeld/signal_tracking_shadow.py",
+        "openpilot/selfdrive/ui/mici/onroad/traffic_light.py",
+        "openpilot/selfdrive/ui/overlay_state.py",
+        "openpilot/selfdrive/ui/signal_status.py",
+        "openpilot/selfdrive/ui/tests/test_signal_status.py"
+      ],
+      "disposition": "implemented_focused_validation",
+      "evidence": [
+        "Planner, display and classical observer lifecycle source deltas pass HOST and ARM/QEMU focused checks; docs/naver/dev-md-latest-refresh.md."
+      ]
     }
   ],
   "files": [
@@ -6371,10 +6397,10 @@
       "disposition": "reference_only",
       "rust_targets": [],
       "evidence": [
-        "Retain local branch-isolation and corrected user scope; upstream repository instructions do not replace them."
+        "Latest signal display/preparation delta; focused receipts in docs/naver/dev-md-latest-refresh.md."
       ],
-      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
-      "source_sha256": "ca463209adcfd0ebbcb55869c896edca9584783625d33f16341ea06fdd74eb22"
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "55fcb49a080c97317a0096b136dca7c46cde0121bbab781d79f8ee8a734a0677"
     },
     {
       "path": "README.md",
@@ -9211,9 +9237,15 @@
     {
       "path": "openpilot/selfdrive/carrot/carrot_functions.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validation",
+      "rust_targets": [
+        "rust/crates/plannerd/src/carrot/signal.rs"
+      ],
+      "evidence": [
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "8ae2448b8cb4914f908e5a679d3ac08c8f6fc81542c917cc20787dd52baec02a"
     },
     {
       "path": "openpilot/selfdrive/carrot/carrot_man.py",
@@ -9274,9 +9306,16 @@
     {
       "path": "openpilot/selfdrive/carrot/cluster/cluster_renderer.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validation",
+      "rust_targets": [
+        "rust/crates/cluster/src/renderer/signal_display.rs",
+        "rust/crates/cluster/src/renderer/hud/speed.rs"
+      ],
+      "evidence": [
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "1bc4b1bea7c58cb6134c99b0ca424ca0925596e45309fd5de3d387a264731f4b"
     },
     {
       "path": "openpilot/selfdrive/carrot/cluster/cluster_usb_display.py",
@@ -9840,9 +9879,15 @@
     {
       "path": "openpilot/selfdrive/carrot/signal_display.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validation",
+      "rust_targets": [
+        "rust/crates/ui-application/src/signal_display.rs"
+      ],
+      "evidence": [
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "e725b6dea72ca9ab67bc9be69dab1289de8b2b007467f085cc2c620ea2112b3b"
     },
     {
       "path": "openpilot/selfdrive/carrot/signal_mode.py",
@@ -9868,16 +9913,15 @@
     {
       "path": "openpilot/selfdrive/carrot/signal_stop_prepare.py",
       "change": "A",
-      "disposition": "implemented_host_validated",
+      "disposition": "implemented_focused_validation",
       "rust_targets": [
-        "rust/crates/plannerd/src/signal/prepare",
-        "rust/crates/plannerd/src/signal/mod.rs",
-        "rust/crates/plannerd/src/signal/geometry.rs",
-        "rust/crates/plannerd/src/signal/priority.rs"
+        "rust/crates/plannerd/src/signal/mod.rs"
       ],
       "evidence": [
-        "docs/naver/dev-md-signal-validation.md: full algorithm symbol closure; 7680 states, 576 strict geometry cases, 360 complete owners, 189 real-IO/fault owners per architecture; HOST and actual ARM original-source/record comparisons. Runtime subscription exceptional construction, QCOM and final package remain separate open gates."
-      ]
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "ca3c720ac9417203df969d108fbbe7d36aaeaf97d44182d96a623d3bf3859f3c"
     },
     {
       "path": "openpilot/selfdrive/carrot/signal_stop_prepare_runtime.py",
@@ -10068,9 +10112,13 @@
     {
       "path": "openpilot/selfdrive/carrot/tests/test_signal_display.py",
       "change": "A",
-      "disposition": "pending",
+      "disposition": "reference_only",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Latest signal display/preparation delta; focused receipts in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "17caff5b1972f645394e854bbe9f4ea2442889f3353fc54b086fe3a017a6e823"
     },
     {
       "path": "openpilot/selfdrive/carrot/tests/test_signal_mode.py",
@@ -10131,9 +10179,13 @@
     {
       "path": "openpilot/selfdrive/carrot/tests/test_signal_stop_prepare.py",
       "change": "A",
-      "disposition": "pending",
+      "disposition": "reference_only",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Latest signal display/preparation delta; focused receipts in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "2b4901fc28f4e3c20e057d98b51c01357ef7e79b72f046c05b19d12254ecc1e9"
     },
     {
       "path": "openpilot/selfdrive/carrot/tests/test_signal_transition_departure.py",
@@ -10675,9 +10727,17 @@
     {
       "path": "openpilot/selfdrive/carrot_settings.json",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validation",
+      "rust_targets": [
+        "openpilot/selfdrive/carrot_settings.json",
+        "docs/user/ko/settings.md",
+        "docs/user/en/settings.md"
+      ],
+      "evidence": [
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "4280c1bfcf67f7569c9cb56161b01b56603aea360165a96a48ba2b1973d9a727"
     },
     {
       "path": "openpilot/selfdrive/controls/controlsd.py",
@@ -10766,9 +10826,16 @@
     {
       "path": "openpilot/selfdrive/controls/lib/longitudinal_planner.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validation",
+      "rust_targets": [
+        "rust/crates/plannerd/src/signal/longitudinal.rs",
+        "rust/crates/plannerd/src/longitudinal_planner/update.rs"
+      ],
+      "evidence": [
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "79e6905dd39931adc15bf686e882f19a84e2f51953f4b3fdfbb942afbb297a14"
     },
     {
       "path": "openpilot/selfdrive/controls/lib/radar_only_warning.py",
@@ -11201,9 +11268,15 @@
     {
       "path": "openpilot/selfdrive/modeld/signal_tracking_shadow.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validation",
+      "rust_targets": [
+        "rust/crates/signal-observer/src/runtime.rs"
+      ],
+      "evidence": [
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "77f5fc12b080e798020fd170deda5a8951957324b7cb630ba67bd51bcf60e12b"
     },
     {
       "path": "openpilot/selfdrive/modeld/tests/fixtures/mdm2_metadata.json",
@@ -11761,9 +11834,15 @@
     {
       "path": "openpilot/selfdrive/ui/mici/onroad/traffic_light.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validation",
+      "rust_targets": [
+        "rust/crates/ui-application/src/mici/onroad/traffic_light.rs"
+      ],
+      "evidence": [
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "160802e66037a4511ddc7f18432bcd2c4956dff1b39c3073aa69217b1ec2ea79"
     },
     {
       "path": "openpilot/selfdrive/ui/mici/onroad/vision_renderer.py",
@@ -11834,13 +11913,15 @@
     {
       "path": "openpilot/selfdrive/ui/overlay_state.py",
       "change": "A",
-      "disposition": "implemented_host_validated",
+      "disposition": "implemented_focused_validation",
       "rust_targets": [
         "rust/crates/ui-application/src/overlay_state.rs"
       ],
       "evidence": [
-        "docs/naver/dev-md-ui-validation.md: all40fields/urgent rules384 source Cereal states HOST/ARM and512 actualVisionIPC fullowner frames; final-source complete graphics reference. Narrow source-file closure, final runtime remains open."
-      ]
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "16111ae470fa3ebc2317d1ebcb1c17d699c0be5871d7bbd09a2c4a9e603801ce"
     },
     {
       "path": "openpilot/selfdrive/ui/radar_display.py",
@@ -11864,9 +11945,15 @@
     {
       "path": "openpilot/selfdrive/ui/signal_status.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validation",
+      "rust_targets": [
+        "rust/crates/ui-application/src/signal_status.rs"
+      ],
+      "evidence": [
+        "Exact source delta implemented; HOST and actual ARM/QEMU focused comparisons recorded in docs/naver/dev-md-latest-refresh.md. No device acceptance claimed."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "126498178d428c51144ff06241e58d6701c92f25c4fa5d8902431a06b686ee69"
     },
     {
       "path": "openpilot/selfdrive/ui/soundd.py",
@@ -11961,9 +12048,13 @@
     {
       "path": "openpilot/selfdrive/ui/tests/test_signal_status.py",
       "change": "A",
-      "disposition": "pending",
+      "disposition": "reference_only",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Latest signal display/preparation delta; focused receipts in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "e354b1bac3932e39270d8604c5b3ba746b53c40d3b01a9dc5b0b3e63783eb727"
     },
     {
       "path": "openpilot/selfdrive/ui/tests/test_soundd.py",
@@ -14805,22 +14896,45 @@
       ],
       "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
       "source_sha256": "d9b333d119cd8904bf11dd3a8ec30e2702ee5ef06631e71a203364b3487e8660"
+    },
+    {
+      "path": "docs/signal_modes_display_20261016.md",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Latest signal display/preparation delta; focused receipts in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "d3ef2527cd4e89155fb87ede11f621015683be1f4b6a90bc289d72ee5208f261"
+    },
+    {
+      "path": "openpilot/selfdrive/carrot/tests/test_signal_prepare_lead_distance.py",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Latest signal display/preparation delta; focused receipts in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+      "source_sha256": "0132c092a26da9c84b4a1234a8d1249f1d7ef9ddd27a78da5d036dd2713a2f33"
     }
   ],
   "scope": "Only upstream changed runtime behavior and necessary compatibility; development/build/test-tool conversion is owned by separate #296 session. Baseline API parity and broad full-project tests are not gates.",
   "previous_source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
   "latest_refresh": {
     "from": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
-    "to": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
-    "commits": 9,
+    "to": "8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8",
+    "commits": 10,
     "runtime_status": "implemented_focused_validation",
-    "scope": "MD v3 selection/runtime, Tesla control/safety/angle saturation, S3 shutdown/retry behavior, web model name. No development tool conversion.",
+    "scope": "MD v3 selection/runtime, Tesla control/safety/angle saturation, S3 shutdown/retry behavior, web model name. No development tool conversion. Signal observation display independent of control, fixed50m preparation exclusion and classical observer mode continuity.",
     "files": [
       ".github/workflows/mdm-model.yaml",
       "AGENTS.md",
       "docs/hud_retry_memory_20261015.md",
       "docs/md_v3_20261015.md",
       "docs/s3_release_20261015.md",
+      "docs/signal_modes_display_20261016.md",
       "docs/tesla_pr551_review_20261015.md",
       "docs/user/en/settings.md",
       "docs/user/ko/settings.md",
@@ -14830,26 +14944,40 @@
       "opendbc_repo/opendbc/car/tesla/tests/test_coop_steering.py",
       "opendbc_repo/opendbc/safety/safety/safety_tesla.h",
       "opendbc_repo/opendbc/safety/tests/test_tesla.py",
+      "openpilot/selfdrive/carrot/carrot_functions.py",
       "openpilot/selfdrive/carrot/cluster/cluster_profile.py",
+      "openpilot/selfdrive/carrot/cluster/cluster_renderer.py",
       "openpilot/selfdrive/carrot/cluster/cluster_wifi_display.py",
       "openpilot/selfdrive/carrot/cluster/main.py",
       "openpilot/selfdrive/carrot/cluster_autorun.py",
+      "openpilot/selfdrive/carrot/signal_display.py",
+      "openpilot/selfdrive/carrot/signal_stop_prepare.py",
       "openpilot/selfdrive/carrot/tests/test_cluster_gc_lifecycle.py",
       "openpilot/selfdrive/carrot/tests/test_cluster_retry_logging.py",
       "openpilot/selfdrive/carrot/tests/test_cluster_wifi.py",
+      "openpilot/selfdrive/carrot/tests/test_signal_display.py",
+      "openpilot/selfdrive/carrot/tests/test_signal_prepare_lead_distance.py",
+      "openpilot/selfdrive/carrot/tests/test_signal_stop_prepare.py",
       "openpilot/selfdrive/carrot/web/generated/asset-manifest.json",
       "openpilot/selfdrive/carrot/web/js/generated/tools.js",
       "openpilot/selfdrive/carrot/web/src/features/tools/egpu_model.js",
+      "openpilot/selfdrive/carrot_settings.json",
       "openpilot/selfdrive/controls/lib/latcontrol_angle.py",
+      "openpilot/selfdrive/controls/lib/longitudinal_planner.py",
       "openpilot/selfdrive/controls/tests/test_angle_saturation.py",
       "openpilot/selfdrive/modeld/big_model.py",
       "openpilot/selfdrive/modeld/egpu_usb_wait.py",
       "openpilot/selfdrive/modeld/precompiled_model.py",
+      "openpilot/selfdrive/modeld/signal_tracking_shadow.py",
       "openpilot/selfdrive/modeld/tests/fixtures/md_v3_metadata.json",
       "openpilot/selfdrive/modeld/tests/test_big_model.py",
       "openpilot/selfdrive/modeld/tests/test_egpu_failure_containment.py",
       "openpilot/selfdrive/modeld/tests/test_precompiled_artifact.py",
       "openpilot/selfdrive/modeld/tests/test_precompiled_model.py",
+      "openpilot/selfdrive/ui/mici/onroad/traffic_light.py",
+      "openpilot/selfdrive/ui/overlay_state.py",
+      "openpilot/selfdrive/ui/signal_status.py",
+      "openpilot/selfdrive/ui/tests/test_signal_status.py",
       "openpilot/system/tests/test_panda_firmware_version.py",
       "tools/carrot_route_vault/tests/test_viewer.py",
       "tools/carrot_route_vault/viewer.py",
@@ -14868,5 +14996,5 @@
     ],
     "record": "docs/naver/dev-md-latest-refresh.md"
   },
-  "coverage_note": "coverage_complete remains false for the historical whole-file inventory. It is not a count of missing changed-runtime ports. Latest refresh dispositions cover all49 changed source paths; no claim of whole-project API parity or device acceptance."
+  "coverage_note": "coverage_complete remains false for the historical whole-file inventory. It is not a count of missing changed-runtime ports. Latest refresh dispositions cover all 64 changed source paths; no claim of whole-project API parity or device acceptance."
 }

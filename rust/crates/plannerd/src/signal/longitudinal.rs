@@ -15,6 +15,12 @@ pub struct Input {
     pub acc: bool,
     pub lead_one: bool,
     pub lead_two: bool,
+    #[serde(default)]
+    pub lead_one_distance: f64,
+    #[serde(default)]
+    pub lead_two_distance: f64,
+    #[serde(default)]
+    pub soft_hold_active: i32,
     pub ego_speed: f64,
     pub ego_accel: f64,
 }
@@ -45,12 +51,26 @@ impl Constraints {
             && !input.reset
             && !input.gas
             && !input.brake
+            && 5. / 3.6 < input.ego_speed
+            && input.ego_speed < 82. / 3.6
+            && input.soft_hold_active == 0
             && 0. < elapsed
             && elapsed <= 0.2
             && !output.should_stop
             && input.acc
-            && !input.lead_one
-            && !input.lead_two;
+            && !super::prepare_lead_blocked(&crate::radar::Radar {
+                lead_one: crate::lead::Lead {
+                    status: input.lead_one,
+                    d_rel: input.lead_one_distance,
+                    ..Default::default()
+                },
+                lead_two: crate::lead::Lead {
+                    status: input.lead_two,
+                    d_rel: input.lead_two_distance,
+                    ..Default::default()
+                },
+                ..Default::default()
+            });
         let previous = self.previous.unwrap_or(input.ego_accel);
         let uncapped = output.accel;
         output.accel = self.accel.apply(output.accel, previous, elapsed, active);
@@ -105,6 +125,9 @@ mod tests {
             acc: true,
             lead_one: false,
             lead_two: false,
+            lead_one_distance: 0.,
+            lead_two_distance: 0.,
+            soft_hold_active: 0,
             ego_speed: 10.,
             ego_accel: 0.,
         };

@@ -397,9 +397,9 @@ Experimental DM switches to standard monitoring for 20 seconds only when moving 
 
 ## Signal Assistance Mode (Trial)
 
-`SignalAssistMode` defaults to `0`. Mode `0` disables auxiliary signals; `1` enables recognition, display, alerts and the stopped-red departure veto; `2` also enables moving-red preparation.
+`SignalAssistMode` defaults to `0`. Mode `0` disables auxiliary recognition, display and control; `1` enables recognition throughout driving, display, alerts and the stopped-red departure veto; `2` also enables moving-red preparation. Modes `1` and `2` display observations even when longitudinal control is inactive. The ring shows recognition and the centre dot shows actual assistance. Previous results dim for at most two seconds from capture, then turn unknown/gray; this display memory is never a control input.
 
-Mode `2` gradually requests acceleration toward approximately −0.5m/s² after qualifying red evidence, with no lead, pedal input or turn and a speed above 5km/h and below 82km/h. At night, at least two persistent red lamps must have compatible placement and road-direction support; inferred housing size is not used as a stopping distance.
+Mode `2` gradually requests acceleration toward approximately −0.5m/s² after qualifying red evidence, with neither tracked lead within 50m, no pedal input, turn or soft hold, and a speed above 5km/h and below 82km/h. Either active lead at or below 50m, or with an invalid range, cancels extra preparation; both leads remain normal following obstacles. The 50m threshold is a fixed trial value. At standstill, mode `2` uses the same stopped-red guard as mode `1`; preparation alone does not command a full stop or departure. At night, at least two persistent red lamps must have compatible placement and road-direction support; inferred housing size is not used as a stopping distance.
 
 Preparation releases when red evidence disappears or conflicts with green. The existing driving model still controls stopping toward the stop line; this trial does not guarantee deceleration or stopping at every red signal.
 

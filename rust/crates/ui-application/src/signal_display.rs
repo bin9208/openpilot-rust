@@ -309,6 +309,144 @@ pub fn project_box(bounds: [f64; 4], video: [f64; 4]) -> [f64; 4] {
     ]
 }
 
+/// Camera-independent, display-only memory. Capture time never advances on repeats.
+pub struct StatusReader {
+    next_read: f64,
+    key: Option<Key>,
+    color: u8,
+    color_time: f64,
+    capture_time: f64,
+}
+impl Default for StatusReader {
+    fn default() -> Self {
+        Self {
+            next_read: 0.,
+            key: None,
+            color: 0,
+            color_time: f64::NEG_INFINITY,
+            capture_time: f64::NEG_INFINITY,
+        }
+    }
+}
+impl StatusReader {
+    pub fn read_record(&mut self, now: f64, requested: bool, record: &Value) -> (u8, bool, bool) {
+        if !requested {
+            self.clear();
+            return (0, false, false);
+        }
+        if now >= self.next_read {
+            self.next_read = now + 0.05;
+            let frame = record["frame_id"]
+                .as_u64()
+                .and_then(|v| u32::try_from(v).ok());
+            if let Some(camera) = frame
+                .map(|frame| (frame, now, 1344, 760, false))
+                .filter(|camera| valid(record, now, *camera, true))
+            {
+                let key = Key(
+                    record["session"].as_str().unwrap_or_default().into(),
+                    record["timestamp"].as_f64().unwrap_or_default(),
+                    record["frame_id"].as_f64().unwrap_or_default(),
+                );
+                if self
+                    .key
+                    .as_ref()
+                    .is_some_and(|old| key.0 != old.0 || key.1 < old.1 || key.2 < old.2)
+                {
+                    self.color = 0;
+                    self.color_time = f64::NEG_INFINITY;
+                }
+                if self.key.as_ref() != Some(&key) {
+                    let tracks = visible(record, now, camera, true);
+                    let color = u8::from(tracks.iter().any(|t| t.state == "red"))
+                        + 2 * u8::from(tracks.iter().any(|t| t.state == "green"));
+                    if color != 0 {
+                        self.color = color;
+                        self.color_time = key.1;
+                    }
+                    self.capture_time = key.1;
+                    self.key = Some(key);
+                }
+            } else {
+                self.clear();
+            }
+        }
+        let color = if (0. ..=2.).contains(&(now - self.color_time)) {
+            self.color
+        } else {
+            0
+        };
+        (
+            color,
+            color != 0 && (now - self.color_time > 0.35 || self.color_time != self.capture_time),
+            (0. ..=2.).contains(&(now - self.capture_time)),
+        )
+    }
+    fn clear(&mut self) {
+        self.key = None;
+        self.color = 0;
+        self.color_time = f64::NEG_INFINITY;
+        self.capture_time = f64::NEG_INFINITY;
+    }
+    fn read(&mut self, now: f64, requested: bool) -> (u8, bool, bool) {
+        let record = if requested && now >= self.next_read {
+            fs::File::open(DISPLAY_PATH)
+                .ok()
+                .and_then(|file| {
+                    let mut bytes = Vec::new();
+                    file.take(8193).read_to_end(&mut bytes).ok()?;
+                    (bytes.len() <= 8192)
+                        .then(|| serde_json::from_slice(&bytes).ok())
+                        .flatten()
+                })
+                .unwrap_or(Value::Null)
+        } else {
+            Value::Null
+        };
+        self.read_record(now, requested, &record)
+    }
+}
+thread_local! {
+    static STATUS_READER: std::cell::RefCell<StatusReader> = std::cell::RefCell::new(StatusReader::default());
+    static DISPLAY_REQUEST: std::cell::Cell<(f64, bool)> = const { std::cell::Cell::new((0., false)) };
+}
+pub fn monotonic() -> f64 {
+    let time = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
+    time.tv_sec as f64 + time.tv_nsec as f64 / 1e9
+}
+pub fn display_requested() -> bool {
+    let now = monotonic();
+    DISPLAY_REQUEST.with(|cache| {
+        let (next, mut enabled) = cache.get();
+        if now >= next {
+            enabled = openpilot_params::Params::for_runtime()
+                .ok()
+                .and_then(|params| params.get("SignalAssistMode").ok().flatten())
+                .and_then(|bytes| crate::params::numeric::integer(&bytes))
+                .is_some_and(|mode| matches!(mode, 1 | 2));
+            cache.set((now + 0.5, enabled));
+        }
+        enabled
+    })
+}
+pub fn signal_display_status() -> (u8, bool, bool) {
+    STATUS_READER.with(|reader| reader.borrow_mut().read(monotonic(), display_requested()))
+}
+pub fn ring_rgb(color: u8, held: bool) -> [u8; 3] {
+    let mut rgb = [
+        [160, 165, 170],
+        [255, 75, 75],
+        [60, 255, 120],
+        [255, 185, 40],
+    ][usize::from(color)];
+    if held {
+        for channel in &mut rgb {
+            *channel = u8::try_from(u16::from(*channel) * 55 / 100).unwrap_or_default();
+        }
+    }
+    rgb
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

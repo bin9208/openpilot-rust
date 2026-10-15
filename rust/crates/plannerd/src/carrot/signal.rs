@@ -179,7 +179,7 @@ impl CarrotPlanner {
             speed: input.car.v_ego,
             gas: input.car.gas_pressed,
             brake: input.car.brake_pressed,
-            lead: input.radar.lead_one.status || input.radar.lead_two.status,
+            lead: crate::signal::prepare_lead_blocked(input.radar),
             turning: s.turning || input.car.left_blinker || input.car.right_blinker,
             model_stopping: matches!(
                 self.x_state,
@@ -187,7 +187,8 @@ impl CarrotPlanner {
             ),
             entry_allowed: self.traffic_starting_count == 0
                 && self.user_stop_distance < 0.
-                && self.mode == crate::types::PlannerMode::Acc,
+                && self.mode == crate::types::PlannerMode::Acc
+                && self.soft_hold_active == 0,
         };
         let decision = self
             .stop_prepare

@@ -27,7 +27,7 @@ impl TrafficLight {
         }
     }
     pub fn visible(&self) -> bool {
-        self.alpha_filter.x > 0.05 || self.signal.assisted()
+        self.alpha_filter.x > 0.05 || self.signal.visible
     }
     pub fn opacity(&self) -> f64 {
         self.alpha_filter.x
@@ -80,7 +80,7 @@ impl Widget for TrafficLight {
     }
     fn paint(&mut self, _: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         let alpha = self.alpha_filter.x.clamp(0.0, 1.0);
-        if alpha <= 0.01 && !self.signal.assisted() {
+        if alpha <= 0.01 && !self.signal.visible {
             return Ok(RenderResult::None);
         }
         let alpha = (255.0 * alpha)

@@ -177,6 +177,18 @@ impl ClusterUiRenderer {
         )
     }
     fn draw_model_traffic_state(&mut self, state: i64) -> Result<()> {
+        if openpilot_ui_application::signal_display::display_requested() {
+            let (color, held, _) =
+                openpilot_ui_application::signal_display::signal_display_status();
+            let [r, g, b] = openpilot_ui_application::signal_display::ring_rgb(color, held);
+            for offset in [2., 3., 4.] {
+                self.gfx.circle_lines(
+                    Point::new(SPEED_MODEL_TRAFFIC_CENTER_X, SPEED_MODEL_TRAFFIC_CENTER_Y),
+                    SPEED_MODEL_TRAFFIC_ICON_SIZE * 0.5 + offset,
+                    [r, g, b, 255],
+                )?;
+            }
+        }
         let kind = match state {
             1 => StaticImage::TrafficRed,
             2 => StaticImage::TrafficGreen,

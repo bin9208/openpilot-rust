@@ -15,6 +15,8 @@ def create(scene, ui):
     from openpilot.selfdrive.ui.mici.onroad.confidence_ball import ConfidenceBall
 
     return ConfidenceBall(scene['indicator']['demo'])
+  from final_graphics_source import install_traffic_light
+  install_traffic_light()
   from openpilot.selfdrive.ui.mici.onroad.traffic_light import TrafficLight
 
   return TrafficLight()

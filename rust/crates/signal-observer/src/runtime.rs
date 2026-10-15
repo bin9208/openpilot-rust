@@ -118,13 +118,11 @@ fn run_classical_selected(
         "signalTrackingShadowLoaded",
         json!({"mode":"tracking_observation","algorithm_sha256":algorithm,"runtime":"4.13.0","pid":std::process::id(),"max_hz":20,"target_cpu_duty":0.5,"stream":"road","reference_width":1344,"reference_height":760,"control_permission":false,"assist_transport":false,"daytime_comparison":true,"revalidated":true,"single_tracker":true,"verified_lamps":true,"native_observer":true}),
     )?;
-    let selected = mode();
     let mut count = 0;
     while !stop.load(Ordering::Relaxed)
         && mode().enabled()
         && mode().enabled()
         && flag(config, "daytime_comparison_enabled")? == comparison_selection
-        && mode() == selected
         && config
             .duration
             .is_none_or(|limit| now() - start < limit.as_secs_f64())

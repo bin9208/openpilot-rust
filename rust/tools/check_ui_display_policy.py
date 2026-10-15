@@ -59,17 +59,69 @@ for index in range(1024):
  tints=[r|(g<<8)|(b<<16)|(a<<24) for r,g,b,a in colors]
  cases.append({'kind':'blindspot','payload':list(raw),'now':10_000_000_000,'valid':valid,'split':split,'merged':merged,'sources':sources});expected.append({'accepted':accepted,'fresh':fresh,'sides':[list(s) for s in sides],'tints':tints})
 blindspot_count=len(cases)-radar_count
-source=subprocess.check_output(['git','show',PIN+':openpilot/selfdrive/ui/signal_status.py'])
-scope={};tree=ast.parse(source);exec(compile(ast.Module(body=[n for n in tree.body if isinstance(n,ast.FunctionDef)],type_ignores=[]),'signal_status.py','exec'),scope)
+DISPLAY_PIN='8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8'
+source=subprocess.check_output(['git','show',DISPLAY_PIN+':openpilot/selfdrive/ui/signal_status.py'])
+hashes['openpilot/selfdrive/ui/signal_status.py']=hashlib.sha256(source).hexdigest()
+scope={'signal_display_status':lambda:(0,False,False),'display_requested':lambda:True};tree=ast.parse(source);exec(compile(ast.Module(body=[n for n in tree.body if isinstance(n,ast.FunctionDef)],type_ignores=[]),'signal_status.py','exec'),scope)
 for valid in [False,True]:
  for alive in [False,True]:
   for suspended in [False,True]:
    for color in [0,1,2,3,4,255]:
     for action in [0,1,2,3,4,255]:
      sm=SM(longitudinalPlan=types.SimpleNamespace(signalDetectionSuspended=suspended,signalObservationColor=color,signalAssistAction=action));sm.valid={'longitudinalPlan':valid};sm.alive={'longitudinalPlan':alive}
+     scope['signal_display_status']=lambda:(color if color in (1,2,3) else 0,False,True)
      c,a=scope['signal_assist_status'](sm)
      cases.append({'kind':'signal','valid':valid,'alive':alive,'suspended':suspended,'color':color,'action':action});expected.append({'paused':scope['signal_detection_paused'](sm),'color':c,'action':a})
 signal_count=len(cases)-radar_count-blindspot_count
+for valid in [False,True]:
+ for alive in [False,True]:
+  for requested in [False,True]:
+   for online in [False,True]:
+    sm=SM();sm.valid={'longitudinalPlan':valid};sm.alive={'longitudinalPlan':alive}
+    scope['display_requested']=lambda:requested
+    scope['signal_display_status']=lambda:(0,False,online)
+    cases.append(dict(kind='visibility',valid=valid,alive=alive,requested=requested,online=online))
+    expected.append(scope['signal_display_visible'](sm))
+
+from signal_source import source as signal_source
+import tempfile
+summary_scope={}
+display_source=signal_source('openpilot/selfdrive/carrot/signal_display.py')
+hashes['openpilot/selfdrive/carrot/signal_display.py']=hashlib.sha256(display_source.encode()).hexdigest()
+exec(compile(display_source,DISPLAY_PIN+':signal_display.py','exec'),summary_scope)
+packet=lambda stamp,frame,raw,session='a':dict(version=1,stream='road',size=[1344,760],session=session,timestamp=stamp,frame_id=frame,tracks=[dict(id=i+1,box=[100+i*50,200,130+i*50,250],raw=c,state=c,age=0) for i,c in enumerate(raw)])
+steps=[]
+def step(now,record,requested=True):steps.append(dict(now=now,record=record,requested=requested))
+red=packet(10.,100,['red'])
+step(10.,red);step(10.02,red);step(10.36,red)
+step(10.5,packet(10.5,110,['unknown']));step(11.99,packet(11.99,140,[]));step(12.01,packet(12.01,141,[]))
+step(12.1,packet(12.1,142,['green'],'b'));step(12.2,packet(12.2,143,['red','green'],'b'))
+step(12.3,packet(12.15,144,['unknown'],'b'));step(12.4,packet(12.4,145,['green'],'c'))
+step(12.5,None);step(12.6,packet(12.6,146,['red']));step(12.7,packet(12.6,146,['red']),False)
+step(12.8,packet(12.8,147,['green']));step(13.,packet(13.,148,['unknown']));step(14.8,packet(13.,148,['unknown']));step(14.81,packet(13.,148,['unknown']))
+cluster_path='openpilot/selfdrive/carrot/cluster/cluster_renderer.py'
+cluster_source=subprocess.check_output(['git','show',DISPLAY_PIN+':'+cluster_path])
+hashes[cluster_path]=hashlib.sha256(cluster_source).hexdigest()
+cluster_class=next(n for n in ast.parse(cluster_source).body if isinstance(n,ast.ClassDef) and n.name=='ClusterUiRenderer')
+ring_method=next(n for n in cluster_class.body if isinstance(n,ast.FunctionDef) and n.name=='_draw_model_traffic_state')
+ring_calls=[]
+ring_scope={'rl':types.SimpleNamespace(draw_circle_lines=lambda *a:ring_calls.append(a)), 'rl_color':lambda rgb:rgb, 'SPEED_MODEL_TRAFFIC_CENTER_X':0., 'SPEED_MODEL_TRAFFIC_CENTER_Y':0., 'SPEED_MODEL_TRAFFIC_ICON_SIZE':10.}
+exec(compile(ast.Module(body=[ring_method],type_ignores=[]),DISPLAY_PIN+':'+cluster_path,'exec'),ring_scope)
+display_module=types.ModuleType('openpilot.selfdrive.carrot.signal_display')
+display_module.display_requested=lambda:True
+sys.modules[display_module.__name__]=display_module
+with tempfile.TemporaryDirectory() as directory:
+ path=Path(directory)/'display.json';reader=summary_scope['SignalStatusReader'](path);rows=[]
+ for item in steps:
+  summary_scope['display_requested']=lambda:item['requested']
+  path.write_text(json.dumps(item['record']))
+  status=reader.read(item['now']);display_module.signal_display_status=lambda:status
+  ring_calls.clear();ring_scope['_draw_model_traffic_state'](None,0)
+  assert len(ring_calls)==3 and [r[2] for r in ring_calls]==[7.,8.,9.]
+  rgb=ring_calls[0][3]
+  rows.append(dict(status=list(status),rgb=list(rgb)))
+cases.append(dict(kind='summary',steps=steps));expected.append(rows)
+
 source=subprocess.check_output(['git','show',PIN+':openpilot/system/ui/lib/overlay_cache.py']);tree=ast.parse(source)
 clock_time=types.SimpleNamespace(monotonic=lambda:now)
 scope={'time':clock_time};exec(compile(ast.Module(body=[n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='DisplayClock'],type_ignores=[]),'overlay_cache.py','exec'),scope)
@@ -79,7 +131,7 @@ for retention in [0.,0.05,0.2,0.8,0.85,1.]:
  for now in times:rows.append([clock.tick(),clock.retention(retention)])
  cases.append({'kind':'clock','times':times,'retention':retention});expected.append(rows)
 (args.output/'input.json').write_text(json.dumps(cases));(args.output/'source.json').write_text(json.dumps(expected))
-result=subprocess.run([*args.runner,str(args.binary)],input=json.dumps(cases),text=True,capture_output=True,check=True);native=json.loads(result.stdout);(args.output/'native.json').write_text(result.stdout)
+result=subprocess.run([*args.runner,str(args.binary)],input=json.dumps(cases),text=True,capture_output=True);(args.output/'native.stderr').write_text(result.stderr);result.check_returncode();native=json.loads(result.stdout);(args.output/'native.json').write_text(result.stdout)
 differences=[{'index':i,'case':case,'source':a,'native':b} for i,(case,a,b) in enumerate(zip(cases,expected,native,strict=True)) if a!=b]
-(args.output/'result.json').write_text(json.dumps({'source_commit':PIN,'hashes':hashes,'radar_cases':radar_count,'blindspot_cases':blindspot_count,'signal_cases':signal_count,'clock_steps':600,'differences':differences},indent=2));assert not differences,differences[:3]
-print(f'PASS {radar_count} radar, {blindspot_count} blindspot, {signal_count} signal and600clock steps')
+(args.output/'result.json').write_text(json.dumps({'source_commit':PIN,'display_source_commit':DISPLAY_PIN,'summary_steps':len(steps),'hashes':hashes,'radar_cases':radar_count,'blindspot_cases':blindspot_count,'signal_cases':signal_count,'clock_steps':600,'differences':differences},indent=2));assert not differences,differences[:3]
+print(f'PASS {radar_count} radar, {blindspot_count} blindspot, {signal_count} signal,16visibility,{len(steps)} summary and600clock steps')

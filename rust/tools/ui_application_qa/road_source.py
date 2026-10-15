@@ -37,6 +37,9 @@ def create(scene: Scene, ui: State) -> tuple[Road, CameraProtocol]:
   import openpilot.selfdrive.ui.ui_state as state
 
   state.UIStatus = SimpleNamespace(DISENGAGED=0, ENGAGED=1, OVERRIDE=2)
+  if not scene['config']['big']:
+    from final_graphics_source import install_traffic_light
+    install_traffic_light()
   sys.modules['openpilot.system.hardware'].TICI = False
   sys.modules['openpilot.system.hardware'].__path__ = [str(Path(__file__).resolve().parents[3] / 'openpilot/system/hardware')]
   type(ui.params).get_float = source_float
@@ -58,7 +61,7 @@ def create(scene: Scene, ui: State) -> tuple[Road, CameraProtocol]:
       path=name.replace('.', '/')+'.py'
       module=ModuleType(name);module.__file__=str(Path.cwd()/path)
       sys.modules[name]=module
-      source=subprocess.check_output(['git','show','e8e152dbcfd9574a1791ed12026d1880e87689b3:'+path])
+      source=subprocess.check_output(['git','show','8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8:'+path])
       exec(compile(source,'pinned-final:'+path,'exec'),module.__dict__)
   if scene['config']['big']:
     from openpilot.selfdrive.ui.onroad.augmented_road_view import AugmentedRoadView
