@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Twenty-four sources have locally verified replacements and migrated
-callers; 3,556 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Twenty-five sources have locally verified replacements and migrated
+callers; 3,555 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -59,7 +59,7 @@ up. Workflow callers migrated, and the old checker, source wrapper and Python
 process-probe tests were removed. The original runtime process module remains
 because other original-source comparisons still use it.
 
-After these integrations and the additions below, all 131 selected dev-tools
+After these integrations and the additions below, all 136 selected dev-tools
 tests passed together; all-target Clippy passed with warnings denied. The added
 logging-build, encoder-build, model-source and native architecture-test disk guards are asserted separately
 while preserving the exact arguments/hash of all 179 inherited ordinary guards
@@ -106,6 +106,19 @@ catalog and emitted header, so original source fingerprints alone cannot
 misrepresent generator provenance. Review regressions established explicit
 errors for malformed JSON11 lock structures. This is host builder evidence,
 not runtime/device acceptance.
+
+The firmware SPI fixture build driver is also native: 26 original cases and two
+native tests preserve compiler commands, separately captured text/decoding,
+failure ordering, lexical paths, CLI semantics and late provenance. Python ABI
+metadata is supplied explicitly by the remaining checker. Fresh original/native
+libraries match SHA-256 `6c79a5eb54544d5d7ed21fb5e6e9513b82e03ff8fc038ec46c1948f89012fdd4`
+(fixture) and `6e5e62aa775f2c5366bd05b1577f99677585ab0a9c6b1bcd40bff64335e8cf90`
+(binding). Three owned `/dev/null`-backed comparisons match 40 calls with both
+builds; no physical SPI was accessed. Original C-extension cached handles are
+recorded separately; the native Rust zero-handle requirement is unchanged.
+The caller migrated and the Python driver was removed. The C extension and
+Python comparison remain pending. The orchestration now fingerprints all native
+Panda build tools and their source dependencies; three orchestration tests pass.
 
 ## Logging and release utilities
 
@@ -224,6 +237,15 @@ source mutation. A real Linux bootstrap built the current package and emitted
 unverified. No actual ADB, SSH or device operation was performed. The shared
 Python service catalog remains because other callers still require it.
 
+The hardware command assertion is now a native checker. Thirty independent
+original JSON/stderr cases preserve duplicate-key behavior, numeric equality
+(including true/one and integer-valued floats), invalid data and exact stderr.
+Three tests and strict Clippy pass. The actual owned command fixture was freshly
+built and both checkers passed its identical outputs, fixture SHA-256
+`a3fd7bb26e8703f55f7426ac08babe9f6d6713ea2d37bd7e46cab82930f1ca26`.
+The workflow retains the original fixture execution and redirections, replacing
+only the inline Python assertion. No hardware platform/I2C/device operation ran.
+
 Native release-file selection matches the unchanged original regular expressions,
 regular files, directory/dangling/loop symlinks and FIFO exclusion. A synthetic
 original capture and a 15,640-path current-tree comparison matched. Three tests
@@ -302,8 +324,22 @@ issue in this bounded unit; it does not establish arbitrary NaN-payload,
 cross-target or full-model equivalence. The genuine current A630 Add binary
 remains identical, with both renderer modules fingerprinted.
 
-Full compiled-model numeric parity remains unresolved. After preserving IMAGE
-half-storage/float32 accumulation semantics, the driver comparison still has
+The CPU math unit subsequently passed all 120 model-runtime tests and strict
+Clippy. Exp2, Sign, contracted multiply-add, tanh-Gelu and Sigmoid reproduce
+14,752 independently captured dynamic outputs bit-for-bit. The actual first
+driver Gelu also matches all 2,764,800 bytes, SHA-256
+`3c3726b13ef0cf54ccf8b7be3cf6b618d70c5665780f11a6edeac82c2eaf5519`.
+Original polynomial/constants, range handling and explicit FMA order are retained.
+Independent review found no concrete Important issue in bounded conversions,
+shifts, target separation or admission. Gelu-none/default remains rejected before
+compilation/publication: its unresolved NaN payloads depend on original layout and
+output materialization context. Twelve independent cases and both original
+capture contexts remain recorded as pending; no universal NaN normalization or
+tolerance was substituted. Genuine A630 Add output remains unchanged with the
+new math helper source fingerprinted. Full-model fusion and parity remain open.
+
+Full compiled-model numeric parity remains unresolved. The last complete scalar
+reference comparison after preserving IMAGE half-storage/float32 accumulation has
 553/553 different outputs, maximum absolute difference 0.004296779632568359.
 No tolerance was loosened or failure accepted. Original LLVM reference output,
 model/source hashes, flags and exact comparison bytes are retained in the
@@ -328,6 +364,16 @@ unchanged; no source/flag checks were removed. The repair commit
 [Fast checks run](https://github.com/bin9208/openpilot-rust/actions/runs/38717608255).
 This is push-check evidence for that checkpoint, not PR/integration/device or
 subsequent uncommitted source validation.
+
+The next local checkpoint adds the hardware-command checker, firmware SPI
+builder and bounded CPU math implementation. The actual current fast-checks
+routing step passes all 136 selected dev-tools tests, 16 service-tools tests and
+its remaining Python policy test. All 120 model-runtime tests pass; strict
+all-target Clippy, workspace formatting and diff checks pass. Original/native
+hardware fixture and SPI library comparisons are recorded above. These are local
+results; the latest remote checkpoint `777bd1c7cd4830d28bd426154eb302d0e156a06e`
+has passed push/PR fast checks, user docs and integration, while its full Rust
+workspace job is still running. No later commit inherits that CI evidence.
 
 Continue the [implementation plan](rust-repository-python-retirement-296-plan.md)
 through every remaining source family, actual consumer migration, a zero-Python

@@ -301,6 +301,12 @@ pub fn compile_onnx(
     // No origin is supplied intentionally: external_data requires separately pinned
     // payload identities, which this partial backend API does not yet accept.
     let model = compiler_onnx::Model::parse(&bytes)?;
+    // Original CPU:LLVM NaN operand selection for the erf-based approximation
+    // varies with layout/unrolling. Its polynomial's finite agreement alone is
+    // insufficient to publish an equivalent artifact; retain fail-closed admission.
+    if model.graph.nodes.iter().any(|node| node.op == "Gelu" && node.attributes.get("approximate").is_none_or(|attribute| matches!(attribute, compiler_onnx::Attribute::String(value) if value == "none"))) {
+        return Err("CPU Gelu approximate=none layout-sensitive NaN propagation is not implemented".into());
+    }
     let lowered = if options.offline_bindings {
         LoweredGraph::lower_offline(&model)
     } else {

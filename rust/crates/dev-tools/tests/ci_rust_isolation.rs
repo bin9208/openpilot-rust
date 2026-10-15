@@ -324,9 +324,10 @@ fn hardware_runtime_requires_source_and_native_boundaries() {
             "check_hardware_control.py",
             "check_amplifier.py",
             "check_amplifier_linux.py",
+            "rust/target/debug/check-hardware-command --evidence \"$RUNNER_TEMP/hardware-runtime\"",
             "bootlog_raw_file_probe.rs",
         ],
-        &["python rust/tools/check_"],
+        &["python rust/tools/check_", "check-hardware-command"],
         false,
     );
 }

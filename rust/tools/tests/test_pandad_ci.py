@@ -51,14 +51,13 @@ def test_spidev_comparison_has_a_fresh_output_separate_from_its_builder(tmp_path
 
   monkeypatch.setattr(check_pandad_ci, 'stage_json11', reject_python_staging, raising=False)
   monkeypatch.setattr(checker, 'spidev', lambda: tmp_path / 'spidev-source')
+  monkeypatch.setattr(check_pandad_ci.sysconfig, 'get_paths', lambda: {'include': str(tmp_path / 'active python headers')})
+  monkeypatch.setattr(check_pandad_ci.sysconfig, 'get_config_var', lambda key: '.active-python-abi.so' if key == 'EXT_SUFFIX' else None)
   monkeypatch.setitem(sys.modules, 'usb1', SimpleNamespace(__file__=str(tmp_path / 'usb1.py')))
 
   def record(name: str, script: str, arguments: list[str]) -> None:
-    if name == 'build-spidev':
-      folder = Path(arguments[arguments.index('--output') + 1])
-      folder.mkdir()
-      built.append(folder)
-    elif name == 'check-spidev':
+    assert name != 'build-spidev', 'source fixture builder must run without the Python driver'
+    if name == 'check-spidev':
       folder = Path(arguments[arguments.index('--output') + 1])
       folder.mkdir()
       assert Path(arguments[arguments.index('--library') + 1]).parent == built[0]
@@ -74,10 +73,16 @@ def test_spidev_comparison_has_a_fresh_output_separate_from_its_builder(tmp_path
       checker.commands.mkdir(parents=True)
       (checker.commands / f'{name}.stdout').write_text(json.dumps({
         'prefix': str(tmp_path / 'json11'), 'dependency': {'json11_architecture': 'x86_64'}}))
+    elif name == 'build-spidev':
+      assert arguments[arguments.index('--python-include') + 1] == str(tmp_path / 'active python headers')
+      assert arguments[arguments.index('--extension-suffix') + 1] == '.active-python-abi.so'
+      folder = Path(arguments[arguments.index('--output') + 1])
+      folder.mkdir()
+      built.append(folder)
 
   monkeypatch.setattr(checker, 'command', record_native)
   with pytest.raises(ReachedComparison):
     checker.execute(tmp_path / 'zmq')
   assert native_builds == ['stage-json11'] + ['build-pandad-protocol-source'] * 5 + [
-    'build-pandad-peripheral-source', 'build-pandad-spi-source', 'build-pandad-usb-source']
+    'build-pandad-peripheral-source', 'build-pandad-spi-source', 'build-pandad-usb-source', 'build-pandad-firmware-spi-fixture']
   assert json.loads((tmp_path / 'json11-dependency.json').read_text()) == {'json11_architecture': 'x86_64'}

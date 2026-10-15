@@ -17,8 +17,16 @@ name = "build-athena-vision-peer"
 path = "src/bin/build_athena_vision_peer.rs"
 
 [[bin]]
+name = "build-pandad-firmware-spi-fixture"
+path = "src/bin/build_pandad_firmware_spi_fixture.rs"
+
+[[bin]]
 name = "check-ui-updater-handshake"
 path = "src/bin/check_ui_updater_handshake.rs"
+
+[[bin]]
+name = "check-hardware-command"
+path = "src/bin/check_hardware_command.rs"
 
 [lints]
 workspace = true

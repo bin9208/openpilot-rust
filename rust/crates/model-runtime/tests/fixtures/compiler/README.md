@@ -53,3 +53,23 @@ work and unprofiled product reductions (including IMAGE MatMul); GPU reduction,
 image packing, general fusion and full model parity remain pending. Bias is
 loaded early in the original kernel but accumulators start at zero; it is not
 seeded into the reduction. No Python source or caller is removed by this unit.
+
+`original-math.json` retains original optimized CPU:LLVM Exp2, Sign, contracted
+multiply/add, Gelu and Sigmoid programs with raw dynamic float32 inputs. The
+proven CPU subset compares 14,752 output patterns including signed zeros,
+subnormals, overflow/underflow boundaries, infinities and signed signaling/quiet
+NaN payloads. The exact first driver Gelu (`approximate=tanh`) also compares all
+2,764,800 output bytes by SHA256 after the verified first convolution. Native
+Exp2 uses the original polynomial, FMA and range-scaling order, not libm exp2.
+The original CPU renderer rejects an explicit Ops.MULACC; the native IR primitive
+here reproduces accepted original `a*b+c` contraction, not that UOp admission.
+
+Gelu `approximate=none` and its default remain explicitly rejected by the CPU
+source admission before compilation or publication. Native finite/infinite
+agreement does not cover its unresolved NaN sign/payload behavior. Twelve
+original ONNX cases and separate byte-export Tensor cases preserve the failure
+evidence: realizing float32 output first and fusing a byte export can produce
+different original NaN operand selection in unrolled layouts. No universal NaN
+guard, payload normalization or tolerance was accepted. General importing and
+reference lowering remain available; half activation math, GPU transcendental
+rendering and full-model numerical parity remain pending.

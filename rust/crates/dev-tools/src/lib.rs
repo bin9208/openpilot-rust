@@ -16,6 +16,7 @@ pub mod encoder_source_build;
 pub mod encoder_stage;
 
 pub mod ffmpeg_build;
+pub mod hardware_command_check;
 pub mod qcom_compiler_stage;
 pub mod torque_stage;
 
@@ -33,6 +34,7 @@ pub mod logging_oracle_build;
 pub mod native_logging_build;
 pub mod panda_oracle_build;
 pub mod panda_runtime_build;
+pub mod pandad_firmware_spi_build;
 pub mod path_resolve;
 pub mod raylib_stage;
 pub mod release_files;

@@ -1465,7 +1465,7 @@ rust/tools/build_locationd_oracle.py	980a243ad5d06c1c85c3e0d594cd8076a3fcc3c8	pe
 rust/tools/build_model_pipelines.py	f1becdc082d18db6747ef895ef5c676661c54971	pending	-
 rust/tools/build_msgq_python.py	9fd7eb729d2427c9917a081a6dd1d0ec131359a9	pending	-
 rust/tools/build_offline_model_pipelines.py	577243ff62e8ff3352a3680b70e4cae3a756d763	pending	-
-rust/tools/build_pandad_firmware_spi_fixture.py	253b156d0b7861d9925fde18237f2077fc8ba09e	pending	-
+rust/tools/build_pandad_firmware_spi_fixture.py	253b156d0b7861d9925fde18237f2077fc8ba09e	replaced-local	rust/crates/dev-tools/src/pandad_firmware_spi_build.rs
 rust/tools/build_pandad_peripheral_source.py	9787d647f47d1a06bfe08046da8608f6df4e4ba7	replaced-local	rust/crates/dev-tools/src/panda_oracle_build.rs
 rust/tools/build_pandad_protocol_source.py	a1fb672611efbc4346c9c34fdcb22031b119f132	replaced-local	rust/crates/dev-tools/src/panda_oracle_build.rs
 rust/tools/build_pandad_runtime_fixture.py	c2ce5df0ac23abc7d83bd91e5df7a508d77fa4c4	replaced-local	rust/crates/dev-tools/src/panda_oracle_build.rs

@@ -1,6 +1,7 @@
 //! Bounded OpenCL preprocessing renderer and explicit CPU reduction renderer.
 //! This is a bounded compiler primitive, not a complete graph backend. Image
 //! packing, GPU reductions and fused scheduling remain separate pending work.
+mod math;
 mod reduction;
 use super::{
     lower::{IndexExpr, LoweredGraph, ScalarExpr},
@@ -22,6 +23,8 @@ struct Renderer<'a> {
     preserve_half_storage: bool,
     reduction: Option<(String, usize)>,
     statements: Vec<String>,
+    cpu_math: bool,
+    shared_reciprocals: Vec<ScalarExpr>,
 }
 fn elements(shape: &[usize]) -> Result<usize, String> {
     shape.iter().try_fold(1usize, |n, v| {
@@ -176,6 +179,20 @@ impl Renderer<'_> {
                 value,
             } => self.reduce_sum(*count, value),
             ScalarExpr::PaddedLoad { plan, coordinates } => self.padded_load(*plan, coordinates),
+            ScalarExpr::Exp2 { dtype: 1, value } if self.cpu_emulated_half => {
+                self.cpu_math = true;
+                Ok(format!("native_exp2({})", self.expression(value)?))
+            }
+            ScalarExpr::Sign { dtype: 1, value } if self.cpu_emulated_half => {
+                self.cpu_math = true;
+                Ok(format!("native_sign({})", self.expression(value)?))
+            }
+            ScalarExpr::MulAcc { dtype: 1, a, b, c } if self.cpu_emulated_half => Ok(format!(
+                "__builtin_fmaf((float)({}),(float)({}),(float)({}))",
+                self.expression(a)?,
+                self.expression(b)?,
+                self.expression(c)?
+            )),
             ScalarExpr::FloatLiteral { dtype, value } if matches!(dtype, 1 | 10) => {
                 self.round(*dtype, float(*value)?)
             }
@@ -207,17 +224,27 @@ impl Renderer<'_> {
                     return Err("half minimum/maximum rendering not implemented".into());
                 }
                 if self.cpu_emulated_half && matches!(dtype, 1 | 10) && *kind == Binary::Mul {
-                    if let ScalarExpr::Reciprocal {
-                        dtype: reciprocal_dtype,
-                        value,
-                    } = right.as_ref()
+                    let division = match (left.as_ref(), right.as_ref()) {
+                        (numerator, ScalarExpr::Reciprocal { dtype, value }) => {
+                            Some((numerator, dtype, value.as_ref()))
+                        }
+                        (ScalarExpr::Reciprocal { dtype, value }, numerator) => {
+                            Some((numerator, dtype, value.as_ref()))
+                        }
+                        _ => None,
+                    };
+                    if let Some((numerator, reciprocal_dtype, value)) =
+                        division.filter(|(_, _, value)| {
+                            !self.shared_reciprocals.iter().any(|v| v == *value)
+                        })
                     {
                         if reciprocal_dtype != dtype {
                             return Err("division reciprocal dtype mismatch".into());
                         }
-                        // Original late FDIV rewrite, after half ALU emulation.
-                        let a = self.expression(left)?;
-                        if let ScalarExpr::Literal(constant) = value.as_ref() {
+                        // Original late FDIV rewrite accepts reciprocal on either
+                        // side after commutative canonicalization.
+                        let a = self.expression(numerator)?;
+                        if let ScalarExpr::Literal(constant) = value {
                             let number = constant.float()? as f32;
                             let reciprocal = 1.0f32 / number;
                             if reciprocal.is_finite() {
@@ -226,6 +253,25 @@ impl Renderer<'_> {
                         }
                         let b = self.expression(value)?;
                         return Ok(format!("((float)({a})/(float)({b}))"));
+                    }
+                }
+                if self.cpu_emulated_half && *dtype == 1 && *kind == Binary::Sub {
+                    if let ScalarExpr::Binary {
+                        kind: Binary::Mul,
+                        dtype: 1,
+                        left: a,
+                        right: b,
+                    } = right.as_ref()
+                    {
+                        let has_unshared_reciprocal = [a.as_ref(), b.as_ref()].iter().any(|term| matches!(term, ScalarExpr::Reciprocal { value, .. } if !self.shared_reciprocals.iter().any(|v| v == value.as_ref())));
+                        if !has_unshared_reciprocal {
+                            return Ok(format!(
+                                "__builtin_fmaf(-(float)({}),(float)({}),(float)({}))",
+                                self.expression(a)?,
+                                self.expression(b)?,
+                                self.expression(left)?
+                            ));
+                        }
                     }
                 }
                 let mut a = self.expression(left)?;
@@ -312,6 +358,49 @@ fn render(
     }
     let preserve_half_storage =
         cpu_emulated_half && plan.ty.dtype == 10 && raw_half_view(&plan.expression, graph);
+    fn reciprocals(value: &ScalarExpr, found: &mut Vec<(ScalarExpr, usize)>) {
+        match value {
+            ScalarExpr::Reciprocal { value, .. } => {
+                if let Some((_, count)) = found.iter_mut().find(|(v, _)| v == value.as_ref()) {
+                    *count += 1;
+                } else {
+                    found.push((value.as_ref().clone(), 1));
+                }
+                reciprocals(value, found);
+            }
+            ScalarExpr::Cast { value, .. }
+            | ScalarExpr::StorageRound { value, .. }
+            | ScalarExpr::Exp2 { value, .. }
+            | ScalarExpr::Sign { value, .. }
+            | ScalarExpr::Sqrt { value, .. }
+            | ScalarExpr::Trunc { value, .. }
+            | ScalarExpr::ReduceSum { value, .. }
+            | ScalarExpr::ReduceMax { value, .. }
+            | ScalarExpr::GreaterZero(value)
+            | ScalarExpr::BoolNot(value) => reciprocals(value, found),
+            ScalarExpr::Binary { left, right, .. } => {
+                reciprocals(left, found);
+                reciprocals(right, found);
+            }
+            ScalarExpr::MulAcc { a, b, c, .. } => {
+                reciprocals(a, found);
+                reciprocals(b, found);
+                reciprocals(c, found);
+            }
+            ScalarExpr::Select { condition, yes, no } => {
+                reciprocals(condition, found);
+                reciprocals(yes, found);
+                reciprocals(no, found);
+            }
+            _ => (),
+        }
+    }
+    let mut occurrences = Vec::new();
+    reciprocals(&plan.expression, &mut occurrences);
+    let shared_reciprocals = occurrences
+        .into_iter()
+        .filter_map(|(value, count)| (count > 1).then_some(value))
+        .collect();
     let mut renderer = Renderer {
         graph,
         output,
@@ -321,6 +410,8 @@ fn render(
         preserve_half_storage,
         reduction: None,
         statements: Vec::new(),
+        cpu_math: false,
+        shared_reciprocals,
     };
     let mut expression = renderer.expression(&plan.expression)?;
     // Only the outermost arithmetic parentheses are redundant in the store.
@@ -362,6 +453,11 @@ fn render(
         "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
     } else {
         ""
+    };
+    let header = if renderer.cpu_math {
+        format!("{header}{}", math::CPU_MATH)
+    } else {
+        header.to_string()
     };
     let source = format!(
         "{header}__kernel void {function}({}) {{ int i=get_global_id(0); {}out[i]={expression}; }}\n",

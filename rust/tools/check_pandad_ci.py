@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+import sysconfig
 import tarfile
 import tomllib
 
@@ -98,8 +99,9 @@ class PandaCheck:
     self.check('usb_policy', ['--binary', str(self.examples / 'usb_policy'), '--fixture', str(usb)])
     import usb1
     self.check('usb_raw', ['--binary', str(self.examples / 'raw_fixture'), '--fixture', str(usb), '--binding', str(Path(usb1.__file__).resolve())])
-    self.python('build-spidev', 'build_pandad_firmware_spi_fixture.py',
-      ['--output', str(self.output / 'spidev-src'), *common, '--spidev-source', str(self.spidev())])
+    self.command('build-spidev', [str(self.binaries / 'build-pandad-firmware-spi-fixture'), '--root', str(ROOT),
+      '--output', str(self.output / 'spidev-src'), *common, '--spidev-source', str(self.spidev()),
+      '--python-include', sysconfig.get_paths()['include'], '--extension-suffix', sysconfig.get_config_var('EXT_SUFFIX')])
     self.check('spidev', ['--native', str(self.examples / 'spi_policy'), '--library', str(self.output / 'spidev-src/libpandad_firmware_spi.so')])
     self.command('build-runtime-fixture', [str(self.binaries / 'build-pandad-runtime-fixture'), '--root', str(ROOT),
       '--output', str(self.output / 'runtime-fixture'), *common, '--libusb-include', '/usr/include'])
@@ -138,9 +140,18 @@ def main() -> None:
   output.mkdir(parents=True)
   zmq = zmq_output(arguments.build_messages)
   sources = list(TOOLS.glob('*pandad*'))
+  native_tools = ROOT / 'rust/crates/dev-tools'
+  sources += list((native_tools / 'src').glob('*panda*.rs')) + list((native_tools / 'src/bin').glob('build_pandad_*.rs'))
+  sources += [native_tools / 'src' / name for name in
+              ('json11_stage.rs', 'services_header.rs', 'qa_process.rs', 'path_resolve.rs', 'bin/stage_json11.rs')]
+  sources += [native_tools / 'Cargo.toml', ROOT / 'rust/crates/disk-space/src/lib.rs',
+              ROOT / 'rust/crates/messaging/src/services_generated.rs', ROOT / 'rust/Cargo.lock', ROOT / 'uv.lock']
   for name in ('pandad', 'panda-usb', 'panda-spi', 'panda-spi-linux'):
     sources += list((ROOT / 'rust/crates' / name).rglob('*.rs'))
   executables = [binaries / name for name in ('openpilot-pandad', 'openpilot-pandad-supervisor', 'openpilot-process-child', 'openpilot-logmessaged')]
+  executables += [binaries / name for name in ('stage-json11', 'build-pandad-protocol-source',
+    'build-pandad-peripheral-source', 'build-pandad-spi-source', 'build-pandad-usb-source',
+    'build-pandad-runtime-fixture', 'build-pandad-runtime-source', 'build-pandad-firmware-spi-fixture')]
   executables += [binaries / 'examples' / name for name in ('panda_protocol', 'panda_safety', 'device', 'state', 'can_io',
     'peripheral', 'firmware', 'firmware_client', 'firmware_spi', 'supervisor', 'supervisor_native', 'dfu_recovery',
     'usb_policy', 'spi_policy', 'usb_fixture', 'raw_fixture', 'spi_fixture')]

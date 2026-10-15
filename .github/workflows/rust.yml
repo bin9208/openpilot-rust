@@ -2690,7 +2690,7 @@ jobs:
           python rust/tools/check_hardware_control.py rust/target/debug/examples/hardware_control_trace "$RUNNER_TEMP/hardware-runtime/control-policy"
           rust/target/debug/examples/hardware_control_command rust/target/debug/openpilot-process-child \
             > "$RUNNER_TEMP/hardware-runtime/command.json" 2> "$RUNNER_TEMP/hardware-runtime/command.stderr"
-          python -c 'import json,pathlib,sys; root=pathlib.Path(sys.argv[1]); assert json.loads((root/"command.json").read_text()) == {"status":7,"stdout_bytes":131072,"stdout_zero":True,"call_status":3,"shell_status":5,"missing_is_io":True}; assert (root/"command.stderr").read_text() == "inherited-stderr"' "$RUNNER_TEMP/hardware-runtime"
+          rust/target/debug/check-hardware-command --evidence "$RUNNER_TEMP/hardware-runtime"
       - name: Exercise boot file ownership and failure cleanup with AddressSanitizer
         run: |
           rustc +nightly-2026-09-29 --edition=2021 -Zsanitizer=address -g rust/tools/bootlog_raw_file_probe.rs -o "$RUNNER_TEMP/boot-file-asan"

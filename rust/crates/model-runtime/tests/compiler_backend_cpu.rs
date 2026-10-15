@@ -162,7 +162,7 @@ fn identity_unsupported_ir_and_existing_destination_fail_before_compiler_or_publ
         .unwrap_err()
         .contains("identity"));
     assert!(!destination.exists());
-    let case = fixture("Sigmoid-1-{}");
+    let case = fixture("Softmax-1-None");
     let bytes = decode(case["onnx_hex"].as_str().unwrap());
     fs::write(&onnx, &bytes).unwrap();
     assert!(compile_onnx(
