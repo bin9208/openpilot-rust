@@ -1,7 +1,10 @@
 use crate::Error;
 use openpilot_modeld::{inputs::PolicyInputs, parse::RawOutputs, prediction::DrivingPrediction};
 use openpilot_usbgpu::client::{Client, Frame, Launch};
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 #[derive(Clone, Copy, Default)]
 pub struct Controls {
@@ -25,21 +28,49 @@ pub struct UsbModel {
     pub client: Client,
     pub controls: Controls,
     inputs: PolicyInputs,
+    artifact: Option<PathBuf>,
     slices: BTreeMap<String, [usize; 2]>,
 }
 impl UsbModel {
     pub fn load(worker: &Path, model: &Path, camera: [u32; 2]) -> Result<Self, Error> {
         let client = Client::load(worker, model, camera)?;
-        Self::from_client(client)
+        let mut result = Self::from_client(client)?;
+        result.artifact = Some(model.to_owned());
+        Ok(result)
     }
     pub fn launch(launch: Launch<'_>) -> Result<Self, Error> {
-        Self::from_client(Client::launch(launch)?)
+        let artifact = launch.model.to_owned();
+        let mut result = Self::from_client(Client::launch(launch)?)?;
+        result.artifact = Some(artifact);
+        Ok(result)
     }
     pub fn launch_with_assets(
         launch: Launch<'_>,
         binding: &openpilot_usbgpu::worker_artifact::Binding,
     ) -> Result<Self, Error> {
-        Self::from_client(Client::launch_with_assets(launch, binding)?)
+        let artifact = launch.model.to_owned();
+        let mut result = Self::from_client(Client::launch_with_assets(launch, binding)?)?;
+        result.artifact = Some(artifact);
+        Ok(result)
+    }
+    pub fn launch_recovery_with_assets(
+        launch: Launch<'_>,
+        binding: &openpilot_usbgpu::worker_artifact::Binding,
+    ) -> Result<Self, Error> {
+        let artifact = launch.model.to_owned();
+        let mut result = Self::from_client(Client::launch_recovery_with_assets(launch, binding)?)?;
+        result.artifact = Some(artifact);
+        Ok(result)
+    }
+    pub fn reset_after_probe(&mut self) -> Result<(), Error> {
+        self.client.reset()?;
+        self.inputs = PolicyInputs::new(
+            self.slices
+                .get("hidden_state")
+                .map_or(1, |section| section[1] - section[0]),
+        )?;
+        self.controls = Controls::default();
+        Ok(())
     }
     pub fn from_client(client: Client) -> Result<Self, Error> {
         let mut slices = BTreeMap::new();
@@ -57,6 +88,7 @@ impl UsbModel {
         Ok(Self {
             client,
             controls: Controls::default(),
+            artifact: None,
             inputs: PolicyInputs::new(
                 slices
                     .get("hidden_state")
@@ -100,7 +132,25 @@ impl UsbModel {
                 inputs: self.inputs.packed(),
             },
             prepare_only,
-        )?;
+        );
+        let values = match values {
+            Ok(values) => values,
+            Err(error) => {
+                if let Some(path) = self
+                    .artifact
+                    .as_ref()
+                    .filter(|_| !matches!(error, openpilot_usbgpu::Error::Cancelled))
+                {
+                    use openpilot_usbgpu::model_delivery::{failure, smoke};
+                    if let Err(record_error) = smoke::wall_time()
+                        .and_then(|time| failure::record_error(path, &error, "inference", time))
+                    {
+                        eprintln!("could not persist eGPU failure: {record_error}");
+                    }
+                }
+                return Err(error.into());
+            }
+        };
         let Some(values) = values else {
             return Ok(None);
         };

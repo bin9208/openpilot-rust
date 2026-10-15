@@ -1,12 +1,15 @@
-"""Regression fixtures bound to the unchanged 430ec72b input constructor."""
+"""430ec72b input semantics across the additive #338 schema import."""
+import base64
+import gzip
 import hashlib
+import json
 import os
 from pathlib import Path
 import subprocess
 import sys
 import unittest  # noqa: TID251 - focused stdlib regression; no added test dependency
 
-from radard_ipc import availability_phase, packet, SERVICES, WARMUP_FRAMES
+from radard_ipc import availability_phase, packet, SERVICES, WARMUP_FRAMES, log
 
 
 class PreconditioningTests(unittest.TestCase):
@@ -29,18 +32,30 @@ value = hashlib.sha256()
 for index in range(40):
   for topic in SERVICES:
     value.update(packet(topic, index).to_bytes())
-assert value.hexdigest() == '9b52421501fc4cd5487623d1b61c5489067d2e6e6f1862e4fe82c78df53620ad'
+assert value.hexdigest() == '83261653c789aa715d24f56edba21e42bdc2bc252fbb1d20b5ac056833e204a9'
 assert 'msgq' not in sys.modules and 'openpilot.cereal.messaging' not in sys.modules
 """
     environment = dict(os.environ, PYTHONPATH=os.pathsep.join(map(str, [root, root / 'opendbc_repo', root / 'rust/tools'])))
     subprocess.run([sys.executable, '-P', '-c', script], cwd=root, env=environment, check=True, timeout=20)
 
-  def test_all_160_measured_packets_match_original_source_bytes(self):
+  def test_legacy_160_packets_preserve_every_decoded_field_and_default(self):
+    # Generated with unchanged packet() and pre-import b55552db schemas. This
+    # fixture retains the old byte fingerprint, independent of current layout.
+    path = Path(__file__).with_name('fixtures') / 'radard-legacy-160.json.gz'
+    rows = [base64.b64decode(row) for row in json.loads(gzip.decompress(path.read_bytes()))]
+    self.assertEqual(len(rows), 160)
+    self.assertEqual(hashlib.sha256(b''.join(rows)).hexdigest(),
+                     '9b52421501fc4cd5487623d1b61c5489067d2e6e6f1862e4fe82c78df53620ad')
+    for offset, raw in enumerate(rows):
+      with log.Event.from_bytes(raw) as legacy:
+        self.assertEqual(legacy.to_dict(), packet(SERVICES[offset % 4], offset // 4).to_dict(), offset)
+
+  def test_all_160_measured_packets_match_current_schema_bytes(self):
     digest = hashlib.sha256()
     for index in range(40):
       for topic in SERVICES:
         digest.update(packet(topic, index, stamp_index=index).to_bytes())
-    self.assertEqual(digest.hexdigest(), '9b52421501fc4cd5487623d1b61c5489067d2e6e6f1862e4fe82c78df53620ad')
+    self.assertEqual(digest.hexdigest(), '83261653c789aa715d24f56edba21e42bdc2bc252fbb1d20b5ac056833e204a9')
 
   def test_preconditioning_precedes_original_scenario_time(self):
     for topic in SERVICES:

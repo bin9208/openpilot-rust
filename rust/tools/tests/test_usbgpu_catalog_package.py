@@ -63,3 +63,30 @@ def test_pinned_archive_rejects_escape_links_and_duplicate_sources(tmp_path: Pat
   with pytest.raises(ArtifactError, match='archive member|duplicate'):
     runtime_sources(archive, tmp_path / 'sources')
   assert not (tmp_path / 'outside').exists()
+
+
+def test_warp_reuse_requires_bound_archive_and_identical_math_ast(tmp_path: Path) -> None:
+  from usbgpu_catalog_package import fingerprint, warp_equivalence
+  names = ['NV12Frame', 'warp_perspective_tinygrad', 'frames_to_tensor', 'make_frame_prepare', 'make_luma_warp']
+  math = '\n'.join(f'def {name}(x):\n  return x + 1\n' for name in names)
+  archive = tmp_path / 'old.tar.gz'
+  with tarfile.open(archive, 'w:gz') as target:
+    for path, data in [('tinygrad/uop/__init__.py', b'x'), ('examples/openpilot/compile_warp.py', math.encode())]:
+      item = tarfile.TarInfo(path)
+      item.size = len(data)
+      target.addfile(item, io.BytesIO(data))
+  hardware = tmp_path / 'hardware'
+  hardware.mkdir()
+  (hardware / 'source-provenance.json').write_text(json.dumps({'runtime_sha256':fingerprint(archive)}))
+  runtime = tmp_path / 'runtime'
+  selected = runtime / 'examples/openpilot/compile_warp.py'
+  selected.parent.mkdir(parents=True)
+  selected.write_text(math + '\n# changed exporter only\n')
+  evidence = warp_equivalence(hardware, runtime, archive)
+  assert evidence['identical_ast_definitions'] == names
+  selected.write_text(math.replace('x + 1','x + 2',1))
+  with pytest.raises(ArtifactError, match='mathematical functions differ'):
+    warp_equivalence(hardware, runtime, archive)
+  (hardware / 'source-provenance.json').write_text(json.dumps({'runtime_sha256':'0'*64}))
+  with pytest.raises(ArtifactError, match='archive differs'):
+    warp_equivalence(hardware, runtime, archive)

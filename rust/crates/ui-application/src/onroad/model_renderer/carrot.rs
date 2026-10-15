@@ -47,7 +47,7 @@ impl Default for Carrot {
             long_active: false,
             lane_speed: 0,
             sequence: 0.,
-            sequence_second: None,
+            sequence_second: Some(-1),
             position_t: 0.,
             path_x: 0,
             path_y: 0,

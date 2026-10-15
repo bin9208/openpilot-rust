@@ -179,9 +179,16 @@ fn can_driven_step_publishes_previous_output_before_initializing_and_applying() 
     params.init_root::<car_params::Builder>().set_passive(false);
     let mut state = State::new(&openpilot_card::core::SERVICES, Options::default()).unwrap();
     let mut cc = Builder::new_default();
-    cc.init_root::<event::Builder>()
-        .init_car_control()
-        .set_enabled(true);
+    {
+        let mut control = cc.init_root::<event::Builder>().init_car_control();
+        control.set_enabled(true);
+        control.set_lat_active(true);
+        control.set_long_active(true);
+        let mut actuators = control.init_actuators();
+        actuators.set_torque(0.7);
+        actuators.set_steering_angle_deg(99.);
+        actuators.set_curvature(0.01);
+    }
     let mut ready = Builder::new_default();
     ready.init_root::<event::Builder>().init_onroad_events(0);
     state
@@ -224,6 +231,13 @@ fn can_driven_step_publishes_previous_output_before_initializing_and_applying() 
         .unwrap();
     assert_eq!(io.sent, ["carParams", "carOutput", "carState", "sendcan"]);
     assert_eq!(driver.calls, ["update", "init", "apply"]);
+    let applied = card
+        .last_actuators
+        .get_root_as_reader::<openpilot_cereal::car_capnp::car_control::actuators::Reader>()
+        .unwrap();
+    assert_eq!(applied.get_torque(), 0.);
+    assert_eq!(applied.get_steering_angle_deg(), 0.);
+    assert_eq!(applied.get_curvature(), 0.);
     assert_eq!(io.writes, [("ControlsReady".into(), b"1".to_vec())]);
     assert_eq!(
         io.logs,

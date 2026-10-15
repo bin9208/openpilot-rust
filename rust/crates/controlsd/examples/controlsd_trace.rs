@@ -78,7 +78,7 @@ impl Parameters for Store {
 fn snapshot(controls: &Controls) -> Value {
     let lo = &controls.longitudinal;
     let la = &controls.lateral;
-    let mut state = json!({"curvature":controls.curvature,"desired":controls.desired,"safety_limited":controls.safety_limited,
+    let mut state = json!({"startup_ready":controls.lateral_startup.ready,"lateral_started":controls.lateral_started,"curvature":controls.curvature,"desired":controls.desired,"safety_limited":controls.safety_limited,
         "long_state": match lo.state { openpilot_controlsd::longitudinal::State::Off => "0", openpilot_controlsd::longitudinal::State::Pid => "1", openpilot_controlsd::longitudinal::State::Stopping => "2", openpilot_controlsd::longitudinal::State::Starting => "3" },
         "long_pid":[lo.pid.p,lo.pid.i,lo.pid.f,lo.pid.control],"last_accel":lo.last,"coasting":lo.correction,"saturation":la.saturation,
         "suspended":controls.suspend.active,"suspend_times":[controls.suspend.enter,controls.suspend.hold]});

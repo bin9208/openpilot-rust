@@ -41,7 +41,13 @@ pub struct State {
     pub inputs: Inputs,
     pub monitor: Monitor,
     pub navigation: Navigation,
+    pub navigation_policy: super::navigation::policy::Policy,
+    pub navigation_config: super::navigation::policy::Config,
+    pub navigation_long_press: bool,
     pub soft_hold: i16,
+    pub speedcam_engaged: bool,
+    pub speedcam_v_cruise: f64,
+    pub speedcam_gas_tok_consumed: bool,
     pub out: Builder<HeapAllocator>,
     pub metric: bool,
     pub main_enabled: bool,
@@ -52,6 +58,8 @@ pub struct State {
     pub cluster_filter: SpeedFilter,
     pub blinkers: Blinkers,
     pub steering_pressed: SteeringPressed,
+    pub steering_touch: super::steering_touch::SteeringTouch,
+    pub stalks: super::stalks::Stalks,
     pub cluster_speed: f64,
     pub cluster_counter: u32,
     pub cluster_seen: bool,
@@ -84,7 +92,7 @@ impl State {
         let mut inputs = Inputs::new(path, &config, now_ns)?;
         super::diagnostics::constructor(&mut inputs, config.flags & f::CANFD != 0);
         let monitor = Monitor::new(&config, &settings)?;
-        let navigation = Navigation::new(config.candidate == "KIA_PV5", &settings)?;
+        let mut navigation = Navigation::new(config.candidate == "KIA_PV5", &settings)?;
         let main_enabled = setting_int(&settings, "AutoEngage")? == 2;
         let (gear_message, gear_signal) = if config.flags & f::CANFD != 0 {
             (config.gear_message(), "GEAR")
@@ -120,13 +128,21 @@ impl State {
         let limits = TorqueLimits::new(&config.candidate, config.flags);
         let mut out = Builder::new_default();
         out.init_root::<car_state::Builder>();
+        let navigation_config =
+            super::navigation::policy::Config::read(&settings, &mut navigation.camera_policy)?;
         Ok(Self {
             config,
             settings,
             inputs,
             monitor,
+            navigation_config,
             navigation,
+            navigation_policy: super::navigation::policy::Policy::default(),
+            navigation_long_press: false,
             soft_hold: 0,
+            speedcam_engaged: false,
+            speedcam_v_cruise: 0.,
+            speedcam_gas_tok_consumed: false,
             out,
             metric: false,
             main_enabled,
@@ -137,6 +153,8 @@ impl State {
             cluster_filter: SpeedFilter::new()?,
             blinkers: Blinkers::default(),
             steering_pressed: SteeringPressed::default(),
+            steering_touch: super::steering_touch::SteeringTouch::default(),
+            stalks: super::stalks::Stalks::default(),
             cluster_speed: 0.,
             cluster_counter: 20,
             cluster_seen: false,

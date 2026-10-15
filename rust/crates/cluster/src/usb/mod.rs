@@ -9,6 +9,7 @@ pub mod packet;
 mod params_runtime;
 mod profile;
 mod settings;
+mod wifi;
 mod write;
 
 pub use display::{Display, Runtime};

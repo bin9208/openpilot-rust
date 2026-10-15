@@ -9,6 +9,7 @@ pub struct LkasInput<'a> {
     pub candidate: &'a str,
     pub flags: u32,
     pub frame: u32,
+    pub dm_alert: u8,
     pub torque: f64,
     pub steer_req: bool,
     pub torque_fault: bool,
@@ -98,6 +99,25 @@ pub fn lkas(
     if i.ldws_car {
         data.insert("CF_Lkas_LdwsOpt_USM".into(), 3.);
     }
+    if (1..=3).contains(&i.dm_alert) && i.flags & f::SEND_LFA == 0 {
+        let warning = if i.candidate == "HYUNDAI_SANTA_FE" {
+            Some(if i.dm_alert == 3 { 5. } else { 4. })
+        } else if matches!(i.candidate, "KIA_OPTIMA_G4" | "KIA_OPTIMA_G4_FL") {
+            if i.dm_alert >= 2 {
+                Some(4.)
+            } else {
+                None
+            }
+        } else {
+            Some(3.)
+        };
+        if let Some(warning) = warning {
+            data.insert("CF_Lkas_SysWarning".into(), warning);
+        }
+        if get(&data, "CF_Lkas_SysWarning")? != 0. {
+            data.insert("CF_Lkas_LdwsSysState".into(), 3.);
+        }
+    }
     data.insert("CF_Lkas_Chksum".into(), 0.);
     let frame = writer.frame("LKAS11", 0, &data, None)?;
     let head = frame.data.get(..6).ok_or(Error::Numeric)?;
@@ -180,11 +200,28 @@ pub fn clu_cancel(
     )
 }
 
-pub fn lfa_mfc(writer: &mut CanWriter, active: [bool; 3], carrot: i16) -> Result<Frame, Error> {
+pub fn lfa_mfc(
+    writer: &mut CanWriter,
+    active: [bool; 3],
+    carrot: i16,
+    dm_alert: u8,
+) -> Result<Frame, Error> {
     writer.frame(
         "LFAHDA_MFC",
         0,
         &values(&[
+            (
+                "LFA_SysWarning",
+                if (1..=3).contains(&dm_alert) {
+                    if dm_alert == 3 {
+                        6.
+                    } else {
+                        5.
+                    }
+                } else {
+                    0.
+                },
+            ),
             (
                 "LFA_Icon_State",
                 if active[0] {

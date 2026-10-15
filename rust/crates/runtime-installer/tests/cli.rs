@@ -8,11 +8,19 @@ use std::{
 };
 use tempfile::TempDir;
 
-const REQUIRED: [&str; 14] = [
+// ARM integration tests use an explicit QEMU launcher; production has no override.
+fn installer() -> std::ffi::OsString {
+    std::env::var_os("RUNTIME_INSTALLER_TEST_LAUNCHER")
+        .unwrap_or_else(|| env!("CARGO_BIN_EXE_openpilot-runtime-install").into())
+}
+
+const REQUIRED: [&str; 16] = [
     "openpilot-launch",
     "openpilot-runtime-install",
     "openpilot-manager",
     "openpilot-process-child",
+    "openpilot-reboot",
+    "openpilot-startup-recovery",
     "openpilot-carrot-recovery",
     "openpilot-carrot-web-watchdog",
     "openpilot-carrot-server",
@@ -38,6 +46,7 @@ enum Package {
     LongPath,
     WrongArtifactHash,
     SourceAsset,
+    WakeAssets,
     Traversal,
     DuplicateManifest,
 }
@@ -165,6 +174,17 @@ impl Fixture {
                 unpacked += 12;
                 files.push(json!({"path":path,"sha256":format!("{:x}",Sha256::digest(b"fixture-font")),"executable":false}));
             }
+            Package::WakeAssets => {
+                for name in [
+                    "panda_tesla_wake.bin.signed",
+                    "panda_h7_tesla_wake.bin.signed",
+                ] {
+                    let path = format!("panda/board/obj/{name}");
+                    append(&mut builder, &path, b"verified-wake-fixture", 0o644);
+                    unpacked += 21;
+                    files.push(json!({"path":path,"sha256":format!("{:x}",Sha256::digest(b"verified-wake-fixture")),"executable":false}));
+                }
+            }
             Package::Traversal => {
                 let mut header = tar::Header::new_gnu();
                 header.set_size(9);
@@ -195,7 +215,7 @@ impl Fixture {
         .unwrap();
     }
     fn run(&self, extra: &[&str]) -> Output {
-        Command::new(env!("CARGO_BIN_EXE_openpilot-runtime-install"))
+        Command::new(installer())
             .arg("--root")
             .arg(self.root())
             .args(extra)
@@ -203,7 +223,7 @@ impl Fixture {
             .unwrap()
     }
     fn install(&self) -> Output {
-        Command::new(env!("CARGO_BIN_EXE_openpilot-runtime-install"))
+        Command::new(installer())
             .arg("--root")
             .arg(self.root())
             .arg("--archive")
@@ -325,7 +345,7 @@ fn missing_install_check_does_not_invoke_curl() {
     .unwrap();
     fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
     // When running the actual networking-free --check CLI.
-    let result = Command::new(env!("CARGO_BIN_EXE_openpilot-runtime-install"))
+    let result = Command::new(installer())
         .arg("--root")
         .arg(fixture.root())
         .arg("--check")
@@ -631,7 +651,7 @@ fn concurrent_installers_activate_one_generation() {
     let fixture = Fixture::new();
     fixture.archive();
     let spawn = || {
-        Command::new(env!("CARGO_BIN_EXE_openpilot-runtime-install"))
+        Command::new(installer())
             .arg("--root")
             .arg(fixture.root())
             .arg("--archive")
@@ -722,7 +742,7 @@ impl Fixture {
         previous
     }
     fn stage_update(&self) -> Output {
-        Command::new(env!("CARGO_BIN_EXE_openpilot-runtime-install"))
+        Command::new(installer())
             .arg("--stage-update")
             .arg("--root")
             .arg(self.root())
@@ -1023,7 +1043,7 @@ impl Fixture {
         finalized
     }
     fn adopt_update(&self) -> Output {
-        Command::new(env!("CARGO_BIN_EXE_openpilot-runtime-install"))
+        Command::new(installer())
             .arg("--adopt-update")
             .arg("--root")
             .arg(self.root())
@@ -1338,4 +1358,146 @@ fn activation_rejects_staging_that_contains_the_active_checkout() {
     )
     .is_err());
     assert!(!fixture.dir.path().join(".runtime-update.lock").exists());
+}
+
+#[test]
+fn selected_wake_images_are_admitted_and_installed_with_sealed_hashes() {
+    let fixture = Fixture::new();
+    fixture.package(Package::WakeAssets);
+    let result = fixture.install();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    for name in [
+        "panda_tesla_wake.bin.signed",
+        "panda_h7_tesla_wake.bin.signed",
+    ] {
+        assert_eq!(
+            fs::read(fixture.root().join("panda/board/obj").join(name)).unwrap(),
+            b"verified-wake-fixture"
+        );
+    }
+    assert!(fixture.run(&["--check"]).status.success());
+}
+
+struct NoNetwork(std::cell::Cell<usize>);
+impl openpilot_runtime_installer::Download for NoNetwork {
+    fn download(&self, _: &str, _: &Path, _: u64) -> openpilot_runtime_installer::Result<()> {
+        self.0.set(self.0.get() + 1);
+        Err(openpilot_runtime_installer::Error::Invalid(
+            "owned network unavailable".into(),
+        ))
+    }
+}
+fn cached_repair_options(
+    fixture: &Fixture,
+    target: &str,
+) -> openpilot_runtime_installer::transaction::StageOptions {
+    let args: Vec<std::ffi::OsString> = vec![
+        "--root".into(),
+        fixture.root().into_os_string(),
+        "--target".into(),
+        target.into(),
+        "--staging".into(),
+        fixture.dir.path().join("safe_staging").into_os_string(),
+        "--params-root".into(),
+        fixture.dir.path().join("params").into_os_string(),
+        "--reserve-bytes".into(),
+        "0".into(),
+    ];
+    openpilot_runtime_installer::transaction::StageOptions::parse(args.into_iter()).unwrap()
+}
+#[test]
+fn cached_current_package_repairs_offline_without_mutating_active_files() {
+    let mut fixture = Fixture::new();
+    fixture.update_target();
+    let previous = fixture.head();
+    fs::write(
+        fixture.root().join("rust/bin/openpilot-manager"),
+        b"broken runtime",
+    )
+    .unwrap();
+    let network = NoNetwork(std::cell::Cell::new(0));
+    let prepared = openpilot_runtime_installer::transaction::prepare(
+        cached_repair_options(&fixture, &previous),
+        &network,
+    );
+    assert!(prepared.is_ok(), "{prepared:?}");
+    assert_eq!(network.0.get(), 0);
+    assert_eq!(fixture.head(), previous);
+    assert_eq!(
+        fs::read(fixture.root().join("rust/bin/openpilot-manager")).unwrap(),
+        b"broken runtime"
+    );
+    assert!(openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        &fixture.dir.path().join("safe_staging"),
+        &fixture.dir.path().join("params")
+    )
+    .unwrap());
+    assert_eq!(fixture.head(), previous);
+    assert!(fixture.run(&["--check"]).status.success());
+}
+
+#[test]
+fn offline_repair_rejects_unbound_corrupt_missing_and_linked_cache() {
+    use std::os::unix::fs::symlink;
+    for mode in [
+        "corrupt",
+        "missing",
+        "link",
+        "descriptor",
+        "different-source",
+    ] {
+        let mut fixture = Fixture::new();
+        fixture.update_target();
+        let previous = fixture.head();
+        let generation = fixture
+            .root()
+            .join("rust/.runtime-active")
+            .canonicalize()
+            .unwrap();
+        let archive = generation.join(".archive.tar.gz");
+        let original = fs::read(fixture.root().join("rust/bin/openpilot-manager")).unwrap();
+        match mode {
+            "corrupt" => fs::write(&archive, b"bad archive").unwrap(),
+            "missing" => fs::remove_file(&archive).unwrap(),
+            "link" => {
+                fs::remove_file(&archive).unwrap();
+                symlink(fixture.dir.path().join("runtime.tar.gz"), &archive).unwrap();
+            }
+            "descriptor" => fs::write(generation.join(".runtime-release.json"), b"{}").unwrap(),
+            _ => (),
+        }
+        let target = if mode == "different-source" {
+            &fixture.sha
+        } else {
+            &previous
+        };
+        let network = NoNetwork(std::cell::Cell::new(0));
+        let result = openpilot_runtime_installer::transaction::prepare(
+            cached_repair_options(&fixture, target),
+            &network,
+        );
+        assert!(result.is_err(), "{mode}");
+        assert_eq!(
+            network.0.get(),
+            1,
+            "{mode}: refused cache falls back to the configured downloader"
+        );
+        assert_eq!(fixture.head(), previous);
+        assert_eq!(
+            fs::read(fixture.root().join("rust/bin/openpilot-manager")).unwrap(),
+            original
+        );
+        assert!(!fixture.dir.path().join("safe_staging/finalized").exists());
+        if mode == "missing" {
+            assert!(
+                fixture.run(&["--check"]).status.success(),
+                "legacy no-cache generation remains valid"
+            );
+        }
+    }
 }

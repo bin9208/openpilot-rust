@@ -128,6 +128,7 @@ impl Fixture {
                     enabled: false,
                 },
                 frame,
+                source_sof: 0,
                 prepare_only,
                 camera_ready: true,
                 validation: Some(&self.validation),
@@ -165,6 +166,7 @@ fn shadow_never_waits_for_external_worker() {
     assert_eq!(output.plan[0][0], 7.0);
     assert!(start.elapsed() < Duration::from_millis(30));
     assert_eq!(f.runtime.status.decision.source, Source::Native);
+    assert!(!f._dir.path().join("carrot-jetlink-fault").exists());
 }
 #[test]
 fn active_uses_matching_external_result_while_native_remains_executed() {
@@ -195,6 +197,12 @@ fn active_timeout_latches_loss_and_never_relabels_old_native_as_fresh() {
     assert_eq!(output.plan[0][0], 7.0);
     assert!(start.elapsed() < Duration::from_millis(200));
     assert!(f.runtime.status.decision.loss_latched);
+    let fault: f64 = std::fs::read_to_string(f._dir.path().join("carrot-jetlink-fault"))
+        .unwrap()
+        .parse()
+        .unwrap();
+    let age = openpilot_jetlink::now_ns() as f64 * 1e-9 - fault;
+    assert!((0. ..5.).contains(&age));
     assert!(!f.runtime.valid_at_publish());
     f.release();
     f.begin(Mode::ActiveRequest, 43, true);

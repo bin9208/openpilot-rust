@@ -1,0 +1,8 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "source_path": "openpilot/selfdrive/ui/dm_preview.py",
+  "source_sha256": "a10d977df6a3594850328762d9d72c8efae3c35abcf84c5a7d9c2d2c1b8c7552",
+  "fixture_sha256": "066d28324f5881aed2295c6f80963d1228db36e3d32a11a1920e628ddb1c9aab",
+  "cases": 902,
+  "method": "Execute exact pinned pure presentation helper; exhaustive boolean states, age boundaries, seeded face projection and device geometries."
+}

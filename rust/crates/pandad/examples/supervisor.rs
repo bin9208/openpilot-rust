@@ -225,6 +225,7 @@ impl Backend for Fixture {
     }
     fn expected_signature(&mut self, panda: &mut Handle) -> Result<Vec<u8>, Fault> {
         panda.record("get_mcu_type")?;
+        panda.record("get_mcu_type")?;
         self.trace
             .borrow_mut()
             .record(json!(["firmware_signature", "/firmware/app.bin"]))?;

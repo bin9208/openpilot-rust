@@ -1,7 +1,7 @@
 use super::{Buffer, Error};
-use openpilot_camerad::ioctl::{retry_interrupted, ControlEnvelope, SyscallResult, CONTROL_IOCTL};
+use openpilot_camerad::ioctl::{CONTROL_IOCTL, ControlEnvelope, SyscallResult, retry_interrupted};
 use std::ffi::CString;
-use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
+use std::os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, OwnedFd};
 
 #[derive(Clone, Copy, Debug)]
 pub struct CallResult {
@@ -28,7 +28,19 @@ pub struct Device {
     fd: OwnedFd,
 }
 
+impl AsFd for Device {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.fd.as_fd()
+    }
+}
+
 impl Device {
+    /// A worker holds its own descriptor while the owner retains camera state.
+    pub fn try_clone(&self) -> std::io::Result<Self> {
+        Ok(Self {
+            fd: self.fd.try_clone()?,
+        })
+    }
     pub(super) fn raw_fd(&self) -> i32 {
         self.fd.as_raw_fd()
     }

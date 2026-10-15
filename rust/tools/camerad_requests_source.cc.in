@@ -7,6 +7,10 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <utility>
 #include "system/camerad/cameras/camera_event_timing.h"
 
 #define LOGD(...) ((void)0)
@@ -14,7 +18,11 @@
 #define LOGE(...) ((void)0)
 namespace cereal { struct FrameData { enum class ImageSensor { AR0231, OTHER }; }; }
 struct Sensor { cereal::FrameData::ImageSensor image_sensor; uint64_t readout_time_ns; };
-struct Config { int camera_num; bool staggered_sof; bool enabled; };
+const int VISION_STREAM_DRIVER = 2;
+// This reference gate executes the source synchronous branch on every camera.
+// The independent eventfd gate covers actual asynchronous submission/completion.
+struct Config { int camera_num; bool staggered_sof; bool enabled; int stream_type = 0; };
+struct AsyncFrameWait { std::optional<bool> ready; void submit(std::function<bool()> f) { ready = f(); } std::optional<bool> take() { return std::exchange(ready, {}); } };
 std::array<Config, 3> ALL_CAMERA_CONFIGS;
 struct Master { int cam_sync_fd = 7; };
 struct FrameMetadata { uint32_t frame_id, request_id; uint64_t timestamp_sof, timestamp_eof; float processing_time; };
@@ -52,7 +60,11 @@ public:
   bool handle_camera_event(const cam_req_mgr_message *);
   bool validateEvent(uint64_t, uint64_t);
   void clearAndRequeue(uint64_t);
-  bool waitForFrameReady(uint64_t);
+  std::function<bool()> frameWaitTask(uint64_t);
+  bool finishFrame(uint64_t, uint64_t, uint64_t, bool);
+  bool complete_frame_wait();
+  std::unique_ptr<AsyncFrameWait> frame_wait;
+  uint64_t pending_request = 0, pending_frame = 0, pending_timestamp = 0;
   bool processFrame(int, uint64_t, uint64_t, uint64_t);
   static bool syncFirstFrame(int, uint64_t, uint64_t, uint64_t, bool);
   bool stress_test(const std::string &name) {

@@ -1,9 +1,9 @@
-use super::{constants::*, Controller};
+use super::{Controller, constants::*};
 use crate::{
     math::{maximum, minimum},
     model::VisionLead,
     path::Path,
-    primary::{constants::*, source::position_continuous, VisionMatch},
+    primary::{VisionMatch, constants::*, source::position_continuous},
 };
 
 pub fn central_vision(vision: Option<VisionLead>, path: &Path) -> bool {
@@ -87,6 +87,17 @@ impl<P: crate::predictor::CutOutPredictor> Controller<P> {
         path: &Path,
         time: f64,
     ) -> bool {
+        if let Some(matched) = matched.filter(|m| {
+            self.primary_matcher
+                .closing_range_match
+                .as_ref()
+                .is_some_and(|v| v.point.identity() == m.point.identity())
+        }) {
+            self._moving_range_last_point = Some(matched.point.clone());
+            self._moving_range_last_time_s = Some(time);
+            self.reset_range_mismatch();
+            return false;
+        }
         let moving = matched.is_some_and(|matched| {
             let point = &matched.point;
             point.source == "frontRadar"

@@ -96,6 +96,13 @@ public:
   void color4(uint32_t color);
   void vertices_end();
   uint32_t target_create(int32_t width,int32_t height);
+  uint32_t overlay_create(int32_t width,int32_t height);
+  bool overlay_complete(uint32_t index) const;
+  uint32_t framebuffer() const;
+  void framebuffer_bind(uint32_t framebuffer);
+  void render_flush();
+  void coverage_begin();
+  void overlay_composite(uint32_t index,float width,float height);
   void target_release(uint32_t index);
   void target_begin(uint32_t index);
   void external_target_begin(TargetInfo target);
@@ -147,8 +154,11 @@ public:
   void scissor(Rect rect, bool enabled);
   void render_target(int32_t width, int32_t height);
   bool has_render_target() const;
+  bool has_capture_frame() const;
+  void release_render_target();
   void burn_in(rust::Str vertex, rust::Str fragment);
   rust::Vec<uint8_t> capture_pixels() const;
+  rust::Vec<uint8_t> capture_frame_pixels() const;
   uint32_t shader_load(rust::Str vertex, rust::Str fragment);
   void shader_unload(uint32_t shader);
   void uniform_floats(uint32_t shader, rust::Str name, rust::Slice<const float> values, int32_t kind, int32_t count);
@@ -162,6 +172,8 @@ public:
   int32_t char_pressed() const;
   bool key_down(int32_t key) const;
   bool key_started(int32_t key) const;
+  void exit_key(int32_t key);
+  bool mouse_pressed(int32_t button) const;
   Point mouse_position() const;
   void finish_content(float scale);
   void present();
@@ -186,6 +198,8 @@ private:
   int64_t default_font_index = -1;
   std::vector<::Texture> textures;
   ::RenderTexture target{};
+  ::RenderTexture frame_target{};
+  bool frame_open=false;
   ::Shader shader{};
 };
 std::unique_ptr<Surface> create(int32_t width, int32_t height, rust::Str title,

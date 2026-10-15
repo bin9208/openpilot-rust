@@ -2,6 +2,7 @@
 
 import copy
 import math
+import json
 from openpilot.cereal import car, log
 
 SERVICES = [
@@ -10,6 +11,8 @@ SERVICES = [
   'onroadEvents',
   'liveCalibration',
   'radarState',
+  'liveTracks',
+  'customReservedRawData1',
   'deviceState',
   'pandaStates',
   'carParams',
@@ -107,8 +110,11 @@ def messages(curve=0.0, hill=0.0):
 
 def packet(name, body, time, valid=True):
   event = log.Event.new_message(valid=valid, logMonoTime=round(time * 1e9))
-  event.init(name)
-  getattr(event, name).from_dict(body)
+  if name.startswith('customReservedRawData'):
+    setattr(event,name,json.dumps(body).encode())
+  else:
+    event.init(name)
+    getattr(event, name).from_dict(body)
   return list(event.to_bytes())
 
 
@@ -196,7 +202,7 @@ def suite(big, smoke=False):
       aEgo=-2.0 if i < 10 else 1.0,
       vEgoCluster=0.0 if i % 9 == 0 else 22.0,
     )
-    bodies['longitudinalPlan'].update(xState=i % 6, trafficState=1001 if i % 2 else 1, accels=[[-1.0, 0.0, 0.5][i % 3]])
+    bodies['longitudinalPlan'].update(xState=i % 7, trafficState=1001 if i % 2 else 1, accels=[[-1.0, 0.0, 0.5][i % 3]])
     bodies['carState']['vEgo'] = 0.0 if i % 3 == 0 else 20.0
     if i >= 20:
       step['params'] = {'ShowPathMode': list(b'7'), 'ShowPathModeLane': list(b'10'), 'ShowLaneInfo': list(b'0'), 'ShowRadarInfo': list(b'0')}
@@ -235,4 +241,28 @@ def suite(big, smoke=False):
       bodies['modelV2']['position']['x'][1] = bodies['modelV2']['position']['x'][0]
 
   result.append(scene('short-model-arrays', big, count=12, mutate=shape_boundary))
+  def provenance(i, bodies, step, invalid, omit):
+    bodies['carState'].update(leftBlindspot=True,rightBlindspot=True,blindspotSplitSourcesValid=i<8,
+      leftBlindspotOem=bool(i&1),leftBlindspotOnnx=bool(i&2),rightBlindspotOem=bool(i&4),rightBlindspotOnnx=bool(i&1))
+    bodies['customReservedRawData1']={'type':'xiaogeBlindspotSources','version':1,
+      'left':{'oem':bool(i&1),'vision':bool(i&2)},'right':{'oem':bool(i&4),'vision':bool(i&1)},
+      'receivedMonoTimeNanos':int((step['now']-(2. if i>=16 else 0.))*1e9)}
+    if i in (10,11,12):invalid.add('radarState')
+    if i in (14,15):invalid.add('customReservedRawData1')
+  result.append(scene('blindspot-source-colors',big,count=20,mutate=provenance))
+  def display(i,bodies,step,invalid,omit):
+    bodies['liveTracks']={'hasDisplayData':i!=0,'displayPoints':[{'trackId':1,'measured':True,'radarSource':'frontRadar','dRel':30.,'yRel':1.5,'vLead':12.,'yvRel':-0.3}]}
+    if i==4:bodies['liveTracks']['displayPoints']*=2
+    if i==5:bodies['liveTracks']['errors']={'canError':True}
+    if i==6:bodies['liveTracks']['displayPoints']=[]
+    if 8<=i<16:omit.add('liveTracks')
+    if i==17:invalid.add('liveTracks')
+    if i==18:bodies['liveTracks']['displayPoints'][0]['measured']=False
+  result.append(scene('display-points-validity',big,count=20,mutate=display))
+  def cadence(i,bodies,step,invalid,omit):
+    step['now']=100.+[0.,0.025,0.05,0.075,0.15,0.5,0.55,0.6,0.7,0.9,1.0,1.05][i]
+    bodies['carOutput']['actuatorsOutput']['torque']=0.7 if i%2 else -0.7
+    bodies['longitudinalPlan']['allowThrottle']=i%3==0
+    if i in (3,5,9):omit.add('modelV2')
+  result.append(scene('elapsed-display-cadence',big,count=12,mutate=cadence))
   return result

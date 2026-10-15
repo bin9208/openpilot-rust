@@ -14,6 +14,7 @@ pub struct LateralInput<'a> {
 
 pub struct LateralMpc {
     solver: Acados,
+    cost_key: Option<[u64; 5]>,
     reference: [[f64; 5]; 33],
     pub x: [[f64; 4]; 33],
     pub u: [[f64; 1]; 32],
@@ -26,6 +27,7 @@ impl LateralMpc {
     pub fn load(directory: &Path) -> Result<Self, Error> {
         let mut owner = Self {
             solver: Acados::load(directory, Kind::Lateral)?,
+            cost_key: None,
             reference: [[0.; 5]; 33],
             x: [[0.; 4]; 33],
             u: [[0.; 1]; 32],
@@ -38,6 +40,7 @@ impl LateralMpc {
     }
 
     pub fn reset(&mut self, initial: [f64; 4]) -> Result<(), Error> {
+        self.cost_key = None;
         self.x = [[0.; 4]; 33];
         self.u = [[0.; 1]; 32];
         self.reference = [[0.; 5]; 33];
@@ -61,6 +64,15 @@ impl LateralMpc {
     }
 
     pub fn set_weights(&mut self, weights: [f64; 5]) -> Result<(), Error> {
+        let key = weights
+            .iter()
+            .all(|v| v.is_finite())
+            .then(|| weights.map(f64::to_bits));
+        // Solver ownership is permanent; reset always invalidates the cache.
+        if key.is_some() && key == self.cost_key {
+            return Ok(());
+        }
+        self.cost_key = None;
         let mut stage_weights = [0.; 25];
         for (index, weight) in weights.iter().enumerate() {
             stage_weights[index * 5 + index] = *weight;
@@ -72,7 +84,9 @@ impl LateralMpc {
         for (index, weight) in weights[..3].iter().enumerate() {
             terminal[index * 3 + index] = *weight;
         }
-        self.solver.set(32, Field::Weights, &terminal)
+        self.solver.set(32, Field::Weights, &terminal)?;
+        self.cost_key = key;
+        Ok(())
     }
 
     pub fn run(&mut self, input: LateralInput<'_>) -> Result<(), Error> {

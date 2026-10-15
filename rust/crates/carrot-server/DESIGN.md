@@ -105,3 +105,8 @@ Parent owns full workflow/catalog/inventory integration. Exact-stack hosted
 host/ARM results, complete 27-family coverage, normal startup/upload, executable
 and asset packaging and device acceptance remain separate gates. The source
 frontend assets are unchanged.
+
+
+The dev-md source update retires YouTube live streaming and its terminal test.
+Native Carrot Vision diagnostic process/snapshot primitives remain under
+`vision_test`; no YouTube service is constructed or registered by Application.

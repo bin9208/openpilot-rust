@@ -1,0 +1,12 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "transitions": 768,
+  "finite_numeric_bits_compared": 554941,
+  "source_definitions": 15,
+  "source_files_sha256": "8c4cf75bcf371980cedc77432d22950c5ca490eff8a300a97685f2f84419a2f6",
+  "extracted_source_program_sha256": "515191f28ae9933b8158e0ef051a1dd32df7ab2f972d3b65f867f0b88f565d6b",
+  "host_fixture_sha256": "5ad356b6aaf4db33f1147d837377d4cb28e9261a8075bd72970ec7cbef78d7a5",
+  "arm_source_json_sha256": "f6195711db095370e2d4befb1844c8fabefc8719d91c40045ac136cb1e422ebf",
+  "method": "Actual ARM CPython3.12.3 + NumPy2.5.3 under QEMU execute exact original raw tracking definitions; NumPy fallback solver, no SciPy; all captured production transitions have fallback false. Source input states chain across sequential cases; resets restore original source state.",
+  "wheel_sha256": "76c2c1e6bfa5c84adc6434dfbf013aa92096a7985221762c8f11fedfd20fff58"
+}

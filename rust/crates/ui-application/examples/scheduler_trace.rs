@@ -16,6 +16,8 @@ struct Step {
     onroad: bool,
     force: bool,
     online: bool,
+    #[serde(default)]
+    online_cores: Option<BTreeSet<usize>>,
     child: bool,
     #[serde(default)]
     gone: Option<i32>,
@@ -27,13 +29,25 @@ struct Step {
 #[derive(Deserialize)]
 struct Scene {
     enabled: bool,
+    #[serde(default)]
+    device_type: Option<String>,
+    #[serde(default = "default_core")]
+    core: usize,
+    #[serde(default)]
+    include_little: bool,
+    #[serde(default)]
+    extra_onroad_cores: Vec<usize>,
     workers: BTreeMap<i32, Worker>,
     steps: Vec<Step>,
+}
+fn default_core() -> usize {
+    6
 }
 struct Mock {
     workers: BTreeMap<i32, Worker>,
     calls: Vec<serde_json::Value>,
     online: bool,
+    online_cores: Option<BTreeSet<usize>>,
     gone: Option<i32>,
     fail: Option<i32>,
     deny: bool,
@@ -51,7 +65,9 @@ impl Mock {
 impl Platform for Mock {
     fn online(&mut self, core: usize) -> bool {
         self.calls.push(serde_json::json!(["online", core]));
-        self.online
+        self.online_cores
+            .as_ref()
+            .map_or(self.online, |cores| cores.contains(&core))
     }
     fn threads(&mut self, pid: Option<i32>) -> io::Result<Vec<i32>> {
         self.calls.push(serde_json::json!(["threads", pid]));
@@ -95,11 +111,20 @@ impl Platform for Mock {
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let scene: Scene = serde_json::from_reader(std::io::stdin())?;
-    let mut scheduler = Scheduler::new(scene.enabled);
+    let mut scheduler = scene.device_type.as_ref().map_or_else(
+        || Scheduler::new(scene.enabled),
+        |device| Scheduler::for_ui(scene.enabled, device),
+    );
+    if scene.device_type.is_none() {
+        scheduler.core = scene.core;
+        scheduler.include_little = scene.include_little;
+        scheduler.extra_onroad_cores = scene.extra_onroad_cores;
+    }
     let mut mock = Mock {
         workers: scene.workers,
         calls: Vec::new(),
         online: false,
+        online_cores: None,
         gone: None,
         fail: None,
         deny: false,
@@ -107,6 +132,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut output = Vec::new();
     for step in scene.steps {
         mock.online = step.online;
+        mock.online_cores = step.online_cores;
         mock.gone = step.gone;
         mock.fail = step.fail_affinity;
         mock.deny = step.deny_restore;

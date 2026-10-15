@@ -58,8 +58,10 @@ impl<B: RuntimeBus> NativeRuntime<B> {
         if self.failed {
             return Err(Error::Contract("local worker stopped after failure"));
         }
+        crate::worker_progress::mark("input_upload");
         #[cfg(feature = "native-skip-miri")]
         if let Some(local) = &mut self.local {
+            crate::worker_progress::mark("local_prepare");
             let warped = local.prepare_split(
                 [info.input(packed, "img")?, info.input(packed, "big_img")?],
                 packed
@@ -77,10 +79,12 @@ impl<B: RuntimeBus> NativeRuntime<B> {
             self.graph
                 .write(&mut self.gpu, target, info.input(packed, source)?)?;
         }
+        crate::worker_progress::mark("warp");
         self.graph.run(&mut self.gpu, "prepare")
     }
     fn run_inner(&mut self, packed: &[u8], info: &Info, output: &mut [u8]) -> Result<(), Error> {
         self.prepare_inner(packed, info)?;
+        crate::worker_progress::mark("input_upload");
         for (index, name) in ["desire", "traffic_convention", "action_t"]
             .into_iter()
             .enumerate()
@@ -94,7 +98,9 @@ impl<B: RuntimeBus> NativeRuntime<B> {
         }
         self.graph
             .write(&mut self.gpu, "packed_npy_inputs", &self.policy)?;
+        crate::worker_progress::mark("model_call");
         self.graph.run(&mut self.gpu, "policy")?;
+        crate::worker_progress::mark("output_read");
         let bytes = self.graph.read(&mut self.gpu, "model")?;
         if bytes.len() != output.len()
             || bytes.chunks_exact(4).any(|value| {

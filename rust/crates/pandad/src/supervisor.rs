@@ -77,13 +77,7 @@ pub fn flash_panda<B: Backend>(backend: &mut B, serial: &str) -> Result<B::Devic
         result => result?,
     };
     let result = (|| {
-        let expected = match backend.expected_signature(&mut panda) {
-            Ok(signature) => signature,
-            Err(error) => {
-                backend.log(Log::Exception("Error computing expected signature", error))?;
-                Vec::new()
-            }
-        };
+        let expected = backend.expected_signature(&mut panda)?;
         let internal = panda.is_internal()?;
         let version = if panda.bootstub() {
             "bootstub".into()

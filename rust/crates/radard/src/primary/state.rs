@@ -1,8 +1,12 @@
-use super::{constants::*, source::position_continuous, Matcher};
+use super::{Matcher, constants::*, source::position_continuous};
 use crate::{math::maximum, model::VisionLead, point::Point};
 
 impl Matcher {
     pub fn reset(&mut self) {
+        self._closing_range_history.clear();
+        self.closing_range_match = None;
+        self._corner_motion_history.clear();
+        self._corner_motion_unreliable_until.clear();
         self.reset_moving();
         self.reset_stationary();
         self.reset_radar_only_moving();

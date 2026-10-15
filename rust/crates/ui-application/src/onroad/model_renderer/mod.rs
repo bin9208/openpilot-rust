@@ -28,6 +28,9 @@ use openpilot_ui_framework::{
 use settings::Settings;
 
 pub struct ModelRenderer {
+    overlay: openpilot_ui_framework::overlay::PaintLayer<Option<crate::overlay_state::Key>>,
+    overlay_state: Option<crate::overlay_state::Shared>,
+    clock: crate::display_clock::DisplayClock,
     widget: WidgetState,
     context: Context,
     pub common: Common,
@@ -38,6 +41,9 @@ pub struct ModelRenderer {
 impl ModelRenderer {
     pub fn new(context: Context) -> Result<Self, Error> {
         Ok(Self {
+            overlay: openpilot_ui_framework::overlay::PaintLayer::new(0),
+            overlay_state: None,
+            clock: Default::default(),
             widget: WidgetState::default(),
             common: Common::new(&context)?,
             context,
@@ -46,11 +52,15 @@ impl ModelRenderer {
             diagnostics: None,
         })
     }
+    pub fn set_overlay_state(&mut self, state: crate::overlay_state::Shared) {
+        self.overlay_state = Some(state);
+    }
     pub fn set_transform(&mut self, transform: [[f64; 3]; 3]) {
         self.common.projection.set_transform(transform);
         self.common.transform_dirty = true;
     }
     fn render_model(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<(), Error> {
+        self.clock.tick((self.context.now_monotonic)());
         let context = self.context.clone();
         let messages = context.messages.borrow();
         let input = input::Input::new(&messages.state)?;
@@ -58,7 +68,8 @@ impl ModelRenderer {
             return Ok(());
         }
         self.common.header(&input, self.widget.rect)?;
-        if input.updated("modelV2")? {
+        if input.messages.topic("modelV2")?.receive_frame != self.common.model_frame {
+            self.common.model_frame = input.messages.topic("modelV2")?.receive_frame;
             self.common.raw(input.model)?;
         }
         if self.common.path.raw.is_empty() {
@@ -93,7 +104,26 @@ impl Widget for ModelRenderer {
         frame: &Frame<'_>,
         draw: &mut dyn Draw,
     ) -> Result<RenderResult, openpilot_ui_framework::Error> {
-        self.render_model(frame, draw)?;
+        let state = self
+            .overlay_state
+            .as_ref()
+            .map(|s| s.borrow().clone())
+            .unwrap_or_default();
+        let mut overlay = std::mem::replace(
+            &mut self.overlay,
+            openpilot_ui_framework::overlay::PaintLayer::new(0),
+        );
+        let clock = self.context.now_monotonic.clone();
+        let result = overlay.paint(
+            draw,
+            self.widget.rect,
+            state.key.clone(),
+            state.control(frame.index),
+            || clock(),
+            |draw| Ok(self.render_model(frame, draw)?),
+        );
+        self.overlay = overlay;
+        result?;
         Ok(RenderResult::None)
     }
 }

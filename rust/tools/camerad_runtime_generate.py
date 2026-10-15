@@ -20,7 +20,14 @@ def main() -> None:
     + '  if (actual == -2) return -1;\n  if (actual < -100) return -actual-100;\n'
     + '  if (actual >= 0) fd = actual;\n  if (fd < 0) {',
   )
-  text = replace_once(text, '  int ret = setting("CK_POLL_RETURN", 1), error = 0;', '  runtime_poll();\n  int ret = setting("CK_POLL_RETURN", 1), error = 0;')
+  start = text.index('extern "C" int poll(')
+  end = text.index('\nstatic ', start)
+  text = text[:start] + '''extern "C" int poll(struct pollfd* fds, nfds_t count, int timeout) {
+    if (count && fds[0].fd == 501) return runtime_poll(fds, count, timeout);
+    timespec delay{timeout / 1000, (timeout % 1000) * 1000000L};
+    return syscall(SYS_ppoll, fds, count, timeout < 0 ? nullptr : &delay, nullptr, 0);
+  }
+''' + text[end:]
   start = text.index('      data->session_hdl = -1001;')
   end = text.index('      data->u.frame_msg.sof_status = 0;', start) + len('      data->u.frame_msg.sof_status = 0;')
   text = text[:start] + '      runtime_event(data);' + text[end:]
@@ -52,6 +59,14 @@ def main() -> None:
   )
   marker = '  camera_target = fd; camera_packet_opcode = -1;'
   queries = '''
+  if (fd == 501 && request == VIDIOC_CAM_CONTROL) {
+    auto* control = static_cast<cam_control*>(payload);
+    if (control->op_code == CAM_REQ_MGR_SCHED_REQ) {
+      auto* schedule = reinterpret_cast<cam_req_mgr_sched_request*>(control->handle);
+      int port = schedule->session_hdl - 10001;
+      if (port >= 0 && port < 3 && schedule->req_id > 18) runtime_completed[port] = schedule->req_id - 18;
+    }
+  }
   if (request == VIDIOC_SUBSCRIBE_EVENT) {
     trace("{\\"op\\":\\"subscribe\\",\\"fd\\":%d}", fd);
     return 0;
@@ -84,8 +99,8 @@ def main() -> None:
         if (descriptors[0].length >= sizeof(i2c_rdwr_header) && writes->header.count < 64) {
           char payload[4096];
           hex(writes->random_wr_payload, writes->header.count * sizeof(i2c_random_wr_payload), payload);
-          trace("{\\"op\\":\\"runtime-registers\\",\\"port\\":%d,\\"round\\":%d,\\"count\\":%u,\\"payload\\":\\"%s\\"}",
-                fd - 510, runtime_round, writes->header.count, payload);
+          trace("{\\"op\\":\\"runtime-registers\\",\\"port\\":%d,\\"round\\":%d,\\"request\\":%lld,\\"count\\":%u,\\"payload\\":\\"%s\\"}",
+                fd - 510, runtime_round, static_cast<long long>(runtime_completed[fd - 510]), writes->header.count, payload);
           static bool barrier_used = false;
           if (const char* gate = getenv("CK_REGISTER_GATE"); gate && !barrier_used && fd == 510) {
             barrier_used = true;
@@ -102,6 +117,35 @@ def main() -> None:
   assert text.count(marker) == 2
   before, matched, after = text.rpartition(marker)
   text = before + matched + '\n' + registers + after
+  text = '#include <atomic>\n#include <string>\n#include <sys/stat.h>\n' + text
+  text = text.replace('static int camera_target = 501, camera_event = 0, camera_packet_opcode = -1;',
+                      'static thread_local int camera_target = 501, camera_packet_opcode = -1; static int camera_event = 0;')
+  text = text.replace('syncs = 0, failures = 0;', 'syncs = 0; static std::atomic<int> failures{0};')
+  text = text.replace('syscall(SYS_write, log_fd, bytes, n); syscall(SYS_write, log_fd, "\\n", 1);',
+                      "bytes[n++] = '\\n'; syscall(SYS_write, log_fd, bytes, n);")
+  # OwnedFd duplicates share the inert sync device's inode. Preserve real FD
+  # ownership while mapping only this fixture's duplicate back to its ABI peer.
+  text = replace_once(text, '  if (fd < 501 || fd > 522)', '''  if (fd < 501 || fd > 522) {
+    struct stat actual{}, sync{};
+    if (!fstat(fd, &actual) && !fstat(505, &sync) && actual.st_dev == sync.st_dev && actual.st_ino == sync.st_ino) fd = 505;
+  }
+  if (fd < 501 || fd > 522)''')
+  marker = '  camera_target = fd; camera_packet_opcode = -1;'
+  text = replace_once(text, marker, '''  if (fd == 505 && request == CAM_PRIVATE_IOCTL_CMD && syscall(SYS_gettid) != getpid()) {
+    auto* arg = static_cast<cam_private_ioctl_arg*>(payload);
+    static thread_local bool waited = false;
+    if (const char* gate = getenv("CK_DRIVER_WAIT_GATE"); gate && arg->id == CAM_SYNC_WAIT && !waited) {
+      waited = true;
+      std::string ready = std::string(gate) + ".ready";
+      int mark = syscall(SYS_openat, AT_FDCWD, ready.c_str(), O_WRONLY | O_CREAT, 0600);
+      if (mark < 0) abort();
+      syscall(SYS_close, mark);
+      trace("{\\"op\\":\\"driver-wait-blocked\\"}");
+      while (syscall(SYS_faccessat, AT_FDCWD, gate, F_OK) != 0) runtime_pause();
+      trace("{\\"op\\":\\"driver-wait-released\\"}");
+    }
+  }
+''' + marker)
   print(text)
 
 

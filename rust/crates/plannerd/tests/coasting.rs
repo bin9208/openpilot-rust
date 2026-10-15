@@ -57,3 +57,18 @@ fn invalid_time_resets_reference() {
     assert_eq!(reference, 0.);
     assert_eq!(owner.stable_time(), 0.);
 }
+
+#[test]
+fn conversion_drift_does_not_restart_stability_or_move_reference() {
+    let mut owner = CruiseCoastingPlan::default();
+    let mut frame = input();
+    for index in 0..21 {
+        frame.target = 20. + f64::from(index) * 0.03;
+        let actual = owner.update(&frame);
+        assert_eq!(actual, if index == 20 { 20. } else { 0. });
+    }
+    frame.target = 19.;
+    frame.external_limit = 20.5;
+    assert_eq!(owner.update(&frame), 0.);
+    assert_eq!(owner.stable_time(), 0.);
+}

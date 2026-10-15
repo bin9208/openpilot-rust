@@ -1,0 +1,1602 @@
+[
+  {
+    "model": null,
+    "maximum": null,
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": null,
+    "maximum": "0",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": null,
+    "maximum": "1",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": null,
+    "maximum": "2",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": null,
+    "maximum": "255",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": null,
+    "maximum": "-1",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": null,
+    "maximum": "-3",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": null,
+    "maximum": "٠١٢",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": null,
+    "maximum": "１２３",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": null,
+    "maximum": "1_024",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": null,
+    "maximum": "  +31\n",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": null,
+    "maximum": "1.0",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": null,
+    "maximum": "NaN",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": null,
+    "maximum": "0x20",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": null,
+    "maximum": "invalid",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": null,
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  },
+  {
+    "model": "",
+    "maximum": null,
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "",
+    "maximum": "0",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "",
+    "maximum": "1",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "",
+    "maximum": "2",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": "",
+    "maximum": "255",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": "",
+    "maximum": "-1",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": "",
+    "maximum": "-3",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": "",
+    "maximum": "٠١٢",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": "",
+    "maximum": "１２３",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": "",
+    "maximum": "1_024",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": "",
+    "maximum": "  +31\n",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": "",
+    "maximum": "1.0",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "",
+    "maximum": "NaN",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "",
+    "maximum": "0x20",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "",
+    "maximum": "invalid",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "",
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  },
+  {
+    "model": "comma tici",
+    "maximum": null,
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma tici",
+    "maximum": "0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "2",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "255",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "-1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "-3",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "٠١٢",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "１２３",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "1_024",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "  +31\n",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": "comma tici",
+    "maximum": "1.0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma tici",
+    "maximum": "NaN",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma tici",
+    "maximum": "0x20",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma tici",
+    "maximum": "invalid",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma tici",
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": null,
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "2",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "255",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "-1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "-3",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "٠١٢",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "１２３",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "1_024",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "  +31\n",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "1.0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "NaN",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "0x20",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "invalid",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "COMMA TIZI\n\u0000",
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  },
+  {
+    "model": "comma c3",
+    "maximum": null,
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3",
+    "maximum": "0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "2",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "255",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "-1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "-3",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "٠١٢",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "１２３",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "1_024",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "  +31\n",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": "comma c3",
+    "maximum": "1.0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3",
+    "maximum": "NaN",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3",
+    "maximum": "0x20",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3",
+    "maximum": "invalid",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3",
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": null,
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "2",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "255",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "-1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "-3",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "٠١٢",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "１２３",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "1_024",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "  +31\n",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "1.0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "NaN",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "0x20",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "invalid",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3x",
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  },
+  {
+    "model": " comma c3",
+    "maximum": null,
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": " comma c3",
+    "maximum": "0",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "1",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "2",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "255",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "-1",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "-3",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "٠١٢",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "１２３",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "1_024",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "  +31\n",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": " comma c3",
+    "maximum": "1.0",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": " comma c3",
+    "maximum": "NaN",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": " comma c3",
+    "maximum": "0x20",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": " comma c3",
+    "maximum": "invalid",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": " comma c3",
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  },
+  {
+    "model": "comma c4",
+    "maximum": null,
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c4",
+    "maximum": "0",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "1",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "2",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "255",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "-1",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "-3",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "٠١٢",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "１２３",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "1_024",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "  +31\n",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": "comma c4",
+    "maximum": "1.0",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c4",
+    "maximum": "NaN",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c4",
+    "maximum": "0x20",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c4",
+    "maximum": "invalid",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c4",
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      536,
+      240
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": null,
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "2",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "255",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "-1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "-3",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "٠١٢",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "１２３",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "1_024",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "  +31\n",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "1.0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "NaN",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "0x20",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "invalid",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "comma c3\r\n",
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": null,
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "0"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "2",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "1"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "255",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "127"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "-1",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-1"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "-3",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "-2"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "٠١٢",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "6"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "１２３",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "61"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "1_024",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "512"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "  +31\n",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "15"
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "1.0",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "NaN",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "0x20",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "invalid",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": null
+  },
+  {
+    "model": "\u0000comma tici\u0000\n",
+    "maximum": "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "size": [
+      2160,
+      1080
+    ],
+    "power": "0",
+    "brightness": "499999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+  }
+]

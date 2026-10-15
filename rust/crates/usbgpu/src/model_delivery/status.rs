@@ -20,6 +20,9 @@ pub enum Phase {
     Compiling,
     Compiled,
     Error,
+    WaitingForNetwork,
+    Installing,
+    Installed,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -38,6 +41,12 @@ pub struct Status {
     pub total_bytes: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub detail: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error_code: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retry_count: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retry_in_seconds: Option<u32>,
 }
 
 pub fn read(cache: &Path) -> Option<Status> {
@@ -52,12 +61,30 @@ pub struct Values<'a> {
     pub detail: Option<&'a str>,
 }
 
+#[derive(Default)]
+pub struct Extra {
+    pub error_code: Option<&'static str>,
+    pub retry_count: Option<u32>,
+    pub retry_in_seconds: Option<u32>,
+}
+
 pub fn write(
     cache: &Path,
     phase: Phase,
     values: Values<'_>,
     now: f64,
     started: Option<f64>,
+) -> Result<Status, Error> {
+    write_extended(cache, phase, values, now, started, Extra::default())
+}
+
+pub fn write_extended(
+    cache: &Path,
+    phase: Phase,
+    values: Values<'_>,
+    now: f64,
+    started: Option<f64>,
+    extra: Extra,
 ) -> Result<Status, Error> {
     let started_at = started.unwrap_or_else(|| {
         read(cache)
@@ -74,6 +101,9 @@ pub fn write(
         downloaded_bytes: values.downloaded,
         total_bytes: values.model.map(|model| model.size),
         detail: values.detail.map(str::to_owned),
+        error_code: extra.error_code.map(str::to_owned),
+        retry_count: extra.retry_count,
+        retry_in_seconds: extra.retry_in_seconds,
     };
     fs::create_dir_all(cache)?;
     let mut staging = tempfile::Builder::new()
@@ -103,6 +133,30 @@ impl Reporter {
             last_write: Duration::ZERO,
             started_at: wall_time,
         }
+    }
+
+    pub fn error(
+        &mut self,
+        phase: Phase,
+        values: Values<'_>,
+        class: super::delivery_error::Classification,
+        attempt: u32,
+        delay: u32,
+        wall_time: f64,
+    ) -> Result<Status, Error> {
+        self.started_at = wall_time;
+        write_extended(
+            &self.cache,
+            phase,
+            values,
+            wall_time,
+            Some(wall_time),
+            Extra {
+                error_code: Some(class.code),
+                retry_count: Some(attempt),
+                retry_in_seconds: Some(delay),
+            },
+        )
     }
 
     pub fn update(

@@ -1,7 +1,7 @@
 use super::{
     bus::CanBus,
     flags as f,
-    wire::{get, set, values, CanWriter, Values},
+    wire::{get, remove_counter, set, values, CanWriter, Values},
     Error,
 };
 use openpilot_can::Frame;
@@ -89,6 +89,7 @@ pub fn tcs(
         return Ok(Vec::new());
     };
     let mut data = source.clone();
+    let counter = remove_counter(&mut data)?;
     set(
         &mut data,
         &[
@@ -106,7 +107,7 @@ pub fn tcs(
             ),
         ],
     );
-    Ok(vec![writer.frame("TCS", bus.cam, &data, None)?])
+    Ok(vec![writer.frame("TCS", bus.cam, &data, counter)?])
 }
 
 pub fn suppress_lfa(

@@ -23,6 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let install = root.join("install");
     cxx_build::bridge("src/bridge.rs")
         .file("native/image.cc")
+        .file("native/signal.cc")
         .file("native/net.cc")
         .include("native")
         .include(install.join("include/opencv4"))
@@ -51,6 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "native/bridge.h",
         "native/check.h",
         "native/image.cc",
+        "native/signal.cc",
         "native/net.cc",
     ] {
         println!("cargo:rerun-if-changed={path}");

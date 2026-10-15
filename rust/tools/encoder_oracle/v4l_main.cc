@@ -18,11 +18,7 @@ int main(int argc, char **argv) {
     const char *services[] = {"livestreamRoadEncodeData", "livestreamDriverEncodeData", "livestreamWideRoadEncodeData"};
     info.publish_name = services[camera]; info.get_settings = [](int) { return EncoderSettings::StreamEncoderSettings(); };
   } else {
-    info.publish_name = "youtubeRoadEncodeData";
-    if (mode == "--youtube-low") info.get_settings = [](int) { return EncoderSettings::YouTubeLowEncoderSettings(); };
-    else if (mode == "--youtube-medium") info.get_settings = [](int) { return EncoderSettings::YouTubeMediumEncoderSettings(); };
-    else if (mode == "--youtube-wide") info.get_settings = [](int) { return EncoderSettings::YouTubeWideEncoderSettings(); };
-    else info.get_settings = [](int) { return EncoderSettings::YouTubeEncoderSettings(); };
+    return 2;
   }
   V4LEncoder encoder(info, width, height);
   encoder.encoder_open();

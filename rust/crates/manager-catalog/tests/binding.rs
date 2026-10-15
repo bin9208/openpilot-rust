@@ -179,6 +179,8 @@ fn panda_binding_rejects_missing_empty_pointer_firmware_before_launch() {
     let names = [
         "panda.bin.signed",
         "panda_h7.bin.signed",
+        "panda_tesla_wake.bin.signed",
+        "panda_h7_tesla_wake.bin.signed",
         "bootstub.panda.bin",
         "bootstub.panda_h7.bin",
     ];

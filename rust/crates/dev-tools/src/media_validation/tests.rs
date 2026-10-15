@@ -131,14 +131,13 @@ fn saved(output: &Path) -> Value {
     serde_json::from_slice(&fs::read(output.join("report.json")).unwrap()).unwrap()
 }
 fn dynamic_fixture(f: &Fixture) -> DynamicOptions {
-    for name in ["libportaudio.so.2", "libusb-1.0.so.0", "librtmp.so.1"] {
+    for name in ["libportaudio.so.2", "libusb-1.0.so.0"] {
         f.copy(&format!("sdk/usr/lib/aarch64-linux-gnu/{name}"));
     }
     for source in [
         "portaudio/src/native.rs",
         "panda-usb/src/api.rs",
         "usbgpu/src/native_usb/api.rs",
-        "carrot-server/src/youtube_live/rtmp_api.rs",
     ] {
         let path = f.path(&format!("source/rust/crates/{source}"));
         fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -163,7 +162,7 @@ fn dynamic_preserves_all_current_source_symbols_commands_and_failure_records() {
     let options = dynamic_fixture(&f);
     let mut runner = f.runner();
     assert_eq!(dynamic(&options, &mut runner).unwrap()["passed"], true);
-    assert_eq!(runner.commands.len(), 3);
+    assert_eq!(runner.commands.len(), 2);
     for c in &runner.commands {
         assert_eq!(c.timeout, Duration::from_secs(30));
         assert_eq!(&c.argv[c.argv.len() - 2..], ["OtherSymbol", "OwnedSymbol"]);
@@ -171,9 +170,9 @@ fn dynamic_preserves_all_current_source_symbols_commands_and_failure_records() {
     let report = saved(&options.output);
     assert_eq!(report["runs"][0]["stdout"], "{\"resolved\":2}\n");
     let mut runner = f.runner();
-    runner.fail_at = Some(2);
+    runner.fail_at = Some(1);
     assert!(dynamic(&options, &mut runner).is_err());
-    assert_eq!(runner.commands.len(), 3);
+    assert_eq!(runner.commands.len(), 2);
     assert_eq!(saved(&options.output)["passed"], false);
     fs::write(
         options.root.join("rust/crates/portaudio/src/native.rs"),

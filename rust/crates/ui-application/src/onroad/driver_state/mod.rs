@@ -50,6 +50,9 @@ impl Widget for DriverState {
             .get_alert_size()
             .map_err(crate::Error::from)?
             == openpilot_cereal::log_capnp::selfdrive_state::AlertSize::None
+            && (!self.context.ui.borrow().started
+                || !crate::state::messages::driver_monitoring_state(&messages.state)?
+                    .get_dm2_disabled())
             && messages
                 .state
                 .topic("driverStateV2")

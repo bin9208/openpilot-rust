@@ -35,12 +35,19 @@ class Prune(TypedDict):
   holds: list[str] | None
 
 
+class Attention(TypedDict):
+  op: Literal['attention']
+  address: str
+  action: str
+  at: float
+
+
 class Publish(TypedDict):
   op: Literal['publish']
-  channel: Literal['cruise', 'lane']
+  channel: Literal['cruise', 'lane', 'attention']
 
 
-Operation: TypeAlias = Send | Prune | Publish
+Operation: TypeAlias = Send | Prune | Publish | Attention
 
 
 def operations() -> list[Operation]:
@@ -59,6 +66,9 @@ def operations() -> list[Operation]:
     result.append({'op': 'send', 'address': MACS[index % 2], 'action': 'gapAdjustCruise', 'at': at,
                    'hold': [None, '', 'held-A', 'held-B'][index % 4], 'repeat': bool(index % 3)})
     result.append({'op': 'prune', 'addresses': MACS, 'at': at, 'holds': None if index % 3 == 0 else ['held-A']})
+  for index in range(80):
+    result.append({'op': 'attention', 'address': MACS[index % 2], 'action': 'none' if index % 2 else 'laneLeft',
+                   'at': 40 + index * .001})
   result.extend([{'op': 'prune', 'addresses': [], 'at': 100, 'holds': []}, {'op': 'publish', 'channel': 'lane'}])
   return result
 
@@ -70,6 +80,8 @@ def original(root: Path, commands: list[Operation]):
   result = []
   for command in commands:
     match command['op']:
+      case 'attention':
+        writer.attention(command['address'], command['action'], command['at'])
       case 'send':
         writer.send(command['address'], command['action'], command['at'], hold=command['hold'], repeat=command['repeat'])
       case 'prune':
@@ -129,7 +141,7 @@ def main() -> None:
   assert all(len(values) == 1 for values in sessions), sessions
   assert max_events == 64
   for side in ('original', 'native'):
-    assert sorted(path.name for path in (args.output / side).iterdir()) == ['cruise.json', 'lane.json']
+    assert sorted(path.name for path in (args.output / side).iterdir()) == ['attention.json', 'cruise.json', 'lane.json']
   summary = {'operations': len(commands), 'max_events_per_channel': max_events, 'mode': '0600',
              'values_and_rewrite_decisions': 'exact after UUID session normalization',
              'source_sha256': hashlib.sha256((ROOT / 'openpilot/selfdrive/carrot/bluetooth/model.py').read_bytes()).hexdigest(),

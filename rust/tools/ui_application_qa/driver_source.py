@@ -89,6 +89,8 @@ def create(scene, ui, CameraView):
       visibility = next((step for step in reversed(options.get('visibility_steps', [])) if step['frame'] <= index), None)
       if visibility is not None:
         ui.started_frame = visibility['started_frame']
+        ui.started = visibility.get('started', False)
+        dm.dm2Disabled = visibility.get('dm2_disabled', False)
         drivers.wheelOnRightProb = 0.9 if visibility['rhd'] else 0.1
         dm.isRHD = visibility['rhd']
         ui.sm['selfdriveState'].alertSize = visibility['alert_size']

@@ -48,7 +48,7 @@ def native_policy(binary: Path, value: dict[str, Any], env: dict[str, str]) -> d
   if result.returncode: raise RuntimeError(result.stderr)
   return json.loads(result.stdout)
 
-def wrapper_script() -> str:
+def wrapper_script(ffmpeg_path: str) -> str:
   return '''#!/usr/bin/python3
 import json, os, pathlib, subprocess, sys
 root = pathlib.Path(__file__).parent
@@ -61,13 +61,13 @@ if mode == 'empty': pathlib.Path(sys.argv[-1]).write_bytes(b''); sys.exit(0)
 result = subprocess.run(['/usr/bin/ffmpeg', *sys.argv[1:]])
 if result.returncode == 0 and pathlib.Path(sys.argv[-1]).exists(): os.utime(sys.argv[-1], ns=(1700000000123456789,1700000000123456789))
 sys.exit(result.returncode)
-'''
+'''.replace("'/usr/bin/ffmpeg'", repr(ffmpeg_path))
 
 async def main() -> None:
-  parser = argparse.ArgumentParser(); parser.add_argument('--binary', type=Path, required=True); parser.add_argument('--output', type=Path, required=True); parser.add_argument('--composed-only', action='store_true'); parser.add_argument('--policy-only', action='store_true'); args = parser.parse_args()
+  parser = argparse.ArgumentParser(); parser.add_argument('--binary', type=Path, required=True); parser.add_argument('--output', type=Path, required=True); parser.add_argument('--composed-only', action='store_true'); parser.add_argument('--policy-only', action='store_true'); parser.add_argument('--ffmpeg',type=Path,default=Path('/usr/bin/ffmpeg')); args = parser.parse_args()
   output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True); binary = args.binary.resolve(); disk_guard(output, 16 * 1024**2)
   invocation = {'command': [sys.executable, '-P', *sys.argv], 'PYTHONPATH': os.environ.get('PYTHONPATH', ''), 'binary': str(binary), 'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest()}; save(output / 'invocation.json', invocation)
-  catalog, routes, paths = owned_source(); original_hashes = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in [Path('openpilot/selfdrive/carrot/server/features/screenrecord/catalog.py'), Path('openpilot/selfdrive/carrot/server/features/screenrecord/routes.py'), Path('openpilot/selfdrive/carrot/server/features/dashcam/paths.py'), Path('openpilot/selfdrive/carrot/server/features/dashcam/ffmpeg.py')]}; save(output / 'source-hashes.json', original_hashes)
+  catalog, routes, paths = owned_source(); routes.datetime = SimpleNamespace(datetime=SimpleNamespace(now=lambda: SimpleNamespace(timestamp=lambda: WALL))); original_hashes = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in [Path('openpilot/selfdrive/carrot/server/features/screenrecord/catalog.py'), Path('openpilot/selfdrive/carrot/server/features/screenrecord/routes.py'), Path('openpilot/selfdrive/carrot/server/features/dashcam/paths.py'), Path('openpilot/selfdrive/carrot/server/features/dashcam/ffmpeg.py')]}; save(output / 'source-hashes.json', original_hashes)
   fixture = output / 'owned-files'; fixture.mkdir(exist_ok=True)
   first, second, alias, missing = [fixture / name for name in ('first', 'second', 'alias', 'missing')]
   first.mkdir(exist_ok=True); second.mkdir(exist_ok=True); alias.symlink_to(first, target_is_directory=True)
@@ -76,11 +76,16 @@ async def main() -> None:
   for index, name in enumerate(('normal.mp4', '차량 🚗"\\.MP4', 'clip.mkv', 'clip.avi', 'clip.mov', 'clip.ts', 'clip.hevc', '.mp4', 'ignored.txt', 'empty.mp4')):
     path = first / name; path.write_bytes(b'' if name == 'empty.mp4' else bytes(range(64)) + name.encode()); os.utime(path, ns=(STAMP_NS, STAMP_NS if index % 2 == 0 else STAMP_NS + 1000000000))
   (first / 'link.mp4').symlink_to(first / 'normal.mp4'); (first / 'directory.mp4').mkdir(); (second / 'older.mov').write_bytes(b'owned older'); os.utime(second / 'older.mov', (-1.75, -1.75))
-  generated = subprocess.run(['/usr/bin/ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=navy:s=160x120:r=10', '-t', '2', '-c:v', 'mpeg4', str(first / 'synthetic.mp4')], capture_output=True, timeout=15)
+  raw=output/'fixture.yuv';raw.write_bytes((bytes([32])*(160*120)+bytes([128])*(160*120//2))*20)
+  generated = subprocess.run([str(args.ffmpeg.resolve()), '-hide_banner', '-loglevel', 'error', '-y', '-f', 'rawvideo', '-pixel_format','yuv420p','-video_size','160x120','-framerate','10','-i',str(raw), '-t', '2', '-c:v', 'libx264', str(first / 'synthetic.mp4')], capture_output=True, timeout=15)
   (output / 'synthetic-video-stderr.txt').write_bytes(generated.stderr)
   if generated.returncode: raise RuntimeError('owned synthetic FFmpeg video failed')
-  os.utime(first / 'synthetic.mp4', ns=(STAMP_NS, STAMP_NS)); save(output / 'synthetic-video.json', {'command': ['/usr/bin/ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=navy:s=160x120:r=10', '-t', '2', '-c:v', 'mpeg4', str(first / 'synthetic.mp4')], 'size': (first / 'synthetic.mp4').stat().st_size, 'sha256': hashlib.sha256((first / 'synthetic.mp4').read_bytes()).hexdigest()})
-  tools = output / 'owned-bin'; tools.mkdir(); ffmpeg = tools / 'ffmpeg'; ffmpeg.write_text(wrapper_script()); ffmpeg.chmod(0o700); (tools / 'mode').write_text('success')
+  os.utime(first / 'synthetic.mp4', ns=(STAMP_NS, STAMP_NS)); save(output / 'synthetic-video.json', {'command': generated.args, 'size': (first / 'synthetic.mp4').stat().st_size, 'sha256': hashlib.sha256((first / 'synthetic.mp4').read_bytes()).hexdigest()})
+  dated=first/'20261015-010203.mp4';shutil.copyfile(first/'synthetic.mp4',dated);os.utime(dated,ns=(STAMP_NS,STAMP_NS))
+  short=first/'short.mp4'
+  command=[str(args.ffmpeg.resolve()),'-hide_banner','-loglevel','error','-y','-f','rawvideo','-pixel_format','yuv420p','-video_size','160x120','-framerate','10','-i',str(raw),'-t','0.1','-c:v','libx264',str(short)]
+  subprocess.run(command,capture_output=True,check=True,timeout=15);os.utime(short,ns=(STAMP_NS,STAMP_NS))
+  tools = output / 'owned-bin'; tools.mkdir(); ffmpeg = tools / 'ffmpeg'; ffmpeg.write_text(wrapper_script(str(args.ffmpeg.resolve()))); ffmpeg.chmod(0o700); (tools / 'mode').write_text('success')
   caches = [output / name for name in ('original-cache', 'native-cache')]
   for cache in caches: cache.mkdir()
   catalog.SCREEN_RECORDING_DIRS = routes.SCREEN_RECORDING_DIRS = tuple(directories); paths.DASHCAM_CACHE_DIR = str(caches[0]); paths.time = SimpleNamespace(time=lambda: WALL)
@@ -146,6 +151,12 @@ async def main() -> None:
       (tools / 'mode').write_text('success')
       await pair('application-thumbnail-provider-recovery', thumb)
     else:
+      await pair('actual-mp4-info','/api/screenrecord/info/'+synthetic)
+      await pair('dated-info','/api/screenrecord/info/'+ids['20261015-010203.mp4'])
+      await pair('dated-info-cached','/api/screenrecord/info/'+ids['20261015-010203.mp4'])
+      await pair('short-first-frame-thumbnail','/api/screenrecord/thumbnail/'+ids['short.mp4'])
+      await pair('info-not-found','/api/screenrecord/info/unknown')
+      await pair('info-post-405','/api/screenrecord/info/'+synthetic,'POST')
       await pair('initial-cache-before-three', '/api/screenrecord/videos'); await now(3.); await pair('catalog-list', '/api/screenrecord/videos'); await pair('catalog-head', '/api/screenrecord/videos', 'HEAD')
       for query in ('?offset=1&limit=2', '?offset=-1&limit=0', '?offset=&limit=', '?offset=9999999999999999999999999999&limit=9999999999999999999999999', '?offset=1_0&limit=%20%2B2%20', '?offset=bad', '?limit=1.2', '?offset=1&offset=2&limit=1'):
         await pair('pagination-boundary', '/api/screenrecord/videos' + query)
@@ -167,14 +178,26 @@ async def main() -> None:
         if mode == 'missing': ffmpeg.rename(tools / 'disabled')
         await pair('thumbnail-provider-' + mode, thumb)
         if mode == 'missing': (tools / 'disabled').rename(ffmpeg)
+      delete_path='/api/screenrecord/video/'+ids['20261015-010203.mp4'];saved=dated.read_bytes();stamp=dated.stat().st_mtime_ns
+      original=await capture(source_port,'DELETE',delete_path)
+      assert not dated.exists()
+      dated.write_bytes(saved);os.utime(dated,ns=(stamp,stamp))
+      result=await capture(native_port,'DELETE',delete_path)
+      assert not dated.exists()
+      row={'surface':'http','scenario':'delete-recording','original':original,'native':result};observations.append(row)
+      if original!=result:failures.append(row)
+      await pair('delete-cache-invalidated','/api/screenrecord/videos')
+      await pair('delete-missing','/api/screenrecord/video/'+ids['20261015-010203.mp4'],'DELETE')
       save(output / 'positive-cache-provider-count.json', {'commands_before_cached_request': len(commands), 'no_extra_commands': True})
     save(output / 'observations.json', observations); save(output / 'failures.json', failures)
   native.stdin.write(b'\n'); await native.stdin.drain(); stdout, stderr = await asyncio.wait_for(native.communicate(), 15); (output / 'native-stdout.txt').write_bytes(stdout); (output / 'native-stderr.txt').write_bytes(stderr); await runner.cleanup(); os.environ['PATH'] = previous_path
   commands = [json.loads(line) for line in (tools / 'commands.jsonl').read_text().splitlines()]; save(output / 'provider-commands.json', commands)
   provider_pairs = []; command_failures = []
-  for index in range(0, len(commands), 2):
-    original, result = commands[index:index + 2]; left, right = dict(original), dict(result); left['argv'] = [arg.replace(str(caches[0]), '$OWNED_CACHE') for arg in left['argv']]; right['argv'] = [arg.replace(str(caches[1]), '$OWNED_CACHE') for arg in right['argv']]; pair_row = {'original': original, 'native': result, 'equal_after_cache_root_normalization': left == right}; provider_pairs.append(pair_row)
-    if left != right: command_failures.append(pair_row)
+  source_commands=[row for row in commands if str(caches[0]) in row['argv'][-1]]
+  native_commands=[row for row in commands if str(caches[1]) in row['argv'][-1]]
+  for original,result in zip(source_commands,native_commands,strict=True):
+    left,right=dict(original),dict(result);left['argv']=[arg.replace(str(caches[0]),'$OWNED_CACHE') for arg in left['argv']];right['argv']=[arg.replace(str(caches[1]),'$OWNED_CACHE') for arg in right['argv']];pair_row={'original':original,'native':result,'equal_after_cache_root_normalization':left==right};provider_pairs.append(pair_row)
+    if left!=right:command_failures.append(pair_row)
   save(output / 'provider-comparison.json', provider_pairs)
   for cache in caches: save(output / (cache.name + '-snapshot.json'), [{'path': str(path.relative_to(cache)), 'size': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in cache.rglob('*') if path.is_file()])
   summary = {'policy_pairs': sum(row['surface'] == 'policy' for row in observations), 'http_pairs': sum(row['surface'] != 'policy' for row in observations), 'failures': len(failures), 'provider_pairs': len(provider_pairs), 'provider_failures': len(command_failures), 'native_exit_code': native.returncode, 'limits': ['owned synthetic files and loopback only', 'external FFmpeg codec availability and runtime device paths remain provider/target gates', 'shared file protocol corpus reused; only family-specific representative Range/conditional cases repeated']}; save(output / 'summary.json', summary)

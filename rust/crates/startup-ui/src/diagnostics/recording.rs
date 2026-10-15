@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         mpsc::{self, SyncSender, TrySendError},
         Arc,
     },
@@ -16,6 +16,7 @@ pub struct Encoding {
     pub width: i32,
     pub height: i32,
     pub fps: i32,
+    pub capture_every: u64,
     pub speed: u32,
     pub quality: u8,
     pub bitrate: String,
@@ -44,7 +45,7 @@ impl Encoding {
             "-s".into(),
             format!("{}x{}", self.width, self.height),
             "-r".into(),
-            self.fps.to_string(),
+            capture_rate(f64::from(self.fps) / self.capture_every.max(1) as f64),
             "-i".into(),
             "pipe:0".into(),
             "-vf".into(),
@@ -76,6 +77,37 @@ impl Encoding {
         Ok(args)
     }
 }
+// Python's default :g rate uses six significant digits and a locale-independent
+// decimal point. Generate the rounded scientific digits once, then place the
+// decimal according to the same general-format exponent rule.
+fn capture_rate(value: f64) -> String {
+    let scientific = format!("{value:.5e}");
+    let (mantissa, exponent) = scientific.split_once('e').expect("finite positive rate");
+    let exponent: i32 = exponent.parse().expect("scientific exponent");
+    if !(-4..6).contains(&exponent) {
+        return format!(
+            "{}e{exponent:+03}",
+            mantissa.trim_end_matches('0').trim_end_matches('.')
+        );
+    }
+    let mut digits = mantissa.replace('.', "");
+    let position = exponent + 1;
+    if position <= 0 {
+        digits = format!("0.{}{}", "0".repeat((-position) as usize), digits);
+    } else if position < digits.len() as i32 {
+        digits.insert(position as usize, '.');
+    } else {
+        digits.push_str(&"0".repeat(position as usize - digits.len()));
+    }
+    if digits.contains('.') {
+        digits
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_owned()
+    } else {
+        digits
+    }
+}
 pub struct Recorder {
     child: Child,
     sender: Option<SyncSender<Vec<u8>>>,
@@ -83,6 +115,8 @@ pub struct Recorder {
     worker: Option<JoinHandle<()>>,
     stop: Arc<AtomicBool>,
     expected_bytes: usize,
+    pending: Arc<AtomicUsize>,
+    capacity: usize,
     pub output: PathBuf,
     pub accepted: u64,
     pub dropped: u64,
@@ -105,13 +139,18 @@ impl Recorder {
         let (done_sender, done) = mpsc::sync_channel(1);
         let stop = Arc::new(AtomicBool::new(false));
         let worker_stop = stop.clone();
+        let pending = Arc::new(AtomicUsize::new(0));
+        let worker_pending = pending.clone();
         let worker = std::thread::Builder::new()
             .name("ui-ffmpeg".into())
             .spawn(move || {
                 let result = (|| {
                     loop {
                         match receiver.recv_timeout(Duration::from_secs(1)) {
-                            Ok(bytes) => input.write_all(&bytes)?,
+                            Ok(bytes) => {
+                                worker_pending.fetch_sub(1, Ordering::Relaxed);
+                                input.write_all(&bytes)?;
+                            }
                             Err(mpsc::RecvTimeoutError::Disconnected) => break,
                             Err(mpsc::RecvTimeoutError::Timeout) => {
                                 if worker_stop.load(Ordering::Relaxed) {
@@ -155,10 +194,15 @@ impl Recorder {
             worker: Some(worker),
             stop,
             expected_bytes,
+            pending,
+            capacity: encoding.capacity,
             output: output.into(),
             accepted: 0,
             dropped: 0,
         })
+    }
+    pub fn can_accept(&self) -> bool {
+        self.sender.is_some() && self.pending.load(Ordering::Relaxed) < self.capacity
     }
     pub fn submit(&mut self, bytes: Vec<u8>) -> Result<(), Error> {
         if bytes.len() != self.expected_bytes {
@@ -168,10 +212,15 @@ impl Recorder {
             .sender
             .as_ref()
             .ok_or(Error::Contract("recording already closed"))?;
+        self.pending.fetch_add(1, Ordering::Relaxed);
         match sender.try_send(bytes) {
             Ok(()) => self.accepted = self.accepted.saturating_add(1),
-            Err(TrySendError::Full(_)) => self.dropped = self.dropped.saturating_add(1),
+            Err(TrySendError::Full(_)) => {
+                self.pending.fetch_sub(1, Ordering::Relaxed);
+                self.dropped = self.dropped.saturating_add(1);
+            }
             Err(TrySendError::Disconnected(_)) => {
+                self.pending.fetch_sub(1, Ordering::Relaxed);
                 return Err(Error::Contract("ffmpeg writer disconnected"));
             }
         }
@@ -222,6 +271,38 @@ impl Drop for Recorder {
     fn drop(&mut self) {
         if let Err(error) = self.close() {
             eprintln!("UI recording close: {error}");
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn final_source_capture_rate_arguments() {
+        let rows: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../fixtures/ui-recording-rate-final.json"
+        ))
+        .unwrap();
+        for row in rows.as_array().unwrap() {
+            let encoding = Encoding {
+                width: 64,
+                height: 48,
+                fps: row["fps"].as_i64().unwrap() as i32,
+                capture_every: row["every"].as_u64().unwrap(),
+                speed: 1,
+                quality: 23,
+                bitrate: String::new(),
+                preset: "ultrafast",
+                capacity: 8,
+            };
+            assert_eq!(
+                serde_json::to_value(encoding.arguments(Path::new("owned.mp4")).unwrap()).unwrap(),
+                row["args"],
+                "fps={}, every={}",
+                row["fps"],
+                row["every"]
+            );
         }
     }
 }

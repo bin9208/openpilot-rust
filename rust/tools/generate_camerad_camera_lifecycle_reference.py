@@ -75,11 +75,13 @@ def fixture(root: Path) -> str:
 
 
 def source(root: Path) -> str:
-  source_text = (root / 'openpilot/system/camerad/cameras/spectra.cc').read_text()
-  header = (root / 'openpilot/system/camerad/cameras/spectra.h').read_text()
-  common = (root / 'openpilot/system/camerad/cameras/camera_common.cc').read_text()
-  common_header = (root / 'openpilot/system/camerad/cameras/camera_common.h').read_text()
-  util = (root / 'openpilot/common/util.h').read_text()
+  def pinned(path):
+    return subprocess.check_output(['git','show','e8e152dbcfd9574a1791ed12026d1880e87689b3:' + path], cwd=root, text=True)
+  source_text = pinned('openpilot/system/camerad/cameras/spectra.cc')
+  header = pinned('openpilot/system/camerad/cameras/spectra.h')
+  common = pinned('openpilot/system/camerad/cameras/camera_common.cc')
+  common_header = pinned('openpilot/system/camerad/cameras/camera_common.h')
+  util = pinned('openpilot/common/util.h')
   macro_start = util.index('#define HANDLE_EINTR(')
   macro = util[macro_start:util.index('\n\n', macro_start)]
   helpers = [macro, extract(util, 'struct unique_fd') + ';',
@@ -99,9 +101,9 @@ def source(root: Path) -> str:
     'void SpectraCamera::camera_open(', 'void SpectraCamera::camera_close(', 'void SpectraCamera::camera_map_bufs(',
     'int SpectraCamera::clear_req_queue(', 'void SpectraCamera::enqueue_frame(', 'void SpectraCamera::destroySyncObjectAt(',
     'bool SpectraCamera::handle_camera_event(', 'bool SpectraCamera::validateEvent(', 'void SpectraCamera::clearAndRequeue(',
-    'bool SpectraCamera::waitForFrameReady(', 'bool SpectraCamera::processFrame(', 'bool SpectraCamera::syncFirstFrame(')]
+    'std::function<bool()> SpectraCamera::frameWaitTask(', 'bool SpectraCamera::finishFrame(', 'bool SpectraCamera::complete_frame_wait(', 'bool SpectraCamera::processFrame(', 'bool SpectraCamera::syncFirstFrame(')]
   constants = header[header.index('enum {'):header.index('\n};', header.index('enum {')) + 3]
-  ife = (root / 'openpilot/system/camerad/cameras/ife.h').read_text()
+  ife = pinned('openpilot/system/camerad/cameras/ife.h')
   replacements = {
     '@CONSTANTS@': constants,
     '@HELPERS@': '\n\n'.join(helpers),
@@ -116,7 +118,7 @@ def source(root: Path) -> str:
   template = (root / 'rust/tools/camerad_camera_lifecycle_source.cc.in').read_text()
   for key, value in replacements.items():
     template = replace_once(template, key, value)
-  return template
+  return pinned('openpilot/system/camerad/cameras/async_frame_wait.h').replace('#pragma once', '') + "\n" + template
 
 
 def main() -> None:

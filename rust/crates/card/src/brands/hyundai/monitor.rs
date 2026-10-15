@@ -47,6 +47,9 @@ impl Monitor {
             settings.put_bool("HyundaiCameraSccHint", true)?;
         }
         if self.count > 200 {
+            if fd {
+                self.discover_camera_templates(inputs, now)?;
+            }
             return Ok(());
         }
         if settings.get_bool("ControlsReady")? {
@@ -100,25 +103,10 @@ impl Monitor {
                 inputs.capture((channel, "SCC_CONTROL", "scc_control"), false, now)?;
             }
             121 => {
-                for (channel, name, key) in [
-                    (Channel::Pt, "TCS", "tcs"),
-                    (Channel::Pt, "MDPS", "mdps"),
-                    (Channel::Cam, "LFA", "lfa"),
-                    (Channel::Cam, "LFA_ALT", "lfa_alt"),
-                    (Channel::Cam, "LFAHDA_CLUSTER", "lfahda_cluster"),
-                ] {
+                for (channel, name, key) in
+                    [(Channel::Pt, "TCS", "tcs"), (Channel::Pt, "MDPS", "mdps")]
+                {
                     inputs.capture((channel, name, key), false, now)?;
-                }
-            }
-            122 => {
-                for (name, key) in [
-                    ("ADRV_0x161", "adrv_0x161"),
-                    ("ADRV_0x200", "adrv_0x200"),
-                    ("ADRV_0x1ea", "adrv_0x1ea"),
-                    ("ADRV_0x160", "adrv_0x160"),
-                    ("CCNC_0x162", "ccnc_0x162"),
-                ] {
-                    inputs.capture((Channel::Cam, name, key), false, now)?;
                 }
             }
             123 => {
@@ -180,13 +168,15 @@ impl Monitor {
                 if config.gear_message() == "ACCELERATOR" {
                     inputs.capture((Channel::Pt, "ACCELERATOR", "accelerator"), true, now)?;
                 }
-                for (name, key) in [
-                    ("BLINKERS", "blinkers"),
-                    ("BLINKERS_ALT", "blinkers_alt"),
-                    ("DOORS_SEATBELTS", "doors_seatbelts"),
-                ] {
+                for (name, key) in [("BLINKERS", "blinkers"), ("BLINKERS_ALT", "blinkers_alt")] {
                     inputs.capture((Channel::Pt, name, key), false, now)?;
                 }
+                inputs.capture((Channel::Pt, "BLINKER_STALKS", "blinker_stalks"), true, now)?;
+                inputs.capture(
+                    (Channel::Pt, "DOORS_SEATBELTS", "doors_seatbelts"),
+                    false,
+                    now,
+                )?;
             }
             126 => {
                 inputs.capture(
@@ -198,6 +188,224 @@ impl Monitor {
             }
             _ => {}
         }
+        self.discover_camera_templates(inputs, now)?;
         Ok(())
+    }
+    fn discover_camera_templates(&self, inputs: &mut Inputs, now: u64) -> Result<(), Error> {
+        for (name, key, ready) in [
+            ("LFA", "lfa", 121),
+            ("LFA_ALT", "lfa_alt", 121),
+            ("LFAHDA_CLUSTER", "lfahda_cluster", 121),
+            ("ADRV_0x161", "adrv_0x161", 122),
+            ("ADRV_0x200", "adrv_0x200", 122),
+            ("ADRV_0x1ea", "adrv_0x1ea", 122),
+            ("ADRV_0x160", "adrv_0x160", 122),
+            ("CCNC_0x162", "ccnc_0x162", 122),
+        ] {
+            if self.count < ready || inputs.captures.contains_key(key) {
+                continue;
+            }
+            let parser = &mut inputs.cam;
+            let Some(address) = parser.dbc.names.get(name).copied() else {
+                continue;
+            };
+            if !parser.seen_addresses.contains(&address) {
+                continue;
+            }
+            if !parser.states.contains_key(&address) {
+                parser.add(name, None, false, now)?;
+            }
+            let timestamp = parser
+                .states
+                .get(&address)
+                .and_then(|state| state.timestamps.back())
+                .copied()
+                .unwrap_or(0);
+            let age = i128::from(parser.last_update) - i128::from(timestamp);
+            let size = parser.dbc.messages[&address].size;
+            if timestamp > 0
+                && (0..=150_000_000).contains(&age)
+                && parser
+                    .raw
+                    .get(&address)
+                    .is_some_and(|data| data.len() == size)
+            {
+                inputs.captures.insert(key, (Channel::Cam, name));
+                inputs.diagnostics.logs.push(crate::core::VehicleLog {
+                    level: crate::query::DiagnosticLevel::Info,
+                    message: format!(
+                        "CAN-FD camera TX template ready: {name} bus={} ready_count={}",
+                        parser.bus, self.count
+                    ),
+                });
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use openpilot_can::{dbc::Dbc, packer::Packer, parser::Parser, Frame, Packet};
+    use std::{collections::BTreeMap, sync::Arc};
+
+    fn inputs() -> Inputs {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../opendbc_repo/opendbc/dbc/hyundai_canfd_generated.dbc");
+        let dbc = Arc::new(Dbc::load(&path).unwrap());
+        let mut cam = Parser::new(Arc::clone(&dbc), 2, 1_000_000_000);
+        cam.controls_ready = true;
+        Inputs {
+            diagnostics: super::super::diagnostics::Diagnostics::default(),
+            pt: Parser::new(dbc, 0, 1_000_000_000),
+            cam,
+            alt: None,
+            captures: BTreeMap::new(),
+        }
+    }
+    fn receive(inputs: &mut Inputs, now: u64, frame: Option<Frame>) {
+        inputs
+            .cam
+            .update(&[Packet {
+                mono_time: now,
+                frames: frame.into_iter().collect(),
+            }])
+            .unwrap();
+    }
+    // Port of the pinned test_canfd_camera_discovery.py startup/late/live cases.
+    #[test]
+    fn camera_templates_require_real_fresh_frames_and_keep_discovering_after_startup() {
+        for (name, key, ready) in [
+            ("LFA", "lfa", 121),
+            ("LFA_ALT", "lfa_alt", 121),
+            ("LFAHDA_CLUSTER", "lfahda_cluster", 121),
+            ("ADRV_0x161", "adrv_0x161", 122),
+            ("ADRV_0x200", "adrv_0x200", 122),
+            ("ADRV_0x1ea", "adrv_0x1ea", 122),
+            ("ADRV_0x160", "adrv_0x160", 122),
+            ("CCNC_0x162", "ccnc_0x162", 122),
+        ] {
+            for count in [ready, 201] {
+                let mut inputs = inputs();
+                let monitor = Monitor {
+                    count,
+                    hint_enabled: false,
+                    hint: false,
+                };
+                let mut packer = Packer::new(Arc::clone(&inputs.cam.dbc));
+                let address = inputs.cam.dbc.names[name];
+                for (counter, now) in [(1, 3_000_000_000), (2, 3_010_000_000), (3, 3_020_000_000)] {
+                    let data = packer
+                        .pack(name, &[("COUNTER", f64::from(counter))], None)
+                        .unwrap();
+                    receive(
+                        &mut inputs,
+                        now,
+                        Some(Frame {
+                            address,
+                            bus: 2,
+                            data,
+                        }),
+                    );
+                    monitor.discover_camera_templates(&mut inputs, now).unwrap();
+                    assert_eq!(
+                        inputs.captures.contains_key(key),
+                        counter >= 2,
+                        "{name} count={count} frame={counter}"
+                    );
+                    if counter >= 2 {
+                        assert_eq!(
+                            inputs.captured(key).unwrap().unwrap()["COUNTER"],
+                            f64::from(counter)
+                        );
+                    }
+                }
+                assert_eq!(inputs.diagnostics.logs.len(), 1);
+                assert!(!inputs.cam.states[&address].ignore_counter);
+                assert!(!inputs.cam.states[&address].ignore_checksum);
+            }
+        }
+    }
+    #[test]
+    fn absent_echo_invalid_and_stale_camera_frames_cannot_supply_templates() {
+        let mut inputs = inputs();
+        let monitor = Monitor {
+            count: 201,
+            hint_enabled: false,
+            hint: false,
+        };
+        let mut packer = Packer::new(Arc::clone(&inputs.cam.dbc));
+        let address = inputs.cam.dbc.names["LFA"];
+        for bus in [0, 1, 128, 130] {
+            let data = packer.pack("LFA", &[], None).unwrap();
+            receive(
+                &mut inputs,
+                2_000_000_000,
+                Some(Frame { address, bus, data }),
+            );
+            monitor
+                .discover_camera_templates(&mut inputs, 2_000_000_000)
+                .unwrap();
+        }
+        assert!(inputs.cam.states.is_empty());
+        assert!(inputs.cam.can_valid());
+        let data = packer.pack("LFA", &[("COUNTER", 1.)], None).unwrap();
+        receive(
+            &mut inputs,
+            3_000_000_000,
+            Some(Frame {
+                address,
+                bus: 2,
+                data,
+            }),
+        );
+        monitor
+            .discover_camera_templates(&mut inputs, 3_000_000_000)
+            .unwrap();
+        let data = packer.pack("LFA", &[("COUNTER", 2.)], None).unwrap();
+        let mut corrupt = data.clone();
+        corrupt[0] ^= 1;
+        receive(
+            &mut inputs,
+            3_010_000_000,
+            Some(Frame {
+                address,
+                bus: 2,
+                data: corrupt,
+            }),
+        );
+        monitor
+            .discover_camera_templates(&mut inputs, 3_010_000_000)
+            .unwrap();
+        assert!(!inputs.captures.contains_key("lfa"));
+        receive(
+            &mut inputs,
+            3_020_000_000,
+            Some(Frame {
+                address,
+                bus: 2,
+                data,
+            }),
+        );
+        receive(&mut inputs, 4_000_000_000, None);
+        monitor
+            .discover_camera_templates(&mut inputs, 4_000_000_000)
+            .unwrap();
+        assert!(!inputs.captures.contains_key("lfa"));
+        let data = packer.pack("LFA", &[("COUNTER", 3.)], None).unwrap();
+        receive(
+            &mut inputs,
+            4_010_000_000,
+            Some(Frame {
+                address,
+                bus: 2,
+                data,
+            }),
+        );
+        monitor
+            .discover_camera_templates(&mut inputs, 4_010_000_000)
+            .unwrap();
+        assert!(inputs.captures.contains_key("lfa"));
     }
 }

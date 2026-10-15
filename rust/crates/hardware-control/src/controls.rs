@@ -64,7 +64,7 @@ impl HardwareControl {
         if self.model.is_none() {
             return platform.print("REBOOT!");
         }
-        check_output(platform, &["sudo", "reboot"])?;
+        check_output(platform, &["openpilot-reboot"])?;
         Ok(())
     }
     pub fn shutdown(&self, platform: &mut impl Platform) -> Result<(), Error> {

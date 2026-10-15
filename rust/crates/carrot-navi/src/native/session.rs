@@ -4,6 +4,7 @@ use super::{
     socket::{self, Socket},
 };
 use crate::{json::Value, receiver::Stream, Error};
+use std::sync::Arc;
 use tokio_tungstenite::tungstenite::Message;
 
 #[derive(Clone)]
@@ -19,6 +20,7 @@ pub enum Route {
 pub struct Session {
     pub route: Route,
     pub peer: String,
+    pub identity: Arc<()>,
 }
 
 fn object(text: &str) -> Result<Value, Error> {
@@ -59,13 +61,33 @@ impl Session {
                     return Err(Error::value("v2 control accepts JSON text only"));
                 };
                 let payload = object(&text)?;
-                shared.with(|receiver| {
-                    if payload.get("type").text_eq("requirements_query") {
-                        receiver.negotiate(&payload, version, entropy).map(Some)
-                    } else {
-                        receiver.record_control(&payload, &self.peer).map(|()| None)
+                let mut owner = shared.control_owner.lock().map_err(|_| {
+                    Error::typed("RuntimeError", "control owner lock poisoned".into())
+                })?;
+                let current = owner.as_ref().and_then(std::sync::Weak::upgrade);
+                let owns = current
+                    .as_ref()
+                    .is_some_and(|id| Arc::ptr_eq(id, &self.identity));
+                if payload.get("type").text_eq("requirements_query") {
+                    if current.is_some() && !owns {
+                        return Err(Error::typed(
+                            "ReceiverBusy",
+                            "another navigation control connection is active".into(),
+                        ));
                     }
-                })?
+                    let manifest = shared
+                        .with(|receiver| receiver.negotiate(&payload, version, entropy))??;
+                    *owner = Some(Arc::downgrade(&self.identity));
+                    Ok(Some(manifest))
+                } else {
+                    if !owns {
+                        return Err(Error::value(
+                            "negotiate navigation control before sending events",
+                        ));
+                    }
+                    shared.with(|receiver| receiver.record_control(&payload, &self.peer))??;
+                    Ok(None)
+                }
             }
             Route::Item {
                 kind: "json",
@@ -194,6 +216,15 @@ impl Session {
             eprintln!("{}: {error}", error.kind);
         }
         if let Route::Control(version) = &self.route {
+            if let Ok(mut owner) = shared.control_owner.lock() {
+                if owner
+                    .as_ref()
+                    .and_then(std::sync::Weak::upgrade)
+                    .is_some_and(|id| Arc::ptr_eq(&id, &self.identity))
+                {
+                    *owner = None;
+                }
+            }
             let _ = shared.with(|receiver| receiver.control_disconnected());
             println!(
                 "[carrot_navi][WS] control disconnected peer={} app={version}",

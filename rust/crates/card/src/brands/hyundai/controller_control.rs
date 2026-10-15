@@ -31,16 +31,25 @@ pub struct Steering {
     active_carrot: i16,
     haptic_end: i64,
     pub blink: bool,
+    pub handover: super::steering_handover::SteeringHandover,
+    pub model_clock: super::steering_handover::ModelFreshness,
+    pub logs: Vec<crate::core::VehicleLog>,
 }
 
 impl Steering {
     pub fn update(
         &mut self,
-        input: (car_control::Reader<'_>, &State, Option<f64>),
+        input: (
+            car_control::Reader<'_>,
+            &State,
+            &super::controller_model::Model,
+            u64,
+        ),
         settings: &Settings,
         frame: u32,
     ) -> Result<Command, Error> {
-        let (cc, state, y_std) = input;
+        let (cc, state, model, now_ns) = input;
+        let y_std = model.y_std;
         let cs = state
             .out
             .get_root_as_reader::<openpilot_cereal::car_capnp::car_state::Reader<'_>>()?;
@@ -82,13 +91,46 @@ impl Steering {
             max_angle: 175.,
             y_std,
         })?;
-        let authority = self.authority.update(AuthorityInput {
+        let mut authority = self.authority.update(AuthorityInput {
             active: lat,
             pressed: cs.get_steering_pressed(),
             torque: f64::from(cs.get_steering_torque()),
             threshold: settings.limits.threshold,
             y_std,
         })?;
+        if state.config.flags & f::ANGLE_CONTROL != 0 {
+            let valid_model = self.model_clock.update(model.frame_id, y_std, now_ns);
+            let previous = self.handover.state;
+            authority = self.handover.update(super::steering_handover::Input {
+                mode: 3,
+                now: now_ns.to_f64().ok_or(Error::Numeric)? * 1e-9,
+                baseline: authority,
+                minimum: 25.,
+                maximum: 250.,
+                driver: f64::from(cs.get_steering_torque()),
+                threshold: settings.limits.threshold,
+                pressed: cs.get_steering_pressed(),
+                target_error: f64::from(actuators.get_steering_angle_deg())
+                    - f64::from(cs.get_steering_angle_deg()),
+                command_error: angle - f64::from(cs.get_steering_angle_deg()),
+                speed: f64::from(cs.get_v_ego_raw()),
+                wheelbase: state.config.wheelbase,
+                steer_ratio: state.config.steer_ratio,
+                active: lat,
+                valid: cs.get_can_valid()
+                    && !cs.get_steer_fault_temporary()
+                    && !cs.get_steer_fault_permanent()
+                    && valid_model,
+            });
+            if frame.is_multiple_of(100) || previous != self.handover.state {
+                self.logs.push(crate::core::VehicleLog {
+                    level: crate::query::DiagnosticLevel::Info,
+                    message: format!("SteeringHandover mode=3 state={} effort={:.3} error={:.3} legacy={:.1} cap={:.1}",
+                        self.handover.state.as_str(), self.handover.effort.unwrap_or(0.),
+                        self.handover.error, self.authority.max_torque, authority),
+                });
+            }
+        }
         self.torque = torque;
         self.angle = angle;
         let warning = matches!(

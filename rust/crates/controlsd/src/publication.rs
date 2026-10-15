@@ -109,10 +109,7 @@ pub fn publish(
         cs.set_up_accel_cmd(controls.longitudinal.pid.p as f32);
         cs.set_ui_accel_cmd(controls.longitudinal.pid.i as f32);
         cs.set_uf_accel_cmd(controls.longitudinal.pid.f as f32);
-        cs.set_force_decel(
-            params.integer("DisableDM")? == 0
-                && (input.distracted || input.selfdrive.soft_disabling),
-        );
+        write_monitoring_decel(input, cs.reborrow());
         cs.set_active_lane_line(controls.lane_lines);
         lateral(controls, &command.log, cs.init_lateral_control_state());
     }
@@ -123,6 +120,12 @@ pub fn publish(
         serialize::write_message_to_words(&car),
     ])
 }
+fn write_monitoring_decel(input: &Inputs, mut state: controls_state::Builder<'_>) {
+    state.set_force_decel(
+        (!input.monitoring_disabled && input.distracted) || input.selfdrive.soft_disabling,
+    );
+}
+
 fn lateral(
     controls: &Controls,
     log: &Log,
@@ -158,5 +161,42 @@ fn lateral(
         out.set_f(log.f as f32);
         out.set_output(log.output as f32);
         out.set_saturated(log.saturated);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn monitoring_force_decel_packet_respects_published_disable_and_soft_disabling() {
+        for disabled in [false, true] {
+            for distracted in [false, true] {
+                for soft in [false, true] {
+                    let input = Inputs {
+                        monitoring_disabled: disabled,
+                        distracted,
+                        selfdrive: crate::inputs::Selfdrive {
+                            soft_disabling: soft,
+                            ..Default::default()
+                        },
+                        ..Inputs::default()
+                    };
+                    let mut message = Builder::new_default();
+                    let event = message.init_root::<event::Builder>();
+                    write_monitoring_decel(&input, event.init_controls_state());
+                    let bytes = serialize::write_message_to_words(&message);
+                    let reader =
+                        serialize::read_message(bytes.as_slice(), Default::default()).unwrap();
+                    let event = reader.get_root::<event::Reader>().unwrap();
+                    let event::ControlsState(state) = event.which().unwrap() else {
+                        panic!("wrong event")
+                    };
+                    assert_eq!(
+                        state.unwrap().get_force_decel(),
+                        (!disabled && distracted) || soft
+                    );
+                }
+            }
+        }
     }
 }

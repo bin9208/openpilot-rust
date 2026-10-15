@@ -65,6 +65,11 @@ pub(super) fn open<C>(
     let mut transport = None;
     let output = if args.usb_output() {
         let spec = Spec::new(args, preferences, rate)?;
+        // The S3 expires idle TCP clients after two seconds. Finish graphics
+        // creation before the asynchronous sender discovers/connects it.
+        if spec.wifi() {
+            setup.prepare(args, Some([1920, 462]), false)?;
+        }
         match args.usb_codec {
             Codec::H264 => {
                 if args.usb_h264_backend == H264Backend::Auto {

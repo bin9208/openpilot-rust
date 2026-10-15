@@ -26,6 +26,20 @@ fn paths(root: PathBuf, assets: PathBuf) -> Result<Paths, Error> {
 fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1).collect::<VecDeque<_>>();
     let mode = argument(&mut args)?;
+    if mode == "--present" {
+        let mut devices = PathBuf::from(hardware::SYSFS);
+        while let Some(flag) = args.pop_front() {
+            if flag != "--devices" {
+                return Err(Error::Contract("unknown presence argument").into());
+            }
+            devices = argument(&mut args)?.into();
+        }
+        return Ok(if model_delivery::presence::present(&devices) {
+            ExitCode::SUCCESS
+        } else {
+            ExitCode::FAILURE
+        });
+    }
     let mut root = std::env::current_dir()?;
     let mut assets = std::env::var_os("USBGPU_ASSETS_ROOT")
         .map(PathBuf::from)
@@ -37,14 +51,9 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let mut devices = PathBuf::from(hardware::SYSFS);
     let mut identity_root = PathBuf::from("/");
     let mut expected_assets = None;
-    let mut manifest_url = match std::env::var("CARROT_BIG_MODEL_MANIFEST") {
-        Ok(value) => value,
-        Err(std::env::VarError::NotPresent) => model_delivery::DEFAULT_MANIFEST_URL.into(),
-        Err(std::env::VarError::NotUnicode(_)) => {
-            return Err(Error::Contract("invalid model manifest URL encoding").into())
-        }
-    };
+    let mut manifest_url = None;
     let mut network_wait_seconds = 0.0;
+    let mut retry_network = false;
     let model_path = if mode == "--smoke" {
         Some(PathBuf::from(argument(&mut args)?))
     } else {
@@ -59,7 +68,8 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
             "--devices" => devices = argument(&mut args)?.into(),
             "--identity-root" => identity_root = argument(&mut args)?.into(),
             "--expect-assets-manifest" => expected_assets = Some(argument(&mut args)?),
-            "--manifest-url" => manifest_url = argument(&mut args)?,
+            "--manifest-url" => manifest_url = Some(argument(&mut args)?),
+            "--retry-network" => retry_network = true,
             "--network-wait-seconds" => {
                 network_wait_seconds = argument(&mut args)?.parse::<f64>()?
             }
@@ -78,8 +88,25 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
         )?;
         return Ok(ExitCode::from(2));
     }
+    let manifest_url = match manifest_url {
+        Some(url) => url,
+        None if matches!(mode.as_str(), "--ensure-if-egpu" | "--prepare-for-startup") => {
+            match std::env::var("CARROT_BIG_MODEL_MANIFEST") {
+                Ok(value) => value,
+                Err(std::env::VarError::NotPresent) => model_delivery::DEFAULT_MANIFEST_URL.into(),
+                Err(_) => return Err(Error::Contract("invalid model manifest URL encoding").into()),
+            }
+        }
+        None => String::new(),
+    };
+    if mode == "--boot"
+        && std::env::var_os("CARROT_BIG_MODEL_STARTUP_FAILED").is_some_and(|value| value == "1")
+    {
+        emit(serde_json::json!({"prepared":false}))?;
+        return Ok(ExitCode::SUCCESS);
+    }
     let cancelled = Arc::new(AtomicBool::new(false));
-    if mode != "--ensure-if-egpu" {
+    if mode != "--ensure-if-egpu" || retry_network {
         signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&cancelled))?;
         signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&cancelled))?;
     }
@@ -102,20 +129,24 @@ fn run() -> Result<ExitCode, Box<dyn std::error::Error>> {
             let prepared = boot::prepare(&boot::Config {paths, worker, runner: std::env::current_exe()?, devices, identity_root}, &cancelled)?;
             emit(serde_json::json!({"prepared":prepared}))?;
         }
+        "--prepare-for-startup" => {
+            let delivered = model_delivery::background::prepare_for_startup(&paths, &manifest_url, retry_network, &cancelled)?;
+            return Ok(if delivered { ExitCode::SUCCESS } else { ExitCode::FAILURE });
+        }
         "--ensure-if-egpu" => {
             let params = openpilot_params::Params::for_runtime()?;
-            model_delivery::background::run(&model_delivery::background::Config {
+            model_delivery::background::run_retrying(&model_delivery::background::Config {
                 paths: &paths,
                 params: &params,
                 devices: &devices,
                 manifest_url: &manifest_url,
                 network_wait_seconds,
-            })?;
+            }, retry_network, &cancelled)?;
         }
         "--ready" => return Ok(if model::compiled_path(&paths).is_some() {ExitCode::SUCCESS} else {ExitCode::FAILURE}),
-        "--active-sha" => emit(model::active_manifest(&paths).map_or_else(String::new, |model| model.sha256))?,
-        "--active-path" => emit(model::active_manifest(&paths).map_or_else(String::new, |model| paths.cache.join(model.cache_filename()).display().to_string()))?,
-        "--help" => emit("openpilot-usbgpu-model --boot|--ready|--active-sha|--active-path|--ensure-if-egpu|--smoke MODEL.pkl [--camera WIDTHxHEIGHT]")?,
+        "--active-sha" => emit(model::selected_manifest(&paths).map_or_else(String::new, |model| model.sha256))?,
+        "--active-path" => emit(model::selected_manifest(&paths).map_or_else(String::new, |model| paths.cache.join(model.cache_filename()).display().to_string()))?,
+        "--help" => emit("openpilot-usbgpu-model --boot|--present|--ready|--active-sha|--active-path|--ensure-if-egpu|--prepare-for-startup|--smoke MODEL.pkl [--camera WIDTHxHEIGHT]")?,
         _ => return Err(Error::Contract("unknown model command").into()),
     }
     Ok(ExitCode::SUCCESS)

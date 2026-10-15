@@ -21,15 +21,7 @@ pub fn run(action: Action, params: &mut Backend, engaged: bool) -> Result<Value,
     if !params.has_params() {
         match action {
             Action::Reboot => {
-                let mut child = std::process::Command::new("sudo")
-                    .arg("reboot")
-                    .spawn()
-                    .map_err(|error| crate::state::io_error(error, std::path::Path::new("sudo")))?;
-                std::thread::spawn(move || {
-                    if let Err(error) = child.wait() {
-                        eprintln!("reboot child: {error}");
-                    }
-                });
+                spawn_reboot(0.0)?;
                 return Ok(Value::object([("ok", Value::Bool(true))]));
             }
             Action::Poweroff | Action::Recalibrate => {
@@ -63,4 +55,20 @@ pub fn run(action: Action, params: &mut Backend, engaged: bool) -> Result<Value,
         }
     }
     Ok(Value::object([("ok", Value::Bool(true))]))
+}
+
+/// The shared helper checks device admission before a new session is created.
+/// Its owned child completes the bounded chime/reboot sequence independently of
+/// the request, while this reaper collects its exit status.
+pub(crate) fn spawn_reboot(delay: f64) -> Result<(), Error> {
+    let config = openpilot_hardware_control::reboot::Config::for_runtime()
+        .map_err(|error| Error::Source(error.to_string()))?;
+    let mut child = openpilot_hardware_control::reboot::spawn(&config, delay)
+        .map_err(|error| Error::Source(error.to_string()))?;
+    std::thread::spawn(move || {
+        if let Err(error) = child.process.wait() {
+            eprintln!("reboot child: {error}");
+        }
+    });
+    Ok(())
 }

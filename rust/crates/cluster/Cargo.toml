@@ -19,6 +19,7 @@ default = []
 native-media = ["dep:openpilot-encoderd"]
 
 [dependencies]
+openpilot-cluster-wifi = { path = "../cluster-wifi" }
 openpilot-can = { path = "../can" }
 openpilot-carrot-navi = { path = "../carrot-navi", features = ["native"] }
 openpilot-jpeg = { path = "../jpeg" }
@@ -32,6 +33,7 @@ num-bigint = "=0.4.8"
 signal-hook = "0.3"
 unicode-general-category = "=0.6.0"
 openpilot-usbgpu = { path = "../usbgpu" }
+openpilot-jetlink = { path = "../jetlink" }
 zlib-rs = "=0.6.8"
 chrono = { version = "=0.4.45", default-features = false, features = ["clock"] }
 openpilot-params = { path = "../params" }

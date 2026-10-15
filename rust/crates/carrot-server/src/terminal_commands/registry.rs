@@ -6,7 +6,7 @@ pub struct Command {
     pub usage: &'static str,
     pub hidden: bool,
 }
-pub const COMMANDS: [Command; 7] = [
+pub const COMMANDS: [Command; 6] = [
     Command {
         name: "help",
         summary: "사용 가능한 Carrot 명령과 사용법을 보여줍니다.",
@@ -41,12 +41,6 @@ pub const COMMANDS: [Command; 7] = [
         name: "web-lab",
         summary: "Carrot Web 실험 기능의 잠금을 관리합니다.",
         usage: "carrot web-lab <on|off|status>",
-        hidden: false,
-    },
-    Command {
-        name: "youtube-test",
-        summary: "Run the YouTube camera pipeline while the device is offroad.",
-        usage: "carrot youtube-test [verify|start|status|logs|stop] [--lines N]",
         hidden: false,
     },
 ];

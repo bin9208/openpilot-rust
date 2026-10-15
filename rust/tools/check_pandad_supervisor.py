@@ -88,7 +88,7 @@ def original(case):
       self.call('get_mcu_type')
       return SimpleNamespace(config=SimpleNamespace(app_fn='app.bin'))
 
-    def flash(self):
+    def flash(self, fn=None):
       self.call('flash')
       self.device['bootstub'] = self.device['flash_bootstub']
       self.device['signature'] = self.device['final_signature']
@@ -132,6 +132,9 @@ def original(case):
       return current['dfu']
 
   class Params:
+    def get_bool(self, key):
+      return False
+
     def remove(self, key):
       record('remove', key)
 
@@ -142,6 +145,9 @@ def original(case):
       record('put_bool', key, value)
 
   class Environment:
+    def pop(self, key, default=None):
+      return default
+
     def __setitem__(self, key, value):
       record('env', key, value)
 
@@ -177,9 +183,9 @@ def original(case):
     if operation == 'main':
       namespace['main']()
     elif operation == 'all':
-      namespace['flash_all_pandas']([d['serial'] for d in current['devices']])
+      namespace['flash_all_pandas']([d['serial'] for d in current['devices']], Params())
     else:
-      namespace['flash_panda'](current['devices'][0]['serial'])
+      namespace['flash_panda'](current['devices'][0]['serial'], Params())
   except Halt:
     pass
   except Exception:
@@ -189,7 +195,7 @@ def original(case):
 
 def cases():
   fields = '''uptime voltage current safety_tx_blocked safety_rx_invalid tx_overflow rx_overflow faults ignition_line
-              ignition_can controls_allowed harness_status safety_model safety_param fault_status power_save heartbeat_lost
+              ignition_can wake_on_can controls_allowed harness_status safety_model safety_param fault_status power_save heartbeat_lost
               alternative_experience interrupt_load fan_power safety_rx_checks_invalid spi_checksum_errors fan_stall_count
               sbu1_mv sbu2_mv som_reset_triggered'''.split()
   health = dict.fromkeys(fields, 0)

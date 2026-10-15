@@ -12,6 +12,7 @@ pub struct Health {
     pub faults: u32,
     pub ignition_line: u8,
     pub ignition_can: u8,
+    pub wake_on_can: u8,
     pub controls_allowed: u8,
     pub harness_status: u8,
     pub safety_model: u8,
@@ -44,7 +45,8 @@ fn u32_at(bytes: &[u8], offset: usize) -> u32 {
 }
 
 impl Health {
-    pub const PACKET_SIZE: usize = 58;
+    pub const PACKET_SIZE: usize = 59;
+    pub const PACKET_VERSION: u8 = 17;
 
     pub fn from_packet(bytes: &[u8; Self::PACKET_SIZE]) -> Self {
         Self {
@@ -58,22 +60,23 @@ impl Health {
             faults: u32_at(bytes, 28),
             ignition_line: bytes[32],
             ignition_can: bytes[33],
-            controls_allowed: bytes[34],
-            harness_status: bytes[35],
-            safety_model: bytes[36],
-            safety_param: u16_at(bytes, 37),
-            fault_status: bytes[39],
-            power_save: bytes[40],
-            heartbeat_lost: bytes[41],
-            alternative_experience: u16_at(bytes, 42),
-            interrupt_load: f32::from_bits(u32_at(bytes, 44)),
-            fan_power: bytes[48],
-            safety_rx_checks_invalid: bytes[49],
-            spi_checksum_errors: u16_at(bytes, 50),
-            fan_stall_count: bytes[52],
-            sbu1_mv: u16_at(bytes, 53),
-            sbu2_mv: u16_at(bytes, 55),
-            som_reset_triggered: bytes[57],
+            wake_on_can: bytes[34],
+            controls_allowed: bytes[35],
+            harness_status: bytes[36],
+            safety_model: bytes[37],
+            safety_param: u16_at(bytes, 38),
+            fault_status: bytes[40],
+            power_save: bytes[41],
+            heartbeat_lost: bytes[42],
+            alternative_experience: u16_at(bytes, 43),
+            interrupt_load: f32::from_bits(u32_at(bytes, 45)),
+            fan_power: bytes[49],
+            safety_rx_checks_invalid: bytes[50],
+            spi_checksum_errors: u16_at(bytes, 51),
+            fan_stall_count: bytes[53],
+            sbu1_mv: u16_at(bytes, 54),
+            sbu2_mv: u16_at(bytes, 56),
+            som_reset_triggered: bytes[58],
         }
     }
 }

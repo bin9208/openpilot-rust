@@ -1,10 +1,12 @@
 pub mod constants;
 mod dynamics;
+mod forced_scc;
 mod range;
 mod scc;
 mod update;
 
 use crate::{
+    Lead,
     association::Associator,
     model::Model,
     point::{Identity, Point},
@@ -12,7 +14,7 @@ use crate::{
     primary::{self, Matcher},
     selection::{self, LeadTwoTracker, PrimaryHandoff, StationaryShadow},
     trajectory_cutin::Detector,
-    trajectory_cutout, Lead,
+    trajectory_cutout,
 };
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -72,6 +74,10 @@ pub struct Output {
 pub struct Controller<P: CutOutPredictor = Predictor> {
     pub primary_matcher: Matcher,
     pub scc_primary_fallback_matcher: Matcher,
+    pub forced_scc_rejected_s: Option<f64>,
+    pub _forced_scc_previous: Option<(f64, Point)>,
+    pub stopping_lane_corner_tracker: crate::stationary_lane::StoppingLaneCornerTracker,
+    pub in_lane_corner_tracker: crate::in_lane::InLaneCornerTracker,
     pub enable_radar_tracks: i32,
     pub front_radar_measurement_delay_s: f64,
     pub corner_radar_measurement_delay_s: f64,
@@ -117,6 +123,10 @@ fn serialize_associator<S: serde::Serializer>(
 impl<P: CutOutPredictor> Controller<P> {
     pub fn new(options: Options) -> Self {
         Self {
+            forced_scc_rejected_s: None,
+            _forced_scc_previous: None,
+            stopping_lane_corner_tracker: Default::default(),
+            in_lane_corner_tracker: Default::default(),
             primary_matcher: Matcher::default(),
             scc_primary_fallback_matcher: Matcher::default(),
             enable_radar_tracks: options.enable_radar_tracks,
@@ -159,10 +169,14 @@ impl<P: CutOutPredictor> Controller<P> {
         self._same_row_suppressed_until.clear();
     }
     fn reset_invalid_path(&mut self) {
+        self.forced_scc_rejected_s = None;
+        self._forced_scc_previous = None;
         self.primary_matcher.reset();
         self.scc_primary_fallback_matcher.reset();
         self.lead_two_tracker.reset();
         self.stationary_shadow_tracker.reset();
+        self.stopping_lane_corner_tracker.reset();
+        self.in_lane_corner_tracker.reset();
         self.stationary_primary_handoff_tracker.reset();
         self.scc_lead_two_tracker.reset();
         self.primary_cut_out_predictor = P::default();
@@ -203,6 +217,8 @@ impl<P: CutOutPredictor> Controller<P> {
             self.reset_motion_pipeline();
             self.lead_two_tracker.reset();
             self.stationary_shadow_tracker.reset();
+            self.stopping_lane_corner_tracker.reset();
+            self.in_lane_corner_tracker.reset();
             self.stationary_primary_handoff_tracker.reset();
             self.scc_lead_two_tracker.reset();
         }

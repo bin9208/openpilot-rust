@@ -17,20 +17,25 @@ impl CarrotPlanner {
             self.atc_type.clear();
             return (cruise, false);
         };
+        let traffic = if self.signal_detection_suspended {
+            0
+        } else {
+            navigation.traffic_state
+        };
         self.carrot_stay_stop = false;
         let trigger = if matches!(navigation.atc_type.as_str(), "turn left" | "atc left")
             || input.car.left_blinker
         {
-            if self.traffic_state_carrot == 1 && navigation.traffic_state == 3 {
+            if self.traffic_state_carrot == 1 && traffic == 3 {
                 true
             } else {
-                self.carrot_stay_stop = matches!(navigation.traffic_state, 1 | 2);
+                self.carrot_stay_stop = matches!(traffic, 1 | 2);
                 false
             }
         } else {
-            self.traffic_state_carrot == 1 && navigation.traffic_state == 2
+            self.traffic_state_carrot == 1 && traffic == 2
         };
-        self.traffic_state_carrot = navigation.traffic_state;
+        self.traffic_state_carrot = traffic;
         if trigger {
             if self.soft_hold_active > 0 {
                 self.add_event(EventName::TrafficSignChanged, clock);

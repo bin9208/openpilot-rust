@@ -81,6 +81,15 @@ impl Manager {
         segments: &[String],
         settings: Option<Settings>,
     ) -> Result<Value, Error> {
+        self.start_scoped(root, segments, settings, false)
+    }
+    pub fn start_scoped(
+        &mut self,
+        root: &Path,
+        segments: &[String],
+        settings: Option<Settings>,
+        include_all_files: bool,
+    ) -> Result<Value, Error> {
         let segments = catalog::validate_selection(root, segments)?;
         self.expire(None)?;
         let mut jobs = lock(&self.jobs)?;
@@ -90,7 +99,12 @@ impl Manager {
             );
         }
         let id = uuid::Uuid::new_v4().simple().to_string()[..12].to_owned();
-        jobs.create(id.clone(), segments.clone(), worker::clock());
+        jobs.create_scoped(
+            id.clone(),
+            segments.clone(),
+            worker::clock(),
+            include_all_files,
+        );
         drop(jobs);
         let spawn = (|| -> Result<(), Error> {
             let mut child = Command::new(&self.executable)
@@ -111,6 +125,7 @@ impl Manager {
                 &mut control,
                 &Request {
                     parent_pid: std::process::id(),
+                    include_all_files,
                     root: root.to_owned(),
                     id: id.clone(),
                     segments,

@@ -136,8 +136,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         [
             "touch /data/__system_reset__",
             "sync",
-            "Output([\"sudo\", \"reboot\"])",
-            "Output([\"sudo\", \"reboot\"])",
+            "Output([\"openpilot-reboot\"])",
+            "Output([\"openpilot-reboot\"])",
             "Shell(\"sudo poweroff\")"
         ]
     );

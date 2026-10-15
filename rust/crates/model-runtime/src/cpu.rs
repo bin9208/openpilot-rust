@@ -14,6 +14,7 @@ struct Invocation {
 
 pub struct CpuModel {
     graph: Graph,
+    initial_weights: Vec<u8>,
     buffers: Vec<Buffer>,
     calls: Vec<Invocation>,
     _library: Library,
@@ -99,6 +100,7 @@ impl CpuModel {
         }
         Ok(Self {
             graph,
+            initial_weights: weights,
             buffers,
             calls,
             _library: library,
@@ -123,6 +125,24 @@ impl CpuModel {
 
     pub fn run(&mut self) {
         Self::execute(&mut self.calls);
+    }
+
+    /// Restore initial allocation contents without reloading verified kernels.
+    pub fn reset_mutable(&mut self) -> Result<(), Error> {
+        let zeroes = [0u8; 16384];
+        for (allocation, buffer) in self.graph.allocations.iter().zip(&mut self.buffers) {
+            if let Some(offset) = allocation.weight_offset {
+                buffer.write(0, &self.initial_weights[offset..offset + allocation.bytes])?;
+                continue;
+            }
+            for offset in (0..allocation.bytes).step_by(zeroes.len()) {
+                buffer.write(
+                    offset,
+                    &zeroes[..(allocation.bytes - offset).min(zeroes.len())],
+                )?;
+            }
+        }
+        Ok(())
     }
 
     pub fn run_entry(&mut self, name: &str) -> Result<(), Error> {

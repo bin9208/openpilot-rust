@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod capture;
+pub mod crash;
 mod detached_child;
 mod ensure;
 mod exec;

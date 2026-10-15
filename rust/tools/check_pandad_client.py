@@ -202,8 +202,8 @@ def original(namespace, case):
 def cases(namespace):
   signature = list(range(128))
   device = {'serial': '010002000300040005000600', 'bootstub': False, 'bcd': None, 'spi': False,
-            'kind': [9], 'versions': [16, 4, 5], 'signature': signature, 'version': list(b'test-version'),
-            'health': [0] * 58, 'reads': {}}
+            'kind': [9], 'versions': [17, 4, 5], 'signature': signature, 'version': list(b'test-version'),
+            'health': [0] * 59, 'reads': {}}
   default = {'usb': [device], 'spi': [None], 'operations': [], 'file': signature, 'file_exists': True, 'dfu': [[]], 'fail_at': None}
   operations = [{'name': name} for name in ('type', 'mcu', 'internal', 'signature', 'version', 'health', 'up_to_date', 'close', 'close')]
   result = [{**default, 'operations': operations}]
@@ -215,9 +215,9 @@ def cases(namespace):
   for bcd in (None, [0], [4], [6], [9]):
     for kind in (magic, [9], [], [1, 2]):
       result.append({**default, 'usb': [{**device, 'bootstub': True, 'bcd': bcd, 'kind': kind}], 'operations': operations})
-  for version in ([], [16], [16, 4], [16, 4, 5, 6], [0, 4, 5], [15, 4, 5]):
+  for version in ([], [17], [17, 4], [17, 4, 5, 6], [0, 4, 5], [15, 4, 5], [16, 4, 5]):
     result.append({**default, 'usb': [{**device, 'versions': version}], 'operations': [{'name': 'health'}]})
-  for size in (0, 1, 57, 58, 59):
+  for size in (0, 1, 58, 59, 60):
     result.append({**default, 'usb': [{**device, 'health': [0] * size}], 'operations': [{'name': 'health'}]})
   for version in ([0xff], list('한글'.encode()), [], [0, 10, 97]):
     result.append({**default, 'usb': [{**device, 'version': version}], 'operations': [{'name': 'version'}]})

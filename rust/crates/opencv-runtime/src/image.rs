@@ -46,13 +46,14 @@ pub enum Format {
     Gray,
     Rgb,
     Bgr,
+    Hsv,
 }
 
 impl Format {
     pub const fn channels(self) -> usize {
         match self {
             Self::Gray => 1,
-            Self::Rgb | Self::Bgr => 3,
+            Self::Rgb | Self::Bgr | Self::Hsv => 3,
         }
     }
 }

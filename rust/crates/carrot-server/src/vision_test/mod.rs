@@ -1,5 +1,8 @@
 //! Active services/vision_test.py runner and terminal command contract.
 mod arguments;
+pub(crate) mod process;
+pub(crate) mod support;
+pub use support::CommandSpec;
 mod config;
 mod control;
 pub mod http;

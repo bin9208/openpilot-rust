@@ -43,6 +43,8 @@ pub struct Input<'a> {
 
 pub struct LongitudinalMpc {
     solver: Acados,
+    cost_key: Option<(PlannerMode, [u64; 10])>,
+    comfort_states: [crate::braking_gap::LeadComfortState; 2],
     pub mode: PlannerMode,
     dt: f64,
     pub source: MpcSource,
@@ -66,6 +68,7 @@ pub struct LongitudinalMpc {
     pub response_level: i32,
     response_state: LeadResponseState,
     gap_states: [LeadGapState; 2],
+    gap_predicted_speed: [f64; 13],
     pub gap_margins: [[f64; 2]; 13],
     pub status: bool,
     pub crash_count: u64,
@@ -80,6 +83,10 @@ impl LongitudinalMpc {
     pub fn load(directory: &Path, mode: PlannerMode, dt: f64) -> Result<Self, Error> {
         let mut owner = Self {
             solver: Acados::load(directory, Kind::Longitudinal)?,
+            cost_key: None,
+            comfort_states: std::array::from_fn(|_| {
+                crate::braking_gap::LeadComfortState::default()
+            }),
             mode,
             dt,
             source: MpcSource::Cruise,
@@ -103,6 +110,7 @@ impl LongitudinalMpc {
             response_level: 0,
             response_state: LeadResponseState::default(),
             gap_states: std::array::from_fn(|_| LeadGapState::default()),
+            gap_predicted_speed: [0.; 13],
             gap_margins: [[0.; 2]; 13],
             status: false,
             crash_count: 0,
@@ -117,6 +125,9 @@ impl LongitudinalMpc {
     }
 
     pub fn reset(&mut self) -> Result<(), Error> {
+        self.cost_key = None;
+        self.comfort_states =
+            std::array::from_fn(|_| crate::braking_gap::LeadComfortState::default());
         self.solver.reset()?;
         self.speed = [0.; 13];
         self.acceleration = [0.; 13];

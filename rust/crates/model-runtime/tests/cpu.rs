@@ -83,6 +83,11 @@ fn preserves_recurrent_state_and_overlapping_output_views() {
                 .collect::<Vec<_>>()
         );
     }
+    model.reset_mutable().unwrap();
+    model.run();
+    let mut reset = [0_u8; 4];
+    model.read_output("sum", &mut reset).unwrap();
+    assert_eq!(f32::from_le_bytes(reset), 6.0);
     let mut fresh = load(dir.path()).unwrap();
     fresh.run();
     let mut output = [0_u8; 4];

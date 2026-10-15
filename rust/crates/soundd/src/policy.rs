@@ -11,6 +11,7 @@ pub struct Sound {
 pub struct Playback {
     pub sounds: Vec<Sound>,
     pub alert: u16,
+    pub alert_type: String,
     pub frame: usize,
     pub volume: f64,
 }
@@ -19,11 +20,15 @@ impl Playback {
         Self {
             sounds,
             alert: 0,
+            alert_type: String::new(),
             frame: 0,
             volume: 0.1,
         }
     }
     pub fn update_alert(&mut self, alert: u16) -> Option<u16> {
+        self.update_alert_with_type(alert, "")
+    }
+    pub fn update_alert_with_type(&mut self, alert: u16, alert_type: &str) -> Option<u16> {
         let unsupported = alert != 0 && !self.sounds.iter().any(|sound| sound.alert == alert);
         let new_alert = if unsupported { 0 } else { alert };
         let played = self.alert == 0
@@ -35,6 +40,9 @@ impl Playback {
         if self.alert != new_alert && (new_alert != 0 || played) {
             self.alert = new_alert;
             self.frame = 0;
+            self.alert_type = alert_type.to_owned();
+        } else if self.alert == new_alert {
+            self.alert_type = alert_type.to_owned();
         }
         unsupported.then_some(alert)
     }
@@ -63,10 +71,14 @@ impl Playback {
             }
         }
         // NumPy multiplies the float32 array by its scalar cast to float32.
-        let volume = self
-            .volume
-            .to_f32()
-            .ok_or(Error::Contract("volume conversion"))?;
+        let gain = match (self.alert, self.alert_type.as_str()) {
+            (5, "driverDistracted3/permanent" | "driverUnresponsive3/permanent") => 1.,
+            (8, "driverDistracted2/permanent" | "driverUnresponsive2/permanent") => {
+                self.volume.max(0.7)
+            }
+            _ => self.volume,
+        };
+        let volume = gain.to_f32().ok_or(Error::Contract("volume conversion"))?;
         for sample in output {
             *sample *= volume;
         }
@@ -82,6 +94,7 @@ pub struct Input {
     pub selfdrive_received: f64,
     pub enabled: bool,
     pub alert: u16,
+    pub alert_type: String,
     pub countdown: i32,
     pub pressure: Option<f64>,
     pub main_buttons: Vec<bool>,
@@ -89,6 +102,7 @@ pub struct Input {
 #[derive(Serialize)]
 pub struct Snapshot {
     pub alert: u16,
+    pub alert_type: String,
     pub frame: usize,
     pub volume: f64,
     pub adjust: f64,
@@ -122,6 +136,7 @@ impl Policy {
     pub fn snapshot(&self) -> Snapshot {
         Snapshot {
             alert: self.playback.alert,
+            alert_type: self.playback.alert_type.clone(),
             frame: self.playback.frame,
             volume: self.playback.volume,
             adjust: self.adjust,
@@ -167,7 +182,14 @@ impl Policy {
                     _ => 0,
                 };
             }
-            return self.playback.update_alert(alert);
+            return self.playback.update_alert_with_type(
+                alert,
+                if input.alert == 0 {
+                    ""
+                } else {
+                    &input.alert_type
+                },
+            );
         }
         let missing = input.now - input.selfdrive_received;
         if missing > 5. && input.enabled && missing - 5. < 10. {

@@ -61,18 +61,32 @@ pub(super) fn buffer(buffers: &[Bound], view: View) -> Result<Bound, Error> {
         .copied()
         .ok_or(Error::Contract("HCQ buffer index out of range"))
 }
-pub(super) fn expression(value: &Expression, buffers: &[Bound]) -> Result<u64, Error> {
+pub(super) fn expression(
+    value: &Expression,
+    buffers: &[Bound],
+    bindings: &[Allocation],
+) -> Result<u64, Error> {
     Ok(match value {
         Expression::Constant { value } => *value,
+        Expression::Binding {
+            slot,
+            offset,
+            space,
+        } => {
+            let allocation = bindings
+                .get(*slot)
+                .ok_or(Error::Contract("HCQ binding index out of range"))?;
+            Bound::Device(*allocation).address(*offset, *space)?
+        }
         Expression::Address { view, space } => {
             buffer(buffers, *view)?.address(view.offset, *space)?
         }
-        Expression::Add { left, right } => expression(left, buffers)?
-            .checked_add(expression(right, buffers)?)
+        Expression::Add { left, right } => expression(left, buffers, bindings)?
+            .checked_add(expression(right, buffers, bindings)?)
             .ok_or(Error::Contract("HCQ link addition overflow"))?,
-        Expression::Shr { left, right } => expression(left, buffers)?
+        Expression::Shr { left, right } => expression(left, buffers, bindings)?
             .checked_shr(
-                u32::try_from(expression(right, buffers)?)
+                u32::try_from(expression(right, buffers, bindings)?)
                     .map_err(|_| Error::Contract("HCQ link shift overflow"))?,
             )
             .ok_or(Error::Contract("HCQ link shift outside width"))?,

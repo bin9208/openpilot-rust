@@ -51,6 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         path("repository")?.join("rust/bin/usbgpu-assets")
                     },
                 },
+                telemetry: egpu_model_telemetry(&input)?,
                 usb_devices: path("usb_devices")?,
                 timestamp: input
                     .has("egpu_timestamp")
@@ -112,4 +113,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .join()
         .map_err(|_| "fixture input thread panicked")?;
     Ok(())
+}
+
+fn egpu_model_telemetry(
+    input: &Value,
+) -> Result<openpilot_carrot_server::egpu_model::diagnostics::Telemetry, Box<dyn std::error::Error>>
+{
+    let root = PathBuf::from(input.get("model_cache").string()?).join("../telemetry");
+    Ok(
+        openpilot_carrot_server::egpu_model::diagnostics::Telemetry {
+            boot_id: root.join("boot_id"),
+            root,
+            now: input
+                .has("egpu_monotonic")
+                .then(|| input.get("egpu_monotonic").float())
+                .transpose()?,
+        },
+    )
 }

@@ -14,6 +14,7 @@ use std::{io, thread, time::Duration};
 impl QueryIo for NativeIo {
     fn log(&mut self, level: crate::query::DiagnosticLevel, message: &str) {
         let level = match level {
+            crate::query::DiagnosticLevel::Info => Level::Info,
             crate::query::DiagnosticLevel::Warning => Level::Warning,
             crate::query::DiagnosticLevel::Error | crate::query::DiagnosticLevel::Exception => {
                 Level::Error

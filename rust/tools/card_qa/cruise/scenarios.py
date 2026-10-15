@@ -138,4 +138,21 @@ def scenarios():
       steps.append(frame(vEgo=rng.choice((0.,.05,5.,10.,20.,30.)),vEgoCluster=rng.choice((0.,10.,20.)),gasPressed=index%11==0,brakePressed=index%7==0,steeringAngleDeg=rng.choice((0.,20.,70.)),cruiseSpeedBigStep=index%13==0,buttonEvents=[dict(type=button,pressed=index%2==0)]))
       steps[-1]["events"]=[event("carControl",enabled=index%3!=0),event("radarState",leadOne=dict(status=index%5!=0,dRel=rng.choice((0.,5.,20.,80.)),vRel=-3,vLeadK=10)),event("longitudinalPlan",xState=rng.choice((0,3,5)),aTarget=.2)]
     add(f"temporal-seeded-{sequence}",steps,{"CruiseButtonMode":str(sequence%4)},metric=sequence%2==0)
+  for mode in (0,1,3):
+    for fingerprint in ('TOYOTA_RAV4_TSS2_2022','TOYOTA_RAV4_TSS2'):
+      steps=[frame(cruiseState=dict(available=True,enabled=False,speed=0,speedCluster=0)),
+             frame(cruiseState=dict(available=True,enabled=False,speed=50/3.6,speedCluster=52/3.6)),
+             frame(cruiseState=dict(available=True,enabled=True,speed=50/3.6,speedCluster=52/3.6)),
+             frame(cruiseState=dict(available=True,enabled=True,speed=60/3.6,speedCluster=62/3.6)),
+             frame(cruiseState=dict(available=True,enabled=True,speed=60/3.6,speedCluster=62/3.6),buttonEvents=[dict(type='accelCruise',pressed=True)]),
+             frame(cruiseState=dict(available=True,enabled=True,speed=70/3.6,speedCluster=72/3.6),buttonEvents=[dict(type='accelCruise',pressed=False)]),
+             frame(cruiseState=dict(available=True,enabled=True,speed=70/3.6,speedCluster=72/3.6)),
+             frame(canValid=False,cruiseState=dict(available=True,enabled=True,speed=80/3.6,speedCluster=82/3.6)),
+             frame(cruiseState=dict(available=True,enabled=True,speed=80/3.6,speedCluster=82/3.6))]
+      add(f'toyota-pcm-{mode}-{fingerprint}',steps,{'SpeedFromPCM':str(mode)},pcm=True)
+      cases[-1]['cp'].update(brand='toyota',carFingerprint=fingerprint,openpilotLongitudinalControl=True)
+  for consumed in (False,True):
+    steps=[frame(),frame(gasPressed=True,gas=.2),frame(),frame()]
+    for step in steps:step['speedcam_consumed']=consumed
+    add(f'speedcam-consumed-{consumed}',steps)
   return cases

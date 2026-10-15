@@ -43,6 +43,7 @@ class Case(TypedDict, total=False):
   now: str
 
 CATALOG = {'params': [
+  {'name':'DriverMonitoringEnabled','min':0,'max':1,'default':1,'search_only':True},
   {'name':'IsMetric','min':0,'max':1,'default':1},
   {'name':'LongitudinalPersonalityMax','min':3,'max':4,'default':3},
   {'name':'CruiseGapLevels','min':2,'max':4,'default':4,'options':{'en':['two','three','four']}},
@@ -58,6 +59,11 @@ PROFILE_ID = uuid.UUID(int=1).hex
 
 
 def cases() -> Iterator[Case]:
+  protected = {'DriverMonitoringEnabled':False,'DriverMonitoringSessionDisabled':True,'JetsonLegacyUpdatePending':True,'CarrotVisionEnabled':True}
+  yield {'action':'restore_preview','values':protected}
+  yield {'action':'restore_apply','values':protected,'source':'restore'}
+  yield {'action':'restore_raw','values':protected,'source':'restore'}
+  yield {'action':'restore_apply','values':protected,'source':'reset_defaults'}
   yield from [
     {'action':'read'}, {'action':'read','fixture':'corrupt_profiles'},
     {'action':'write','data':{'profiles':[None,{}, {'id':' a ','name':'  한글\n  이름  ','values':{'FutureSetting':14.999,'Ghost':1},'meta':{'branch':3}}, {'id':'a','name':'duplicate','values':{'IsMetric':False}}]}},

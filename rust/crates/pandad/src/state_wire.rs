@@ -86,6 +86,7 @@ pub fn encode(states: &[Snapshot], valid: bool, monotonic_ns: u64) -> capnp::Res
         builder.set_safety_rx_invalid(health.safety_rx_invalid);
         builder.set_ignition_line(health.ignition_line != 0);
         builder.set_ignition_can(health.ignition_can != 0);
+        builder.set_wake_on_can(health.wake_on_can != 0);
         builder.set_controls_allowed(health.controls_allowed != 0);
         builder.set_tx_buffer_overflow(health.tx_overflow);
         builder.set_rx_buffer_overflow(health.rx_overflow);

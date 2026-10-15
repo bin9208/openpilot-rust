@@ -15,9 +15,7 @@ import shlex
 from typing import Final, TypedDict
 
 ROOT: Final = Path(__file__).resolve().parents[2]
-BINDING: Final = (
-  ROOT / '.analysis/scratch/2026-09-30-rust-startup-integration/combined-inputs-3/startup-params-binding' / 'params_pyx.cpython-312-x86_64-linux-gnu.so'
-)
+BINDING: Final = Path(os.environ['OPENPILOT_PARAMS_BINDING'])
 SOURCE: Final = Path(__file__).with_name('carrot_server_system_actions_source.py')
 
 
@@ -78,8 +76,7 @@ def cases() -> list[Case]:
 def main() -> None:
   binary = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else None
   output = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else ROOT / '.omo/evidence/225-system/actions-source'
-  environment = json.loads((ROOT / '.omo/evidence/carrot-server-225-resume/live-runtime/application-ruff-v4-invocation.json').read_text())
-  env = os.environ | {'PYTHONPATH': environment['PYTHONPATH'], 'OPENPILOT_PREFIX': 'd'}
+  env = os.environ | {'PYTHONPATH': os.pathsep.join(filter(None, [os.environ.get('PYTHONPATH'), str(ROOT), str(ROOT / 'rust/tools')])), 'OPENPILOT_PREFIX': 'd'}
   output.mkdir(exist_ok=False)
   results = []
   for case in cases():
@@ -100,7 +97,7 @@ def main() -> None:
         helper.write_text('#!/bin/sh\nprintf \'{"pid":%s}\\n\' "$$" > ' + shlex.quote(str(root / 'spawn.json')) + '\n')
         helper.chmod(0o700)
       case_env = env | {'PATH': str(root / 'bin')}
-      command = [environment['argv'][0], '-P', str(SOURCE)] if kind == 'source' else [str(binary)]
+      command = [sys.executable, '-P', str(SOURCE)] if kind == 'source' else [str(binary)]
       process = subprocess.run(command, env=case_env, input=json.dumps(config) + '\n', text=True, capture_output=True, timeout=8, check=False)
       receipt = {'argv': command, 'input': config, 'exit': process.returncode, 'stdout': process.stdout, 'stderr': process.stderr}
       (root / 'invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')

@@ -322,7 +322,6 @@ impl State {
             now,
         )?;
         ret.set_steer_fault_permanent(eac.as_deref() == Some("EAC_FAULT"));
-        ret.set_steer_fault_temporary(eac.as_deref() == Some("EAC_INHIBITED"));
         let error = enum_value(
             &self.defs,
             &mut self.party,
@@ -330,6 +329,13 @@ impl State {
             "EPAS3S_eacErrorCode",
             now,
         )?;
+        ret.set_steer_fault_temporary(
+            eac.as_deref() == Some("EAC_INHIBITED")
+                && !matches!(
+                    error.as_deref(),
+                    Some("EAC_ERROR_IDLE" | "EAC_ERROR_MIN_SPEED")
+                ),
+        );
         self.extras.steering_disengage = self.extras.hands_on_level >= 3.
             || (eac.as_deref() == Some("EAC_INHIBITED")
                 && error.as_deref() == Some("EAC_ERROR_HIGH_ANGLE_RATE_SAFETY"));

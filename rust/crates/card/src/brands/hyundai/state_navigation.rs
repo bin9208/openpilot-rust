@@ -94,19 +94,60 @@ pub fn update(
     mut ret: car_state::Builder<'_>,
     camera: bool,
     canfd: bool,
+    accel_rising: bool,
 ) -> Result<(), Error> {
     let data = data(state)?;
     let input = data.input();
     let changed = state.navigation.refresh(&state.settings)?;
+    if canfd && state.navigation.params_counter == 0 {
+        state.navigation_config = super::navigation::policy::Config::read(
+            &state.settings,
+            &mut state.navigation.camera_policy,
+        )?;
+    }
     let mut output = Output {
         speed_limit: f64::from(ret.reborrow_as_reader().get_speed_limit()),
         ..Output::default()
     };
+    let warning = (camera, output.speed_limit);
     let camera = if canfd {
         state
             .navigation
             .update_events(&input, &mut output, camera)?
             || camera
+    } else {
+        camera
+    };
+    let context = super::navigation::policy::Context {
+        accel_rising,
+        gas_tap: if canfd {
+            state
+                .navigation_policy
+                .gas_tap(ret.reborrow_as_reader().get_gas_pressed())
+        } else {
+            false
+        },
+        engaged: state.speedcam_engaged,
+        cruise_kph: state.speedcam_v_cruise,
+        v_ego: f64::from(ret.reborrow_as_reader().get_v_ego()),
+        cluster_ratio: f64::from(ret.reborrow_as_reader().get_v_clu_ratio()),
+    };
+    let camera = if canfd {
+        let camera = state.navigation_policy.camera(
+            &mut state.navigation,
+            &output,
+            camera,
+            warning,
+            context,
+            &state.navigation_config,
+        )?;
+        state.navigation_policy.bump(
+            &mut state.navigation,
+            &mut output,
+            context,
+            &state.navigation_config,
+        );
+        camera
     } else {
         camera
     };
@@ -117,6 +158,20 @@ pub fn update(
         f64::from(ret.reborrow_as_reader().get_v_ego()),
         changed,
     );
+    if canfd {
+        state.navigation_long_press = state.navigation_policy.decel_long_press(
+            state.cruise_buttons.back().copied().unwrap_or(0),
+            &state.navigation_config,
+        );
+        state.navigation_policy.section(
+            &state.navigation,
+            &mut output,
+            context,
+            state.navigation_long_press,
+            &state.navigation_config,
+        );
+        state.speedcam_gas_tok_consumed = state.navigation_policy.gas_consumed;
+    }
     ret.set_speed_limit(float32(output.speed_limit)?);
     ret.set_speed_limit_distance(float32(output.speed_limit_distance)?);
     if canfd {

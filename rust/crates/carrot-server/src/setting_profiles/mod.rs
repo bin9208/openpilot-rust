@@ -76,6 +76,9 @@ impl<'a> ProfileStore<'a> {
     pub fn snapshot(&self, backend: &Backend) -> Result<Value, Error> {
         let mut values = Vec::new();
         for (key, definition) in crate::json_fields::fields(&self.catalog.by_name)? {
+            if definition.get("search_only").truth() {
+                continue;
+            }
             let name = Value::Text(key.clone()).string()?;
             let default = if definition.has("default") {
                 definition.get("default").clone()

@@ -52,6 +52,8 @@ impl Codec {
     }
 
     pub fn build(&self, values: &Value) -> Result<Value, Error> {
+        let filtered = crate::params::filter_backup(values)?;
+        let values = &filtered;
         if let Ok(result) = self.build_version(values, 3) {
             return Ok(result);
         }

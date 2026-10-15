@@ -1,5 +1,6 @@
 use super::super::inputs::Decoded;
-use super::super::{views::Views, Output, Planner};
+use super::super::{Output, Planner, views::Views};
+use crate::{Error, parameters::Parameters, platform::Clock};
 use crate::{
     fast_radar::{FastInput, FastReason},
     publication::{self, Metadata},
@@ -8,7 +9,6 @@ use crate::{
     stopping_lead::StopInput,
     types::PlannerMode,
 };
-use crate::{parameters::Parameters, platform::Clock, Error};
 use openpilot_cereal::{
     car_capnp::car_control::actuators::LongControlState,
     log_capnp::longitudinal_plan::PlanningTrigger,
@@ -74,12 +74,20 @@ impl Planner {
         )?;
         let decoded = Decoded::read(views)?;
         let input = decoded.longitudinal(views, &stopping)?;
-        let warning = self.longitudinal.update(
+        let mut signals = super::super::signals::Source::new(
+            &mut self.signals,
+            views,
+            &decoded.model,
+            clock,
+            output,
+        );
+        let warning = self.longitudinal.update_with_signals(
             &input,
             &mut self.carrot,
             parameters,
             &mut || clock.wall(),
             &mut || clock.monotonic(),
+            Some(&mut signals),
         )?;
         if let Some(status) = warning {
             output.warning(format!("Long mpc reset, solution_status: {status}"))?;

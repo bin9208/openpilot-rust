@@ -44,10 +44,7 @@ fn on_demand_defaults_and_stale_static_services_preserve_checks() {
 fn source_services_preserve_readable_payloads_and_known_schema_errors() {
     for service in openpilot_messaging::services::SERVICES {
         let result = State::new(&[service.name], Options::default());
-        if matches!(
-            service.name,
-            "navModel" | "customReservedRawData1" | "customReservedRawData2"
-        ) {
+        if matches!(service.name, "navModel" | "customReservedRawData2") {
             assert!(
                 matches!(result, Err(openpilot_messaging::state::Error::Cereal(error)) if error.kind == capnp::ErrorKind::FieldNotFound)
             );

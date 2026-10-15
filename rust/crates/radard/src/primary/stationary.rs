@@ -1,12 +1,12 @@
 use super::{
+    Frame, Matcher, VisionMatch,
     constants::*,
     source::{position_continuous, stationary_source_rank},
     stationary_geometry::{
         corroborating_fronts, cross_front_support, cross_position_cost, front_corner_pairs,
         vision_base_cost, vision_cost,
     },
-    stationary_support::{radar_only_support, vision_path_compatible, Candidate},
-    Frame, Matcher, VisionMatch,
+    stationary_support::{Candidate, radar_only_support, vision_path_compatible},
 };
 use crate::{
     math::{maximum, minimum},
@@ -96,10 +96,17 @@ impl Matcher {
             .iter()
             .map(|(front, _, _, _)| front.identity())
             .collect();
-        let cross_support: IndexMap<_, _> = cross_front_support(frame.vision, &pairs)
-            .into_iter()
-            .map(|candidate| (candidate.0.identity(), candidate))
-            .collect();
+        let cross_support: IndexMap<_, _> = cross_front_support(
+            frame.vision,
+            &pairs,
+            frame.yaw_rate,
+            self.stationary_identity
+                .as_ref()
+                .or(self._stationary_pending_identity.as_ref()),
+        )
+        .into_iter()
+        .map(|candidate| (candidate.0.identity(), candidate))
+        .collect();
         let mut held_cost = IndexMap::new();
         let mut eligible = Vec::new();
         let held_present = frame

@@ -23,7 +23,7 @@ class Done(Exception):
 
 
 def capture(root: Path) -> dict[str, str | None]:
-  return {name: (root / f'{name}.json').read_text() if (root / f'{name}.json').exists() else None for name in ('cruise', 'lane', 'status')}
+  return {name: (root / f'{name}.json').read_text() if (root / f'{name}.json').exists() else None for name in ('cruise', 'lane', 'attention', 'status')}
 
 
 class Source:

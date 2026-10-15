@@ -66,6 +66,11 @@ fn python_chunk_manifest_does_not_report_native_readiness() -> Result<(), Box<dy
         paths,
         usb_devices: root.path().join("sysfs"),
         timestamp: None,
+        telemetry: openpilot_carrot_server::egpu_model::diagnostics::Telemetry {
+            root: root.path().join("telemetry"),
+            boot_id: root.path().join("boot_id"),
+            now: Some(100.),
+        },
     };
     let response = files.status(&backend)?;
     assert!(!response.get("compiled").truth());

@@ -1,0 +1,13 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "source_sha256": "26778cfae38be1966712dd7ce5df75731f626bfa08a95a12ec659058b014a028",
+  "function_sha256": "44b8c63a319be88ea6654af55639682d4b8f8d054a08f5bd77edd66588d91baa",
+  "numpy": "2.5.3",
+  "machine": "aarch64",
+  "wheel_sha256": "76c2c1e6bfa5c84adc6434dfbf013aa92096a7985221762c8f11fedfd20fff58",
+  "method": "Pinned coefficient function executed under QEMU ARM CPython3.12.3 with official NumPy2.5.3; only these coefficients substituted into original source receiver/MyTrack oracle on host. Native values are never used as expectations.",
+  "fixtures": {
+    "ars510-receiver-final.jsonl.zst": "5f1ad744b7f5252547a065396e1549b514e34a2fce798e8f29bd8ff9f4ff7b52",
+    "ars510-receiver-final-arm.jsonl.zst": "93f997dab81251149e7f44e992a4ef2c241c92c8694f26656b42eaaa732a0460"
+  }
+}

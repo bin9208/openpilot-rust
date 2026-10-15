@@ -21,7 +21,7 @@ struct Step {
 }
 
 fn capture(root: &Path) -> Result<IndexMap<&'static str, Option<String>>, io::Error> {
-    ["cruise", "lane", "status"]
+    ["cruise", "lane", "attention", "status"]
         .into_iter()
         .map(
             |name| match fs::read_to_string(root.join(format!("{name}.json"))) {

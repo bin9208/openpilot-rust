@@ -183,7 +183,7 @@ pub fn segment_dir(root: &Path, segment: &str) -> Result<PathBuf, Error> {
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct SourceFile {
-    pub kind: &'static str,
+    pub kind: String,
     pub name: String,
     pub size: u64,
     #[serde(rename = "sizeLabel")]
@@ -191,6 +191,12 @@ pub struct SourceFile {
 }
 pub const RLOG_NAMES: &[&str] = &["rlog.zst", "rlog.bz2", "rlog"];
 pub fn file_summary(directory: &Path) -> Result<Vec<SourceFile>, Error> {
+    file_summary_scoped(directory, false)
+}
+pub fn file_summary_scoped(
+    directory: &Path,
+    include_all_files: bool,
+) -> Result<Vec<SourceFile>, Error> {
     let mut files = Vec::new();
     for (kind, names) in [
         ("qcamera", &["qcamera.ts", "qcamera.mp4"][..]),
@@ -200,7 +206,7 @@ pub fn file_summary(directory: &Path) -> Result<Vec<SourceFile>, Error> {
             if let Ok(meta) = fs::metadata(directory.join(name)) {
                 if meta.is_file() && meta.len() > 0 {
                     files.push(SourceFile {
-                        kind,
+                        kind: kind.into(),
                         name: (*name).into(),
                         size: meta.len(),
                         size_label: size_label(meta.len()),
@@ -212,6 +218,27 @@ pub fn file_summary(directory: &Path) -> Result<Vec<SourceFile>, Error> {
     }
     if !files.iter().any(|file| file.kind == "rlog") {
         return Err(bad("rlog not found", 404));
+    }
+    if include_all_files {
+        files.clear();
+        let mut entries = fs::read_dir(directory)?.collect::<Result<Vec<_>, _>>()?;
+        entries.sort_by_key(|entry| entry.file_name());
+        for entry in entries {
+            if !entry.file_type()?.is_file() {
+                continue;
+            }
+            let meta = fs::symlink_metadata(entry.path())?;
+            let name = entry
+                .file_name()
+                .into_string()
+                .map_err(|_| Error::Runtime("upload filename is not UTF-8".into()))?;
+            files.push(SourceFile {
+                kind: name.split('.').next().unwrap_or("").into(),
+                name,
+                size: meta.len(),
+                size_label: size_label(meta.len()),
+            });
+        }
     }
     Ok(files)
 }

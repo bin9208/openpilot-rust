@@ -23,7 +23,7 @@ impl LongitudinalMpc {
         let brake = input.carrot.comfort_brake;
         let stop = input.carrot.config.stop_distance;
         self.base_desired_distances = [speed0, speed1].map(|lead_speed| {
-            trajectory::desired_distance(speed, lead_speed, following, brake, stop)
+            trajectory::scalar_desired_distance(speed, lead_speed, following, brake, stop)
         });
         let (mode, cruise, stop_x) = if self.mode == PlannerMode::Blended {
             (self.mode, input.cruise, 1000.)
@@ -85,7 +85,7 @@ impl LongitudinalMpc {
             change_cost_factor: request.a_change_cost_factor,
             jerk_cost_factor: request.jerk_cost_factor,
         })?;
-        self.gaps(
+        let comfort_reliefs = self.gaps(
             &input,
             mode,
             following,
@@ -113,7 +113,50 @@ impl LongitudinalMpc {
             row[7] = stop;
         }
         self.following_time = following;
-        let warning = self.run(clock)?;
+        let mut warning = self.run(clock)?;
+        if comfort_reliefs.iter().flatten().any(|v| *v != 0.)
+            && self.solution_status == 0
+            && self.comfort_states.iter().any(|state| state.relief > 0.)
+        {
+            let reserve_ok = [lead0, lead1].iter().enumerate().all(|(index, lead)| {
+                if !comfort_reliefs.iter().any(|row| row[index] != 0.) {
+                    return true;
+                }
+                let gaps = std::array::from_fn(|i| lead[i][0] - self.x[i][0]);
+                let danger = std::array::from_fn(|i| {
+                    physical[i][index]
+                        - self.x[i][0]
+                        - self.parameters[i][5]
+                            * trajectory::safe_distance(self.x[i][1], following, brake, stop)
+                });
+                crate::braking_gap::has_reserve(&self.speed, &gaps, &danger, &TIMES, stop)
+            });
+            if !reserve_ok {
+                for (row, relief) in self.gap_margins.iter_mut().zip(comfort_reliefs) {
+                    for i in 0..2 {
+                        row[i] += relief[i];
+                    }
+                }
+                for state in &mut self.comfort_states {
+                    state.relief = 0.;
+                }
+                // Admission used the preceding solution, not the just-computed trial.
+                let predicted_speed = self.gap_predicted_speed;
+                self.gap_reference(&predicted_speed, &obstacles);
+                self.displayed_gap(&input, &physical, &obstacles);
+                for stage in 0..12 {
+                    self.solver
+                        .set(stage, Field::Reference, &self.reference[stage])?;
+                }
+                self.solver
+                    .set(12, Field::Reference, &self.reference[12][..5])?;
+                let trial_times = self.times;
+                warning = self.run(clock)?.or(warning);
+                for (value, trial) in self.times.iter_mut().zip(trial_times) {
+                    *value += trial;
+                }
+            }
+        }
         if mode == PlannerMode::Acc {
             self.predicted_danger_margin = 1000.;
             if input.radar.lead_one.status {

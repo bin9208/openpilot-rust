@@ -18,6 +18,11 @@ impl VisionClient {
     }
 }
 impl RetainedBuffer<'_> {
+    /// Current producer ID, for rejecting a recycled retained camera image.
+    pub fn frame_id(&self) -> Result<u64, Error> {
+        self.buffer.mapping.frame_id()
+    }
+
     pub fn layout(&self) -> VisionLayout {
         self.buffer.wire.layout
     }

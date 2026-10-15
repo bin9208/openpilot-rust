@@ -104,6 +104,7 @@ pub fn camera_steering(
     let mut frames = Vec::with_capacity(4);
     if let Some(original) = &source.mdps {
         let mut data = original.clone();
+        let counter = remove_counter(&mut data)?;
         if i.angle_control {
             if let Some(lfa) = &source.lfa_alt {
                 data.insert("LFA2_ACTIVE".into(), get(lfa, "LKAS_ANGLE_ACTIVE")?);
@@ -117,7 +118,7 @@ pub fn camera_steering(
                 get(&data, "STEERING_COL_TORQUE")? + 220.,
             );
         }
-        frames.push(writer.frame("MDPS", i.bus.cam, &data, None)?);
+        frames.push(writer.frame("MDPS", i.bus.cam, &data, counter)?);
     }
     if i.frame.is_multiple_of(10) {
         if let Some(original) = &source.touch {

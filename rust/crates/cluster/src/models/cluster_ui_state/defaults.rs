@@ -160,6 +160,7 @@ impl Default for ClusterUiState {
             network_address: None,
             network_connected: false,
             egpu_active: false,
+            external_compute_label: String::new(),
             external_nav_active: false,
             navi_owner: String::new(),
             navi_lifecycle: String::new(),

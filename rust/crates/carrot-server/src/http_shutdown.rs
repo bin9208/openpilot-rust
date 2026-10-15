@@ -33,9 +33,6 @@ pub(crate) async fn finish(app: &Application, background: Background) -> Result<
     if let Some(service) = &app.web_navi {
         failures.record("navigation", service.shutdown().await);
     }
-    if let Some(service) = &app.youtube_live {
-        failures.record("YouTube", service.finish().await);
-    }
     failures.record("background", background.finish(app).await);
     failures.record("Bluetooth", app.bluetooth_http.shutdown().await);
     if let Some(service) = &app.tools {

@@ -21,6 +21,7 @@ pub fn input(
         .unwrap_or(0.);
     Ok(HudInput {
         frame,
+        dm_alert: hud.get_driver_monitoring_alert(),
         enabled: cc.get_enabled(),
         active: cc.get_lat_active(),
         main_enabled: cs.get_cruise_state()?.get_available(),

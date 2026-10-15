@@ -36,7 +36,7 @@ pub fn context(
             &super::product_input::car_bytes(car)?,
         )?;
     }
-    let ui = UiState::new(params.as_ref(), 0.0, scene.models)?;
+    let ui = UiState::new(params.as_ref(), 0.0, scene.models.clone())?;
     let device = Device::new(DeviceConfig {
         big: scene.config.big,
         pc: true,
@@ -73,8 +73,8 @@ pub fn context(
         device_type: "pc".into(),
         now_monotonic: Rc::new(|| 0.0),
         model_status: {
-            let models = scene.models;
-            Rc::new(move || Ok(models))
+            let models = scene.models.clone();
+            Rc::new(move || Ok(models.clone()))
         },
         now_wall: Rc::new(move || stamp),
         source_root: root.into(),

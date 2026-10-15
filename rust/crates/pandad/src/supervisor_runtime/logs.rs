@@ -61,6 +61,7 @@ fn health(value: Health) -> Value {
         ("faults", u64::from(value.faults)),
         ("ignition_line", u64::from(value.ignition_line)),
         ("ignition_can", u64::from(value.ignition_can)),
+        ("wake_on_can", u64::from(value.wake_on_can)),
         ("controls_allowed", u64::from(value.controls_allowed)),
         ("car_harness_status", u64::from(value.harness_status)),
         ("safety_mode", u64::from(value.safety_model)),

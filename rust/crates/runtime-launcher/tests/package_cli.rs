@@ -9,6 +9,8 @@ fn package() -> tempfile::TempDir {
         "openpilot-runtime-install",
         "openpilot-manager",
         "openpilot-process-child",
+        "openpilot-reboot",
+        "openpilot-startup-recovery",
         "openpilot-carrot-recovery",
         "openpilot-carrot-web-watchdog",
         "openpilot-carrot-server",

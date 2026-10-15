@@ -71,6 +71,50 @@ impl CarSpecificParams for NativeEffects<'_> {
     }
 }
 impl Effects for NativeEffects<'_> {
+    fn jetlink_fault_active(&mut self) -> bool {
+        std::fs::read_to_string("/dev/shm/carrot-jetlink-fault")
+            .ok()
+            .is_some_and(|s| super::startup_events::jetlink_fault_recent(&s, self.monotonic()))
+    }
+    fn impact_new(&mut self) -> Result<Option<openpilot_impact_dashcam::ImpactDashcam>, Error> {
+        let memory = Params::for_runtime_at(std::path::Path::new("/dev/shm/params"))
+            .map_err(callbacks::Error::Parameter)?;
+        Ok(Some(openpilot_impact_dashcam::ImpactDashcam::new(
+            &mut self.params,
+            &mut &memory,
+        )?))
+    }
+    fn impact_update(
+        &mut self,
+        impact: &mut openpilot_impact_dashcam::ImpactDashcam,
+        now: f64,
+        allowed: bool,
+        trigger: bool,
+        quiet: Option<bool>,
+        details: serde_json::Value,
+    ) -> Result<(), Error> {
+        let memory = Params::for_runtime_at(std::path::Path::new("/dev/shm/params"))
+            .map_err(callbacks::Error::Parameter)?;
+        if let Err(error) = impact.update(
+            now,
+            allowed,
+            trigger,
+            quiet,
+            details,
+            &mut self.params,
+            &mut &memory,
+        ) {
+            impact.cancel(&mut &memory)?;
+            self.logger.emit(
+                log_site!(),
+                Record::text(
+                    Level::Error,
+                    format!("Impact dashcam parameter write failed: {error}"),
+                ),
+            )?;
+        }
+        Ok(())
+    }
     fn presence(&mut self, key: &str) -> Result<bool, Error> {
         match key {
             "NNFFModelName" => Ok(self.text(key)?.is_some()),

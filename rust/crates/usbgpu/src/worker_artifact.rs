@@ -1,5 +1,5 @@
 use crate::{
-    model_delivery::{assets, catalog::Catalog, packaged, pinned_manifest, sha256, Error},
+    model_delivery::{assets, catalog::Catalog, known_manifest, packaged, sha256, Error},
     worker::{Info, Metadata},
 };
 use std::{
@@ -44,7 +44,12 @@ fn package(model: &Path, root: &Path) -> Result<Identity, Error> {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             let package = packaged::worker_package(model, root)?;
-            let pinned = pinned_manifest();
+            let identity = packaged::identity(model)?;
+            let digest = identity["model_sha256"]
+                .as_str()
+                .ok_or_else(|| Error::Invalid("native model identity missing".into()))?;
+            let pinned = known_manifest(digest)
+                .ok_or_else(|| Error::Invalid("native model identity unknown".into()))?;
             return Ok(Identity {
                 digest: pinned.sha256,
                 bytes: pinned.size,

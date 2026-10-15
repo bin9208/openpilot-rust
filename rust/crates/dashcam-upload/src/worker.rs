@@ -112,6 +112,8 @@ pub fn concurrency(value: Option<&str>) -> usize {
 #[derive(Serialize, Deserialize)]
 pub struct Request {
     pub parent_pid: u32,
+    #[serde(default)]
+    pub include_all_files: bool,
     pub root: PathBuf,
     pub id: String,
     pub segments: Vec<String>,
@@ -199,7 +201,13 @@ pub fn run() -> Result<(), Error> {
         .map_or_else(|| Settings::for_runtime(&mut logger), Ok)
         .and_then(|mut settings| {
             settings.root = request.root;
-            crate::engine::run(settings, request.segments, canceled, output.clone())
+            crate::engine::run(
+                settings,
+                request.segments,
+                request.include_all_files,
+                canceled,
+                output.clone(),
+            )
         });
     match result {
         Ok(patch) => output.emit(Event::Finish { patch }),

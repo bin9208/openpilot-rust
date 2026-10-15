@@ -77,6 +77,8 @@ pub fn stage_fixture(temporary: &std::path::Path) -> (PathBuf, PathBuf) {
     for name in [
         "panda.bin.signed",
         "panda_h7.bin.signed",
+        "panda_tesla_wake.bin.signed",
+        "panda_h7_tesla_wake.bin.signed",
         "bootstub.panda.bin",
         "bootstub.panda_h7.bin",
     ] {

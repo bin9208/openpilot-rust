@@ -1,5 +1,6 @@
 mod assets;
 mod background;
+mod signal_display;
 pub mod camera_overlay;
 mod core;
 pub mod display;

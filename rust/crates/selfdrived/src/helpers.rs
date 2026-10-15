@@ -1,5 +1,5 @@
 use openpilot_calibrationd::orientation::{compose, rotation};
-use openpilot_locationd::orientation::{apply, rotate_std, Matrix, IDENTITY};
+use openpilot_locationd::orientation::{IDENTITY, Matrix, apply, rotate_std};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Deserialize, Serialize)]
@@ -132,13 +132,11 @@ impl ExcessiveActuationCheck {
 
 pub fn camera_packets(
     use_wide_camera: bool,
-    disable_dm: i32,
-    simulation: bool,
+    _disable_dm: i32,
+    _simulation: bool,
 ) -> Vec<&'static str> {
     let mut packets = vec!["roadCameraState"];
-    if disable_dm == 0 || simulation {
-        packets.push("driverCameraState");
-    }
+    // Driver camera/model health belongs to the always-running DM2 fallback.
     if use_wide_camera {
         packets.push("wideRoadCameraState");
     }

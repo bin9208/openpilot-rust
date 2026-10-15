@@ -71,20 +71,26 @@ impl Activity {
                 && event.gates.car_ok
                 && !(held.contains(token) && event.gates.hold_blocked)
                 && event.at.0 - last >= 0.18
-                && action != Action::None
             {
-                event.writer.send(Intent {
-                    address: remote.address.clone(),
-                    action,
-                    at: event.at,
-                    hold: held
-                        .contains(token)
-                        .then(|| format!("{}:{}", event.path, token.as_str())),
-                    repeat: remote.decoder.repeated().contains(token),
-                })?;
-                self.last_fire.insert(key, event.at);
-                emitted = true;
-                reason = Reason::Sent;
+                if !remote.decoder.repeated().contains(token) {
+                    event
+                        .writer
+                        .attention(remote.address.clone(), action, event.at)?;
+                }
+                if action != Action::None {
+                    event.writer.send(Intent {
+                        address: remote.address.clone(),
+                        action,
+                        at: event.at,
+                        hold: held
+                            .contains(token)
+                            .then(|| format!("{}:{}", event.path, token.as_str())),
+                        repeat: remote.decoder.repeated().contains(token),
+                    })?;
+                    self.last_fire.insert(key, event.at);
+                    emitted = true;
+                    reason = Reason::Sent;
+                }
             }
             let record = Record {
                 id: uuid::Uuid::new_v4().simple().to_string(),

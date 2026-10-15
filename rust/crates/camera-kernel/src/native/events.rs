@@ -1,5 +1,6 @@
 use super::{Buffer, CallResult, Device, Session};
 use openpilot_camerad::{ioctl::DEQUEUE_EVENT_IOCTL, requests::FrameEvent};
+use std::os::fd::{AsRawFd, BorrowedFd};
 
 #[derive(Debug)]
 pub struct PollResult {
@@ -26,6 +27,45 @@ pub struct CameraEvent {
 }
 
 impl Device {
+    pub fn poll_frames(
+        &self,
+        completions: &[Option<BorrowedFd<'_>>],
+        timeout_ms: i32,
+    ) -> (PollResult, Vec<bool>) {
+        let mut descriptors = Vec::with_capacity(completions.len() + 1);
+        descriptors.push(libc::pollfd {
+            fd: self.raw_fd(),
+            events: libc::POLLPRI,
+            revents: 0,
+        });
+        descriptors.extend(completions.iter().map(|fd| libc::pollfd {
+            fd: fd.as_ref().map_or(-1, AsRawFd::as_raw_fd),
+            events: libc::POLLIN,
+            revents: 0,
+        }));
+        // SAFETY: Every descriptor is initialized and each borrowed FD outlives poll.
+        let code = unsafe {
+            libc::poll(
+                descriptors.as_mut_ptr(),
+                descriptors.len() as libc::nfds_t,
+                timeout_ms,
+            )
+        };
+        let result = PollResult {
+            result: CallResult {
+                code,
+                errno: std::io::Error::last_os_error().raw_os_error().unwrap_or(0),
+            },
+            revents: descriptors[0].revents,
+        };
+        (
+            result,
+            descriptors[1..]
+                .iter()
+                .map(|fd| fd.revents & libc::POLLIN != 0)
+                .collect(),
+        )
+    }
     pub fn poll_priority(&self, timeout_ms: i32) -> PollResult {
         let mut descriptor = libc::pollfd {
             fd: self.raw_fd(),

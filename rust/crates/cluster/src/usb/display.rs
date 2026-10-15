@@ -13,6 +13,9 @@ pub trait Runtime {
     fn reset_protected(&self) -> bool;
     fn connected(&mut self, value: bool);
     fn warning(&mut self, message: &str);
+    fn message(&mut self, message: &str) {
+        println!("{message}");
+    }
 }
 
 pub struct Display<R: Runtime> {
@@ -26,12 +29,25 @@ pub struct Display<R: Runtime> {
     dimensions: [u32; 2],
     bus: BusLock,
     scanner: Option<Scanner>,
+    pub(super) wifi: Option<super::wifi::Wifi>,
 }
 
 impl<R: Runtime> Display<R> {
     /// # Errors
     /// Returns failure to open the shared eGPU bus lock.
-    pub fn new(mut options: Options, runtime: R, lock: &Path) -> Result<Self, Error> {
+    pub fn new(options: Options, runtime: R, lock: &Path) -> Result<Self, Error> {
+        Self::new_with_wifi(options, runtime, lock, None)
+    }
+    /// Select a registration-backed S3 transport while preserving USB defaults.
+    ///
+    /// # Errors
+    /// Returns failure to open the existing shared bus-lock file.
+    pub fn new_with_wifi(
+        mut options: Options,
+        runtime: R,
+        lock: &Path,
+        registration: Option<openpilot_cluster_wifi::Registration>,
+    ) -> Result<Self, Error> {
         options.brightness = options.brightness.clamp(0, 100);
         options.display_fps = options.display_fps.clamp(0, 255);
         options.frame_drain_attempts = options.frame_drain_attempts.max(0);
@@ -46,9 +62,10 @@ impl<R: Runtime> Display<R> {
             orientation: 0,
             chunk_gap: Duration::ZERO,
             profile: Samples::from_environment(),
-            dimensions: [1920, 480],
+            dimensions: [1920, if registration.is_some() { 462 } else { 480 }],
             bus: BusLock::open(lock)?,
             scanner: None,
+            wifi: registration.map(super::wifi::Wifi::new),
         })
     }
 
@@ -73,6 +90,15 @@ impl<R: Runtime> Display<R> {
     /// # Errors
     /// Returns discovery, access or initialization failure after one recovery attempt.
     pub fn open(&mut self) -> Result<(), Error> {
+        let brightness = self.brightness_raw();
+        if let Some(wifi) = self.wifi.as_mut() {
+            if !matches!(self.options.expected_product_id, None | Some(0x0092)) {
+                return Err(Error::Contract(
+                    "S3 bridge currently supports the TURZX 9.2-inch display",
+                ));
+            }
+            return wifi.open(&mut self.runtime, brightness);
+        }
         if self.scanner.is_none() {
             self.scanner = Some(Scanner::new()?);
         }
@@ -89,6 +115,10 @@ impl<R: Runtime> Display<R> {
     }
 
     pub fn close(&mut self) {
+        if let Some(wifi) = self.wifi.as_mut() {
+            wifi.close(&mut self.runtime);
+            return;
+        }
         self.runtime.connected(false);
         if self.connection.is_none() {
             return;
@@ -96,6 +126,12 @@ impl<R: Runtime> Display<R> {
         self.optional_command(14, &[(8, 0)], NoAck::NONE);
         self.connection = None;
         self.frame_errors = 0;
+    }
+
+    pub(super) fn is_open(&self) -> bool {
+        self.wifi
+            .as_ref()
+            .map_or(self.connection.is_some(), super::wifi::Wifi::connected)
     }
 
     fn connect(&mut self) -> Result<(), Error> {

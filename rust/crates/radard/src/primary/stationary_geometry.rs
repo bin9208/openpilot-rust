@@ -1,4 +1,4 @@
-use super::{constants::*, source::position_continuous, Matcher};
+use super::{Matcher, constants::*, source::position_continuous};
 use crate::{
     math::{maximum, minimum},
     model::VisionLead,
@@ -78,6 +78,9 @@ pub fn front_corner_pairs(points: &[Point], path: &Path) -> Vec<Pair> {
 }
 
 pub fn cross_position_cost(vision: Option<VisionLead>, front: &Point) -> Option<f64> {
+    cross_position_scaled(vision, front, 1.)
+}
+fn cross_position_scaled(vision: Option<VisionLead>, front: &Point, scale: f64) -> Option<f64> {
     let vision = vision?;
     if vision.probability < STATIONARY_VISION_MIN_PROB {
         return None;
@@ -95,6 +98,7 @@ pub fn cross_position_cost(vision: Option<VisionLead>, front: &Point) -> Option<
             ),
         ),
     );
+    let distance_gate = distance_gate * scale;
     let lateral_gate = maximum(2., minimum(4., vision.y_std.abs() * 3.));
     let distance_error = (front.d_rel - vision.d_rel).abs();
     let lateral_error = (front.y_rel - vision.y_rel).abs();
@@ -108,6 +112,8 @@ pub fn cross_position_cost(vision: Option<VisionLead>, front: &Point) -> Option<
 pub fn cross_front_support(
     vision: Option<VisionLead>,
     pairs: &[Pair],
+    yaw: f64,
+    preferred: Option<&crate::point::Identity>,
 ) -> Vec<(Point, f64, f64, Point)> {
     let Some(vision) = vision else {
         return Vec::new();
@@ -118,10 +124,21 @@ pub fn cross_front_support(
     pairs
         .iter()
         .filter_map(|(front, d_path, corner, _)| {
-            let position_cost = cross_position_cost(Some(vision), front)?;
-            if (front.v_lead - vision.velocity).abs() > STATIONARY_MAX_VISION_SPEED_DELTA_MPS {
-                return None;
+            let mut position_cost = cross_position_cost(Some(vision), front);
+            if position_cost.is_none()
+                || (front.v_lead - vision.velocity).abs() > STATIONARY_MAX_VISION_SPEED_DELTA_MPS
+            {
+                if front.radar_track_state < STATIONARY_RADAR_ONLY_FRONT_MIN_TRACK_STATE
+                    || yaw.abs() >= STATIONARY_TURN_FRONT_MIN_ABS_YAW_RATE_RAD_S
+                    || preferred.is_some_and(|id| *id != front.identity())
+                    || (front.y_rel - vision.y_rel).abs() > 1.25
+                    || (front.v_lead - vision.velocity).abs() > 30.
+                {
+                    return None;
+                }
+                position_cost = cross_position_scaled(Some(vision), front, 2.);
             }
+            let position_cost = position_cost?;
             let cost = position_cost
                 + (front.d_rel - corner.d_rel).abs() / STATIONARY_VISION_CROSS_SOURCE_MAX_DREL_M
                 + (front.y_rel - corner.y_rel).abs() / STATIONARY_VISION_CROSS_SOURCE_MAX_YREL_M
@@ -156,7 +173,11 @@ pub fn vision_base_cost(vision: Option<VisionLead>, point: &Point) -> Option<f64
     );
     let lateral_gate = maximum(2., minimum(4., vision.y_std.abs() * 3.));
     let distance_error = (point.d_rel - vision.d_rel).abs();
-    let lateral_error = (point.y_rel - vision.y_rel).abs();
+    let lateral_error = if point.source == "scc" {
+        0.
+    } else {
+        (point.y_rel - vision.y_rel).abs()
+    };
     if distance_error > distance_gate || lateral_error > lateral_gate {
         None
     } else {

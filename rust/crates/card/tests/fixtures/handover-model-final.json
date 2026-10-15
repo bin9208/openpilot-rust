@@ -1,0 +1,103 @@
+{
+  "source": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "sha256": "285fea414f09d7d09c9984ca33e7d80a2495247ba81da1d5fa8b50aad4d42179",
+  "block_sha256": "75ae9ffcaf1625c0a333b3ff3c3be25034073e9cbc85992c48bbb10aec1356d6",
+  "rows": [
+    {
+      "frame": 0,
+      "now": 1000000000,
+      "std": 0.2,
+      "result": true,
+      "model_frame": 0,
+      "model_time": 1000000000
+    },
+    {
+      "frame": 0,
+      "now": 1150000000,
+      "std": 0.3,
+      "result": true,
+      "model_frame": 0,
+      "model_time": 1000000000
+    },
+    {
+      "frame": 0,
+      "now": 1150000001,
+      "std": 0.2,
+      "result": false,
+      "model_frame": 0,
+      "model_time": 1000000000
+    },
+    {
+      "frame": 0,
+      "now": 999999999,
+      "std": 0.2,
+      "result": false,
+      "model_frame": 0,
+      "model_time": 1000000000
+    },
+    {
+      "frame": null,
+      "now": 1200000000,
+      "std": 0.2,
+      "result": false,
+      "model_frame": 0,
+      "model_time": 1000000000
+    },
+    {
+      "frame": 1,
+      "now": 1200000000,
+      "std": null,
+      "result": false,
+      "model_frame": 1,
+      "model_time": 1200000000
+    },
+    {
+      "frame": 1,
+      "now": 1300000000,
+      "std": 0.2,
+      "result": true,
+      "model_frame": 1,
+      "model_time": 1200000000
+    },
+    {
+      "frame": 1,
+      "now": 1300000000,
+      "std": -0.1,
+      "result": false,
+      "model_frame": 1,
+      "model_time": 1200000000
+    },
+    {
+      "frame": 1,
+      "now": 1300000000,
+      "std": 0.3000001,
+      "result": false,
+      "model_frame": 1,
+      "model_time": 1200000000
+    },
+    {
+      "frame": 1,
+      "now": 1300000000,
+      "std": "NaN",
+      "result": false,
+      "model_frame": 1,
+      "model_time": 1200000000
+    },
+    {
+      "frame": 2,
+      "now": 1500000000,
+      "std": 0.2,
+      "result": true,
+      "model_frame": 2,
+      "model_time": 1500000000
+    },
+    {
+      "frame": 2,
+      "now": 1650000000,
+      "std": 0.0,
+      "result": true,
+      "model_frame": 2,
+      "model_time": 1500000000
+    }
+  ]
+}

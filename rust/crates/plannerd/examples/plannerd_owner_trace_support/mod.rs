@@ -1,5 +1,7 @@
 pub mod decode;
+pub mod signal;
 pub mod snapshot;
+pub mod wire;
 use openpilot_plannerd::{native_parameters, parameters::Parameters, Error};
 use std::collections::BTreeMap;
 

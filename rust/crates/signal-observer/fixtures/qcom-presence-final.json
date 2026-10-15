@@ -1,0 +1,465 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "scope": "original run_selected; only leaf execution and stat boundary inert",
+  "cases": [
+    {
+      "request": {
+        "files": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          false,
+          true,
+          false,
+          false
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          false,
+          false
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json",
+          "classifier.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          false,
+          false,
+          true,
+          false
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          false,
+          true,
+          false
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          false,
+          true,
+          true,
+          false
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          false
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json",
+          "classifier.qcom.pkl",
+          "classifier.qcom.json"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          false,
+          false,
+          false,
+          true
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          false,
+          false,
+          true
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          false,
+          true,
+          false,
+          true
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          false,
+          true
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json",
+          "classifier.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          false,
+          false,
+          true,
+          true
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          false,
+          true,
+          true
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          false,
+          true,
+          true,
+          true
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "missing",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "fault": null
+      },
+      "expected": {
+        "route": "qcom",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json",
+          "classifier.qcom.pkl",
+          "classifier.qcom.json",
+          "run:qcom"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "fault": {
+          "index": 0,
+          "kind": "permission"
+        }
+      },
+      "expected": {
+        "route": "stat_error",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "fault": {
+          "index": 0,
+          "kind": "io"
+        }
+      },
+      "expected": {
+        "route": "stat_error",
+        "trace": [
+          "detector.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "fault": {
+          "index": 1,
+          "kind": "permission"
+        }
+      },
+      "expected": {
+        "route": "stat_error",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "fault": {
+          "index": 1,
+          "kind": "io"
+        }
+      },
+      "expected": {
+        "route": "stat_error",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "fault": {
+          "index": 2,
+          "kind": "permission"
+        }
+      },
+      "expected": {
+        "route": "stat_error",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json",
+          "classifier.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "fault": {
+          "index": 2,
+          "kind": "io"
+        }
+      },
+      "expected": {
+        "route": "stat_error",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json",
+          "classifier.qcom.pkl"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "fault": {
+          "index": 3,
+          "kind": "permission"
+        }
+      },
+      "expected": {
+        "route": "stat_error",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json",
+          "classifier.qcom.pkl",
+          "classifier.qcom.json"
+        ]
+      }
+    },
+    {
+      "request": {
+        "files": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "fault": {
+          "index": 3,
+          "kind": "io"
+        }
+      },
+      "expected": {
+        "route": "stat_error",
+        "trace": [
+          "detector.qcom.pkl",
+          "detector.qcom.json",
+          "classifier.qcom.pkl",
+          "classifier.qcom.json"
+        ]
+      }
+    }
+  ]
+}

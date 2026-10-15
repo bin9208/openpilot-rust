@@ -3,9 +3,9 @@ use super::{camera::Camera, publisher::Publisher};
 use crate::{
     inference::BlindspotModel,
     service::{state::Timing, Stream},
-    vision::{gate, Direction, Gate, GateInput, Side},
+    vision::{gate, Gate, GateInput, Side},
 };
-use openpilot_cereal::log_capnp::{event, LaneChangeDirection};
+use openpilot_cereal::log_capnp::event;
 use openpilot_messaging::{
     runtime::SubMaster,
     state::{Options, State},
@@ -16,47 +16,32 @@ use std::{
     time::Duration,
 };
 
-fn update_gate(state: &State) -> Result<Gate, Error> {
+fn update_gate(state: &State, configured: [bool; 2], next_side: Side) -> Result<Gate, Error> {
     let valid =
         state.all_alive(&["carState", "modelV2"])? && state.all_valid(&["carState", "modelV2"])?;
-    if !valid {
-        return Ok(gate(GateInput {
-            alive_valid: false,
-            speed: 0.0,
-            direction: Direction::None,
-            left_width: 0.0,
-            right_width: 0.0,
-        }));
-    }
-    let event::CarState(car) = state
-        .topic("carState")?
-        .event()?
-        .which()
-        .map_err(capnp::Error::from)?
-    else {
-        return Err(Error::Contract("unexpected gate carState"));
-    };
-    let event::ModelV2(model) = state
-        .topic("modelV2")?
-        .event()?
-        .which()
-        .map_err(capnp::Error::from)?
-    else {
-        return Err(Error::Contract("unexpected gate modelV2"));
-    };
-    let car = car?;
-    let meta = model?.get_meta()?;
-    let direction = match meta.get_lane_change_direction() {
-        Ok(LaneChangeDirection::Left) => Direction::Left,
-        Ok(LaneChangeDirection::Right) => Direction::Right,
-        Ok(LaneChangeDirection::None) | Err(_) => Direction::None,
+    let (left_width, right_width) = if valid {
+        let event::ModelV2(model) = state
+            .topic("modelV2")?
+            .event()?
+            .which()
+            .map_err(capnp::Error::from)?
+        else {
+            return Err(Error::Contract("unexpected gate modelV2"));
+        };
+        let meta = model?.get_meta()?;
+        (
+            f64::from(meta.get_lane_width_left()),
+            f64::from(meta.get_lane_width_right()),
+        )
+    } else {
+        (0.0, 0.0)
     };
     Ok(gate(GateInput {
-        alive_valid: true,
-        speed: f64::from(car.get_v_ego()),
-        direction,
-        left_width: f64::from(meta.get_lane_width_left()),
-        right_width: f64::from(meta.get_lane_width_right()),
+        alive_valid: valid,
+        left_width,
+        right_width,
+        configured,
+        next_side,
     }))
 }
 
@@ -93,7 +78,17 @@ pub fn run(
             let now = platform::monotonic()?;
             shared.refresh(false)?;
             subscriber.update(Duration::ZERO)?;
-            let gate = update_gate(&subscriber.state)?;
+            let (configured, next_side) = {
+                let state = shared.state()?;
+                (
+                    [
+                        state.config.poly_left.len() >= 3,
+                        state.config.poly_right.len() >= 3,
+                    ],
+                    state.next_side,
+                )
+            };
+            let gate = update_gate(&subscriber.state, configured, next_side)?;
             let side = gate.side.filter(|_| gate.active);
             let (clear, interval) = {
                 let mut state = shared.state()?;
@@ -106,14 +101,24 @@ pub fn run(
                     camera_state.snapshot_response = camera_state.snapshot_request;
                     shared.snapshot.notify_all();
                 }
+                let mut clear = false;
+                for candidate in [Side::Left, Side::Right] {
+                    if !state.gate.eligible_sides.contains(&candidate) {
+                        clear |= state.blindspot_active[candidate.index()];
+                        state.blindspot_active[candidate.index()] = false;
+                        state.blindspot_side_updated[candidate.index()] = 0;
+                    }
+                }
                 if side.is_none() {
-                    let clear = state.blindspot_active.iter().any(|active| *active);
                     state.blindspot_active = [false; 2];
                     state.blindspot_side = None;
                     state.blindspot_updated = platform::timestamp()?;
                     (clear, 0.0)
                 } else {
-                    let interval = if now < state.followup_until {
+                    let interval = if now
+                        < state.followup_until
+                            [side.ok_or(Error::Contract("gate side missing"))?.index()]
+                    {
                         0.15
                     } else {
                         state.settings.base_interval_seconds
@@ -171,13 +176,23 @@ pub fn run(
                 })?;
                 state.side_at[side.index()] = now;
                 if active {
-                    state.followup_until = now + 1.5;
+                    state.followup_until[side.index()] = now + 1.5;
                 }
                 state.sides = [*model.side(Side::Left), *model.side(Side::Right)];
-                state.blindspot_active = [false; 2];
                 state.blindspot_active[side.index()] = active;
                 state.blindspot_side = Some(side);
                 state.blindspot_updated = platform::timestamp()?;
+                state.blindspot_side_updated[side.index()] = state.blindspot_updated;
+                let other = if side == Side::Left {
+                    Side::Right
+                } else {
+                    Side::Left
+                };
+                state.next_side = if state.gate.eligible_sides.contains(&other) {
+                    other
+                } else {
+                    side
+                };
             }
             drop(operation);
             publisher.publish(&shared)

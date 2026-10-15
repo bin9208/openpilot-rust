@@ -18,7 +18,7 @@ POLICIES = (
   ('packets', 'packets', 'sensor_packets'),
 )
 LIFECYCLES = ('kernel', 'sensor_lifecycle', 'isp_lifecycle', 'camera_lifecycle')
-RUNTIME_CASES = ('term', 'int', 'pwr', 'disabled-road', 'missing-road', 'wait-failure', 'poll-error', 'publication-order')
+RUNTIME_CASES = ('term', 'int', 'pwr', 'disabled-road', 'missing-road', 'missing-driver-node', 'driver-blocked', 'wait-failure', 'poll-error', 'publication-order')
 SCHEMAS = ('car', 'custom', 'deprecated', 'log')
 
 

@@ -1,8 +1,8 @@
 use super::{
+    Matcher, VisionMatch,
     constants::*,
     source::{position_continuous, stationary_source_rank},
     stationary_support::Candidate,
-    Matcher, VisionMatch,
 };
 use crate::{
     association::prefer_front_current,
@@ -104,9 +104,20 @@ impl Matcher {
         };
         let mut candidates = Vec::new();
         for point in points {
-            if stationary_source_rank(point) > 2
+            let held_stopping_front = point.source == "frontRadar"
+                && point.track_id.0 != 0
+                && point.measured
+                && self.radar_only_moving_identity.as_ref() == Some(&point.identity())
+                && point.v_lead >= -1.
+                && self
+                    ._radar_only_moving_last_point
+                    .as_ref()
+                    .zip(self._radar_only_moving_last_time_s)
+                    .is_some_and(|(p, t)| position_continuous(p, t, point, now));
+            if (point.source == "frontRadar" && point.radar_track_state == 1)
+                || stationary_source_rank(point) > 2
                 || !(0.5 < point.d_rel && point.d_rel <= RADAR_ONLY_MOVING_MAX_DREL_M)
-                || point.v_lead <= RADAR_ONLY_MOVING_MIN_VLEAD_MPS
+                || (point.v_lead <= RADAR_ONLY_MOVING_MIN_VLEAD_MPS && !held_stopping_front)
                 || (point.d_rel > RADAR_ONLY_MOVING_RECEDING_MAX_DREL_M
                     && point.v_rel > RADAR_ONLY_MOVING_RECEDING_VREL_MPS)
             {

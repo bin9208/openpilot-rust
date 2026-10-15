@@ -1,13 +1,14 @@
-//! Typed cereal extraction from the original 28-service SubMaster boundary.
+//! Typed cereal extraction from the final-source 30-service SubMaster boundary.
 use super::{ControlState, Input, Panda};
 use crate::Error;
 use openpilot_messaging::state::State;
-pub const SERVICES: [&str; 28] = [
+pub const SERVICES: [&str; 30] = [
     "modelV2",
     "controlsState",
     "onroadEvents",
     "liveCalibration",
     "radarState",
+    "liveTracks",
     "deviceState",
     "pandaStates",
     "carParams",
@@ -31,6 +32,7 @@ pub const SERVICES: [&str; 28] = [
     "liveTorqueParameters",
     "lateralPlan",
     "customReservedRawData0",
+    "customReservedRawData1",
 ];
 #[derive(Clone, Copy)]
 pub struct Clock {

@@ -62,6 +62,15 @@ impl Renderer {
     pub fn has_render_target(&self) -> bool {
         self.surface.has_render_target()
     }
+    pub fn has_capture_frame(&self) -> bool {
+        self.surface.has_capture_frame()
+    }
+    pub fn release_render_target(&mut self) -> Result<(), Error> {
+        Ok(self.surface.pin_mut().release_render_target()?)
+    }
+    pub fn capture_frame_pixels(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.surface.capture_frame_pixels()?)
+    }
     pub fn capture_pixels(&self) -> Result<Vec<u8>, Error> {
         Ok(self.surface.capture_pixels()?)
     }
@@ -121,6 +130,12 @@ impl Renderer {
     }
     pub fn key_started(&self, key: i32) -> bool {
         self.surface.key_started(key)
+    }
+    pub fn set_exit_key(&mut self, key: i32) {
+        self.surface.pin_mut().exit_key(key);
+    }
+    pub fn mouse_button_pressed(&self, button: i32) -> bool {
+        self.surface.mouse_pressed(button)
     }
     pub fn mouse_button_down(&self, button: i32) -> bool {
         self.surface.sample(button).down

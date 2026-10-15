@@ -116,6 +116,71 @@ pub trait RequestIo {
     fn sleep_ms(&mut self, millis: u64);
 }
 
+/// Immutable owner-captured fence IDs and stress decisions. No camera state is
+/// accessed by a wait worker.
+#[derive(Debug, Clone, Copy)]
+pub struct FrameWait {
+    camera: i32,
+    ife: i32,
+    bps: i32,
+    sleep: bool,
+    ife_timeout: u32,
+    bps_timeout: u32,
+}
+pub trait WaitIo {
+    fn now_ms(&mut self) -> f64;
+    fn wait(&mut self, fence: i32, timeout: u32) -> bool;
+    fn sleep_ms(&mut self, millis: u64);
+    fn failed(&mut self, camera: i32, point: StressPoint, elapsed_ms: f64);
+}
+impl<T: RequestIo> WaitIo for T {
+    fn now_ms(&mut self) -> f64 {
+        RequestIo::now_ms(self)
+    }
+    fn wait(&mut self, fence: i32, timeout: u32) -> bool {
+        self.wait_for_sync(fence, timeout)
+    }
+    fn sleep_ms(&mut self, millis: u64) {
+        RequestIo::sleep_ms(self, millis);
+    }
+    fn failed(&mut self, camera: i32, point: StressPoint, elapsed_ms: f64) {
+        self.diagnostic(Diagnostic::WaitFailure {
+            camera,
+            point,
+            elapsed_ms,
+        });
+    }
+}
+impl FrameWait {
+    pub fn run(self, io: &mut impl WaitIo) -> bool {
+        if self.sleep {
+            io.sleep_ms(350);
+            return false;
+        }
+        let mut wait = |fence, timeout, point| {
+            let start = io.now_ms();
+            let result = io.wait(fence, timeout);
+            let elapsed = io.now_ms() - start;
+            if !result {
+                io.failed(self.camera, point, elapsed);
+            }
+            result
+        };
+        wait(self.ife, self.ife_timeout, StressPoint::IfeWait)
+            && (self.bps == 0 || wait(self.bps, self.bps_timeout, StressPoint::BpsWait))
+    }
+}
+#[derive(Debug)]
+pub struct PendingFrame {
+    event: FrameEvent,
+    result: EventResult,
+}
+#[derive(Debug)]
+pub enum PreparedFrame {
+    Complete(EventResult),
+    Wait(PendingFrame, FrameWait),
+}
+
 #[derive(Debug, thiserror::Error)]
 #[error("camera buffer depth must be between 1 and 19, got {0}")]
 pub struct InvalidDepth(pub usize);
@@ -177,6 +242,20 @@ impl CameraRequests {
         sync: &mut FrameSync,
         io: &mut I,
     ) -> Result<EventResult, RequestError<I::Error>> {
+        match self.prepare_event(event, io)? {
+            PreparedFrame::Complete(result) => Ok(result),
+            PreparedFrame::Wait(pending, wait) => {
+                let ready = wait.run(io);
+                self.finish_frame(pending, ready, sync, io)
+            }
+        }
+    }
+
+    pub fn prepare_event<I: RequestIo>(
+        &mut self,
+        event: FrameEvent,
+        io: &mut I,
+    ) -> Result<PreparedFrame, RequestError<I::Error>> {
         let mut result = EventResult {
             frame: None,
             timing: None,
@@ -187,7 +266,7 @@ impl CameraRequests {
                 camera: self.camera,
                 event,
             });
-            return Ok(result);
+            return Ok(PreparedFrame::Complete(result));
         }
         let received = io.now_ns();
         let timing = self.timing.observe(event.timestamp, received);
@@ -205,18 +284,30 @@ impl CameraRequests {
         result.timing = Some(timing);
         if io.stress(StressPoint::SkipSof).map_err(RequestError::Io)? {
             result.disposition = Disposition::StressSkipped;
-            return Ok(result);
+            return Ok(PreparedFrame::Complete(result));
         }
         if let Some(disposition) = self.validate(event, io)? {
             result.disposition = disposition;
-            return Ok(result);
+            return Ok(PreparedFrame::Complete(result));
         }
         if event.request_id == self.request_id_last.wrapping_add(1) {
             self.skip_expected = false;
         }
         self.frame_id_raw_last = event.frame_id;
         self.request_id_last = event.request_id;
-        if !self.wait_for_frame(event.request_id, io)? {
+        let wait = self.frame_wait(event.request_id, io)?;
+        Ok(PreparedFrame::Wait(PendingFrame { event, result }, wait))
+    }
+
+    pub fn finish_frame<I: RequestIo>(
+        &mut self,
+        pending: PendingFrame,
+        ready: bool,
+        sync: &mut FrameSync,
+        io: &mut I,
+    ) -> Result<EventResult, RequestError<I::Error>> {
+        let PendingFrame { event, mut result } = pending;
+        if !ready {
             io.diagnostic(Diagnostic::SyncFailure {
                 camera: self.camera,
                 event,
@@ -316,51 +407,35 @@ impl CameraRequests {
         Ok(())
     }
 
-    fn wait_for_frame<I: RequestIo>(
+    fn frame_wait<I: RequestIo>(
         &self,
         request: u64,
         io: &mut I,
-    ) -> Result<bool, RequestError<I::Error>> {
+    ) -> Result<FrameWait, RequestError<I::Error>> {
         let (ife, bps) = io.fences((request % self.depth as u64) as usize);
         if ife == 0 {
             return Err(RequestError::MissingFence(request));
         }
-        if io
+        let sleep = io
             .stress(StressPoint::SyncSleep)
-            .map_err(RequestError::Io)?
-        {
-            io.sleep_ms(350);
-            return Ok(false);
-        }
-        let mut success = self.wait_for_sync(ife, 100, StressPoint::IfeWait, io)?;
-        if success && bps != 0 {
-            success = self.wait_for_sync(bps, 50, StressPoint::BpsWait, io)?;
-        }
-        Ok(success)
-    }
-
-    fn wait_for_sync<I: RequestIo>(
-        &self,
-        fence: i32,
-        timeout: u32,
-        point: StressPoint,
-        io: &mut I,
-    ) -> Result<bool, RequestError<I::Error>> {
-        let start = io.now_ms();
-        let timeout = if io.stress(point).map_err(RequestError::Io)? {
+            .map_err(RequestError::Io)?;
+        let ife_timeout = if io.stress(StressPoint::IfeWait).map_err(RequestError::Io)? {
             1
         } else {
-            timeout
+            100
         };
-        let success = io.wait_for_sync(fence, timeout);
-        let end = io.now_ms();
-        if !success {
-            io.diagnostic(Diagnostic::WaitFailure {
-                camera: self.camera,
-                point,
-                elapsed_ms: end - start,
-            });
-        }
-        Ok(success)
+        let bps_timeout = if io.stress(StressPoint::BpsWait).map_err(RequestError::Io)? {
+            1
+        } else {
+            50
+        };
+        Ok(FrameWait {
+            camera: self.camera,
+            ife,
+            bps,
+            sleep,
+            ife_timeout,
+            bps_timeout,
+        })
     }
 }

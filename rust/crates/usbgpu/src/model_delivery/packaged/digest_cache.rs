@@ -1,7 +1,5 @@
-use super::{
-    super::{pinned_manifest, Error},
-    copy,
-};
+use super::{super::Error, copy};
+use crate::model::Manifest;
 use parking_lot::Mutex;
 use std::{
     os::unix::fs::MetadataExt,
@@ -12,6 +10,7 @@ use std::{
 #[derive(Clone, PartialEq, Eq)]
 struct Stamp {
     path: PathBuf,
+    digest: String,
     device: u64,
     inode: u64,
     bytes: u64,
@@ -19,17 +18,18 @@ struct Stamp {
     changed: [i64; 2],
 }
 
-fn stamp(path: &Path) -> Result<Option<Stamp>, Error> {
+fn stamp(path: &Path, model: &Manifest) -> Result<Option<Stamp>, Error> {
     let metadata = match path.symlink_metadata() {
         Ok(metadata) => metadata,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(error.into()),
     };
-    if !metadata.is_file() || metadata.len() != pinned_manifest().size {
+    if !metadata.is_file() || metadata.len() != model.size {
         return Ok(None);
     }
     Ok(Some(Stamp {
         path: path.to_path_buf(),
+        digest: model.sha256.clone(),
         device: metadata.dev(),
         inode: metadata.ino(),
         bytes: metadata.len(),
@@ -40,18 +40,18 @@ fn stamp(path: &Path) -> Result<Option<Stamp>, Error> {
 
 static VERIFIED: OnceLock<Mutex<[Option<Stamp>; 2]>> = OnceLock::new();
 
-pub(super) fn verified(path: &Path) -> Result<bool, Error> {
-    let Some(before) = stamp(path)? else {
+pub(super) fn verified(path: &Path, model: &Manifest) -> Result<bool, Error> {
+    let Some(before) = stamp(path, model)? else {
         return Ok(false);
     };
     let cache = VERIFIED.get_or_init(|| Mutex::new([None, None]));
     if cache.lock().iter().flatten().any(|entry| entry == &before) {
         return Ok(true);
     }
-    if !copy::verified(path, &pinned_manifest())? {
+    if !copy::verified(path, model)? {
         return Ok(false);
     }
-    if stamp(path)?.as_ref() != Some(&before) {
+    if stamp(path, model)?.as_ref() != Some(&before) {
         return Err(Error::Invalid(
             "native model changed during readiness admission".into(),
         ));

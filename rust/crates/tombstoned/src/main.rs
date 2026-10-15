@@ -24,6 +24,18 @@ fn run(options: Options) -> Result<(), Error> {
         None => NativeSdk::default(),
     };
     let mut inputs = RuntimeInputs::new(options.base);
+    // Local Sentry fixtures must not bind the production diagnostic socket.
+    let _crash_collector = if !inputs.pc {
+        match openpilot_tombstoned::process_crash::native::Native::start() {
+            Ok(owner) => Some(owner),
+            Err(error) => {
+                eprintln!("[process_crash] collector unavailable: {error}");
+                None
+            }
+        }
+    } else {
+        None
+    };
     if let Some(device) = options.local_device {
         inputs.pc = false;
         inputs.device_override = Some(device);
@@ -68,6 +80,34 @@ fn run(options: Options) -> Result<(), Error> {
     Ok(())
 }
 fn main() -> ExitCode {
+    let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    if arguments
+        .first()
+        .is_some_and(|value| value == "--process-crash-upload")
+    {
+        let result = match arguments.as_slice() {
+            [_, target, path] => target
+                .to_str()
+                .ok_or_else(|| std::io::Error::other("invalid destination"))
+                .and_then(|target| {
+                    openpilot_tombstoned::process_crash::native::upload_child(
+                        target,
+                        std::path::Path::new(path),
+                    )
+                }),
+            _ => Err(std::io::Error::other(
+                "expected upload destination and saved report",
+            )),
+        };
+        return match result {
+            Ok(true) => ExitCode::SUCCESS,
+            Ok(false) => ExitCode::FAILURE,
+            Err(error) => {
+                eprintln!("[process_crash] upload: {error}");
+                ExitCode::FAILURE
+            }
+        };
+    }
     match openpilot_managed_entry::runtime("openpilot.system.tombstoned", "tombstoned", || {
         Options::parse(std::env::args_os().skip(1))
             .and_then(|options| options.map_or(Ok(()), run))

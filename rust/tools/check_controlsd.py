@@ -2,6 +2,7 @@
 import argparse
 import copy
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -28,6 +29,11 @@ def main():
     request['cases'].append(case)
   (args.evidence / 'input.json').write_text(json.dumps(request) + '\n')
   expected = [trace(case) for case in request['cases']]
+  # The readiness regression must actually reach steering, not merely compare two inactive loops.
+  startup=next(case for case in expected if case['name']=='startup-invalid-live-recovery-and-one-way-latch')
+  assert all(not row['state']['startup_ready'] for row in startup['rows'][:10])
+  assert all(row['state']['startup_ready'] and row['state']['lateral_started'] for row in startup['rows'][10:])
+  assert all(math.isfinite(row['state']['curvature']) for row in startup['rows'])
   (args.evidence / 'source.json').write_text(json.dumps(expected, indent=2) + '\n')
   output = args.evidence / 'native-raw.json'
   child = subprocess.run(
@@ -40,7 +46,10 @@ def main():
   (args.evidence / 'process.log').write_text(child.stdout + child.stderr + f'\nEXIT {child.returncode}\n')
   child.check_returncode()
   actual = json.loads(output.read_text())
-  print(json.dumps(compare_traces(expected, actual, args.evidence)))
+  result=compare_traces(expected, actual, args.evidence)
+  result['source_delta']=dict(fixture='rust/upstream/lateral-readiness-source.json',source_commit='e8e152dbcfd9574a1791ed12026d1880e87689b3',scope='startup gate, nominal fallback, first active curvature, common steering ratio and published DM disable forceDecel')
+  (args.evidence / 'results.json').write_text(json.dumps(result,indent=2)+'\n')
+  print(json.dumps(result))
 
 
 if __name__ == '__main__':

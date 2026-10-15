@@ -53,3 +53,43 @@ fn flipping_owned_publication_toggles_front_only_and_leaves_raw_points_unchanged
     publication.set_flip(false);
     assert_eq!(publication.points[0].y_rel, 1.);
 }
+
+#[test]
+fn separate_display_points_flip_once_on_owned_publications_without_joining_control() {
+    let raw = Data {
+        has_display_data: true,
+        points: vec![Point {
+            y_rel: 1.,
+            yv_rel: -0.2,
+            ..Point::default()
+        }],
+        display_points: vec![
+            Point {
+                track_id: 123,
+                y_rel: 3.,
+                yv_rel: -0.4,
+                ..Point::default()
+            },
+            Point {
+                track_id: 124,
+                radar_source: Source::Corner235,
+                y_rel: 2.,
+                ..Point::default()
+            },
+        ],
+        ..Data::default()
+    };
+    let mut output = raw.clone();
+    output.set_flip(true);
+    assert_eq!(output.points.len(), 1);
+    assert_eq!(output.display_points.len(), 2);
+    assert_eq!(output.display_points[0].y_rel, -3.);
+    assert_eq!(output.display_points[0].yv_rel, 0.4);
+    assert_eq!(output.display_points[1].y_rel, 2.);
+    assert_eq!(raw.display_points[0].y_rel, 3.);
+    output.set_flip(true);
+    assert_eq!(output.display_points[0].y_rel, -3.);
+    output.set_flip(false);
+    assert_eq!(output.display_points[0].y_rel, 3.);
+    assert_eq!(output.points[0].y_rel, 1.);
+}

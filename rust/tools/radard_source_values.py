@@ -40,6 +40,9 @@ def model(value):
   return {
     "position": {name: [number(item) for item in getattr(position, name, ())] for name in ("x", "y")},
     "velocity": [number(item) for item in getattr(velocity, "x", ())],
+    "lane_lines": [{name: [number(item) for item in getattr(line,name,())] for name in ("x","y")} for line in getattr(value,"laneLines",())],
+    "lane_stds": [number(item) for item in getattr(value,"laneLineStds",())],
+    "lane_change_state": str(getattr(getattr(value,"meta",None),"laneChangeState","unknown")),
     "lane_probabilities": [number(item) for item in getattr(value, "laneLineProbs", ())],
     "leads": [
       {"probability": number(getattr(lead, "prob", 0.0)),

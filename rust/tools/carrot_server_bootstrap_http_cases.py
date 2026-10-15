@@ -48,5 +48,5 @@ def prepare(scenario, root, params):
   for store in params:
     store.put('CarSelected3', 'HYUNDAI SONATA')
   for directory in ('data', 'native_data'):
-    for name in ('intro.json', 'web_settings.json', 'setting_profiles.json', 'setting_favorites.json', 'youtube_live.json'):
+    for name in ('intro.json', 'web_settings.json', 'setting_profiles.json', 'setting_favorites.json'):
       (root / directory / 'state' / name).unlink(missing_ok=True)

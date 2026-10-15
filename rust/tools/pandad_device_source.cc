@@ -56,7 +56,7 @@ Json health(const health_t &h) {
     {"uptime", double(h.uptime_pkt)}, {"voltage", double(h.voltage_pkt)}, {"current", double(h.current_pkt)},
     {"safety_tx_blocked", double(h.safety_tx_blocked_pkt)}, {"safety_rx_invalid", double(h.safety_rx_invalid_pkt)},
     {"tx_overflow", double(h.tx_buffer_overflow_pkt)}, {"rx_overflow", double(h.rx_buffer_overflow_pkt)},
-    {"faults", double(h.faults_pkt)}, {"ignition_line", h.ignition_line_pkt}, {"ignition_can", h.ignition_can_pkt},
+    {"faults", double(h.faults_pkt)}, {"ignition_line", h.ignition_line_pkt}, {"ignition_can", h.ignition_can_pkt}, {"wake_on_can", h.wake_on_can_pkt},
     {"controls_allowed", h.controls_allowed_pkt}, {"harness_status", h.car_harness_status_pkt},
     {"safety_model", h.safety_mode_pkt}, {"safety_param", h.safety_param_pkt}, {"fault_status", h.fault_status_pkt},
     {"power_save", h.power_save_enabled_pkt}, {"heartbeat_lost", h.heartbeat_lost_pkt},

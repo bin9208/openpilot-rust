@@ -16,6 +16,7 @@ impl StepIo for NativeIo {
     }
     fn vehicle_log(&mut self, diagnostic: &crate::core::VehicleLog) -> Result<(), Error> {
         let level = match diagnostic.level {
+            crate::query::DiagnosticLevel::Info => Level::Info,
             crate::query::DiagnosticLevel::Warning => Level::Warning,
             crate::query::DiagnosticLevel::Error | crate::query::DiagnosticLevel::Exception => {
                 Level::Error

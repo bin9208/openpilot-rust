@@ -11,6 +11,7 @@ pub struct TrafficLight {
     state: WidgetState,
     context: Context,
     current: i32,
+    signal: crate::signal_status::Status,
     green_start: Option<f64>,
     alpha_filter: Filter,
 }
@@ -20,12 +21,13 @@ impl TrafficLight {
             state: WidgetState::default(),
             context,
             current: 0,
+            signal: Default::default(),
             green_start: None,
             alpha_filter: Filter::new(0.0, 1.0, 60.0),
         }
     }
     pub fn visible(&self) -> bool {
-        self.alpha_filter.x > 0.05
+        self.alpha_filter.x > 0.05 || self.signal.assisted()
     }
     pub fn opacity(&self) -> f64 {
         self.alpha_filter.x
@@ -39,6 +41,17 @@ impl Widget for TrafficLight {
         &mut self.state
     }
     fn update(&mut self, _: &Frame<'_>, _: &mut dyn Draw) -> Result<(), Error> {
+        self.signal =
+            crate::signal_status::Status::from_messages(&self.context.messages.borrow().state)?;
+        if self.signal.paused {
+            self.current = 3;
+            self.green_start = None;
+            self.alpha_filter.x = 1.;
+            return Ok(());
+        }
+        if self.current == 3 {
+            self.alpha_filter.x = 0.;
+        }
         let traffic =
             messages::longitudinal_plan(&self.context.messages.borrow().state)?.get_traffic_state();
         let now = (self.context.now_monotonic)();
@@ -67,7 +80,7 @@ impl Widget for TrafficLight {
     }
     fn paint(&mut self, _: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         let alpha = self.alpha_filter.x.clamp(0.0, 1.0);
-        if alpha <= 0.01 {
+        if alpha <= 0.01 && !self.signal.assisted() {
             return Ok(RenderResult::None);
         }
         let alpha = (255.0 * alpha)
@@ -82,6 +95,12 @@ impl Widget for TrafficLight {
         let content_x = openpilot_ui_framework::text_layout::float(
             f64::from(rect.x) + f64::from(rect.width) - 60.0,
         );
+        let center_x = f64::from(content_x) + 60.0 - 24.0;
+        let center_y = f64::from(rect.y) + 24.0;
+        if self.current == 3 {
+            crate::signal_status::draw_pause(draw, center_x, center_y, 24.)?;
+            return Ok(RenderResult::None);
+        }
         super::confidence_ball::circle_gradient(
             draw,
             f64::from(content_x) + 60.0 - 24.0,
@@ -90,6 +109,7 @@ impl Widget for TrafficLight {
             top,
             bottom,
         )?;
+        self.signal.draw_assist(draw, center_x, center_y, 24.)?;
         Ok(RenderResult::None)
     }
 }

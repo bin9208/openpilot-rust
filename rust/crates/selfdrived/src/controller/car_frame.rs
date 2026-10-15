@@ -8,6 +8,7 @@ use std::io::Cursor;
 
 pub struct CarFrame {
     pub bytes: Vec<u8>,
+    pub timestamp: Option<u64>,
     message: Reader<OwnedSegments>,
 }
 impl CarFrame {
@@ -25,17 +26,24 @@ impl CarFrame {
             },
         )?;
         message.get_root::<car_state::Reader<'_>>()?;
-        Ok(Self { bytes, message })
+        Ok(Self {
+            bytes,
+            message,
+            timestamp: None,
+        })
     }
     pub fn from_event(bytes: &[u8]) -> Result<Self, Error> {
         let event = serialize::read_message(Cursor::new(bytes), ReaderOptions::new())?;
         let event::Which::CarState(cs) = event.get_root::<event::Reader<'_>>()?.which()? else {
             return Err(Error::Contract("carState event union"));
         };
+        let timestamp = event.get_root::<event::Reader<'_>>()?.get_log_mono_time();
         let cs = cs?;
         let mut message = Builder::new_default();
         message.set_root(cs)?;
-        Self::read(serialize::write_message_to_words(&message))
+        let mut frame = Self::read(serialize::write_message_to_words(&message))?;
+        frame.timestamp = Some(timestamp);
+        Ok(frame)
     }
     pub fn state(&self) -> Result<car_state::Reader<'_>, Error> {
         Ok(self.message.get_root()?)

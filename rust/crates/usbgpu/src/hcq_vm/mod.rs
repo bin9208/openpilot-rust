@@ -35,6 +35,8 @@ pub trait Host {
 pub(super) enum Op {
     Argument { slot: usize },
     Local { bytes: usize },
+    Data { bytes: Vec<u8> },
+    ClockGettime,
     Constant { value: u64 },
     Index { stride: u64 },
     Cast,
@@ -45,6 +47,8 @@ pub(super) enum Op {
     Add,
     Sub,
     Mul,
+    Cdiv,
+    Neg,
     And,
     Or,
     Xor,
@@ -58,6 +62,8 @@ pub(super) enum Op {
     Call,
     Range,
     End,
+    If,
+    Endif,
     Noop,
 }
 #[derive(Deserialize)]

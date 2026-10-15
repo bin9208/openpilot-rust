@@ -123,8 +123,8 @@ impl ModelRenderer {
             .get(self.common.acceleration.len() / 4)
             .copied()
             .unwrap_or(0.);
-        let alpha = 0.05 / (0.1 + 0.05);
-        let slow = 0.05 / (1. + 0.05);
+        let alpha = 1. - self.clock.retention(1. - 0.05 / (0.1 + 0.05));
+        let slow = 1. - self.clock.retention(1. - 0.05 / (1. + 0.05));
         self.filters.acceleration =
             float(1. - alpha) * self.filters.acceleration + float(alpha) * acceleration;
         self.filters.acceleration_slow =

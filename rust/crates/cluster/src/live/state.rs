@@ -1,4 +1,4 @@
-use super::{navigation, projection::Data, Error, Input, Projection};
+use super::{Error, Input, Projection, navigation, projection::Data};
 use crate::models::{ClusterUiState, NaviLiveState};
 use num_traits::ToPrimitive;
 
@@ -114,6 +114,10 @@ impl Input {
         );
         self.hud(&mut state)?;
         state.egpu_active = self.params.as_ref().is_some_and(|params| params.egpu);
+        state.external_compute_label = self
+            .params
+            .as_ref()
+            .map_or_else(String::new, |params| params.external_compute_label.clone());
         state.alert = self.alert(state.alert.take(), state.onroad, now)?;
         self.last_state = Some(state.clone());
         Ok(state)

@@ -32,6 +32,7 @@ pub fn messages(
                     candidate: &config.candidate,
                     flags: config.flags,
                     frame: c.frame,
+                    dm_alert: hud.get_driver_monitoring_alert(),
                     torque: command.torque,
                     steer_req: command.request,
                     torque_fault: cc.get_lat_active() && !command.request,
@@ -111,6 +112,7 @@ pub fn messages(
             &mut c.writer,
             [cc.get_lat_active(), cc.get_enabled(), c.steering.blink],
             hud.get_active_carrot(),
+            hud.get_driver_monitoring_alert(),
         )?);
     }
     if c.frame.is_multiple_of(20) && config.longitudinal && config.flags & f::CAMERA_SCC == 0 {

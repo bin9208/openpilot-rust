@@ -46,7 +46,7 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Builder<HeapAllocator>, Erro
     let mut message = vehicle_params::baseline(input.candidate)?;
     let platform = vehicle_params::platform(input.candidate)?;
     let mut cp = message.get_root::<car_params::Builder<'_>>()?;
-    let detection = detect(DetectionInput {
+    let mut detection = detect(DetectionInput {
         candidate: input.candidate,
         fingerprints: input.fingerprints,
         flags: cp.reborrow_as_reader().get_flags(),
@@ -56,6 +56,13 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Builder<HeapAllocator>, Erro
         radar_tracks: setting_int(input.settings, "EnableRadarTracks")?,
         alpha_long: input.alpha_long,
     });
+    if detection.flags & flags::CANFD != 0
+        && detection.flags & flags::CAMERA_SCC != 0
+        && input.settings.get_bool("HyundaiCanfdClusterDirectTx")?
+    {
+        detection.flags |= flags::CLUSTER_DIRECT_TX;
+        detection.safety_param |= flags::safety::CLUSTER_DIRECT_TX;
+    }
     cp.set_brand("hyundai");
     cp.set_flags(detection.flags);
     cp.set_ext_flags(detection.ext_flags);

@@ -10,3 +10,7 @@ License Version 2; see https://docs.python.org/3/license.html.
 NumPy/OpenBLAS is an explicit separately packaged native numerical dependency.
 No original Python runtime or project-owned C++ radar policy is used by the
 Rust radar policy.
+
+The scalar norm function translates CPython 3.12.14 vector_norm/dl_mul/dl_fast_sum.
+Python Software Foundation License Version 2 and historical licenses are reproduced
+in licenses/CPython-LICENSE. Source: https://github.com/python/cpython/blob/v3.12.14/Modules/mathmodule.c

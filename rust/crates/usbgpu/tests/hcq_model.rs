@@ -94,3 +94,48 @@ fn verified_model_preserves_recurrent_alias_and_rejects_changed_artifact() {
     std::fs::write(&artifact, b"abce").unwrap();
     assert!(Model::load(&descriptor, &artifact, OwnedDevice::default()).is_err());
 }
+
+#[test]
+fn persistent_abi_binds_scalar_device_addresses_without_legacy_input_table() {
+    let temp = tempfile::tempdir().unwrap();
+    let artifact = temp.path().join("model.pkl");
+    std::fs::write(&artifact, b"data").unwrap();
+    let hash = format!("{:x}", Sha256::digest(b"data"));
+    let mut bundle = json!({"version":2,"model_sha256":hash,"model_bytes":4,"kernel_count":1,
+      "buffers":[],"patches":[],"arguments":[],
+      "argument_values":[{"kind":"binding","slot":0,"offset":0,"space":"device"}],
+      "parameters":[{"slot":0,"name":"device_address","bytes":0}],
+      "bindings":[{"name":"state_q","shape":[4],"bytes":4,"dtype":"uint8","output":false,"alias":null},
+        {"name":"next_state_q","shape":[4],"bytes":4,"dtype":"uint8","output":true,"alias":0}],
+      "input_table":null,
+      "dispatcher":[{"op":{"kind":"argument","slot":0},"src":[],"bits":64}]});
+    let mut model = Model::load(
+        &serde_json::to_vec(&bundle).unwrap(),
+        &artifact,
+        OwnedDevice::default(),
+    )
+    .unwrap();
+    model.write_input("state_q", b"MDM!").unwrap();
+    model.run().unwrap();
+    let mut output = [0; 4];
+    model.read_output("next_state_q", &mut output).unwrap();
+    assert_eq!(&output, b"MDM!");
+    model.reset_recurrent().unwrap();
+    model.read_output("next_state_q", &mut output).unwrap();
+    assert_eq!(output, [0; 4]);
+    bundle["argument_values"][0]["offset"] = json!(5);
+    assert!(Model::load(
+        &serde_json::to_vec(&bundle).unwrap(),
+        &artifact,
+        OwnedDevice::default()
+    )
+    .is_err());
+    bundle["argument_values"][0]["offset"] = json!(0);
+    bundle["version"] = json!(1);
+    assert!(Model::load(
+        &serde_json::to_vec(&bundle).unwrap(),
+        &artifact,
+        OwnedDevice::default()
+    )
+    .is_err());
+}

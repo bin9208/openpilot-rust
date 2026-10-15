@@ -31,6 +31,8 @@ mod product_network;
 mod product_plot;
 #[path = "support/product_probe.rs"]
 mod product_probe;
+#[path = "support/product_preview.rs"]
+mod product_preview;
 #[path = "support/product_road.rs"]
 mod product_road;
 #[path = "support/product_root.rs"]

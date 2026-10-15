@@ -103,13 +103,9 @@ fn availability(name: &str) -> RustAvailability {
         "deleter" => ("openpilot-deleter", "openpilot-deleter"),
         "dmonitoringd" => ("openpilot-dmonitoringd", "openpilot-dmonitoringd"),
         "dmonitoringmodeld" => ("openpilot-dmonitoringmodeld", "openpilot-dmonitoringmodeld"),
-        "encoderd"
-        | "stream_encoderd"
-        | "carrot_vision_encoderd"
-        | "youtube_low_encoderd"
-        | "youtube_medium_encoderd"
-        | "youtube_encoderd"
-        | "youtube_wide_encoderd" => ("openpilot-encoderd", "openpilot-encoderd"),
+        "encoderd" | "stream_encoderd" | "carrot_vision_encoderd" => {
+            ("openpilot-encoderd", "openpilot-encoderd")
+        }
         "feedbackd" => ("openpilot-feedbackd", "openpilot-feedbackd"),
         "hardwared" => ("openpilot-hardwared", "openpilot-hardwared"),
         "jetlinkd" => ("openpilot-jetlink", "jetlinkd-rs"),
@@ -215,46 +211,6 @@ pub fn catalog(config: ImportConfig) -> Vec<Descriptor> {
             false,
         ),
         Descriptor::new(
-            "youtube_low_encoderd",
-            Native {
-                cwd: "openpilot/system/loggerd",
-                argv: &["./encoderd", "--youtube-low"],
-            },
-            All(&[Onroad, YoutubeLow]),
-            true,
-            false,
-        ),
-        Descriptor::new(
-            "youtube_medium_encoderd",
-            Native {
-                cwd: "openpilot/system/loggerd",
-                argv: &["./encoderd", "--youtube-medium"],
-            },
-            All(&[Onroad, YoutubeMedium]),
-            true,
-            false,
-        ),
-        Descriptor::new(
-            "youtube_encoderd",
-            Native {
-                cwd: "openpilot/system/loggerd",
-                argv: &["./encoderd", "--youtube"],
-            },
-            All(&[Onroad, Youtube]),
-            true,
-            false,
-        ),
-        Descriptor::new(
-            "youtube_wide_encoderd",
-            Native {
-                cwd: "openpilot/system/loggerd",
-                argv: &["./encoderd", "--youtube-wide"],
-            },
-            All(&[Onroad, YoutubeWide]),
-            true,
-            false,
-        ),
-        Descriptor::new(
             "logmessaged",
             Python {
                 module: "openpilot.system.logmessaged",
@@ -332,7 +288,7 @@ pub fn catalog(config: ImportConfig) -> Vec<Descriptor> {
             Python {
                 module: "openpilot.selfdrive.modeld.dmonitoringmodeld",
             },
-            DriverMonitoring,
+            DriverMonitoringModel,
             config.webcam || !config.pc,
             false,
         ),
@@ -448,7 +404,7 @@ pub fn catalog(config: ImportConfig) -> Vec<Descriptor> {
         Descriptor::new(
             "dmonitoringd",
             Python {
-                module: "openpilot.selfdrive.monitoring.dmonitoringd",
+                module: "openpilot.selfdrive.monitoring.dm2d",
             },
             DriverMonitoring,
             config.webcam || !config.pc,

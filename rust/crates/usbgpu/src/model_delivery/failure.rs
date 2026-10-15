@@ -1,4 +1,11 @@
 //! Preserve transient artifacts and reject persistent model failures.
+mod retry;
+mod terminal;
+pub use retry::retry_rejection;
+pub use terminal::{
+    gpu_bootloader_timeout, gpu_transport_failure, gpu_usb_link_failure, gpu_worker_busy,
+};
+
 use crate::Error;
 use serde::Deserialize;
 use std::{fs, io::Write, path::Path};
@@ -51,6 +58,38 @@ pub fn record(
     phase: &str,
     wall_time: f64,
 ) -> Result<bool, Error> {
+    record_with_worker(path, detail, kind, phase, wall_time, None)
+}
+
+pub fn record_error(
+    path: &Path,
+    error: &Error,
+    phase: &str,
+    wall_time: f64,
+) -> Result<bool, Error> {
+    let kind = match error.worker_cause() {
+        Error::Io(value) if value.kind() == std::io::ErrorKind::TimedOut => Kind::Timeout,
+        Error::Io(value) if value.kind() == std::io::ErrorKind::BrokenPipe => Kind::BrokenPipe,
+        _ => Kind::Detail,
+    };
+    record_with_worker(
+        path,
+        &crate::worker::diagnostic(error),
+        kind,
+        phase,
+        wall_time,
+        error.worker_snapshot(),
+    )
+}
+
+pub fn record_with_worker(
+    path: &Path,
+    detail: &str,
+    kind: Kind,
+    phase: &str,
+    wall_time: f64,
+    worker: Option<&serde_json::Value>,
+) -> Result<bool, Error> {
     if crate::local_artifact::is_local(path) {
         return crate::local_artifact::validation::record(path, detail, kind, phase, wall_time);
     }
@@ -63,14 +102,40 @@ pub fn record(
     let digest = value["pickle"]["sha256"]
         .as_str()
         .ok_or(Error::Contract("installed model hash missing"))?;
-    let rejected = !transient(detail, kind);
+    let rejected = !(transient(detail, kind)
+        || gpu_bootloader_timeout(detail, phase)
+        || gpu_worker_busy(detail)
+        || gpu_transport_failure(detail)
+        || gpu_usb_link_failure(
+            detail,
+            value["runtime"]["sha256"]
+                .as_str()
+                .or_else(|| value["runtime_archive_sha256"].as_str())
+                .unwrap_or(""),
+        ));
     let start = detail
         .char_indices()
         .rev()
         .nth(16383)
         .map_or(0, |(index, _)| index);
-    let failure = serde_json::json!({"time":wall_time,"phase":phase,"rejected":rejected,
-        "pickle_sha256":digest,"error":&detail[start..]});
+    let mut failure = serde_json::json!({"time":wall_time,"phase":phase,"rejected":rejected,
+        "pickle_sha256":digest,"boot_id":boot_identity(),"error":&detail[start..]});
+    if let Some(worker) = worker {
+        failure["worker"] = worker.clone();
+    }
+    // The server exports at most 32 KiB. Retain valid JSON even for multibyte errors.
+    while serde_json::to_vec(&failure)?.len() > 32768 {
+        let text = failure["error"].as_str().unwrap_or("");
+        if text.is_empty() {
+            failure.as_object_mut().unwrap().remove("worker");
+            break;
+        }
+        let mut start = text.len().div_ceil(4);
+        while !text.is_char_boundary(start) {
+            start += 1;
+        }
+        failure["error"] = serde_json::Value::String(text[start..].to_owned());
+    }
     let mut staging = tempfile::Builder::new()
         .prefix(".failure-")
         .tempfile_in(root)?;
@@ -83,4 +148,38 @@ pub fn record(
         fs::write(root.join("rejected"), digest)?;
     }
     Ok(rejected)
+}
+
+/// A missing boot identity cannot authorize cross-boot rejection migration.
+#[must_use]
+pub fn boot_identity() -> String {
+    fs::read_to_string("/proc/sys/kernel/random/boot_id")
+        .map(|value| value.trim().to_owned())
+        .unwrap_or_default()
+}
+
+/// Preserve only this boot validation attempt's worker snapshot across the runner process.
+pub fn worker_since(path: &Path, earliest: f64) -> Option<serde_json::Value> {
+    use std::io::Read;
+    let root = path.parent()?;
+    let file = fs::File::open(root.join("last_failure.json")).ok()?;
+    let mut bytes = Vec::new();
+    file.take(32769).read_to_end(&mut bytes).ok()?;
+    if bytes.len() > 32768 {
+        return None;
+    }
+    let value: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+    let identity = super::packaged::identity(path).ok()?;
+    let boot = boot_identity();
+    if boot.is_empty()
+        || value["boot_id"].as_str() != Some(&boot)
+        || value["pickle_sha256"] != identity["pickle"]["sha256"]
+        || value["time"].as_f64()? < earliest
+    {
+        return None;
+    }
+    value
+        .get("worker")
+        .filter(|value| value.is_object())
+        .cloned()
 }

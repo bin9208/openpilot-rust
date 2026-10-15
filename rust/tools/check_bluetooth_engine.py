@@ -27,7 +27,7 @@ def normalize(value: Json, ids: dict[str, int]) -> Json:
             if child not in ids:
               ids[child] = len(ids)
             result[key] = ids[child]
-        elif key in ('cruise', 'lane', 'status') and isinstance(child, str):
+        elif key in ('cruise', 'lane', 'attention', 'status') and isinstance(child, str):
           result[key] = normalize(json.loads(child), ids)
         else:
           result[key] = normalize(child, ids)

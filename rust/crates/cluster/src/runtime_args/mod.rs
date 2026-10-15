@@ -23,6 +23,7 @@ macro_rules! arguments {
         pub struct RuntimeArgs {
             $(pub $field: $kind,)+
             pub is_metric: Option<bool>,
+            #[serde(skip)] pub wifi_fps: Option<u32>,
             #[serde(flatten)] pub navi: NaviFlags,
             #[serde(flatten)] pub transport: TransportFlags,
             #[serde(flatten)] pub ack: AckFlags,
@@ -36,7 +37,7 @@ macro_rules! arguments {
         }
         impl Default for RuntimeArgs {
             fn default() -> Self {
-                Self { $($field: $default,)+ is_metric: None, navi: NaviFlags::default(),
+                Self { $($field: $default,)+ is_metric: None, wifi_fps: None, navi: NaviFlags::default(),
                     transport: TransportFlags::default(), ack: AckFlags::default(),
                     patterns: PatternFlags::default(), replay: ReplayFlags::default(),
                     live: LiveFlags::default(), diagnostics: DiagnosticFlags::default(),
@@ -144,12 +145,38 @@ impl RuntimeArgs {
         matches!(self.output, Output::Usb | Output::Both)
     }
 
+    /// Apply final-source registration overrides before resolving output rate.
+    pub fn apply_wifi(
+        &mut self,
+        registration: &openpilot_cluster_wifi::Registration,
+    ) -> &'static str {
+        self.wifi_fps = Some(registration.fps);
+        self.usb_codec = Codec::Jpeg;
+        self.usb_jpeg_quality = i64::from(registration.quality);
+        self.transport.usb_async = true;
+        "S3 Wi-Fi JPEG"
+    }
+
     /// Resolve the rate using the current `UsbGpuActive` state.
     ///
     /// # Errors
     /// Fails when the source's rounded display rate cannot become an integer.
     pub fn output_rate(&self, tici: bool, egpu_active: bool) -> Result<OutputRate, crate::Error> {
         let fixed = tici && self.input == InputSource::Live && self.usb_output();
+        if let Some(fps) = self.wifi_fps {
+            let target = if fixed && egpu_active {
+                fps.min(10)
+            } else {
+                fps
+            };
+            return Ok(OutputRate {
+                target_fps: f64::from(target),
+                fps_source: "S3 Wi-Fi",
+                fixed_usb_policy: fixed,
+                usb_display_fps: i64::from(target),
+                usb_display_fps_auto: fixed,
+            });
+        }
         let (target, source) = if fixed {
             (if egpu_active { 5.0 } else { 10.0 }, "fixed USB policy")
         } else if self.usb_output() && self.usb_codec == Codec::H264 && !self.fps_from_cli() {

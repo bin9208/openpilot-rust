@@ -47,6 +47,10 @@ pub enum Error {
     #[error("(34, 'Numerical result out of range')")]
     PowerOverflow,
     #[error("{0}")]
+    ArsValue(String),
+    #[error("{0}")]
+    BoschValue(String),
+    #[error("{0}")]
     Contract(&'static str),
     #[error("radar DBC metadata is absent for {0}")]
     MissingRadarDbc(String),

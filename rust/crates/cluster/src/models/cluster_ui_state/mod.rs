@@ -140,6 +140,8 @@ pub struct ClusterUiState {
     pub network_address: Option<String>,
     pub network_connected: bool,
     pub egpu_active: bool,
+    #[serde(default)]
+    pub external_compute_label: String,
     pub external_nav_active: bool,
     pub navi_owner: String,
     pub navi_lifecycle: String,

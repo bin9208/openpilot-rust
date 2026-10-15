@@ -56,8 +56,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     live.snapshot(false).await?;
     let navi = application.web_navi.as_ref().ok_or("navi absent")?;
     navi.status().await?;
-    let youtube = application.youtube_live.as_ref().ok_or("YouTube absent")?;
-    youtube.status().await?;
     if let Some(healthy) = &application.support_terminal {
         healthy.snapshot().await?;
         healthy.shutdown().await?;
@@ -92,13 +90,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .status()
         .await
         .is_err();
-    let youtube_stopped = retained
-        .youtube_live
-        .as_ref()
-        .ok_or("YouTube absent")?
-        .status()
-        .await
-        .is_err();
     println!(
         "{}",
         Value::object([
@@ -106,12 +97,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ("terminal_stopped", Value::Bool(terminal_stopped)),
             ("live_stopped", Value::Bool(live_stopped)),
             ("navi_stopped", Value::Bool(navi_stopped)),
-            ("youtube_stopped", Value::Bool(youtube_stopped)),
             ("retained_application", Value::Bool(true)),
         ])
         .encode()?
     );
-    if !(terminal_stopped && live_stopped && navi_stopped && youtube_stopped) {
+    if !(terminal_stopped && live_stopped && navi_stopped) {
         return Err("a later Application owner survived cleanup failure".into());
     }
     Ok(())

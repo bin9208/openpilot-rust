@@ -1,4 +1,4 @@
-use super::super::{assets, pinned_manifest, Error};
+use super::super::{assets, known_manifest, Error};
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
@@ -53,7 +53,8 @@ impl Record {
             ));
         }
         let record: Self = serde_json::from_slice(&fs::read(path)?)?;
-        let pinned = pinned_manifest();
+        let pinned = known_manifest(&record.model_sha256)
+            .ok_or_else(|| Error::Invalid("native provider has unknown source model".into()))?;
         if record.version != 1
             || record.model_sha256 != pinned.sha256
             || record.pickle.sha256 != pinned.sha256

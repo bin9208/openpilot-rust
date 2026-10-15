@@ -42,7 +42,10 @@ pub fn initialize(
     if params.boolean("RecordFrontLock")? {
         params.put_bool("RecordFront", true)?;
     }
+    crate::parameters::configure_monitoring(params)?;
+    std::env::remove_var("CARROT_DM_MODE");
     set_defaults(params, false)?;
+    crate::parameters::configure_stopping_speed(params)?;
     let mut environment = BTreeMap::new();
     let wide = params
         .get("UseWideCamera")?

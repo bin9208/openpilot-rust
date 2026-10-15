@@ -1,7 +1,15 @@
 # dev-md latest Carrot Rust port (#338)
 
-> Execution: continue the approved runtime design autonomously; implement and
-> validate dependency-ordered groups, keeping all work isolated from dev.
+> Scope correction (2026-10-16): port only upstream changed runtime behavior
+> into the existing Rust implementation. Repository-wide development/build/test
+> tool conversion belongs to the separate #296 session. Unchanged/vendor API
+> parity and exhaustive full-project verification are not delivery requirements.
+> Latest requested source is8e7eec049241b6ba384e9197aacdfb01f7d88ed3;
+> this refresh adds9 commits after the initial e8e152 pin. User owns device tests.
+> Current candidate disposition and focused results:
+> [2026-10-16 changed-runtime refresh](dev-md-latest-refresh.md).
+> Earlier whole-file checklist items below are historical, not a renewed mandate
+> to convert development tools or repeat complete project verification.
 
 Issue: https://github.com/bin9208/openpilot-rust/issues/338
 Spec: [full runtime design](../rust-port/design.md), extended by the user's

@@ -13,15 +13,17 @@ use std::{
 pub enum Channel {
     Cruise,
     Lane,
+    Attention,
 }
 
 impl Channel {
-    pub const ALL: [Self; 2] = [Self::Cruise, Self::Lane];
+    pub const ALL: [Self; 3] = [Self::Cruise, Self::Lane, Self::Attention];
 
     pub const fn filename(self) -> &'static str {
         match self {
             Self::Cruise => "cruise.json",
             Self::Lane => "lane.json",
+            Self::Attention => "attention.json",
         }
     }
 }
@@ -53,6 +55,7 @@ pub struct CommandWriter {
     root: PathBuf,
     cruise: Journal,
     lane: Journal,
+    attention: Journal,
     session: String,
     sequence: u64,
 }
@@ -63,6 +66,7 @@ impl CommandWriter {
             root: root.to_owned(),
             cruise: Journal::default(),
             lane: Journal::default(),
+            attention: Journal::default(),
             session: uuid::Uuid::new_v4().simple().to_string(),
             sequence: 0,
         }
@@ -72,6 +76,7 @@ impl CommandWriter {
         match channel {
             Channel::Cruise => &mut self.cruise.events,
             Channel::Lane => &mut self.lane.events,
+            Channel::Attention => &mut self.attention.events,
         }
     }
 
@@ -79,6 +84,7 @@ impl CommandWriter {
         let journal = match channel {
             Channel::Cruise => &self.cruise,
             Channel::Lane => &self.lane,
+            Channel::Attention => &self.attention,
         };
         atomic_json(&self.root.join(channel.filename()), journal)
     }
@@ -100,6 +106,28 @@ impl CommandWriter {
             | Action::PaddleDecel
             | Action::CarrotCruise => Channel::Cruise,
         };
+        self.append(channel, intent)
+    }
+
+    pub fn attention(
+        &mut self,
+        address: Address,
+        action: Action,
+        at: Seconds,
+    ) -> Result<(), Error> {
+        self.append(
+            Channel::Attention,
+            Intent {
+                address,
+                action,
+                at,
+                hold: None,
+                repeat: false,
+            },
+        )
+    }
+
+    fn append(&mut self, channel: Channel, intent: Intent) -> Result<(), Error> {
         self.sequence = self.sequence.checked_add(1).ok_or(Error::Sequence)?;
         let id = format!("{}:{}", self.session, self.sequence);
         let events = self.events(channel);

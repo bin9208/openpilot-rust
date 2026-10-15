@@ -32,7 +32,7 @@ impl LongitudinalPlanner {
             self.desired_speed.value() + self.dt * (self.desired_acceleration + previous) / 2.,
         );
         let delay = parameters.float("LongActuatorDelay")? * 0.01;
-        let stopping_speed = parameters.float("VEgoStopping")? * 0.01;
+        let stopping_speed = parameters.stopping_speed()?;
         let action_time = delay + 0.05;
         let (base, should_stop, speed) =
             self.acceleration_from_plan(action_time, stopping_speed)?;

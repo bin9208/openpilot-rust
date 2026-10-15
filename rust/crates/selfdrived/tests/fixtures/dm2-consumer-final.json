@@ -1,0 +1,313 @@
+{
+  "source": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "path": "openpilot/selfdrive/selfdrived/selfdrived.py",
+  "sha256": "59d0889e8fd349bdf1427d6ac600e959d21f2479b6d22840a77810af6b5257c1",
+  "methods": [
+    "update_events exact DM block",
+    "update_dm_lockout full method"
+  ],
+  "cases": [
+    {
+      "now": 1.0,
+      "stamp": 1.0,
+      "valid": true,
+      "disabled": false,
+      "locked": true,
+      "always": false,
+      "level": "two",
+      "policy": "vision",
+      "uncertain": 100,
+      "events": [
+        45,
+        34
+      ],
+      "writes": [
+        [
+          "DriverTooDistracted",
+          true
+        ]
+      ],
+      "shown": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "removed": [],
+      "lockout_set": true,
+      "uncertain_alerted": true,
+      "disabled_previous": false
+    },
+    {
+      "now": 1.05,
+      "stamp": 1.05,
+      "valid": true,
+      "disabled": false,
+      "locked": false,
+      "always": false,
+      "level": "one",
+      "policy": "wheeltouch",
+      "uncertain": 0,
+      "events": [
+        36
+      ],
+      "writes": [
+        [
+          "DriverTooDistracted",
+          true
+        ],
+        [
+          "DriverTooDistracted",
+          false
+        ]
+      ],
+      "shown": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "removed": [],
+      "lockout_set": false,
+      "uncertain_alerted": true,
+      "disabled_previous": false
+    },
+    {
+      "now": 1.1,
+      "stamp": 1.1,
+      "valid": true,
+      "disabled": true,
+      "locked": true,
+      "always": true,
+      "level": "three",
+      "policy": "vision",
+      "uncertain": 100,
+      "events": [],
+      "writes": [
+        [
+          "DriverTooDistracted",
+          true
+        ],
+        [
+          "DriverTooDistracted",
+          false
+        ]
+      ],
+      "shown": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "removed": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "lockout_set": false,
+      "uncertain_alerted": false,
+      "disabled_previous": true
+    },
+    {
+      "now": 1.15,
+      "stamp": 1.15,
+      "valid": true,
+      "disabled": true,
+      "locked": true,
+      "always": true,
+      "level": "three",
+      "policy": "vision",
+      "uncertain": 100,
+      "events": [],
+      "writes": [
+        [
+          "DriverTooDistracted",
+          true
+        ],
+        [
+          "DriverTooDistracted",
+          false
+        ]
+      ],
+      "shown": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "removed": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "lockout_set": false,
+      "uncertain_alerted": false,
+      "disabled_previous": true
+    },
+    {
+      "now": 1.2,
+      "stamp": 1.2,
+      "valid": true,
+      "disabled": false,
+      "locked": false,
+      "always": false,
+      "level": "none",
+      "policy": "vision",
+      "uncertain": 100,
+      "events": [],
+      "writes": [
+        [
+          "DriverTooDistracted",
+          true
+        ],
+        [
+          "DriverTooDistracted",
+          false
+        ]
+      ],
+      "shown": [
+        "Offroad_DriverMonitoringUncertain",
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "removed": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "lockout_set": false,
+      "uncertain_alerted": true,
+      "disabled_previous": false
+    },
+    {
+      "now": 2.0,
+      "stamp": 1.0,
+      "valid": true,
+      "disabled": false,
+      "locked": true,
+      "always": false,
+      "level": "three",
+      "policy": "wheeltouch",
+      "uncertain": 0,
+      "events": [
+        45,
+        38
+      ],
+      "writes": [
+        [
+          "DriverTooDistracted",
+          true
+        ],
+        [
+          "DriverTooDistracted",
+          false
+        ]
+      ],
+      "shown": [
+        "Offroad_DriverMonitoringUncertain",
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "removed": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "lockout_set": false,
+      "uncertain_alerted": true,
+      "disabled_previous": false
+    },
+    {
+      "now": 2.05,
+      "stamp": 2.05,
+      "valid": false,
+      "disabled": false,
+      "locked": true,
+      "always": false,
+      "level": "three",
+      "policy": "vision",
+      "uncertain": 0,
+      "events": [
+        45,
+        35
+      ],
+      "writes": [
+        [
+          "DriverTooDistracted",
+          true
+        ],
+        [
+          "DriverTooDistracted",
+          false
+        ]
+      ],
+      "shown": [
+        "Offroad_DriverMonitoringUncertain",
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "removed": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "lockout_set": false,
+      "uncertain_alerted": true,
+      "disabled_previous": false
+    },
+    {
+      "now": 2.1,
+      "stamp": 2.1,
+      "valid": true,
+      "disabled": false,
+      "locked": true,
+      "always": true,
+      "level": "three",
+      "policy": "vision",
+      "uncertain": 0,
+      "events": [
+        45,
+        35
+      ],
+      "writes": [
+        [
+          "DriverTooDistracted",
+          true
+        ],
+        [
+          "DriverTooDistracted",
+          false
+        ],
+        [
+          "DriverTooDistracted",
+          true
+        ]
+      ],
+      "shown": [
+        "Offroad_DriverMonitoringUncertain",
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "removed": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "lockout_set": true,
+      "uncertain_alerted": true,
+      "disabled_previous": false
+    },
+    {
+      "now": 2.15,
+      "stamp": 2.15,
+      "valid": true,
+      "disabled": false,
+      "locked": false,
+      "always": false,
+      "level": "none",
+      "policy": "vision",
+      "uncertain": 0,
+      "events": [],
+      "writes": [
+        [
+          "DriverTooDistracted",
+          true
+        ],
+        [
+          "DriverTooDistracted",
+          false
+        ],
+        [
+          "DriverTooDistracted",
+          true
+        ],
+        [
+          "DriverTooDistracted",
+          false
+        ]
+      ],
+      "shown": [
+        "Offroad_DriverMonitoringUncertain",
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "removed": [
+        "Offroad_DriverMonitoringUncertain"
+      ],
+      "lockout_set": false,
+      "uncertain_alerted": true,
+      "disabled_previous": false
+    }
+  ]
+}

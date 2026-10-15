@@ -1,3 +1,4 @@
+mod bosch;
 mod carlog;
 mod fixture;
 mod io;
@@ -8,6 +9,7 @@ mod options;
 )]
 mod platform;
 mod run;
+pub use carlog::Carlog;
 pub use fixture::Paths as FixturePaths;
 pub use options::{parse, Options};
 pub use run::run;

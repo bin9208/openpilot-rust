@@ -15,6 +15,8 @@ ROLES = (
   'openpilot-runtime-install',
   'openpilot-manager',
   'openpilot-process-child',
+  'openpilot-reboot',
+  'openpilot-startup-recovery',
   'openpilot-carrot-recovery',
   'openpilot-carrot-web-watchdog',
   'openpilot-carrot-server',
@@ -22,8 +24,10 @@ ROLES = (
   'openpilot-agnos-updater',
   'openpilot-text-window',
   'openpilot-usbgpu-model',
+  'openpilot-spinner',
   'sudo',
   'tmux',
+  'git',
   'taskset',
 )
 COMMIT = '0123456789abcdef0123456789abcdef01234567'
@@ -37,11 +41,12 @@ def records(path: Path) -> list[dict]:
 
 def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -> None:
   output.mkdir(parents=True, exist_ok=False)
-  if shutil.disk_usage(output).free < (25 * 1024**3 + 512 * 1024**2):
+  estimated_growth = 14 * len(ROLES) * provider.stat().st_size + 64 * 1024**2
+  if shutil.disk_usage(output).free < (25 * 1024**3 + estimated_growth):
     raise RuntimeError('insufficient space for owned bootstrap package')
   rows = []
-  for scenario in ('ready', 'package-corrupt', 'metadata-mismatch', 'installer-unlisted', 'installer-missing',
-                   'agnos-current', 'agnos-activate', 'agnos-ui-failed'):
+  for scenario in ('ready', 'manager-failed', 'package-corrupt', 'metadata-mismatch', 'installer-unlisted', 'installer-missing',
+                   'agnos-current', 'agnos-activate', 'agnos-ui-failed', 'egpu-ready', 'egpu-failed', 'egpu-locked', 'egpu-cancel-lock', 'egpu-cancel-delivery'):
     root = output / scenario
     repo, data, temporary, system = [root / name for name in ('repo', 'data', 'tmp', 'system')]
     for path in (repo / 'rust/bin', data, temporary, system / 'usr/comma', system / 'sys/firmware/devicetree/base'):
@@ -52,7 +57,12 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
       (system / 'AGNOS').touch()
       (system / 'VERSION').write_text('19.8-carrot-bt1\n' if scenario == 'agnos-current' else 'old\n')
     for role in (*ROLES, 'openpilot-launch'):
-      os.link(binary if role == 'openpilot-launch' else provider, repo / 'rust/bin' / role)
+      if role == 'openpilot-launch':
+        os.link(binary, repo / 'rust/bin' / role)
+      else:
+        # Native service reconciliation compares inode identity; sharing the
+        # provider inode across independent runs makes them appear one runtime.
+        shutil.copy2(provider, repo / 'rust/bin' / role)
     (repo / 'build.json').write_text(json.dumps({'openpilot': {'git_commit': COMMIT if scenario != 'metadata-mismatch' else 'stale'}}))
     manifest = {
       'schema': 1,
@@ -75,6 +85,9 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
     paths_file = root / 'paths.json'
     paths_file.write_text(json.dumps({'repository': str(repo), 'data': str(data), 'temporary': str(temporary), 'system': str(system)}))
     event_file = root / 'events.jsonl'
+    model_lock = (temporary / 'big_model_update.lock').open('w') if scenario in ('egpu-locked', 'egpu-cancel-lock') else None
+    if model_lock is not None:
+      fcntl.flock(model_lock, fcntl.LOCK_EX)
     environment = os.environ.copy()
     environment.pop('LD_LIBRARY_PATH', None)
     inherited_libraries = [str(root / 'explicit-libraries')] if scenario == 'agnos-current' else []
@@ -85,7 +98,7 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
     for key in ('CARROT_BOOT_LOCK_SOCKET', 'CARROT_BOOT_LOCK_FD', 'CARROT_REPO_LOCK_PATH', 'CARROT_WEB_PID_FILE', 'CARROT_WEB_LOCK_FILE', 'CARROT_DATA_DIR'):
       environment.pop(key, None)
     environment.update(
-      {'OWNED_BOOTSTRAP_RECORD': str(event_file), 'OWNED_VERIFY': 'ready' if scenario == 'agnos-activate' else 'missing', 'CARROT_WEB_EXTERNAL': '1'}
+      {'OWNED_BOOTSTRAP_RECORD': str(event_file), 'OWNED_VERIFY': 'ready' if scenario == 'agnos-activate' else 'missing', 'CARROT_WEB_EXTERNAL': '1', 'OWNED_EGPU': scenario, 'CARROT_BIG_MODEL_DIR': str(data / 'models'), 'CARROT_BIG_MODEL_STARTUP_FAILED': 'stale'}
     )
     if entry is not None:
       installed_entry = repo / 'launch_openpilot.sh'
@@ -100,14 +113,26 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
         while True:
           observed = records(event_file)
           roles = [row['role'] for row in observed]
-          if scenario in ('ready', 'agnos-current'):
+          if scenario == 'egpu-locked' and model_lock is not None and any(row.get('args', [None])[0] == '--present' for row in observed):
+            time.sleep(0.2)
+            assert not any(row.get('args', [None])[0] == '--prepare-for-startup' for row in records(event_file))
+            assert 'openpilot-manager' not in roles
+            fcntl.flock(model_lock, fcntl.LOCK_UN)
+            model_lock.close()
+            model_lock = None
+          if scenario in ('egpu-cancel-lock','egpu-cancel-delivery'):
+            expected_mode='--present' if scenario=='egpu-cancel-lock' else '--prepare-for-startup'
+            complete=any(row.get('args',[None])[0]==expected_mode for row in observed)
+          elif scenario in ('ready', 'agnos-current', 'egpu-ready', 'egpu-failed', 'egpu-locked'):
             complete = 'manager-lock-released' in roles and any(
-              row.get('args', [None])[0] == '--ensure-if-egpu' for row in observed if row['role'] == 'openpilot-usbgpu-model'
+              row.get('args', [None])[0] == '--ensure-if-egpu' and '--retry-network' in row.get('args', []) for row in observed if row['role'] == 'openpilot-usbgpu-model'
             )
+          elif scenario == 'manager-failed':
+            complete = any(row['role']=='openpilot-startup-recovery' and '--headless' in row['args'] for row in observed)
           elif scenario == 'agnos-activate':
             complete = any(row['role'] == 'sudo' and row['args'] == ['reboot'] for row in observed)
           else:
-            complete = 'openpilot-text-window' in roles
+            complete = 'openpilot-startup-recovery' in roles
           if complete and 'openpilot-carrot-recovery' in roles:
             break
           assert child.poll() is None, (scenario, (root / 'launcher.log').read_text())
@@ -117,16 +142,40 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
         assert 'openpilot-runtime-install' not in roles, observed
         expected_libraries = [str(repo / 'rust/bin/lib'), *inherited_libraries]
         assert all(row['library_path'] == expected_libraries for row in observed if 'library_path' in row), (scenario, observed)
-        if scenario in ('ready', 'agnos-current'):
+        if scenario in ('ready', 'agnos-current', 'egpu-ready', 'egpu-failed', 'egpu-locked'):
           assert roles.index('openpilot-usbgpu-model') < roles.index('openpilot-manager'), observed
+          prepared = [row for row in observed if row['role']=='openpilot-usbgpu-model' and row['args'][0]=='--prepare-for-startup']
+          assert bool(prepared) == scenario.startswith('egpu-'), observed
+          if prepared:
+            assert '--retry-network' in prepared[0]['args']
+            assert prepared[0]['model_lock_held'], prepared
+            assert roles.index('openpilot-spinner') < roles.index('openpilot-manager')
+            assert any('Waiting for network (dns); retrying in 30s' in row.get('text','') for row in observed), observed
+          boot = next(row for row in observed if row['role']=='openpilot-usbgpu-model' and row['args'][0]=='--boot')
+          manager = next(row for row in observed if row['role']=='openpilot-manager')
+          assert boot['startup_failed'] == manager['startup_failed'] == ('1' if scenario=='egpu-failed' else None), observed
           assert (data / 'params/d/SshEnabled').read_bytes() == b'1'
           with (temporary / 'carrot_repo_update.lock').open('r') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        elif scenario == 'manager-failed':
+          assert 'manager-lock-released' in roles
+          captured=(temporary/'carrot_startup_failure.log').read_bytes()
+          assert 60000 < len(captured) <= 65536
+          assert captured.endswith(b'Error: owned native manager failure without newline')
+          assert b'owned diagnostic 0000' in (root/'launcher.log').read_bytes()
+          assert b'owned diagnostic 0000' not in captured
+          failure=next(row for row in observed if row['role']=='openpilot-startup-recovery')
+          assert 'exit status: 7' in failure['args'][failure['args'].index('--reason')+1]
+          assert sum(row['role']=='openpilot-startup-recovery' for row in observed)==2
+        elif scenario in ('egpu-cancel-lock','egpu-cancel-delivery'):
+          assert 'openpilot-manager' not in roles, observed
+          assert not any(row.get('args',[None])[0]=='--boot' for row in observed)
         else:
           assert 'openpilot-manager' not in roles, observed
           assert 'openpilot-usbgpu-model' not in roles, observed
         if scenario in ('installer-unlisted', 'installer-missing'):
-          message = next(row for row in observed if row['role'] == 'openpilot-text-window')['args'][-1]
+          recovery_args = next(row for row in observed if row['role'] == 'openpilot-startup-recovery')['args']
+          message = recovery_args[recovery_args.index('--reason') + 1]
           if scenario == 'installer-unlisted':
             assert 'required executable absent from runtime manifest: rust/bin/openpilot-runtime-install' in message, message
             assert (repo / 'rust/bin/openpilot-runtime-install').is_file()
@@ -138,11 +187,20 @@ def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -
           assert next(row for row in observed if row['role'] == 'openpilot-agnos')['args'][-1].endswith('agnos-tici.json')
         if scenario == 'agnos-current':
           assert 'openpilot-agnos' not in roles, observed
+          clock = next(row for row in observed if row['role']=='git' and '--format=%ct' in row['args'])
+          assert observed.index(clock) < next(i for i,row in enumerate(observed) if row.get('args',[None])[0]=='--present'), observed
+          assert not any(row['role']=='sudo' and 'date' in row['args'] for row in observed), observed
         child.terminate()
         assert child.wait(timeout=5) == 0
+        if scenario.startswith('egpu-'):
+          for event in observed:
+            if event['role'] in ('openpilot-spinner','openpilot-usbgpu-model') and event.get('args',[None])[0]!='--ensure-if-egpu':
+              assert not Path(f"/proc/{event['pid']}").exists(), event
         rows.append({'scenario': scenario, 'pass': True, 'events': len(observed), 'process_reaped': True})
         (root / 'invocation.json').write_text(json.dumps({'argv': command, 'pid': child.pid, 'exit': child.returncode}) + '\n')
       finally:
+        if model_lock is not None:
+          model_lock.close()
         if child.poll() is None:
           child.kill()
           child.wait(timeout=5)

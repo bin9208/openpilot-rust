@@ -3,7 +3,7 @@ import math
 from openpilot.cereal import car, log
 from controlsd_parameters import Store
 from controlsd_source import load
-from paramsd_fixture import event, pose
+from paramsd_fixture import event, pose as base_pose
 
 SETTINGS = {
   'FingerPrints': '{0: {}, 1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {}, 7: {}}',
@@ -56,6 +56,13 @@ def parameters(fingerprint, mode, settings):
   return list(cp.to_bytes())
 
 
+def pose(time):
+  with log.Event.from_bytes(bytes(base_pose(time))) as message:
+    values=message.to_dict()['livePose']
+  values['inputsOK']=True
+  return event('livePose',time,values)
+
+
 def frame(index):
   time = 100.0 + index * 0.01
   active = index >= 3
@@ -78,7 +85,7 @@ def frame(index):
         'cruiseState': {'enabled': True, 'standstill': False},
       },
     ),
-    event('liveParameters', time, {'stiffnessFactor': 1.0, 'steerRatio': 15.0, 'angleOffsetDeg': 0.2, 'roll': 0.01}),
+    event('liveParameters', time, {'stiffnessFactor': 1.0, 'steerRatio': 15.0, 'angleOffsetDeg': 0.2, 'roll': 0.01, 'valid': True, 'sensorValid': True, 'posenetValid': True}),
     event(
       'liveTorqueParameters', time, {'useParams': True, 'latAccelFactorFiltered': 2.6, 'latAccelOffsetFiltered': 0.01, 'frictionCoefficientFiltered': 0.12}
     ),
@@ -98,7 +105,7 @@ def frame(index):
       time,
       {'aTarget': 0.2 * math.sin(index * 0.01), 'vTargetNow': speed + 0.2, 'jTargetNow': 0.05, 'speeds': [20.0] * 17, 'hasLead': True, 'cruiseTarget': 80.0},
     ),
-    event('lateralPlan', time, {'useLaneLines': False, 'psis': [0.0] * 17, 'curvatures': [0.0] * 17, 'distances': [float(j) for j in range(17)]}),
+    event('lateralPlan', time, {'useLaneLines': False, 'mpcSolutionValid': True, 'psis': [0.0] * 17, 'curvatures': [0.0] * 17, 'distances': [float(j) for j in range(17)]}),
     event('radarState', time, {'leadOne': {'status': True, 'dRel': 25.0, 'vRel': -0.1, 'radar': True, 'dPath': 0.1}}),
     event('carOutput', time, {'actuatorsOutput': {'torque': 0.0, 'curvature': 0.0, 'steeringAngleDeg': 0.0}}),
     event('carrotMan', time, {'desiredSpeed': 70.0, 'vTurnSpeed': 130.0, 'activeCarrot': 2}),
@@ -111,6 +118,15 @@ def frame(index):
   events = log.Event.new_message(logMonoTime=int(time * 1e9), valid=True)
   events.init('onroadEvents', 0)
   messages.insert(0, list(events.to_bytes()))
+  # Readiness checks real service frequencies. Keep 20 Hz inputs at 20 Hz,
+  # while onroadEvents deliberately bursts at 100 Hz to cover its exception.
+  if index % 5:
+    paced=[]
+    for packet in messages:
+      with log.Event.from_bytes(bytes(packet)) as message:
+        if message.which() not in ('modelV2','liveParameters','livePose','lateralPlan'):
+          paced.append(packet)
+    messages=paced
   return {'time': time, 'messages': messages}
 
 

@@ -145,9 +145,15 @@ impl Hud {
         }
         Ok(())
     }
-    fn traffic_info(&self) -> Result<Option<(String, String)>, crate::Error> {
-        let now = (self.context.now_monotonic)();
+    pub(super) fn traffic_info(&self) -> Result<Option<TrafficInfo>, crate::Error> {
+        if crate::signal_status::Status::from_messages(&self.context.messages.borrow().state)?
+            .paused
+        {
+            return Ok(Some(("paused".into(), "0".into(), None)));
+        }
         if self.debug_traffic {
+            let stamps: [f64; 5] = std::array::from_fn(|_| (self.context.now_monotonic)());
+            let now = (self.context.now_monotonic)();
             let index = math::integer((now / 2.0).floor())?.rem_euclid(5);
             let (lamp, remain) = match index {
                 0 => ("red", "13"),
@@ -156,7 +162,11 @@ impl Hud {
                 3 => ("right", "5"),
                 _ => ("uturn", "4"),
             };
-            return Ok(Some((lamp.into(), remain.into())));
+            return Ok(Some((
+                lamp.into(),
+                remain.into(),
+                Some(stamps[index as usize]),
+            )));
         }
         let Some(raw) = self.context.memory.bytes("TrafficLight")? else {
             return Ok(None);
@@ -205,16 +215,20 @@ impl Hud {
         let Some(timestamp) = timestamp else {
             return Ok(None);
         };
-        if timestamp > 0.0 && now - timestamp > 2.5 {
+        if timestamp > 0.0 && (self.context.now_monotonic)() - timestamp > 2.5 {
             return Ok(None);
         }
-        Ok(Some((lamp.into(), remain.to_string())))
+        Ok(Some((lamp.into(), remain.to_string(), None)))
     }
     fn traffic(&self, draw: &mut dyn Draw, position: [f64; 2]) -> Result<bool, Error> {
-        let Some((lamp, remain)) = self.traffic_info()? else {
+        let Some((lamp, remain, _)) = &self.traffic else {
             return Ok(false);
         };
         let [x, y] = position;
+        if lamp == "paused" {
+            crate::signal_status::draw_pause(draw, x + 24., y, 24.)?;
+            return Ok(true);
+        }
         let center = Point {
             x: math::float(x + 24.0),
             y: math::float(y),
@@ -259,11 +273,11 @@ impl Hud {
             }
             _ => return Ok(false),
         }
-        let size = text_layout::measure(draw, Font::SemiBold, &remain, 28.0, 0.0);
+        let size = text_layout::measure(draw, Font::SemiBold, remain, 28.0, 0.0);
         style::text(
             draw,
             Text {
-                value: &remain,
+                value: remain,
                 position: [x + 24.0 + 24.0 + 5.0, (y - f64::from(size.y) / 2.0).trunc()],
                 size: 28.0,
                 font: Font::Display,

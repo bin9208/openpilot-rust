@@ -1,5 +1,5 @@
 //! Execute the source smoke inputs through the owned native worker protocol.
-use super::failure::{self, Kind};
+use super::failure;
 use crate::{
     client::{Client, Frame, Launch},
     Error,
@@ -26,30 +26,9 @@ pub fn wall_time() -> Result<f64, Error> {
         .map_err(|error| std::io::Error::other(error).into())
 }
 
-fn kind(error: &Error) -> Kind {
-    match error {
-        Error::Io(error) => match error.kind() {
-            std::io::ErrorKind::TimedOut => Kind::Timeout,
-            std::io::ErrorKind::BrokenPipe => Kind::BrokenPipe,
-            _ => Kind::Detail,
-        },
-        #[cfg(feature = "native-skip-miri")]
-        Error::ModelRuntime(_) | Error::Library(_) => Kind::Detail,
-        Error::Utf8(_)
-        | Error::Json(_)
-        | Error::UsbApi { .. }
-        | Error::Protocol(_)
-        | Error::Contract(_)
-        | Error::ShortPower(_)
-        | Error::Allocation(_)
-        | Error::Timeout { .. }
-        | Error::Cancelled => Kind::Detail,
-    }
-}
-
 fn failed(model: &Path, error: Error, phase: &str) -> Result<Error, Error> {
     if !matches!(error, Error::Cancelled) {
-        failure::record(model, &error.to_string(), kind(&error), phase, wall_time()?)?;
+        failure::record_error(model, &error, phase, wall_time()?)?;
     }
     Ok(error)
 }

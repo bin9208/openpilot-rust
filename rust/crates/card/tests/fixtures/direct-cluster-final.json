@@ -1,0 +1,150 @@
+{
+  "source": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "sha256": "089a3eb9ca0b9457e47c5bc57631a8e334fcbf9870f1511f083700eceb5145e3",
+  "rows": [
+    {
+      "candidate": "KIA_EV6",
+      "camera": 0,
+      "direct": false,
+      "flags": 10242,
+      "safety": [
+        {
+          "model": 28,
+          "parameter": 37
+        }
+      ]
+    },
+    {
+      "candidate": "KIA_EV6",
+      "camera": 0,
+      "direct": true,
+      "flags": 10242,
+      "safety": [
+        {
+          "model": 28,
+          "parameter": 37
+        }
+      ]
+    },
+    {
+      "candidate": "KIA_EV6",
+      "camera": 1,
+      "direct": false,
+      "flags": 10250,
+      "safety": [
+        {
+          "model": 28,
+          "parameter": 45
+        }
+      ]
+    },
+    {
+      "candidate": "KIA_EV6",
+      "camera": 1,
+      "direct": true,
+      "flags": 134227978,
+      "safety": [
+        {
+          "model": 28,
+          "parameter": 2093
+        }
+      ]
+    },
+    {
+      "candidate": "HYUNDAI_TUCSON_4TH_GEN",
+      "camera": 0,
+      "direct": false,
+      "flags": 8194,
+      "safety": [
+        {
+          "model": 28,
+          "parameter": 36
+        }
+      ]
+    },
+    {
+      "candidate": "HYUNDAI_TUCSON_4TH_GEN",
+      "camera": 0,
+      "direct": true,
+      "flags": 8194,
+      "safety": [
+        {
+          "model": 28,
+          "parameter": 36
+        }
+      ]
+    },
+    {
+      "candidate": "HYUNDAI_TUCSON_4TH_GEN",
+      "camera": 1,
+      "direct": false,
+      "flags": 8202,
+      "safety": [
+        {
+          "model": 28,
+          "parameter": 44
+        }
+      ]
+    },
+    {
+      "candidate": "HYUNDAI_TUCSON_4TH_GEN",
+      "camera": 1,
+      "direct": true,
+      "flags": 134225930,
+      "safety": [
+        {
+          "model": 28,
+          "parameter": 2092
+        }
+      ]
+    },
+    {
+      "candidate": "HYUNDAI_SANTA_FE",
+      "camera": 0,
+      "direct": false,
+      "flags": 69632,
+      "safety": [
+        {
+          "model": 8,
+          "parameter": 4
+        }
+      ]
+    },
+    {
+      "candidate": "HYUNDAI_SANTA_FE",
+      "camera": 0,
+      "direct": true,
+      "flags": 69632,
+      "safety": [
+        {
+          "model": 8,
+          "parameter": 4
+        }
+      ]
+    },
+    {
+      "candidate": "HYUNDAI_SANTA_FE",
+      "camera": 1,
+      "direct": false,
+      "flags": 69640,
+      "safety": [
+        {
+          "model": 8,
+          "parameter": 12
+        }
+      ]
+    },
+    {
+      "candidate": "HYUNDAI_SANTA_FE",
+      "camera": 1,
+      "direct": true,
+      "flags": 69640,
+      "safety": [
+        {
+          "model": 8,
+          "parameter": 12
+        }
+      ]
+    }
+  ]
+}

@@ -74,6 +74,7 @@ pub(super) fn model_update(paths: &Paths) -> Result<(), Error> {
         "10".into(),
         paths.binary("openpilot-usbgpu-model").into_os_string(),
         "--ensure-if-egpu".into(),
+        "--retry-network".into(),
         "--network-wait-seconds".into(),
         "60".into(),
         "--root".into(),

@@ -5,6 +5,7 @@ pub mod daemon;
 pub mod discovery;
 pub mod options;
 pub mod parse;
+pub mod process_crash;
 mod reader;
 pub use parse::safe_fn;
 

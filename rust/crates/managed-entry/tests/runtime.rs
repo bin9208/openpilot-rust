@@ -4,6 +4,17 @@ use std::{
     process::{Command, Stdio},
 };
 
+fn owned_child() -> Command {
+    let executable = std::env::current_exe().unwrap();
+    if let Some(runner) = std::env::var_os("MANAGED_ENTRY_TEST_LAUNCHER") {
+        let mut command = Command::new(runner);
+        command.arg(executable);
+        command
+    } else {
+        Command::new(executable)
+    }
+}
+
 #[test]
 #[ignore = "executed by the isolated runtime boundary test"]
 fn runtime_child() {
@@ -42,7 +53,7 @@ fn real_child_records_typed_failure_and_interrupt_with_inherited_context() {
         let pull = context.socket(zmq::PULL).unwrap();
         pull.set_rcvtimeo(5000).unwrap();
         pull.bind(&format!("ipc://{ipc}")).unwrap();
-        let mut child = Command::new(std::env::current_exe().unwrap())
+        let mut child = owned_child()
             .args(["--exact", "runtime_child", "--ignored"])
             .env("MANAGER_DAEMON", "statsd")
             .env("OPENPILOT_BASEDIR", root.path())
@@ -88,7 +99,7 @@ fn real_child_records_typed_failure_and_interrupt_with_inherited_context() {
 #[test]
 fn standalone_return_does_not_require_runtime_metadata_or_params() {
     let root = tempfile::tempdir().unwrap();
-    let mut child = Command::new(std::env::current_exe().unwrap())
+    let mut child = owned_child()
         .args(["--exact", "runtime_child", "--ignored"])
         .env_remove("MANAGER_DAEMON")
         .env("OPENPILOT_BASEDIR", root.path())

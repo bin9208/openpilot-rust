@@ -23,7 +23,7 @@ PRESET_KEYS = ('HyundaiCameraSCC', 'SpeedFromPCM', 'DisableDM', 'EnableRadarTrac
 OBSERVED_KEYS = (*PRESET_KEYS, 'CarSelected3', 'CarName', 'CanfdHDA2',
                  'LongitudinalPersonalityMax', 'CompletedTrainingVersion', 'DongleId', 'CalibrationParams',
                  'IsMetric', 'UptimeOnroad', 'InstallDate', 'LiveParameters', 'CarParamsPersistent')
-MARKERS = ('web_settings.json', 'setting_profiles.json', 'setting_favorites.json', 'youtube_live.json')
+MARKERS = ('web_settings.json', 'setting_profiles.json', 'setting_favorites.json')
 CATALOG: dict[str, Json] = {'params': [
   {'name': name, 'min': 0, 'max': 4, 'default': 99,
    'hidden_brands': ['toyota']} for name in PRESET_KEYS
@@ -74,7 +74,7 @@ def cases() -> list[Scenario]:
   ]
   rows.extend(Scenario('marker-' + name, 'marker-' + name, reason=reason)
               for name, reason in zip(MARKERS, ('web_settings_exists', 'setting_profiles_exists',
-                                               'setting_favorites_exists', 'youtube_live_exists')))
+                                               'setting_favorites_exists')))
   rows.extend([
     Scenario('marker-directory', 'marker-dir', reason='fresh_install'),
     Scenario('state-already-completed', 'completed', reason='saved_reason'),
@@ -301,7 +301,7 @@ async def compare(binary: Path, output: Path, binding: Path) -> None:
     state.CARROT_STATE_DIR = str(source.state)
     state.CARROT_INTRO_STATE_PATH = str(source.state / 'intro.json')
     for attribute, name in zip(('CARROT_WEB_SETTINGS_PATH', 'CARROT_SETTING_PROFILES_PATH',
-                                'CARROT_SETTING_FAVORITES_PATH', 'CARROT_YOUTUBE_LIVE_STATE_PATH'), MARKERS):
+                                'CARROT_SETTING_FAVORITES_PATH'), MARKERS):
       setattr(state, attribute, str(source.state / name))
     state.time.time = lambda: TIMESTAMP
     params.Params = state.Params = lambda: source.params

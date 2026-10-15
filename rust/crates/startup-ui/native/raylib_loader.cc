@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "rlgl.h"
 #include <cstdlib>
+#include <cstdint>
 #include <dlfcn.h>
 #include <stdexcept>
 #include <string>
@@ -23,7 +24,7 @@ void *library() {
       throw std::runtime_error(
           "native startup raylib plugin contract mismatch");
     }
-    const char *required[] = {"BeginMode3D", "EndMode3D", "rlViewport", "DrawTriangle3D", "DrawLine3D", "DrawSphereEx", "DrawCubeV", "GetWorldToScreenEx", "rlEnableBackfaceCulling", "rlDisableBackfaceCulling", "rlBegin", "rlVertex3f", "rlColor4ub", "rlEnd", "MemAlloc", "MemFree", "UploadMesh", "UnloadMesh", "LoadModelFromMesh", "IsModelValid", "UnloadModel", "DrawModelEx", "BeginBlendMode", "rlSetBlendFactors", "EndBlendMode", "GenImageColor", "ImageDrawTextEx", "LoadImage", "LoadImageFromMemory", "GetFontDefault", "DrawRectangleRec", "DrawTriangle", "rlTranslatef", "ImageFormat", "DrawRing", "DrawCircleLines", "UpdateTexture", "SetShaderValueTexture",
+    const char *required[] = {"rlGetVersion", "rlGetActiveFramebuffer", "rlFramebufferComplete", "rlEnableFramebuffer", "rlSetBlendFactorsSeparate","BeginMode3D", "EndMode3D", "rlViewport", "DrawTriangle3D", "DrawLine3D", "DrawSphereEx", "DrawCubeV", "GetWorldToScreenEx", "rlEnableBackfaceCulling", "rlDisableBackfaceCulling", "rlBegin", "rlVertex3f", "rlColor4ub", "rlEnd", "MemAlloc", "MemFree", "UploadMesh", "UnloadMesh", "LoadModelFromMesh", "IsModelValid", "UnloadModel", "DrawModelEx", "BeginBlendMode", "rlSetBlendFactors", "EndBlendMode", "GenImageColor", "ImageDrawTextEx", "LoadImage", "LoadImageFromMemory", "GetFontDefault", "DrawRectangleRec", "DrawTriangle", "rlTranslatef", "ImageFormat", "DrawRing", "DrawCircleLines", "UpdateTexture", "SetShaderValueTexture",
                               "UnloadImage",
                               "ImageAlphaPremultiply",
                               "ImageResize",
@@ -62,6 +63,8 @@ void *library() {
                               "ExportImage",
                               "WindowShouldClose",
                               "SetTargetFPS",
+                              "SetExitKey",
+                              "IsMouseButtonPressed",
                               "GetFrameTime",
                               "GetTime",
                               "GetTouchPosition",
@@ -90,6 +93,28 @@ template <typename Function> Function resolve(const char *name) {
 }
 } // namespace
 bool openpilot_raylib_symbol_available(const char *name) {return dlsym(library(),name)!=nullptr;}
+// Raylib's ES2 rlGetActiveFramebuffer is a zero-returning stub. Resolve the
+// actual binding reader once, before accepting the window, and query the GL
+// context that owns the caller's rotated/recording target on each draw.
+uint32_t openpilot_active_framebuffer() {
+  using GetInteger = void (*)(unsigned int, int *);
+  static GetInteger es_reader = []() -> GetInteger {
+    const auto version = resolve<decltype(&rlGetVersion)>("rlGetVersion")();
+    if (version != RL_OPENGL_ES_20 && version != RL_OPENGL_ES_30) return nullptr;
+    void *gles = dlopen("libGLESv2.so", RTLD_NOW | RTLD_LOCAL);
+    if (!gles) gles = dlopen("libGLESv2.so.2", RTLD_NOW | RTLD_LOCAL);
+    if (!gles) throw std::runtime_error(std::string("overlay GLES library: ")+dlerror());
+    auto query = reinterpret_cast<GetInteger>(dlsym(gles, "glGetIntegerv"));
+    if (!query) {dlclose(gles);throw std::runtime_error("overlay glGetIntegerv unavailable");}
+    // As with the raylib provider, keep this loader handle for its full lifetime.
+    return query;
+  }();
+  if (!es_reader) return rlGetActiveFramebuffer();
+  int binding = 0;
+  es_reader(0x8CA6, &binding); // GL_FRAMEBUFFER_BINDING, valid in ES2.
+  return static_cast<uint32_t>(binding);
+}
+
 #define FORWARD(result, name, parameters, arguments)                           \
   result name parameters {                                                     \
     static auto function = resolve<decltype(&name)>(#name);                    \
@@ -194,6 +219,8 @@ FORWARD(bool, ExportImage, (Image image, const char *path), (image, path))
 FORWARD(unsigned char *, ExportImageToMemory, (Image image,const char *extension,int *size), (image,extension,size))
 FORWARD(bool, WindowShouldClose, (), ())
 FORWARD(void, SetTargetFPS, (int fps), (fps))
+FORWARD(void, SetExitKey, (int key), (key))
+FORWARD(bool, IsMouseButtonPressed, (int button), (button))
 FORWARD(float, GetFrameTime, (), ())
 FORWARD(double, GetTime, (), ())
 FORWARD(Vector2, GetTouchPosition, (int slot), (slot))
@@ -235,4 +262,10 @@ FORWARD(void, DrawRectangleLines, (int x, int y, int width, int height, Color co
 FORWARD(void, DrawRectangleLinesEx, (Rectangle rect, float thickness, Color color), (rect,thickness,color))
 FORWARD(void, DrawSplineLinear, (const Vector2 *points, int count, float thick, Color color), (points, count, thick, color))
 FORWARD(void, DrawCircleLines, (int x, int y, float radius, Color color), (x, y, radius, color))
+
+FORWARD(unsigned int, rlGetActiveFramebuffer, (), ())
+FORWARD(bool, rlFramebufferComplete, (unsigned int id), (id))
+FORWARD(void, rlEnableFramebuffer, (unsigned int id), (id))
+FORWARD(void, rlSetBlendFactorsSeparate, (int srcRGB,int dstRGB,int srcAlpha,int dstAlpha,int eqRGB,int eqAlpha), (srcRGB,dstRGB,srcAlpha,dstAlpha,eqRGB,eqAlpha))
+
 #undef FORWARD

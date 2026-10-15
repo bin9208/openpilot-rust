@@ -17,6 +17,12 @@ struct Case {
 }
 #[derive(Deserialize)]
 struct Step {
+    #[serde(default)]
+    speedcam_engaged: bool,
+    #[serde(default)]
+    speedcam_v_cruise: f64,
+    #[serde(default)]
+    logs: Vec<serde_json::Value>,
     now: u64,
     packets: Vec<openpilot_can::Packet>,
     diagnostics: Vec<String>,
@@ -66,10 +72,17 @@ fn complete_car_state_when_legacy_canfd_capture_and_timeout_streams() {
         let mut diagnostics_output =
             std::fs::File::create(output.join("diagnostics.jsonl")).unwrap();
         for (tick, step) in case.steps.iter().enumerate() {
+            state.speedcam_engaged = step.speedcam_engaged;
+            state.speedcam_v_cruise = step.speedcam_v_cruise;
             let result = state.update(&step.packets, step.now).unwrap();
             capnp::serialize::write_message(&mut states_output, &result).unwrap();
             let lines = std::mem::take(&mut state.inputs.diagnostics.prints);
             let warnings = std::mem::take(&mut state.inputs.diagnostics.warnings);
+            let logs: Vec<_> = std::mem::take(&mut state.inputs.diagnostics.logs)
+                .into_iter()
+                .map(|log| serde_json::json!({"level":log.level,"message":log.message}))
+                .collect();
+            assert_eq!(logs, step.logs, "{} typed logs tick {tick}", case.candidate);
             use std::io::Write;
             diagnostics_output
                 .write_all(&serde_json::to_vec(&(&lines, &warnings)).unwrap())

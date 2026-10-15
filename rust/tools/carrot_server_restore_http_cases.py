@@ -18,7 +18,8 @@ def register(app, root):
 def cases():
   from openpilot.selfdrive.carrot.server.services import params
   preview, apply = '/api/params_restore_preview', '/api/params_restore_json'
-  values = {'IsMetric': 'yes', 'FutureSetting': '21', 'CruiseGapLevels': 4,
+  values = {'DriverMonitoringEnabled':False,'DriverMonitoringSessionDisabled':True,'JetsonLegacyUpdatePending':True,
+            'IsMetric': 'yes', 'FutureSetting': '21', 'CruiseGapLevels': 4,
             'CarName': 'RESTORED FIXTURE', 'InstallDate': '2026-10-08',
             'CarParams': 'unsupported', 'UnknownWithoutDefinition': 9}
   encoded = params.build_params_qr_payload({'IsMetric': True, 'CruiseGapLevels': 3})['payload']
@@ -96,7 +97,7 @@ def prepare(scenario, root, stores, definition):
     (root / 'settings.json').write_text('{bad')
     os.utime(root / 'settings.json', (1700000400, 1700000400))
   if scenario == 'download-file':
-    (root / 'params_backup.json').write_bytes(b'{"IsMetric": true, "CruiseGapLevels": 3}\n')
+    (root / 'params_backup.json').write_bytes(b'{"DriverMonitoringEnabled": false, "DriverMonitoringSessionDisabled": true, "JetsonLegacyUpdatePending": true, "IsMetric": true, "CruiseGapLevels": 3}\n')
     os.utime(root / 'params_backup.json', (1700000500, 1700000500))
   if scenario == 'download-directory':
     (root / 'params_backup.json').unlink()

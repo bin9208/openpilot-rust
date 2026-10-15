@@ -105,6 +105,20 @@ pub fn set_defaults(params: &impl Parameters, overwrite: bool) -> Result<(), Err
     Ok(())
 }
 
+/// One-time migration preserves legacy streaming, never legacy DM disablement.
+/// Run before filling defaults so an absent migration marker remains observable.
+pub fn configure_monitoring(params: &impl Parameters) -> Result<(), Error> {
+    if params.get("DriverMonitoringMode")?.is_none() {
+        if params.get("CarrotVisionEnabled")?.is_none() {
+            let old = params.get("DisableDM")?.unwrap_or_default();
+            let streaming = openpilot_manager_catalog::integer_value("DisableDM", &old)? == 2;
+            params.put_bool("CarrotVisionEnabled", streaming)?;
+        }
+        params.put("DriverMonitoringMode", b"0")?;
+    }
+    Ok(())
+}
+
 pub fn write_onroad(params: &impl Parameters, started: bool) -> Result<(), Error> {
     params.put_bool("IsOnroad", started)?;
     params.put_bool("IsOffroad", !started)
@@ -146,4 +160,14 @@ fn float_bytes(bytes: &[u8]) -> bool {
         }
     }
     text.replace('_', "").parse::<f64>().is_ok()
+}
+
+/// Repair the stored stop threshold before any runtime or settings consumer starts.
+pub fn configure_stopping_speed(params: &impl Parameters) -> Result<(), Error> {
+    let raw = params.get("VEgoStopping")?.unwrap_or_default();
+    let stored = openpilot_calibrationd::parameters::parse_float(&raw).unwrap_or(f64::NAN);
+    if let Some(value) = openpilot_control_policy::stopping::speed(stored).repair {
+        params.put("VEgoStopping", value.to_string().as_bytes())?;
+    }
+    Ok(())
 }

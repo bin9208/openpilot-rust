@@ -17,9 +17,11 @@ use serde::{Deserialize, Serialize};
 mod config;
 mod desire;
 mod navigation;
+mod signal;
 mod traffic;
 mod update;
 pub use config::Config;
+pub use signal::{PrepareRead, SignalSource, Signals, StartRead};
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -30,6 +32,7 @@ pub enum XState {
     E2eStop,
     E2ePrepare,
     E2eStopped,
+    E2eStopPrepare,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -115,6 +118,14 @@ pub struct CarrotPlanner {
     pub cruise_speed: f64,
     pub stop_distance: f64,
     pub mode: PlannerMode,
+    pub signal_detection_suspended: bool,
+    pub signal_observation_color: u8,
+    pub signal_green_active: bool,
+    pub start_decision: Option<crate::signal::start::Decision>,
+    pub prepare_decision: Option<crate::signal::prepare::Decision>,
+    pub prepare_control_active: bool,
+    start_guard: crate::signal::start::Guard,
+    stop_prepare: crate::signal::prepare::Prepare,
 }
 
 impl CarrotPlanner {
@@ -172,18 +183,30 @@ impl CarrotPlanner {
             cruise_speed: 0.,
             stop_distance: 0.,
             mode: PlannerMode::Acc,
+            signal_detection_suspended: false,
+            signal_observation_color: 0,
+            signal_green_active: false,
+            start_decision: None,
+            prepare_decision: None,
+            prepare_control_active: false,
+            start_guard: crate::signal::start::Guard::default(),
+            stop_prepare: crate::signal::prepare::Prepare::default(),
         })
     }
 
     fn add_event(&mut self, event: EventName, clock: &mut impl FnMut() -> f64) {
         let now = clock();
         if now - self.last_event_time > 5. {
-            let index = self
-                .events
-                .partition_point(|value| u16::from(*value) <= u16::from(event));
-            self.events.insert(index, event);
+            self.insert_event(event);
             self.last_event_time = now;
         }
+    }
+
+    fn insert_event(&mut self, event: EventName) {
+        let index = self
+            .events
+            .partition_point(|value| u16::from(*value) <= u16::from(event));
+        self.events.insert(index, event);
     }
 }
 

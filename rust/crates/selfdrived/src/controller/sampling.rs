@@ -10,7 +10,7 @@ impl Controller {
     ) -> Result<(), Error> {
         if !self.initialized {
             let all_valid = cs.get_can_valid() && state.all_checks(&[])?;
-            let timed_out = state.frame() as f64 * 0.01 > 6.0;
+            let timed_out = state.frame() as f64 * 0.01 > 10.0;
             if all_valid || timed_out || (self.mode.simulation && !self.mode.replay) {
                 let available = effects.available_streams()?;
                 if !available.contains(&openpilot_msgq::VisionStream::Road) {

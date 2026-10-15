@@ -92,6 +92,10 @@ impl SpeedLimit {
             self.manual_override_active = true;
             self.reset_pending();
         }
+        if cc.get_hud_control()?.get_active_carrot() >= 2 {
+            self.reset(false);
+            return Ok(Vec::new());
+        }
         if cs.get_brake_pressed() || !e.tesla_speed_limit_target_valid || !fresh {
             self.reset(false);
             return Ok(Vec::new());

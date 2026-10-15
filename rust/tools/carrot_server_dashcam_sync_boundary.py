@@ -34,20 +34,25 @@ def session_error_receiver() -> Receiver:
 
 async def boundary(config: Config) -> None:
     rows = []
-    for scenario in ('normal', 'partial', 'session-error'):
+    for scenario in ('normal', 'all-files', 'partial', 'session-error'):
         output = config.output/scenario; output.mkdir()
         current = replace(config, output=output, token='' if scenario == 'session-error' else config.token)
         root, segment = files(output)
+        if scenario=='all-files':
+            (root/segment/'qlog.zst').write_bytes(b'reduced')
+            (root/segment/'empty.bin').touch()
+            (root/segment/'nested').mkdir()
+            (root/segment/'alias').symlink_to('rlog.zst')
         if scenario == 'partial':
             (root/segment).rename(root/'00000001--1234567890--1'); segment = '00000001--1234567890--1'
-        receivers = [session_error_receiver() for _ in Kind] if scenario == 'session-error' else [Receiver(scenario) for _ in Kind]
+        receivers = [session_error_receiver() for _ in Kind] if scenario == 'session-error' else [Receiver('normal' if scenario=='all-files' else scenario) for _ in Kind]
         fixtures = [Fixture(kind, current) for kind in Kind]
         responses = []
         try:
             for fixture, receiver in zip(fixtures, receivers, strict=True): await fixture.start(root, receiver)
-            calls = [Call(body={'segment': segment})]
+            calls = [Call(body={'segment': segment,'includeAllFiles':scenario=='all-files'})]
             if scenario == 'normal':
-                calls = [Call(method='GET'), Call(method='HEAD'), Call(body={}),
+                calls = [Call(method='GET'), Call(method='HEAD'), Call(body={}), Call(body=[]), Call(body={'includeAllFiles':None}), Call(body={'segment':segment,'includeAllFiles':'true'}),
                          Call(body={'segment': '00000001--1234567890--99'}), Call('/api/dashcam/%75pload', {'segment': segment})]
             for call in calls:
                 source = await fixtures[0].fetch(call); native = await fixtures[1].fetch(call)
@@ -62,6 +67,11 @@ async def boundary(config: Config) -> None:
                 for receiver in receivers:
                     assert len(receiver.captures) == 4
                     assert {(row['size'], row['sha256']) for row in receiver.captures if row['method'] == 'PUT'} == expected
+            if scenario=='all-files':
+                assert final['source']['payload']['ok']
+                expected={(4096,hashlib.sha256(b'Q'*4096).hexdigest()),(1024,hashlib.sha256(b'R'*1024).hexdigest()),(7,hashlib.sha256(b'reduced').hexdigest()),(0,hashlib.sha256(b'').hexdigest())}
+                for receiver in receivers:
+                    assert {(row['size'],row['sha256']) for row in receiver.captures if row['method']=='PUT'}==expected
             if scenario == 'session-error':
                 for receiver in receivers:
                     assert len(receiver.captures) == 1 and receiver.captures[0]['body']['purpose'] == 'dashcam'

@@ -120,10 +120,24 @@ pub async fn handle(request: Request<RequestBody>, uploads: Arc<Uploads>) -> Res
                     Value::Object(Vec::new())
                 }
             };
+            let include_all_files = if matches!(route, Route::Summary | Route::Start) {
+                match parse::include_all_files(&body) {
+                    Ok(value) => value,
+                    Err(Failure::Http { status, message }) => {
+                        return rejected(status, &message, head)
+                    }
+                    Err(_) => return failed(head),
+                }
+            } else {
+                false
+            };
             match route {
                 Route::Summary => match parse::segments(&body) {
                     Ok(segments) => {
-                        match tokio::task::spawn_blocking(move || uploads.summary(&segments)).await
+                        match tokio::task::spawn_blocking(move || {
+                            uploads.summary(&segments, include_all_files)
+                        })
+                        .await
                         {
                             Ok(result) => result,
                             Err(_) => return rejected(500, "dashcam upload summary failed", head),
@@ -132,7 +146,7 @@ pub async fn handle(request: Request<RequestBody>, uploads: Arc<Uploads>) -> Res
                     Err(error) => Err(error),
                 },
                 Route::Start => match parse::segments(&body) {
-                    Ok(segments) => uploads.start(segments).await,
+                    Ok(segments) => uploads.start(segments, include_all_files).await,
                     Err(error) => Err(error),
                 },
                 Route::Cancel => {

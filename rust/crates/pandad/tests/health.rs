@@ -2,7 +2,7 @@ use openpilot_pandad::health::{CanHealth, Health};
 
 #[test]
 fn packed_health_fields_preserve_unaligned_offsets_and_wire_bits() {
-    let mut packet = [0; 58];
+    let mut packet = [0; 59];
     for (index, byte) in packet.iter_mut().enumerate() {
         *byte = u8::try_from(index).unwrap();
     }
@@ -10,14 +10,16 @@ fn packed_health_fields_preserve_unaligned_offsets_and_wire_bits() {
     assert_eq!(health.uptime, 0x03020100);
     assert_eq!(health.voltage, 0x07060504);
     assert_eq!(health.faults, 0x1f1e1d1c);
-    assert_eq!(health.safety_model, 0x24);
-    assert_eq!(health.safety_param, 0x2625);
-    assert_eq!(health.alternative_experience, 0x2b2a);
-    assert_eq!(health.interrupt_load.to_bits(), 0x2f2e2d2c);
-    assert_eq!(health.spi_checksum_errors, 0x3332);
-    assert_eq!(health.sbu1_mv, 0x3635);
-    assert_eq!(health.sbu2_mv, 0x3837);
-    assert_eq!(health.som_reset_triggered, 0x39);
+    assert_eq!(health.wake_on_can, 0x22);
+    assert_eq!(health.controls_allowed, 0x23);
+    assert_eq!(health.safety_model, 0x25);
+    assert_eq!(health.safety_param, 0x2726);
+    assert_eq!(health.alternative_experience, 0x2c2b);
+    assert_eq!(health.interrupt_load.to_bits(), 0x302f2e2d);
+    assert_eq!(health.spi_checksum_errors, 0x3433);
+    assert_eq!(health.sbu1_mv, 0x3736);
+    assert_eq!(health.sbu2_mv, 0x3938);
+    assert_eq!(health.som_reset_triggered, 0x3a);
 }
 
 #[test]

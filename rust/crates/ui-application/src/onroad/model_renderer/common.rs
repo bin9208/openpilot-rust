@@ -11,6 +11,10 @@ pub struct ModelPoints {
 }
 #[derive(Serialize)]
 pub struct Common {
+    #[serde(skip)]
+    pub model_frame: i64,
+    #[serde(skip)]
+    params_frame: i64,
     pub longitudinal: bool,
     pub experimental: bool,
     pub path_height: f64,
@@ -32,6 +36,8 @@ impl Common {
                 false
             };
         Ok(Self {
+            model_frame: -1,
+            params_frame: -1,
             longitudinal,
             experimental: false,
             path_height: 1.22,
@@ -59,7 +65,9 @@ impl Common {
         } else {
             f64::from(height.get(0))
         };
-        if input.updated("carParams")? {
+        let params_frame = input.messages.topic("carParams")?.receive_frame;
+        if self.params_frame != params_frame {
+            self.params_frame = params_frame;
             self.longitudinal = input.params.get_openpilot_longitudinal_control();
         }
         Ok(())

@@ -20,12 +20,21 @@ use openpilot_ui_framework::{
     widget::{Frame, RenderResult, Widget, WidgetState},
     Error,
 };
-use std::{cell::Cell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 enum Model {
     Big(Box<onroad::model_renderer::ModelRenderer>),
     Compact(Box<compact::model_renderer::ModelRenderer>),
 }
 impl Model {
+    fn overlay_state(&mut self, state: crate::overlay_state::Shared) {
+        match self {
+            Self::Big(widget) => widget.set_overlay_state(state),
+            Self::Compact(widget) => widget.set_overlay_state(state),
+        }
+    }
     fn transform(&mut self, matrix: onroad::calibration::Matrix) {
         match self {
             Self::Big(widget) => widget.set_transform(matrix),
@@ -44,6 +53,12 @@ enum Hud {
     Compact(Box<compact::hud::Hud>),
 }
 impl Hud {
+    fn overlay_state(&mut self, state: crate::overlay_state::Shared) {
+        match self {
+            Self::Big(widget) => widget.set_overlay_state(state),
+            Self::Compact(widget) => widget.set_overlay_state(state),
+        }
+    }
     fn widget(&mut self) -> &mut dyn Widget {
         match self {
             Self::Big(widget) => widget.as_mut(),
@@ -63,19 +78,8 @@ impl Alerts {
         }
     }
 }
-enum Driver {
-    Big(Box<onroad::driver_state::DriverState>),
-    Compact(Box<compact::driver_state::DriverState>),
-}
-impl Driver {
-    fn widget(&mut self) -> &mut dyn Widget {
-        match self {
-            Self::Big(widget) => widget.as_mut(),
-            Self::Compact(widget) => widget.as_mut(),
-        }
-    }
-}
 pub struct Road {
+    overlay_state: crate::overlay_state::Shared,
     state: WidgetState,
     context: Context,
     pub camera: onroad::camera::CameraView,
@@ -83,7 +87,7 @@ pub struct Road {
     model: Model,
     hud: Hud,
     alerts: Alerts,
-    driver: Driver,
+    driver: onroad::driver_preview::DriverPreview,
     vision: Option<compact::vision_renderer::VisionRenderer>,
     confidence: Option<compact::confidence_ball::ConfidenceBall>,
     traffic: Option<compact::traffic_light::TrafficLight>,
@@ -126,17 +130,13 @@ impl Road {
         } else {
             color(0, 0, 0, 255)
         });
-        let (model, hud, alerts, driver) = if big {
+        let (mut model, mut hud, alerts) = if big {
             (
                 Model::Big(Box::new(onroad::model_renderer::ModelRenderer::new(
                     context.clone(),
                 )?)),
                 Hud::Big(Box::new(onroad::hud::Hud::new(context.clone(), canvas)?)),
                 Alerts::Big(Box::new(onroad::alert::Alerts::new(context.clone()))),
-                Driver::Big(Box::new(onroad::driver_state::DriverState::new(
-                    context.clone(),
-                    canvas,
-                )?)),
             )
         } else {
             (
@@ -153,16 +153,11 @@ impl Road {
                     canvas,
                     20.0,
                 )?)),
-                Driver::Compact(Box::new(compact::driver_state::DriverState::new(
-                    context.clone(),
-                    canvas,
-                    60,
-                    false,
-                    false,
-                    20.0,
-                )?)),
             )
         };
+        let overlay_state = Rc::new(RefCell::new(crate::overlay_state::State::default()));
+        model.overlay_state(overlay_state.clone());
+        hud.overlay_state(overlay_state.clone());
         let mut label = UnifiedLabel::new("start the car to\nuse openpilot");
         label.size = 54.0;
         label.font = Font::Display;
@@ -170,13 +165,14 @@ impl Road {
         label.horizontal = Horizontal::Center;
         label.vertical = Vertical::Middle;
         Ok(Self {
+            overlay_state,
             state: WidgetState::default(),
             calibration: Default::default(),
             camera,
             model,
             hud,
             alerts,
-            driver,
+            driver: onroad::driver_preview::DriverPreview::new(context.clone(), canvas, name)?,
             vision: (!big).then(|| compact::vision_renderer::VisionRenderer::new(context.clone())),
             confidence: (!big).then(|| {
                 compact::confidence_ball::ConfidenceBall::new(context.clone(), 20.0, false)
@@ -211,26 +207,11 @@ impl Road {
     }
     pub fn road_view_mode(&self) -> Result<i32, crate::Error> {
         let ui = self.context.ui.borrow();
-        let mode = ui.slow.show_model_view;
-        let ratio = ui.slow.show_brightness_ratio;
-        if mode <= 0
-            || !ui.started
-            || ratio <= 0.0
-            || ratio >= 1.0
-            || (self.context.now_monotonic)() - ui.started_time < 10.0
-        {
-            return Ok(0);
-        }
-        let sm = self.context.messages.borrow();
-        Ok(
-            if f64::from(messages::device_state(&sm.state)?.get_screen_brightness_percent())
-                <= ratio * 100.0 + 3.0
-            {
-                mode.min(3)
-            } else {
-                0
-            },
-        )
+        Ok(if ui.started {
+            ui.slow.show_model_view.clamp(0, 3)
+        } else {
+            0
+        })
     }
     fn switch(&mut self) -> Result<(), Error> {
         let sm = self.context.messages.borrow();
@@ -396,6 +377,17 @@ impl Widget for Road {
             }
             Ok(())
         })?;
+        self.overlay_state.borrow_mut().update(
+            &self.context.ui.borrow(),
+            &self.context.messages.borrow().state,
+            self.camera.overlay_camera(),
+            if big {
+                crate::overlay_state::Mode::Large(self.suppress_camera)
+            } else {
+                crate::overlay_state::Mode::Compact((self.suppress_camera, mode))
+            },
+            !frame.events.is_empty(),
+        )?;
         if !self.suppress_camera && (big || matches!(mode, 0 | 2)) {
             measure(1, &mut || {
                 Self::render_child(self.model.widget(), content, frame, draw)
@@ -409,7 +401,13 @@ impl Widget for Road {
                 Self::render_child(self.alerts.widget(), content, frame, draw)
             })?;
             measure(2, &mut || {
-                Self::render_child(self.driver.widget(), content, frame, draw)
+                let alert = match &self.alerts {
+                    Alerts::Big(alerts) => alerts.current()?.is_some(),
+                    _ => false,
+                };
+                self.driver
+                    .draw_onroad(content, alert, frame.monotonic, draw)?;
+                Ok(())
             })?;
         } else {
             if !self.suppress_camera {
@@ -438,22 +436,9 @@ impl Widget for Road {
                 Alerts::Compact(alerts) => alerts.will_render()?,
                 Alerts::Big(_) => return Err(Error::Contract("compact alert renderer")),
             };
-            let icons = match &self.hud {
-                Hud::Compact(hud) => hud.drawing_top_icons(),
-                Hud::Big(_) => return Err(Error::Contract("compact HUD renderer")),
-            };
-            if let Driver::Compact(driver) = &mut self.driver {
-                let ui = self.context.ui.borrow();
-                driver.should_draw = !icons
-                    && ui.started
-                    && (ui.status != Status::Disengaged || ui.realtime.value.always_on_dm);
-                driver.set_position(
-                    float(f64::from(rect.x) + 16.0),
-                    float(f64::from(rect.y) + 10.0),
-                );
-            }
             measure(2, &mut || {
-                self.driver.widget().render(frame, draw)?;
+                self.driver
+                    .draw_onroad(rect, alert.is_some(), frame.monotonic, draw)?;
                 Ok(())
             })?;
             if let Hud::Compact(hud) = &mut self.hud {

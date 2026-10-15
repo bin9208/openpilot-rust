@@ -20,6 +20,12 @@ impl Errors {
 #[serde(rename_all = "camelCase")]
 pub struct Data {
     pub points: Vec<Point>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub display_points: Vec<Point>,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub has_display_data: bool,
+    #[serde(skip)]
+    pub display_points_present: bool,
     #[serde(skip)]
     pub points_present: bool,
     pub errors: Errors,
@@ -33,7 +39,7 @@ pub struct Data {
 impl Data {
     pub fn set_flip(&mut self, flip: bool) {
         if self.radar_track_flipped != flip {
-            for point in &mut self.points {
+            for point in self.points.iter_mut().chain(&mut self.display_points) {
                 if point.radar_source == Source::FrontRadar {
                     point.y_rel = -point.y_rel;
                     point.yv_rel = -point.yv_rel;

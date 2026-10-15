@@ -68,6 +68,7 @@ pub struct CarSpecificEvents {
     #[serde(rename = "carrotCruise_prev")]
     carrot_cruise_prev: i16,
     tesla_lkas_button_prev: bool,
+    tesla_standstill_steer_fault_frames: u64,
 }
 
 impl CarSpecificEvents {
@@ -86,6 +87,7 @@ impl CarSpecificEvents {
             v_cruise_prev: 250.0,
             carrot_cruise_prev: 0,
             tesla_lkas_button_prev: false,
+            tesla_standstill_steer_fault_frames: 0,
         }
     }
 

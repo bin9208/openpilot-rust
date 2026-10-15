@@ -15,7 +15,12 @@ use openpilot_ui_framework::{
     widget::{NavigationRequest, WidgetHandle},
     Error,
 };
-use std::{cell::Cell, path::PathBuf, rc::Rc, time::Duration};
+use std::{
+    cell::{Cell, RefCell},
+    path::PathBuf,
+    rc::Rc,
+    time::Duration,
+};
 pub struct Runtime {
     pub context: Context,
     pub root: WidgetHandle,
@@ -28,6 +33,7 @@ pub struct Runtime {
     prime: Option<crate::services::polling::Poller>,
     network: openpilot_ui_framework::network::WifiSession,
     pub app: Application,
+    impact: RefCell<crate::impact_prompt::Prompt>,
 }
 impl Runtime {
     pub fn new(
@@ -85,11 +91,12 @@ impl Runtime {
         let board = !context.pc;
         let mut runtime = Self {
             context: context.clone(),
+            impact: RefCell::new(crate::impact_prompt::Prompt::new(context.clone())),
             root,
             onboarding,
             recording,
             hardware,
-            scheduler: scheduling::Scheduler::new(board),
+            scheduler: scheduling::Scheduler::for_ui(board, &context.device_type),
             platform: scheduling::Native { root: "/".into() },
             effects: actions::Effects::new(
                 context.clone(),
@@ -126,13 +133,17 @@ impl Runtime {
             effects,
             prime,
             network,
+            impact,
         } = self;
-        let rendered = app.render_cycle(
+        let rendered = app.render_cycle_with_input(
+            |events| impact.borrow_mut().input(events).map_err(Error::from),
             |frame, stack, _| root.get_mut::<Main>()?.tick(root, onboarding, stack, frame),
             |frame, canvas, diagnostics, stack, rendered| {
                 if rendered {
                     root.get_mut::<Main>()?
                         .finish_render(diagnostics, &mut canvas.renderer)?;
+                    let width = canvas.renderer.dimensions().0;
+                    impact.borrow_mut().render(frame.monotonic, width, canvas)?;
                 }
                 effects.drain(root, frame, canvas, diagnostics, stack, hardware.as_mut())?;
                 recording.set(diagnostics.is_recording());
@@ -165,6 +176,9 @@ impl Runtime {
                         state::ModelStatus {
                             compiled: ui.slow.usbgpu_compiled,
                             compile_pending: ui.slow.usbgpu_compile_pending,
+                            delivery_badge: ui.slow.delivery_badge.clone(),
+                            recovery_badge: ui.slow.recovery_badge.clone(),
+                            jetlink_badge: ui.slow.jetlink_badge.clone(),
                         }
                     }
                 };

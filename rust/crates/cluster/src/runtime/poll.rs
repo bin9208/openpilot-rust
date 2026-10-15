@@ -113,7 +113,8 @@ impl Poll {
             self.brightness = now + 0.1;
         }
         if rate.fixed_usb_policy && now >= self.fps {
-            let target = reader.usb_fps();
+            let active = reader.usb_fps().to_bits() == 5.0_f64.to_bits();
+            let target = args.output_rate(true, active)?.target_fps;
             if target.to_bits() != rate.target_fps.to_bits() {
                 let encoder = u32::try_from(crate::rate::encoder_fps(target, args.usb_h264_fps)?)
                     .map_err(|error| Error::Invalid(error.to_string()))?;

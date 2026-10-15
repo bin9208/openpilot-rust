@@ -194,6 +194,16 @@ async def compare(binary: Path, output: Path, binding: Path, family: str):
           if scenario == 'web-legacy':
             for directory in ('data', 'native_data'):
               (root / directory / 'state/web_settings.json').write_text(json.dumps({'toss_upload_url': 'https://shind0.synology.me', 'web_language': 'main_en'}))
+          if scenario == 'download-fifo':
+            # Final upstream JSON reading blocks on a FIFO. Preserve the native
+            # runtime's existing non-regular-file rejection and test it separately.
+            async with session.request(method, URL(f'http://127.0.0.1:{native_port}{path}', encoded=True)) as response:
+              body = await response.read()
+              assert response.status == 403, (response.status, body)
+              (output / 'native-backup-fifo.json').write_text(json.dumps({
+                'status':response.status, 'body':body.decode(),
+                'policy':'retain native nonblocking file guard; upstream FIFO read is not executed'}))
+            continue
           for side, port in (('original', source_port), ('native', native_port)):
             if scenario.startswith('profiles-') and method not in ('GET', 'HEAD'):
               request_body = payload if isinstance(payload, bytes) else json.dumps(profiles_http.payload(side, payload)).encode()

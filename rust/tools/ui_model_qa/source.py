@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json
 import math
+import time
 import os
 from pathlib import Path
 import sys
@@ -55,8 +56,14 @@ sys.modules[params_module.__name__] = params_module
 import pyray as rl
 from openpilot.cereal import car, log
 from openpilot.common.filter_simple import FirstOrderFilter
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ui_application_qa'))
+from final_graphics_source import install as install_final_graphics
+install_final_graphics()
 from openpilot.system.ui.lib.application import gui_app, FontWeight
-from openpilot.system.ui.lib import shader_polygon, text_draw
+from openpilot.system.ui.lib import shader_polygon, text_draw, native_draw, native_geometry, native_text
+from openpilot.system.ui.lib.overlay_cache import OverlayLayer, DisplayClock
+from openpilot.selfdrive.ui.radar_display import select_radar_display_points
+from openpilot.selfdrive.ui.vision_status import blindspot_source_packet, blindspot_sources
 from openpilot.system.ui.lib.multilang import multilang
 from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.onroad.path_geometry import sample_path, project_path
@@ -94,6 +101,11 @@ module = ModuleType('source_model_renderer')
 sys.modules[module.__name__] = module
 module.__dict__.update(
   math=math,
+  time=time,
+  native_draw=native_draw, native_geometry=native_geometry, native_text=native_text,
+  OverlayLayer=OverlayLayer, DisplayClock=DisplayClock,
+  select_radar_display_points=select_radar_display_points,
+  blindspot_source_packet=blindspot_source_packet, blindspot_sources=blindspot_sources,
   colorsys=colorsys,
   np=np,
   rl=rl,
@@ -131,6 +143,8 @@ tree = ast.parse(path.read_text())
 nodes = [node for node in tree.body if not isinstance(node, (ast.Import, ast.ImportFrom))]
 exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), 'exec'), module.__dict__)
 now = 0.0
+time.monotonic = lambda: now
+time.monotonic_ns = lambda: int(now * 1e9)
 rl.get_time = lambda: now
 rl.get_frame_time = lambda: 0.05
 loop = gui_app.render()
@@ -142,6 +156,8 @@ try:
     ui.sm = scope['SubMaster'](SERVICES)
     current_param_reads.clear()
     widget = module.ModelRenderer()
+    if suite.get("overlay"):
+      widget._overlay_state=SimpleNamespace(key=None,enabled=True,urgent=False)
     rect = rl.Rectangle(*(scene['rect'][key] for key in ['x', 'y', 'width', 'height']))
     widget.set_rect(rect)
     rows = []
@@ -156,6 +172,12 @@ try:
       if 'transform' in step:
         widget.set_transform(np.asarray(step['transform'], dtype=np.float64))
       next(loop)
+      # Final source captures the active FBO immediately after BeginDrawing.
+      gui_app.render_framebuffer=rl.rl_get_active_framebuffer()
+      if suite.get("overlay"):
+        gui_app._frame=index
+        widget._overlay_state.enabled=index%19!=18
+        widget._overlay_state.urgent=index%11==7
       record.commands = []
       widget._render(rect)
       rows.append({'state': snapshot(widget, big), 'commands': record.commands})

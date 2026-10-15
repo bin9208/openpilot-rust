@@ -162,11 +162,11 @@ impl<L: Launch> TextWindow<L> {
             None => Ok(None),
         }
     }
-    /// Source contract waits specifically for exit code 1; ordinary code 0 does not finish this wait.
+    /// Any observed exit finishes the wait, including failure or signal exit.
     pub fn wait_for_exit(&mut self) -> Result<(), Error> {
         if self.child.is_some() {
             loop {
-                if self.status()? == Some(1) {
+                if self.status()?.is_some() {
                     return Ok(());
                 }
                 std::thread::sleep(Duration::from_millis(100));
@@ -186,6 +186,69 @@ impl<L: Launch> Drop for TextWindow<L> {
     fn drop(&mut self) {
         if let Err(error) = self.close() {
             self.launcher.warning(&format!("TextWindow close: {error}"));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{cell::Cell, rc::Rc};
+    struct Process {
+        code: i32,
+        polls: Rc<Cell<usize>>,
+    }
+    impl Child for Process {
+        fn status(&mut self) -> Result<Option<i32>, Error> {
+            self.polls.set(self.polls.get() + 1);
+            if self.polls.get() > 1 {
+                return Err(Error::Contract("exited window polled again"));
+            }
+            Ok(Some(self.code))
+        }
+        fn send(&mut self, _: &[u8]) -> std::io::Result<bool> {
+            Ok(false)
+        }
+        fn kill(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+        fn terminate(&mut self) -> Result<(), Error> {
+            Ok(())
+        }
+        fn communicate(&mut self, _: Duration) -> Result<(), StopError> {
+            Ok(())
+        }
+    }
+    struct Launcher {
+        code: i32,
+        polls: Rc<Cell<usize>>,
+    }
+    impl Launch for Launcher {
+        type Child = Process;
+        fn spawn(&mut self, _: Window<'_>) -> Result<Process, Error> {
+            Ok(Process {
+                code: self.code,
+                polls: self.polls.clone(),
+            })
+        }
+    }
+    #[test]
+    fn final_source_text_wait_finishes_after_every_exit_status() {
+        // Exact exit cases from the pinned test_startup_recovery.py regression.
+        for code in [0, 1, 2, -9] {
+            let polls = Rc::new(Cell::new(0));
+            let mut window = TextWindow::new(
+                Launcher {
+                    code,
+                    polls: polls.clone(),
+                },
+                "error",
+            );
+            assert!(
+                window.wait_for_exit().is_ok(),
+                "already exited status {code}"
+            );
+            assert_eq!(polls.get(), 1);
         }
     }
 }

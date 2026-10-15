@@ -9,6 +9,10 @@ from original_params_binding import load
 
 
 def cases():
+  for name in ('DriverMonitoringSessionDisabled', 'JetsonLegacyUpdatePending', 'DriverMonitoringEnabled'):
+    for value in (True, False, '0', '1'):
+      yield {'action': 'put_param', 'name': name, 'value': value}
+
   dates = ('2026-10-08', '20261008', '2026-W41', '2026W414',
            '2026-10-08T12:34:56', '20261008x123456', '2026-W41-4T12:34:56',
            '2026-10-08T12:34:56Z', '2026-10-08T12:34:56+09:00',

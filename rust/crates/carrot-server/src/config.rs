@@ -6,10 +6,8 @@ use std::{
 
 pub const BODY_LIMIT: usize = 16 * 1024 * 1024;
 pub const UNIT_CYCLE: [u32; 6] = [1, 2, 5, 10, 50, 100];
-pub const LEGACY_STATE_FILES: [&str; 7] = [
+pub const LEGACY_STATE_FILES: [&str; 5] = [
     "web_settings.json",
-    "youtube_live.json",
-    "youtube_live_secret.json",
     "setting_favorites.json",
     "setting_profiles.json",
     "git.json",

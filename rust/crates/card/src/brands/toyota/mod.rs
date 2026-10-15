@@ -27,6 +27,11 @@ pub const SNG_WITHOUT_DSU: u32 = 512;
 pub const RAISED_ACCEL_LIMIT: u32 = 1024;
 pub const SECOC: u32 = 2048;
 
+/// Exact final receiver capability; this declares no ECU or control policy.
+pub fn supports_ars510(brand: &str, candidate: &str, flags: u32) -> bool {
+    brand == "toyota" && candidate == "TOYOTA_RAV4_TSS2_2022" && flags & RADAR_ACC != 0
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]

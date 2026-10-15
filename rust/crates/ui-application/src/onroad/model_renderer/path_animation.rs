@@ -21,7 +21,7 @@ impl ModelRenderer {
         }
         let speed = f64::from(input.car.get_v_ego()) * 3.6;
         let acceleration = f64::from(input.car.get_a_ego());
-        let sequence = (speed / 100.).max(0.3);
+        let sequence = (speed / 100.).max(0.3) * self.clock.frames;
         let forward = acceleration >= -1. || acceleration.is_nan();
         let maximum = i32::try_from((length / 4 + 3).min(16))
             .map_err(|_| Error::Contract("path sequence range"))?;

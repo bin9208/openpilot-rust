@@ -87,7 +87,7 @@ pub fn scc_fields(
                 5.5,
             ),
             clip(lead.v_rel, -170., 239.3),
-            if lead.v_rel > 0. { 1. } else { 2. },
+            if lead.v_rel > 0.3 { 1. } else { 2. },
         ]),
         None => Ok([204.6, 0., 239.4, 0.]),
     }

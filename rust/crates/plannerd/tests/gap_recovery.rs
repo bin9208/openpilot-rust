@@ -9,9 +9,10 @@ fn opening() -> GapSample {
         ego_speed: 20.,
         lead_speed: 22.,
         relative_speed: 2.,
-        distance: 50.,
-        desired_distance: 30.,
+        distance: 40.,
+        desired_distance: 20.,
         base_tf: 1.45,
+        stop_distance: 6.,
     }
 }
 
@@ -42,4 +43,22 @@ fn maximum_response_level_clears_extra_headroom() {
     let margin = state.update(input);
     // Then: no previously captured extra TF survives.
     assert_eq!(margin, 0.);
+}
+
+#[test]
+fn opening_gap_outside_distance_band_releases_even_for_stopped_lead() {
+    let mut owner = LeadGapState::default();
+    let mut frame = opening();
+    frame.lead_speed = 0.;
+    frame.distance = 70.;
+    let mut first = 0.;
+    let mut last = 0.;
+    for index in 0..400 {
+        last = owner.update(frame);
+        if index == 15 {
+            first = last;
+        }
+    }
+    assert!(first > 0.1);
+    assert!(last < first * 0.001, "{first} -> {last}");
 }

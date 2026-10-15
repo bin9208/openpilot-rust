@@ -22,10 +22,12 @@ inline rust::Vec<std::uint8_t> owned_bytes(const cv::Mat& value) {
   if (value.depth() != CV_8U) throw std::runtime_error("OpenCV returned a non-byte image");
   const cv::Mat contiguous = value.isContinuous() ? value : value.clone();
   const auto count = contiguous.total() * contiguous.elemSize();
-  rust::Vec<std::uint8_t> output;
-  output.reserve(count);
-  for (std::size_t i = 0; i < count; ++i) output.push_back(contiguous.data[i]);
-  return output;
+  return copy_bytes(rust::Slice<const std::uint8_t>(contiguous.data, count));
+}
+inline rust::Vec<float> owned_scores(const cv::Mat& value) {
+  if (value.type() != CV_32FC1) throw std::runtime_error("OpenCV returned non-float scores");
+  const cv::Mat contiguous = value.isContinuous() ? value : value.clone();
+  return copy_scores(rust::Slice<const float>(contiguous.ptr<float>(), contiguous.total()));
 }
 inline std::vector<cv::Point> checked_points(rust::Slice<const Point> points) {
   if (points.empty() || points.size() > INT32_MAX) throw std::invalid_argument("invalid polygon point count");

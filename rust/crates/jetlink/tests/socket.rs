@@ -210,6 +210,7 @@ fn wrong_reply_identity_closes_proxy() {
         let mut hello = vec![b'J'];
         hello.extend(
             serde_json::to_vec(&rpc::Hello {
+                protocol: 2,
                 ready: true,
                 generation: rpc::encode_generation([3; 16]),
                 spec: contract::contract().unwrap(),
@@ -317,4 +318,73 @@ fn kernel_stuck_hardware_seam_cannot_extend_explicit_owner_stop() {
     // Then the caller returns without unblocking hardware or waiting for a second shutdown timeout.
     assert!(start.elapsed() < Duration::from_millis(200));
     release_tx.send(()).unwrap();
+}
+
+#[test]
+fn private_provisioning_tail_starts_after_current_model_reply() {
+    let _serial = FIXTURE_LOCK.lock().unwrap();
+    struct Tail {
+        peer: Synthetic,
+        entered: mpsc::Sender<()>,
+        release: mpsc::Receiver<()>,
+    }
+    impl Backend for Tail {
+        fn connect(&mut self) -> Result<Identity, Error> {
+            self.peer.connect()
+        }
+        fn infer(
+            &mut self,
+            frame: u32,
+            image: &[u8],
+            packed: &[f32],
+            deadline: Deadline,
+            reset: bool,
+        ) -> Result<Vec<f32>, Error> {
+            self.peer.infer(frame, image, packed, deadline, reset)
+        }
+        fn after_reply(&mut self) -> Result<(), Error> {
+            self.entered.send(()).unwrap();
+            self.release
+                .recv_timeout(Duration::from_secs(2))
+                .map_err(|_| Error::Deadline)
+        }
+        fn dead(&self) -> bool {
+            self.peer.dead()
+        }
+        fn close(&mut self) {
+            self.peer.close();
+        }
+    }
+    let root = tempfile::tempdir().unwrap();
+    let socket = root.path().join("owner.sock");
+    let (entered_tx, entered_rx) = mpsc::channel();
+    let (release_tx, release_rx) = mpsc::channel();
+    let mut server = Server::spawn(
+        Tail {
+            peer: Synthetic {
+                last: None,
+                dead: false,
+            },
+            entered: entered_tx,
+            release: release_rx,
+        },
+        &socket,
+    )
+    .unwrap();
+    ready(&server);
+    let mut client = ProxyClient::connect(&socket).unwrap();
+    let result = client.infer(
+        42,
+        &vec![0; contract::WARPED_BYTES],
+        &[0.; 12],
+        Deadline::after(Duration::from_millis(50)).unwrap(),
+        true,
+    );
+    // The tail deliberately cannot finish until the caller already owns this result.
+    let entered = entered_rx.recv_timeout(Duration::from_secs(1));
+    release_tx.send(()).unwrap();
+    assert!(entered.is_ok());
+    assert_eq!(result.unwrap().len(), contract::OUTPUT_FLOATS);
+    client.close();
+    server.stop(Duration::from_secs(2)).unwrap();
 }

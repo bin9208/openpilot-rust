@@ -33,13 +33,10 @@ PREDICATES = [
   'only_offroad',
   'enable_updated',
   'enable_dm',
+  'enable_dm_model',
   'enable_xiaoge_data',
   'enable_webrtc',
   'c3x_lite',
-  'enable_youtube_low_encoder',
-  'enable_youtube_medium_encoder',
-  'enable_youtube_encoder',
-  'enable_youtube_wide_encoder',
   'enable_cluster_hud',
 ]
 BOOL_KEYS = [
@@ -51,9 +48,12 @@ BOOL_KEYS = [
   'LateralManeuverMode',
   'SoftwareMenu',
   'ShareData',
+  'DriverMonitoringEnabled',
+  'DriverMonitoringSessionDisabled',
+  'CarrotVisionEnabled',
   'HardwareC3xLite',
 ]
-INTEGER_KEYS = ['DisableDM', 'ClusterHud', 'CarrotYouTubeLive', 'CarrotYouTubeQuality']
+INTEGER_KEYS = ['ClusterHud']
 
 
 def encoded(values):
@@ -117,10 +117,10 @@ def main():
           key,
           next(((i, a, b) for i, (a, b) in enumerate(zip(outputs['source'][key], outputs['native'][key], strict=False)) if a != b), None),
         )
-      assert len(outputs['source']['catalog']) == 63
-      assert len({item['name'] for item in outputs['source']['catalog']}) == 63
+      assert len(outputs['source']['catalog']) == 59
+      assert len({item['name'] for item in outputs['source']['catalog']}) == 59
       assert 'uploader' not in {item['name'] for item in outputs['source']['catalog']}
-      observable = f"63 ordered descriptors and {len(request.get('cases', []))} callback outcomes/access traces/persisted Ublox values identical"
+      observable = f"59 ordered descriptors and {len(request.get('cases', []))} callback outcomes/access traces/persisted Ublox values identical"
     row = {
       'scenario': name,
       'invocations': invocations,
@@ -145,10 +145,7 @@ def main():
     cases.append({'predicate': predicate, 'started': True, 'not_car': False, 'values': encoded(values or {}), **kw})
 
   profiles = [{}, dict.fromkeys(BOOL_KEYS, 1), dict.fromkeys(BOOL_KEYS, 0)]
-  profiles += [
-    {'DisableDM': dm, 'ClusterHud': hud, 'CarrotYouTubeLive': 1, 'CarrotYouTubeQuality': quality}
-    for dm, hud, quality in itertools.product([0, 1, 2], [0, 1], [0, 1, 2, 3, 4])
-  ]
+  profiles += [{'DisableDM': dm, 'ClusterHud': hud} for dm, hud in itertools.product([0, 1, 2], [0, 1])]
   for profile, started, not_car in itertools.product(profiles, [False, True], [False, True]):
     for name in names:
       add('process:' + name, profile, started=started, not_car=not_car)
@@ -163,36 +160,28 @@ def main():
   for dm, driver in itertools.product([-1, 0, 1, 2, 3], [0, 1]):
     for started in [False, True]:
       add('enable_dm', {'DisableDM': dm, 'IsDriverViewEnabled': driver}, started=started)
-  for name, live, quality in itertools.product(PREDICATES[-5:-1], [-1, 0, 1, 2], [-1, 0, 1, 2, 3, 4]):
-    add(name, {'CarrotYouTubeLive': live, 'CarrotYouTubeQuality': quality})
-  for wide in [b'', b'0', b'1', b'true', b'\xff', b'1\x00']:
-    add('enable_youtube_wide_encoder', {'UseWideCamera': wide, 'CarrotYouTubeLive': 1, 'CarrotYouTubeQuality': 3})
   for name, started, stored, tty, quectel in itertools.product(['ublox', 'qcomgps'], [False, True], [0, 1], [False, True], [False, True]):
     paths = [path for path, present in [('/dev/ttyHS0', tty), ('/persist/comma/use-quectel-gps', quectel)] if present]
     add(name, {'UbloxAvailable': stored}, started=started, gps_paths=paths)
   affected = {
-    'DisableDM': 'enable_dm',
     'ClusterHud': 'enable_cluster_hud',
-    'CarrotYouTubeLive': 'enable_youtube_encoder',
-    'CarrotYouTubeQuality': 'enable_youtube_encoder',
   }
   for key, value in itertools.product(INTEGER_KEYS, [b'', b'  +2tail', b'-1suffix', b'2147483647', b'-2147483648', b'0\x00garbage', b'1.9', b'\v2']):
-    add(affected[key], {'CarrotYouTubeLive': 1, key: value})
+    add(affected[key], {key: value})
   for key in BOOL_KEYS + INTEGER_KEYS + ['UseWideCamera']:
     for name in PREDICATES:
-      add(name, {'CarrotYouTubeLive': 1, 'CarrotYouTubeQuality': 3}, directories=[key])
-      add(name, {'CarrotYouTubeLive': 1, 'CarrotYouTubeQuality': 3}, exception_key=key)
+      add(name, {}, directories=[key])
+      add(name, {}, exception_key=key)
   # Invalid integer bytes behind short-circuits must never reach Cython stoi.
-  for name in ['enable_dm', 'process:carrot_vision_encoderd', 'process:youtube_encoderd', 'process:youtube_wide_encoderd']:
+  for name in ['enable_dm', 'process:carrot_vision_encoderd']:
     add(name, dict.fromkeys(INTEGER_KEYS, b'invalid'), started=False)
-  add('enable_youtube_wide_encoder', {'UseWideCamera': 0, 'CarrotYouTubeLive': b'invalid'})
-  add('enable_youtube_encoder', {'CarrotYouTubeLive': 0, 'CarrotYouTubeQuality': b'invalid'})
   add('enable_webrtc', {'DisableDM': 0, 'ClusterHud': b'invalid'})
+  add('enable_dm', {'DisableDM': b'invalid'})
   run('parameter-and-order-policy', {'cases': cases})
   count += len(cases)
   fatal_count = 0
   for key, value in itertools.product(INTEGER_KEYS, [b'invalid', b'2147483648', b'-2147483649', b' ', b'\xff', b'\x00']):
-    request = {'cases': [{'predicate': affected[key], 'started': True, 'not_car': False, 'values': encoded({'CarrotYouTubeLive': 1, key: value})}]}
+    request = {'cases': [{'predicate': affected[key], 'started': True, 'not_car': False, 'values': encoded({key: value})}]}
     run(f'fatal-{fatal_count:02}', request, fatal=True)
     fatal_count += 1
   inventory = json.loads(Path('rust/port-status.json').read_text())
@@ -213,7 +202,7 @@ def main():
   ]
   report = {
     'result': 'PASS',
-    'descriptors': 63,
+    'descriptors': 59,
     'catalog_configurations': 64,
     'environment_snapshots': 25,
     'predicate_cases': count,

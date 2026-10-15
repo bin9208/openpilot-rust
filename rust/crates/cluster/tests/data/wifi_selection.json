@@ -1,0 +1,2048 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "scope": "two unchanged main S3 selection blocks and actual reader.read; no full main claim",
+  "input": [
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 1,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 1,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 1,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 5,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 5,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 5,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 10,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 10,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 10,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 15,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 15,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 15,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 20,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 20,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": false,
+      "fps": 20,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 1,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 1,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 1,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 5,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 5,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 5,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 10,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 10,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 10,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 15,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 15,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 15,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 20,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 20,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": false,
+      "egpu": true,
+      "fps": 20,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 1,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 1,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 1,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 5,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 5,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 5,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 10,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 10,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 10,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 15,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 15,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 15,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 20,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 20,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": false,
+      "fps": 20,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 1,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 1,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 1,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 5,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 5,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 5,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 10,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 10,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 10,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 15,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 15,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 15,
+      "quality": 90
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 20,
+      "quality": 20
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 20,
+      "quality": 50
+    },
+    {
+      "tici": false,
+      "live": true,
+      "egpu": true,
+      "fps": 20,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 1,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 1,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 1,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 5,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 5,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 5,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 10,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 10,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 10,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 15,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 15,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 15,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 20,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 20,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": false,
+      "fps": 20,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 1,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 1,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 1,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 5,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 5,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 5,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 10,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 10,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 10,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 15,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 15,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 15,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 20,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 20,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": false,
+      "egpu": true,
+      "fps": 20,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 1,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 1,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 1,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 5,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 5,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 5,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 10,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 10,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 10,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 15,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 15,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 15,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 20,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 20,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": false,
+      "fps": 20,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 1,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 1,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 1,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 5,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 5,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 5,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 10,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 10,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 10,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 15,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 15,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 15,
+      "quality": 90
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 20,
+      "quality": 20
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 20,
+      "quality": 50
+    },
+    {
+      "tici": true,
+      "live": true,
+      "egpu": true,
+      "fps": 20,
+      "quality": 90
+    }
+  ],
+  "expected": [
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": false
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 15.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 15,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 20.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 20,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 1.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 1,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 5.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 5,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 20,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 50,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    },
+    {
+      "codec": "jpeg",
+      "quality": 90,
+      "asynchronous": true,
+      "encoder_source": "S3 Wi-Fi JPEG",
+      "fps": 10.0,
+      "source": "S3 Wi-Fi",
+      "display_fps": 10,
+      "automatic": true
+    }
+  ]
+}

@@ -7,6 +7,7 @@ mod protocol;
 use protocol::receive;
 use rustix::process::{kill_process, Pid, Signal};
 use std::{
+    io::Write,
     path::Path,
     process::{Child, Command, Stdio},
     sync::{atomic::AtomicBool, Arc},
@@ -23,6 +24,7 @@ pub struct Frame<'a> {
 pub struct Client {
     child: Child,
     shared: tempfile::NamedTempFile,
+    progress: Option<tempfile::NamedTempFile>,
     pub info: Info,
     packed: Vec<u8>,
     output: Vec<u8>,
@@ -101,6 +103,48 @@ impl Client {
             .env("USBGPU_ASSETS_MANIFEST_SHA256", binding.manifest_sha256());
         Self::from_command(command, launch)
     }
+    /// Background recovery must never allocate or probe the internal QCOM GPU.
+    pub fn launch_recovery_with_assets(
+        launch: Launch<'_>,
+        binding: &crate::worker_artifact::Binding,
+    ) -> Result<Self, Error> {
+        let mut command = Command::new(launch.worker);
+        command
+            .env("USBGPU_ASSETS_ROOT", binding.root())
+            .env("USBGPU_ASSETS_MANIFEST_SHA256", binding.manifest_sha256())
+            .env("USBGPU_AMD_ONLY", "1");
+        Self::from_command(command, launch)
+    }
+    pub fn reset(&mut self) -> Result<(), Error> {
+        if self.failed {
+            return Err(Error::Contract("model worker stopped after failure"));
+        }
+        let result = (|| {
+            self.child
+                .stdin
+                .as_mut()
+                .ok_or(Error::Contract("missing worker input"))?
+                .write_all(b"z")?;
+            let stdout = self
+                .child
+                .stdout
+                .as_mut()
+                .ok_or(Error::Contract("missing worker output"))?;
+            if receive(stdout, Duration::from_secs(5), &self.cancelled)? != b"1\n" {
+                return Err(Error::Contract("invalid worker reset response"));
+            }
+            self.packed.fill(0);
+            self.output.fill(0);
+            self.values.fill(0.0);
+            Ok(())
+        })();
+        let result = result.map_err(|error| self.capture_failure(error));
+        if result.is_err() {
+            self.failed = true;
+            self.stop();
+        }
+        result
+    }
     pub fn load_command(command: Command, model: &Path, camera: [u32; 2]) -> Result<Self, Error> {
         Self::from_command(
             command,
@@ -122,6 +166,12 @@ impl Client {
             ..
         } = launch;
         let shared = tempfile::NamedTempFile::new()?;
+        let progress = tempfile::NamedTempFile::new().ok();
+        if let Some(progress) = &progress {
+            command.env("USBGPU_PROGRESS_PATH", progress.path());
+        } else {
+            command.env_remove("USBGPU_PROGRESS_PATH");
+        }
         let child = command
             .arg(model)
             .arg(shared.path())
@@ -142,6 +192,7 @@ impl Client {
         let mut client = Self {
             child,
             shared,
+            progress,
             info: placeholder,
             packed: Vec::new(),
             output: Vec::new(),
@@ -155,7 +206,9 @@ impl Client {
             .stdout
             .as_mut()
             .ok_or(Error::Contract("missing worker output"))?;
-        let info: Info = serde_json::from_slice(&receive(stdout, timeout, &client.cancelled)?)?;
+        let response = receive(stdout, timeout, &client.cancelled)
+            .map_err(|error| client.capture_failure(error))?;
+        let info: Info = serde_json::from_slice(&response)?;
         validate(&info, camera)?;
         if client.shared.as_file().metadata()?.len() != info.size as u64 {
             return Err(Error::Contract("worker shared file length mismatch"));
@@ -182,14 +235,33 @@ impl Client {
             Ok(true) => Ok(Some(&self.values)),
             Ok(false) => Ok(None),
             Err(error) => {
+                let error = self.capture_failure(error);
                 self.failed = true;
                 self.stop();
                 Err(error)
             }
         }
     }
+    pub fn alive(&mut self) -> bool {
+        matches!(self.child.try_wait(), Ok(None))
+    }
     pub fn raw_output(&self) -> &[u8] {
         &self.output
+    }
+    fn capture_failure(&self, error: Error) -> Error {
+        if matches!(error, Error::Cancelled) {
+            return error;
+        }
+        Error::Worker {
+            source: Box::new(error),
+            progress: crate::worker_progress::snapshot(
+                self.progress
+                    .as_ref()
+                    .map_or(Path::new(""), |file| file.path()),
+                self.child.id(),
+                Path::new("/proc"),
+            ),
+        }
     }
     fn stop(&mut self) {
         if matches!(self.child.try_wait(), Ok(Some(_))) {

@@ -82,6 +82,9 @@ impl<R: Runtime> Display<R> {
         fields: &[(usize, i64)],
     ) -> Result<Vec<u8>, Error> {
         let mut payload = packet::command(id, self.runtime.milliseconds()?, fields)?;
+        if let Some(wifi) = self.wifi.as_mut() {
+            return wifi.transaction(&payload, false, true, &mut self.runtime);
+        }
         self.endpoints(true)?;
         let start = self.profile.start();
         self.clear_halt();
@@ -100,6 +103,26 @@ impl<R: Runtime> Display<R> {
     }
 
     pub(super) fn optional_command(&mut self, id: u8, fields: &[(usize, i64)], pacing: NoAck) {
+        if self.wifi.is_some() {
+            let result = self
+                .runtime
+                .milliseconds()
+                .and_then(|timestamp| packet::command(id, timestamp, fields))
+                .and_then(|payload| {
+                    self.wifi
+                        .as_mut()
+                        .expect("selected Wi-Fi transport")
+                        .transaction(&payload, false, false, &mut self.runtime)
+                });
+            if let Err(error) = result {
+                self.runtime.warning(&format!(
+                    "Warning: optional TURZX USB command skipped: {error}"
+                ));
+            } else if !pacing.gap.is_zero() {
+                self.runtime.sleep(pacing.gap);
+            }
+            return;
+        }
         let result = self
             .runtime
             .milliseconds()

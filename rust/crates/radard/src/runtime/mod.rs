@@ -1,6 +1,6 @@
 mod platform;
 use crate::{
-    daemon::{self, Radar, SERVICES},
+    daemon::{Radar, SERVICES},
     wire, Error,
 };
 use num_traits::ToPrimitive;
@@ -76,7 +76,9 @@ pub fn run(frames: Option<u64>) -> Result<(), Error> {
         log_site!(),
         Record::text(Level::Info, "dPath radard got CarParams".into()),
     )?;
-    let mut subscriber = SubMaster::for_runtime(&SERVICES, daemon::options())?;
+    let poll_mode = integer(&params, "EnableRadarTracks")?;
+    let mut subscriber =
+        SubMaster::for_runtime(&SERVICES, wire::subscriptions(&bytes, poll_mode)?)?;
     let mut publisher = PubMaster::for_runtime(&["radarState"])?;
     let config = wire::configuration(
         &bytes,

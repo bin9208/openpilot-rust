@@ -1,5 +1,5 @@
-use crate::{launch, EntryError, NativeError, Outcome, Step, StepError};
-use openpilot_crash_reporting::{sdk::NativeSdk, Project, Reporter, RuntimeInputs};
+use crate::{EntryError, NativeError, Outcome, Step, StepError, launch};
+use openpilot_crash_reporting::{Project, Reporter, RuntimeInputs, sdk::NativeSdk};
 use openpilot_logging::producer::Factory;
 use std::{env, path::PathBuf};
 

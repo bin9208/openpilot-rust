@@ -44,11 +44,11 @@ def cases() -> list[Case]:
         [False, True], [False, True], [False, True], [0, 1, 2], [0, 1], [0, 19, 1, 255], [0, 1, 2])):
       pandas: list[PandaInput] = []
       for index in range(len(hardware)):
-        health = bytearray(rng.randbytes(58))
+        health = bytearray(rng.randbytes(59))
         health[32:34] = bytes([line if index == 0 else 0, ignition_can if index == 0 else 0])
-        health[36] = model
-        health[40] = power
-        struct.pack_into('<H', health, 50, iteration % 7)
+        health[37] = model
+        health[41] = power
+        struct.pack_into('<H', health, 51, iteration % 7)
         pandas.append({'health': list(health), 'can': [list(rng.randbytes(64)) for _ in range(3)],
                        'healthy': iteration % 5 != 0 or index != 0})
       listed = [identity['serial'] for identity in identities]
@@ -59,7 +59,7 @@ def cases() -> list[Case]:
     output.append({'identities': identities, 'steps': rows})
   ids: list[Identity] = [{'hardware_type': 6, 'serial': list(b'internal')}, {'hardware_type': 7, 'serial': list(b'external')}]
   base: Step = {'input': {'onroad': True, 'engaged': True, 'spoofing_started': False}, 'now_ns': 1_000_000_000,
-                'pandas': [{'health': [0] * 58, 'can': [[0] * 64 for _ in range(3)], 'healthy': True} for _ in ids],
+                'pandas': [{'health': [0] * 59, 'can': [[0] * 64 for _ in range(3)], 'healthy': True} for _ in ids],
                 'listed': [identity['serial'] for identity in ids]}
   for index in range(2):
     for part in range(4):

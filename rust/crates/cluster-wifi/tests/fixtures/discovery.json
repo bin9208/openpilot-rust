@@ -1,0 +1,562 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "input": [
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "valid",
+      "timeout": 2.0,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    },
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "malformed",
+      "timeout": 2.0,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a67",
+        "62616421001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714",
+        "53335231001122334455780102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714",
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6715",
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    },
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "timeout",
+      "timeout": 2.0,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    },
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "valid",
+      "timeout": 0.0,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    },
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "valid",
+      "timeout": -1.0,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    },
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "valid",
+      "timeout": 0.125,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    },
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "send_error",
+      "timeout": 2.0,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    },
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "receive_error",
+      "timeout": 2.0,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    },
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "nonce_error",
+      "timeout": 2.0,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    },
+    {
+      "config": {
+        "version": 1,
+        "device": "001122334455",
+        "key": "abababababababababababababababababababababababababababababababab"
+      },
+      "fault": "socket_error",
+      "timeout": 2.0,
+      "replies": [
+        "53335231001122334455000102030405060708090a0b0c0d0e0fe439f8e0fd2fa6689a40a4f97eeb359a9a4f0c3f990a57e3be1d647aa97a6714"
+      ]
+    }
+  ],
+  "expected": [
+    {
+      "address": "192.0.2.8",
+      "calls": [
+        [
+          "nonce",
+          16
+        ],
+        [
+          "clock",
+          0.0
+        ],
+        [
+          "socket"
+        ],
+        [
+          "broadcast"
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "127.0.0.1",
+          3333
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "192.0.2.1",
+          3333
+        ],
+        [
+          "clock",
+          0.125
+        ],
+        [
+          "clock",
+          0.25
+        ],
+        [
+          "timeout",
+          1.75
+        ],
+        [
+          "receive",
+          128
+        ],
+        [
+          "close"
+        ]
+      ]
+    },
+    {
+      "address": "192.0.2.8",
+      "calls": [
+        [
+          "nonce",
+          16
+        ],
+        [
+          "clock",
+          0.0
+        ],
+        [
+          "socket"
+        ],
+        [
+          "broadcast"
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "127.0.0.1",
+          3333
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "192.0.2.1",
+          3333
+        ],
+        [
+          "clock",
+          0.125
+        ],
+        [
+          "clock",
+          0.25
+        ],
+        [
+          "timeout",
+          1.75
+        ],
+        [
+          "receive",
+          128
+        ],
+        [
+          "clock",
+          0.375
+        ],
+        [
+          "clock",
+          0.5
+        ],
+        [
+          "timeout",
+          1.5
+        ],
+        [
+          "receive",
+          128
+        ],
+        [
+          "clock",
+          0.625
+        ],
+        [
+          "clock",
+          0.75
+        ],
+        [
+          "timeout",
+          1.25
+        ],
+        [
+          "receive",
+          128
+        ],
+        [
+          "clock",
+          0.875
+        ],
+        [
+          "clock",
+          1.0
+        ],
+        [
+          "timeout",
+          1.0
+        ],
+        [
+          "receive",
+          128
+        ],
+        [
+          "clock",
+          1.125
+        ],
+        [
+          "clock",
+          1.25
+        ],
+        [
+          "timeout",
+          0.75
+        ],
+        [
+          "receive",
+          128
+        ],
+        [
+          "close"
+        ]
+      ]
+    },
+    {
+      "error": "Registered S3 display not found on this Wi-Fi",
+      "calls": [
+        [
+          "nonce",
+          16
+        ],
+        [
+          "clock",
+          0.0
+        ],
+        [
+          "socket"
+        ],
+        [
+          "broadcast"
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "127.0.0.1",
+          3333
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "192.0.2.1",
+          3333
+        ],
+        [
+          "clock",
+          0.125
+        ],
+        [
+          "clock",
+          0.25
+        ],
+        [
+          "timeout",
+          1.75
+        ],
+        [
+          "receive",
+          128
+        ],
+        [
+          "close"
+        ]
+      ]
+    },
+    {
+      "error": "Registered S3 display not found on this Wi-Fi",
+      "calls": [
+        [
+          "nonce",
+          16
+        ],
+        [
+          "clock",
+          0.0
+        ],
+        [
+          "socket"
+        ],
+        [
+          "broadcast"
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "127.0.0.1",
+          3333
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "192.0.2.1",
+          3333
+        ],
+        [
+          "clock",
+          0.125
+        ],
+        [
+          "close"
+        ]
+      ]
+    },
+    {
+      "error": "Registered S3 display not found on this Wi-Fi",
+      "calls": [
+        [
+          "nonce",
+          16
+        ],
+        [
+          "clock",
+          0.0
+        ],
+        [
+          "socket"
+        ],
+        [
+          "broadcast"
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "127.0.0.1",
+          3333
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "192.0.2.1",
+          3333
+        ],
+        [
+          "clock",
+          0.125
+        ],
+        [
+          "close"
+        ]
+      ]
+    },
+    {
+      "error": "Registered S3 display not found on this Wi-Fi",
+      "calls": [
+        [
+          "nonce",
+          16
+        ],
+        [
+          "clock",
+          0.0
+        ],
+        [
+          "socket"
+        ],
+        [
+          "broadcast"
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "127.0.0.1",
+          3333
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "192.0.2.1",
+          3333
+        ],
+        [
+          "clock",
+          0.125
+        ],
+        [
+          "close"
+        ]
+      ]
+    },
+    {
+      "error": "send failed",
+      "calls": [
+        [
+          "nonce",
+          16
+        ],
+        [
+          "clock",
+          0.0
+        ],
+        [
+          "socket"
+        ],
+        [
+          "broadcast"
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "127.0.0.1",
+          3333
+        ],
+        [
+          "close"
+        ]
+      ]
+    },
+    {
+      "error": "receive failed",
+      "calls": [
+        [
+          "nonce",
+          16
+        ],
+        [
+          "clock",
+          0.0
+        ],
+        [
+          "socket"
+        ],
+        [
+          "broadcast"
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "127.0.0.1",
+          3333
+        ],
+        [
+          "send",
+          "53334431001122334455000102030405060708090a0b0c0d0e0f442f7349c8d236cc9896923ebbe6cdcecd7750fc31c69a3c0f63facf08c045ab",
+          "192.0.2.1",
+          3333
+        ],
+        [
+          "clock",
+          0.125
+        ],
+        [
+          "clock",
+          0.25
+        ],
+        [
+          "timeout",
+          1.75
+        ],
+        [
+          "receive",
+          128
+        ],
+        [
+          "close"
+        ]
+      ]
+    },
+    {
+      "error": "nonce failed",
+      "calls": [
+        [
+          "nonce",
+          16
+        ]
+      ]
+    },
+    {
+      "error": "socket failed",
+      "calls": [
+        [
+          "nonce",
+          16
+        ],
+        [
+          "clock",
+          0.0
+        ],
+        [
+          "socket"
+        ]
+      ]
+    }
+  ]
+}

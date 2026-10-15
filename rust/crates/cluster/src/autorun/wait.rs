@@ -48,7 +48,7 @@ pub(super) fn supported_device(
     params: &Reader,
     platform: &mut impl Platform,
     mut expected: u16,
-) -> Option<u16> {
+) -> Result<Option<u16>, super::controller::Error> {
     println!(
         "[cluster_autorun] {} not found or disconnected; waiting for USB event",
         label(expected)
@@ -63,31 +63,35 @@ pub(super) fn supported_device(
     let mut next_scan = Instant::now() + FALLBACK_SCAN;
     loop {
         if platform.interrupted() {
-            return None;
+            return Ok(None);
         }
         let now = Instant::now();
         if now >= next_check {
             let mode = params.hud_mode();
             let Some(product) = product_id(mode) else {
                 println!("[cluster_autorun] ClusterHud={mode}; stopping cluster HUD");
-                return None;
+                return Ok(None);
             };
             if !params.output_allowed() {
                 println!(
                     "[cluster_autorun] ClusterHudDebug=0 and IsOnroad=0; stopping HUD output while waiting for USB"
                 );
-                return None;
+                return Ok(None);
             }
             if product != expected {
                 expected = product;
                 next_scan = now;
+            }
+            if platform.wifi_registered()? {
+                println!("[cluster_autorun] S3 Wi-Fi registration detected; rechecking output");
+                return Ok(None);
             }
             next_check = now + HUD_CHECK;
         }
         let now = Instant::now();
         if now >= next_scan {
             if let Some(found) = platform.find(expected) {
-                return Some(found);
+                return Ok(Some(found));
             }
             next_scan = now + FALLBACK_SCAN;
         }
@@ -97,7 +101,7 @@ pub(super) fn supported_device(
             .max(HUD_CHECK);
         if events.wait(wait, expected) {
             if let Some(found) = platform.find(expected) {
-                return Some(found);
+                return Ok(Some(found));
             }
         }
     }

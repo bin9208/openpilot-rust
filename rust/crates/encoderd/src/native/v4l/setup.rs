@@ -62,7 +62,6 @@ pub fn configure(
         ));
     }
     let hevc = settings.codec == Codec::FullHevc;
-    let youtube = info.publish == "youtubeRoadEncodeData";
     let livestream = info.publish == "livestreamRoadEncodeData";
     let format = |kind, dimensions: (i32, i32), pixel, color| -> Result<v4l2_format, Error> {
         let mut value = v4l2_format {
@@ -95,11 +94,6 @@ pub fn configure(
     }
     // SAFETY: [FFI boundary] the queue type selects pix_mp, initialized before S_FMT.
     let capture = unsafe { capture.fmt.pix_mp };
-    if youtube
-        && (capture.width != u32::try_from(output.0)? || capture.height != u32::try_from(output.1)?)
-    {
-        return Err(Error::Contract("YouTube encoder output contract rejected"));
-    }
     let mut timing = v4l2_streamparm {
         type_: V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
         ..Default::default()
@@ -124,51 +118,6 @@ pub fn configure(
     // SAFETY: [FFI boundary] the input format has its matching initialized union.
     unsafe {
         io::ioctl(fd, ENCODER_VIDIOC_S_FMT, &mut source)?;
-    }
-    if youtube {
-        let mut width = input.0 & !1;
-        let mut height = ((width * 9) / 16) & !1;
-        if height > input.1 {
-            height = input.1 & !1;
-            width = ((height * 16) / 9) & !1;
-        }
-        let left = ((input.0 - width) / 2) & !1;
-        let top = ((input.1 - height) / 2) & !1;
-        let mut selection = v4l2_selection {
-            type_: V4L2_BUF_TYPE_VIDEO_OUTPUT,
-            target: V4L2_SEL_TGT_CROP,
-            r: v4l2_rect {
-                left,
-                top,
-                width: width.try_into()?,
-                height: height.try_into()?,
-            },
-            ..Default::default()
-        };
-        // SAFETY: [FFI boundary] S_SELECTION receives its initialized structure.
-        let applied = unsafe { io::ioctl(fd, ENCODER_VIDIOC_S_SELECTION, &mut selection) }.is_ok();
-        let rect = selection.r;
-        if applied
-            && rect.left == left
-            && rect.top == top
-            && rect.width == width as u32
-            && rect.height == height as u32
-        {
-            warn(format!(
-                "YouTube encoder crop={width}x{height}+{left}+{top} output={}x{} bitrate={}",
-                output.0, output.1, settings.bitrate
-            ));
-        } else if applied {
-            warn(format!(
-                "YouTube encoder adjusted crop to {}x{}+{}+{}; scaling full frame to exact {}x{}",
-                rect.width, rect.height, rect.left, rect.top, output.0, output.1
-            ));
-        } else {
-            warn(format!(
-                "YouTube encoder crop unavailable; scaling full frame to exact {}x{}",
-                output.0, output.1
-            ));
-        }
     }
     // SAFETY: [FFI boundary] S_FMT initialized the pix_mp arm selected by type_.
     let input_size = unsafe { source.fmt.pix_mp.plane_fmt[0].sizeimage };

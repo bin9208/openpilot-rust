@@ -39,6 +39,7 @@ pub fn limit(
 }
 #[derive(Default, Serialize)]
 pub struct Coop {
+    pub apply_angle_out_last: f64,
     pub apply_angle_last: f64,
     pub coop_apply_angle_sat_last: f64,
     pub angle_override: f64,
@@ -65,6 +66,25 @@ impl Coop {
             steering_rate: rate,
             torque,
         } = input;
+        // CarState speed is Float32; equality at 25 km/h disables cooperation.
+        let minimum_speed = f64::from((25.0_f64 * (1.0 / 3.6)) as f32);
+        if active && speed.partial_cmp(&minimum_speed) != Some(std::cmp::Ordering::Greater) {
+            let angle = limit(
+                requested,
+                self.apply_angle_out_last,
+                raw,
+                steering,
+                active,
+                vm,
+            )?;
+            self.apply_angle_last = angle;
+            self.angle_override = 0.;
+            self.coop_apply_angle_sat_last = angle;
+            self.resume_rate_limiter_delta = 0.;
+            self.resume_rate_limiter = angle;
+            self.apply_angle_out_last = angle;
+            return Ok(angle);
+        }
         let phase = steering + rate / 8.;
         let mut angle = if !active {
             self.resume_rate_limiter_delta = 0.;
@@ -88,7 +108,8 @@ impl Coop {
             self.apply_angle_last = angle;
             self.angle_override = 0.;
             self.coop_apply_angle_sat_last = angle;
-            return Ok(angle);
+            self.apply_angle_out_last = clip(steering, -360., 360.);
+            return Ok(self.apply_angle_out_last);
         }
         let apply_step = angle - self.apply_angle_last;
         self.apply_angle_last = angle;
@@ -140,6 +161,7 @@ impl Coop {
             self.angle_override -=
                 clip(error, -self.angle_override.abs(), self.angle_override.abs());
         }
-        Ok(self.coop_apply_angle_sat_last)
+        self.apply_angle_out_last = self.coop_apply_angle_sat_last;
+        Ok(self.apply_angle_out_last)
     }
 }

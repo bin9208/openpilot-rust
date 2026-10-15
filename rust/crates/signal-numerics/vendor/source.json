@@ -1,0 +1,32 @@
+{
+  "numpy": "2.5.3",
+  "sdist_sha256": "df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563",
+  "path": "numpy/_core/src/npysort/x86-simd-sort",
+  "files": {
+    "LICENSE.md": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910",
+    "src/README.md": "6aa403de8164f5245b4ffb4d51ca1389cf3315a15124835e0e91f400d1c7cb4f",
+    "src/avx2-32bit-half.hpp": "c40be06286875c898dd24e12f4abf39516e53f63cce4e7ea5c99145f0af35a5a",
+    "src/avx2-32bit-qsort.hpp": "d761b47bd5bf530efc884fbb94c9c86c020d2dc8607d07fa67cadd242735e651",
+    "src/avx2-64bit-qsort.hpp": "fba0e51606b87ff50daeb12f62e858376dc8fe9a74f4db17d2da75eccfd8e1a2",
+    "src/avx2-emu-funcs.hpp": "1073c6abd870794b36b8e208b7988cc50da3ae8cc157f4d392b6b7f5197fa2fb",
+    "src/avx512-16bit-common.h": "09d17df4f6796f42c672be436ac4285e7232b534178580762b646a09d6a8f04b",
+    "src/avx512-16bit-qsort.hpp": "67ad6c722a11de188dc1f20972a3a0d4a7aee37766a2d8cea43619e7410d000a",
+    "src/avx512-32bit-qsort.hpp": "7ff85a3145b1c30c8bb1f8f42ebc564048414c33a4b919c53e62e0d860989417",
+    "src/avx512-64bit-argsort.hpp": "d7ff66b0844f9cecb1f3e6d4ba9add3dd193f0ecbb71861221ed3abfb9862bc9",
+    "src/avx512-64bit-common.h": "f01e6fcccfb1bf7e029c85dd3b07d1f2f5637847fa8f8da04b48634f56707b97",
+    "src/avx512-64bit-qsort.hpp": "f72b7156119128424bcc34311653bf62f418de917dece78c644503fc257e3bdd",
+    "src/avx512fp16-16bit-qsort.hpp": "a8dae5578cc6846823e9ab390b918aae4aab65562b47e4e21c2ddb58f04a550e",
+    "src/x86simdsort-static-incl.h": "357d4799ed88e08030aa3ed20da39ae72a697f243143381b5e5efaf737398e24",
+    "src/xss-common-argsort.h": "58f720e91e3ae3ef82cc2099adcd11448b01e3299b0b92689e71330d004d704f",
+    "src/xss-common-comparators.hpp": "4276ff2a5c95de117260f1bbdd0e28fc41ead2cd00b605f1629fc79247ea579d",
+    "src/xss-common-includes.h": "02bf51c63b3f87009234b81a5487db6e38719f309cd0f36c1f3dc31b5a4aa185",
+    "src/xss-common-keyvaluesort.hpp": "227277e1095b999bcd338fcaee1c47f19e246051e58e4f98803404f0f8cc4a6f",
+    "src/xss-common-qsort.h": "1ec6b1f5df0db59bbd112b21f1e58278fa5ecca8fbd1cd0cc090ab12f987f51c",
+    "src/xss-custom-float.h": "50a1223d7fb7f3469099856010e08152b710458fc3cbe73103ba0bbf9f8a92fe",
+    "src/xss-network-keyvaluesort.hpp": "412bbdba713503fcb8b5d235fb5cd3492c76f776c9a3a8c27e1b91edfc29f0bd",
+    "src/xss-network-qsort.hpp": "cb8579cf4e532d97b980bb59cfc4f82f530f70e5aac0ed8afb324cda6d25ce70",
+    "src/xss-optimal-networks.hpp": "2189f5de95404f88c46c5a097d12bfe0d6fcd0f40fceac4b438847f56d8f4160",
+    "src/xss-pivot-selection.hpp": "eda5bc0d9c12eb15ad9df9fa961882d01573253583d5ffe7948dbe86ced3c97c",
+    "src/xss-reg-networks.hpp": "b00982b00d35aedf44950706ef8da539e29b75cd11cd93059dfb0d66dc81c2b2"
+  }
+}

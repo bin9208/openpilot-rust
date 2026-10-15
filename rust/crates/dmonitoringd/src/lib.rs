@@ -6,6 +6,8 @@ pub enum Error {
     #[error("driver monitoring contract: {0}")]
     Contract(&'static str),
     #[error(transparent)]
+    Transport(#[from] openpilot_msgq::Error),
+    #[error(transparent)]
     Params(#[from] openpilot_params::Error),
     #[error(transparent)]
     Policy(#[from] openpilot_monitoring::InputError),

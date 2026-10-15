@@ -1,4 +1,4 @@
-use super::{input, publication, ApplyInput, Card, Error, StateTail, StepIo, Vehicle};
+use super::{input, publication, readiness, ApplyInput, Card, Error, StateTail, StepIo, Vehicle};
 use crate::{can_wire, toggle::Button, xiaoge};
 use openpilot_cereal::car_capnp::{car_params, car_state};
 
@@ -18,6 +18,10 @@ impl Card {
             .map(|bytes| can_wire::decode(bytes))
             .collect::<Result<Vec<_>, _>>()?;
         let decoded = io.monotonic_ns();
+        vehicle.set_speedcam_context(
+            input::control(io.subscribers())?.get_enabled(),
+            tail.cruise_speed_kph(),
+        );
         let mut message = vehicle.update(&packets, decoded)?;
         vehicle.emit_diagnostics(io)?;
         let updated = io.monotonic_ns();
@@ -69,6 +73,7 @@ impl Card {
             self.settings_updated = Some(subscribed);
         }
         let tail_now = io.now();
+        tail.set_speedcam_gas_tok_consumed(vehicle.speedcam_gas_tok_consumed());
         tail.update(state.reborrow(), io.subscribers(), self.metric, tail_now)?;
         for (key, bytes) in tail.take_param_writes() {
             io.put_nonblocking(&key, &bytes)?;
@@ -155,8 +160,19 @@ impl Card {
                 } else {
                     publication::event_time(io)?
                 };
+                let guarded = readiness::guard(
+                    &mut self.lateral_startup,
+                    io.subscribers(),
+                    message.get_root_as_reader::<car_state::Reader>()?,
+                )?;
+                let control = if let Some(message) = &guarded {
+                    message
+                        .get_root_as_reader::<openpilot_cereal::car_capnp::car_control::Reader>()?
+                } else {
+                    input::control(io.subscribers())?
+                };
                 let result = vehicle.apply(ApplyInput {
-                    control: input::control(io.subscribers())?,
+                    control,
                     now_ns,
                     model: input::model(io.subscribers())?,
                     radar: input::radar(io.subscribers())?,

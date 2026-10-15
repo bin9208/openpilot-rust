@@ -38,6 +38,7 @@ pub fn run(options: Options) -> Result<(), Error> {
         thread::sleep(Duration::from_millis(100));
     };
     let mut engine = Engine::new(config, &mut io, std::env::var_os("REPLAY").is_some())?;
+    io.enable_bosch_context(engine.radar.supports_bosch(), engine.replay)?;
     let mut remaining = options.steps.map(std::num::NonZeroU64::get);
     while stop.load(Ordering::Relaxed) == 0 {
         io.poll()?;
@@ -55,6 +56,7 @@ pub fn run(options: Options) -> Result<(), Error> {
         for bytes in io.drain(1)? {
             engine.add_state(wire::ego(&bytes)?);
         }
+        io.update_bosch_context()?;
         let decode_done = platform::seconds(ClockId::Monotonic);
         let metrics = engine.process(&mut io)?;
         let work = (platform::seconds(ClockId::Monotonic) - start) * 1000.;

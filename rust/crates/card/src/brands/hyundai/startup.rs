@@ -8,7 +8,9 @@ use crate::{
 pub fn init(state: &mut State, io: &mut impl StartupIo) -> Result<(), Error> {
     state.settings.put("LongitudinalPersonalityMax", b"4")?;
     let config = &state.config;
-    if config.longitudinal && config.flags & f::CAMERA_SCC == 0 {
+    let bosch_passive = config.ext_flags & f::ext::BOSCH_RADAR != 0
+        && setting_int(&state.settings, "EnableRadarTracks")? > 0;
+    if config.longitudinal && config.flags & f::CAMERA_SCC == 0 && !bosch_passive {
         let target = if config.flags & f::HDA2 != 0 {
             EcuAddress(0x730, None, config.bus.ecan)
         } else {
@@ -24,7 +26,10 @@ pub fn init(state: &mut State, io: &mut impl StartupIo) -> Result<(), Error> {
             io,
         );
     }
-    if setting_int(&state.settings, "EnableRadarTracks")? > 0 && config.flags & f::CANFD == 0 {
+    if setting_int(&state.settings, "EnableRadarTracks")? > 0
+        && config.flags & f::CANFD == 0
+        && !bosch_passive
+    {
         let result = enable_tracks(
             if config.flags & f::CAMERA_SCC != 0 {
                 2

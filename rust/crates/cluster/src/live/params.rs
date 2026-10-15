@@ -1,4 +1,4 @@
-use super::{projection::Data, Input};
+use super::{Input, projection::Data};
 use crate::models::EnergyGaugeLabel;
 use capnp::{message::ReaderOptions, serialize};
 use openpilot_cereal::{car_capnp::car_params, log_capnp::event};
@@ -9,6 +9,7 @@ pub(super) struct Settings {
     pub persistent: Params,
     pub memory: Option<Params>,
     pub egpu: bool,
+    pub external_compute_label: String,
     next_egpu: f64,
 }
 impl Settings {
@@ -17,12 +18,21 @@ impl Settings {
             persistent,
             memory,
             egpu: false,
+            external_compute_label: String::new(),
             next_egpu: 0.0,
         }
     }
     pub fn refresh_egpu(&mut self, now: f64) {
         if now >= self.next_egpu {
             self.egpu = self.persistent.get_bool("UsbGpuActive").unwrap_or(false);
+            use openpilot_jetlink::status;
+            use std::path::Path;
+            let saved = status::read_json(Path::new(status::LINK_STATUS));
+            let link = status::read_fresh(Path::new(status::LINK_STATUS), now);
+            let model = status::read_fresh(Path::new(status::MODEL_STATUS), now);
+            self.external_compute_label = status::badge(&saved, &link, &model, now)
+                .filter(|badge| badge.style == "active")
+                .map_or_else(String::new, |badge| badge.text);
             self.next_egpu = now + 1.0;
         }
     }

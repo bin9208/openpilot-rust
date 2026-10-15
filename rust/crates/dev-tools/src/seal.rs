@@ -12,11 +12,13 @@ use std::{
 };
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
-pub const BOOT_BINARIES: [&str; 14] = [
+pub const BOOT_BINARIES: [&str; 16] = [
     "openpilot-launch",
     "openpilot-runtime-install",
     "openpilot-manager",
     "openpilot-process-child",
+    "openpilot-reboot",
+    "openpilot-startup-recovery",
     "openpilot-carrot-recovery",
     "openpilot-carrot-web-watchdog",
     "openpilot-carrot-server",

@@ -20,20 +20,30 @@ mod tests;
 pub(super) struct Failed {
     pub detail: String,
     pub kind: Kind,
+    pub worker: Option<serde_json::Value>,
 }
 impl From<Error> for Failed {
     fn from(error: Error) -> Self {
-        let kind = match &error {
-            Error::Io(error) | Error::Native(crate::Error::Io(error)) => match error.kind() {
+        let worker = match &error {
+            Error::Native(error) => error.worker_snapshot().cloned(),
+            _ => None,
+        };
+        let native = match &error {
+            Error::Native(error) => Some(error.worker_cause()),
+            _ => None,
+        };
+        let kind = match (&error, native) {
+            (Error::Io(error), _) | (_, Some(crate::Error::Io(error))) => match error.kind() {
                 std::io::ErrorKind::TimedOut => Kind::Timeout,
                 std::io::ErrorKind::BrokenPipe => Kind::BrokenPipe,
                 _ => Kind::Detail,
             },
-            Error::Native(_) | Error::Json(_) | Error::Http(_) | Error::Invalid(_) => Kind::Detail,
+            _ => Kind::Detail,
         };
         Self {
             detail: error.to_string(),
             kind,
+            worker,
         }
     }
 }
@@ -137,6 +147,7 @@ pub(super) fn validate(
             .arg("--camera")
             .arg(format!("{}x{}", camera[0], camera[1]));
     }
+    let started_wall = super::smoke::wall_time()?;
     let mut child = OwnedChild {
         child: command
             .stdin(Stdio::null())
@@ -159,14 +170,17 @@ pub(super) fn validate(
         _ => String::from_utf8(bytes).map_err(crate::Error::from)?,
     };
     std::io::stdout().lock().write_all(detail.as_bytes())?;
+    let worker = super::failure::worker_since(model, started_wall);
     match result {
         Ok(true) => Ok(None),
         Ok(false) => Ok(Some(Failed {
             detail,
             kind: Kind::Detail,
+            worker,
         })),
         Err(error) => {
             let mut failed = Failed::from(error);
+            failed.worker = worker.or(failed.worker);
             if !detail.is_empty() {
                 failed.detail = detail;
             }

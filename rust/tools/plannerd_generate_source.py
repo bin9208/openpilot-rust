@@ -21,6 +21,11 @@ def main():
   logging.cloudlog = types.SimpleNamespace(**dict.fromkeys(('warning', 'info', 'error', 'event'), reject_runtime_boundary))
   sys.modules[logging.__name__] = logging
   source_modules()
+  if os.environ.get('PLANNER_SOURCE_FIXTURE'):
+    from planner_source import module as final_module
+    for name in ('longitudinal_gap_recovery', 'longitudinal_braking_gap'):
+      imported = final_module('openpilot/selfdrive/controls/lib/' + name + '.py')
+      sys.modules['openpilot.selfdrive.controls.lib.' + name] = imported
   import numpy
 
   locked = tomllib.loads((Path(__file__).resolve().parents[2] / 'uv.lock').read_text())

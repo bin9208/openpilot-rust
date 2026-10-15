@@ -1,0 +1,29 @@
+[package]
+name = "openpilot-onnx-runtime"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish = false
+
+[features]
+default = []
+native-skip-miri = ["dep:cxx"]
+
+[dependencies]
+cxx = { version = "=1.0.202", optional = true }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+
+[build-dependencies]
+cxx-build = "=1.0.202"
+sha2 = "0.10"
+serde_json = "1"
+
+[lints.rust]
+unsafe_code = "deny"
+
+[[example]]
+name = "ort_tensor_trace"
+required-features = ["native-skip-miri"]

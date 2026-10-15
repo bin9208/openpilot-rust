@@ -1,8 +1,14 @@
 use crate::Error;
 
 pub fn clip(value: f64, low: f64, high: f64) -> f64 {
-    if value.is_nan() || low.is_nan() || high.is_nan() {
-        return f64::NAN;
+    if value.is_nan() {
+        return value;
+    }
+    if low.is_nan() {
+        return low;
+    }
+    if high.is_nan() || low > high {
+        return high;
     }
     let value = if value < low { low } else { value };
     if value > high {

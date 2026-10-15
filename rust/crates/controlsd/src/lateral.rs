@@ -1,6 +1,6 @@
 use crate::{
     config::{Config, Torque, Tuning},
-    inputs::{CarState, Inputs},
+    inputs::{CarState, Inputs, LiveParameters},
     interface::ControlInterface,
     parameters::Parameters,
     torque_neural::Neural,
@@ -17,6 +17,7 @@ pub struct Request<'a> {
     pub config: &'a Config,
     pub vm: &'a VehicleModel,
     pub input: &'a Inputs,
+    pub live: &'a LiveParameters,
     pub active: bool,
     pub curvature: f64,
     pub limited: bool,
@@ -162,13 +163,13 @@ impl Lateral {
             config,
             vm,
             input,
+            live,
             active,
             curvature,
             limited,
             curvature_limited,
         } = request;
         let cs = &input.car;
-        let live = &input.live;
         if config.angle {
             let angle = if active {
                 vm.steer(-curvature, cs.speed, live.roll)?.to_degrees() + live.offset
@@ -186,7 +187,7 @@ impl Lateral {
                 saturated: self.saturation(
                     (angle - cs.steer_angle).abs() > 3.,
                     cs,
-                    false,
+                    limited,
                     curvature_limited,
                     5.,
                 ),

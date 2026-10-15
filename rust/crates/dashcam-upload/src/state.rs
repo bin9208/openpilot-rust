@@ -11,6 +11,8 @@ pub struct Clock {
 pub struct Job {
     pub id: String,
     pub action: &'static str,
+    #[serde(rename = "includeAllFiles")]
+    pub include_all_files: bool,
     pub status: String,
     pub cancel_requested: bool,
     pub log: String,
@@ -77,10 +79,19 @@ fn assign<T: PartialEq>(field: &mut T, value: T) -> bool {
 
 impl Job {
     pub fn new(id: String, segments: Vec<String>, clock: Clock) -> Self {
+        Self::new_scoped(id, segments, clock, false)
+    }
+    pub fn new_scoped(
+        id: String,
+        segments: Vec<String>,
+        clock: Clock,
+        include_all_files: bool,
+    ) -> Self {
         let total = segments.len() as u64;
         Self {
             id,
             action: "dashcam_upload",
+            include_all_files,
             status: "running".into(),
             cancel_requested: false,
             log: String::new(),
@@ -271,10 +282,20 @@ impl Jobs {
         self.0.iter_mut().find(|job| job.id == id)
     }
     pub fn create(&mut self, id: String, segments: Vec<String>, clock: Clock) {
+        self.create_scoped(id, segments, clock, false);
+    }
+    pub fn create_scoped(
+        &mut self,
+        id: String,
+        segments: Vec<String>,
+        clock: Clock,
+        include_all_files: bool,
+    ) {
         if let Some(job) = self.get_mut(&id) {
-            *job = Job::new(id, segments, clock);
+            *job = Job::new_scoped(id, segments, clock, include_all_files);
         } else {
-            self.0.push(Job::new(id, segments, clock));
+            self.0
+                .push(Job::new_scoped(id, segments, clock, include_all_files));
         }
         self.prune();
     }

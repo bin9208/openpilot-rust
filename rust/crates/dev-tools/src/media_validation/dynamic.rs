@@ -20,10 +20,6 @@ pub fn dynamic(options: &DynamicOptions, runner: &mut impl Runner) -> Result<Val
             "libusb-1.0.so.0",
             &["panda-usb/src/api.rs", "usbgpu/src/native_usb/api.rs"],
         ),
-        (
-            "librtmp.so.1",
-            &["carrot-server/src/youtube_live/rtmp_api.rs"],
-        ),
     ];
     let roots: Vec<_> = specifications
         .iter()

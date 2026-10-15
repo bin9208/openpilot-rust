@@ -4,6 +4,7 @@ pub(super) fn specification<'a>(
     cameras: &'a [String],
     gps: &'a str,
     mode: &Mode,
+    not_car: bool,
 ) -> (Vec<&'a str>, Options) {
     let mut names = BASE_TOPICS.to_vec();
     names.extend(cameras.iter().map(String::as_str));
@@ -13,11 +14,14 @@ pub(super) fn specification<'a>(
         "gyroscope".into(),
         gps.to_owned(),
         "alertDebug".into(),
+        "liveTracks".into(),
     ];
     if mode.simulation {
         ignore.extend(["driverCameraState".into(), "managerState".into()]);
     }
-    ignore.push("driverMonitoringState".into());
+    if not_car || mode.simulation {
+        ignore.push("driverMonitoringState".into());
+    }
     if mode.replay {
         ignore.push("roadCameraState".into());
         if cameras.iter().any(|name| name == "wideRoadCameraState") {

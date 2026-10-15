@@ -1,5 +1,8 @@
 use super::*;
 impl Measure for Renderer {
+    fn resolve_font(&self, font: Font, text: &str) -> Font {
+        self.font_for_text(font, text)
+    }
     fn measure(&self, font: Font, text: &str, size: f32, spacing: f32) -> Point {
         let (plain, count) = if font == Font::Normal {
             crate::text::strip_emoji(text)
@@ -8,7 +11,7 @@ impl Measure for Renderer {
         };
         match self
             .surface
-            .measure(self.font_id(font), &plain, size, spacing)
+            .measure(self.font_id_for_text(font, text), &plain, size, spacing)
         {
             Ok(value) => Point {
                 x: value.x + crate::number::float(count) * size,
@@ -26,12 +29,19 @@ impl Measure for Renderer {
     }
 }
 impl Draw for Renderer {
+    fn native_renderer(&mut self) -> Option<&mut Renderer> {
+        Some(self)
+    }
+    fn rectangle_lines_ex(&mut self, rect: Rect, thickness: f32, color: u32) -> Result<(), Error> {
+        Renderer::rectangle_lines_ex(self, rect, thickness, color);
+        Ok(())
+    }
     fn clear(&mut self, color: u32) -> Result<(), Error> {
         self.surface.pin_mut().clear(color);
         Ok(())
     }
     fn text(&mut self, text: TextDraw<'_>) -> Result<(), Error> {
-        let font = self.font_id(text.font);
+        let font = self.font_id_for_text(text.font, text.text);
         Ok(self.surface.pin_mut().text(
             font,
             text.text,

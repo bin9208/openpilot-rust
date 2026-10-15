@@ -1,7 +1,10 @@
 mod events;
 mod limits;
+pub mod policy;
 mod profile;
 mod pv5;
+pub mod section_average;
+pub mod speedcam;
 use super::{parameters::setting_int, wire::Values, Error};
 use openpilot_params::Params;
 pub use profile::{EventType, Profile};
@@ -13,6 +16,7 @@ pub struct Event {
     pub speed: f64,
     pub subtype: u8,
     pub target: f64,
+    pub cancelled: bool,
 }
 
 #[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -47,6 +51,7 @@ pub struct Input<'a> {
 }
 
 pub struct Navigation {
+    pub camera_policy: speedcam::SpeedcamPolicy,
     pub wrapped: bool,
     pub total_distance: f64,
     pub speed_limit_distance: f64,
@@ -79,6 +84,7 @@ pub struct Navigation {
 impl Navigation {
     pub fn new(wrapped: bool, settings: &Params) -> Result<Self, Error> {
         Ok(Self {
+            camera_policy: speedcam::SpeedcamPolicy::default(),
             wrapped,
             total_distance: 0.,
             speed_limit_distance: 0.,
@@ -121,6 +127,7 @@ impl Navigation {
     }
 
     pub fn clear_events(&mut self) {
+        self.camera_policy.clear();
         self.events.clear();
         self.camera_target = None;
         self.camera_event = None;

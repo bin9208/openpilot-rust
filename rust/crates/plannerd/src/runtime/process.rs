@@ -1,5 +1,5 @@
-use super::{views::Views, Output, Planner};
-use crate::{platform::Clock, radar_decode, types::PlannerMode, Error};
+use super::{Output, Planner, views::Views};
+use crate::{Error, platform::Clock, radar_decode, types::PlannerMode};
 use openpilot_cereal::log_capnp::longitudinal_plan::PlanningTrigger;
 use openpilot_logging::{Fields, Number, Value};
 use openpilot_messaging::state::State;

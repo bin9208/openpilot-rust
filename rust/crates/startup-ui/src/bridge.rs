@@ -249,6 +249,18 @@ pub mod ffi {
         fn color4(self: Pin<&mut Surface>, color: u32);
         fn vertices_end(self: Pin<&mut Surface>);
         fn target_create(self: Pin<&mut Surface>, width: i32, height: i32) -> Result<u32>;
+        fn overlay_create(self: Pin<&mut Surface>, width: i32, height: i32) -> Result<u32>;
+        fn overlay_complete(self: &Surface, target: u32) -> Result<bool>;
+        fn framebuffer(self: &Surface) -> u32;
+        fn framebuffer_bind(self: Pin<&mut Surface>, framebuffer: u32);
+        fn render_flush(self: Pin<&mut Surface>);
+        fn coverage_begin(self: Pin<&mut Surface>);
+        fn overlay_composite(
+            self: Pin<&mut Surface>,
+            target: u32,
+            width: f32,
+            height: f32,
+        ) -> Result<()>;
         fn target_release(self: Pin<&mut Surface>, target: u32) -> Result<()>;
         fn target_begin(self: Pin<&mut Surface>, target: u32) -> Result<()>;
         fn external_target_begin(self: Pin<&mut Surface>, target: TargetInfo) -> Result<()>;
@@ -366,8 +378,11 @@ pub mod ffi {
         fn scissor(self: Pin<&mut Surface>, rect: Rect, enabled: bool);
         fn render_target(self: Pin<&mut Surface>, width: i32, height: i32) -> Result<()>;
         fn has_render_target(self: &Surface) -> bool;
+        fn has_capture_frame(self: &Surface) -> bool;
+        fn release_render_target(self: Pin<&mut Surface>) -> Result<()>;
         fn burn_in(self: Pin<&mut Surface>, vertex: &str, fragment: &str) -> Result<()>;
         fn capture_pixels(self: &Surface) -> Result<Vec<u8>>;
+        fn capture_frame_pixels(self: &Surface) -> Result<Vec<u8>>;
         fn shader_load(self: Pin<&mut Surface>, vertex: &str, fragment: &str) -> Result<u32>;
         fn shader_unload(self: Pin<&mut Surface>, shader: u32) -> Result<()>;
         fn uniform_floats(
@@ -416,6 +431,8 @@ pub mod ffi {
         );
         fn should_close(self: &Surface) -> bool;
         fn target_fps(self: Pin<&mut Surface>, fps: i32);
+        fn exit_key(self: Pin<&mut Surface>, key: i32);
+        fn mouse_pressed(self: &Surface, button: i32) -> bool;
         fn frame_time(self: &Surface) -> f32;
         fn time(self: &Surface) -> f64;
         fn sample(self: &Surface, slot: i32) -> Sample;

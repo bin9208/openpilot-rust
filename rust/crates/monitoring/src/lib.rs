@@ -1,6 +1,9 @@
 //! Port of openpilot/selfdrive/monitoring/policy.py and active scalar filters.
 //! This library owns policy and packet construction, not daemon IPC or Params.
+pub mod context;
+mod dm2;
 mod events;
+pub use dm2::DriverMonitoring2;
 mod input;
 mod packet;
 mod pose;
@@ -53,6 +56,12 @@ pub struct Blink {
 }
 #[derive(Debug, Serialize)]
 pub struct DriverMonitoring {
+    #[serde(skip)]
+    pub timeouts: [[f64; 3]; 2],
+    #[serde(skip)]
+    pub relax_pose: bool,
+    #[serde(skip)]
+    pub experimental_phone: bool,
     pub wheelpos_offsetter: RunningStatFilter,
     pub pose: Pose,
     pub blink: Blink,
@@ -90,6 +99,9 @@ impl DriverMonitoring {
     /// `too_distracted` is the original DriverTooDistracted Params value.
     pub fn new(rhd_saved: bool, always_on: bool, too_distracted: bool) -> Self {
         Self {
+            timeouts: [[5., 8., 13.], [5., 15., 25.]],
+            relax_pose: false,
+            experimental_phone: false,
             wheelpos_offsetter: RunningStatFilter::new((0.03, 3. * 5.5e-5, 2), None),
             pose: Pose {
                 yaw: 0.,
@@ -147,13 +159,16 @@ impl DriverMonitoring {
         } else {
             input
         };
+        self.update_camera(input)?;
+        self.update_events(input);
+        Ok(())
+    }
+    fn update_camera(&mut self, input: &Input) -> Result<(), InputError> {
         let k1 = scalar::max(-0.00156 * (input.car_speed - 16.).powi(2) + 0.6, 0.2);
         let bp = scalar::max(scalar::min(input.brake_disengage_prob / k1, 0.5), 0.);
         self.pose.cfactor_pitch = (0.3237 + bp * ((0.3133 - 0.3237) / 0.5)) / 0.3133;
         self.pose.cfactor_yaw = (0.5042 + bp * ((0.4020 - 0.5042) / 0.5)) / 0.4020;
-        self.update_states(input)?;
-        self.update_events(input);
-        Ok(())
+        self.update_states(input)
     }
     fn reset_awareness(&mut self) {
         self.awareness = 1.;
@@ -163,7 +178,7 @@ impl DriverMonitoring {
     fn set_policy(&mut self, target: Policy) {
         if self.active_policy == Policy::Vision && self.awareness <= self.threshold_alert_2 {
             self.step_change = if target == Policy::Vision {
-                DT_DMON / 13.
+                DT_DMON / self.timeouts[0][2]
             } else {
                 0.
             };
@@ -177,18 +192,18 @@ impl DriverMonitoring {
                     self.last_wheeltouch_awareness = self.awareness;
                     self.awareness = self.last_vision_awareness;
                 }
-                self.threshold_alert_1 = 1. - 5. / 13.;
-                self.threshold_alert_2 = 1. - 8. / 13.;
-                self.step_change = DT_DMON / 13.;
+                self.threshold_alert_1 = 1. - self.timeouts[0][0] / self.timeouts[0][2];
+                self.threshold_alert_2 = 1. - self.timeouts[0][1] / self.timeouts[0][2];
+                self.step_change = DT_DMON / self.timeouts[0][2];
             }
             Policy::Wheeltouch => {
                 if self.active_policy == Policy::Vision {
                     self.last_vision_awareness = self.awareness;
                     self.awareness = self.last_wheeltouch_awareness;
                 }
-                self.threshold_alert_1 = 1. - 5. / 25.;
-                self.threshold_alert_2 = 1. - 15. / 25.;
-                self.step_change = DT_DMON / 25.;
+                self.threshold_alert_1 = 1. - self.timeouts[1][0] / self.timeouts[1][2];
+                self.threshold_alert_2 = 1. - self.timeouts[1][1] / self.timeouts[1][2];
+                self.step_change = DT_DMON / self.timeouts[1][2];
             }
         }
         self.active_policy = target;

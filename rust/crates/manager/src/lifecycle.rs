@@ -23,6 +23,8 @@ pub trait Runtime {
     fn cleanup_finished(&mut self) -> Result<(), Error>;
     fn poll(&mut self) -> Result<Input, Error>;
     fn initial_not_car(&self) -> Result<bool, Error>;
+    fn stop_monitoring(&mut self) -> Result<(), Error>;
+    fn xiaoge_ready(&mut self, started: bool, controls_ready: bool) -> Result<bool, Error>;
     fn ensure_running(
         &mut self,
         started: bool,
@@ -103,6 +105,8 @@ pub fn manager_thread(
             params.clear(openpilot_params::CLEAR_ON_OFFROAD_TRANSITION)?;
         }
         if input.ignition && !ignition_prev {
+            // Drain the old monitor's asynchronous session-disable writes first.
+            runtime.stop_monitoring()?;
             params.clear(openpilot_params::CLEAR_ON_IGNITION_ON)?;
         }
         if input.started != started_prev {
@@ -110,7 +114,12 @@ pub fn manager_thread(
         }
         started_prev = input.started;
         ignition_prev = input.ignition;
-        runtime.ensure_running(input.started, input.not_car, &ignore)?;
+        let ready = runtime.xiaoge_ready(input.started, params.boolean("ControlsReady")?)?;
+        let mut not_run = ignore.clone();
+        if !ready {
+            not_run.push("xiaoge_data".into());
+        }
+        runtime.ensure_running(input.started, input.not_car, &not_run)?;
         // State production and transport remain one native operation. Diagnostics do
         // not affect transition state and print every tenth iteration.
         let states = runtime.states()?;

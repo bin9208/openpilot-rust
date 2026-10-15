@@ -4,6 +4,7 @@ mod controls;
 mod initialization;
 mod io_policy;
 mod native;
+pub mod reboot;
 
 pub use io_policy::{gpio_init, gpio_set, sudo_write};
 pub use native::{Commands, LinuxPlatform, ProcessCommands};

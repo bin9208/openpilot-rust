@@ -11,9 +11,11 @@ pub(super) struct Manifest {
     pub buffers: Vec<Buffer>,
     pub patches: Vec<Patch>,
     pub arguments: Vec<View>,
+    #[serde(default)]
+    pub argument_values: Option<Vec<Expression>>,
     pub parameters: Vec<Parameter>,
     pub bindings: Vec<Binding>,
-    pub input_table: InputTable,
+    pub input_table: Option<InputTable>,
     pub dispatcher: serde_json::Value,
 }
 #[derive(Deserialize)]
@@ -81,10 +83,26 @@ pub(super) struct Input {
 #[derive(Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub(super) enum Expression {
-    Constant { value: u64 },
-    Address { view: View, space: Space },
-    Add { left: Box<Self>, right: Box<Self> },
-    Shr { left: Box<Self>, right: Box<Self> },
+    Constant {
+        value: u64,
+    },
+    Binding {
+        slot: usize,
+        offset: u64,
+        space: Space,
+    },
+    Address {
+        view: View,
+        space: Space,
+    },
+    Add {
+        left: Box<Self>,
+        right: Box<Self>,
+    },
+    Shr {
+        left: Box<Self>,
+        right: Box<Self>,
+    },
 }
 #[derive(Clone, Copy, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -111,7 +129,7 @@ impl Manifest {
             return Err(Error::Contract("HCQ model manifest size limit"));
         }
         let result: Self = serde_json::from_slice(bytes)?;
-        if result.version != 1
+        if ![1, 2].contains(&result.version)
             || result.model_bytes == 0
             || result.model_bytes > 4 << 30
             || result.kernel_count == 0
@@ -150,7 +168,16 @@ impl Manifest {
                 }
             }
         }
-        for entry in &result.input_table.entries {
+        if (result.version == 1
+            && (result.argument_values.is_some() || result.input_table.is_none()))
+            || (result.version == 2
+                && (result.argument_values.is_none()
+                    || result.input_table.is_some()
+                    || !result.arguments.is_empty()))
+        {
+            return Err(Error::Contract("HCQ descriptor version ABI mismatch"));
+        }
+        for entry in result.input_table.iter().flat_map(|table| &table.entries) {
             if result
                 .bindings
                 .get(entry.slot)

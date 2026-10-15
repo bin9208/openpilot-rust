@@ -1,8 +1,8 @@
 use crate::{
-    carrot::CarrotPlanner, config::Config, fast_radar::FastRadarOverlay,
+    Error, carrot::CarrotPlanner, config::Config, fast_radar::FastRadarOverlay,
     lane_departure::LaneDeparture, lateral_planner::LateralPlanner,
     longitudinal_planner::LongitudinalPlanner, parameters::Parameters,
-    stopping_lead::StoppingLeadFilter, Error,
+    stopping_lead::StoppingLeadFilter,
 };
 use openpilot_logging::{producer::Logger, runtime::RuntimeDiagnostics};
 use openpilot_messaging::{
@@ -14,11 +14,13 @@ use std::path::Path;
 mod daemon;
 mod inputs;
 mod process;
+mod signals;
 mod views;
 pub use daemon::run;
 pub use process::Tick;
+pub use signals::Inputs as SignalInputs;
 
-pub const SERVICES: [&str; 10] = [
+pub const SERVICES: [&str; 11] = [
     "carControl",
     "carState",
     "controlsState",
@@ -29,6 +31,7 @@ pub const SERVICES: [&str; 10] = [
     "selfdriveState",
     "carrotMan",
     "livePose",
+    "carrotNavi",
 ];
 pub const PUBLICATIONS: [&str; 3] = ["longitudinalPlan", "driverAssistance", "lateralPlan"];
 
@@ -43,6 +46,7 @@ pub struct Planner {
     live_tracks: bool,
     model_frame: u64,
     last_longitudinal_ns: u64,
+    signals: signals::RuntimeSignals,
 }
 
 impl Planner {
@@ -68,6 +72,11 @@ impl Planner {
         let fast = FastRadarOverlay::new(config.front_delay);
         let stopping = StoppingLeadFilter::default();
         let attached = setup(options(live_tracks))?;
+        let signal_constructed_at =
+            crate::platform::Clock::monotonic(&crate::platform::SystemClock);
+        let signal_mode = crate::signal::transport::Mode::from_parameter(i64::from(
+            parameters.integer("SignalAssistMode").unwrap_or(0),
+        ));
         let carrot = CarrotPlanner::new(parameters)?;
         Ok((
             Self {
@@ -81,9 +90,16 @@ impl Planner {
                 live_tracks,
                 model_frame: 0,
                 last_longitudinal_ns: 0,
+                signals: signals::RuntimeSignals::new_at(signal_mode, signal_constructed_at),
             },
             attached,
         ))
+    }
+
+    /// Attach owned acquisition boundaries before processing the first frame.
+    pub fn with_signal_inputs(mut self, inputs: SignalInputs) -> Self {
+        self.signals = self.signals.with_inputs(inputs);
+        self
     }
 
     pub fn options(&self) -> Options {
@@ -95,6 +111,9 @@ pub trait Output {
     fn send(&mut self, name: &'static str, bytes: &[u8]) -> Result<(), Error>;
     fn warning(&mut self, message: String) -> Result<(), Error>;
     fn info(&mut self, message: String) -> Result<(), Error>;
+    fn event(&mut self, name: &str, fields: serde_json::Value) -> Result<(), Error> {
+        self.info(format!("{name}: {fields}"))
+    }
 }
 
 pub struct NativeOutput {
@@ -104,6 +123,25 @@ pub struct NativeOutput {
 }
 
 impl Output for NativeOutput {
+    fn event(&mut self, name: &str, fields: serde_json::Value) -> Result<(), Error> {
+        let object = fields
+            .as_object()
+            .ok_or(Error::Contract("signal event fields"))?;
+        let fields = object
+            .iter()
+            .map(|(key, value)| {
+                Ok((
+                    key.clone(),
+                    openpilot_logging::Value::from_json(value.clone())?,
+                ))
+            })
+            .collect::<Result<openpilot_logging::Fields, openpilot_logging::Error>>()?;
+        self.logger.emit(
+            openpilot_logging::log_site!(),
+            openpilot_logging::record::Record::event(name, Vec::new(), fields)?,
+        )?;
+        Ok(())
+    }
     fn send(&mut self, name: &'static str, bytes: &[u8]) -> Result<(), Error> {
         Ok(self.publisher.send(name, bytes)?)
     }

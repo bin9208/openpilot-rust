@@ -31,7 +31,8 @@ def main():
     Path(os.fsdecode(params.get_param_path('UptimeOnroad'))).write_bytes(b'1__2.5')
 
   if scenario == 'default_edges':
-    for key, value in {'CarrotYouTubeLive': '_1', 'CarrotYouTubeQuality': '9' * 53,
+    params.put_int('VEgoStopping', 5)
+    for key, value in {'ClusterHud': '_1', 'ShowDebugUI': '9' * 53,
                        'UptimeOffroad': '1_2.5', 'UptimeOnroad': '1__2.5'}.items():
       Path(os.fsdecode(params.get_param_path(key))).write_text(value)
 
@@ -69,11 +70,20 @@ def main():
          capture_exception=lambda: record('capture'))
   module('openpilot.common.text_window', TextWindow=None)
   module('openpilot.common.repo_update', release_boot_lock=lambda: record('unlock'))
-  process = SimpleNamespace(prepare=lambda: record('prepare'), stop=lambda block=True: record('stop', block), proc=None,
+  pending_session_write = True
+  def stop_monitoring(block=True):
+    nonlocal pending_session_write
+    record('stop', 'dmonitoringd', block)
+    if pending_session_write and block and scenario in ('normal', 'default_edges', 'logging'):
+      params.put_bool('DriverMonitoringSessionDisabled', True)
+      pending_session_write = False
+  def ensure_running(processes, started, params, CP, not_run):
+    assert not params.get_bool('DriverMonitoringSessionDisabled')
+    record('ensure', started, CP.notCar, not_run)
+  process = SimpleNamespace(prepare=lambda: record('prepare'), stop=stop_monitoring, proc=None,
                             get_process_state_msg=lambda: None)
-  module('openpilot.system.manager.process_config', managed_processes={'fixture': process})
-  module('openpilot.system.manager.process', ensure_running=lambda processes, started, params, CP, not_run:
-         record('ensure', started, CP.notCar, not_run))
+  module('openpilot.system.manager.process_config', managed_processes={'dmonitoringd': process})
+  module('openpilot.system.manager.process', ensure_running=ensure_running)
   module('openpilot.system.manager.update_status', UpdateStatus=lambda _: (record('checkout'), SimpleNamespace(update=lambda _: False))[1])
   def register(**_):
     record('register')
@@ -89,6 +99,7 @@ def main():
   class SubMaster:
     def __init__(self, *_args, **_kwargs):
       self.frame = 0
+      self.logMonoTime = {s: 0 for s in ('deviceState', 'selfdriveState', 'modelV2', 'carState', 'pandaStates')}
     def update(self, timeout):
       record('poll', timeout)
       if scenario == 'poll_failure':
@@ -96,6 +107,7 @@ def main():
       if scenario == 'interrupted':
         raise SystemExit(1)
       self.frame += 1
+      self.logMonoTime = {s: self.frame for s in self.logMonoTime}
       if self.frame == 3:
         for key in ('DoUninstall', 'DoShutdown', 'DoReboot'):
           params.put_bool(key, True)
@@ -103,7 +115,11 @@ def main():
       if key == 'deviceState':
         return SimpleNamespace(started=self.frame < 3)
       if key == 'carParams':
-        return SimpleNamespace(notCar=False)
+        return SimpleNamespace(notCar=False, safetyConfigs=[])
+      if key == 'selfdriveState':
+        return SimpleNamespace(engageable=True)
+      if key == 'carState':
+        return SimpleNamespace(canValid=True, canTimeout=False)
       return [SimpleNamespace(ignitionLine=self.frame != 2, ignitionCan=False, pandaType=1)]
     def all_checks(self, _):
       return True

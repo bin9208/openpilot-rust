@@ -7,7 +7,21 @@ use std::{
     time::{Duration, Instant},
 };
 fn command(root: &Path) -> Command {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_jetlinkd-rs"));
+    // Cargo's runner applies to the test process, not children it launches.
+    // Keep the real daemon process tests executable under ARM user emulation.
+    let runner = if cfg!(target_arch = "aarch64") {
+        std::env::var("CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER").ok()
+    } else {
+        None
+    };
+    let mut command = if let Some(runner) = runner {
+        let mut parts = runner.split_whitespace();
+        let mut command = Command::new(parts.next().expect("nonempty Cargo runner"));
+        command.args(parts).arg(env!("CARGO_BIN_EXE_jetlinkd-rs"));
+        command
+    } else {
+        Command::new(env!("CARGO_BIN_EXE_jetlinkd-rs"))
+    };
     command
         .args(["--run", "--socket"])
         .arg(root.join("owner.sock"))
@@ -33,12 +47,17 @@ fn off_and_onroad_requests_publish_status_without_usb_setup() {
         // Then it exits cleanly, reports OFF, and never creates the inference listener.
         assert!(
             output.status.success(),
-            "{}",
+            "status={} stdout={} stderr={}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
         let status: serde_json::Value =
             serde_json::from_slice(&params.get("JetlinkStatus").unwrap().unwrap()).unwrap();
         assert_eq!(status["phase"], "OFF");
+        let source = openpilot_jetlink::status::read_json(&dir.path().join("carrot-jetlink.json"));
+        assert_eq!(source["state"], "waiting");
+        assert!(source["updated"].as_f64().unwrap() > 0.);
         assert!(!dir.path().join("owner.sock").exists());
     }
 }

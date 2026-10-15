@@ -9,7 +9,11 @@ use crate::{
     Error, Value,
 };
 use hyper::{header, Method, Request, Response, StatusCode};
-use std::sync::Arc;
+use std::{
+    io::Read,
+    os::unix::fs::{FileTypeExt, OpenOptionsExt},
+    sync::Arc,
+};
 
 pub(crate) async fn download<T>(request: &Request<T>, path: &std::path::Path) -> Response<Body> {
     let head = request.method() == Method::HEAD;
@@ -27,14 +31,61 @@ pub(crate) async fn download<T>(request: &Request<T>, path: &std::path::Path) ->
     if !path.exists() {
         return rejected(StatusCode::NOT_FOUND, "file not found", head);
     }
-    match crate::static_web::file_response(path, request).await {
-        Ok(mut response) => {
+    // Retain the native non-regular-file guard: opening a FIFO must not park a worker.
+    if std::fs::metadata(path).is_ok_and(|meta| meta.file_type().is_fifo()) {
+        return rejected(
+            StatusCode::FORBIDDEN,
+            "backup path is not a regular file",
+            head,
+        );
+    }
+    let path = path.to_owned();
+    let result = tokio::task::spawn_blocking(move || -> Result<Value, Error> {
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NONBLOCK)
+            .open(&path)
+            .map_err(|error| {
+                if error.kind() == std::io::ErrorKind::NotFound {
+                    Error::Io(error)
+                } else {
+                    crate::state::io_error(error, &path)
+                }
+            })?;
+        let metadata = file.metadata()?;
+        if metadata.is_dir() {
+            return Err(crate::state::io_error(
+                std::io::Error::from_raw_os_error(libc::EISDIR),
+                &path,
+            ));
+        }
+        if !metadata.is_file() {
+            return Err(Error::Source("backup path is not a regular file".into()));
+        }
+        let mut text = String::new();
+        file.read_to_string(&mut text)
+            .map_err(|error| crate::state::io_error(error, &path))?;
+        let values = Value::parse(&text)?;
+        crate::params::filter_backup(&values)
+    })
+    .await;
+    match result {
+        Ok(Ok(values)) => {
+            let mut response = reply(StatusCode::OK, values, head);
             response.headers_mut().insert(
                 header::CONTENT_DISPOSITION,
                 header::HeaderValue::from_static("attachment; filename=params_backup.json"),
             );
+            response.headers_mut().insert(
+                header::CACHE_CONTROL,
+                header::HeaderValue::from_static("no-store"),
+            );
             response
         }
+        Ok(Err(Error::Io(error))) if error.kind() == std::io::ErrorKind::NotFound => {
+            rejected(StatusCode::NOT_FOUND, "file not found", head)
+        }
+        Ok(Err(error)) => rejected(StatusCode::INTERNAL_SERVER_ERROR, &error.to_string(), head),
         Err(_) => failure(head),
     }
 }

@@ -19,6 +19,9 @@ paths = ModuleType('openpilot.system.hardware.hw')
 paths.Paths = SimpleNamespace(swaglog_ipc=lambda: 'inproc://application-source', swaglog_root=lambda: str(output.parent / 'source-logs'))
 sys.modules[paths.__name__] = paths
 import pyray as rl
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"ui_application_qa"))
+from final_graphics_source import install as install_final_graphics
+install_final_graphics(widgets=True)
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.inputbox import InputBox

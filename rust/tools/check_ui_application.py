@@ -94,7 +94,7 @@ probe = subprocess.run(
   check=True,
 )
 (args.output / 'dynamic-ffprobe.json').write_text(probe.stdout)
-assert json.loads(probe.stdout)['streams'][0]['nb_frames'] == '3'
+assert json.loads(probe.stdout)['streams'][0]['nb_frames'] == '9'
 connection = display.Display(args.display)
 protocol_errors = []
 connection.set_error_handler(lambda error, request: protocol_errors.append(str(error)))

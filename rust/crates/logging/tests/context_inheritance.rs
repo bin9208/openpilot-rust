@@ -8,6 +8,19 @@ use std::{
     process::{Command, Stdio},
 };
 
+// A QEMU runner is a validation-only boundary; every child still executes the
+// freshly linked ARM harness. Production logging and process spawning are unchanged.
+fn owned_child() -> Command {
+    let executable = std::env::current_exe().unwrap();
+    if let Some(runner) = std::env::var_os("LOGGING_TEST_LAUNCHER") {
+        let mut command = Command::new(runner);
+        command.arg(executable);
+        command
+    } else {
+        Command::new(executable)
+    }
+}
+
 #[test]
 #[ignore = "owned child validates a fresh process logging context"]
 fn context_child() {
@@ -42,7 +55,7 @@ fn exec_child_inherits_original_context_and_names_its_actual_implementation() {
     pull.set_rcvtimeo(2000).unwrap();
     pull.bind(&format!("ipc://{path}")).unwrap();
     let exe = std::env::current_exe().unwrap();
-    let mut child = Command::new(&exe).args(["--exact", "context_child", "--ignored"])
+    let mut child = owned_child().args(["--exact", "context_child", "--ignored"])
         .env("OPENPILOT_PREFIX", &prefix)
         .env("MANAGER_DAEMON", "calibrationd")
         .env("OPENPILOT_LOG_CONTEXT", r#"{"version":"owned-version","dongle_id":"owned-device","dirty":true,"runtime_implementation":"openpilot-manager","runtime_language":"python","source_commit":"parent-commit","source_tree":"parent-tree"}"#)
@@ -75,13 +88,15 @@ fn exec_child_inherits_original_context_and_names_its_actual_implementation() {
 #[test]
 fn invalid_inherited_context_does_not_silently_lose_diagnostics() {
     for value in ["broken", "[]", "null"] {
-        assert!(Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", "context_child", "--ignored"])
-            .env("OPENPILOT_LOG_CONTEXT", value)
-            .env("OWNED_CONTEXT_INVALID", "1")
-            .stdout(Stdio::null())
-            .status()
-            .unwrap()
-            .success());
+        assert!(
+            owned_child()
+                .args(["--exact", "context_child", "--ignored"])
+                .env("OPENPILOT_LOG_CONTEXT", value)
+                .env("OWNED_CONTEXT_INVALID", "1")
+                .stdout(Stdio::null())
+                .status()
+                .unwrap()
+                .success()
+        );
     }
 }

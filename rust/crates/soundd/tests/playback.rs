@@ -61,3 +61,37 @@ fn system_ready_plays_one_prompt_at_full_asset_gain() {
     assert!(!ready.samples.is_empty());
     assert_eq!(ready.samples, prompt.samples);
 }
+
+#[test]
+fn monitoring_gain_follows_event_identity_even_when_another_event_reuses_the_wave() {
+    use openpilot_soundd::{Input, Policy};
+    let mut policy = Policy::new(
+        [5, 8]
+            .into_iter()
+            .map(|alert| Sound {
+                alert,
+                samples: vec![1.; 4],
+                loops: None,
+            })
+            .collect(),
+        false,
+    );
+    policy.playback.volume = 0.1;
+    for (alert, alert_type, expected) in [
+        (8, "driverDistracted2/permanent", 0.7),
+        (8, "navigation/permanent", 0.1),
+        (5, "driverUnresponsive3/permanent", 1.),
+        (5, "controlsUnresponsive/permanent", 0.1),
+        (5, "driverDistracted2/permanent", 0.1),
+        (8, "driverUnresponsive2/permanent", 0.7),
+    ] {
+        let input: Input = serde_json::from_value(serde_json::json!({
+            "updated_selfdrive":true, "alert":alert, "alert_type":alert_type,
+        }))
+        .unwrap();
+        policy.step(&input);
+        let mut output = [0.];
+        policy.playback.render(&mut output).unwrap();
+        assert_eq!(output, [expected], "{alert_type}");
+    }
+}

@@ -26,7 +26,7 @@ pub(super) fn values(raw: &Value, catalog: &Catalog) -> Value {
     let Value::Object(fields) = raw else {
         return Value::Object(Vec::new());
     };
-    Value::Object(fields.iter().filter(|(key,_)|matches!(&catalog.by_name,Value::Object(allowed) if allowed.iter().any(|(name,_)|name==key))).cloned().collect())
+    Value::Object(fields.iter().filter(|(key,_)|matches!(&catalog.by_name,Value::Object(allowed) if allowed.iter().any(|(name, definition)|name==key && !definition.get("search_only").truth()))).cloned().collect())
 }
 pub(super) fn profile(raw: &Value, catalog: &Catalog) -> Result<Option<Value>, Error> {
     if !matches!(raw, Value::Object(_)) {

@@ -4,6 +4,8 @@ use serde::Serialize;
 #[derive(Serialize)]
 pub(super) struct CruiseState {
     pub frame: u64,
+    pub toyota_pcm_speed_sync: super::toyota_pcm::ToyotaPcmSetSpeedSync,
+    pub speedcam_gas_tok_consumed: bool,
     pub v_cruise_kph: Number,
     pub v_cruise_cluster_kph: Number,
     pub v_cruise_kph_last: Number,
@@ -107,6 +109,8 @@ impl CruiseState {
     pub fn new(auto_engage: i32, lane_speed: i32, disengage: bool, soft_hold: bool) -> Self {
         Self {
             frame: 0,
+            toyota_pcm_speed_sync: super::toyota_pcm::ToyotaPcmSetSpeedSync::default(),
+            speedcam_gas_tok_consumed: false,
             v_cruise_kph: Number::int(20.),
             v_cruise_cluster_kph: Number::int(20.),
             v_cruise_kph_last: Number::int(20.),

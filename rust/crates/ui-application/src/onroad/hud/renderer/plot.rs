@@ -7,6 +7,8 @@ pub(super) struct Plot {
     minimum: f64,
     maximum: f64,
     mode: i32,
+    ready: bool,
+    title: &'static str,
 }
 impl Default for Plot {
     fn default() -> Self {
@@ -17,17 +19,14 @@ impl Default for Plot {
             minimum: 0.0,
             maximum: 0.0,
             mode: -1,
+            ready: false,
+            title: "",
         }
     }
 }
 impl Plot {
-    pub(super) fn draw(
-        &mut self,
-        context: &Context,
-        draw: &mut dyn Draw,
-        rect: Rect,
-        mode: i32,
-    ) -> Result<(), Error> {
+    pub(super) fn update(&mut self, context: &Context, mode: i32) -> Result<(), Error> {
+        self.ready = false;
         let sm = context.messages.borrow();
         if mode == 0
             || !sm
@@ -47,7 +46,9 @@ impl Plot {
             *self = Self::default();
             self.mode = mode;
         }
-        let (values, _) = data::values(&sm.state, mode)?;
+        let Ok((values, _)) = data::values(&sm.state, mode) else {
+            return Ok(());
+        };
         let title = match mode {
             0 | 1 => "1.Accel (Y:a_ego, G:a_target, O:a_out)",
             2 => "2.Speed/Accel(Y:speed_0, G:v_ego, O:a_ego)",
@@ -91,7 +92,12 @@ impl Plot {
         if self.maximum == f64::NEG_INFINITY || self.maximum < 2.0 {
             self.maximum = 2.0;
         }
-        if rect.width < 1200.0 {
+        self.title = title;
+        self.ready = true;
+        Ok(())
+    }
+    pub(super) fn paint(&self, draw: &mut dyn Draw, rect: Rect) -> Result<(), Error> {
+        if !self.ready || rect.width < 1200.0 {
             return Ok(());
         }
         let x = f64::from(rect.x) + 350.0;
@@ -138,7 +144,7 @@ impl Plot {
         }
         Hud::text(
             draw,
-            title,
+            self.title,
             [x + 400.0, y - 20.0],
             25.0,
             common::WHITE,

@@ -260,3 +260,77 @@ fn nnff_offroad_does_not_poll_or_consume_notice() {
     assert!(!noticed(&c));
     assert_eq!(p.reads, 0);
 }
+
+#[test]
+fn system_ready_chime_requires_half_second_health_and_fires_once() {
+    let (mut c, mut p, mut s, car) = fixture();
+    let cs = car.get_root_as_reader().unwrap();
+    c.update_system_ready_alert(cs, &s, &mut p).unwrap();
+    advance(&mut s, 49);
+    c.update_system_ready_alert(cs, &s, &mut p).unwrap();
+    assert!(!c.system_ready_alerted);
+    advance(&mut s, 50);
+    c.update_system_ready_alert(cs, &s, &mut p).unwrap();
+    assert!(c.system_ready_alerted);
+    assert_eq!(c.alerts.current().alert_type, "systemReady/permanent");
+    c.events.clear();
+    c.alerts.process_alerts(10000, &[]);
+    advance(&mut s, 200);
+    c.update_system_ready_alert(cs, &s, &mut p).unwrap();
+    assert!(!c.events.names().contains(&E::SystemReady));
+}
+#[test]
+fn system_ready_health_loss_restarts_hold_and_waits_for_active_alert() {
+    let (mut c, mut p, mut s, mut car) = fixture();
+    c.update_system_ready_alert(car.get_root_as_reader().unwrap(), &s, &mut p)
+        .unwrap();
+    advance(&mut s, 40);
+    car.get_root::<car_state::Builder>()
+        .unwrap()
+        .set_can_valid(false);
+    c.update_system_ready_alert(car.get_root_as_reader().unwrap(), &s, &mut p)
+        .unwrap();
+    assert_eq!(c.system_ready_since, None);
+    car.get_root::<car_state::Builder>()
+        .unwrap()
+        .set_can_valid(true);
+    advance(&mut s, 50);
+    c.update_system_ready_alert(car.get_root_as_reader().unwrap(), &s, &mut p)
+        .unwrap();
+    c.alerts.add_many(
+        100,
+        [Alert {
+            alert_type: "warning/warning".into(),
+            duration: 10,
+            ..Alert::default()
+        }],
+    );
+    c.alerts.process_alerts(100, &[]);
+    advance(&mut s, 100);
+    c.update_system_ready_alert(car.get_root_as_reader().unwrap(), &s, &mut p)
+        .unwrap();
+    assert!(!c.system_ready_alerted);
+    c.alerts.process_alerts(111, &[]);
+    advance(&mut s, 111);
+    c.update_system_ready_alert(car.get_root_as_reader().unwrap(), &s, &mut p)
+        .unwrap();
+    assert!(c.system_ready_alerted);
+}
+#[test]
+fn system_ready_is_suppressed_in_replay_simulation_passive_and_no_entry() {
+    for gate in 0..4 {
+        let (mut c, mut p, mut s, car) = fixture();
+        match gate {
+            0 => c.mode.replay = true,
+            1 => c.mode.simulation = true,
+            2 => c.config.passive = true,
+            _ => c.events.add(E::DoorOpen, false),
+        }
+        c.update_system_ready_alert(car.get_root_as_reader().unwrap(), &s, &mut p)
+            .unwrap();
+        advance(&mut s, 100);
+        c.update_system_ready_alert(car.get_root_as_reader().unwrap(), &s, &mut p)
+            .unwrap();
+        assert!(!c.system_ready_alerted, "gate {gate}");
+    }
+}

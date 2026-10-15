@@ -1,7 +1,7 @@
 use super::super::inputs::Decoded;
-use super::super::{views::Views, Output, Planner};
+use super::super::{Output, Planner, views::Views};
+use crate::{Error, parameters::Parameters, platform::Clock};
 use crate::{lateral_planner, publication};
-use crate::{parameters::Parameters, platform::Clock, Error};
 
 impl Planner {
     pub(super) fn lateral_step(

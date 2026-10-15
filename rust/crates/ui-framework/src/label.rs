@@ -47,12 +47,13 @@ impl Widget for Label {
     }
     fn paint(&mut self, _: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         let value = self.text.get();
+        let font = draw.resolve_font(self.font, &value);
         let rect = self.state.rect;
         let width = f64::from(rect.width) - self.padding * 2.0;
         let lines = if self.elide {
             vec![text::elide(
                 draw,
-                self.font,
+                font,
                 &value,
                 self.size,
                 0.0,
@@ -60,18 +61,11 @@ impl Widget for Label {
                 false,
             )]
         } else {
-            text::wrap(
-                draw,
-                self.font,
-                &value,
-                self.size,
-                0.0,
-                width.round_ties_even(),
-            )
+            text::wrap(draw, font, &value, self.size, 0.0, width.round_ties_even())
         };
         let sizes: Vec<_> = lines
             .iter()
-            .map(|line| text::measure(draw, self.font, line, self.size, 0.0))
+            .map(|line| text::measure(draw, font, line, self.size, 0.0))
             .collect();
         let first = sizes.first().copied().unwrap_or_default();
         let sum: f64 = sizes.iter().map(|size| f64::from(size.y)).sum();
@@ -118,7 +112,7 @@ impl Widget for Label {
                 };
             text::draw_emoji_line(
                 draw,
-                self.font,
+                font,
                 line,
                 Point { x, y: position.y },
                 self.size,
@@ -148,6 +142,7 @@ pub fn gui_label(
     let text::TextStyle {
         font, size, color, ..
     } = style;
+    let font = draw.resolve_font(font, value);
     let value = if elide {
         text::elide(draw, font, value, size, 0.0, f64::from(rect.width), false)
     } else {

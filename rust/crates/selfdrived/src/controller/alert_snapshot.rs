@@ -143,7 +143,7 @@ impl Controller {
             clear.push(EventType::NoEntry);
         }
         let personality = self.personality.wire()?;
-        let alerts = self
+        let mut alerts = self
             .events
             .create_alerts(
                 &self.state_machine.current_alert_types,
@@ -170,6 +170,15 @@ impl Controller {
                 CreateAlertError::UndefinedEvent(event) => Error::UndefinedEvent(event),
                 CreateAlertError::Callback(error) => error,
             })?;
+        if !self.enabled
+            && self
+                .events
+                .names()
+                .contains(&log_capnp::onroad_event::EventName::SelfdriveInitializing)
+        {
+            alerts.retain(|alert| alert.alert_type != "wrongGear/noEntry");
+            self.alerts.remove("wrongGear/noEntry");
+        }
         self.alerts.add_many(state.frame(), alerts);
         self.alerts.process_alerts(state.frame(), &clear);
         Ok(())

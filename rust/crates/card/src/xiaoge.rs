@@ -29,6 +29,7 @@ pub struct VisionResult {
     pub right_blindspot: bool,
     pub blindspot_valid: bool,
     pub blindspot_received: Option<u64>,
+    pub blindspot_received_by_side: [Option<u64>; 2],
 }
 
 fn fresh(received: Option<u64>, now: u64, timeout: u64) -> bool {
@@ -62,13 +63,40 @@ pub fn apply(mut state: car_state::Builder<'_>, result: Option<&VisionResult>, n
             applied = true;
         }
     }
-    if result.blindspot_valid && fresh(result.blindspot_received, now, 1_500_000_000) {
+    let [left_vision, right_vision] = blindspot_vision(Some(result), now);
+    if left_vision || right_vision {
         let previous = state.reborrow_as_reader();
-        let left = previous.get_left_blindspot() || result.left_blindspot;
-        let right = previous.get_right_blindspot() || result.right_blindspot;
+        let left = previous.get_left_blindspot() || left_vision;
+        let right = previous.get_right_blindspot() || right_vision;
         state.set_left_blindspot(left);
         state.set_right_blindspot(right);
-        applied |= result.left_blindspot || result.right_blindspot;
+        applied = true;
     }
     applied
+}
+
+/// Final source aggregate gate followed by independent per-side freshness.
+pub fn blindspot_vision(result: Option<&VisionResult>, now: u64) -> [bool; 2] {
+    let Some(result) = result else {
+        return [false; 2];
+    };
+    if !result.blindspot_valid || !fresh(result.blindspot_received, now, 1_500_000_000) {
+        return [false; 2];
+    }
+    let side = |index: usize| {
+        let received = result.blindspot_received_by_side[index];
+        fresh(
+            if received == Some(0) {
+                result.blindspot_received
+            } else {
+                received
+            },
+            now,
+            1_500_000_000,
+        )
+    };
+    [
+        result.left_blindspot && side(0),
+        result.right_blindspot && side(1),
+    ]
 }

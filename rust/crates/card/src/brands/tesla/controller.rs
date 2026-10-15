@@ -1,13 +1,13 @@
 use super::{
-    parameters::{parameters, ParamsInput},
+    AUTO_SPEED_LIMIT, Error, FSD_14,
+    parameters::{ParamsInput, parameters},
     speed_limit::SpeedLimit,
     state::State,
     steering::{self, Coop, SteeringInput},
-    Error, AUTO_SPEED_LIMIT, FSD_14,
 };
 use crate::core::{ApplyInput, ApplyOutput, Message};
 use num_traits::ToPrimitive;
-use openpilot_can::{packer::Packer, Frame};
+use openpilot_can::{Frame, packer::Packer};
 use openpilot_cereal::car_capnp::{car_control, car_params, car_state};
 use openpilot_control_policy::{
     math::clip,
@@ -26,6 +26,7 @@ pub struct Snapshot<'a> {
     pub speed_limit: &'a SpeedLimit,
 }
 pub struct Controller {
+    apply_angle_out: f64,
     pub frame: u64,
     pub apply_angle_last: f64,
     pub l_jerk: f64,
@@ -62,6 +63,7 @@ impl Controller {
         });
         Ok(Self {
             frame: 0,
+            apply_angle_out: 0.,
             apply_angle_last: 0.,
             l_jerk: 0.,
             coop: Coop::default(),
@@ -172,6 +174,7 @@ impl Controller {
                 },
                 &self.vm,
             )?;
+            self.apply_angle_out = angle;
             let mut kind = if lat { 1. } else { 0. };
             if self.flags & FSD_14 != 0 && kind == 1. {
                 kind = 2.;
@@ -244,7 +247,7 @@ impl Controller {
         let mut out = Message::new_default();
         out.set_root(actuators)?;
         out.get_root::<car_control::actuators::Builder>()?
-            .set_steering_angle_deg(self.apply_angle_last.to_f32().ok_or(Error::Numeric)?);
+            .set_steering_angle_deg(self.apply_angle_out.to_f32().ok_or(Error::Numeric)?);
         self.frame += 1;
         Ok(ApplyOutput {
             actuators: out,
@@ -252,3 +255,6 @@ impl Controller {
         })
     }
 }
+
+#[cfg(test)]
+mod tests;

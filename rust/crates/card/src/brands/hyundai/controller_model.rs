@@ -3,6 +3,7 @@ use openpilot_cereal::log_capnp::{model_data_v2, radar_state};
 
 #[derive(Default)]
 pub struct Model {
+    pub frame_id: Option<u32>,
     pub leads: Vec<Lead>,
     pub x: Vec<f64>,
     pub y: Vec<f64>,
@@ -10,6 +11,8 @@ pub struct Model {
     pub change_available: [bool; 2],
     pub changing: u8,
     pub desire: u16,
+    pub lane_pair: Option<[f64; 2]>,
+    pub blinker_hold: u8,
 }
 
 impl Model {
@@ -19,6 +22,7 @@ impl Model {
     ) -> Result<Self, Error> {
         let mut ret = Self::default();
         if let Some(model) = model {
+            ret.frame_id = Some(model.get_frame_id());
             let position = model.get_position()?;
             ret.x = position.get_x()?.iter().map(f64::from).collect();
             ret.y = position.get_y()?.iter().map(f64::from).collect();
@@ -34,6 +38,16 @@ impl Model {
                 meta.get_lane_change_available_right(),
             ];
             ret.desire = meta.get_desire()?.into();
+            ret.blinker_hold = u8::try_from(u16::from(meta.get_lane_change_blinker_hold()?))
+                .map_err(|_| Error::Numeric)?;
+            let lanes = model.get_lane_lines()?;
+            if lanes.len() >= 3 {
+                let left = lanes.get(1).get_y()?;
+                let right = lanes.get(2).get_y()?;
+                if !left.is_empty() && !right.is_empty() {
+                    ret.lane_pair = Some([f64::from(left.get(0)), f64::from(right.get(0))]);
+                }
+            }
             let desire = meta.get_desire_state()?;
             if desire.len() > 4 {
                 for index in 1..=4 {

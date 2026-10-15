@@ -56,7 +56,11 @@ impl Matcher {
                 continue;
             }
             let score = laplacian(point.d_rel, vision.d_rel, vision.x_std)
-                * laplacian(point.y_rel, vision.y_rel, vision.y_std)
+                * if point.source == "scc" {
+                    1.
+                } else {
+                    laplacian(point.y_rel, vision.y_rel, vision.y_std)
+                }
                 * laplacian(point.v_lead, vision.velocity, vision.v_std);
             let velocity_error = (point.v_lead - vision.velocity).abs();
             if (!held && score < VISION_MATCH_FRESH_MIN_SCORE)
@@ -68,15 +72,19 @@ impl Matcher {
                         } else {
                             0.
                         }
-                || (point.y_rel - vision.y_rel).abs() >= 2.
+                || (point.source != "scc" && (point.y_rel - vision.y_rel).abs() >= 2.)
                 || !(velocity_error < velocity_tolerance
                     || (point.v_lead > 3.
                         && velocity_error < maximum(velocity_tolerance * 3., 20.)))
             {
                 continue;
             }
-            let projection = path.project(point.d_rel, point.y_rel);
-            if projection.d_path.abs()
+            let d_path = if point.source == "scc" {
+                0.
+            } else {
+                path.project(point.d_rel, point.y_rel).d_path
+            };
+            if d_path.abs()
                 > if held {
                     VISION_MATCH_HELD_MAX_DPATH_M
                 } else {
@@ -89,7 +97,7 @@ impl Matcher {
                 point: point.clone(),
                 probability: vision.probability,
                 score,
-                d_path: projection.d_path,
+                d_path,
             });
         }
         if candidates.is_empty() {

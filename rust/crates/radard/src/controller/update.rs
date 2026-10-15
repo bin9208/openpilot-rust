@@ -1,6 +1,6 @@
-use super::{constants::*, range::central_vision, scc, Controller, Input, Output};
+use super::{Controller, Input, Output, constants::*, range::central_vision, scc};
 use crate::{
-    association,
+    Error, Lead, association,
     lead::{self, Entry},
     math::maximum,
     path::Path,
@@ -9,7 +9,7 @@ use crate::{
     primary::{self, constants::*, source, stationary_geometry::cross_position_cost},
     scope,
     selection::{Candidate, Identity as CandidateIdentity},
-    trajectory_cutin, trajectory_cutout, Error, Lead,
+    trajectory_cutin, trajectory_cutout,
 };
 use std::collections::HashSet;
 
@@ -126,7 +126,7 @@ impl<P: crate::predictor::CutOutPredictor> Controller<P> {
             Some(&stationary),
         );
         let vision = self.primary_matcher._vision_fallback;
-        if self.enable_radar_tracks == -1 {
+        if matches!(self.enable_radar_tracks, -1 | 0) {
             matched = source::unconditional_scc(&points);
             self.reset_range_mismatch();
             self._moving_range_last_point = None;
@@ -137,6 +137,17 @@ impl<P: crate::predictor::CutOutPredictor> Controller<P> {
         }
         if matched.is_none() && self.enable_radar_tracks == 3 {
             matched = source::unconditional_scc(&points);
+            if matched.as_ref().is_some_and(|m| {
+                self.reject_forced_scc(&m.point, &points, &path, vision, model, time)
+            }) {
+                matched = None;
+            } else if matched.is_none() {
+                self.forced_scc_rejected_s = None;
+                self._forced_scc_previous = None;
+            }
+        } else {
+            self.forced_scc_rejected_s = None;
+            self._forced_scc_previous = None;
         }
         if matched.is_some() {
             self.scc_primary_fallback_matcher.reset();
@@ -171,11 +182,35 @@ impl<P: crate::predictor::CutOutPredictor> Controller<P> {
             )?)
         } else {
             vision
-                .filter(|_| {
-                    self.enable_radar_tracks <= VISION_ONLY_RADAR_TRACK_MODE
-                        || central_vision(vision, &path)
-                })
+                .filter(|_| self.enable_radar_tracks <= 0 || central_vision(vision, &path))
                 .map(|vision| lead::from_vision(&vision, &path, [v_ego, model.ego_speed(v_ego)]))
+        };
+        let stopping_corner =
+            if self.enable_radar_tracks > 0 && self.motion_sensor == "corner" && lead_one.is_none()
+            {
+                self.stopping_lane_corner_tracker.update(
+                    time,
+                    v_ego,
+                    model,
+                    &points,
+                    model.primary_vision(),
+                )
+            } else {
+                self.stopping_lane_corner_tracker.reset();
+                None
+            };
+        let in_lane_corner = if self.enable_radar_tracks > 0 && self.motion_sensor == "corner" {
+            self.in_lane_corner_tracker.update(
+                time,
+                v_ego,
+                model,
+                &points,
+                model.primary_vision(),
+                Some(time - skew),
+            )
+        } else {
+            self.in_lane_corner_tracker.reset();
+            None
         };
         let cutout_point = matched
             .as_ref()
@@ -512,6 +547,27 @@ impl<P: crate::predictor::CutOutPredictor> Controller<P> {
             }
         }
         let mut lead_two = selection.lead_two;
+        if let Some((point, offset)) = in_lane_corner.filter(|_| lead_one.is_none_or(|v| !v.radar))
+        {
+            if lead_two.is_none_or(|v| point.d_rel < v.d_rel) {
+                lead_two = Some(self.radar_lead(
+                    &point,
+                    offset,
+                    model.primary_vision().map_or(0., |v| v.probability),
+                    1.,
+                )?);
+            }
+        }
+        if let Some((point, offset)) = stopping_corner {
+            if lead_two.is_none_or(|v| point.d_rel < v.d_rel) {
+                lead_two = Some(self.radar_lead(
+                    &point,
+                    offset,
+                    model.primary_vision().map_or(0., |v| v.probability),
+                    1.,
+                )?);
+            }
+        }
         if scc_lead.is_some_and(|scc| lead_two.is_none_or(|lead| scc.d_rel < lead.d_rel)) {
             lead_two = scc_lead;
         }

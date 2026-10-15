@@ -10,7 +10,7 @@ use std::{
 pub use crate::model::DEFAULT_MANIFEST_URL;
 
 #[must_use]
-pub fn pinned_manifest() -> Manifest {
+pub fn legacy_manifest() -> Manifest {
     Manifest {
         model_id: "comma-pr38932-cinque-v3-892fc3a1-e758b96d".into(),
         filename: "big_driving_tinygrad.pkl".into(),
@@ -22,9 +22,53 @@ pub fn pinned_manifest() -> Manifest {
     }
 }
 
+/// Previous retrained MDM remains readable for existing native assets and explicit selection.
+#[must_use]
+pub fn retrained_manifest() -> Manifest {
+    Manifest {
+        model_id: "comma-pr39047-mdm-retrained-6f4c0faf-256f2178".into(),
+        filename: "big_driving_tinygrad.pkl".into(),
+        size: 799_942_179,
+        sha256: "256f2178366479a211933701c03518621ed3970289e6a8a43e5a2bcb15e55b5f".into(),
+        url: "https://upload.shind0.synology.me/models/comma4-big-mdm-8d736683/big_driving_tinygrad.pkl".into(),
+    }
+}
+
+/// Latest upstream MD v3 selection (8864280c); internal/DM/Jetlink are unchanged.
+#[must_use]
+pub fn pinned_manifest() -> Manifest {
+    Manifest {
+        model_id: "comma-pr39087-md-v3-e86b58dc-d4c7a3fc".into(),
+        filename: "big_driving_tinygrad.pkl".into(),
+        size: 799_941_965,
+        sha256: "d4c7a3fcfc95813826ca871a80bea18df833aacb2eb6f5333e25a01e65b1a422".into(),
+        url: "https://upload.shind0.synology.me/models/comma4-big-md-v3-1365126a/big_driving_tinygrad.pkl".into(),
+    }
+}
+
+#[must_use]
+pub fn known_manifest(digest: &str) -> Option<Manifest> {
+    [pinned_manifest(), retrained_manifest(), legacy_manifest()]
+        .into_iter()
+        .find(|model| model.sha256 == digest)
+}
+pub const RETRAINED_MANIFEST_URL: &str =
+    "https://upload.shind0.synology.me/models/comma4-big-mdm-8d736683/manifest.json";
+pub const LEGACY_MANIFEST_URL: &str =
+    "https://upload.shind0.synology.me/models/comma4-big-cinque-v3/manifest.json";
+#[must_use]
+pub fn source_manifest(url: &str) -> Option<Manifest> {
+    match url {
+        DEFAULT_MANIFEST_URL => Some(pinned_manifest()),
+        LEGACY_MANIFEST_URL => Some(legacy_manifest()),
+        RETRAINED_MANIFEST_URL => Some(retrained_manifest()),
+        _ => None,
+    }
+}
+
 pub fn fetch_manifest(agent: &ureq::Agent, url: &str) -> Result<Manifest, Error> {
-    if url == DEFAULT_MANIFEST_URL {
-        return Ok(pinned_manifest());
+    if let Some(model) = source_manifest(url) {
+        return Ok(model);
     }
     let response = agent
         .get(url)
@@ -33,10 +77,10 @@ pub fn fetch_manifest(agent: &ureq::Agent, url: &str) -> Result<Manifest, Error>
         .header("User-Agent", "carrot-modeld/1")
         .call()?;
     if !response.status().is_success() {
-        return Err(Error::Invalid(format!(
-            "manifest HTTP {}",
-            response.status()
-        )));
+        return Err(Error::HttpStatus {
+            code: response.status().as_u16(),
+            message: format!("manifest HTTP {}", response.status()),
+        });
     }
     let mut bytes = Vec::new();
     response
@@ -126,6 +170,29 @@ impl State {
             .map_err(|error| error.error)?;
         Ok(())
     }
+}
+
+/// Bind a verified selection to its explicit catalog, even when content is unchanged.
+pub fn bind_manifest(cache: &Path, model: &Manifest, manifest_url: &str) -> Result<(), Error> {
+    if !model.validate() {
+        return Err(Error::Invalid("invalid model manifest".into()));
+    }
+    let mut state = State::read(cache)?;
+    state.active = Some(model.clone());
+    let mut value = serde_json::to_value(state)?;
+    value["manifest_url"] = serde_json::Value::String(manifest_url.to_owned());
+    let mut staging = tempfile::Builder::new()
+        .prefix(".state-")
+        .suffix(".json")
+        .tempfile_in(cache)?;
+    serde_json::to_writer_pretty(&mut staging, &value)?;
+    staging.write_all(b"\n")?;
+    staging.flush()?;
+    staging.as_file().sync_all()?;
+    staging
+        .persist(cache.join("state.json"))
+        .map_err(|error| error.error)?;
+    Ok(())
 }
 
 /// Download and atomically select a verified model, retaining the previous model.

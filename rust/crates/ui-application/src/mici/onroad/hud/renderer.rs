@@ -25,10 +25,20 @@ pub struct Snapshot {
     pub torque: f64,
     pub wheel_alpha: f64,
     pub animation_text: String,
-    pub animation_time: i32,
+    pub animation_time: f64,
     pub turn: super::turn_intent::Snapshot,
 }
+type TrafficInfo = (String, String, Option<f64>);
+type OverlayKey = (
+    Option<crate::overlay_state::Key>,
+    Option<TrafficInfo>,
+    bool,
+    bool,
+);
 pub struct Hud {
+    overlay: openpilot_ui_framework::overlay::PaintLayer<OverlayKey>,
+    overlay_state: Option<crate::overlay_state::Shared>,
+    traffic: Option<TrafficInfo>,
     state: WidgetState,
     context: Context,
     cruise_set: bool,
@@ -55,11 +65,15 @@ pub struct Hud {
     speed_bg: Texture,
     cruise_text_last: String,
     animation_text: String,
-    animation_time: i32,
+    animation_time: f64,
+    animation_started: f64,
 }
 impl Hud {
     pub fn new(context: Context, canvas: &mut Canvas, fps: f64) -> Result<Self, Error> {
         Ok(Self {
+            overlay: openpilot_ui_framework::overlay::PaintLayer::new(1),
+            overlay_state: None,
+            traffic: None,
             state: WidgetState::default(),
             turn: TurnIntent::new(context.clone(), canvas, fps)?,
             context,
@@ -90,8 +104,12 @@ impl Hud {
             speed_bg: paint::texture(canvas, "images/speed_bg.png", (307, 115))?,
             cruise_text_last: String::new(),
             animation_text: String::new(),
-            animation_time: -1,
+            animation_time: -1.,
+            animation_started: 0.,
         })
+    }
+    pub fn set_overlay_state(&mut self, state: crate::overlay_state::Shared) {
+        self.overlay_state = Some(state);
     }
     pub fn set_wheel_critical_icon(&mut self, critical: bool) {
         self.critical = critical;
@@ -125,11 +143,15 @@ impl Hud {
     fn animate(&mut self, draw: &mut dyn Draw) -> Result<(), Error> {
         use crate::onroad::hud::style::{self, Anchor, Text};
         use openpilot_ui_framework::text::Font;
-        if self.animation_time <= 0 || self.animation_text.is_empty() {
+        if self.animation_time <= 0. || self.animation_text.is_empty() {
             return Ok(());
         }
-        self.animation_time -= 12;
-        let time = f64::from(self.animation_time.min(100));
+        let elapsed = (self.context.now_monotonic)() - self.animation_started;
+        self.animation_time = (120. - 12. * (1. + elapsed * 20.)).max(0.);
+        if elapsed >= 0.5 {
+            return Ok(());
+        }
+        let time = self.animation_time.min(100.);
         let rect = self.state.rect;
         let x = f64::from(rect.x);
         let y = f64::from(rect.y);
@@ -154,8 +176,16 @@ impl Hud {
                 font: Font::Display,
                 color: common::GREEN,
                 anchor: Anchor::Center,
-                border: if self.animation_time >= 100 { 3.0 } else { 1.0 },
-                shadow: if self.animation_time >= 100 { 3.0 } else { 0.0 },
+                border: if self.animation_time >= 100. {
+                    3.0
+                } else {
+                    1.0
+                },
+                shadow: if self.animation_time >= 100. {
+                    3.0
+                } else {
+                    0.0
+                },
                 y_offset: 0.0,
             },
         )
@@ -169,6 +199,9 @@ impl Widget for Hud {
         &mut self.state
     }
     fn update(&mut self, frame: &Frame<'_>, _: &mut dyn Draw) -> Result<(), Error> {
+        self.traffic = self.traffic_info()?;
+        self.wheel_alpha.update(255.0 * 0.95);
+        self.wheel_y.update(0.0);
         let messages = self.context.messages.borrow();
         if messages
             .state
@@ -211,7 +244,8 @@ impl Widget for Hud {
             self.cruise_text_last = text.clone();
             if text != "--" {
                 self.animation_text = text;
-                self.animation_time = 120;
+                self.animation_time = 120.;
+                self.animation_started = (self.context.now_monotonic)();
             }
         }
         let cluster = f64::from(car.get_v_ego_cluster());
@@ -227,9 +261,36 @@ impl Widget for Hud {
         Ok(())
     }
     fn paint(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
-        self.panel(draw)?;
-        self.draw_wheel(frame, draw)?;
-        common::badge(&self.context, draw, self.state.rect)?;
+        let state = self
+            .overlay_state
+            .as_ref()
+            .map(|s| s.borrow().clone())
+            .unwrap_or_default();
+        let key = (
+            state.key.clone(),
+            self.traffic.clone(),
+            self.top_icons,
+            self.critical,
+        );
+        let mut overlay = std::mem::replace(
+            &mut self.overlay,
+            openpilot_ui_framework::overlay::PaintLayer::new(1),
+        );
+        let clock = self.context.now_monotonic.clone();
+        let result = overlay.paint(
+            draw,
+            self.state.rect,
+            key,
+            state.control(frame.index),
+            || clock(),
+            |draw| {
+                self.panel(draw)?;
+                self.draw_wheel(frame, draw)?;
+                common::badge(&self.context, draw, self.state.rect)
+            },
+        );
+        self.overlay = overlay;
+        result?;
         self.animate(draw)?;
         Ok(RenderResult::None)
     }

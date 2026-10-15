@@ -30,6 +30,9 @@ class Case(TypedDict, total=False):
 
 def corpus(params, backup:dict[str,Json]) -> Iterator[Case]:
   yield {'action':'backup','scenario':'real208-typed-backup'}
+  yield {'action':'build', 'values':{'DriverMonitoringEnabled':False, 'DriverMonitoringSessionDisabled':True,
+                                   'JetsonLegacyUpdatePending':True, 'CarrotVisionEnabled':True},
+         'scenario':'monitoring-backup-exclusion'}
   for version in (2,3,4):
     built=getattr(params,f'_build_params_qr_payload_v{version}')(backup)
     yield {'action':'build','version':version,'scenario':f'real208-build-v{version}'}

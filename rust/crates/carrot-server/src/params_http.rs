@@ -83,6 +83,18 @@ fn set_value(app: &Application, body: &Value) -> Result<(StatusCode, Value), Err
         ));
     }
     let name = name_value.string()?;
+    if crate::params::internal_session(&name) {
+        return Ok((
+            StatusCode::FORBIDDEN,
+            Value::object([
+                ("ok", Value::Bool(false)),
+                (
+                    "error",
+                    Value::text("driver monitoring is controlled by the vehicle CANCEL gesture"),
+                ),
+            ]),
+        ));
+    }
     let mut params = app
         .params
         .lock()

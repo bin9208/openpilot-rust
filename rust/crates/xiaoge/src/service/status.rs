@@ -58,6 +58,23 @@ impl State {
                     ),
                     ("reason", Value::Text(self.gate.reason.to_owned())),
                     ("laneWidth", Value::Float(self.gate.lane_width)),
+                    (
+                        "eligibleSides",
+                        Value::Array(
+                            self.gate
+                                .eligible_sides
+                                .iter()
+                                .map(|side| Value::Text(side.name().to_owned()))
+                                .collect(),
+                        ),
+                    ),
+                    (
+                        "laneWidths",
+                        object([
+                            ("left", Value::Float(self.gate.lane_widths[0])),
+                            ("right", Value::Float(self.gate.lane_widths[1])),
+                        ]),
+                    ),
                 ]),
             ),
             ("threshold", Value::Float(self.settings.threshold)),
@@ -110,6 +127,10 @@ impl State {
         let valid = self.side_valid(side, now, nanos);
         object([
             ("valid", Value::Bool(valid)),
+            (
+                "updatedMonoTimeNanos",
+                Value::Integer(i128::from(self.blindspot_side_updated[side.index()])),
+            ),
             (
                 "active",
                 Value::Bool(valid && self.blindspot_active[side.index()]),
@@ -171,9 +192,15 @@ impl State {
     }
 
     pub fn publication(&self, now: f64, nanos: u64) -> Result<Fields, std::num::ParseFloatError> {
-        let side = [Side::Left, Side::Right]
+        let valid_sides: Vec<_> = [Side::Left, Side::Right]
             .into_iter()
-            .find(|&side| self.side_valid(side, now, nanos));
+            .filter(|&side| self.side_valid(side, now, nanos))
+            .collect();
+        let side = self
+            .gate
+            .side
+            .filter(|side| valid_sides.contains(side))
+            .or_else(|| valid_sides.first().copied());
         Ok(fields([
             ("type", Value::Text("xiaogeVision".to_owned())),
             ("version", Value::Integer(1)),
@@ -216,6 +243,28 @@ impl State {
                         ),
                     ),
                     ("valid", Value::Bool(side.is_some())),
+                    (
+                        "validSides",
+                        Value::Array(
+                            valid_sides
+                                .iter()
+                                .map(|side| Value::Text(side.name().to_owned()))
+                                .collect(),
+                        ),
+                    ),
+                    (
+                        "receivedMonoTimeNanosBySide",
+                        object([
+                            (
+                                "left",
+                                Value::Integer(i128::from(self.blindspot_side_updated[0])),
+                            ),
+                            (
+                                "right",
+                                Value::Integer(i128::from(self.blindspot_side_updated[1])),
+                            ),
+                        ]),
+                    ),
                     ("side", Value::Text(side.map_or("", Side::name).to_owned())),
                     (
                         "receivedMonoTimeNanos",

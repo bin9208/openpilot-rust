@@ -41,6 +41,8 @@ pub struct Controls {
     pub curvature: f64,
     pub desired: f64,
     pub safety_limited: bool,
+    pub lateral_startup: openpilot_control_policy::lateral_readiness::Gate,
+    pub lateral_started: bool,
     pub lane_lines: bool,
     pub turn_speed: i32,
     pub calibration: [f64; 3],
@@ -92,6 +94,8 @@ impl Controls {
             curvature: 0.,
             desired: 0.,
             safety_limited: false,
+            lateral_startup: Default::default(),
+            lateral_started: false,
             lane_lines: false,
             turn_speed,
             calibration: [0.; 3],
@@ -105,7 +109,15 @@ impl Controls {
     ) -> Result<Command, Error> {
         self.update_pose(input);
         let cs = &input.car;
-        let live = &input.live;
+        let lateral_ready = self.lateral_startup.update(input.startup_inputs());
+        let live = if lateral_ready {
+            input.live
+        } else {
+            input.live.for_inactive(
+                input.startup.services.live,
+                self.config.physical.steer_ratio,
+            )
+        };
         let ratio = drive::steer_ratio(
             live.ratio,
             params.float("SteerRatioRate")?,
@@ -134,11 +146,15 @@ impl Controls {
             && !cs.fault_temporary
             && !cs.fault_permanent
             && ((cs.standstill && standstill) || (!cs.standstill && !below));
-        let lateral = self.suspend.update(cs, lateral, params)?;
+        let lateral = self.suspend.update(cs, lateral, params)? && lateral_ready;
         let longitudinal =
             input.selfdrive.enabled && !input.override_long && self.config.openpilot_long;
         if !lateral {
             self.lateral.reset();
+        }
+        if lateral && !self.lateral_started {
+            self.desired = self.curvature;
+            self.lateral_started = true;
         }
         if !longitudinal {
             self.longitudinal.reset();
@@ -217,6 +233,7 @@ impl Controls {
                 config: &self.config,
                 vm: &self.vm,
                 input,
+                live: &live,
                 active: lateral,
                 curvature: desired,
                 limited: self.safety_limited,

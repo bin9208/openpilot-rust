@@ -14,6 +14,10 @@ use std::{
 
 #[derive(Deserialize)]
 struct Cp {
+    #[serde(default)]
+    brand: String,
+    #[serde(default, rename = "carFingerprint")]
+    fingerprint: String,
     #[serde(rename = "pcmCruise")]
     pcm: bool,
     #[serde(rename = "openpilotLongitudinalControl")]
@@ -21,6 +25,8 @@ struct Cp {
 }
 #[derive(Deserialize)]
 struct Frame {
+    #[serde(default)]
+    speedcam_consumed: bool,
     cs: Vec<u8>,
     events: Vec<Vec<u8>>,
     metric: bool,
@@ -53,6 +59,8 @@ fn trace(case: Case) -> Result<Vec<Output>, Box<dyn std::error::Error>> {
     let external = Params::open(root.path(), "d")?;
     let mut cp = Builder::new_default();
     let mut cpb = cp.init_root::<car_params::Builder>();
+    cpb.set_brand(&case.cp.brand);
+    cpb.set_car_fingerprint(&case.cp.fingerprint);
     cpb.set_pcm_cruise(case.cp.pcm);
     cpb.set_openpilot_longitudinal_control(case.cp.long);
     let mut tail = CruiseCarrot::new(cp.get_root_as_reader()?, params, root.path(), 10.)?;
@@ -87,6 +95,7 @@ fn trace(case: Case) -> Result<Vec<Output>, Box<dyn std::error::Error>> {
         let input = serialize::read_message(Cursor::new(&frame.cs), ReaderOptions::new())?;
         let mut cs = Builder::new_default();
         cs.set_root(input.get_root::<car_state::Reader>()?)?;
+        tail.set_speedcam_gas_tok_consumed(frame.speedcam_consumed);
         tail.update_at(cs.get_root_as_reader()?, &sm, frame.metric, now)?;
         let openpilot_cereal::log_capnp::event::Which::CarControl(cc) =
             sm.topic("carControl")?.event()?.which()?

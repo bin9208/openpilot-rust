@@ -16,6 +16,7 @@ pub mod runtime;
 pub mod signals;
 pub mod startup;
 pub mod supported_cars;
+pub mod xiaoge_startup;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

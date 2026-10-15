@@ -30,7 +30,7 @@ def original(root, commands):
     try:
       if op == 'create':
         identity[0] = command['id']
-        scope['create_job'](command['segments'])
+        scope['create_job'](command['segments'],include_all_files=command.get('include_all_files',False))
       elif op == 'append':
         scope['append'](job, command.get('text'))
       elif op == 'touch':
@@ -65,7 +65,7 @@ def scenarios():
     clock[1] += 0.125
     return {'op': op, 'clock': clock.copy(), **fields}
 
-  commands = [command('create', id='a', segments=['route--0', 'route--1'])]
+  commands = [command('create', id='a', segments=['route--0', 'route--1'],include_all_files=True)]
   commands += [command('append', id='a', text=text) for text in [None, '', 'a', 'b\r\nc\rd', '\nx', '한글' * 31000]]
   for percent in [-10, 0.5, 1.5, 2.5, 2.4, 98.5, 1000]:
     commands.append(command('progress', id='a', patch={'percent': percent, 'bytes_current': -5, 'current': -1}))

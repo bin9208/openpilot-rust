@@ -25,6 +25,7 @@ pub const MIN_STEER_32_MPH: u32 = 1 << 23;
 pub const ANGLE_CONTROL: u32 = 1 << 24;
 pub const FCEV: u32 = 1 << 25;
 pub const ALT_LIMITS_2: u32 = 1 << 26;
+pub const CLUSTER_DIRECT_TX: u32 = 1 << 27;
 pub const CC_ONLY_CAR: u32 = 1 << 31;
 
 pub mod ext {
@@ -39,6 +40,8 @@ pub mod ext {
     pub const CORNER_430: u32 = 1 << 14;
     pub const RADAR_GROUP4: u32 = 1 << 15;
     pub const EV_MODE_230: u32 = 1 << 16;
+    pub const BOSCH_RADAR: u32 = 1 << 17;
+    pub const BOSCH_RADAR_BUS1: u32 = 1 << 18;
 }
 
 pub mod safety {
@@ -52,4 +55,5 @@ pub mod safety {
     pub const ALT_STEERING: u16 = 128;
     pub const FCEV_GAS: u16 = 256;
     pub const ALT_LIMITS_2: u16 = 512;
+    pub const CLUSTER_DIRECT_TX: u16 = 2048;
 }

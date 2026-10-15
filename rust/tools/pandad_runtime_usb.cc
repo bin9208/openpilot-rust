@@ -132,7 +132,7 @@ int libusb_control_transfer(libusb_device_handle *handle, uint8_t kind, uint8_t 
   }
   if (request == 0xc1 && length > 0) { out[0] = handle->index == 0 ? 6 : 7; return 1; }
   if (config["supervisor"].bool_value() && request == 0xdd) {
-    const uint8_t versions[] = {16, 4, 5};
+    const uint8_t versions[] = {17, 4, 5};
     return copy_packet(out, length, versions);
   }
   if (config["supervisor"].bool_value() && request == 0xd6) {

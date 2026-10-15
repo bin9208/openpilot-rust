@@ -1,6 +1,28 @@
-//! Jetlink v2 framing and FunctionFS descriptors.
+//! Jetlink v2/v3 framing and FunctionFS descriptors.
 //! Ported from third_party/jetlink (MIT, Copyright (c) 2026 Zeph Leggett).
 use crate::Error;
+/// A stream selects one protocol before HELLO; version changes require reconnect.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u16)]
+pub enum Version {
+    V2 = 2,
+    V3 = 3,
+}
+impl Version {
+    pub fn from_u16(value: u16) -> Result<Self, Error> {
+        match value {
+            2 => Ok(Self::V2),
+            3 => Ok(Self::V3),
+            _ => Err(Error::Contract("wire version")),
+        }
+    }
+    pub const fn packet_multiple(self) -> usize {
+        match self {
+            Self::V2 => 1024,
+            Self::V3 => 512,
+        }
+    }
+}
 pub const HEADER_SIZE: usize = 32;
 pub const TX_ALIGN: usize = 16384;
 pub const PADDED: u32 = 128;
@@ -14,9 +36,12 @@ pub struct Header {
 }
 impl Header {
     pub fn encode(&self) -> [u8; 32] {
+        self.encode_version(Version::V2)
+    }
+    pub fn encode_version(&self, version: Version) -> [u8; 32] {
         let mut bytes = [0; 32];
         bytes[..4].copy_from_slice(b"JLNK");
-        bytes[4..6].copy_from_slice(&2u16.to_le_bytes());
+        bytes[4..6].copy_from_slice(&(version as u16).to_le_bytes());
         bytes[6..8].copy_from_slice(&self.kind.to_le_bytes());
         bytes[8..12].copy_from_slice(&self.sequence.to_le_bytes());
         bytes[12..16].copy_from_slice(&self.flags.to_le_bytes());
@@ -25,7 +50,10 @@ impl Header {
         bytes
     }
     pub fn decode(bytes: &[u8; 32]) -> Result<Self, Error> {
-        if &bytes[..4] != b"JLNK" || bytes[4..6] != 2u16.to_le_bytes() {
+        Self::decode_version(bytes, Version::V2)
+    }
+    pub fn decode_version(bytes: &[u8; 32], version: Version) -> Result<Self, Error> {
+        if &bytes[..4] != b"JLNK" || bytes[4..6] != (version as u16).to_le_bytes() {
             return Err(Error::Contract("wire magic/version"));
         }
         Ok(Self {
@@ -50,12 +78,21 @@ pub fn word(bytes: &[u8], offset: usize) -> u32 {
     ])
 }
 pub fn frame(kind: u16, sequence: u32, payload: &[u8], gadget: bool) -> Result<Vec<u8>, Error> {
+    frame_version(kind, sequence, payload, gadget, Version::V2)
+}
+pub fn frame_version(
+    kind: u16,
+    sequence: u32,
+    payload: &[u8],
+    gadget: bool,
+    version: Version,
+) -> Result<Vec<u8>, Error> {
     let length = u32::try_from(payload.len()).map_err(|_| Error::Contract("wire length"))?;
     let total = HEADER_SIZE + payload.len();
     let pad = if gadget {
         (TX_ALIGN - total % TX_ALIGN) % TX_ALIGN
     } else {
-        usize::from(total.is_multiple_of(1024))
+        usize::from(total.is_multiple_of(version.packet_multiple()))
     };
     let flags = if !gadget && pad != 0 { PADDED } else { 0 };
     let mut bytes = Header {
@@ -65,7 +102,7 @@ pub fn frame(kind: u16, sequence: u32, payload: &[u8], gadget: bool) -> Result<V
         length,
         reserved: 0,
     }
-    .encode()
+    .encode_version(version)
     .to_vec();
     bytes.extend(payload);
     bytes.resize(total + pad, 0);

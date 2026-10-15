@@ -1,3 +1,4 @@
+pub mod diagnostics;
 use crate::{http::Application, http_response, params::Backend, Error, Value};
 use hyper::{header, Method, Request, Response, StatusCode};
 use num_traits::{ToPrimitive, Zero};
@@ -14,10 +15,10 @@ use std::{
 };
 
 const STATUS_ROUTE: &str = "/api/egpu/model";
+const DIAGNOSTICS_ROUTE: &str = "/api/egpu/model/diagnostics";
 const RESTART_ROUTE: &str = "/api/egpu/model/compile-restart";
-const DEFAULT_MANIFEST_URL: &str =
-    "https://upload.shind0.synology.me/models/comma4-big-cinque-v3/manifest.json";
-const STATES: [&str; 8] = [
+const DEFAULT_MANIFEST_URL: &str = model::DEFAULT_MANIFEST_URL;
+const STATES: [&str; 11] = [
     "checking",
     "downloading",
     "verifying",
@@ -26,18 +27,37 @@ const STATES: [&str; 8] = [
     "compiling",
     "compiled",
     "error",
+    "waiting_for_network",
+    "installing",
+    "installed",
 ];
-const UPDATING: [&str; 5] = ["checking", "downloading", "verifying", "compiling", "error"];
-const BUSY: [&str; 4] = ["checking", "downloading", "verifying", "compiling"];
+const UPDATING: [&str; 7] = [
+    "checking",
+    "downloading",
+    "verifying",
+    "compiling",
+    "error",
+    "waiting_for_network",
+    "installing",
+];
+const BUSY: [&str; 6] = [
+    "checking",
+    "downloading",
+    "verifying",
+    "compiling",
+    "waiting_for_network",
+    "installing",
+];
 
 pub struct ModelFiles {
     pub paths: Paths,
     pub usb_devices: PathBuf,
     pub timestamp: Option<f64>,
+    pub telemetry: diagnostics::Telemetry,
 }
 
 pub fn matches(path: &str) -> bool {
-    matches!(path, STATUS_ROUTE | RESTART_ROUTE)
+    matches!(path, STATUS_ROUTE | RESTART_ROUTE | DIAGNOSTICS_ROUTE)
 }
 
 fn stored_status(cache: &Path) -> Value {
@@ -155,6 +175,7 @@ impl ModelFiles {
             },
             usb_devices: "/sys/bus/usb/devices".into(),
             timestamp: None,
+            telemetry: Default::default(),
         }
     }
 
@@ -237,10 +258,14 @@ impl ModelFiles {
         let updating = UPDATING.iter().any(|state| phase.text_eq(state));
         let compiled =
             same_model && !updating && model::active_compiled_path(&self.paths).is_some();
-        let state = if updating {
+        let mut state = if updating {
             phase.clone()
         } else if compiled {
-            Value::text("compiled")
+            Value::text(if phase.text_eq("installed") {
+                "installed"
+            } else {
+                "compiled"
+            })
         } else if same_model {
             Value::text(if phase.text_eq("waiting_for_ignition") {
                 "waiting_for_ignition"
@@ -303,8 +328,75 @@ impl ModelFiles {
                     .unwrap_or(Value::Null)
             }
         };
-        let can_restart =
-            same_model && !compiled && !engaged && !BUSY.iter().any(|phase| state.text_eq(phase));
+        let boolean = |key| {
+            params
+                .native_params()
+                .is_some_and(|params| params.get_bool(key).unwrap_or(false))
+        };
+        let active = boolean("UsbGpuActive") && !boolean("UsbGpuLoading");
+        let mut error_code = status.get("error_code").clone();
+        let mut detail = status.get("detail").clone();
+        let blocked = manifest.as_ref().is_some_and(|manifest| {
+            self.paths
+                .cache
+                .join("precompiled")
+                .join(&manifest.sha256)
+                .join("rejected")
+                .exists()
+        });
+        if boolean("UsbGpuStartupFailed") && !active {
+            let failure = manifest.as_ref().map_or_else(
+                || Value::Object(Vec::new()),
+                |manifest| {
+                    diagnostics::current(
+                        &self.paths.cache,
+                        &manifest.sha256,
+                        &self.telemetry.boot_id,
+                    )
+                },
+            );
+            state = Value::text("error");
+            error_code = if failure.has("error_code") {
+                failure.get("error_code").clone()
+            } else {
+                Value::text("runtime")
+            };
+            detail = match failure.get("worker").get("stage") {
+                Value::Text(_) => Value::text(&format!(
+                    "Last worker stage: {}",
+                    failure.get("worker").get("stage").string()?
+                )),
+                _ => Value::Null,
+            };
+        }
+        let recovery = if active {
+            Value::Object(Vec::new())
+        } else {
+            self.telemetry.recovery()?
+        };
+        if ["waiting", "recovering", "ready"]
+            .iter()
+            .any(|phase| recovery.get("state").text_eq(phase))
+        {
+            state = Value::text(if recovery.get("state").text_eq("ready") {
+                "recovery_ready"
+            } else {
+                "recovering"
+            });
+            error_code = Value::Null;
+            detail = Value::Null;
+        } else if recovery.get("state").text_eq("stopped") {
+            state = Value::text("recovery_stopped");
+            error_code = Value::Null;
+            detail = Value::Null;
+        }
+        let can_restart = !blocked
+            && !error_code.text_eq("rejected")
+            && !recovery.truth()
+            && same_model
+            && !compiled
+            && !engaged
+            && !BUSY.iter().any(|phase| state.text_eq(phase));
         Ok(Value::object([
             ("ok", Value::Bool(true)),
             ("available", Value::Bool(true)),
@@ -314,13 +406,62 @@ impl ModelFiles {
             ("downloaded_bytes", Value::Integer(downloaded)),
             ("total_bytes", Value::Integer(total)),
             ("progress", progress),
-            ("detail", status.get("detail").clone()),
+            ("detail", detail),
+            ("error_code", error_code),
+            (
+                "retry_count",
+                if status.has("retry_count") {
+                    status.get("retry_count").clone()
+                } else {
+                    Value::integer(0)
+                },
+            ),
+            (
+                "retry_in_seconds",
+                if status.has("retry_in_seconds") {
+                    status.get("retry_in_seconds").clone()
+                } else {
+                    Value::integer(0)
+                },
+            ),
+            ("active", Value::Bool(active)),
+            ("recovery", recovery),
             ("started_at", status.get("started_at").clone()),
             ("updated_at", status.get("updated_at").clone()),
             ("compiled", Value::Bool(compiled)),
             ("engaged", Value::Bool(engaged)),
             ("can_restart", Value::Bool(can_restart)),
         ]))
+    }
+
+    pub fn diagnostics(&self) -> Result<(StatusCode, Value), Error> {
+        let manifest = self.active_manifest()?;
+        let failure = manifest.as_ref().map_or_else(
+            || Value::Object(Vec::new()),
+            |manifest| diagnostics::saved(&self.paths.cache, &manifest.sha256),
+        );
+        if !failure.truth() {
+            return Ok((
+                StatusCode::NOT_FOUND,
+                Value::object([
+                    ("ok", Value::Bool(false)),
+                    (
+                        "error",
+                        Value::text("No matching saved eGPU failure report."),
+                    ),
+                ]),
+            ));
+        }
+        let manifest =
+            manifest.ok_or_else(|| Error::Source("missing matching diagnostic manifest".into()))?;
+        Ok((
+            StatusCode::OK,
+            Value::object([
+                ("model_id", Value::text(&manifest.model_id)),
+                ("sha256", Value::text(&manifest.sha256)),
+                ("failure", failure),
+            ]),
+        ))
     }
 
     fn write_restart_status(&self, manifest: &Manifest) -> Result<(), Error> {
@@ -451,6 +592,7 @@ pub async fn handle<T>(
 ) -> Response<crate::http::Body> {
     let head = request.method() == Method::HEAD;
     let restart = path == RESTART_ROUTE;
+    let diagnostic = path == DIAGNOSTICS_ROUTE;
     if if restart {
         request.method() != Method::POST
     } else {
@@ -474,8 +616,17 @@ pub async fn handle<T>(
             .map_err(|_| Error::Source("Params lock poisoned".into()))?;
         if restart {
             files.restart(&mut params)
+        } else if diagnostic {
+            files.diagnostics()
         } else {
-            files.status(&params).map(|value| (StatusCode::OK, value))
+            let mut value = files.status(&params)?;
+            if let Value::Object(fields) = &mut value {
+                fields.push((
+                    "jetlink".chars().map(u32::from).collect(),
+                    files.telemetry.jetlink()?,
+                ));
+            }
+            Ok((StatusCode::OK, value))
         }
     })
     .await;
@@ -493,7 +644,21 @@ pub async fn handle<T>(
     };
     match result {
         Ok(Ok((code, payload))) => {
-            http_response::json_response(code, payload, head, "").unwrap_or_else(|_| failure())
+            let mut response =
+                http_response::json_response(code, payload, head, "").unwrap_or_else(|_| failure());
+            if diagnostic && code == StatusCode::OK {
+                response.headers_mut().insert(
+                    header::CACHE_CONTROL,
+                    header::HeaderValue::from_static("no-store"),
+                );
+                response.headers_mut().insert(
+                    header::CONTENT_DISPOSITION,
+                    header::HeaderValue::from_static(
+                        "attachment; filename=\"egpu-diagnostics.json\"",
+                    ),
+                );
+            }
+            response
         }
         Ok(Err(error)) => {
             eprintln!("eGPU model: {error}");

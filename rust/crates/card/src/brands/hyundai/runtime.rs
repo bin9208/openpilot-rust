@@ -73,7 +73,16 @@ impl Hyundai {
         lines.append(&mut self.controller.buttons.diagnostics);
         lines
     }
+    pub fn take_logs(&mut self) -> Vec<crate::core::VehicleLog> {
+        let mut logs = std::mem::take(&mut self.state.inputs.diagnostics.logs);
+        logs.append(&mut self.controller.steering.logs);
+        logs
+    }
     pub fn take_warnings(&mut self) -> Vec<String> {
-        std::mem::take(&mut self.state.inputs.diagnostics.warnings)
+        let mut warnings = std::mem::take(&mut self.state.inputs.diagnostics.warnings);
+        if let Some(stopping) = &mut self.controller.stopping {
+            warnings.append(&mut stopping.warnings);
+        }
+        warnings
     }
 }

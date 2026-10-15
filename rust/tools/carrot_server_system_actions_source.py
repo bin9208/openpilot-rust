@@ -6,6 +6,7 @@
 # python -P rust/tools/carrot_server_system_actions_source.py < OWNED_INPUT_JSON
 from __future__ import annotations
 
+import ast
 import json
 import os
 from pathlib import Path
@@ -52,16 +53,20 @@ def main() -> None:
   commands = []
   children: list[subprocess.Popen] = []
 
-  def spawn(args: list[str]) -> subprocess.Popen:
-    assert args == ['sudo', 'reboot']
-    commands.append(args)
-    if config.get('spawn_fail'):
-      raise FileNotFoundError(2, 'No such file or directory', 'sudo')
-    child = subprocess.Popen(args)
-    children.append(child)
-    return child
-
-  system.subprocess = types.SimpleNamespace(Popen=spawn)
+  # Actual pinned api_reboot and shared admission/spawn functions. On this
+  # non-device gate admission must fail before any subprocess is created.
+  source_root = Path(__file__).resolve().parents[2]
+  pin = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
+  for source_path, names, scope in [
+    ('openpilot/common/reboot.py', {'_device_only', 'spawn_reboot'},
+     {'Path': Path, 'subprocess': subprocess, 'sys': sys, '__file__': __file__}),
+    ('openpilot/selfdrive/carrot/server/features/system.py', {'api_reboot'}, system.__dict__),
+  ]:
+    tree = ast.parse(subprocess.check_output(['/usr/bin/git', 'show', f'{pin}:{source_path}'], cwd=source_root, text=True))
+    tree.body = [node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in names]
+    exec(compile(tree, source_path, 'exec'), scope)
+    if source_path.endswith('common/reboot.py'):
+      system.spawn_reboot = scope['spawn_reboot']
   match config['mode']:
     case 'calibration':
       device = definitions('services/device_info.py')

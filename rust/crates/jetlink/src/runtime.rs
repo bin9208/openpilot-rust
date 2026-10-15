@@ -23,18 +23,19 @@ struct Model {
 enum Work {
     Connect(PathBuf),
     Infer {
-        model: Model,
+        model: Box<Model>,
         warped: Vec<u8>,
-        packed: [f32; 12],
+        packed: Vec<f32>,
         frame: u32,
+        source_sof: u64,
         deadline: Deadline,
         started: Instant,
     },
 }
 enum Complete {
-    Connected(Model),
+    Connected(Box<Model>),
     Inferred {
-        model: Model,
+        model: Box<Model>,
         output: Box<DrivingPrediction>,
         frame: u32,
         elapsed: Duration,
@@ -52,6 +53,7 @@ pub struct FrameInput<'a> {
     pub mode: Mode,
     pub controls: ControlState,
     pub frame: u32,
+    pub source_sof: u64,
     pub prepare_only: bool,
     pub camera_ready: bool,
     pub validation: Option<&'a [u8]>,
@@ -64,10 +66,11 @@ pub struct Runtime {
     results: Receiver<Result<Complete, Error>>,
     worker: Option<JoinHandle<()>>,
     identity: Option<contract::Identity>,
+    selected_sha: String,
     abandoned: bool,
     path: PathBuf,
     transition: Transition,
-    model: Option<Model>,
+    model: Option<Box<Model>>,
     pending: bool,
     connecting: bool,
     cancel: Option<UnixStream>,
@@ -102,6 +105,7 @@ impl Runtime {
             results,
             worker: Some(worker),
             identity: None,
+            selected_sha: contract::SHA256.into(),
             abandoned: false,
             path: path.to_owned(),
             transition: Transition::new(previously_active),
@@ -152,6 +156,12 @@ impl Runtime {
         }
     }
     fn lost(&mut self, error: impl std::fmt::Display) {
+        if self.status.decision.source == Source::Jetlink {
+            let fault = self.path.with_file_name("carrot-jetlink-fault");
+            if let Err(error) = crate::fault::write(&fault, crate::now_ns() as f64 * 1e-9) {
+                eprintln!("could not persist active Jetlink fault: {error}");
+            }
+        }
         self.detail = error.to_string().chars().take(240).collect();
         self.status.decision = self.transition.update(
             self.mode,
@@ -179,6 +189,7 @@ impl Runtime {
             Ok(Complete::Connected(model)) => {
                 self.status.generation = crate::rpc::encode_generation(model.client.generation);
                 self.identity = Some(model.client.identity.clone());
+                self.selected_sha = model.client.session.spec.sha256.clone();
                 match model.client.cancel_handle() {
                     Ok(handle) => self.cancel = Some(handle),
                     Err(error) => {
@@ -212,11 +223,15 @@ impl Runtime {
             }
         }
     }
+    pub fn selected_sha(&self) -> &str {
+        &self.selected_sha
+    }
     pub fn begin(&mut self, input: FrameInput<'_>, warp: impl FnOnce() -> Result<Vec<u8>, Error>) {
         let FrameInput {
             mode,
             controls,
             frame,
+            source_sof,
             prepare_only,
             camera_ready,
             validation,
@@ -262,10 +277,9 @@ impl Runtime {
             .is_some_and(|model| !model.client.dead())
             && camera_ready
             && !self.pending;
-        self.status.validated = self
-            .identity
-            .as_ref()
-            .is_some_and(|identity| contract::validation_matches(validation, identity));
+        self.status.validated = self.identity.as_ref().is_some_and(|identity| {
+            contract::validation_matches_model(validation, identity, &self.selected_sha)
+        });
         self.status.decision =
             self.transition
                 .update(mode, ready, self.status.validated, controls, Outcome::None);
@@ -284,18 +298,23 @@ impl Runtime {
             return;
         }
         let prepared = warp().and_then(|warped| {
-            model
-                .adapter
-                .prepare(&warped, desire, traffic, action, false)
-                .map(|packed| (warped, packed))
+            let packed = model.adapter.prepare_session(
+                &warped,
+                desire,
+                traffic,
+                action,
+                model.client.session.packed_count(),
+            )?;
+            Ok((warped, packed))
         });
         match prepared {
-            Ok((warped, Some(packed))) => {
+            Ok((warped, packed)) => {
                 match self.send(Work::Infer {
                     model,
                     warped,
                     packed,
                     frame,
+                    source_sof,
                     deadline: self.deadline,
                     started: self.started,
                 }) {
@@ -303,7 +322,6 @@ impl Runtime {
                     Err(error) => self.lost(error),
                 }
             }
-            Ok((_, None)) => self.model = Some(model),
             Err(error) => self.lost(error),
         }
     }
@@ -349,18 +367,21 @@ impl Runtime {
 }
 fn execute(work: Work) -> Result<Complete, Error> {
     match work {
-        Work::Connect(path) => Ok(Complete::Connected(Model {
-            client: ProxyClient::connect(&path)?,
-            adapter: Adapter::new()?,
-        })),
+        Work::Connect(path) => {
+            let client = ProxyClient::connect(&path)?;
+            let adapter = Adapter::for_spec(&client.session.spec)?;
+            Ok(Complete::Connected(Box::new(Model { client, adapter })))
+        }
         Work::Infer {
             mut model,
             warped,
             packed,
             frame,
+            source_sof,
             deadline,
             started,
         } => {
+            model.client.set_source_sof(source_sof);
             let values = model.client.infer(
                 frame,
                 &warped,

@@ -47,6 +47,15 @@ impl<R: Runtime> Display<R> {
     /// # Errors
     /// Returns disconnect or terminal frame rejection; other failures attempt source recovery.
     pub fn send_jpeg(&mut self, bytes: &[u8]) -> Result<(), Error> {
+        if self.wifi.is_some() {
+            let payload = self.build_payload(FrameKind::Jpeg, bytes)?;
+            return self
+                .wifi
+                .as_mut()
+                .ok_or(Error::Contract("S3 display is closed"))?
+                .transaction(&payload, true, true, &mut self.runtime)
+                .map(|_| ());
+        }
         self.send_frame(FrameKind::Jpeg, bytes)
     }
 

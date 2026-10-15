@@ -105,6 +105,13 @@ def main():
       for n in names
     ]
     check('files', {'mode': 'files', 'names': names, 'root': temp}, expected)
+    (Path(temp)/'route--4'/'empty.bin').touch()
+    (Path(temp)/'route--4'/'nested').mkdir()
+    os.symlink('rlog.zst',Path(temp)/'route--4'/'alias')
+    all_names=[n for n in names if n!='route--99']
+    expected_all=[{'directory':observed(lambda n=n:scope['segment_dir'](n)),'complete':scope['segment_is_complete'](n),'files':observed(lambda n=n:scope['segment_file_summary'](str(Path(temp)/n),True))} for n in all_names]
+    check('all-files',{'mode':'files','names':all_names,'root':temp,'include_all_files':True},expected_all)
+
 
   urls = [
     '',

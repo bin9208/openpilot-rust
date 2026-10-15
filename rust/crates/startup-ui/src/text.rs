@@ -13,6 +13,9 @@ pub enum Font {
     Regular,
 }
 pub trait Measure {
+    fn resolve_font(&self, font: Font, _text: &str) -> Font {
+        font
+    }
     fn measure_default(&self, _text: &str, _size: i32) -> Result<i32, crate::Error> {
         Err(crate::Error::Contract(
             "default-font measurement unavailable",

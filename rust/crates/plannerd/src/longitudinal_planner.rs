@@ -62,6 +62,7 @@ pub struct LongitudinalPlanner {
     pub coasting_percent: i32,
     coasting_param_time: f64,
     pub coasting_target: f64,
+    signal_constraints: crate::signal::longitudinal::Constraints,
 }
 
 impl LongitudinalPlanner {
@@ -100,7 +101,32 @@ impl LongitudinalPlanner {
             coasting_percent: 0,
             coasting_param_time: 1.,
             coasting_target: 0.,
+            signal_constraints: crate::signal::longitudinal::Constraints::default(),
         })
+    }
+
+    /// Owner hook after MPC target selection and coasting. The runtime supplies
+    /// current validated observer decisions and monotonic time on every update.
+    pub fn apply_signal_constraints(&mut self, input: &crate::signal::longitudinal::Input) {
+        let mut output = crate::signal::longitudinal::Output {
+            should_stop: self.should_stop,
+            speed: self.target_speed,
+            accel: self.target_acceleration,
+            jerk: self.target_jerk,
+            a_desired: self.desired_acceleration,
+            coasting: self.coasting_target,
+        };
+        self.signal_constraints.apply(input, &mut output);
+        self.should_stop = output.should_stop;
+        self.target_speed = output.speed;
+        self.target_acceleration = output.accel;
+        self.target_jerk = output.jerk;
+        self.desired_acceleration = output.a_desired;
+        self.coasting_target = output.coasting;
+    }
+
+    pub fn signal_constraint_snapshot(&self) -> serde_json::Value {
+        self.signal_constraints.snapshot()
     }
 
     pub fn parse_model(model: &Model) -> Result<Reference, Error> {

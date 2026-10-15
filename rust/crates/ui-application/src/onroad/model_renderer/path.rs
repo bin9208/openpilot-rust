@@ -54,6 +54,7 @@ impl ModelRenderer {
                     &mut self.carrot,
                     f64::from(input.car.get_v_ego_cluster()),
                     maximum,
+                    self.clock.frames,
                 )?
             };
             path_geometry::sample_path(&line, &distances)?

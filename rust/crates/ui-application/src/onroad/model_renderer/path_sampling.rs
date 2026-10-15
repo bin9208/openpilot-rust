@@ -17,6 +17,7 @@ pub fn animated_distances(
     carrot: &mut Carrot,
     speed: f64,
     maximum: f64,
+    frames: f64,
 ) -> Result<Vec<f64>, Error> {
     let kph = speed * 3.6;
     let mut dt = (kph * 0.01).min(if carrot.mode >= 10 { 0.6 } else { 1. });
@@ -25,7 +26,7 @@ pub fn animated_distances(
     } else if dt < 0.2 {
         dt = 0.2;
     }
-    carrot.position_t += dt;
+    carrot.position_t += dt * frames;
     if carrot.position_t > 24. {
         carrot.position_t -= 24.;
     }

@@ -56,13 +56,20 @@ async def request(port: int, path: str, method: str='GET', body: bytes=b'', head
         return result
 
 class Fixture:
-    def __init__(self,binary: Path,worker: Path,output: Path,scenario: str,composed: bool=False):
-        self.binary=binary;self.worker=worker;self.output=output;self.output.mkdir()
+    def __init__(self,binary: Path,worker: Path,output: Path,scenario: str,composed: bool=False,include_all: bool=False):
+        self.include_all=include_all;self.binary=binary;self.worker=worker;self.output=output;self.output.mkdir()
         self.receivers=[HeldReceiver(),HeldReceiver()] if scenario=='cancel' else [Receiver(scenario),Receiver(scenario)];self.processes=[];self.logs=[];self.ports=[];self.rows=[];self.failures=[]
         self.root=output/'owned-root';self.root.mkdir()
         self.segments=['00000001--1234567890--'+str(index) for index in range(3)]
         for index,segment in enumerate(self.segments):
             directory=self.root/segment;directory.mkdir();(directory/'rlog.zst').write_bytes(bytes([index+10])*1024);(directory/'qcamera.ts').write_bytes(bytes([index+20])*4096)
+        for segment in self.segments:
+            directory=self.root/segment
+            (directory/'fcamera.hevc').write_bytes(b'wide-video')
+            (directory/'qlog.zst').write_bytes(b'reduced-log')
+            (directory/'empty.bin').touch()
+            (directory/'nested').mkdir()
+            os.symlink('rlog.zst',directory/'alias')
         (self.root/self.segments[2]/'rlog.lock').write_bytes(b'owned lock')
         self.ids=[];self.accepted_workers=[];self.composed=composed
     async def start(self) -> None:
@@ -99,7 +106,7 @@ class Fixture:
         if not equal or any(response['status']!=status for response in responses):self.failures.append(label)
         return responses
     async def begin(self,segment: str) -> None:
-        responses=await self.pair('accepted-job','/api/dashcam/upload/start','POST',json.dumps({'segment':segment}).encode(),live=True)
+        responses=await self.pair('accepted-job','/api/dashcam/upload/start','POST',json.dumps({'segment':segment,'includeAllFiles':self.include_all}).encode(),live=True)
         self.ids=[response['payload']['job_id'] for response in responses]
         assert all(response['payload']['ok'] and response['payload']['status']=='running' for response in responses)
         for receiver in self.receivers:assert await anyio.to_thread.run_sync(receiver.started.wait,5)
@@ -149,10 +156,14 @@ class Fixture:
 async def boundary(fixture: Fixture) -> None:
     for operation in ('summary','start'):
         path='/api/dashcam/upload/'+operation
-        for label,body,status in [('empty',b'',400),('malformed',b'{',400),('null',b'null',500),('list',b'[]',500),('false-members',b'{"segments":[null,false,0,""]}',400),('bad-member',b'{"segments":[true]}',400),('missing',b'{"segment":"missing--0"}',409),('locked',json.dumps({'segment':fixture.segments[2]}).encode(),409)]:
+        for label,body,status in [('empty',b'',400),('malformed',b'{',400),('null',b'null',400),('list',b'[]',400),('false-members',b'{"segments":[null,false,0,""]}',400),('bad-member',b'{"segments":[true]}',400),('missing',b'{"segment":"missing--0"}',409),('locked',json.dumps({'segment':fixture.segments[2]}).encode(),409)]:
             await fixture.pair(operation+'-'+label,path,'POST',body,status)
     for body in ({'segment':fixture.segments[0]},{'segments':[fixture.segments[1],None,False,fixture.segments[0],fixture.segments[0]]},{'segments':'fallback','segment':' '+fixture.segments[0]+' '}):
         await fixture.pair('summary-valid-selection','/api/dashcam/upload/summary','POST',json.dumps(body).encode())
+    for include in [None,0,1,'true',[],{}]:
+        for operation in ('summary','start'):
+            await fixture.pair('scope-type-'+operation,'/api/dashcam/upload/'+operation,'POST',json.dumps({'segment':fixture.segments[0],'includeAllFiles':include}).encode(),400)
+    await fixture.pair('all-files-summary','/api/dashcam/upload/summary','POST',json.dumps({'segment':fixture.segments[0],'includeAllFiles':True}).encode())
     for query,status in [('',400),('?id=+',400),('?id=missing',404),('?id=&id=missing',400)]:await fixture.pair('job-query'+query,'/api/dashcam/upload/job'+query,status=status)
     await fixture.pair('job-head-missing','/api/dashcam/upload/job?id=missing','HEAD',status=404)
     for label,body,status in [('empty',b'',400),('malformed',b'{',400),('false',b'{"id":false}',400),('coerced',b'{"id":true}',404),('alias',b'{"id":"","job_id":" missing "}',404),('list',b'[]',500)]:await fixture.pair('cancel-'+label,'/api/dashcam/upload/cancel','POST',body,status)
@@ -209,18 +220,20 @@ async def success(fixture: Fixture) -> None:
         state=terminal[side]['payload']
         assert state['status']=='done' and state['done'] and state['phase']=='complete'
         assert state['error'] is None and state['progress']==100 and state['result']['ok']
-        assert state['bytes_current']==state['bytes_total']==5120
+        assert state['includeAllFiles']==fixture.include_all
+        expected_bytes=5120+(21 if fixture.include_all else 0)
+        assert state['bytes_current']==state['bytes_total']==expected_bytes
     uploads=[]
     for receiver in fixture.receivers:
         captured=sorted((row['path'].replace(receiver.base,'http://fixture'),row['size'],row['sha256'],row['auth']) for row in receiver.captures if row['method']=='PUT')
         uploads.append(captured)
-    assert uploads[0]==uploads[1] and len(uploads[0])==2
-    expected=sorted((name,(fixture.root/fixture.segments[0]/name).stat().st_size,hashlib.sha256((fixture.root/fixture.segments[0]/name).read_bytes()).hexdigest()) for name in ('qcamera.ts','rlog.zst'))
+    assert uploads[0]==uploads[1] and len(uploads[0])==(5 if fixture.include_all else 2)
+    expected=sorted((name,(fixture.root/fixture.segments[0]/name).stat().st_size,hashlib.sha256((fixture.root/fixture.segments[0]/name).read_bytes()).hexdigest()) for name in (('qcamera.ts','rlog.zst','fcamera.hevc','qlog.zst','empty.bin') if fixture.include_all else ('qcamera.ts','rlog.zst')))
     assert sorted((row[0].rsplit('/',1)[-1],row[1],row[2]) for row in uploads[0])==expected
     save(fixture.output/'success-observations.json',{'terminal_source':terminal['source']['payload'],'terminal_native':terminal['native']['payload'],'source_uploaded_bytes':uploads[0],'native_uploaded_bytes':uploads[1],'source_file_hashes':expected,'deterministic_result_error_progress_fields_compared':True,'raw_complete_results_captured':True})
 
 async def main() -> None:
-    parser=argparse.ArgumentParser();parser.add_argument('--binary',type=Path,required=True);parser.add_argument('--worker',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);selection=parser.add_mutually_exclusive_group();selection.add_argument('--boundary-only',action='store_true');selection.add_argument('--lifecycle-only',action='store_true');selection.add_argument('--composed-only',action='store_true');selection.add_argument('--packaging-only',action='store_true');selection.add_argument('--success-only',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--binary',type=Path,required=True);parser.add_argument('--worker',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--all-files',action='store_true');selection=parser.add_mutually_exclusive_group();selection.add_argument('--boundary-only',action='store_true');selection.add_argument('--lifecycle-only',action='store_true');selection.add_argument('--composed-only',action='store_true');selection.add_argument('--packaging-only',action='store_true');selection.add_argument('--success-only',action='store_true');args=parser.parse_args()
     output=args.output.resolve();output.mkdir(parents=True,exist_ok=False);binary=args.binary.resolve();worker=args.worker.resolve()
     free=shutil.disk_usage(output).free;save(output/'diskguard.json',{'free_bytes':free,'reserve_bytes':25*1024**3,'estimated_growth_bytes':16*1024**2});assert free>=25*1024**3+16*1024**2
     groups=([] if args.lifecycle_only else [('boundary','normal')])+([] if args.boundary_only else [('cancel','cancel'),('server-stop','stale')]);rows=[];failures=[]
@@ -228,7 +241,7 @@ async def main() -> None:
     if args.packaging_only:groups=[('packaging','normal')]
     if args.success_only:groups=[('success','normal')]
     for name,scenario in groups:
-        fixture=Fixture(binary,worker,output/name,scenario,args.composed_only or args.packaging_only or args.success_only)
+        fixture=Fixture(binary,worker,output/name,scenario,args.composed_only or args.packaging_only or args.success_only,args.all_files)
         try:
             await fixture.start()
             if name=='success':await success(fixture)

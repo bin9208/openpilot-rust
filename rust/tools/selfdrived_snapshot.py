@@ -17,12 +17,13 @@ from generate_selfdrive_alerts import serialize_alert
 
 RENAMES = {'last_steering_pressed_frame': 'last_steering_pressed_frame', 'last_functional_fan_frame': 'last_functional_fan_frame',
            'logged_comm_issue': 'logged_comm_issue', 'not_running_prev': 'not_running_previous',
+           '_manager_frame':'manager_frame', '_not_running':'not_running_cache',
            'big_model_ready_t': 'big_model_ready_time', 'atc_type_last': 'atc_type_previous',
-           'gps_location_service': 'gps_service'}
+           'gps_location_service': 'gps_service', 'dm_disabled_prev': 'dm_disabled_previous'}
 SCALARS = ('initialized', 'enabled', 'active', 'mismatch_counter', 'cruise_mismatch_counter',
            'last_steering_pressed_frame', 'distance_traveled', 'last_functional_fan_frame',
-           'logged_comm_issue', 'not_running_prev', 'experimental_mode', 'recalibrating_seen',
-           'dm_lockout_set', 'dm_uncertain_alerted', 'update_reboot_alerted', 'big_model_loading',
+           'logged_comm_issue', 'not_running_prev', '_manager_frame', '_not_running', 'experimental_mode', 'recalibrating_seen',
+           'system_ready_alerted', 'system_ready_since', 'model_startup_complete', 'car_state_time_s', 'dm_lockout_set', 'dm_uncertain_alerted', 'dm_disabled_prev', 'nnff_alerted', 'update_reboot_alerted', 'big_model_loading',
            'big_model_active', 'big_model_ready_t', 'atc_type_last', 'gps_location_service',
            'camera_packets', 'is_metric', 'is_ldw_enabled', 'disable_dm', 'use_wide_camera', 'excessive_actuation')
 
@@ -40,16 +41,23 @@ def source_snapshot(fixture):
     return None
   policy = {RENAMES.get(name, name): getattr(machine, name) for name in SCALARS}
   policy['not_running_previous'] = sorted(policy['not_running_previous']) if policy['not_running_previous'] is not None else None
+  policy['not_running_cache'] = sorted(policy['not_running_cache'])
   policy['personality'] = str(machine.personality)
   policy['mode'] = fixture.mode
   cp = machine.CP
   cp_car = {field: getattr(cp, field) for field in ('brand', 'minSteerSpeed', 'minEnableSpeed', 'pcmCruise', 'openpilotLongitudinalControl')}
   cp_car['networkLocation'] = cp.networkLocation.raw
-  policy['config'] = {'car': cp_car, 'flags': cp.flags, 'alpha_longitudinal_available': cp.alphaLongitudinalAvailable,
+  policy['config'] = {'car': cp_car, 'flags': cp.flags, 'front_radar_delay': (0.0 if cp.brand == 'volkswagen' and cp.flags & 16 else max(0., cp.radarDelay)), 'alpha_longitudinal_available': cp.alphaLongitudinalAvailable,
                       'not_car': cp.notCar, 'passive': cp.passive, 'sec_oc_required': cp.secOcRequired,
                       'sec_oc_key_available': cp.secOcKeyAvailable, 'alternative_experience': cp.alternativeExperience,
                       'safety': [{'model': entry.safetyModel.raw, 'parameter': entry.safetyParam} for entry in cp.safetyConfigs]}
   policy['car_events'] = car_snapshot(machine.car_events)
+  policy['impact'] = {key:value for key,value in vars(machine.impact_dashcam).items() if key not in ('params','memory')}
+  policy['impact_detector'] = {key:value.tolist() if hasattr(value,'tolist') else value for key,value in vars(machine.impact_detector).items()}
+  warning=machine.radar_only_warning
+  def point(p):
+    return {'source':p.source,'track_id':p.track_id,'d':p.d_rel,'y':p.y_rel,'v':p.v_rel,'yv':p.yv_rel,'speed':p.v_lead,'measured':p.measured,'track_state':p.radar_track_state}
+  policy['radar_warning'] = {key: ([point(p) for p in value] if key=='previous' and value is not None else value) for key,value in vars(warning).items() if key!='front_delay_s'}
   policy['pose_calibrator'] = {'calibrated': machine.pose_calibrator.calib_valid,
                                'calib_from_device': machine.pose_calibrator.calib_from_device.tolist()}
   policy['calibrated_pose'] = pose_snapshot(machine.calibrated_pose)

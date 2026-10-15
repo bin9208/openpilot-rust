@@ -7,13 +7,16 @@ pub mod config;
 mod diagnostics;
 pub mod effects;
 mod health_events;
+mod impact;
 mod initialization;
 mod motion_events;
 pub mod native_effects;
 pub mod param_conversion;
 mod publication;
+mod radar_warning;
 mod sampling;
 pub mod snapshot;
+mod startup_events;
 mod subscriptions;
 mod user_events;
 pub mod views;
@@ -47,6 +50,7 @@ pub const BASE_TOPICS: &[&str] = &[
     "managerState",
     "liveParameters",
     "radarState",
+    "liveTracks",
     "liveTorqueParameters",
     "carrotMan",
     "controlsState",
@@ -72,6 +76,9 @@ pub struct Controller {
     pub(crate) alerts: AlertManager,
     #[serde(skip)]
     pub(crate) previous: CarFrame,
+    pub(crate) impact: Option<openpilot_impact_dashcam::ImpactDashcam>,
+    pub(crate) impact_detector: crate::impact_detector::ImpactDetector,
+    pub(crate) radar_warning: crate::radar_only_warning::Warning,
     pub(crate) initialized: bool,
     pub(crate) enabled: bool,
     pub(crate) active: bool,
@@ -84,6 +91,8 @@ pub struct Controller {
     pub(crate) events_previous: Vec<EventName>,
     pub(crate) logged_comm_issue: Option<diagnostics::Issues>,
     pub(crate) not_running_previous: Option<BTreeSet<String>>,
+    pub(crate) manager_frame: i64,
+    pub(crate) not_running_cache: BTreeSet<String>,
     pub(crate) experimental_mode: bool,
     pub(crate) personality: Personality,
     pub(crate) recalibrating_seen: bool,
@@ -91,8 +100,15 @@ pub struct Controller {
     #[serde(skip)]
     pub(crate) cutin_tracker: Tracker,
     pub(crate) dm_uncertain_alerted: bool,
+    pub(crate) dm_disabled_previous: bool,
     pub(crate) update_reboot_alerted: bool,
     pub(crate) nnff_alerted: bool,
+    pub(crate) system_ready_alerted: bool,
+    pub(crate) system_ready_since: Option<i64>,
+    pub(crate) model_startup_complete: bool,
+    #[serde(skip)]
+    pub(crate) model_starting_current: bool,
+    pub(crate) car_state_time_s: f64,
     pub(crate) big_model_loading: bool,
     pub(crate) big_model_active: bool,
     pub(crate) big_model_ready_time: f64,
@@ -114,6 +130,9 @@ pub struct Controller {
 }
 
 impl Controller {
+    pub fn observe_car_state_timestamp(&mut self, timestamp: u64) {
+        self.car_state_time_s = timestamp as f64 * 1e-9;
+    }
     pub fn previous_bytes(&self) -> &[u8] {
         &self.previous.bytes
     }
@@ -132,9 +151,21 @@ impl Controller {
         publications: &mut impl Publications,
     ) -> Result<(), Error> {
         let (car, state, lagging) = input;
+        if let Some(timestamp) = car.timestamp {
+            self.observe_car_state_timestamp(timestamp);
+        }
         let cs = car.state()?;
         self.data_sample(cs, state, effects)?;
+        self.update_impact(cs, state, effects)?;
         self.update_events(cs, state, lagging, effects)?;
+        if let Some(impact) = &self.impact {
+            if impact.pending {
+                self.events.add(EventName::ImpactDetected, false);
+            }
+            if impact.committed {
+                self.events.add(EventName::ImpactDashcamReboot, false);
+            }
+        }
         if !self.config.passive && self.initialized {
             let categories = self
                 .events
@@ -147,6 +178,7 @@ impl Controller {
             self.active = flags.active;
         }
         self.update_alerts(cs, state, effects)?;
+        self.update_system_ready_alert(cs, state, effects)?;
         self.update_nnff_alert(cs, state, effects)?;
         self.publish(state, effects, publications)?;
         self.previous = CarFrame::read(car.bytes.clone())?;

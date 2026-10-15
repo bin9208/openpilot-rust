@@ -33,10 +33,29 @@ impl CarConfig {
         })
     }
 }
-#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Badge {
+    pub text: String,
+    pub style: String,
+}
+impl From<openpilot_jetlink::status::Badge> for Badge {
+    fn from(value: openpilot_jetlink::status::Badge) -> Self {
+        Self {
+            text: value.text,
+            style: value.style,
+        }
+    }
+}
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ModelStatus {
     pub compiled: bool,
     pub compile_pending: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub delivery_badge: Option<Badge>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovery_badge: Option<Badge>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub jetlink_badge: Option<Badge>,
 }
 #[derive(Clone, Debug, Default, Serialize)]
 pub struct SlowParams {
@@ -55,6 +74,12 @@ pub struct SlowParams {
     pub usbgpu_loading: bool,
     pub usbgpu_active: bool,
     pub usbgpu_startup_failed: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub delivery_badge: Option<Badge>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovery_badge: Option<Badge>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub jetlink_badge: Option<Badge>,
 }
 impl SlowParams {
     pub fn refresh(&mut self, params: &impl Read, models: ModelStatus) -> Result<(), Error> {
@@ -77,6 +102,9 @@ impl SlowParams {
         self.usbgpu_present = params.boolean("UsbGpuPresent")?;
         self.usbgpu_compiled = models.compiled;
         self.usbgpu_compile_pending = models.compile_pending;
+        self.delivery_badge = models.delivery_badge;
+        self.recovery_badge = models.recovery_badge;
+        self.jetlink_badge = models.jetlink_badge;
         self.usbgpu_loading = params.boolean("UsbGpuLoading")?;
         self.usbgpu_active = params.boolean("UsbGpuActive")?;
         self.usbgpu_startup_failed = params.boolean("UsbGpuStartupFailed")?;

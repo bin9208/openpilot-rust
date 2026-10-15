@@ -134,3 +134,32 @@ pub fn hide_alerts(
     }
     Ok(())
 }
+
+/// Preserve OEM popup/sound precedence before adding the source DM hands-on warning.
+pub fn driver_monitoring_alert(data: &mut Values, level: u8, stock: &Values) -> Result<(), Error> {
+    if !(1..=3).contains(&level) {
+        return Ok(());
+    }
+    let stock_alert = get(stock, "ALERTS_2")?;
+    if [7., 8., 9., 10., 14., 21.].contains(&stock_alert) {
+        data.insert("ALERTS_2".into(), stock_alert);
+        for index in 1..=4 {
+            let name = format!("SOUNDS_{index}");
+            data.insert(name.clone(), get(stock, &name)?);
+        }
+    }
+    if get(data, "ALERTS_2")? == 0. {
+        data.insert("ALERTS_2".into(), if level == 3 { 2. } else { 1. });
+        if level == 3 {
+            let silent = (1..=4)
+                .map(|index| get(data, &format!("SOUNDS_{index}")))
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .all(|sound| sound == 0.);
+            if silent {
+                data.insert("SOUNDS_2".into(), 3.);
+            }
+        }
+    }
+    Ok(())
+}

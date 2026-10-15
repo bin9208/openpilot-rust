@@ -25,11 +25,17 @@ pub struct Checks {
 }
 #[derive(Deserialize)]
 pub struct Frame {
+    #[serde(default)]
+    pub wire: Option<super::wire::Metadata>,
+    #[serde(default)]
+    pub signals: Option<super::signal::Request>,
     pub time: f64,
     pub wall_time: f64,
     pub messages: BTreeMap<String, PathBuf>,
     pub parameters: BTreeMap<String, String>,
     pub checks: Checks,
+    #[serde(default)]
+    pub mpc_previous_x: Option<[[f64; 3]; 13]>,
 }
 
 pub struct Decoded {

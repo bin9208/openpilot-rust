@@ -4,6 +4,7 @@ pub mod assets;
 pub mod background;
 pub mod boot;
 pub mod catalog;
+pub mod delivery_error;
 mod download;
 pub mod failure;
 pub mod packaged;
@@ -16,8 +17,9 @@ pub mod validation;
 
 pub use download::{download, download_fallible, download_observed, sha256, DownloadKind, Event};
 pub use state::{
-    ensure, ensure_fallible, ensure_observed, fetch_manifest, parse_manifest, pinned_manifest,
-    State, DEFAULT_MANIFEST_URL,
+    bind_manifest, ensure, ensure_fallible, ensure_observed, fetch_manifest, known_manifest,
+    legacy_manifest, parse_manifest, pinned_manifest, retrained_manifest, source_manifest, State,
+    DEFAULT_MANIFEST_URL, LEGACY_MANIFEST_URL, RETRAINED_MANIFEST_URL,
 };
 
 use std::time::Duration;
@@ -32,6 +34,8 @@ pub enum Error {
     Http(#[from] ureq::Error),
     #[error(transparent)]
     Native(#[from] crate::Error),
+    #[error("{message}")]
+    HttpStatus { code: u16, message: String },
     #[error("{0}")]
     Invalid(String),
 }

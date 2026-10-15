@@ -75,6 +75,14 @@ pub fn longitudinal(
     plan.set_should_stop(owner.should_stop);
     plan.set_allow_brake(true);
     plan.set_allow_throttle(true);
+    plan.set_signal_detection_suspended(carrot.signal_detection_suspended);
+    plan.set_signal_observation_color(carrot.signal_observation_color);
+    plan.set_signal_assist_action(crate::signal::longitudinal::action(
+        carrot.start_decision.as_ref().is_some_and(|d| d.hold),
+        carrot.prepare_decision.as_ref().is_some_and(|d| d.active),
+        carrot.prepare_control_active,
+        carrot.signal_green_active,
+    ));
     plan.set_x_state(match carrot.x_state {
         XState::Lead => 0,
         XState::Cruise => 1,
@@ -82,6 +90,7 @@ pub fn longitudinal(
         XState::E2eStop => 3,
         XState::E2ePrepare => 4,
         XState::E2eStopped => 5,
+        XState::E2eStopPrepare => 6,
     });
     plan.set_traffic_state(match carrot.traffic_state {
         TrafficState::Off => 0,
@@ -102,7 +111,8 @@ pub fn longitudinal(
     for (index, name) in carrot.events.iter().enumerate() {
         if !matches!(
             name,
-            EventName::TrafficStopping
+            EventName::AudioRefuse
+                | EventName::TrafficStopping
                 | EventName::TrafficSignGreen
                 | EventName::TrafficSignChanged
         ) {

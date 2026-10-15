@@ -61,7 +61,7 @@ def main():
   library_dir = args.output / 'libraries'
   library_dir.mkdir()
   (library_dir / 'libusb-1.0.so.0').symlink_to(args.library.resolve())
-  default = {'serial': '010002000300040005000600', 'hardware': 9, 'health': [0] * 58, 'cycles': 2}
+  default = {'serial': '010002000300040005000600', 'hardware': 9, 'health': [0] * 59, 'cycles': 2}
   cases = [('child', default), ('setup', {**default, 'signal_at': 0}), ('sleep', {**default, 'missing': True})]
   results = []
   for name, case in cases:

@@ -43,15 +43,17 @@ impl CruiseCoastingPlan {
             .all(|value| value.is_finite())
             || input.target <= 10. / 3.6
             || input.dt <= 0.
-            || input.external_limit <= input.target * (1. + percent / 100.)
         {
             *self = Self::default();
             return 0.;
         }
-        if percent != self.percent
-            || (input.set_speed - self.set_speed).abs() > 0.001
-            || (input.target - self.target).abs() > 0.02
-        {
+        let changed = percent != self.percent || (input.set_speed - self.set_speed).abs() > 0.001;
+        let reference = if changed { input.target } else { self.target };
+        if input.external_limit <= maximum(input.target, reference) * (1. + percent / 100.) {
+            self.reset();
+            return 0.;
+        }
+        if changed {
             self.target = input.target;
             self.set_speed = input.set_speed;
             self.percent = percent;

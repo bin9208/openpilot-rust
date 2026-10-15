@@ -103,3 +103,92 @@ impl DriverMonitoring {
         Ok(capnp::serialize::write_message_to_words(&message))
     }
 }
+
+impl crate::DriverMonitoring2 {
+    pub fn state_packet(
+        &self,
+        valid: bool,
+        now: u64,
+        disabled: bool,
+        camera_unavailable: bool,
+        strict_remaining: f64,
+    ) -> Result<Vec<u8>, capnp::Error> {
+        let bytes = self.monitor.state_packet(valid, now)?;
+        let reader = capnp::serialize::read_message(
+            std::io::Cursor::new(bytes),
+            capnp::message::ReaderOptions::new(),
+        )?;
+        let mut message = capnp::message::Builder::new_default();
+        message.set_root(reader.get_root::<event::Reader>()?)?;
+        let mut root = message.get_root::<event::Builder>()?;
+        let event::DriverMonitoringState(dm) = root
+            .reborrow()
+            .which()
+            .map_err(|e| capnp::Error::failed(e.to_string()))?
+        else {
+            unreachable!("root copied from monitoring state");
+        };
+        let mut dm = dm?;
+        dm.set_camera_unavailable(camera_unavailable);
+        dm.set_dm2_disabled(disabled);
+        dm.set_dm2_experimental(self.experimental);
+        dm.set_dm2_strict_time_remaining(if disabled {
+            0.
+        } else {
+            strict_remaining as f32
+        });
+        dm.set_dm2_wheel_timeout_factor(if disabled {
+            1.
+        } else {
+            self.wheel_factor as f32
+        });
+        dm.set_dm2_vision_timeout_factor(if disabled {
+            1.
+        } else {
+            self.vision_factor as f32
+        });
+        dm.set_dm2_forward_attention_score(if disabled {
+            0.
+        } else {
+            self.forward_score as f32
+        });
+        dm.set_dm2_forward_recovery(!disabled && self.forward_recovery);
+        dm.set_dm2_interaction_credit(if disabled {
+            0.
+        } else {
+            self.input_credit_seconds as f32
+        });
+        dm.set_dm2_interaction_grace_remaining(if disabled {
+            0.
+        } else {
+            self.interaction_grace_remaining() as f32
+        });
+        if disabled {
+            dm.set_lockout(false);
+            dm.set_alert_count_lockout_percent(0);
+            dm.set_alert_time_lockout_percent(0);
+            dm.set_lockout_recovery_percent(0);
+            dm.set_alert3_count(0);
+            dm.set_no_response_count(0);
+            dm.set_no_response_force_decel(false);
+            dm.set_always_on(false);
+            dm.set_always_on_lockout(false);
+            dm.set_alert_level(wire::AlertLevel::None);
+            let mut vision = dm.reborrow().get_vision_policy_state()?;
+            vision.set_awareness_percent(100);
+            vision.set_awareness_step(0.);
+            vision.set_is_distracted(false);
+            vision.set_uncertain_offroad_alert_percent(0);
+            let mut types = vision.get_distracted_types()?;
+            types.set_pose(false);
+            types.set_eye(false);
+            types.set_phone(false);
+            types.set_sleep(false);
+            let mut wheel = dm.get_wheeltouch_policy_state()?;
+            wheel.set_awareness_percent(100);
+            wheel.set_awareness_step(0.);
+            wheel.set_driver_interacting(false);
+        }
+        Ok(capnp::serialize::write_message_to_words(&message))
+    }
+}

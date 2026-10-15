@@ -38,7 +38,7 @@ impl Media {
         crate::screenrecord::ffmpeg::run(&self.program, args, Duration::from_secs(timeout))
             .map(|result| result.status)
             .map_err(|error| match error {
-                crate::screenrecord::Failure::Http { status, message } => {
+                crate::screenrecord::Failure::Http { status, message } | crate::screenrecord::Failure::Json { status, message } => {
                     Failure::Http { status, message }
                 }
                 crate::screenrecord::Failure::Internal => {

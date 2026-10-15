@@ -20,6 +20,28 @@ pub fn model(value: model_data_v2::Reader<'_>) -> Result<Model, Error> {
         },
         velocity: floats(value.get_velocity()?.get_x()?),
         lane_probabilities: floats(value.get_lane_line_probs()?),
+        lane_lines: value
+            .get_lane_lines()?
+            .iter()
+            .map(|line| {
+                Ok(Position {
+                    x: floats(line.get_x()?),
+                    y: floats(line.get_y()?),
+                })
+            })
+            .collect::<Result<_, Error>>()?,
+        lane_stds: floats(value.get_lane_line_stds()?),
+        lane_change_state: match value.get_meta()?.get_lane_change_state()? {
+            openpilot_cereal::log_capnp::LaneChangeState::Off => "off",
+            openpilot_cereal::log_capnp::LaneChangeState::PreLaneChange => "preLaneChange",
+            openpilot_cereal::log_capnp::LaneChangeState::LaneChangeStarting => {
+                "laneChangeStarting"
+            }
+            openpilot_cereal::log_capnp::LaneChangeState::LaneChangeFinishing => {
+                "laneChangeFinishing"
+            }
+        }
+        .to_owned(),
         leads: value
             .get_leads_v3()?
             .iter()
@@ -40,37 +62,39 @@ pub fn model(value: model_data_v2::Reader<'_>) -> Result<Model, Error> {
 }
 
 pub fn points(value: radar_data::Reader<'_>) -> Result<Vec<Point>, Error> {
-    value
-        .get_points()?
-        .iter()
-        .map(|point| {
-            use radar_data::radar_point::RadarSource;
-            let source = match point.get_radar_source()? {
-                RadarSource::FrontRadar => "frontRadar",
-                RadarSource::Scc => "scc",
-                RadarSource::Corner235 => "corner235",
-                RadarSource::Corner180 => "corner180",
-                RadarSource::Corner430 => "corner430",
-            };
-            Ok(Point {
-                track_id: TrackId(i128::from(point.get_track_id())),
-                source: source.to_owned(),
-                d_rel: f64::from(point.get_d_rel()),
-                y_rel: f64::from(point.get_y_rel()),
-                v_rel: f64::from(point.get_v_rel()),
-                a_rel: f64::from(point.get_a_rel()),
-                yv_rel: f64::from(point.get_yv_rel()),
-                v_lead: f64::from(point.get_v_lead()),
-                a_lead: f64::from(point.get_a_lead()),
-                j_lead: f64::from(point.get_j_lead()),
-                measured: point.get_measured(),
-                radar_track_state: i32::from(point.get_track_state()),
-                kinematics_source: None,
-                kinematics_track_id: None,
-            })
-        })
-        .collect()
+    value.get_points()?.iter().map(point).collect()
 }
+/// Display objects remain separate from the controller's radar points.
+pub fn display_points(value: radar_data::Reader<'_>) -> Result<Vec<Point>, Error> {
+    value.get_display_points()?.iter().map(point).collect()
+}
+fn point(point: radar_data::radar_point::Reader<'_>) -> Result<Point, Error> {
+    use radar_data::radar_point::RadarSource;
+    let source = match point.get_radar_source()? {
+        RadarSource::FrontRadar => "frontRadar",
+        RadarSource::Scc => "scc",
+        RadarSource::Corner235 => "corner235",
+        RadarSource::Corner180 => "corner180",
+        RadarSource::Corner430 => "corner430",
+    };
+    Ok(Point {
+        track_id: TrackId(i128::from(point.get_track_id())),
+        source: source.to_owned(),
+        d_rel: f64::from(point.get_d_rel()),
+        y_rel: f64::from(point.get_y_rel()),
+        v_rel: f64::from(point.get_v_rel()),
+        a_rel: f64::from(point.get_a_rel()),
+        yv_rel: f64::from(point.get_yv_rel()),
+        v_lead: f64::from(point.get_v_lead()),
+        a_lead: f64::from(point.get_a_lead()),
+        j_lead: f64::from(point.get_j_lead()),
+        measured: point.get_measured(),
+        radar_track_state: i32::from(point.get_track_state()),
+        kinematics_source: None,
+        kinematics_track_id: None,
+    })
+}
+
 pub fn yaw(value: live_pose::Reader<'_>) -> Result<f64, Error> {
     let angular = value.get_angular_velocity_device()?;
     let value_yaw = f64::from(angular.get_z());

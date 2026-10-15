@@ -1,0 +1,912 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "ancestor": "43203371004e035bdb70a00a8dad29a4b657c6c3",
+  "branch": "dev-md",
+  "coverage_complete": false,
+  "purpose": "Assigned changed-path reconciliation; pending rows remain work, not completion. Central inventory remains root-owned.",
+  "files": [
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/carcontroller.py",
+      "source_sha256": "285fea414f09d7d09c9984ca33e7d80a2495247ba81da1d5fa8b50aad4d42179",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/carstate.py",
+      "source_sha256": "5d68be1af4350c21ea1c7871a059612c43a0fe42bf973b8c13e1dd2e1a8a25f8",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/hyundaican.py",
+      "source_sha256": "c2f3cf729bbb54a71b8203e485e59d56fdc6987c4267d3220d657b22c219f49e",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/hyundaicanfd.py",
+      "source_sha256": "a56089a1969f81905bf842f82658921878a3b1c75ad3e703466b1512c1ed5f9f",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/interface.py",
+      "source_sha256": "089a3eb9ca0b9457e47c5bc57631a8e334fcbf9870f1511f083700eceb5145e3",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/navi_speedcam.py",
+      "source_sha256": "1f2762e79773bc9e8896ed9bdc0fa0a2ec3e9f472f2919b0600f4e1c1a3f456c",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "decode_camera_profile",
+        "SpeedcamPolicy"
+      ],
+      "native_targets": [
+        "rust/crates/card/src/brands/hyundai/navigation/speedcam.rs"
+      ],
+      "evidence": "All24 original source regressions232method transitions+14343 profiledecode vectors; existing host/ARM checks tightened to float bits with no production changes. Selected navigation owner2400transitions+engaged640schema ticks pass HOST/ARM.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/radar_bosch.py",
+      "source_sha256": "8c4cf75bcf371980cedc77432d22950c5ca490eff8a300a97685f2f84419a2f6",
+      "status": "native-file-implemented-and-verified",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/",
+        "rust/crates/radarcan/src/native/bosch.rs",
+        "rust/crates/radard/src/replay/raw.rs"
+      ],
+      "evidence": "All 88 definitions /175 methods mapped; complete source components and original ARM arithmetic checks; selected factory 3600 transitions exact, actual NativeIo IPC plus raw replay each four mode/flip families 880 batches/172 complete publications HOST and ARM. Offline header is recorded timeline, source wall-clock header retained separately. See bosch-source-definitions.json closure_evidence.",
+      "top_level_definitions": [
+        "_bosch_camera_signed",
+        "_bosch_camera_range_span",
+        "_bosch_camera_long_window",
+        "BoschCameraObject",
+        "BoschCameraCycleCache",
+        "_BoschExtendedHistory",
+        "_BoschCurveReacquireHistory",
+        "_BoschTruckPairHistory",
+        "_BoschExtendedRepresentative",
+        "BoschCameraExtendedGrouping",
+        "bosch_numpy_linear_sum_assignment",
+        "_bosch_integer",
+        "_bosch_finite",
+        "BoschRawDetection",
+        "BoschRawTrackingConfig",
+        "BoschRawTrack",
+        "BoschRawAssociationDecision",
+        "_BoschRawState",
+        "_bosch_advance",
+        "_bosch_admissible_cycle",
+        "_bosch_rectangular_unique",
+        "_bosch_component_matching",
+        "_bosch_raw_unique_component",
+        "_bosch_raw_assignment",
+        "BoschRawTrackManager",
+        "BoschGroupingConfig",
+        "BoschVisionCue",
+        "_bosch_sample_ns",
+        "_BoschModelLine",
+        "BoschModelSnapshot",
+        "BoschPublishedSurface",
+        "BoschPhysicalObject",
+        "BoschAssociationDecision",
+        "_BoschPairEvidence",
+        "_BoschCommonGroupAncestry",
+        "_BoschPhysicalState",
+        "_BoschProvisionalBundleState",
+        "BoschProvisionalBundleDecision",
+        "_bosch_group_representative",
+        "_bosch_physical_component",
+        "_bosch_physical_assignment",
+        "_BoschMatureGroupCertificate",
+        "_BoschMatureGroupRetention",
+        "BoschObjectGroupManager",
+        "BoschPhysicalTracker",
+        "_BoschPublicationPassThrough",
+        "_BoschFamilyCompanionState",
+        "BoschFamilyCompanionDecision",
+        "_BoschFamilyCompanionFilter",
+        "_BoschBurstMultiReturnState",
+        "BoschBurstMultiReturnDecision",
+        "_BoschBurstMultiReturnDefer",
+        "_BoschSidePassLateralState",
+        "BoschSidePassLateralDecision",
+        "_BoschSidePassLateralEstimator",
+        "_BoschP91PairState",
+        "_BoschPersistentSpatialCloneFilter",
+        "_BoschOemGateState",
+        "_BoschOemIntentTracker",
+        "_BoschOemValidationGate",
+        "BoschPublicationAliasAllocator",
+        "BoschB5ModelContext",
+        "_BoschB5ParentState",
+        "BoschB5Decision",
+        "BoschBirthB5Defer",
+        "bosch_published_surface",
+        "BoschLeadAccelerationState",
+        "BoschLeadAccelerationEstimator",
+        "_bosch_point_fields",
+        "bosch_fill_point",
+        "_bosch_float32",
+        "bosch_native_surface_coordinates",
+        "bosch_append_points",
+        "bosch_to_native_radar_data",
+        "_BoschCanFrame",
+        "bosch_decode_frame",
+        "_bosch_match_processed_target_word",
+        "bosch_make_points",
+        "BoschMirrorBirthDecision",
+        "_BoschMirrorBirthHoldState",
+        "BoschMirrorBirthHold",
+        "_BoschMirrorM3HoldState",
+        "BoschRoadEdgePublicationFilter",
+        "BoschMirrorM3Shadow",
+        "_unsupported_birth_segments",
+        "birth_d_path",
+        "BoschUnsupportedBirthFilter",
+        "BoschRadarProvider"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/radar_interface.py",
+      "source_sha256": "aced89b68c779fff7a352ee6fda3a082beb966b4730dfd3b6afb1f546e712ddb",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/scalar.py",
+      "source_sha256": "a40d6e9b2969926edbec5cb983fb60d2b7e68cf2c86b4a1fce99e4bfb2154b83",
+      "status": "native-file-implemented-and-verified",
+      "native_targets": [
+        "rust/crates/control-policy/src/math.rs"
+      ],
+      "evidence": "File contains only clip_float:729 original operand bit combinations HOST+ARM exact, including NaN payloads/reversed bounds/signed zero.",
+      "top_level_definitions": [
+        "clip_float"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/section_average.py",
+      "source_sha256": "5dfde58bc602dcc507d91df44d314f3e5a9f30295779bb16b3f5b069116893a2",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "SectionAverage"
+      ],
+      "native_targets": [
+        "rust/crates/card/src/brands/hyundai/navigation/section_average.rs"
+      ],
+      "evidence": "All7 original source regressions28389operations; existing HOST+actualARM source state/allowance checks tightened to float bits, GREEN. Production navigation owner integrated in same CarState chain.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/steering_handover.py",
+      "source_sha256": "d1aa2f3098c694b46a0b6f9670237ecd5382b8d20e8591e90db6e8fefe2a2bb2",
+      "status": "native-file-implemented-and-verified",
+      "native_targets": [
+        "rust/crates/card/src/brands/hyundai/steering_handover.rs"
+      ],
+      "evidence": "All48original source tests /13484complete-state updates strictly bit exact on host/ARM; independent actual ARM original source2126614numeric comparisons exact. Full coupled controller3520ticks/10196CAN exact; broader vehicle/runtime acceptance remains separate.",
+      "top_level_definitions": [
+        "approach",
+        "SteeringHandover"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/steering_touch.py",
+      "source_sha256": "e8a470019a93d7633ae2c2af6f7422cc2a85eb6066a077cfcaf719ee50a72c03",
+      "status": "native-file-implemented-and-verified",
+      "native_targets": [
+        "rust/crates/card/src/brands/hyundai/steering_touch.rs",
+        "rust/crates/card/src/brands/hyundai/state.rs"
+      ],
+      "evidence": "600 original source updates/469validcontacts+independent recordedchecksum vectors and original-bus late-registration/invalidpacket checks HOST+ARM; actual full CarState35520schemas HOST+ARM verifies production publication.",
+      "top_level_definitions": [
+        "touch_checksum",
+        "HyundaiSteeringTouch"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/stopping.py",
+      "source_sha256": "ee5abe0b20d91b8bcfd8c891cae26d029168efe1f4b499cb898f4f897655268d",
+      "status": "native-file-implemented-and-verified",
+      "native_targets": [
+        "rust/crates/card/src/brands/hyundai/stopping.rs",
+        "rust/crates/card/src/brands/hyundai/fd_stopping.rs"
+      ],
+      "evidence": "All144 original source regressions22907complete state transitions now HOST+actualARM float bits, plus9353 actual packet builder calls exactCAN and returnedacceleration/counter/warning checks; original first-packet mismatch reproduced RED before production fix.",
+      "top_level_definitions": [
+        "StopPhase",
+        "StopCommand",
+        "CanfdStopping"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_blink_hold.py",
+      "source_sha256": "34b1febdb4b1cc627874cdb9af54728fa12251f2021dd1b3e4e4a80384c05b0f",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_blinker_stalks.py",
+      "source_sha256": "1f821af334b7480d260cc7e54cb7d13ef4c1be2b0c865bf1f90f7c023f2e1b35",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_bosch_camera_extended.py",
+      "source_sha256": "a77dff8aa95b14e9c6c2a4deb8333250a661ada2330430526330a989eeb6f3bf",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_bosch_mature_retention.py",
+      "source_sha256": "0adf1144c9bf3cbe932636c96a7d19e35abfbea9143ed5fd7229850f6ad7ea79",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_bosch_mirror_birth.py",
+      "source_sha256": "5dbcc507b253c5e260d4e39602a5953de47f139fa326d928ec4365eccf7a0acc",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_bosch_mirror_m3.py",
+      "source_sha256": "96792dc0bcef3e0c42a66e7bde3741d0f72c840a8d07ab2076d3b3db0eae67e9",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_bosch_road_edge.py",
+      "source_sha256": "60de0436a8c639848e8db1cd12c0f7f8da09f6087e1d372bb35a3a214b58dc1d",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_canfd_camera_discovery.py",
+      "source_sha256": "d1ff9cfd596de463dfa0fbbfe2d3b3253224563430fa5fb5729f8e3bdb732afd",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_canfd_cluster_popup.py",
+      "source_sha256": "dc39feb379ff5d8b0b15f7a5076e9d18721c209620bc130797b12cb40023734f",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_canfd_feedback_counters.py",
+      "source_sha256": "f2876de1e92c4a5d46ca6231470bbb53e569fccbf9ad8ffa61c7c8438e81a69e",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_ccnc_cluster.py",
+      "source_sha256": "3a2e77231858984f0b8b29abdbc2730ee8a2b7af8555165af3c997c6b8ffb3cb",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_ccnc_counter.py",
+      "source_sha256": "bbf48ef66aa42b50e9f25bc2b919ded385ab3c3c83032676e4952a4ce83b3693",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_cluster_direct_tx.py",
+      "source_sha256": "b49e617ca7f7ea503ca03a5c75a8b95e155171f185264fc1afc5fa4e4718b4a7",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_dm_cluster.py",
+      "source_sha256": "d6e71442d9ddcc66a5ecb3b8fa0d9a47e21e94ce165cfbda8b9404ad05d5ce2f",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_jerk.py",
+      "source_sha256": "ae98e9c72dc7b30da0533cdc2de24dc4aeca2af395e94c8d508f892b951036e8",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_navi_speedcam.py",
+      "source_sha256": "1eee77aba1d7227140015d098db28d42f1ba0ea708f14f8760f2f586660435f4",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_radar.py",
+      "source_sha256": "d8d147e979be2b86db70371ceec4aac3ee0c9ac032ec4895b3593e614e4dabf8",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_scalar.py",
+      "source_sha256": "cd25463e8cfbd27dffcf98ce741a37d22e017785057951054ef5fdeeb3bc70ce",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_scc_lead.py",
+      "source_sha256": "1f3bbc62808117b1bc96cdd24c579d8e5bdfe4da69da6c6c772cec193dbc5819",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_section_average.py",
+      "source_sha256": "0ae1fb954acf965fb745d9043a2849b40d117a02193678160c7e908032e2e635",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_speed_camera.py",
+      "source_sha256": "8ae7e36b31eee9d0a40e6b6fdf7484d52587877ddde9e27df739e83b67935685",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_steering_handover.py",
+      "source_sha256": "92146de1f9200dab4cd7e9a16a4a6b4ff1201eee81b00eb49d7d3a2d268aed9f",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_steering_handover_controller.py",
+      "source_sha256": "29c3d071861d2541e738827f58d55f3e84d840a34c6a293e894bcc6ecc677dab",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_steering_touch.py",
+      "source_sha256": "14e0717f5996d875eaad5c2614b94ae665c25ed2b173d45e716b4c5adf275f93",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/tests/test_stopping.py",
+      "source_sha256": "a9b1d15ab3d175c01fb1edc969acef01b78e6458c6c05ddbe46bf027129e78bd",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/hyundai/values.py",
+      "source_sha256": "15f60defe6dff1bd72384f67a8f375351b0aabff0107f7bf1f86df06e849fabb",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/tesla/carstate.py",
+      "source_sha256": "e000577ff0be9ad398313aa5636d0f173e5359320934d9856d4905091c2a6162",
+      "status": "final-delta-native-host-arm-verified-whole-file-review-pending",
+      "native_targets": [
+        "rust/crates/card/src/brands/tesla/"
+      ],
+      "evidence": "tesla-final-red.log -> HOST7/ARM7/strictClippy green; pin EPS128+navigation2 source sequences. Whole retained source file not newly declared complete."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/tesla/speed_limit_controller.py",
+      "source_sha256": "dbbd249d1c7aed86c8152ad59fa274beb0438efedbdfa625126d6f586212a968",
+      "status": "final-delta-native-host-arm-verified-whole-file-review-pending",
+      "native_targets": [
+        "rust/crates/card/src/brands/tesla/"
+      ],
+      "evidence": "tesla-final-red.log -> HOST7/ARM7/strictClippy green; pin EPS128+navigation2 source sequences. Whole retained source file not newly declared complete."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/tesla/tests/test_speed_limit_controller.py",
+      "source_sha256": "9bb48bf1d1873bf7ea0e6ee8cdac990ebaa5b027ea83fd7241898a7abc56fb34",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/tesla/tests/test_tesla.py",
+      "source_sha256": "0c0339b83085838739deeaaabf87f0b61ed3495e2f81425e941f2331cb5a899f",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/LICENSE",
+      "source_sha256": "56b07f3b4fd5f231ee865512b6345985d83f61cff58da92dcdedfe665b903a0e",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/__init__.py",
+      "source_sha256": "2b90c995ed9915b3bb83a399524387d3863f4f7db23c6a2c2daeb3be23f8a62c",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [],
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/mod.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/config.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/interface.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/objects.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/record.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/transport.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "evidence": "Public profile/type/decoder/transport semantic exports covered by44profile defaults, complete interface frames and outer production factory gates; Rust uses typed native module paths. No Python package loader required.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/constants.py",
+      "source_sha256": "4c130c12107d895b361663716e7eeea2729458cc0dce4c20284f4f1b575df63a",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [],
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/config.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/fields.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/objects.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/record.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/transport.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "evidence": "Wire/address/length/field/layout constants consumed by native codecs and complete source interface/factory gates;44profile defaults checked. Native field definitions preserve source nominal conversions.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/interface.py",
+      "source_sha256": "fb04d359df44df0bea7c49ed8a8caa93de15d6efa8c1351b786e6fdc465cb6be",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "NativeInterfaceConfig",
+        "parse_toyota_yaw_rate",
+        "parse_toyota_speed_mps",
+        "Ars510NativeRadarInterface"
+      ],
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/interface.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/config.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/fusion.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "evidence": "44configuration defaults,1851complete payload transitions/35881completeCANframe transitions/2736filter transitions HOST+actualARM finite float bits; constructor/cache/point/error state checked. Private jLead coefficient source architecture distinction applies only in outer receiver, documented explicitly.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/objects.py",
+      "source_sha256": "026ee8ddd038430f4b3e8a4987fd8d94622746b236ea20d24e368988500e0973",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "NativeField",
+        "slot_bits",
+        "field_code",
+        "field_value",
+        "encode_slot",
+        "NativeObject",
+        "is_init_template",
+        "decode_native_slot",
+        "relative_velocity"
+      ],
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/objects.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/fields.rs"
+      ],
+      "evidence": "Native bitfield metadata, slot encode/decode/init geometry and relative-velocity behavior checked by source record/property vectors plus full1851payload/35881frame gate HOST+ARM. MIT license retained.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/record.py",
+      "source_sha256": "6f893898eda96d442b70c3b248b943f1c56adc255c0d4768c4c0efdf4945c19b",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "id80_crc_ok",
+        "id80_crc",
+        "slot_bytes",
+        "occupied_slots",
+        "live_object_count"
+      ],
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/record.rs"
+      ],
+      "evidence": "512 original source CRC/slot vectors plus full1851payload/35881frame gate, HOST+ARM finite bits and bytes exact.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/shell85.py",
+      "source_sha256": "726af1543211830e1eda3d609b4962cdc07d54ea3022a6c46a1b5280520137b5",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "ShellCell",
+        "prefix_flags_consistent",
+        "id85_crc_ok",
+        "parse_shell"
+      ],
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/shell85.rs"
+      ],
+      "evidence": "Complete library CRC/parser/cell fields/prefix short-circuit+error-order scope512records/128prefixprobes HOST+actualARM float-bit exact. Standalone export is not selected for control. MIT provenance retained.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/support.py",
+      "source_sha256": "8c0a1677612d0c18da272f08f3ec5a61af00f6cf1a13343335ef5311ed59153d",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "Target192",
+        "parse_0x192",
+        "CycleHeader",
+        "parse_0x190",
+        "Target191",
+        "parse_0x191",
+        "Object680",
+        "parse_0x680",
+        "_be_field",
+        "parse_acc_target_vrel",
+        "parse_acc_target_arel",
+        "parse_acc_target_position",
+        "parse_acc_target_range_code",
+        "AccTarget",
+        "parse_acc_target",
+        "AccTargetInfo",
+        "parse_0x239",
+        "crc8_0x1d_bits",
+        "crc_0x23b",
+        "parse_0x23b",
+        "Target366",
+        "parse_0x366"
+      ],
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "evidence": "1024 source CAN-support decoder/property/CRC vectors plus complete interface and receiver tests HOST+actualARM; typed byte/float domain preserved.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/tracks.py",
+      "source_sha256": "0c59bd460d9191a030e65b6267d3ed98cc14f0b0e3ac04ea006a6d21da5e4561",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "NativeTrackIdAssigner"
+      ],
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/tracks.rs"
+      ],
+      "evidence": "380 complete source allocator updates/errors/idempotence states plus full interface/factory source gates HOST+actualARM; IDs/age/reset/cache/order checked.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/transport.py",
+      "source_sha256": "33dd639634a956759a06f36b3c3d826df8e9af3d9985e014ad129a452430704d",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "CompletedRecord",
+        "SegmentedRecordAssembler",
+        "Id80RecordAssembler",
+        "Id85RecordAssembler"
+      ],
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/transport.rs"
+      ],
+      "evidence": "4210 complete source assembler operations across record families/restarts/badlength/nonfinite time; full35881CANframe source gate HOST+ARM checks all assembler/cache mutable data.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510_carrot.py",
+      "source_sha256": "02ecabd9c3e1d66b229fe3860faf08e05a2f147689800a8ec371ea88150064d8",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/interface.py",
+      "source_sha256": "a761e2d6b914a504f86965073bbe599605b5a17833e5e5fe4333b97fc5daf3db",
+      "status": "native-file-implemented-and-verified",
+      "top_level_definitions": [
+        "CarInterface"
+      ],
+      "native_targets": [
+        "rust/crates/card/src/brands/toyota/parameters.rs",
+        "rust/crates/card/src/brands/toyota/mod.rs",
+        "rust/crates/card/src/brands/toyota/runtime.rs"
+      ],
+      "evidence": "Complete pinned Toyota package oracle1348scenarios/24008frames HOST+actualARM, full CP/state/actuator/temporal/orderedCAN/Params/lifecycle float-bit equality with disclosed type/error projections. ARS CP RED->32configuration+1824capability HOST/ARM exact. Actual registry/setup recomputes CP after cached identity. Manifest toyota-whole-gate-manifest.json.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/radar_interface.py",
+      "source_sha256": "36625edeeb9cbf7813efda8ffcbf423669da1fff033c18ef521863e560540e20",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/tests/test_ars510_carrot.py",
+      "source_sha256": "3fd9fe16ae387299104f3b0b6a4f1a475ebd1eab5d8131cdfb78b2b8c88acbff",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/tests/test_ars510_display.py",
+      "source_sha256": "adb668933817a2a37416f65d75fb7cad6e9c6feb8cc158df451c0f516374b154",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/safety/modes/hyundai_canfd.h",
+      "status": "retained-external-C-firmware-verified",
+      "evidence": "348 original tests/11669 production-hook calls HOST+ARM exact; full6image pin-matched native builder gate."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/safety/safety/safety_hyundai_canfd.h",
+      "source_sha256": "63ed592bcd2d920f94a80a06e42f812b348fee4916a449e183fb8b4394f9e46a",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "evidence": "348 original safety tests/11669 executed actualARM C hook calls exact; all6 full firmware images linked/signed/verified with251exactpinnedpublicinputs. External C safety retained; no device.",
+      "native_targets": [
+        "opendbc/safety/safety/safety_hyundai_canfd.h"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/safety/safety/safety_hyundai_canfd_cluster.h",
+      "source_sha256": "23801d5acb3472083035df0e15034a3cf3710b1267b1cb7d84a4cff1ab691286",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "evidence": "348 original safety tests/11669 executed actualARM C hook calls exact; all6 full firmware images linked/signed/verified with251exactpinnedpublicinputs. External C safety retained; no device.",
+      "native_targets": [
+        "opendbc/safety/safety/safety_hyundai_canfd_cluster.h"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/safety/safety_declarations.h",
+      "source_sha256": "deeb23d9d1e3c8996421aa79d6e64f34ca7fd97867c35348ef2d2cc358bbefa8",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "evidence": "348 original safety tests/11669 executed actualARM C hook calls exact; all6 full firmware images linked/signed/verified with251exactpinnedpublicinputs. External C safety retained; no device.",
+      "native_targets": [
+        "opendbc/safety/safety_declarations.h"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/safety/tests/hyundai_canfd_cluster.c",
+      "source_sha256": "3764cdb55b1fd893877e20f067b6edc098bace769cac15a1f1e4a2ad8e7a4679",
+      "status": "retained-external-C-firmware-verified",
+      "evidence": "348 original regressions/11669 production-hook calls HOST+ARM exact; full6image pin-matched native builder gate."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/safety/tests/hyundai_canfd_fwd_timer.c",
+      "source_sha256": "4a1f34ff42f46aceb5ec0f9d324d6d58419316dbc1ffa74f38dbada48a455298",
+      "status": "retained-external-C-firmware-verified",
+      "evidence": "348 original regressions/11669 production-hook calls HOST+ARM exact; full6image pin-matched native builder gate."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/safety/tests/test_hyundai_canfd_cluster.py",
+      "source_sha256": "4239ebb8c80c093956a65e1f525fee23675d09ac32ac69e425596c60dac37488",
+      "status": "retained-external-C-firmware-verified",
+      "evidence": "348 original regressions/11669 production-hook calls HOST+ARM exact; full6image pin-matched native builder gate."
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/safety/tests/test_hyundai_canfd_fwd_timer.py",
+      "source_sha256": "7d7bb538eed7eaeb27e5256720d1eae5869983b6f75a2dedb37948a81c0791d5",
+      "status": "retained-external-C-firmware-verified",
+      "evidence": "348 original regressions/11669 production-hook calls HOST+ARM exact; full6image pin-matched native builder gate."
+    },
+    {
+      "source_path": "panda/board/SConscript",
+      "source_sha256": "eae1da08e51f33daa0c0846a5b59ae10f84751040234bbb6900cbfb7c68c9fa4",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "rust/crates/dev-tools/src/panda_build.rs"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/drivers/bootkick.h",
+      "source_sha256": "8b95fe7683eb65c753b1dfd958f99898815a50a9fc9fded2e6b663a693bd479e",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/drivers/bootkick.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/drivers/bootkick_declarations.h",
+      "source_sha256": "f0695cb7e7cbb74f65e491de00bbacbba2a697570a87d50bb7ae67e8d854e627",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/drivers/bootkick_declarations.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/drivers/can_common.h",
+      "source_sha256": "39d4816710d4e59a8a86a829a599884c36dee36c2ce1d72430debde4c88f4ad8",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/drivers/can_common.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/drivers/can_common_declarations.h",
+      "source_sha256": "52edc6604a65fc056df02744d891b32ca3defeaec483f156a53595af14581cef",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/drivers/can_common_declarations.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/drivers/fdcan.h",
+      "source_sha256": "38a1196b254e798caa8b3b57df681d1fedc8720366e1098f9bc5a63ee81973a3",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/drivers/fdcan.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/drivers/timers.h",
+      "source_sha256": "ecedc7d658ccf869b905e7a82464438383435b9a9a7aff3774da7b261263cfff",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/drivers/timers.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/fake_stm.h",
+      "source_sha256": "b016c7c91cf44adae61a67133ccc9aac0e75c885b00673103dd54be65d195526",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/fake_stm.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/health.h",
+      "source_sha256": "bd8ec57900ea5c717014badc2d281fff8cfeeede0bd985a272bf08f7c1ae1a40",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/health.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/main.c",
+      "source_sha256": "24ca55c1608ed5cd668742389e59e9b31b9b303b7d778e5c32b3ad1feab1edea",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/main.c"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/main_comms.h",
+      "source_sha256": "79fe6ea3e7512d227b426db673bb6874d4d0973c21b080f964cdbf57c561839d",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/main_comms.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/stm32h7/llfdcan.h",
+      "source_sha256": "b4b3cf47bcdde4a5a409613e7a2ce3cdc01d18ee51f4cdf9fd1a6046dc1f8678",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/stm32h7/llfdcan.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/board/stm32h7/sound.h",
+      "source_sha256": "7007aa562d9a873b37ac1b5cee778b845ddfaa01d6ffb1a27115e9efecbc02f8",
+      "status": "source-matched-external-native-firmware-built-and-verified",
+      "native_targets": [
+        "panda/board/stm32h7/sound.h"
+      ],
+      "evidence": "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim.",
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/python/__init__.py",
+      "source_sha256": "43557e70230eac7efd25550e6f4b64fc56f503de10676d00fedb60bdcf8b4058",
+      "status": "pending-full-path-reconciliation"
+    },
+    {
+      "source_path": "panda/tests/libpanda/SConscript",
+      "source_sha256": "9d4e2805eef6e6d76db7a37df13276c959c7ee2c58eb71a150aea108b4f6395c",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "panda/tests/libpanda/bootkick.c",
+      "source_sha256": "32e847a273f61ffe9a5ab74ee80f1f622230a5e0d6cd25c8604809ed23e4cecf",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "panda/tests/libpanda/libpanda_py.py",
+      "source_sha256": "7dd6fa124605aa290b4318da05404dc94e252111ef3051f7a37a76985be1ced0",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "panda/tests/libpanda/panda.c",
+      "source_sha256": "2912f6fc5e029e43e1de6db4b7907f2d2536d21f6f15975b6afc08c9c60babf7",
+      "status": "source-regression-covered-native-tool-migration-pending",
+      "evidence": "Original source suites and native fixture/owner scopes recorded in dev-md-vehicle-validation.md; Python test-tool conversion must be reconciled individually, not inferred from source pytest success."
+    },
+    {
+      "source_path": "panda/tests/test_bootkick.py",
+      "source_sha256": "da5ff8334ac9b298a3d9224481a0e08de91522f55d54c36fdf8596b87db2a7ce",
+      "status": "native-file-implemented-and-verified",
+      "evidence": "All45 original source tests pass before capture;1001 actual original wake/stock calls with complete globals/bootkick state after every operation and explicit reads/writes migrated to data fixture+native Rust/C driver. Repeated HOST+actualARM C execution passes without Python/CFFI; native CLI admits173 pinned productionC/H sources. Full broader libpanda API/build option migration remains separate.",
+      "top_level_definitions": [
+        "test_wake_rising_edge_and_high_wake_do_not_block_ignition_bootkick"
+      ],
+      "native_targets": [
+        "rust/crates/dev-tools/src/panda_hooks/ignition.rs",
+        "rust/crates/dev-tools/data/panda-hooks/ignition-final.json.gz"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/tests/test_ignition_can.py",
+      "source_sha256": "a40b8fa69b7ce179f733214669dc23c3345e14ab3175483a4b710d8a73c7eb4c",
+      "status": "native-file-implemented-and-verified",
+      "evidence": "All45 original source tests pass before capture;1001 actual original wake/stock calls with complete globals/bootkick state after every operation and explicit reads/writes migrated to data fixture+native Rust/C driver. Repeated HOST+actualARM C execution passes without Python/CFFI; native CLI admits173 pinned productionC/H sources. Full broader libpanda API/build option migration remains separate.",
+      "top_level_definitions": [
+        "tesla_checksum",
+        "send",
+        "power",
+        "gear",
+        "cabin",
+        "reset_ignition",
+        "test_tesla_can_wake_without_going_onroad",
+        "test_tesla_driving_gears_go_onroad",
+        "test_tesla_park_and_exit_go_offroad_but_stay_awake",
+        "test_park_with_latched_belt_and_closed_doors_preserves_prior_ignition",
+        "test_shared_118_address_does_not_change_other_brands_ignition",
+        "test_stale_tesla_power_evidence_cannot_authorize_gear_updates",
+        "test_wake_and_ignition_expire_when_can_stops",
+        "test_accessory_traffic_keeps_wake_alive_without_refreshing_ignition",
+        "test_invalid_gear_does_not_keep_ignition_alive",
+        "test_single_valid_frame_does_not_wake",
+        "test_bad_checksum_does_not_wake_and_breaks_sequence",
+        "test_any_corrupt_byte_does_not_wake",
+        "test_extended_frame_does_not_wake",
+        "test_garbage_221_traffic_from_other_ecu_does_not_wake",
+        "test_bad_checksum_gear_does_not_set_ignition",
+        "test_bad_checksum_cabin_does_not_update_state",
+        "test_incorrect_frame_lengths_do_not_change_state",
+        "test_wake_and_ignition_only_use_bus_zero",
+        "test_counter_discontinuities_are_ignored_and_wrap_is_accepted",
+        "test_other_brand_ignition_source_still_works"
+      ],
+      "native_targets": [
+        "rust/crates/dev-tools/src/panda_hooks/ignition.rs",
+        "rust/crates/dev-tools/data/panda-hooks/ignition-final.json.gz"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    },
+    {
+      "source_path": "panda/tests/test_tesla_stock_ignition.py",
+      "source_sha256": "61db0a62a25a468584757806763fec1cec1875198dd4d87bead2bb9ec43bae03",
+      "status": "native-file-implemented-and-verified",
+      "evidence": "All45 original source tests pass before capture;1001 actual original wake/stock calls with complete globals/bootkick state after every operation and explicit reads/writes migrated to data fixture+native Rust/C driver. Repeated HOST+actualARM C execution passes without Python/CFFI; native CLI admits173 pinned productionC/H sources. Full broader libpanda API/build option migration remains separate.",
+      "top_level_definitions": [
+        "tesla_checksum",
+        "send_power",
+        "send_gear",
+        "test_stock_firmware_preserves_tesla_onroad_without_wake",
+        "test_stock_firmware_does_not_wake_in_accessory_mode"
+      ],
+      "native_targets": [
+        "rust/crates/dev-tools/src/panda_hooks/ignition.rs",
+        "rust/crates/dev-tools/data/panda-hooks/ignition-final.json.gz"
+      ],
+      "record": "docs/naver/dev-md-vehicle-validation.md"
+    }
+  ]
+}

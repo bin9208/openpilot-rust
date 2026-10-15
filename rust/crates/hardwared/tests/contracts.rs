@@ -4,6 +4,47 @@ use openpilot_hardwared::{
 };
 use serde_json::json;
 #[test]
+fn tesla_stays_awake_but_ignition_off_stops_onroad_and_restart_checks_startup() {
+    use openpilot_hardwared::policy::{Input, Policy};
+    let mut state = Policy::new("tizi");
+    let mut input = Input {
+        now: 1000.,
+        frame: 10,
+        panda_updated: true,
+        panda_present: true,
+        ignition: true,
+        in_car: true,
+        booted: true,
+        tesla: true,
+        ..Input::default()
+    };
+    state.poll(&input);
+    assert!(state.step(&input).started);
+    input.now += 0.5;
+    input.frame += 5;
+    input.ignition = false;
+    state.poll(&input);
+    let stopped = state.step(&input);
+    assert!(!stopped.started);
+    assert_eq!(stopped.started_ts, None);
+    assert!(!stopped.power_save);
+    assert!(state.started_seen);
+    input.now += 0.5;
+    input.frame += 5;
+    input.ignition = true;
+    input.startup.insert("accepted_terms".into(), false);
+    state.poll(&input);
+    assert!(!state.step(&input).started);
+    input.now += 0.5;
+    input.frame += 5;
+    input.startup.insert("accepted_terms".into(), true);
+    state.poll(&input);
+    let restarted = state.step(&input);
+    assert!(restarted.started);
+    assert_eq!(restarted.started_ts, Some(input.now));
+    assert!(!restarted.power_save);
+}
+#[test]
 fn hardware_power_read_failure_retains_voltage_save_and_previous_integration_time() {
     // Given a prior offroad measurement.
     let mut power = PowerMonitoring::new(3e6);

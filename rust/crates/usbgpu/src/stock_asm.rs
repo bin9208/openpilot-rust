@@ -280,7 +280,17 @@ impl<T: Transport, C: Clock> StockAsm<T, C> {
             }
             let status = (completion >> 13) & 7;
             if status != 0 || (config && (value.is_none() != (b284 & 1 != 0))) {
-                return Err(Error::Protocol(format!("TLP status: {}",match status{1=>format!("Unsupported Request: invalid address/function (target might not be reachable): {address:#x}"),4=>"Completer Abort: abort due to internal error".into(),2=>"Configuration Request Retry Status: configuration space busy".into(),_=>format!("Reserved (0b{status:03b})")})));
+                return Err(Error::Protocol(format!(
+                    "TLP status: {}",
+                    match status {
+                        1 => format!(
+                            "Unsupported Request: invalid address/function (target might not be reachable): {address:#x}"
+                        ),
+                        4 => "Completer Abort: abort due to internal error".into(),
+                        2 => "Configuration Request Retry Status: configuration space busy".into(),
+                        _ => format!("Reserved (0b{status:03b})"),
+                    }
+                )));
             }
             return if value.is_none() {
                 let bytes = self.read(0xb220, 4, 255)?;

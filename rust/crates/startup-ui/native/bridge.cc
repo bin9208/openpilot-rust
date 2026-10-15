@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 bool openpilot_raylib_symbol_available(const char *name);
+uint32_t openpilot_active_framebuffer();
 namespace startup_ui {
 bool try_process_locale(rust::Str candidate) {
   const std::string name(candidate);
@@ -111,6 +112,7 @@ Surface::Surface(int32_t width, int32_t height, rust::Str title,
   InitWindow(width, height, std::string(title).c_str());
   if (!IsWindowReady())
     throw std::runtime_error("raylib window initialization failed");
+  try {openpilot_active_framebuffer();} catch (...) {CloseWindow();throw;}
   window_owned = true;
 }
 Surface::~Surface() {
@@ -238,7 +240,34 @@ uint32_t Surface::target_create(int32_t width,int32_t height) {
   for (size_t index=0;index<targets.size();++index) if (!targets[index].id) {targets[index]=value;return index;}
   targets.push_back(value);return targets.size()-1;
 }
-void Surface::target_release(uint32_t index) { auto &value=targets.at(index); if (value.id) {UnloadRenderTexture(value);value={};} }
+uint32_t Surface::overlay_create(int32_t width,int32_t height) {
+  if(width<=0 || height<=0)throw std::runtime_error("overlay dimensions must be positive");
+  auto value=LoadRenderTexture(width,height);
+  // Preserve partial/zero allocation metadata so the Rust owner can fall back
+  // once and release every allocated attachment, as the source does.
+  for(size_t index=0;index<targets.size();++index)if(!targets[index].id && !targets[index].texture.id && !targets[index].depth.id){targets[index]=value;return index;}
+  targets.push_back(value);return targets.size()-1;
+}
+uint32_t Surface::framebuffer() const {return openpilot_active_framebuffer();}
+bool Surface::overlay_complete(uint32_t index) const {
+  const auto value=targets.at(index);
+  return value.id && value.texture.id && rlFramebufferComplete(value.id);
+}
+void Surface::framebuffer_bind(uint32_t framebuffer) {rlEnableFramebuffer(framebuffer);}
+void Surface::render_flush() {rlDrawRenderBatchActive();}
+void Surface::coverage_begin() {
+  ClearBackground(BLANK);
+  rlSetBlendFactorsSeparate(0x0302,0x0303,1,0x0303,0x8006,0x8006);
+  BeginBlendMode(BLEND_CUSTOM_SEPARATE);
+}
+void Surface::overlay_composite(uint32_t index,float width,float height) {
+  const auto value=targets.at(index);
+  if(!value.id || !value.texture.id)throw std::runtime_error("overlay target unavailable");
+  BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
+  DrawTexturePro(value.texture,{0,0,float(value.texture.width),-float(value.texture.height)},{0,0,width,height},{0,0},0,WHITE);
+  EndBlendMode();
+}
+void Surface::target_release(uint32_t index) { auto &value=targets.at(index); if (value.id || value.texture.id || value.depth.id) UnloadRenderTexture(value); value={}; }
 void Surface::target_begin(uint32_t index) { const auto value=targets.at(index); if (!value.id) throw std::runtime_error("render target released"); BeginTextureMode(value); }
 void Surface::external_target_begin(TargetInfo info) {
   if(!info.framebuffer || !info.texture || info.width<=0 || info.height<=0)throw std::runtime_error("invalid external render target");
@@ -392,14 +421,19 @@ void Surface::scissor(Rect rect, bool enabled) {
 }
 void Surface::render_target(int32_t width, int32_t height) {
   if (target.id) return;
+  const auto previous=openpilot_active_framebuffer();
+  rlDrawRenderBatchActive();
   target = LoadRenderTexture(width, height);
+  rlEnableFramebuffer(previous);
   if (!target.id)
     throw std::runtime_error("raylib render texture failed");
   SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
 }
 void Surface::begin(float scale) {
-  if (target.id)
-    BeginTextureMode(target);
+  frame_target=target;
+  frame_open=true;
+  if (frame_target.id)
+    BeginTextureMode(frame_target);
   else
     BeginDrawing();
   ClearBackground(BLACK);
@@ -411,31 +445,36 @@ void Surface::begin(float scale) {
 void Surface::finish_content(float scale) {
   if (scale != 1)
     rlPopMatrix();
-  if (target.id) {
+  if (frame_target.id) {
     EndTextureMode();
     BeginDrawing();
     ClearBackground(BLACK);
     if (shader.id) BeginShaderMode(shader);
     DrawTexturePro(
-        target.texture,
-        {0, 0, float(target.texture.width), -float(target.texture.height)},
-        {0, 0, float(target.texture.width), float(target.texture.height)},
+        frame_target.texture,
+        {0, 0, float(frame_target.texture.width), -float(frame_target.texture.height)},
+        {0, 0, float(frame_target.texture.width), float(frame_target.texture.height)},
         {0, 0}, 0, WHITE);
     if (shader.id) EndShaderMode();
   }
 }
-void Surface::present() { EndDrawing(); }
+void Surface::present() { EndDrawing(); frame_open=false; }
 void Surface::end(float scale) { finish_content(scale); present(); }
 bool Surface::has_render_target() const { return target.id != 0; }
+bool Surface::has_capture_frame() const {return frame_target.id != 0;}
+void Surface::release_render_target() {
+  if(frame_open)throw std::runtime_error("render target release during a frame");
+  if(target.id)UnloadRenderTexture(target);
+  target={};frame_target={};
+}
 void Surface::burn_in(rust::Str vertex, rust::Str fragment) {
   if (shader.id) return;
   shader = LoadShaderFromMemory(std::string(vertex).c_str(), std::string(fragment).c_str());
   if (!shader.id) throw std::runtime_error("burn-in shader failed");
 }
-rust::Vec<uint8_t> Surface::capture_pixels() const {
-  if (!target.id) throw std::runtime_error("recording render target missing");
+static rust::Vec<uint8_t> read_texture_pixels(::Texture texture) {
   rlDrawRenderBatchActive();
-  auto image = LoadImageFromTexture(target.texture);
+  auto image = LoadImageFromTexture(texture);
   if (!image.data) throw std::runtime_error("recording texture readback failed");
   struct ImageGuard { ::Image value; ~ImageGuard() { UnloadImage(value); } } guard{image};
   if (image.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 || image.width <= 0 || image.height <= 0)
@@ -447,6 +486,14 @@ rust::Vec<uint8_t> Surface::capture_pixels() const {
   for (uint64_t i=0; i<count; ++i) bytes.push_back(pixels[i]);
   return bytes;
 }
+rust::Vec<uint8_t> Surface::capture_pixels() const {
+  if (!target.id) throw std::runtime_error("capture render target missing");
+  return read_texture_pixels(target.texture);
+}
+rust::Vec<uint8_t> Surface::capture_frame_pixels() const {
+  if (!frame_target.id) throw std::runtime_error("recording frame target missing");
+  return read_texture_pixels(frame_target.texture);
+}
 void Surface::set_title(rust::Str title) { SetWindowTitle(std::string(title).c_str()); }
 int32_t Surface::fps() const { return GetFPS(); }
 void Surface::draw_fps(int32_t x, int32_t y) { DrawFPS(x,y); }
@@ -454,6 +501,8 @@ int32_t Surface::key_pressed() const { return GetKeyPressed(); }
 int32_t Surface::char_pressed() const { return GetCharPressed(); }
 bool Surface::key_down(int32_t key) const { return IsKeyDown(key); }
 bool Surface::key_started(int32_t key) const { return IsKeyPressed(key); }
+void Surface::exit_key(int32_t key) { SetExitKey(key); }
+bool Surface::mouse_pressed(int32_t button) const { return IsMouseButtonPressed(button); }
 Point Surface::mouse_position() const { auto position=GetMousePosition();return {position.x,position.y}; }
 
 void Surface::screenshot(rust::Str path) const {

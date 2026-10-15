@@ -2,7 +2,7 @@ use openpilot_plannerd::{
     carrot::CarrotPlanner, lateral_planner::LateralPlanner,
     longitudinal_planner::LongitudinalPlanner,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 pub fn frame(
     long: &LongitudinalPlanner,

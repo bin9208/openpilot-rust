@@ -14,7 +14,7 @@ impl<R: Runtime> Display<R> {
             return false;
         }
         self.options.brightness = value;
-        if self.connection.is_none() {
+        if !self.is_open() {
             return false;
         }
         self.setting(14, self.brightness_raw());
@@ -31,7 +31,7 @@ impl<R: Runtime> Display<R> {
             return false;
         }
         self.orientation = value;
-        if self.connection.is_none() {
+        if !self.is_open() {
             return false;
         }
         self.setting(13, i64::from(value));
@@ -44,7 +44,7 @@ impl<R: Runtime> Display<R> {
             return false;
         }
         self.options.display_fps = value;
-        if self.connection.is_none() || value == 0 {
+        if !self.is_open() || value == 0 {
             return false;
         }
         self.optional_command(15, &[(8, i64::from(value))], NoAck::FRAME_RATE);

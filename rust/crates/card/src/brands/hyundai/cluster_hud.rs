@@ -6,6 +6,7 @@ use super::{
 
 pub struct HudInput {
     pub frame: u32,
+    pub dm_alert: u8,
     pub enabled: bool,
     pub active: bool,
     pub main_enabled: bool,
@@ -34,6 +35,7 @@ pub struct HudInput {
 }
 
 pub fn hud(data: &mut Values, i: &HudInput) -> Result<(), Error> {
+    let stock = data.clone();
     let hdp = match i.hdp_use {
         1 => i.enabled && i.nav_active,
         2 => i.enabled,
@@ -112,15 +114,13 @@ pub fn hud(data: &mut Values, i: &HudInput) -> Result<(), Error> {
             ("TARGET_DISTANCE", i.lead_distance),
             (
                 "BACKGROUND",
-                if i.paddle_mode > 0 && i.paddle {
-                    6.
-                } else if i.enabled {
-                    1.
-                } else if i.active {
-                    3.
-                } else {
-                    7.
-                },
+                background(
+                    i.enabled,
+                    i.active,
+                    i.paddle,
+                    i.paddle_mode,
+                    [1, 2].contains(&i.desire),
+                ),
             ),
             ("CENTERLINE", if i.hda_mode > 0. { 1. } else { 0. }),
             (
@@ -185,6 +185,7 @@ pub fn hud(data: &mut Values, i: &HudInput) -> Result<(), Error> {
         ],
     );
     cluster_fields::hide_alerts(data, true, i.soft_hold, i.trailer)?;
+    cluster_fields::driver_monitoring_alert(data, i.dm_alert, &stock)?;
     cluster_fields::lane_lines(data, (i.steering_angle, i.active, 0));
     for (side, index) in [("LEFT", 0), ("RIGHT", 1)] {
         let color = if i.change_available[index] { 6. } else { 2. };
@@ -243,4 +244,22 @@ pub fn hud(data: &mut Values, i: &HudInput) -> Result<(), Error> {
         );
     }
     Ok(())
+}
+
+pub fn background(
+    enabled: bool,
+    active: bool,
+    paddle: bool,
+    paddle_mode: i32,
+    turning: bool,
+) -> f64 {
+    if (active && turning) || (paddle_mode > 0 && paddle) {
+        6.
+    } else if enabled {
+        1.
+    } else if active {
+        3.
+    } else {
+        7.
+    }
 }

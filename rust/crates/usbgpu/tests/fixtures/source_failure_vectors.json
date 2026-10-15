@@ -1,0 +1,1949 @@
+{
+  "source": "e8e152dbcfd9574a1791ed12026d1880e87689b3:openpilot/selfdrive/modeld/precompiled_model.py",
+  "cases": [
+    {
+      "detail": "TimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4",
+      "bootloader_load": true,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "TimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4\n",
+      "bootloader_load": true,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "TimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: TimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: TimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: TimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nTimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4",
+      "bootloader_load": true,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nTimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4\n",
+      "bootloader_load": true,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nTimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: TimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: TimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: TimeoutError: BL not ready. Timed out after 2000 ms, condition not met: 3 != 4\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "previous eGPU worker is still exiting",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": true,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "previous eGPU worker is still exiting\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": true,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "previous eGPU worker is still exiting\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: previous eGPU worker is still exiting",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": true,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: previous eGPU worker is still exiting\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": true,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: previous eGPU worker is still exiting\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nprevious eGPU worker is still exiting",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": true,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nprevious eGPU worker is still exiting\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": true,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nprevious eGPU worker is still exiting\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: previous eGPU worker is still exiting",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": true,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: previous eGPU worker is still exiting\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": true,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: previous eGPU worker is still exiting\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD:0 failed with 1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD:0 failed with 1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD:0 failed with 1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD:0 failed with 1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD:0 failed with 1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD:0 failed with 1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD:0 failed with 1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD:0 failed with 1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD:0 failed with 1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD:0 failed with 1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD:0 failed with 1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD:0 failed with 1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD:12 failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD:12 failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD:12 failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD:12 failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD:12 failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD:12 failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD:12 failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD:12 failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD:12 failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD:12 failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD:12 failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": true,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD:12 failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD failed with 2",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD failed with 2\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD failed with 2\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD failed with 2",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD failed with 2\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD failed with 2\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD failed with 2",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD failed with 2\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD failed with 2\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD failed with 2",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD failed with 2\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD failed with 2\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "ValueError: model file: Input/Output Error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "ValueError: model file: Input/Output Error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "ValueError: model file: Input/Output Error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: ValueError: model file: Input/Output Error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: ValueError: model file: Input/Output Error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: ValueError: model file: Input/Output Error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nValueError: model file: Input/Output Error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nValueError: model file: Input/Output Error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nValueError: model file: Input/Output Error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: ValueError: model file: Input/Output Error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: ValueError: model file: Input/Output Error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: ValueError: model file: Input/Output Error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_bulk_transfer: Input/Output Error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_bulk_transfer: Input/Output Error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_bulk_transfer: Input/Output Error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_bulk_transfer: Input/Output Error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_bulk_transfer: Input/Output Error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_bulk_transfer: Input/Output Error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_bulk_transfer: Input/Output Error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_bulk_transfer: Input/Output Error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_bulk_transfer: Input/Output Error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_bulk_transfer: Input/Output Error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_bulk_transfer: Input/Output Error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_bulk_transfer: Input/Output Error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "bulk OUT 0x4 failed: Pipe error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "bulk OUT 0x4 failed: Pipe error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "bulk OUT 0x4 failed: Pipe error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: bulk OUT 0x4 failed: Pipe error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: bulk OUT 0x4 failed: Pipe error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: bulk OUT 0x4 failed: Pipe error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nbulk OUT 0x4 failed: Pipe error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nbulk OUT 0x4 failed: Pipe error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nbulk OUT 0x4 failed: Pipe error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: bulk OUT 0x4 failed: Pipe error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: bulk OUT 0x4 failed: Pipe error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: bulk OUT 0x4 failed: Pipe error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_open: No such device (it may have been disconnected)",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_open: No such device (it may have been disconnected)\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_open: No such device (it may have been disconnected)\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_open: No such device (it may have been disconnected)",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_open: No such device (it may have been disconnected)\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_open: No such device (it may have been disconnected)\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_open: No such device (it may have been disconnected)",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_open: No such device (it may have been disconnected)\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_open: No such device (it may have been disconnected)\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_open: No such device (it may have been disconnected)",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_open: No such device (it may have been disconnected)\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_open: No such device (it may have been disconnected)\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_claim_interface: System call interrupted (perhaps due to signal)",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_claim_interface: System call interrupted (perhaps due to signal)\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_claim_interface: System call interrupted (perhaps due to signal)\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_claim_interface: System call interrupted (perhaps due to signal)",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_claim_interface: System call interrupted (perhaps due to signal)\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_claim_interface: System call interrupted (perhaps due to signal)\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_claim_interface: System call interrupted (perhaps due to signal)",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_claim_interface: System call interrupted (perhaps due to signal)\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_claim_interface: System call interrupted (perhaps due to signal)\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_claim_interface: System call interrupted (perhaps due to signal)",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_claim_interface: System call interrupted (perhaps due to signal)\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_claim_interface: System call interrupted (perhaps due to signal)\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_control_transfer: Operation timed out",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_control_transfer: Operation timed out\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_control_transfer: Operation timed out\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_control_transfer: Operation timed out",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_control_transfer: Operation timed out\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_control_transfer: Operation timed out\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_control_transfer: Operation timed out",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_control_transfer: Operation timed out\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_control_transfer: Operation timed out\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_control_transfer: Operation timed out",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_control_transfer: Operation timed out\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_control_transfer: Operation timed out\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_interrupt_transfer: Resource busy",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_interrupt_transfer: Resource busy\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_interrupt_transfer: Resource busy\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_interrupt_transfer: Resource busy",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_interrupt_transfer: Resource busy\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_interrupt_transfer: Resource busy\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_interrupt_transfer: Resource busy",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_interrupt_transfer: Resource busy\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_interrupt_transfer: Resource busy\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_interrupt_transfer: Resource busy",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_interrupt_transfer: Resource busy\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_interrupt_transfer: Resource busy\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "bulk IN 0xA failed: System call interrupted",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "bulk IN 0xA failed: System call interrupted\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "bulk IN 0xA failed: System call interrupted\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: bulk IN 0xA failed: System call interrupted",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: bulk IN 0xA failed: System call interrupted\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: bulk IN 0xA failed: System call interrupted\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nbulk IN 0xA failed: System call interrupted",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nbulk IN 0xA failed: System call interrupted\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nbulk IN 0xA failed: System call interrupted\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: bulk IN 0xA failed: System call interrupted",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: bulk IN 0xA failed: System call interrupted\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": true,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: bulk IN 0xA failed: System call interrupted\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_unknown: Pipe error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_unknown: Pipe error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_unknown: Pipe error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_unknown: Pipe error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_unknown: Pipe error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_unknown: Pipe error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_unknown: Pipe error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_unknown: Pipe error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_unknown: Pipe error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_unknown: Pipe error",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_unknown: Pipe error\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_unknown: Pipe error\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_open: No such device",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_open: No such device\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "libusb_open: No such device\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_open: No such device",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_open: No such device\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: libusb_open: No such device\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_open: No such device",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_open: No such device\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nlibusb_open: No such device\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_open: No such device",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_open: No such device\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: libusb_open: No such device\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD:-1 failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD:-1 failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "AMD:-1 failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD:-1 failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD:-1 failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: AMD:-1 failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD:-1 failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD:-1 failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nAMD:-1 failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD:-1 failed with -1",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD:-1 failed with -1\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: AMD:-1 failed with -1\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "TimeoutError: model loading timed out",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "TimeoutError: model loading timed out\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "TimeoutError: model loading timed out\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: TimeoutError: model loading timed out",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: TimeoutError: model loading timed out\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "RuntimeError: TimeoutError: model loading timed out\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nTimeoutError: model loading timed out",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nTimeoutError: model loading timed out\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nTimeoutError: model loading timed out\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: TimeoutError: model loading timed out",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: TimeoutError: model loading timed out\n",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    },
+    {
+      "detail": "traceback\nRuntimeError: TimeoutError: model loading timed out\nValueError: persistent model corruption",
+      "bootloader_load": false,
+      "bootloader_inference": false,
+      "busy": false,
+      "transport": false,
+      "usb_link_pinned": false,
+      "usb_link_unknown": false
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import ast
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
@@ -22,6 +23,7 @@ class Sources:
   runtime: Path
   hardware: Path
   selected_sha256: str
+  warp_reference: Path | None = None
 
 
 def fingerprint(path: Path) -> str:
@@ -94,7 +96,32 @@ def runtime_sources(archive: Path, destination: Path) -> None:
     raise ArtifactError('pinned runtime lacks HCQ operation/warp source contract')
 
 
-def hardware_files(root: Path, runtime: Path) -> list[tuple[Path, str]]:
+def warp_equivalence(root: Path, runtime: Path, reference: Path | None) -> dict | None:
+  if reference is None:
+    return None
+  provenance = json.loads((root / 'source-provenance.json').read_text())
+  if fingerprint(reference) != provenance.get('runtime_sha256'):
+    raise ArtifactError('warp reference archive differs from hardware provenance')
+  with tempfile.TemporaryDirectory(prefix='warp-reference-') as temporary:
+    directory = Path(temporary)
+    runtime_sources(reference, directory)
+    before = (directory / 'examples/openpilot/compile_warp.py').read_bytes()
+  after = (runtime / 'examples/openpilot/compile_warp.py').read_bytes()
+  names = ['NV12Frame', 'warp_perspective_tinygrad', 'frames_to_tensor', 'make_frame_prepare', 'make_luma_warp']
+  def functions(source):
+    return {node.name: ast.dump(node, include_attributes=False) for node in ast.parse(source).body
+            if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in names}
+  old, new = functions(before), functions(after)
+  if set(old) != set(names) or old != new:
+    raise ArtifactError('warp mathematical functions differ from verified companions')
+  return {'reference_runtime_sha256':fingerprint(reference),
+          'reference_source_sha256':hashlib.sha256(before).hexdigest(),
+          'selected_source_sha256':hashlib.sha256(after).hexdigest(),
+          'identical_ast_definitions':names,
+          'scope':'NV12 warp math only; compiled kernels retained from verified reference package'}
+
+
+def hardware_files(root: Path, runtime: Path, equivalence: dict | None = None) -> list[tuple[Path, str]]:
   manifest = json.loads((root / 'manifest.json').read_text())
   if manifest.get('version') != 1 or not isinstance(manifest.get('files'), list):
     raise ArtifactError('hardware companion manifest required')
@@ -118,14 +145,19 @@ def hardware_files(root: Path, runtime: Path) -> list[tuple[Path, str]]:
     files[name] = path
   required = {'tinygrad-LICENSE', 'probe-gfx1200.json'}
   source_sha256 = fingerprint(runtime / 'examples/openpilot/compile_warp.py')
+  allowed_sources = {source_sha256}
+  if equivalence is not None:
+    if equivalence['selected_source_sha256'] != source_sha256:
+      raise ArtifactError('warp source changed after equivalence verification')
+    allowed_sources.add(equivalence['reference_source_sha256'])
   for width, height in [(1344, 760), (1928, 1208)]:
     name = f'warp-gfx1200-{width}x{height}.json'
     required.add(name)
-    if name not in files or json.loads(files[name].read_text()).get('source_sha256') != source_sha256:
+    if name not in files or json.loads(files[name].read_text()).get('source_sha256') not in allowed_sources:
       raise ArtifactError('AMD warp differs from pinned runtime source')
     qcom = f'warp-qcom-a630-{width}x{height}'
     required.update(f'{qcom}/{name}' for name in ['graph.json', 'weights.bin', 'provenance.json'])
-    if f'{qcom}/provenance.json' not in files or json.loads(files[f'{qcom}/provenance.json'].read_text()).get('source_sha256') != source_sha256:
+    if f'{qcom}/provenance.json' not in files or json.loads(files[f'{qcom}/provenance.json'].read_text()).get('source_sha256') not in allowed_sources:
       raise ArtifactError('QCOM warp differs from pinned runtime source')
   if not required.issubset(files) or not any(name.startswith('firmware/') for name in files):
     raise ArtifactError('incomplete native hardware companions')
@@ -142,7 +174,8 @@ def publish(sources: Sources, destination: Path) -> Path:
     temporary = Path(temporary)
     runtime = temporary / 'runtime'
     runtime_sources(sources.runtime, runtime)
-    hardware = hardware_files(sources.hardware, runtime)
+    equivalence = warp_equivalence(sources.hardware, runtime, sources.warp_reference)
+    hardware = hardware_files(sources.hardware, runtime, equivalence)
     stage = temporary / 'package'
     stage.mkdir()
     with Artifact(sources.model, runtime) as artifact:
@@ -168,8 +201,9 @@ def publish(sources: Sources, destination: Path) -> Path:
       'hardware_manifest_sha256': fingerprint(sources.hardware / 'manifest.json'),
       'build_sources': {
         name: fingerprint(Path(__file__).with_name(name))
-        for name in ['usbgpu_catalog_package.py', 'import_usbgpu_hcq.py', 'usbgpu_hcq_data.py', 'usbgpu_hcq_dispatch.py', 'usbgpu_worker_metadata.py']
+        for name in ['usbgpu_catalog_package.py', 'import_usbgpu_hcq.py', 'usbgpu_hcq_data.py', 'usbgpu_hcq_dispatch.py', 'usbgpu_hcq_dispatch2.py', 'usbgpu_hcq_export2.py', 'usbgpu_worker_metadata.py']
       },
+      'warp_source_equivalence':equivalence,
       'execution_boundary': 'Build-time data-only conversion; native HCQ dispatcher and source-derived AMD/QCOM warp companions. No runtime Python.',
     }
     (stage / 'source-provenance.json').write_text(json.dumps(provenance, sort_keys=True, indent=2) + '\n')

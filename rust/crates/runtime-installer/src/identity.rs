@@ -11,7 +11,7 @@ use std::{
 
 pub(crate) const MAX_JSON_BYTES: u64 = 4 * 1024 * 1024;
 pub(crate) const MAX_UNPACKED_BYTES: u64 = 8 * 1024 * 1024 * 1024;
-pub(crate) const SOURCE_ASSETS: [&str; 17] = [
+pub(crate) const SOURCE_ASSETS: [&str; 19] = [
     "openpilot/selfdrive/assets/fonts/KaiGenGothicKR-Bold.ttf",
     "openpilot/selfdrive/assets/icons_mici/carrot_cruse_gap_trimmed.png",
     "openpilot/selfdrive/assets/icons_mici/carrot_wheel_lane.png",
@@ -29,12 +29,16 @@ pub(crate) const SOURCE_ASSETS: [&str; 17] = [
     "panda/board/obj/bootstub.panda_h7.bin",
     "panda/board/obj/panda.bin.signed",
     "panda/board/obj/panda_h7.bin.signed",
+    "panda/board/obj/panda_tesla_wake.bin.signed",
+    "panda/board/obj/panda_h7_tesla_wake.bin.signed",
 ];
-const REQUIRED: [&str; 14] = [
+const REQUIRED: [&str; 16] = [
     "openpilot-launch",
     "openpilot-runtime-install",
     "openpilot-manager",
     "openpilot-process-child",
+    "openpilot-reboot",
+    "openpilot-startup-recovery",
     "openpilot-carrot-recovery",
     "openpilot-carrot-web-watchdog",
     "openpilot-carrot-server",
@@ -216,7 +220,7 @@ pub(crate) fn verify_generation(root: &Path, descriptor: &Descriptor) -> Result<
     if source_bytes > 128 * 1024 * 1024 {
         return Err(invalid("source assets exceed reserved activation growth"));
     }
-    let expected: BTreeSet<_> = manifest
+    let mut expected: BTreeSet<_> = manifest
         .files
         .iter()
         .map(|f| f.path.clone())
@@ -225,6 +229,16 @@ pub(crate) fn verify_generation(root: &Path, descriptor: &Descriptor) -> Result<
             PathBuf::from(".runtime-release.json"),
         ])
         .collect();
+    // Older generations need not have a repair cache. This non-executable
+    // retained download is verified against the descriptor again before use.
+    match fs::symlink_metadata(root.join(crate::CACHED_ARCHIVE)) {
+        Ok(metadata) if metadata.is_file() => {
+            expected.insert(PathBuf::from(crate::CACHED_ARCHIVE));
+        }
+        Ok(_) => return Err(invalid("repair archive is not a regular file")),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+        Err(error) => return Err(error.into()),
+    }
     verify_tree(root, Path::new(""), &expected)?;
     Ok(manifest)
 }

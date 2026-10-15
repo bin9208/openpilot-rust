@@ -3,6 +3,10 @@ mod callback;
 #[cfg(feature = "native-skip-miri")]
 mod native;
 #[cfg(feature = "native-skip-miri")]
+mod blocking;
+#[cfg(feature = "native-skip-miri")]
+pub use blocking::play as play_blocking;
+#[cfg(feature = "native-skip-miri")]
 pub use native::Stream;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

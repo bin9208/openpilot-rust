@@ -14,6 +14,8 @@ mod bridge;
 mod native;
 #[cfg(feature = "native-skip-miri")]
 pub use native::{
-    apply_mask, bgr_to_gray, bounding_rect, initialize, nv12_to_rgb, polygon_mask, resize_linear,
-    DnnNet,
+    apply_mask, bgr_to_gray, bounding_rect, connected_components, distance_transform,
+    external_contours, initialize, match_template, match_template_ccorr, morphology_open,
+    morphology_tophat, nv12_to_rgb, polygon_mask, resize_linear, rgb_to_gray, rgb_to_hsv,
+    Component, Components, Contour, DnnNet,
 };

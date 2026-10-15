@@ -15,6 +15,7 @@ from types import SimpleNamespace
 from typing import assert_never
 import numpy as np
 from ui_model_qa.geometry_cases import Case, cases
+from openpilot.system.ui.lib import native_geometry
 from openpilot.selfdrive.ui.onroad.path_geometry import sample_path, project_path
 from openpilot.selfdrive.ui.road_markings import lane_dash_segments, project_lane_segments, project_blindspot_barrier, blindspot_barrier_quads
 
@@ -24,7 +25,7 @@ def helper(path: Path):
   selected = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'ModelRenderer')
   selected.bases = []
   selected.body = [node for node in selected.body if isinstance(node, ast.FunctionDef) and node.name in ('_map_line_to_polygon', '_map_to_screen')]
-  namespace = {'np': np}
+  namespace = {'np': np, 'native_geometry': native_geometry}
   exec(compile(ast.Module(body=[selected], type_ignores=[]), str(path), 'exec'), namespace)
   return namespace['ModelRenderer']
 

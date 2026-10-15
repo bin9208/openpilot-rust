@@ -100,7 +100,7 @@ pub(super) async fn run(config: &Config) -> Result<i32, Error> {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
         let mut streams = Vec::new();
         while tokio::time::Instant::now() < deadline {
-            streams = crate::youtube_test::status::streams();
+            streams = crate::vision_test::support::streams();
             if !streams.is_empty() { break; }
             tokio::time::sleep(Duration::from_millis(250)).await;
         }

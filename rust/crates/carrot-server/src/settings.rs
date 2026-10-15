@@ -72,7 +72,10 @@ impl Catalog {
                     Value::integer(
                         items
                             .iter()
-                            .filter(|item| !item.get("detail_parent").truth())
+                            .filter(|item| {
+                                !item.get("detail_parent").truth()
+                                    && !item.get("search_only").truth()
+                            })
                             .count(),
                     ),
                 ),

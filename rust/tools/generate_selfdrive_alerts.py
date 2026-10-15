@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import os
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -21,8 +22,20 @@ def load_source(device):
   timing = ROOT / 'openpilot/common/realtime.py'
   dt = next(ast.literal_eval(node.value) for node in ast.parse(timing.read_text()).body if isinstance(node, ast.Assign)
             and any(isinstance(target, ast.Name) and target.id == 'DT_CTRL' for target in node.targets))
+  final_text = subprocess.check_output(['git','show','e8e152dbcfd9574a1791ed12026d1880e87689b3:openpilot/selfdrive/selfdrived/events.py'],cwd=ROOT,text=True)
+  final_tree=ast.parse(final_text)
+  final_events=next(n for n in final_tree.body if isinstance(n,ast.ClassDef) and n.name=='Events')
+  additions=next(n.value for n in final_tree.body if isinstance(n,ast.AnnAssign) and isinstance(n.target,ast.Name) and n.target.id=='EVENTS')
+  added_names={'driverMonitorFallback','systemReady','impactDetected','impactDashcamReboot','radarStationaryLead'}
+  constants=[n for n in final_tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id.startswith('TEMP_STEER_') for t in n.targets)]
   nodes = []
   for node in ast.parse(source.read_text()).body:
+    if isinstance(node,ast.ClassDef) and node.name=='Events':
+      nodes.extend(constants);node=final_events
+    if isinstance(node,ast.AnnAssign) and isinstance(node.target,ast.Name) and node.target.id=='EVENTS':
+      for key,value in zip(additions.keys,additions.values):
+        if isinstance(key,ast.Attribute) and key.attr in added_names:
+          node.value.keys.append(key);node.value.values.append(value)
     if isinstance(node, (ast.Import, ast.ImportFrom)):
       continue
     if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == 'AlertCallbackType' for target in node.targets):
@@ -36,6 +49,9 @@ def load_source(device):
   annotations = ast.ImportFrom(module='__future__', names=[ast.alias(name='annotations')], level=0)
   tree = ast.fix_missing_locations(ast.Module(body=[annotations, *nodes], type_ignores=[]))
   exec(compile(tree, str(source), 'exec'), namespace)
+  # Final pinned source retains this historical event with no banner/categories.
+  # Map by schema name: upstream126 collides with native jetlinkLost126.
+  namespace['EVENTS'][int(log.OnroadEvent.EventName.driverMonitorFallback)] = {}
   return namespace
 
 
@@ -70,7 +86,10 @@ def generate():
   paths = ['openpilot/selfdrive/selfdrived/events.py', 'openpilot/common/realtime.py',
            'openpilot/cereal/log.capnp', 'opendbc_repo/opendbc/car/car.capnp']
   return {'sources': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths},
-          'tici': catalog('tici'), 'mici': catalog('mici')}
+          'tici': catalog('tici'), 'mici': catalog('mici'),
+          'dm2_event_mapping': {'source': 'e8e152dbcfd9574a1791ed12026d1880e87689b3',
+                                'event': 'driverMonitorFallback', 'source_ordinal': 126, 'native_ordinal': 130,
+                                'reason': 'native ordinal126 already jetlinkLost; source event has no alert categories'}}
 
 
 def main():

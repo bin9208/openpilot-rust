@@ -2,17 +2,20 @@ use openpilot_camera_kernel::{Device, DeviceOperation, Fence, Link, Master, Memo
 use openpilot_camerad::{
     isp::FrameBuffers,
     requests::{
-        CameraRequests, Diagnostic, EventResult, FrameEvent, FrameMetadata, RequestError,
-        RequestIo, StressPoint,
+        CameraRequests, Diagnostic, EventResult, FrameEvent, FrameMetadata, PendingFrame,
+        PreparedFrame, RequestError, RequestIo, StressPoint, WaitIo,
     },
     sensor::{Register, SensorKind},
     startup::FrameSync,
 };
 use openpilot_msgq::{VisionLayout, VisionMetadata, VisionServer, VisionStream};
 
+use crate::frame_wait::AsyncFrameWait;
+use std::{os::fd::BorrowedFd, sync::Arc};
+
 use crate::{
-    images::FrameImages, phy::PhyPort, IspConfig, IspPort, IspPortError, OutputMode, SensorError,
-    SensorPort,
+    IspConfig, IspPort, IspPortError, OutputMode, SensorError, SensorPort, images::FrameImages,
+    phy::PhyPort,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -43,6 +46,8 @@ pub enum CameraError {
     Depth(#[from] openpilot_camerad::requests::InvalidDepth),
     #[error(transparent)]
     Requests(Box<RequestError<CameraError>>),
+    #[error(transparent)]
+    Wait(#[from] std::io::Error),
     #[error("camera allocation dimensions are invalid")]
     Size,
     #[error("camera buffer depth {0} exceeds the 18-buffer IPC stream")]
@@ -71,6 +76,9 @@ pub trait FrameClock {
 }
 
 pub struct CameraPort<'pool, 'device> {
+    frame_wait: Option<AsyncFrameWait>,
+    wait_device: Option<Arc<Device>>,
+    pending: Option<PendingFrame>,
     requests: Option<CameraRequests>,
     io: CameraIo<'pool, 'device>,
 }
@@ -117,14 +125,30 @@ impl<'pool, 'device> CameraPort<'pool, 'device> {
         if config.depth == 0 {
             return Err(openpilot_camerad::requests::InvalidDepth(config.depth).into());
         }
-        let sensor = SensorPort::probe(
-            &master.request,
-            pool,
-            open("cam-sensor-driver", config.port)?,
-            config.port,
-            config.enabled,
-        )?;
+        let sensor = match open("cam-sensor-driver", config.port) {
+            Ok(device) => {
+                SensorPort::probe(&master.request, pool, device, config.port, config.enabled)?
+            }
+            Err(error)
+                if config.stream == VisionStream::Driver
+                    && matches!(
+                        error,
+                        openpilot_camera_kernel::Error::Open { .. }
+                            | openpilot_camera_kernel::Error::MissingDevice { .. }
+                    ) =>
+            {
+                camera_log!(
+                    Error,
+                    "driver sensor node unavailable; continuing with interaction-based driver monitoring"
+                );
+                SensorPort::unavailable(&master.request, pool, config.port)
+            }
+            Err(error) => return Err(error.into()),
+        };
         let mut output = Self {
+            frame_wait: None,
+            wait_device: None,
+            pending: None,
             requests: None,
             io: CameraIo {
                 master,
@@ -246,21 +270,85 @@ impl<'pool, 'device> CameraPort<'pool, 'device> {
         if self.io.closed {
             return Err(CameraError::Closed);
         }
+        if self.frame_wait_pending() {
+            return Err(CameraError::Wait(std::io::Error::other(
+                "camera event while fence pending",
+            )));
+        }
+        let Some(requests) = self.requests.as_mut() else {
+            return Ok(None);
+        };
+        let driver = self.io.config.stream == VisionStream::Driver;
+        let mut io = ClockedIo {
+            io: &mut self.io,
+            clock,
+        };
+        let prepared = requests
+            .prepare_event(event, &mut io)
+            .map_err(|error| CameraError::Requests(Box::new(error)))?;
+        match prepared {
+            PreparedFrame::Complete(result) => Ok(Some(result)),
+            PreparedFrame::Wait(pending, wait) => {
+                if driver {
+                    if self.frame_wait.is_none() {
+                        self.wait_device = Some(Arc::new(self.io.master.sync.try_clone()?));
+                        self.frame_wait = Some(AsyncFrameWait::new()?);
+                    }
+                    let device = Arc::clone(self.wait_device.as_ref().ok_or(CameraError::Closed)?);
+                    self.frame_wait
+                        .as_mut()
+                        .ok_or(CameraError::Closed)?
+                        .submit(move || {
+                            let mut io = KernelWait {
+                                device,
+                                clock: crate::SystemClock::default(),
+                            };
+                            wait.run(&mut io)
+                        })?;
+                    self.pending = Some(pending);
+                    Ok(None)
+                } else {
+                    let ready = wait.run(&mut io);
+                    requests
+                        .finish_frame(pending, ready, sync, &mut io)
+                        .map(Some)
+                        .map_err(|error| CameraError::Requests(Box::new(error)))
+                }
+            }
+        }
+    }
+    pub fn frame_wait_fd(&self) -> Option<BorrowedFd<'_>> {
+        self.frame_wait.as_ref().map(AsyncFrameWait::fd)
+    }
+    pub fn frame_wait_pending(&self) -> bool {
+        self.frame_wait.as_ref().is_some_and(AsyncFrameWait::busy)
+    }
+    pub fn complete_frame_wait(
+        &mut self,
+        sync: &mut FrameSync,
+        clock: &mut impl FrameClock,
+    ) -> Result<Option<EventResult>, CameraError> {
+        let Some(worker) = self.frame_wait.as_mut() else {
+            return Ok(None);
+        };
+        let Some(ready) = worker.take()? else {
+            return Ok(None);
+        };
+        let pending = self.pending.take().ok_or(CameraError::Closed)?;
         self.requests
             .as_mut()
-            .map(|requests| {
-                requests
-                    .handle_event(
-                        event,
-                        sync,
-                        &mut ClockedIo {
-                            io: &mut self.io,
-                            clock,
-                        },
-                    )
-                    .map_err(|error| CameraError::Requests(Box::new(error)))
-            })
-            .transpose()
+            .ok_or(CameraError::Closed)?
+            .finish_frame(
+                pending,
+                ready,
+                sync,
+                &mut ClockedIo {
+                    io: &mut self.io,
+                    clock,
+                },
+            )
+            .map(Some)
+            .map_err(|error| CameraError::Requests(Box::new(error)))
     }
 
     pub fn publish(&self, frame: FrameMetadata) -> Result<(), CameraError> {
@@ -310,7 +398,38 @@ impl<'pool, 'device> CameraPort<'pool, 'device> {
     }
 
     pub fn shutdown(&mut self) {
+        self.frame_wait.take();
+        self.pending.take();
+        self.wait_device.take();
         self.io.shutdown();
+    }
+}
+
+impl Drop for CameraPort<'_, '_> {
+    fn drop(&mut self) {
+        self.shutdown();
+    }
+}
+struct KernelWait {
+    device: Arc<Device>,
+    clock: crate::SystemClock,
+}
+impl WaitIo for KernelWait {
+    fn now_ms(&mut self) -> f64 {
+        self.clock.now_ms()
+    }
+    fn wait(&mut self, fence: i32, timeout: u32) -> bool {
+        self.device.wait_fence(Fence(fence), timeout.into()).code == 0
+    }
+    fn sleep_ms(&mut self, millis: u64) {
+        self.clock.sleep_ms(millis);
+    }
+    fn failed(&mut self, camera: i32, point: StressPoint, elapsed_ms: f64) {
+        self.clock.diagnostic(Diagnostic::WaitFailure {
+            camera,
+            point,
+            elapsed_ms,
+        });
     }
 }
 
@@ -357,7 +476,7 @@ impl CameraIo<'_, '_> {
 
     fn enqueue(&mut self, request: u64) -> Result<(), CameraError> {
         let slot = (request % self.config.depth as u64) as usize;
-        if self.fences[slot].0 .0 != 0 {
+        if self.fences[slot].0.0 != 0 {
             return Err(CameraError::Occupied(slot));
         }
         let bps = self
@@ -400,8 +519,8 @@ impl CameraIo<'_, '_> {
             FrameBuffers {
                 raw,
                 yuv,
-                ife_fence: self.fences[slot].0 .0,
-                bps_fence: self.fences[slot].1 .0,
+                ife_fence: self.fences[slot].0.0,
+                bps_fence: self.fences[slot].1.0,
             },
         )?;
         Ok(())
@@ -501,7 +620,7 @@ impl<Clock: FrameClock> RequestIo for ClockedIo<'_, '_, '_, Clock> {
         self.io.enqueue(request)
     }
     fn fences(&self, slot: usize) -> (i32, i32) {
-        (self.io.fences[slot].0 .0, self.io.fences[slot].1 .0)
+        (self.io.fences[slot].0.0, self.io.fences[slot].1.0)
     }
     fn wait_for_sync(&mut self, fence: i32, timeout_ms: u32) -> bool {
         self.io
@@ -520,5 +639,69 @@ impl<Clock: FrameClock> RequestIo for ClockedIo<'_, '_, '_, Clock> {
     }
     fn sleep_ms(&mut self, millis: u64) {
         self.clock.sleep_ms(millis);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_driver_node_disables_only_driver_without_allocating_or_probing() {
+        let master = Master {
+            request: Device::open("/dev/null").unwrap(),
+            sync: Device::open("/dev/null").unwrap(),
+            isp: Device::open("/dev/null").unwrap(),
+            icp: Device::open("/dev/null").unwrap(),
+            mmu: openpilot_camera_kernel::MmuHandles {
+                device: 0,
+                cdm: 0,
+                icp: 0,
+            },
+            subscription: openpilot_camera_kernel::CallResult { code: 0, errno: 0 },
+        };
+        let mut pool = MemoryPool::new(&master.request);
+        let server = VisionServer::new(&format!("missing-driver-{}", std::process::id())).unwrap();
+        for stream in [
+            VisionStream::Driver,
+            VisionStream::Road,
+            VisionStream::WideRoad,
+        ] {
+            let mut calls = Vec::new();
+            let result = CameraPort::open_with(
+                &master,
+                &pool,
+                &server,
+                CameraConfig {
+                    port: 2,
+                    enabled: true,
+                    mode: OutputMode::Bps,
+                    phy: 0x4003,
+                    vignetting: false,
+                    depth: 18,
+                    stream,
+                    staggered: false,
+                },
+                &mut crate::SystemClock::default(),
+                |name, index| {
+                    calls.push((name.to_owned(), index));
+                    Err(openpilot_camera_kernel::Error::MissingDevice {
+                        name: name.into(),
+                        index,
+                    })
+                },
+            );
+            assert_eq!(calls, [("cam-sensor-driver".into(), 2)]);
+            if stream == VisionStream::Driver {
+                let mut camera = result.unwrap();
+                assert!(!camera.enabled());
+                assert!(camera.session().is_none());
+                assert!(camera.layout().is_none());
+                camera.start_sensors().unwrap();
+                camera.shutdown();
+            } else {
+                assert!(matches!(result, Err(CameraError::Kernel(_))));
+            }
+        }
+        pool.close().unwrap();
     }
 }

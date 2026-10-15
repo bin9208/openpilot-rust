@@ -73,7 +73,6 @@ async fn serve_local(
     let mut sync_changes = app.dashcam_sync_uploads.subscribe();
     let mut live_changes = app.live.as_ref().map(|service| service.subscribe());
     let mut navi_changes = app.web_navi.as_ref().map(|service| service.subscribe());
-    let mut youtube_changes = app.youtube_live.as_ref().map(|service| service.changed());
     let mut tools_changes = app.tools.as_ref().map(|service| service.changed());
     let mut terminal_changes = app.terminal.as_ref().map(|service| service.changed());
     let mut support_changes = app
@@ -96,9 +95,6 @@ async fn serve_local(
     if let Some(service) = &app.web_navi {
         service.quiesce();
     }
-    if let Some(service) = &app.youtube_live {
-        service.quiesce();
-    }
     stop.send_replace(true);
     sound_stop.send_replace(crate::web_sound::Shutdown::Quiescing);
     if tokio::time::timeout(Duration::from_secs(60), async {
@@ -112,10 +108,6 @@ async fn serve_local(
                 && app.live.as_ref().is_none_or(|service| service.is_idle())
                 && app
                     .web_navi
-                    .as_ref()
-                    .is_none_or(|service| service.is_idle())
-                && app
-                    .youtube_live
                     .as_ref()
                     .is_none_or(|service| service.is_idle())
                 && app.tools.as_ref().is_none_or(|service| service.is_idle())
@@ -136,7 +128,6 @@ async fn serve_local(
                 _ = sync_changes.changed() => {}
                 _ = changed(&mut live_changes), if live_changes.is_some() => {}
                 _ = changed(&mut navi_changes), if navi_changes.is_some() => {}
-                _ = changed(&mut youtube_changes), if youtube_changes.is_some() => {}
                 _ = changed(&mut tools_changes), if tools_changes.is_some() => {}
                 _ = changed(&mut terminal_changes), if terminal_changes.is_some() => {}
                 _ = changed(&mut support_changes), if support_changes.is_some() => {}
@@ -157,9 +148,6 @@ async fn serve_local(
             service.force();
         }
         if let Some(service) = &app.web_navi {
-            service.force();
-        }
-        if let Some(service) = &app.youtube_live {
             service.force();
         }
         if let Some(service) = &app.terminal {

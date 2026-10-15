@@ -106,23 +106,38 @@ impl CarSpecificEvents {
                 .ok_or(Error::CounterOverflow)?
         };
         if cs.steer_fault_temporary {
-            if cs.steering_pressed && (!prev.steer_fault_temporary || self.no_steer_warning) {
-                self.no_steer_warning = true;
+            let standstill_transient = matches!(self.cp.brand, super::Brand::Tesla)
+                && (cs.standstill || cs.cruise_state.standstill || cs.v_ego.abs() < 0.5);
+            self.tesla_standstill_steer_fault_frames = if standstill_transient {
+                self.tesla_standstill_steer_fault_frames
+                    .checked_add(1)
+                    .ok_or(Error::CounterOverflow)?
             } else {
-                self.no_steer_warning = false;
-                if self.silent_steer_warning > 0 || cs.standstill || self.steering_unpressed < 150 {
-                    self.silent_steer_warning = self
-                        .silent_steer_warning
-                        .checked_add(1)
-                        .ok_or(Error::CounterOverflow)?;
-                    if self.silent_steer_warning > 20 {
-                        events.push(EventName::SteerTempUnavailableSilent);
-                    }
+                0
+            };
+            if !(standstill_transient && self.tesla_standstill_steer_fault_frames < 200) {
+                if cs.steering_pressed && (!prev.steer_fault_temporary || self.no_steer_warning) {
+                    self.no_steer_warning = true;
                 } else {
-                    events.push(EventName::SteerTempUnavailable);
+                    self.no_steer_warning = false;
+                    if self.silent_steer_warning > 0
+                        || cs.standstill
+                        || self.steering_unpressed < 150
+                    {
+                        self.silent_steer_warning = self
+                            .silent_steer_warning
+                            .checked_add(1)
+                            .ok_or(Error::CounterOverflow)?;
+                        if self.silent_steer_warning > 20 {
+                            events.push(EventName::SteerTempUnavailableSilent);
+                        }
+                    } else {
+                        events.push(EventName::SteerTempUnavailable);
+                    }
                 }
             }
         } else {
+            self.tesla_standstill_steer_fault_frames = 0;
             self.no_steer_warning = false;
             self.silent_steer_warning = 0;
         }

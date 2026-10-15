@@ -134,14 +134,17 @@ impl CarrotPlanner {
                         if car.gas_pressed {
                             self.x_state = XState::E2eCruise;
                         }
-                    } else if car.v_ego * 3.6 < 5. && self.traffic_state != TrafficState::Green {
+                    } else if !self.signal_detection_suspended
+                        && car.v_ego * 3.6 < 5.
+                        && self.traffic_state != TrafficState::Green
+                    {
                         self.x_state = XState::E2eStop;
                         self.actual_stop_distance = 5.;
                     } else if car.v_ego * 3.6 > 5. {
                         self.x_state = XState::E2eCruise;
                     }
                 }
-                XState::Lead | XState::Cruise | XState::E2eCruise => {
+                XState::Lead | XState::Cruise | XState::E2eCruise | XState::E2eStopPrepare => {
                     self.traffic_starting_count = self.traffic_starting_count.saturating_sub(1);
                     if lead.status {
                         self.x_state = XState::Lead;

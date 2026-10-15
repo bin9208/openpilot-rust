@@ -45,6 +45,7 @@ pub(super) struct Context {
     pub(super) settings: Settings,
     pub(super) webdav: Option<openpilot_web_upload::WebDav>,
     pub(super) segments: Vec<String>,
+    pub(super) include_all_files: bool,
     pub(super) canceled: Arc<AtomicBool>,
     pub(super) output: Output,
     pub(super) transfer: Mutex<Transfer>,

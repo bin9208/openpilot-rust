@@ -1,4 +1,6 @@
+mod closing;
 pub mod constants;
+mod corner_motion;
 mod corroboration;
 mod dispatch;
 mod evidence;
@@ -51,6 +53,13 @@ pub struct PositionEvidence {
 
 #[derive(Default, Serialize)]
 pub struct Matcher {
+    #[serde(serialize_with = "entries")]
+    pub _closing_range_history: IndexMap<Identity, (f64, f64, Point)>,
+    pub closing_range_match: Option<VisionMatch>,
+    #[serde(serialize_with = "entries")]
+    pub _corner_motion_history: IndexMap<Identity, std::collections::VecDeque<(f64, Point)>>,
+    #[serde(serialize_with = "entries")]
+    pub _corner_motion_unreliable_until: IndexMap<Identity, f64>,
     pub last_identity: Option<Identity>,
     pub low_probability_hold_frames: usize,
     pub stationary_identity: Option<Identity>,

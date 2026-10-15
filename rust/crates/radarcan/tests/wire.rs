@@ -78,3 +78,49 @@ fn car_state_preserves_batch_identity_and_promotes_schema_float_values() {
 fn malformed_wire_bytes_remain_a_typed_fatal_boundary() {
     assert!(matches!(wire::can(&[0]), Err(wire::Error::ByteLength)));
 }
+
+#[test]
+fn display_support_survives_absent_control_points_and_preserves_separate_presence() {
+    use openpilot_radarcan::point::Point;
+    let data = Data {
+        has_display_data: true,
+        display_points: vec![Point {
+            track_id: 1234,
+            d_rel: 42.,
+            y_rel: 3.,
+            v_lead: 18.,
+            ..Point::default()
+        }],
+        ..Data::default()
+    };
+    let message = publication(&data);
+    let root = message.get_root::<event::Reader>().unwrap();
+    let event::Which::LiveTracks(tracks) = root.which().unwrap() else {
+        panic!("tracks")
+    };
+    let tracks = tracks.unwrap();
+    assert!(tracks.get_has_display_data());
+    assert!(!tracks.has_points());
+    assert!(tracks.has_display_points());
+    let points = tracks.get_display_points().unwrap();
+    assert_eq!(points.len(), 1);
+    let point = points.get(0);
+    assert_eq!(point.get_track_id(), 1234);
+    assert_eq!(point.get_y_rel(), 3.);
+    assert_eq!(point.get_v_lead(), 18.);
+    let data = Data {
+        has_display_data: true,
+        display_points_present: true,
+        ..Data::default()
+    };
+    let message = publication(&data);
+    let root = message.get_root::<event::Reader>().unwrap();
+    let event::Which::LiveTracks(tracks) = root.which().unwrap() else {
+        panic!("tracks")
+    };
+    let tracks = tracks.unwrap();
+    assert!(tracks.get_has_display_data());
+    assert!(tracks.has_display_points());
+    assert_eq!(tracks.get_display_points().unwrap().len(), 0);
+    assert!(!tracks.has_points());
+}

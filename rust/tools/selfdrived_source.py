@@ -6,7 +6,7 @@
 # ─── How to run ───
 # Imported by: PYTHONPATH=. python rust/tools/check_selfdrived_controller.py --help
 # ──────────────────
-"""Unchanged SelfdriveD AST with controlled IO, actual schemas and source helpers."""
+"""Complete pinned final SelfdriveD AST with controlled OS/IPC adapters."""
 from __future__ import annotations
 
 import ast
@@ -14,13 +14,17 @@ import copy
 from collections import defaultdict
 from dataclasses import dataclass
 import json
+import os
+import sys
+from types import ModuleType
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace as NS
 from contextlib import ExitStack
 
 from openpilot.cereal import car, log, messaging
 from openpilot.selfdrive.locationd.helpers import Pose, PoseCalibrator
-from openpilot.selfdrive.selfdrived.camera_config import get_camera_packets
+from check_selfdrive_helpers import get_camera_packets
 from openpilot.selfdrive.controls.lib.cutin_alert import CutinAlertCandidate, CutinAlertTracker, promoted_cutin_candidates
 from check_alert_callbacks import setup_source
 from check_selfdrive_helpers import source_check
@@ -28,6 +32,34 @@ from car_specific_oracle import load as car_source
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'openpilot/selfdrive/selfdrived/selfdrived.py'
+
+DM2_PIN = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
+
+def final_controller_nodes(_nodes):
+  # The complete final class is executed, including startup, impact, DM and advisory.
+  final_text = subprocess.check_output(['git','show',f'{DM2_PIN}:openpilot/selfdrive/selfdrived/selfdrived.py'],cwd=ROOT,text=True)
+  cls = next(n for n in ast.parse(final_text).body if isinstance(n,ast.ClassDef) and n.name=='SelfdriveD')
+  init=next(n for n in cls.body if isinstance(n,ast.FunctionDef) and n.name=='__init__')
+  # Retained native diagnostic field has no runtime authority; final source removed it.
+  init.body.append(ast.Assign(targets=[ast.Attribute(value=ast.Name(id='self',ctx=ast.Load()),attr='disable_dm',ctx=ast.Store())],value=ast.Constant(0)))
+  # Preserve the independent Rust-base Jetlink safety contract alongside final upstream.
+  baseline=ast.parse(SOURCE.read_text())
+  old=next(n for n in baseline.body if isinstance(n,ast.ClassDef) and n.name=='SelfdriveD')
+  old_events=next(n for n in old.body if isinstance(n,ast.FunctionDef) and n.name=='update_events')
+  final_events=next(n for n in cls.body if isinstance(n,ast.FunctionDef) and n.name=='update_events')
+  required=next(n for n in old_events.body if isinstance(n,ast.ImportFrom) and n.module.endswith('jetlink.transition'))
+  filter_node=copy.deepcopy(next(n for n in old_events.body if isinstance(n,ast.Assign) and ast.unparse(n.targets[0])=='not_running'))
+  filter_node.value.args[0]=ast.Name(id='not_running',ctx=ast.Load())
+  lost_start=next(i for i,n in enumerate(old_events.body) if isinstance(n,ast.Assign) and ast.unparse(n.targets[0])=='jetlink_status')
+  body=[]
+  for node in final_events.body:
+    if isinstance(node,ast.Assign) and ast.unparse(node.targets[0])=='has_disable_events':
+      body.extend(copy.deepcopy(old_events.body[lost_start:lost_start+2]))
+    body.append(node)
+    if isinstance(node,ast.Assign) and ast.unparse(node.targets[0])=='not_running':
+      body.extend([copy.deepcopy(required),filter_node])
+  final_events.body=body
+  return ast.fix_missing_locations(ast.Module(body=[cls],type_ignores=[]))
 
 
 class TraceParams:
@@ -66,6 +98,8 @@ class Fixture:
     self.params = TraceParams(params, self.effects)
     self.now, self.current, self.pending, self.streams = 0.0, None, [], []
     self.machine = None
+    from selfdrived_final_dependencies import Memory
+    self.memory = Memory()
 
   def sleep(self, _duration):
     self.params_stop = True
@@ -93,19 +127,28 @@ class Fixture:
     return message
 
   def submaster(self, *args, **kwargs):
-    with ExitStack() as scope:
-      scope.callback(setattr, messaging, 'sub_sock', messaging.sub_sock)
-      messaging.sub_sock = lambda *_args, **_kwargs: None
-      result = messaging.SubMaster(*args, **kwargs)
-    result.update = lambda _timeout: result.update_msgs(self.now, self.pending)
+    from check_message_state import source
+    scope, environment=source()
+    environment['simulation']=os.environ.get('SIMULATION','0')
+    text=subprocess.check_output(['git','show',f'{DM2_PIN}:openpilot/cereal/messaging/__init__.py'],cwd=ROOT,text=True)
+    nodes=[n for n in ast.parse(text).body if isinstance(n,(ast.FunctionDef,ast.ClassDef)) and n.name in ('new_message','FrequencyTracker','SubMaster')]
+    scope['Poller']=messaging.Poller
+    exec(compile(ast.Module(body=nodes,type_ignores=[]),'final-source:messaging','exec'),scope)
+    result=scope['SubMaster'](*args,**kwargs)
+    result.update=lambda _timeout:result.update_msgs(self.now,self.pending)
     return result
 
   def offroad(self, key, show, extra_text=None):
-    self.effects.append({'operation': 'offroad', 'key': key, 'extra': extra_text})
+    if show:
+      self.effects.append({'operation': 'offroad', 'key': key, 'extra': extra_text})
     self.original_offroad(key, show, extra_text)
 
   def initialize(self, cp, mode, language):
     self.machine = None
+    # Filesystem read is controlled; source fault_active remains covered by its native adapter tests.
+    link=ModuleType('openpilot.selfdrive.modeld.jetlink.link')
+    link.fault_active=lambda:False
+    sys.modules[link.__name__]=link
     events = setup_source(mode['device_type'] == 'mici', language or 'en')
     events['Params'] = lambda: self.params
     timing = ROOT / 'openpilot/common/realtime.py'
@@ -129,13 +172,13 @@ class Fixture:
     car_events.__init__.__globals__['Events'] = events['Events']
     tree = ast.parse(SOURCE.read_text())
     nodes = [n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'SelfdriveD']
-    namespace = {'car': car, 'log': log, 'time': NS(monotonic=self.monotonic, sleep=self.sleep), 'Params': lambda: self.params,
+    namespace = {'car': car, 'log': log, 'time': NS(monotonic=self.monotonic, sleep=self.sleep), 'Params': lambda *args: self.memory if args else self.params,
                  'get_build_metadata': lambda: None, 'CarSpecificEvents': car_events, 'PoseCalibrator': PoseCalibrator,
                  'Pose': Pose, 'ExcessiveActuationCheck': source_check(), 'get_camera_packets': get_camera_packets,
                  'get_gps_location_service': lambda p: 'gpsLocationExternal' if p.get_bool('UbloxAvailable') else 'gpsLocation',
                  'messaging': NS(PubMaster=lambda _names: NS(send=self.send), SubMaster=self.submaster, sub_sock=lambda *_args, **_kw: None,
-                                 new_message=self.new_message, recv_one=lambda _sock: NS(carState=self.current) if self.current is not None else None),
-                 'Events': events['Events'], 'ET': events['ET'], 'AlertManager': alert_namespace['AlertManager'],
+                                 new_message=self.new_message, recv_one=lambda _sock: NS(carState=self.current,logMonoTime=int(self.now*1e9)) if self.current is not None else None),
+                 'Events': events['Events'], 'ET': events['ET'], 'EmptyAlert': events['EmptyAlert'], 'AlertManager': alert_namespace['AlertManager'],
                  'StateMachine': self.state_machine_class(), 'Ratekeeper': rates['Ratekeeper'], 'set_offroad_alert': self.offroad,
                  'CutinAlertCandidate': CutinAlertCandidate, 'CutinAlertTracker': CutinAlertTracker, 'promoted_cutin_candidates': promoted_cutin_candidates,
                  'VisionIpcClient': NS(available_streams=self.streams_available),
@@ -146,7 +189,11 @@ class Fixture:
     for node in tree.body:
       if isinstance(node, ast.Assign) and not any(isinstance(t, ast.Name) and t.id in ('REPLAY', 'SIMULATION', 'TESTING_CLOSET') for t in node.targets):
         exec(compile(ast.Module(body=[node], type_ignores=[]), str(SOURCE), 'exec'), namespace)
-    exec(compile(ast.Module(body=nodes, type_ignores=[]), str(SOURCE), 'exec'), namespace)
+    from selfdrived_final_dependencies import load
+    namespace.update(load())
+    namespace['cloudlog'].warning = lambda *_args,**_kwargs: None
+    namespace['cloudlog'].exception = lambda *_args,**_kwargs: None
+    exec(compile(final_controller_nodes(nodes), str(SOURCE) + ':final-controller', 'exec'), namespace)
     self.machine = namespace['SelfdriveD'](cp)
     self.mode = mode
 

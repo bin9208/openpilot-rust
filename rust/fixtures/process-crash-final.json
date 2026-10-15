@@ -1,0 +1,6411 @@
+{
+  "pin": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "source_sha256": "0845e641b2a440149a7ef24ac7c5fe07ce0b7aecf5e88a9fbb308cdd2c9aebcb",
+  "cases": [
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "262fbef70ff6f7846ccb38f0f2605bcfb3a9c6eab16fa36132539ead18e9d3d4",
+          "text_bytes": 262352
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-1",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -69,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-1",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -69,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-1",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -69,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-1.json",
+          "report": {
+            "event": {
+              "id": "1-2-1",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -69,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "9e3b07a583a7d8521177bd9d4464075f0ec3479e1ecd6bbfed0af653d7518d5f",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-2",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -68,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-2",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -68,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-2",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -68,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-2.json",
+          "report": {
+            "event": {
+              "id": "1-2-2",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -68,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "9fb5ace42a03a688d65f29ce61e47a83b74a859259c70b70f0381eb82a7a6a6b",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-3",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -67,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-3",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -67,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-3",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -67,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-3.json",
+          "report": {
+            "event": {
+              "id": "1-2-3",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -67,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "f15103ba793c17059829aedf85317f69dd124aae5f7e5bcc6eb83645986783e1",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-4",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -66,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-4",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -66,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-4",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -66,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-4.json",
+          "report": {
+            "event": {
+              "id": "1-2-4",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -66,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "d9bf766a66ebaffd23fec88cc91bf994e54f39243782715844bec8052c007837",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-5",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -65,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-5",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -65,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-5",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -65,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-5.json",
+          "report": {
+            "event": {
+              "id": "1-2-5",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -65,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "5f5c538bf4cf7bf126ff1d125054bdd447e97dbd655d4ce045ac6c0e984c3e78",
+          "text_bytes": 262352
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-6",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -64,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-6",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -64,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGRTMAX",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-6",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -64,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGRTMAX",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-6.json",
+          "report": {
+            "event": {
+              "id": "1-2-6",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -64,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGRTMAX",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "8553e53134092973b1c08d61aac5154797b882c883b423e01ba6266c5373b29a",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-7",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -63,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-7",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -63,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-7",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -63,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-7.json",
+          "report": {
+            "event": {
+              "id": "1-2-7",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -63,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "721ba962d7c6b55c0b7d8d857eac214a329122f5594199e2503fe78d63a52535",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-8",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -62,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-8",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -62,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-8",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -62,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-8.json",
+          "report": {
+            "event": {
+              "id": "1-2-8",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -62,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "38bf771be50eb061ef1cdee15f17ad91caea2910bfb02e7138febb168cd9a2fa",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-9",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -61,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-9",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -61,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-9",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -61,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-9.json",
+          "report": {
+            "event": {
+              "id": "1-2-9",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -61,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "ee870318537c783644ed71209f1e61403c95ada59f6c97633f6c2f15bba64d5f",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-10",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -60,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-10",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -60,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-10",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -60,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-10.json",
+          "report": {
+            "event": {
+              "id": "1-2-10",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -60,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "156d001266fc59d587be6d01f928f36d6c880573f871d94d913771b03533a543",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-11",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -59,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-11",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -59,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-11",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -59,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-11.json",
+          "report": {
+            "event": {
+              "id": "1-2-11",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -59,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "ae208c1fc518bdb9a929bf8d1a4a7228bd0383e36972fc2bfe5ed4331dc34b55",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-12",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -58,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-12",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -58,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-12",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -58,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-12.json",
+          "report": {
+            "event": {
+              "id": "1-2-12",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -58,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "aa629e569992fcf4dfd769aa461d287805eeaaa63ad5b03f847bbc837cef8e33",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-13",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -57,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-13",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -57,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-13",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -57,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-13.json",
+          "report": {
+            "event": {
+              "id": "1-2-13",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -57,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "586e3949edd067a85c967e1a815a8f5fdb1559c1ab078f2832d25acb0f72afca",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-14",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -56,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-14",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -56,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-14",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -56,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-14.json",
+          "report": {
+            "event": {
+              "id": "1-2-14",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -56,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "07af9814a869a176e6e93c8df2afabcf0bc8776f4317b380afa7a6354df74a6d",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-15",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -55,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-15",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -55,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-15",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -55,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-15.json",
+          "report": {
+            "event": {
+              "id": "1-2-15",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -55,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "bd1e493034b55c8495197be776ea0fb1f6c9a9c3a6d2a233254d393617cb7e62",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-16",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -54,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-16",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -54,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-16",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -54,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-16.json",
+          "report": {
+            "event": {
+              "id": "1-2-16",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -54,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "24d3a28efb391f5469b49b3d300cf33ac0ce4f8ad50ec110ad71ba3712f17eaa",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-17",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -53,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-17",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -53,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-17",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -53,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-17.json",
+          "report": {
+            "event": {
+              "id": "1-2-17",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -53,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "995c8bd7c62d65f41ffa10c1014ea7ed1694a8109789e178672bf53fcf171efe",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-18",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -52,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-18",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -52,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-18",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -52,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-18.json",
+          "report": {
+            "event": {
+              "id": "1-2-18",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -52,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "4bc8a3c6354be4ed07f50d6894e2826e2c57f2c856ca2ebbdb02e706a08ec5d7",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-19",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -51,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-19",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -51,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-19",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -51,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-19.json",
+          "report": {
+            "event": {
+              "id": "1-2-19",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -51,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "8f625c4c2cae54194d81441a88a636126ecf78467b94fa568072235765adad10",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-20",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -50,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-20",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -50,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-20",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -50,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-20.json",
+          "report": {
+            "event": {
+              "id": "1-2-20",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -50,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "6c8c9d1469c8d908c8775d8dd1a920704b37f3a508b0ae55d77c4173f5179ba4",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-21",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -49,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-21",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -49,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-21",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -49,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-21.json",
+          "report": {
+            "event": {
+              "id": "1-2-21",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -49,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "5ac98cd2e5eb7f130ebca5cd42f53a7cbae5e3700f4abbad408c632150174318",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-22",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -48,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-22",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -48,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-22",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -48,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-22.json",
+          "report": {
+            "event": {
+              "id": "1-2-22",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -48,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "a9b7882ba177ca280586336a451a88953dc3481b92c1317cb110afbb09190f89",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-23",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -47,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-23",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -47,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-23",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -47,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-23.json",
+          "report": {
+            "event": {
+              "id": "1-2-23",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -47,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "c1b59bc8317172fba540b3f8c50046efd8f4f8d26b24b31af57a9080d0d9691a",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-24",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -46,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-24",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -46,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-24",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -46,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-24.json",
+          "report": {
+            "event": {
+              "id": "1-2-24",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -46,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "e8dfb819920c0b0927415377607c7ba34261061882f5cfa770d128b7ba6b2a66",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-25",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -45,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-25",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -45,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-25",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -45,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-25.json",
+          "report": {
+            "event": {
+              "id": "1-2-25",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -45,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "002bd8feca7176e85fdf51a48a326ace0209be8d12fd73469d41923887216b57",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-26",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -44,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-26",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -44,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-26",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -44,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-26.json",
+          "report": {
+            "event": {
+              "id": "1-2-26",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -44,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "9270cab192263d18b5f17c28abb8c9769fcc6d21f04ed0ac49e8e70232e70835",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-27",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -43,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-27",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -43,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-27",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -43,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-27.json",
+          "report": {
+            "event": {
+              "id": "1-2-27",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -43,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "7293e3590c302473f25567191aa126fba977b16eedac10032f1b5c497d5ae146",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-28",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -42,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-28",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -42,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-28",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -42,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-28.json",
+          "report": {
+            "event": {
+              "id": "1-2-28",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -42,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "1078620f214e41e7c204736fb4e6cdca28d20f03d16ee3729908f8f6fd61532b",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-29",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -41,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-29",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -41,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-29",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -41,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-29.json",
+          "report": {
+            "event": {
+              "id": "1-2-29",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -41,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "93611b3665fdddbf5be190feaf635c55ad6dfdbbc597daeb9394d2511ec474d3",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-30",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -40,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-30",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -40,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-30",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -40,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-30.json",
+          "report": {
+            "event": {
+              "id": "1-2-30",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -40,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "4ddafcf13abc5589595ae0421ad704ffa006adaab1d1d770b5fdec74a5833a06",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-31",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -39,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-31",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -39,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-31",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -39,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-31.json",
+          "report": {
+            "event": {
+              "id": "1-2-31",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -39,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "38028854099f2584dba77d656343e1b3e2bf4a66cd28bd247bf7533de72e2266",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-32",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -38,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-32",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -38,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-32",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -38,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-32.json",
+          "report": {
+            "event": {
+              "id": "1-2-32",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -38,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "fa3baff29fea791b725df1553f7b9fbef2c43fbcc3fcdc1079f40f9347f9172f",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-33",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -37,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-33",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -37,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-33",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -37,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-33.json",
+          "report": {
+            "event": {
+              "id": "1-2-33",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -37,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "f7b797abdaf5651b50771b4d748af98011cfe7d419018af535d66f579fb90a21",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-34",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -36,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-34",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -36,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-34",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -36,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-34.json",
+          "report": {
+            "event": {
+              "id": "1-2-34",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -36,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "6b29667bb5334e18b8ff4f0d2df7a36b832162beb0b06166b4302e6b8be79229",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-35",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -35,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-35",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -35,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-35",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -35,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-35.json",
+          "report": {
+            "event": {
+              "id": "1-2-35",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -35,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "40aaecde81825e2db78f4b62a87ed88919529b6d87961ab2f3be644bf30fb904",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-36",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -34,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-36",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -34,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGRTMIN",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-36",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -34,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGRTMIN",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-36.json",
+          "report": {
+            "event": {
+              "id": "1-2-36",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -34,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGRTMIN",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "f844c1a0039047ecd8b0ef3f8fa7dd99c19a64afb46d012198cee8f4b090fb00",
+          "text_bytes": 229
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-37",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -33,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-37",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -33,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-37",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -33,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-37.json",
+          "report": {
+            "event": {
+              "id": "1-2-37",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -33,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "fb2084c24cf508df31a6f90bf11f0fb0e564a7d07d7d2e93baef6d9d6f53d671",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-38",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -32,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-38",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -32,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-38",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -32,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-38.json",
+          "report": {
+            "event": {
+              "id": "1-2-38",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -32,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "2b651ac67dbae8d1a3130570a09e8cccb21537be1a4f12c5c12ca97aa78a1fe5",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-39",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -31,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-39",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -31,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGSYS",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-39",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -31,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGSYS",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-39.json",
+          "report": {
+            "event": {
+              "id": "1-2-39",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -31,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGSYS",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "2288c1a39cd6ecdcb2ec1fe57acc2997fa683a85eda697a63bae95a352030b78",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-40",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -30,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-40",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -30,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGPWR",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-40",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -30,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGPWR",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-40.json",
+          "report": {
+            "event": {
+              "id": "1-2-40",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -30,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGPWR",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "24af92a06ca9380792a158e2ad62ae87311de0e5060ef575b4f7ea875fe6ad0b",
+          "text_bytes": 262352
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-41",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -29,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-41",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -29,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGIO",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-41",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -29,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGIO",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-41.json",
+          "report": {
+            "event": {
+              "id": "1-2-41",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -29,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGIO",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "52085293690db895282a4856539949f673afefedf0da4a522e1c914d6b81daf7",
+          "text_bytes": 226
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-42",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -28,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-42",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -28,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGWINCH",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-42",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -28,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGWINCH",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-42.json",
+          "report": {
+            "event": {
+              "id": "1-2-42",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -28,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGWINCH",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "b2ec42e1b2d0d752690c00c21b24b966f3305cf3a0430c7dae62b1a7ce67d697",
+          "text_bytes": 229
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-43",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -27,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-43",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -27,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGPROF",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-43",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -27,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGPROF",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-43.json",
+          "report": {
+            "event": {
+              "id": "1-2-43",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -27,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGPROF",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "5b289642646d5e55199ba7080f5fcc7185a02b6cd32af7e5452c236e3c64588e",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-44",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -26,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-44",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -26,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGVTALRM",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-44",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -26,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGVTALRM",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-44.json",
+          "report": {
+            "event": {
+              "id": "1-2-44",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -26,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGVTALRM",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "f91e8500cc5c3aa0e4e03274fb37c65f2c756b79ba55d3cb2d1d3491f7c03585",
+          "text_bytes": 230
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-45",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -25,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-45",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -25,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGXFSZ",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-45",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -25,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGXFSZ",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-45.json",
+          "report": {
+            "event": {
+              "id": "1-2-45",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -25,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGXFSZ",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "383a03d72b5f51022353a04f5ff3d543d906b0e12053e8cacbca992d0e8e4fbf",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-46",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -24,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-46",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -24,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGXCPU",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-46",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -24,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGXCPU",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-46.json",
+          "report": {
+            "event": {
+              "id": "1-2-46",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -24,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGXCPU",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "082a740c55f3ba3de3f536ce36bf256800669002e6bddbafb01abb4b5ff8bc18",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-47",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -23,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-47",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -23,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGURG",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-47",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -23,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGURG",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-47.json",
+          "report": {
+            "event": {
+              "id": "1-2-47",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -23,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGURG",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "19070b38a0561dbe11bcdbbf17602d7e810e9fb255386ab7b77c1ff0224e1e8b",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-48",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -22,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-48",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -22,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTTOU",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-48",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -22,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTTOU",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-48.json",
+          "report": {
+            "event": {
+              "id": "1-2-48",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -22,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGTTOU",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "47a4ea53029e9aec70099c5d1f8822cb8a17f447f8656cddcf25d6025c61b269",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-49",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -21,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-49",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -21,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTTIN",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-49",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -21,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTTIN",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-49.json",
+          "report": {
+            "event": {
+              "id": "1-2-49",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -21,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGTTIN",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "f8de75d3c64f98e6e7d5a3bbdc8b83b6072bd87d578ee6f59c8840793504150c",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-50",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -20,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-50",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -20,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTSTP",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-50",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -20,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTSTP",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-50.json",
+          "report": {
+            "event": {
+              "id": "1-2-50",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -20,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGTSTP",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "94739158e1b9b7c150ee0c2e49c736fec34824128fee573f782e693386c9d825",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-51",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -19,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-51",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -19,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGSTOP",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-51",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -19,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGSTOP",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-51.json",
+          "report": {
+            "event": {
+              "id": "1-2-51",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -19,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGSTOP",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "84c6f8c95e1d336742d258f38aabbcf4ec738347257a5369f4228f2f7e39031e",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-52",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -18,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-52",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -18,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGCONT",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-52",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -18,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGCONT",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-52.json",
+          "report": {
+            "event": {
+              "id": "1-2-52",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -18,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGCONT",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "ef836c4952facddc6789bc26fcce919afedd9997fdd87bebb12eeaad7853a4b6",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-53",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -17,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-53",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -17,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGCHLD",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-53",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -17,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGCHLD",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-53.json",
+          "report": {
+            "event": {
+              "id": "1-2-53",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -17,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGCHLD",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "1c0d7a9842eae0b6c951e6390740373fefa12b4124f6f33ce0536b61fab133ec",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-54",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -16,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-54",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -16,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGSTKFLT",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-54",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -16,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGSTKFLT",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-54.json",
+          "report": {
+            "event": {
+              "id": "1-2-54",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -16,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGSTKFLT",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "3f796bce44622ec4f4628e8b51803f3a29a3c660980cf5a0d18664b14186a523",
+          "text_bytes": 230
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-55",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -15,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-55",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -15,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTERM",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-55",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -15,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTERM",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-55.json",
+          "report": {
+            "event": {
+              "id": "1-2-55",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -15,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGTERM",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "0eeb919cc03722159840d9c988d4e6a0a0637ff80e953974f8ed04ac95b69b4f",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-56",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -14,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-56",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -14,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGALRM",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-56",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -14,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGALRM",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-56.json",
+          "report": {
+            "event": {
+              "id": "1-2-56",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -14,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGALRM",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "70ce4d89b5bac36edfdad915bf2a016d2d94bce78f88e6276e7a4c5da1cbf9b1",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-57",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -13,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-57",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -13,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGPIPE",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-57",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -13,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGPIPE",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-57.json",
+          "report": {
+            "event": {
+              "id": "1-2-57",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -13,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGPIPE",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "bd834545202441543a2e013db4e779b3408119660676374a93f4c285966e9ba6",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-58",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -12,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-58",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -12,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGUSR2",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-58",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -12,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGUSR2",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-58.json",
+          "report": {
+            "event": {
+              "id": "1-2-58",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -12,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGUSR2",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "f59bf55f9104dfb0c64c86c3bc4c04b6535aa9b788bd0e73b55bab16a0f32872",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-59",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -11,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-59",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -11,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGSEGV",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-59",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -11,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGSEGV",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-59.json",
+          "report": {
+            "event": {
+              "id": "1-2-59",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -11,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGSEGV",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "f0976dcc095f3b06ba528ebd67d1a992bc72cae04940bcff8ca239435a274f94",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-60",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -10,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-60",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -10,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGUSR1",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-60",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -10,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGUSR1",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-60.json",
+          "report": {
+            "event": {
+              "id": "1-2-60",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -10,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGUSR1",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "0a86477632013e7f58d01b0a53b0823bcb951189c82c66a6a37a6f50b613dce0",
+          "text_bytes": 262353
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-61",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -9,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-61",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -9,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGKILL",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-61",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -9,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGKILL",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-61.json",
+          "report": {
+            "event": {
+              "id": "1-2-61",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -9,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGKILL",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "19ad1559e2e9e38507e5f6fee046f0ff7988f277f32e22def4c5007de4b42fc2",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-62",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -8,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-62",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -8,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGFPE",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-62",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -8,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGFPE",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-62.json",
+          "report": {
+            "event": {
+              "id": "1-2-62",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -8,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGFPE",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "25cd7a2e900d1d9ea284babbc8332c6c09055c744e7cae36ef0f033e28299876",
+          "text_bytes": 226
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-63",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -7,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-63",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -7,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGBUS",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-63",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -7,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGBUS",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-63.json",
+          "report": {
+            "event": {
+              "id": "1-2-63",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -7,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGBUS",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "ba51f98f12102db7b94250fb362a74c83d8c594d21f18150e951ed4eeb34154e",
+          "text_bytes": 226
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-64",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -6,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-64",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -6,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGABRT",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-64",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -6,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGABRT",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-64.json",
+          "report": {
+            "event": {
+              "id": "1-2-64",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -6,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGABRT",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "0010e735b5823134c5e0a32e960fd42fcbe7c9975c94dc9077e7967cc5895879",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-65",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -5,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-65",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -5,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTRAP",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-65",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -5,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGTRAP",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-65.json",
+          "report": {
+            "event": {
+              "id": "1-2-65",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -5,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGTRAP",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "c79c68b417a1869e2b473201afd38ff4ba6207c83badf8bc19e682cbcde021d1",
+          "text_bytes": 262352
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-66",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -4,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-66",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -4,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGILL",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-66",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -4,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGILL",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-66.json",
+          "report": {
+            "event": {
+              "id": "1-2-66",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -4,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGILL",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "6ed9f7a69ce17408cf805f85067159b7fe79c68722915e3e5bf7b675519fb3d2",
+          "text_bytes": 226
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-67",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -3,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-67",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -3,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGQUIT",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-67",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -3,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGQUIT",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-67.json",
+          "report": {
+            "event": {
+              "id": "1-2-67",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -3,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGQUIT",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "fd4cd0ca029dbf1995c75b4c3fd1343edd9685092ff2273536a0e1bd391f3feb",
+          "text_bytes": 227
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-68",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -2,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-68",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -2,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGINT",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-68",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -2,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGINT",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-68.json",
+          "report": {
+            "event": {
+              "id": "1-2-68",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -2,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGINT",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "d71f94f1e4777d49f649125c0b0060b11439a547ab67d87099546888647f5498",
+          "text_bytes": 226
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-69",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -1,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-69",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -1,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGHUP",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-69",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -1,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "SIGHUP",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-69.json",
+          "report": {
+            "event": {
+              "id": "1-2-69",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -1,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "SIGHUP",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "b14c4a67f26afcc030075a93222ebbbc53284d21cb44eba0c7d6f452dbce659f",
+          "text_bytes": 226
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-70",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": 0,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-70",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": 0,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-70",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": 0,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-70.json",
+          "report": {
+            "event": {
+              "id": "1-2-70",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": 0,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "769bde3d4e396ba9147055b25ff770a7eeb470f49861d9f71dddeab35c9f4ecd",
+          "text_bytes": 262330
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-71",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": 1,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-71",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": 1,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-71",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": 1,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-71.json",
+          "report": {
+            "event": {
+              "id": "1-2-71",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": 1,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "ed4cf5678332e249183238da48b004696faba426a3a1347655e63dc5b648e2bb",
+          "text_bytes": 205
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-72",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": 2,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-72",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": 2,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-72",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": 2,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-72.json",
+          "report": {
+            "event": {
+              "id": "1-2-72",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": 2,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "76f2cc7ab7597e5ce90dae334ce311d607bbf66d0034bb030870dbb2c1d4c336",
+          "text_bytes": 205
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "../escape",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-3",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-3",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-3",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-3.json",
+          "report": {
+            "event": {
+              "id": "1-2-3",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "d74e56a78f9cac2578b162271dfa55b0edd17d511d90d1a5a2c4d57670dad866",
+          "text_bytes": 262352
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "01-02-03",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "01-02-03",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "01-02-03",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "01-02-03.json",
+          "report": {
+            "event": {
+              "id": "01-02-03",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "15bd109956f7ff58acbf10678d1270bcd843cb64bd1ded2adb847c6402ac07a8",
+          "text_bytes": 230
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-٣",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "99999999999999999999-1-2",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "99999999999999999999-1-2",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "99999999999999999999-1-2",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "99999999999999999999-1-2.json",
+          "report": {
+            "event": {
+              "id": "99999999999999999999-1-2",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "71b89a6dfbe1b9b3c3b3a697d52eedbb13cd4f5efc70c52f523f2efd6734cdcd",
+          "text_bytes": 246
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "999999999999999999999-1-2",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": null,
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": 42,
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "a/b",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "02b83a788eaa3584bc15ef3fce9e474e49e9c3e8d6759729afcef3a778065d15",
+          "text_bytes": 262444
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "차량",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "name-1",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "worker",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "worker",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "worker",
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "2e3c0351a284ba5e7532ec42f79ccf934a2ea5cdf8198a9c3c8d2a9a5e4c362d",
+          "text_bytes": 225
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "False",
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "False",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "False",
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "False",
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "063d5eac39dfcb0569fb34423b9314e1f58bee946421e48e6693bd6def6b817c",
+          "text_bytes": 262349
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": 123,
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": 123,
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": 123,
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": 123,
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "8392770f8e0887a34360c0cd16970e60a693bd9915b6b933d39938a6e995b262",
+          "text_bytes": 220
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": true,
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": true,
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": true,
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": true,
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "02287f6695865146f087600aa861ee9c7bd80bdaa0a78f11b638101705463ed1",
+          "text_bytes": 221
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": null,
+        "pid": 2,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": null,
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": null,
+            "pid": 2,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": null,
+              "pid": 2,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "36b49471b265ddf879dc83cead41307e4059541757dba01eda91bb88851fdb6d",
+          "text_bytes": 221
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": null,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": "2",
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": 2.0,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": true,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": true,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": true,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "worker_1",
+              "pid": true,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "f40124e96ea856a97fd032ece443feab42be7280a182f02c6b2d951bd6789e3e",
+          "text_bytes": 230
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": false,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": false,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": false,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "worker_1",
+              "pid": false,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "50bb593f58a9c5d8daaf9cad3af162f5dd21f8472d9c01dcdaa831a3a069483a",
+          "text_bytes": 231
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": -1,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": -1,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": -1,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "worker_1",
+              "pid": -1,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "6400a3810edaa88b92126a25ea9cefbe1bef6d0b25918df2d587d6ea236f7e89",
+          "text_bytes": 228
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": 0,
+        "exitcode": -70,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": 0,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": 0,
+            "exitcode": -70,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "signal": "unknown",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "worker_1",
+              "pid": 0,
+              "exitcode": -70,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "signal": "unknown",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "122ee283d9fbd17151e8ab511429a652d24bfd4bbd41e011d85e698e20047cfa",
+          "text_bytes": 262352
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": null,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": "-6",
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": true,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": -6.0,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": "ValueError",
+      "calls": [],
+      "reports": []
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": true,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": false,
+      "payload_error": false,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": true,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": true,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": true,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "tmux_why": "process_crash",
+              "car_name": "owned"
+            },
+            "sent": []
+          },
+          "text_sha256": "c75b8933c941c86866ebe4d2b412792f6fe3672c55297d3326a2dd5dd33f4ed1",
+          "text_bytes": 207
+        }
+      ]
+    },
+    {
+      "event": {
+        "id": "1-2-0",
+        "name": "worker_1",
+        "pid": 2,
+        "exitcode": false,
+        "git_branch": "test",
+        "git_commit": "test-commit",
+        "dongle_id": "test-device"
+      },
+      "large": true,
+      "payload_error": true,
+      "error": null,
+      "calls": [
+        [
+          "capture",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": false,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ],
+        [
+          "payload",
+          {
+            "id": "1-2-0",
+            "name": "worker_1",
+            "pid": 2,
+            "exitcode": false,
+            "git_branch": "test",
+            "git_commit": "test-commit",
+            "dongle_id": "test-device",
+            "captured_at": 1700000000.125
+          }
+        ]
+      ],
+      "reports": [
+        {
+          "file": "1-2-0.json",
+          "report": {
+            "event": {
+              "id": "1-2-0",
+              "name": "worker_1",
+              "pid": 2,
+              "exitcode": false,
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "captured_at": 1700000000.125
+            },
+            "payload": {
+              "git_branch": "test",
+              "git_commit": "test-commit",
+              "dongle_id": "test-device",
+              "tmux_why": "process_crash"
+            },
+            "sent": []
+          },
+          "text_sha256": "e3144f9a0658e434c170508ed3e438fe47291fc0c30371f9af996b3ec2322c68",
+          "text_bytes": 262333
+        }
+      ]
+    }
+  ]
+}

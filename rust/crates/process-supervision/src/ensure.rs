@@ -5,6 +5,7 @@ pub fn ensure_running(
     not_run: &[&str],
     mut should_run: impl FnMut(&str) -> Result<bool, Error>,
 ) -> Result<Vec<usize>, Error> {
+    crate::crash::flush();
     let mut running = Vec::new();
     for (index, process) in processes.iter_mut().enumerate() {
         if process.has_process() && process.exit_code()?.is_some() {

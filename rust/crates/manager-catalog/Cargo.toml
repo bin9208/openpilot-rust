@@ -15,5 +15,6 @@ openpilot-beepd = { path = "../beepd" }
 thiserror = "2"
 
 [dev-dependencies]
+tempfile = "3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -12,6 +12,7 @@ pub(super) struct Spec {
     options: Options,
     orientation: i32,
     profile: bool,
+    wifi: Option<openpilot_cluster_wifi::Registration>,
 }
 impl Spec {
     pub fn new(args: &RuntimeArgs, preferences: &Snapshot, rate: OutputRate) -> Result<Self> {
@@ -40,13 +41,20 @@ impl Spec {
             },
             orientation: i32::from(preferences.orientation == 2) * 2,
             profile: args.diagnostics.profile_render,
+            wifi:
+                openpilot_cluster_wifi::Registration::load(&openpilot_cluster_wifi::config_path())
+                    .map_err(|error| Error::Io(io::Error::other(error)))?,
         })
     }
+    pub fn wifi(&self) -> bool {
+        self.wifi.is_some()
+    }
     pub fn open(&self) -> io::Result<Display<ParamsRuntime>> {
-        let mut display = Display::new(
+        let mut display = Display::new_with_wifi(
             self.options.clone(),
             ParamsRuntime::default(),
             Path::new("/tmp/carrot_usbgpu_bus.lock"),
+            self.wifi.clone(),
         )
         .map_err(io::Error::other)?;
         display.set_orientation(self.orientation, false);

@@ -25,3 +25,7 @@ serde_json = "1"
 [[example]]
 name = "opencv_trace"
 required-features = ["native-skip-miri"]
+
+[[example]]
+name = "opencv_signal_trace"
+required-features = ["native-skip-miri"]

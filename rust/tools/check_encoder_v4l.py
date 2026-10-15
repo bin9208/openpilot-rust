@@ -31,11 +31,6 @@ def run(command: list[str], log: Path, env: dict[str, str], expected_failure: tu
 
 
 FAILURES = {
-  "wrong-output": {"source": (-signal.SIGABRT, "YouTube encoder output contract rejected"), "rust": (1, "YouTube encoder output contract rejected")},
-  "cbr-wrong": {
-    "source": (-signal.SIGABRT, "V4L2 encoder did not retain CBR_CFR rate control"),
-    "rust": (1, "V4L2 encoder did not retain CBR_CFR rate control"),
-  },
   "wrong-capability": {
     "source": (-signal.SIGABRT, 'strcmp((const char *)cap.driver, "msm_vidc_driver") == 0'),
     "rust": (1, "source msm_vidc encoder capability assertion"),
@@ -115,20 +110,15 @@ def main() -> None:
     ("--stream", 1, 0),
     ("--stream", 2, 0),
     ("--carrot-vision-road", 0, 0),
-    ("--youtube-low", 0, 0),
-    ("--youtube-medium", 0, 0),
-    ("--youtube", 0, 0),
-    ("--youtube-wide", 0, 0),
   ]
   cases = [(profile, "normal", False, 128) for profile in profiles]
   cases.extend([(("main", 0, 0), "normal", False, 1928), (("main", 0, 0), "poll-eintr", False, 128), (("main", 0, 0), "hold-seven", False, 128)])
   cases.extend([(("main", 0, 0), scenario, False, 128) for scenario in ["output-unused-timestamp", "header-unused-timestamp", "eos-unused-timestamp"]])
   cases.extend([(("--stream", 0, 0), scenario, False, 128) for scenario in ["slice-size-failure", "slice-mode-failure", "compat-failure"]])
-  cases.extend([(("--youtube", 0, 0), scenario, False, 128) for scenario in ["crop-unavailable", "crop-adjusted", "cbr-unavailable", "bitrate-adjusted"]])
   cases.extend(
     [
-      (("--youtube", 0, 0), scenario, True, 128)
-      for scenario in ["wrong-output", "cbr-wrong", "wrong-capability", "wrong-offset", "wrong-timestamp", "negative-frame-timestamp", "input-queue-failure"]
+      (("main", 0, 0), scenario, True, 128)
+      for scenario in ["wrong-capability", "wrong-offset", "wrong-timestamp", "negative-frame-timestamp", "input-queue-failure"]
     ]
   )
   results: list[dict[str, object]] = []

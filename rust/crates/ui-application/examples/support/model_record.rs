@@ -23,6 +23,9 @@ impl Recording<'_> {
     }
 }
 impl Measure for Recording<'_> {
+    fn resolve_font(&self, font: Font, text: &str) -> Font {
+        self.canvas.resolve_font(font, text)
+    }
     fn measure(&self, font: Font, text: &str, size: f32, spacing: f32) -> Point {
         self.canvas.measure(font, text, size, spacing)
     }
@@ -33,6 +36,9 @@ impl Measure for Recording<'_> {
     }
 }
 impl Draw for Recording<'_> {
+    fn native_renderer(&mut self) -> Option<&mut openpilot_startup_ui::renderer::Renderer> {
+        Some(&mut self.canvas.renderer)
+    }
     fn font_scale(&self) -> f64 {
         self.canvas.font_scale()
     }

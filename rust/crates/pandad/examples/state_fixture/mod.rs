@@ -53,7 +53,7 @@ impl Effects for Fixture {
         &self.identities
     }
     fn health(&mut self, index: usize) -> io::Result<Option<Health>> {
-        self.actions.push(json!(["read", index, 0xd2, 0, 0, 58, 0]));
+        self.actions.push(json!(["read", index, 0xd2, 0, 0, 59, 0]));
         Ok(packet(self.step.pandas[index].health.as_deref())?
             .map(|bytes| Health::from_packet(&bytes)))
     }

@@ -75,6 +75,17 @@ pub async fn receive(socket: &mut Socket, session: &Session, shared: &Shared) ->
                             Ok(Some(reply)) => send(socket, &reply).await?,
                             Ok(None) => (),
                             Err(error) => {
+                                if error.kind == "ReceiverBusy" {
+                                    send(socket, &crate::json::Value::object([
+                                        ("type", crate::json::Value::text("protocol_error")),
+                                        ("protocol_version", crate::json::Value::integer(2)),
+                                        ("code", crate::json::Value::text("receiver_busy")),
+                                        ("recoverable", crate::json::Value::Bool(true)),
+                                        ("message", error.message_value()),
+                                    ])).await?;
+                                    close(socket, 1013, "navigation receiver busy").await;
+                                    return Ok(());
+                                }
                                 if session.recoverable(&error) {
                                     session.reject(socket, shared, &error).await?;
                                     if !session.control() { return Ok(()); }

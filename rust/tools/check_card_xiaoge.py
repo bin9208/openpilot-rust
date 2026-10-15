@@ -8,7 +8,16 @@ import subprocess
 from types import SimpleNamespace
 from can_source import ROOT
 from check_card_vehicle import compare
-from openpilot.selfdrive.carrot.xiaoge.xiaoge_vision import apply_xiaoge_vision_result, parse_xiaoge_vision_payload
+import sys
+import types
+SOURCE_COMMIT = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
+SOURCE_PATH = 'openpilot/selfdrive/carrot/xiaoge/xiaoge_vision.py'
+SOURCE_BYTES = subprocess.check_output(['git', 'show', f'{SOURCE_COMMIT}:{SOURCE_PATH}'])
+source_module = types.ModuleType('pinned_card_xiaoge_source')
+sys.modules[source_module.__name__] = source_module
+exec(compile(SOURCE_BYTES, f'{SOURCE_COMMIT}:{SOURCE_PATH}', 'exec'), source_module.__dict__)
+apply_xiaoge_vision_result = source_module.apply_xiaoge_vision_result
+parse_xiaoge_vision_payload = source_module.parse_xiaoge_vision_payload
 
 
 def cases() -> list[dict]:
@@ -23,6 +32,15 @@ def cases() -> list[dict]:
     value = copy.deepcopy(base)
     value['lane']['leftLine'], value['lane']['rightLine'] = detected
     add(json.dumps(value), now, lanes, spots)
+  for aggregate, left, right, now in itertools.product((0,1,2_000_000_001), (None,0,1,2_000_000_001,10**100), (None,0,1,2_000_000_001,10**100), (1,1_500_000_001,2_000_000_001)):
+    value=copy.deepcopy(base); value['blindspot'].update(left=True,right=True,receivedMonoTimeNanos=aggregate)
+    value['blindspot']['receivedMonoTimeNanosBySide']={key:stamp for key,stamp in [('left',left),('right',right)] if stamp is not None}
+    add(json.dumps(value),now)
+  for side_value in (None,True,False,0,1,[],{},'bad'):
+    value=copy.deepcopy(base);value['blindspot']['receivedMonoTimeNanosBySide']=side_value;add(json.dumps(value))
+    for side in ('left','right'):
+      value=copy.deepcopy(base);value['blindspot']['receivedMonoTimeNanosBySide']={side:side_value};add(json.dumps(value))
+    value=copy.deepcopy(base);value['blindspot']['validSides']=side_value;add(json.dumps(value))
   bad = [None, False, True, -2, 2, 1.0, '1', [], {}]
   for section, field in (('lane','leftLine'),('lane','rightLine'),('lane','valid'),('lane','receivedMonoTimeNanos'),
                          ('blindspot','left'),('blindspot','right'),('blindspot','valid'),('blindspot','receivedMonoTimeNanos')):
@@ -59,18 +77,18 @@ def trace(case: dict) -> dict:
 
 def main() -> None:
   parser=argparse.ArgumentParser(); parser.add_argument('--binary',type=Path,required=True); parser.add_argument('--evidence',type=Path,required=True)
-  args=parser.parse_args(); args.evidence.mkdir(parents=True,exist_ok=True)
+  parser.add_argument('--runner', action='append',default=[]); args=parser.parse_args(); args.evidence.mkdir(parents=True,exist_ok=True)
   request=cases(); expected=[trace(case) for case in request]
   (args.evidence/'input.json').write_text(json.dumps(request)+'\n'); (args.evidence/'source.json').write_text(json.dumps(expected)+'\n')
   target=args.evidence/'native.json'
-  child=subprocess.run([args.binary.resolve(),target.resolve()],input=json.dumps(request),text=True,capture_output=True,check=False)
+  child=subprocess.run([*args.runner,args.binary.resolve(),target.resolve()],input=json.dumps(request),text=True,capture_output=True,check=False)
   (args.evidence/'process.log').write_text(child.stdout+child.stderr+f'\nEXIT {child.returncode}\n'); child.check_returncode()
   actual=json.loads(target.read_text())
   try: compare(expected,actual)
   except AssertionError as error:
     (args.evidence/'comparison-failure.txt').write_text(str(error)+'\n'); raise
   result=dict(status='pass',cases=len(request),runtime_python=False,observable='payload acceptance, exact lane/color merge, stock blindspot OR and freshness boundaries',
-              binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),source_sha256=hashlib.sha256((ROOT/'openpilot/selfdrive/carrot/xiaoge/xiaoge_vision.py').read_bytes()).hexdigest())
+              runner=args.runner,binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),source_commit=SOURCE_COMMIT,source_sha256=hashlib.sha256(SOURCE_BYTES).hexdigest())
   (args.evidence/'result.json').write_text(json.dumps(result,indent=2)+'\n'); print(json.dumps(result))
 
 

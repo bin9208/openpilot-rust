@@ -45,7 +45,9 @@ impl Catalog {
             let count = match field(fields(&result.groups)?, &group_key) {
                 Some(items) => array(items)?
                     .iter()
-                    .filter(|item| !item.get("detail_parent").truth())
+                    .filter(|item| {
+                        !item.get("detail_parent").truth() && !item.get("search_only").truth()
+                    })
                     .count(),
                 None => 0,
             };

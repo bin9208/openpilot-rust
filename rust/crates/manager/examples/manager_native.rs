@@ -124,6 +124,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         boundary: Boundary { exited: false },
         signals: openpilot_manager::signals::Signals::install()?,
         loop_time: Duration::ZERO,
+        xiaoge_startup: Default::default(),
     };
     for topic in ["carParams", "pandaStates", "deviceState"] {
         upstream.send(topic, &packet(topic, true))?;

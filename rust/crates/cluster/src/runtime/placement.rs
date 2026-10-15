@@ -10,7 +10,7 @@ impl Placement {
             scheduler: Scheduler::new(board),
             native: Native { root: "/".into() },
         };
-        value.scheduler.core = 7;
+        value.scheduler.core = 4;
         value.update(false, true, None, 0.0)?;
         Ok(value)
     }

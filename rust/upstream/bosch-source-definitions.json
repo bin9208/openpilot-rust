@@ -1,0 +1,1310 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "source_path": "opendbc_repo/opendbc/car/hyundai/radar_bosch.py",
+  "source_sha256": "8c4cf75bcf371980cedc77432d22950c5ca490eff8a300a97685f2f84419a2f6",
+  "whole_file_complete": true,
+  "remaining": "Whole runtime/device/project acceptance remains separate; no remaining implementation scope within this source file.",
+  "definition_count": 88,
+  "definitions": [
+    {
+      "name": "_bosch_camera_signed",
+      "source_lines": [
+        429,
+        431
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_camera_range_span",
+      "source_lines": [
+        434,
+        436
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_camera_long_window",
+      "source_lines": [
+        439,
+        442
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschCameraObject",
+      "source_lines": [
+        446,
+        455
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschCameraCycleCache",
+      "source_lines": [
+        458,
+        654
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera.rs"
+      ],
+      "methods": [
+        "__init__",
+        "_counter_of",
+        "_unwrap",
+        "_store",
+        "_pending_store",
+        "_start_cycle",
+        "_is_complete",
+        "_try_complete",
+        "ingest",
+        "snapshot"
+      ]
+    },
+    {
+      "name": "_BoschExtendedHistory",
+      "source_lines": [
+        658,
+        668
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera_extended.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschCurveReacquireHistory",
+      "source_lines": [
+        672,
+        675
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera_extended.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschTruckPairHistory",
+      "source_lines": [
+        679,
+        692
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera_extended.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschExtendedRepresentative",
+      "source_lines": [
+        696,
+        703
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera_extended.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschCameraExtendedGrouping",
+      "source_lines": [
+        706,
+        1360
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/camera_extended.rs"
+      ],
+      "methods": [
+        "__init__",
+        "_geometry",
+        "_associate",
+        "_curve_reacquire",
+        "_curve_history_prepare",
+        "_curve_history_update",
+        "_complete_link",
+        "_choose_representatives",
+        "_maturity",
+        "_large_footprint_associations",
+        "_truck_pair_continuous",
+        "_truck_a0_bearing_near_miss",
+        "_truck_strict",
+        "update"
+      ]
+    },
+    {
+      "name": "bosch_numpy_linear_sum_assignment",
+      "source_lines": [
+        1363,
+        1435
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/assignment.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_integer",
+      "source_lines": [
+        1444,
+        1454
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/tracking.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_finite",
+      "source_lines": [
+        1457,
+        1463
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/tracking.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschRawDetection",
+      "source_lines": [
+        1467,
+        1510
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": [
+        "__post_init__",
+        "address",
+        "half"
+      ]
+    },
+    {
+      "name": "BoschRawTrackingConfig",
+      "source_lines": [
+        1514,
+        1547
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/tracking.rs"
+      ],
+      "methods": [
+        "__post_init__",
+        "bearing_gate_rad"
+      ]
+    },
+    {
+      "name": "BoschRawTrack",
+      "source_lines": [
+        1551,
+        1584
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/tracking.rs"
+      ],
+      "methods": [
+        "timestamp_ns",
+        "slot",
+        "address",
+        "half",
+        "d_rel",
+        "y_rel",
+        "v_rel"
+      ]
+    },
+    {
+      "name": "BoschRawAssociationDecision",
+      "source_lines": [
+        1588,
+        1616
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/tracking.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschRawState",
+      "source_lines": [
+        1620,
+        1626
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/tracking.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_advance",
+      "source_lines": [
+        1629,
+        1633
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/graph.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_admissible_cycle",
+      "source_lines": [
+        1636,
+        1692
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/graph.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_rectangular_unique",
+      "source_lines": [
+        1695,
+        1753
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/graph.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_component_matching",
+      "source_lines": [
+        1756,
+        1817
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/graph.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_raw_unique_component",
+      "source_lines": [
+        1820,
+        1907
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/graph.rs"
+      ],
+      "methods": [
+        "solve"
+      ]
+    },
+    {
+      "name": "_bosch_raw_assignment",
+      "source_lines": [
+        1910,
+        1978
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/graph.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschRawTrackManager",
+      "source_lines": [
+        1981,
+        2243
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/tracking.rs"
+      ],
+      "methods": [
+        "__init__",
+        "active_count",
+        "update"
+      ]
+    },
+    {
+      "name": "BoschGroupingConfig",
+      "source_lines": [
+        2247,
+        2298
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group_config.rs"
+      ],
+      "methods": [
+        "__post_init__"
+      ]
+    },
+    {
+      "name": "BoschVisionCue",
+      "source_lines": [
+        2302,
+        2308
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/physical.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/context.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_sample_ns",
+      "source_lines": [
+        2311,
+        2312
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/physical.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/context.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschModelLine",
+      "source_lines": [
+        2315,
+        2320
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/model_snapshot.rs"
+      ],
+      "methods": [
+        "__init__"
+      ]
+    },
+    {
+      "name": "BoschModelSnapshot",
+      "source_lines": [
+        2323,
+        2349
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/model_snapshot.rs"
+      ],
+      "methods": [
+        "__init__"
+      ]
+    },
+    {
+      "name": "BoschPublishedSurface",
+      "source_lines": [
+        2353,
+        2378
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/physical.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschPhysicalObject",
+      "source_lines": [
+        2382,
+        2401
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/physical.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group.rs"
+      ],
+      "methods": [
+        "member_slots"
+      ]
+    },
+    {
+      "name": "BoschAssociationDecision",
+      "source_lines": [
+        2405,
+        2444
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/physical.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschPairEvidence",
+      "source_lines": [
+        2448,
+        2449
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group_pairs.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/ancestry.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschCommonGroupAncestry",
+      "source_lines": [
+        2453,
+        2455
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group_pairs.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/ancestry.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschPhysicalState",
+      "source_lines": [
+        2459,
+        2462
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group_pairs.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschProvisionalBundleState",
+      "source_lines": [
+        2466,
+        2473
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group_pairs.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschProvisionalBundleDecision",
+      "source_lines": [
+        2477,
+        2489
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group_pairs.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_group_representative",
+      "source_lines": [
+        2492,
+        2515
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/physical.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_physical_component",
+      "source_lines": [
+        2518,
+        2583
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/graph.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group_cluster.rs"
+      ],
+      "methods": [
+        "solve"
+      ]
+    },
+    {
+      "name": "_bosch_physical_assignment",
+      "source_lines": [
+        2586,
+        2623
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/graph.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group_cluster.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschMatureGroupCertificate",
+      "source_lines": [
+        2627,
+        2646
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/retention.rs"
+      ],
+      "methods": [
+        "clone"
+      ]
+    },
+    {
+      "name": "_BoschMatureGroupRetention",
+      "source_lines": [
+        2649,
+        2879
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/retention.rs"
+      ],
+      "methods": [
+        "__init__",
+        "ingest_path",
+        "_surface_guard",
+        "_pairs",
+        "_veto",
+        "before"
+      ]
+    },
+    {
+      "name": "BoschObjectGroupManager",
+      "source_lines": [
+        2882,
+        3640
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/group_pairs.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/ancestry.rs"
+      ],
+      "methods": [
+        "__init__",
+        "last_diagnostics",
+        "_geometry",
+        "_vision_support",
+        "reset_common_ancestry",
+        "_update_common_ancestry",
+        "common_ancestry_evidence",
+        "update",
+        "_update",
+        "provisional_publication_view",
+        "reset_provisional",
+        "_decision"
+      ]
+    },
+    {
+      "name": "BoschPhysicalTracker",
+      "source_lines": [
+        3643,
+        3663
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/tracker.rs"
+      ],
+      "methods": [
+        "__init__",
+        "set_decision_trace",
+        "update"
+      ]
+    },
+    {
+      "name": "_BoschPublicationPassThrough",
+      "source_lines": [
+        3666,
+        3671
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/provider.rs"
+      ],
+      "methods": [
+        "update"
+      ]
+    },
+    {
+      "name": "_BoschFamilyCompanionState",
+      "source_lines": [
+        3675,
+        3694
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/family.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschFamilyCompanionDecision",
+      "source_lines": [
+        3698,
+        3720
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/family.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschFamilyCompanionFilter",
+      "source_lines": [
+        3723,
+        3980
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/family.rs"
+      ],
+      "methods": [
+        "__init__",
+        "_bearing",
+        "_path_offset",
+        "_strict_independent",
+        "_world_speed",
+        "_metrics",
+        "_geometry_ok",
+        "_decision",
+        "reset",
+        "update",
+        "publication_view"
+      ]
+    },
+    {
+      "name": "_BoschBurstMultiReturnState",
+      "source_lines": [
+        3984,
+        3997
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/burst.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschBurstMultiReturnDecision",
+      "source_lines": [
+        4001,
+        4014
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/burst.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschBurstMultiReturnDefer",
+      "source_lines": [
+        4017,
+        4194
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/burst.rs"
+      ],
+      "methods": [
+        "__init__",
+        "_world_speed",
+        "_decision",
+        "reset",
+        "update",
+        "publication_view"
+      ]
+    },
+    {
+      "name": "_BoschSidePassLateralState",
+      "source_lines": [
+        4198,
+        4205
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/sidepass.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschSidePassLateralDecision",
+      "source_lines": [
+        4209,
+        4216
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/sidepass.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschSidePassLateralEstimator",
+      "source_lines": [
+        4219,
+        4431
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/sidepass.rs"
+      ],
+      "methods": [
+        "__init__",
+        "reset",
+        "_slide",
+        "update",
+        "publication_view"
+      ]
+    },
+    {
+      "name": "_BoschP91PairState",
+      "source_lines": [
+        4435,
+        4451
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/persistent_clone.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschPersistentSpatialCloneFilter",
+      "source_lines": [
+        4454,
+        4624
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/persistent_clone.rs"
+      ],
+      "methods": [
+        "__init__",
+        "_std",
+        "_welford",
+        "update"
+      ]
+    },
+    {
+      "name": "_BoschOemGateState",
+      "source_lines": [
+        4628,
+        4640
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/oem.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschOemIntentTracker",
+      "source_lines": [
+        4643,
+        4680
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/oem.rs"
+      ],
+      "methods": [
+        "__init__",
+        "reset",
+        "ingest",
+        "median"
+      ]
+    },
+    {
+      "name": "_BoschOemValidationGate",
+      "source_lines": [
+        4683,
+        4842
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/oem.rs"
+      ],
+      "methods": [
+        "__init__",
+        "classify",
+        "update"
+      ]
+    },
+    {
+      "name": "BoschPublicationAliasAllocator",
+      "source_lines": [
+        4850,
+        4906
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/alias.rs"
+      ],
+      "methods": [
+        "__init__",
+        "current_usage",
+        "_release",
+        "update"
+      ]
+    },
+    {
+      "name": "BoschB5ModelContext",
+      "source_lines": [
+        4910,
+        4918
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/birth_b5.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschB5ParentState",
+      "source_lines": [
+        4922,
+        4927
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/birth_b5.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschB5Decision",
+      "source_lines": [
+        4931,
+        4943
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/birth_b5.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschBirthB5Defer",
+      "source_lines": [
+        4946,
+        5423
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/birth_b5.rs"
+      ],
+      "methods": [
+        "__init__",
+        "reset",
+        "_append_sample",
+        "ingest_pose",
+        "ingest_speed",
+        "ingest_model",
+        "_interpolate",
+        "_integrate_motion",
+        "_transform",
+        "_interp",
+        "_geometry",
+        "_latest_context",
+        "_align",
+        "_instant_lane",
+        "_population_std",
+        "_scan_geometry",
+        "_corridor_clear",
+        "_representative_code",
+        "_n4_parent",
+        "update",
+        "publication_view"
+      ]
+    },
+    {
+      "name": "bosch_published_surface",
+      "source_lines": [
+        5426,
+        5435
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschLeadAccelerationState",
+      "source_lines": [
+        5439,
+        5449
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/acceleration.rs"
+      ],
+      "methods": [
+        "update"
+      ]
+    },
+    {
+      "name": "BoschLeadAccelerationEstimator",
+      "source_lines": [
+        5452,
+        5586
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/acceleration.rs"
+      ],
+      "methods": [
+        "__init__",
+        "reset",
+        "_v_lead",
+        "update",
+        "debug_snapshot"
+      ]
+    },
+    {
+      "name": "_bosch_point_fields",
+      "source_lines": [
+        5599,
+        5606
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "bosch_fill_point",
+      "source_lines": [
+        5609,
+        5619
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_float32",
+      "source_lines": [
+        5625,
+        5626
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "bosch_native_surface_coordinates",
+      "source_lines": [
+        5629,
+        5636
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "bosch_append_points",
+      "source_lines": [
+        5639,
+        5682
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "bosch_to_native_radar_data",
+      "source_lines": [
+        5685,
+        5705
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschCanFrame",
+      "source_lines": [
+        5709,
+        5713
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "bosch_decode_frame",
+      "source_lines": [
+        5716,
+        5737
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_bosch_match_processed_target_word",
+      "source_lines": [
+        5740,
+        5753
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "bosch_make_points",
+      "source_lines": [
+        5756,
+        5761
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/points.rs",
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/raw.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschMirrorBirthDecision",
+      "source_lines": [
+        5765,
+        5772
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/mirror_birth.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "_BoschMirrorBirthHoldState",
+      "source_lines": [
+        5776,
+        5787
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/mirror_birth.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschMirrorBirthHold",
+      "source_lines": [
+        5790,
+        6110
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/mirror_birth.rs"
+      ],
+      "methods": [
+        "__init__",
+        "_reset_shadow",
+        "_record_event",
+        "reset",
+        "_wall",
+        "_mirror_decisions",
+        "update",
+        "publication_view"
+      ]
+    },
+    {
+      "name": "_BoschMirrorM3HoldState",
+      "source_lines": [
+        6114,
+        6128
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/mirror_m3.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschRoadEdgePublicationFilter",
+      "source_lines": [
+        6131,
+        6325
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/road_edge.rs"
+      ],
+      "methods": [
+        "__init__",
+        "invalidate_model",
+        "reset",
+        "ingest_model",
+        "update",
+        "publication_view",
+        "publication_surface_view"
+      ]
+    },
+    {
+      "name": "BoschMirrorM3Shadow",
+      "source_lines": [
+        6328,
+        6550
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/mirror_m3.rs"
+      ],
+      "methods": [
+        "__init__",
+        "ingest_model",
+        "_edge_at",
+        "_record_event",
+        "reset",
+        "_independent",
+        "_edge_birth",
+        "update",
+        "publication_view"
+      ]
+    },
+    {
+      "name": "_unsupported_birth_segments",
+      "source_lines": [
+        6555,
+        6563
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/unsupported_path.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "birth_d_path",
+      "source_lines": [
+        6566,
+        6584
+      ],
+      "kind": "function",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/unsupported_path.rs"
+      ],
+      "methods": []
+    },
+    {
+      "name": "BoschUnsupportedBirthFilter",
+      "source_lines": [
+        6587,
+        6690
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/unsupported_birth.rs"
+      ],
+      "methods": [
+        "__init__",
+        "_context",
+        "verdict",
+        "publication_view"
+      ]
+    },
+    {
+      "name": "BoschRadarProvider",
+      "source_lines": [
+        6693,
+        7323
+      ],
+      "kind": "class",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/provider.rs"
+      ],
+      "methods": [
+        "__init__",
+        "_companion_pairs_update",
+        "_oem_nearer_view",
+        "_final_view",
+        "_companion_view",
+        "_provisional_birth_view",
+        "_burst_view",
+        "publication_view",
+        "_publication_view_without_road_edge",
+        "slot_to_ids",
+        "debug_snapshot",
+        "_ingest_scc",
+        "_scc_validity",
+        "update",
+        "_finish_scan"
+      ]
+    }
+  ],
+  "evidence": [
+    "docs/naver/dev-md-vehicle-validation.md",
+    "rust/crates/radarcan/tests/fixtures/bosch-helper-source.json"
+  ],
+  "representation_notes": [
+    "Typed native runtime states replace Python dynamic attribute/type slots; foreign None/live-state stand-ins and fake camera stand-ins remain separated in the canonical callback corpus.",
+    "Arc-owned immutable snapshots/cache identities and logical geometry values are checked against source; Python object addresses/type tags are not native control state.",
+    "Pinned dependency branch uses NumPy assignment fallback; separately installed SciPy tie behavior is outside the pin."
+  ],
+  "closure_evidence": [
+    ".analysis/scratch/2026-10-15-dev-md-vehicle/bosch-final-export-audit.json",
+    ".analysis/scratch/2026-10-15-dev-md-vehicle/bosch-factory-gate-manifest.json",
+    ".analysis/scratch/2026-10-15-dev-md-vehicle/bosch-native-ipc-gate-manifest.json",
+    ".analysis/scratch/2026-10-15-dev-md-planner/bosch-raw-host1/receipt.json",
+    ".analysis/scratch/2026-10-15-dev-md-planner/bosch-raw-arm1/receipt.json"
+  ]
+}

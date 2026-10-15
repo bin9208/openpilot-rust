@@ -11,7 +11,7 @@ from openpilot.selfdrive.car.card_diagnostics import should_log_card_diagnostics
 from openpilot.selfdrive.car.openpilot_toggle import CruiseMainOpenpilotToggle
 from openpilot.selfdrive.carrot.xiaoge.xiaoge_vision import parse_xiaoge_vision_payload,apply_xiaoge_vision_result
 
-SERVICES=['pandaStates','carControl','onroadEvents','carrotMan','longitudinalPlan','radarState','modelV2','drivingModelData','customReservedRawData0']
+SERVICES=['pandaStates','carControl','onroadEvents','carrotMan','longitudinalPlan','radarState','modelV2','drivingModelData','customReservedRawData0','liveParameters','livePose','selfdriveState','lateralPlan']
 
 
 def root(schema,bytes):
@@ -73,6 +73,8 @@ def trace(case: dict) -> list[dict]:
       messaging=SimpleNamespace(drain_sock_raw=lambda sock,wait_for_one: [bytes(value) for value in current['can']],new_message=messaging['new_message'],log_from_bytes=decode),
       can_capnp_to_list=can_capnp_to_list,can_list_to_can_capnp=can_list_to_can_capnp,parse_xiaoge_vision_payload=parse_xiaoge_vision_payload,
       apply_xiaoge_vision_result=apply_xiaoge_vision_result,should_log_card_diagnostics=should_log_card_diagnostics)
+  from lateral_readiness_source import module as readiness_module, patch_card
+  patch_card(node)
   exec(compile(ast.Module(body=[node],type_ignores=[]),str(ROOT/'openpilot/selfdrive/car/card.py'),'exec'),scope)
   import openpilot.selfdrive.pandad.pandad_api_impl as can
   can.time=clock
@@ -80,6 +82,7 @@ def trace(case: dict) -> list[dict]:
   toggle.time=clock
   runtime=scope['Car'].__new__(scope['Car']); runtime.CI=Driver(); runtime.CP=runtime.CI.CP
   runtime.can_sock=object(); runtime.sm=sm; runtime.pm=SimpleNamespace(send=publish); runtime.params=settings; runtime.can_callbacks=(lambda:[],lambda frames:None)
+  runtime.lateral_startup=readiness_module().LateralStartupGate()
   runtime.CC_prev=car.CarControl.new_message(); runtime.CS_prev=car.CarState.new_message(); runtime.initialized_prev=False
   runtime.cruise_main_toggle=CruiseMainOpenpilotToggle(car.CarState.ButtonEvent.Type.mainCruise)
   runtime.last_actuators_output=car.CarControl.Actuators.new_message(); runtime.can_rcv_cum_timeout_counter=0

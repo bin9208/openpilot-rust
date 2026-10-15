@@ -1,5 +1,5 @@
 use crate::scalar::{clamp, max, min};
-use crate::{DriverMonitoring, Input, InputError, Policy, DT_DMON};
+use crate::{DT_DMON, DriverMonitoring, Input, InputError, Policy};
 
 /// Original leveled driver camera geometry (tici/ar0231, 1928 x 1208).
 pub fn face_orientation(
@@ -163,10 +163,20 @@ impl DriverMonitoring {
         } else {
             0.449
         };
-        self.distracted_types.pose =
-            pitch_error > pitch_threshold || yaw_error > 0.4020 * self.pose.cfactor_yaw;
+        let factor = if self.relax_pose
+            && !matches!(
+                self.alert_level,
+                crate::AlertLevel::Two | crate::AlertLevel::Three
+            ) {
+            1.2
+        } else {
+            1.
+        };
+        self.distracted_types.pose = pitch_error > pitch_threshold * factor
+            || yaw_error > 0.4020 * self.pose.cfactor_yaw * factor;
         self.distracted_types.eye = (self.blink.left + self.blink.right) * 0.5 > 0.865;
-        self.distracted_types.phone = self.phone_prob > 0.5;
+        self.distracted_types.phone =
+            self.phone_prob > if self.experimental_phone { 0.98 } else { 0.5 };
         self.distracted_types.sleep = self.sleep_prob > 0.75;
     }
 }

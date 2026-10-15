@@ -19,6 +19,19 @@ pub fn stopped_equivalence(speed: f64) -> f64 {
 pub fn safe_distance(speed: f64, follow: f64, brake: f64, stop: f64) -> f64 {
     speed.powi(2) / (2. * brake) + follow * speed + stop
 }
+// NumPy scalar **2 follows libm pow, whereas ndarray **2 uses multiplication.
+// The scalar current-following display must retain that rare one-ULP distinction.
+pub(super) fn scalar_desired_distance(
+    speed: f64,
+    lead: f64,
+    follow: f64,
+    brake: f64,
+    stop: f64,
+) -> f64 {
+    speed.powf(std::hint::black_box(2.)) / (2. * brake) + follow * speed + stop
+        - lead.powf(std::hint::black_box(2.)) / 5.
+}
+
 pub fn desired_distance(speed: f64, lead_speed: f64, follow: f64, brake: f64, stop: f64) -> f64 {
     safe_distance(speed, follow, brake, stop) - stopped_equivalence(lead_speed)
 }
@@ -87,4 +100,21 @@ pub(super) fn argmin(values: &[f64]) -> usize {
         }
     }
     index
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn scalar_following_distance_retains_numpy_power_rounding() {
+        // Exact source comfort replay frame129: scalar **2 differs from the
+        // array multiplication kernel by one ULP before distance cancellation.
+        let value = super::scalar_desired_distance(
+            20.0382695559549,
+            30.0382695559549,
+            1.3649999999999989,
+            2.4,
+            5.5,
+        );
+        assert_eq!(value.to_bits(), (-63.95473822329862_f64).to_bits());
+    }
 }

@@ -20,6 +20,16 @@ use std::{
 };
 
 pub trait Backend: Send + 'static {
+    fn after_reply(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    fn idle(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    fn source_sof(&mut self, _source_sof: u64) {}
+    fn session_contract(&self) -> &crate::session_contract::SessionContract {
+        crate::session_contract::SessionContract::native_default()
+    }
     fn connect(&mut self) -> Result<Identity, Error>;
     fn infer(
         &mut self,
@@ -81,10 +91,9 @@ pub fn infer_request(
     generation: [u8; 16],
     payload: &[u8],
 ) -> Result<(Vec<u8>, Deadline), Error> {
-    if payload.len()
-        != 1 + rpc::REQUEST_BYTES + contract::WARPED_BYTES + contract::PACKED_FLOATS * 4
-        || payload[0] != b'I'
-    {
+    let packed_count = backend.session_contract().packed_count();
+    let base = 1 + rpc::REQUEST_BYTES + contract::WARPED_BYTES + packed_count * 4;
+    if ![base, base + 8].contains(&payload.len()) || payload[0] != b'I' {
         return Err(Error::Contract("inference request"));
     }
     if payload[1..17] != generation || payload[29] > 1 {
@@ -105,10 +114,20 @@ pub fn infer_request(
     }
     let offset = 1 + rpc::REQUEST_BYTES;
     let warped = &payload[offset..offset + contract::WARPED_BYTES];
-    let packed = rpc::decode_floats(&payload[offset + contract::WARPED_BYTES..])?;
-    contract::check_input(warped, &packed)?;
+    let packed = rpc::decode_floats(&payload[offset + contract::WARPED_BYTES..base])?;
+    let source_sof = if payload.len() == base + 8 {
+        u64::from_le_bytes(
+            payload[base..]
+                .try_into()
+                .map_err(|_| Error::Contract("source SOF"))?,
+        )
+    } else {
+        0
+    };
+    backend.source_sof(source_sof);
+    backend.session_contract().check_input(warped, &packed)?;
     let output = backend.infer(frame, warped, &packed, deadline, payload[29] == 1)?;
-    contract::check_output(&output)?;
+    backend.session_contract().check_output(&output)?;
     deadline.remaining()?;
     let mut response = Vec::with_capacity(21 + output.len() * 4);
     response.push(b'R');
@@ -249,6 +268,7 @@ fn serve(
         let (mut stream, _) = match listener.accept() {
             Ok(pair) => pair,
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                backend.idle()?;
                 thread::park_timeout(Duration::from_millis(5));
                 continue;
             }
@@ -262,7 +282,8 @@ fn serve(
             let info = rpc::Hello {
                 ready: true,
                 generation: rpc::encode_generation(generation),
-                spec: contract::contract()?,
+                spec: backend.session_contract().raw().clone(),
+                protocol: backend.session_contract().version as u16,
                 identity: identity.clone(),
             };
             let mut reply = vec![b'J'];
@@ -290,6 +311,7 @@ fn serve(
                     if rpc::send_packet(&mut stream, &reply, deadline).is_err() {
                         break;
                     }
+                    backend.after_reply()?;
                 }
             }
         }

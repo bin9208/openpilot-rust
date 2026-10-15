@@ -41,6 +41,8 @@ impl Paths {
         )
     }
     pub(super) fn environment(&self) -> Result<(), Error> {
+        // A previous launcher environment must not disable this boot's selection.
+        env::remove_var("CARROT_BIG_MODEL_STARTUP_FAILED");
         for (name, value) in [
             ("OMP_NUM_THREADS", "1"),
             ("MKL_NUM_THREADS", "1"),

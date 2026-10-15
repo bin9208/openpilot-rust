@@ -13,8 +13,9 @@ use num_traits::ToPrimitive;
 
 #[derive(Default)]
 pub(super) struct CameraResources {
-    live: Option<LiveRoadCamera>,
+    pub(super) live: Option<LiveRoadCamera>,
     failed: bool,
+    pub(super) signal: openpilot_ui_application::signal_display::Reader,
 }
 impl ClusterUiRenderer {
     pub(super) fn close_live_road_camera(&mut self) -> Result<()> {
@@ -137,6 +138,9 @@ impl ClusterUiRenderer {
                     projection.dest,
                     [0, 0, 0, alpha(CAMERA_BACKGROUND_VIGNETTE_ALPHA)?],
                 )?;
+            }
+            if texture.is_none() && self.camera_resources.live.is_some() {
+                self.draw_signal_detections(&projection, now)?;
             }
             Ok(())
         })();

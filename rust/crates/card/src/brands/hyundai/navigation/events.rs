@@ -55,6 +55,16 @@ impl Navigation {
             if timestamp > self.profile_timestamp {
                 self.profile_timestamp = timestamp;
                 let profile = Profile::decode(data)?;
+                if profile.profile_type == 16
+                    && !self.wrapped
+                    && timestamp > self.route_reset_timestamp
+                {
+                    self.camera_policy.add_preview(
+                        profile.value,
+                        f64::from(profile.offset),
+                        self.total_distance,
+                    );
+                }
                 if let Some((kind, speed, subtype)) = profile.classify() {
                     if timestamp > self.route_reset_timestamp {
                         match kind {
@@ -164,10 +174,9 @@ impl Navigation {
             self.events.retain(|event| event.id != cached.id);
             self.camera_event = None;
         }
-        let bump = self
-            .events
-            .iter()
-            .find(|event| event.target > self.total_distance && event.kind == EventType::Bump);
+        let bump = self.events.iter().find(|event| {
+            event.target > self.total_distance && event.kind == EventType::Bump && !event.cancelled
+        });
         if let Some(event) = bump {
             output.bump_distance = event.target - self.total_distance;
         }

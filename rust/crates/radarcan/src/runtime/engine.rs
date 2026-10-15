@@ -61,6 +61,7 @@ impl Engine {
         if elapsed(now, self.last_error_publish_ns) >= 50_000_000 {
             let mut data = Data::default();
             data.errors.can_error = true;
+            data.has_display_data = self.radar.supports_display();
             data.radar_track_flipped = self.radar_track_flip;
             io.publish(data, false)?;
             self.last_error_publish_ns = now;
@@ -87,7 +88,9 @@ impl Engine {
                 continue;
             }
             if self.needs_reset {
-                self.radar = io.create_interface(&self.config)?;
+                let mut radar = io.create_interface(&self.config)?;
+                radar.recover_from_input_fault(&self.radar)?;
+                self.radar = radar;
                 self.needs_reset = false;
             }
             self.last_input_ns = batch.ego.receive_ns;

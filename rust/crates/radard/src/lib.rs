@@ -49,3 +49,9 @@ pub enum Error {
     #[error(transparent)]
     Radar(#[from] openpilot_radarcan::Error),
 }
+
+pub mod stationary_lane;
+
+pub mod in_lane;
+
+pub mod replay;

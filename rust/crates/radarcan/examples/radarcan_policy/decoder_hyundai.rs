@@ -49,5 +49,16 @@ pub fn snapshot(state: &mut Hyundai) -> Result<(Value, Vec<String>), Error> {
             "track_states":manager.states.iter().map(|((source,id),previous)| json!([[source,id],
                 [previous.slot,previous.object_id,previous.age,previous.distance,previous.lateral,previous.cycle]])).collect::<Vec<_>>()},
         "group3_track_ids":{"next_id":state.group3_track_ids.next_id,"previous":previous},"parsers":parsers}))?);
+    if let Some(bosch) = state.bosch.as_ref() {
+        fields.insert("radar_track_mode".into(), json!(state.radar_track_mode));
+        fields.insert("bosch_debug".into(), bosch.provider.debug_snapshot());
+        fields.insert("_bosch_objects".into(), json!(bosch.objects));
+        fields.insert("_bosch_now_ns".into(), json!(bosch.now));
+        fields.insert(
+            "bosch_aliases".into(),
+            json!(bosch.provider.publication_aliases),
+        );
+        fields.insert("bosch_acceleration".into(), json!(bosch.lead_acceleration));
+    }
     Ok((Value::Object(fields), warnings))
 }

@@ -181,7 +181,18 @@ impl<B: Bus> Asic<B> {
             if name == "SDMA_TRAP" || name == "CP_EOP_INTR" {
                 continue;
             }
-            eprintln!("am: IH ({read:#x}/{write:#x}) client={client} src={name}({source}) ring={} vmid={}({}) pasid={} node={} ctx=[{:#x}, {:#x}, {:#x}, {:#x}]",(entry[0]>>16)&255,(entry[0]>>24)&15,(entry[0]>>31)&1,entry[3]&0xffff,(entry[3]>>16)&255,entry[4],entry[5],entry[6],entry[7]);
+            eprintln!(
+                "am: IH ({read:#x}/{write:#x}) client={client} src={name}({source}) ring={} vmid={}({}) pasid={} node={} ctx=[{:#x}, {:#x}, {:#x}, {:#x}]",
+                (entry[0] >> 16) & 255,
+                (entry[0] >> 24) & 15,
+                (entry[0] >> 31) & 1,
+                entry[3] & 0xffff,
+                (entry[3] >> 16) & 255,
+                entry[4],
+                entry[5],
+                entry[6],
+                entry[7]
+            );
             if name == "SQ_INTERRUPT_ID" {
                 let newer = self.hw.gfx()?[0] >= 11;
                 let encoding = if newer {
@@ -238,7 +249,9 @@ impl<B: Bus> Asic<B> {
         let athub = register.decode("ras_athub_err_event_interrupt_status", value)?;
         let controller = register.decode("ras_cntlr_interrupt_status", value)?;
         if athub != 0 || controller != 0 {
-            eprintln!("am: fatal hardware error detected RAS_ATHUB_ERR_EVENT={athub} RAS_CNTLR={controller}");
+            eprintln!(
+                "am: fatal hardware error detected RAS_ATHUB_ERR_EVENT={athub} RAS_CNTLR={controller}"
+            );
             let mut banks = self.aca_banks(true)?;
             banks.extend(self.aca_banks(false)?);
             for registers in banks {

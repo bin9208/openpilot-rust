@@ -27,11 +27,13 @@ pub struct Controller {
     pub buttons: Buttons,
     pub jerk: HyundaiJerk,
     pub lateral: LeadLateralFilter,
+    pub blink_hold: super::blink_hold::BlinkHold,
     pub stopping: Option<CanfdStopping>,
     pub accel_last: f64,
     pub value_last: f64,
     pub lkas_active: bool,
     pub lane_check: i32,
+    pub steering_template_ready: bool,
 }
 
 impl Controller {
@@ -47,6 +49,7 @@ impl Controller {
             buttons: Buttons::default(),
             jerk: HyundaiJerk::default(),
             lateral: LeadLateralFilter::default(),
+            blink_hold: super::blink_hold::BlinkHold::default(),
             stopping: if state.config.flags & f::CANFD != 0 && state.config.longitudinal {
                 Some(CanfdStopping::default())
             } else {
@@ -56,6 +59,7 @@ impl Controller {
             value_last: 0.,
             lkas_active: false,
             lane_check: 0,
+            steering_template_ready: false,
         })
     }
 
@@ -98,16 +102,37 @@ impl Controller {
         state: &mut State,
         input: ApplyInput<'_>,
     ) -> Result<ApplyOutput, Error> {
-        let cc = input.control;
+        let mut guarded_control = Builder::new_default();
+        let mut cc = input.control;
+        if !self.steering_template_ready
+            && state.config.flags & f::CANFD != 0
+            && state.config.flags & f::CAMERA_SCC != 0
+        {
+            let key = if state.config.flags & f::ANGLE_CONTROL != 0 {
+                "lfa_alt"
+            } else {
+                "lfa"
+            };
+            self.steering_template_ready = state.inputs.captured(key)?.is_some();
+            if !self.steering_template_ready && cc.get_lat_active() {
+                guarded_control.set_root(cc)?;
+                guarded_control
+                    .get_root::<car_control::Builder<'_>>()?
+                    .set_lat_active(false);
+                cc = guarded_control.get_root_as_reader::<car_control::Reader<'_>>()?;
+            }
+        }
         if self.frame.is_multiple_of(50) {
             self.settings.refresh(&state.settings)?;
         }
         self.settings
             .lane_change(cc.get_hud_control()?.get_model_desire());
         let model = Model::read(input.model, input.radar)?;
-        let command = self
-            .steering
-            .update((cc, state, model.y_std), &self.settings, self.frame)?;
+        let command = self.steering.update(
+            (cc, state, &model, input.now_ns),
+            &self.settings,
+            self.frame,
+        )?;
         let captures: BTreeMap<&str, Values> = state
             .inputs
             .captures

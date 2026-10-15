@@ -53,7 +53,7 @@ pub struct Manifest {
     pub url: String,
 }
 pub const DEFAULT_MANIFEST_URL: &str =
-    "https://upload.shind0.synology.me/models/comma4-big-cinque-v3/manifest.json";
+    "https://upload.shind0.synology.me/models/comma4-big-md-v3-1365126a/manifest.json";
 
 pub(crate) fn authority(value: &str) -> Option<&str> {
     let rest = value
@@ -133,6 +133,9 @@ fn manifest(value: &Value) -> Option<Manifest> {
     let mut result: Manifest = serde_json::from_value(value.clone()).ok()?;
     result.resolve_url(DEFAULT_MANIFEST_URL).then_some(result)
 }
+mod selection;
+pub use selection::selected_manifest;
+
 pub fn active_manifest(paths: &Paths) -> Option<Manifest> {
     let state = json(&paths.cache.join("state.json"))?;
     let active = if state.get("active").is_some_and(|v| !v.is_null()) {
@@ -166,7 +169,7 @@ pub fn status(paths: &Paths) -> Result<ModelStatus, Error> {
 }
 
 pub fn active_compiled_path(paths: &Paths) -> Option<PathBuf> {
-    let model = active_manifest(paths)?;
+    let model = selected_manifest(paths)?;
     if let Some(path) = installed(paths, &model) {
         return Some(path);
     }
@@ -184,16 +187,7 @@ fn local_ready(paths: &Paths, model: &Manifest) -> Option<PathBuf> {
 }
 
 pub fn compiled_path(paths: &Paths) -> Option<PathBuf> {
-    if let Some(path) = active_compiled_path(paths) {
-        return Some(path);
-    }
-    if active_manifest(paths).is_some_and(|model| model.precompiled_only()) {
-        return None;
-    }
-    let previous = crate::model_delivery::State::read(&paths.cache)
-        .ok()?
-        .previous?;
-    local_ready(paths, &previous)
+    active_compiled_path(paths)
 }
 
 pub fn remove_active_chunk_manifest(paths: &Paths) -> Result<bool, Error> {

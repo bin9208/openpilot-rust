@@ -22,6 +22,10 @@ pub use thermal::{ThermalConfig, ThermalZone};
 pub fn parse_float(text: &str) -> Result<f64, Error> {
     numeric::float(text)
 }
+/// Parse the source's decimal Python integer grammar without a native Params read.
+pub fn parse_integer(text: &str) -> Result<Number, Error> {
+    numeric::integer(text, 10).map(Number::Integer)
+}
 pub use tici::Tici;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

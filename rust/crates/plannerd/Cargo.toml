@@ -7,6 +7,7 @@ license.workspace = true
 publish = false
 
 [features]
+signal-validation = ["native-skip-miri"]
 default = ["native-skip-miri"]
 native-skip-miri = ["dep:libloading", "dep:sha2", "dep:openpilot-beepd", "dep:openpilot-calibrationd", "dep:openpilot-params", "dep:libc", "dep:rustix", "dep:signal-hook", "dep:openpilot-messaging", "dep:openpilot-logging"]
 
@@ -35,6 +36,7 @@ libloading = { version = "0.8", optional = true }
 sha2 = { version = "0.10", optional = true }
 
 [dev-dependencies]
+openpilot-msgq = { path = "../msgq" }
 tempfile = "3"
 
 [[example]]
@@ -53,3 +55,12 @@ required-features = ["native-skip-miri"]
 [[example]]
 name = "plannerd_runtime_trace"
 required-features = ["native-skip-miri"]
+
+[[example]]
+name = "signal_context_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "signal_live_owner_trace"
+path = "src/validation/signal_live_owner.rs"
+required-features = ["signal-validation"]

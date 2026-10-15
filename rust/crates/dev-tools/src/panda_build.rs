@@ -22,9 +22,11 @@ use std::{
     time::Duration,
 };
 
-const NAMES: [&str; 4] = [
+const NAMES: [&str; 6] = [
     "panda.bin.signed",
     "panda_h7.bin.signed",
+    "panda_tesla_wake.bin.signed",
+    "panda_h7_tesla_wake.bin.signed",
     "bootstub.panda.bin",
     "bootstub.panda_h7.bin",
 ];
@@ -41,7 +43,7 @@ const CONTROLS: [(&str, &str); 5] = [
     ),
     (
         "panda/board/SConscript",
-        "5f09764e1a72c17f9dc7f95f0a5f17a4faca601cacd886f3fc4c3fdfc10111d3",
+        "eae1da08e51f33daa0c0846a5b59ae10f84751040234bbb6900cbfb7c68c9fa4",
     ),
     (
         "panda/firmware_version.py",
@@ -570,10 +572,26 @@ pub fn build_with_runner(
         "Panda signing key changed after source admission",
     )?;
     let mut commands = Vec::new();
-    // Match the original ordered target request: F4/H7 mains, then F4/H7 bootstubs.
-    for (h7, boot) in [(false, false), (true, false), (false, true), (true, true)] {
-        let name = if h7 { "panda_h7" } else { "panda" };
-        let project_flags = flags(h7);
+    // Stock and optional Tesla-wake mains each retain the original MCU flags;
+    // bootstubs are shared and never gain the wake feature define.
+    for (h7, boot, wake) in [
+        (false, false, false),
+        (true, false, false),
+        (false, false, true),
+        (true, false, true),
+        (false, true, false),
+        (true, true, false),
+    ] {
+        let base = if h7 { "panda_h7" } else { "panda" };
+        let name = if wake {
+            format!("{base}_tesla_wake")
+        } else {
+            base.into()
+        };
+        let mut project_flags = flags(h7);
+        if wake {
+            project_flags.push("-DPANDA_TESLA_WAKE_ON_CAN".into());
+        }
         let startup = format!("board/obj/startup_{name}.o");
         if !boot {
             let startup_source = if h7 {
@@ -615,7 +633,7 @@ pub fn build_with_runner(
         let stem = if boot {
             format!("bootstub.{name}")
         } else {
-            name.into()
+            name.clone()
         };
         let elf = format!("board/obj/{stem}.elf");
         let mut args = vec!["-o".into(), elf.clone()];

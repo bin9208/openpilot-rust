@@ -4,6 +4,22 @@ This is an incomplete upstream port, not an installable/accepted candidate.
 The plan and source inventory are `dev-md-upstream-plan.md` and
 `rust/upstream/carrot-wip.json`. No dev/main merge or device action was taken.
 
+## Current continuation: bounded reboot and startup recovery
+
+The reboot helper and caller wiring passed HOST/ARM focused gates: 26 volume
+cases, nine WAVs, ten fake PortAudio ABI paths, actual bounded children/session
+ownership, 35 hardware policies, 24 web actions and manager exit dispatch.
+Thirteen owned bootstrap scenarios passed on HOST and under QEMU ARM with fake
+host command recipients. Package sealer/installer/startup tests passed 57 cases
+on HOST, and six affected crates passed strict all-target Clippy. See
+`dev-md-reboot-validation.md`; no actual reboot/audio/device operation occurred.
+
+The new startup-recovery policy core passed 5,120 original-source transitions
+on HOST and ARM. Its log reader, native staging backend, worker, recovery display
+and launcher integration are still in progress. See
+`dev-md-startup-recovery-validation.md`. These results do not complete the full
+runtime gate; source inventory remains explicitly incomplete.
+
 ## Branch isolation and source accounting
 
 Local `dev-md` was created from fetched `origin/dev` at
@@ -91,3 +107,42 @@ generator and catalog were not changed by this repair.
 Keep #338 open until all functional coverage, integration and user acceptance
 criteria are satisfied. Do not promote this branch to dev or main from this
 engineering evidence.
+
+
+### Final shared runtime diagnostics continuation
+
+The differential reference now executes the exact pinned
+common/runtime_diagnostics.py, including its mutable-sample optimization,
+rather than the inherited working-tree snapshot. HOST and ARM examples match
+18,314 aggregation/rounding/integer-overflow updates, with exact value types,
+field order and floating bits. Actual message-state/frequency snapshots also
+match11,205 source updates per architecture, including ignored checks, unseen
+services and receipt-age calculations. Native logging tests/strict Clippy pass;
+the live scheduler test verifies failed emission cannot poison the next interval.
+
+The Python tuple-allocation optimization is already represented concretely by
+logging::diagnostics::Metric updated in place in IndexMap; no Python tuple or
+per-sample history is created. The final-source differential provides observable
+output equivalence; no CPU speedup is asserted. Linux thread identity/schedstat
+sampling is Rust-owned in logging/src/runtime.rs. Receipt directory:
+.analysis/scratch/2026-10-15-dev-md-resume/overlay-cache/{runtime-diagnostics,communication}-{host,arm}.
+
+
+ARM logging supplementary gate: seven ordinary harnesses pass, but the existing
+context-inheritance test's self-exec initially fails under QEMU because this
+host has no automatic ARM binfmt interpreter. A test-only explicit runner is
+now added for the real ARM child. The original context/name/error assertions
+are unchanged; fresh child inheritance execution is pending its rebuild.
+This does not invalidate the completed metric/message-state source comparisons.
+
+## Tesla hardware startup correction (2026-10-16)
+
+Final upstream removes the Tesla started timestamp override while retaining its
+no-power-save policy. The old native policy reproduced a source mismatch on the
+first ignition-off frame: started=true instead of false. Removing that override
+restores offroad process selection without sleeping the Tesla device. The source
+oracle now reads all hardware methods directly from the pinned Git revision.
+Fifteen source scenarios/953 observations pass HOST and ARM, including three
+device families, ignition off/on, startup guards, onroad-cycle reset, thermal
+hysteresis, power integration and shutdown boundaries. Five native contract
+tests and six logging tests plus all-target Clippy pass; no device was accessed.

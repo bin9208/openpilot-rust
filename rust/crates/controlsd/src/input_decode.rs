@@ -31,6 +31,7 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         accel: f64::from(car.get_a_ego()),
         steer_angle: f64::from(car.get_steering_angle_deg()),
         steer_rate: f64::from(car.get_steering_rate_deg()),
+        steer_torque: f64::from(car.get_steering_torque()),
         steering_pressed: car.get_steering_pressed(),
         can_valid: car.get_can_valid(),
         driving_gear: !matches!(
@@ -61,6 +62,9 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         ratio: f64::from(live.get_steer_ratio()),
         offset: f64::from(live.get_angle_offset_deg()),
         roll: f64::from(live.get_roll()),
+        valid: live.get_valid(),
+        sensor_valid: live.get_sensor_valid(),
+        posenet_valid: live.get_posenet_valid(),
     };
     let torque = service!(state, "liveTorqueParameters", LiveTorqueParameters);
     let torque = TorqueParameters {
@@ -112,6 +116,7 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
     let lateral = service!(state, "lateralPlan", LateralPlan);
     let lateral = LateralPlan {
         lane_lines: lateral.get_use_lane_lines(),
+        solution_valid: lateral.get_mpc_solution_valid(),
         psis: floats(lateral.get_psis()?),
         curvatures: floats(lateral.get_curvatures()?),
         distances: floats(lateral.get_distances()?),
@@ -153,6 +158,7 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         && carrot.desired > 0.
         && carrot.desired <= 250.;
     let mut input = Inputs {
+        startup: crate::readiness::decode(state)?,
         car,
         live,
         torque,
@@ -169,6 +175,8 @@ pub fn decode(state: &State, now: f64) -> Result<Inputs, Error> {
         override_long: service!(state, "onroadEvents", OnroadEvents)
             .iter()
             .any(|event| event.get_override_longitudinal()),
+        monitoring_disabled: service!(state, "driverMonitoringState", DriverMonitoringState)
+            .get_dm2_disabled(),
         distracted: service!(state, "driverMonitoringState", DriverMonitoringState)
             .get_alert_level()
             == Ok(log_capnp::driver_monitoring_state::AlertLevel::Three),

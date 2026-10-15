@@ -34,6 +34,23 @@ pub trait Effects: AlertParams + CarSpecificParams<Error = crate::callbacks::Err
     ) -> Result<(), Error> {
         Ok(())
     }
+    fn jetlink_fault_active(&mut self) -> bool {
+        false
+    }
+    fn impact_new(&mut self) -> Result<Option<openpilot_impact_dashcam::ImpactDashcam>, Error> {
+        Ok(None)
+    }
+    fn impact_update(
+        &mut self,
+        _impact: &mut openpilot_impact_dashcam::ImpactDashcam,
+        _now: f64,
+        _allowed: bool,
+        _trigger: bool,
+        _quiet: Option<bool>,
+        _details: serde_json::Value,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
     fn presence(&mut self, key: &str) -> Result<bool, Error>;
     fn wide_camera(&mut self) -> Result<bool, Error>;
     fn personality(&mut self) -> Result<Personality, Error>;

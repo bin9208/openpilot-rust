@@ -93,7 +93,7 @@ impl Renderer {
     ) -> Result<Point, Error> {
         let value = self
             .surface
-            .measure(self.font_id(font), text, size, spacing)?;
+            .measure(self.font_id_for_text(font, text), text, size, spacing)?;
         Ok(Point {
             x: value.x,
             y: value.y,

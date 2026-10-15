@@ -17,6 +17,25 @@ impl CarrotPlanner {
         clock: &mut impl FnMut() -> f64,
         mono_clock: &mut impl FnMut() -> f64,
     ) -> Result<f64, Error> {
+        self.update_with_signals(input, cruise_kph, mode, parameters, clock, mono_clock, None)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_with_signals(
+        &mut self,
+        input: &Input<'_>,
+        cruise_kph: f64,
+        mode: PlannerMode,
+        parameters: &mut impl Parameters,
+        clock: &mut impl FnMut() -> f64,
+        mono_clock: &mut impl FnMut() -> f64,
+        mut signals: Option<&mut dyn super::SignalSource>,
+    ) -> Result<f64, Error> {
+        let suspended = match signals.as_deref_mut() {
+            Some(source) => source.policy()?,
+            None => false,
+        };
+        self.signal_policy(input, suspended);
         self.parameters_update(parameters)?;
         self.detector.update(&TrafficSample {
             valid: input.mode_checks,
@@ -68,23 +87,52 @@ impl CarrotPlanner {
         self.stop_x_rate_limited = Some(stop_rl);
         let mut stop_model = stop_rl;
         let previous_traffic = self.traffic_state;
-        self.check_stopping(input, cruise)?;
+        if self.signal_detection_suspended {
+            self.traffic_state = TrafficState::Off;
+            self.stop_sign_count = 0;
+            self.start_sign_count = 0;
+        } else {
+            self.check_stopping(input, cruise)?;
+        }
         if self.driving_mode == DrivingMode::High || self.config.traffic_light_mode == 0 {
             self.traffic_state = TrafficState::Off;
         }
-        self.transition(
-            input,
-            &mut cruise,
-            [stop_raw, stop_rl],
-            &mut stop_model,
-            previous_traffic,
-            clock,
-        )?;
+        let start_read = match signals.as_deref_mut() {
+            Some(source) => Some(source.start()?),
+            None => None,
+        };
+        let start_hold = self.signal_start(input, start_read.as_ref());
+        if let (Some(source), Some(decision)) = (signals.as_deref_mut(), &self.start_decision) {
+            source.record_start(decision, input.car.v_ego, stop_rl)?;
+        }
+        if input.car.gas_pressed || input.car.brake_pressed {
+            self.user_stop_distance = -1.;
+        }
+        if start_hold {
+            self.x_state = XState::E2eStopped;
+            self.actual_stop_distance = 0.;
+            stop_model = 0.;
+            self.stopping_count = self.stopping_count.max(10);
+            cruise = 0.;
+            self.traffic_state = TrafficState::Red;
+        } else {
+            self.transition(
+                input,
+                &mut cruise,
+                [stop_raw, stop_rl],
+                &mut stop_model,
+                previous_traffic,
+                clock,
+            )?;
+        }
         if matches!(self.traffic_state, TrafficState::Off | TrafficState::Green) || !self.stopping()
         {
             stop_model = 1000.;
         }
-        if self.user_stop_distance >= 0. {
+        if self.user_stop_distance >= 0. && !start_hold {
+            if self.signal_detection_suspended {
+                stop_model = 0.;
+            }
             self.user_stop_distance = maximum(0., self.user_stop_distance - input.car.v_ego * 0.05);
             self.actual_stop_distance = self.user_stop_distance;
             self.x_state = if self.user_stop_distance > 0. {
@@ -93,7 +141,9 @@ impl CarrotPlanner {
                 XState::E2eStopped
             };
         }
-        self.mode = if mode == PlannerMode::Acc && self.x_state == XState::E2ePrepare {
+        self.mode = if start_hold {
+            PlannerMode::Acc
+        } else if mode == PlannerMode::Acc && self.x_state == XState::E2ePrepare {
             PlannerMode::Blended
         } else {
             mode
@@ -132,6 +182,14 @@ impl CarrotPlanner {
         }
         self.cruise_speed = cruise;
         self.stop_distance = stop;
+        let prepare_read = match signals.as_deref_mut() {
+            Some(source) => Some(source.prepare()?),
+            None => None,
+        };
+        self.signal_prepare(input, prepare_read);
+        if let (Some(source), Some(decision)) = (signals, &self.prepare_decision) {
+            source.record_prepare(decision)?;
+        }
         Ok(cruise_kph)
     }
 

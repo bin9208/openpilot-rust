@@ -49,6 +49,7 @@ chrono = "=0.4.45"
 num-traits = "0.2"
 num-bigint = "=0.4.8"
 openpilot-can = { path = "../can" }
+openpilot-runtime-core = { path = "../runtime-core" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-control-policy = { path = "../control-policy", default-features = false }
 openpilot-desire = { path = "../desire", default-features = false }
@@ -64,6 +65,7 @@ serde_json = { version = "1", features = ["float_roundtrip", "raw_value"] }
 thiserror = "2"
 
 [dev-dependencies]
+zstd = "0.13"
 tempfile = "3"
 
 [[example]]

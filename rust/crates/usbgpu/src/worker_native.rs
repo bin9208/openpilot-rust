@@ -84,7 +84,9 @@ impl<B: HcqBus> NativeRuntime<B> {
                         .take(8)
                         .map(|(index, (a, b))| format!("{index}:{a}/{b}"))
                         .collect::<Vec<_>>();
-                    eprintln!("QCOM pre-upload probe={name} mismatches={count} repeat_stable={stable} boundary_only={explained} samples={samples:?}");
+                    eprintln!(
+                        "QCOM pre-upload probe={name} mismatches={count} repeat_stable={stable} boundary_only={explained} samples={samples:?}"
+                    );
                     if !explained {
                         return Err(Error::Contract(
                             "QCOM pre-upload warp differs from artifact AMD warp",
@@ -101,6 +103,10 @@ impl<B: HcqBus> NativeRuntime<B> {
     }
 }
 impl<B: HcqBus> Runtime for NativeRuntime<B> {
+    fn reset(&mut self) -> Result<(), Error> {
+        self.model.reset_recurrent()
+    }
+
     fn run(&mut self, packed: &[u8], info: &Info, output: &mut [u8]) -> Result<(), Error> {
         let start = info
             .layout
@@ -113,11 +119,15 @@ impl<B: HcqBus> Runtime for NativeRuntime<B> {
         let transforms = packed
             .get(..72)
             .ok_or(Error::Contract("worker transforms missing"))?;
+        crate::worker_progress::mark("input_upload");
         #[cfg(feature = "native-skip-miri")]
         if let Some(local) = &mut self.local {
+            crate::worker_progress::mark("local_prepare");
             let images = local.prepare(frames, transforms)?;
+            crate::worker_progress::mark("input_upload");
             self.model.write_input("new_img", &images)?;
         } else {
+            crate::worker_progress::mark("warp");
             self.model
                 .prepare_input("new_img", |gpu, _| gpu.warp(frames, transforms))?;
         }
@@ -127,7 +137,9 @@ impl<B: HcqBus> Runtime for NativeRuntime<B> {
         for name in ["desire", "traffic_convention", "action_t"] {
             self.model.write_input(name, info.input(packed, name)?)?;
         }
+        crate::worker_progress::mark("model_call");
         self.model.run()?;
+        crate::worker_progress::mark("output_read");
         if self.model.output_size("outputs")? != output.len() {
             return Err(Error::Contract("worker model output length mismatch"));
         }

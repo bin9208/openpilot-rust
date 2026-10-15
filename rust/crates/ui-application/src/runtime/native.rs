@@ -37,10 +37,23 @@ impl Runtime {
         .map_err(|error| crate::Error::Io(std::io::Error::other(error)))?;
         let models = Arc::new(paths.clone());
         let model_status = Rc::new(move || {
+            use openpilot_jetlink::status as badges;
+            let now = openpilot_startup_ui::diagnostics::monotonic_now();
+            let link = badges::read_fresh(Path::new(badges::LINK_STATUS), now);
+            let model = badges::read_fresh(Path::new(badges::MODEL_STATUS), now);
+            let saved = badges::read_json(Path::new(badges::LINK_STATUS));
             openpilot_usbgpu::model::status(&models)
                 .map(|status| ModelStatus {
                     compiled: status.compiled,
                     compile_pending: status.compile_pending,
+                    delivery_badge: badges::delivery_badge(&badges::read_delivery(&models.cache))
+                        .map(Into::into),
+                    recovery_badge: badges::recovery_badge(&badges::read_recovery(
+                        Path::new(badges::RECOVERY_STATUS),
+                        now,
+                    ))
+                    .map(Into::into),
+                    jetlink_badge: badges::badge(&saved, &link, &model, now).map(Into::into),
                 })
                 .map_err(|error| crate::Error::Io(std::io::Error::other(error)))
         });

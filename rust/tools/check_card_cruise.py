@@ -31,6 +31,9 @@ import openpilot.selfdrive.carrot.carrot_man_input as navigation
 
 ROOT: Final = Path(__file__).resolve().parents[2]
 SOURCE: Final = ROOT / "openpilot/selfdrive/car/cruise.py"
+SOURCE_PIN: Final = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
+def pinned(path):
+  return subprocess.check_output(['git','show',f'{SOURCE_PIN}:{path}'],cwd=ROOT,text=True)
 DEFAULTS: Final = {
   "AutoEngage": "0", "UseLaneLineSpeed": "0", "CruiseSpeedUnit": "10", "CruiseSpeedUnitBasic": "1",
   "CruiseButtonLongDelay": "40", "CruiseButtonMode": "0", "AutoCruiseControl": "1", "AutoGasTokSpeed": "20",
@@ -69,14 +72,17 @@ class OracleParams:
 
 def helper_type(params: OracleParams, command_root: Path):
   """Compile unchanged source AST, replacing only external Params construction."""
-  parsed = ast.parse(SOURCE.read_text())
+  parsed = ast.parse(pinned('openpilot/selfdrive/car/cruise.py'))
+  toyota_nodes=[n for n in ast.parse(pinned('openpilot/selfdrive/car/toyota_pcm_speed.py')).body if isinstance(n,ast.ClassDef)]
+  toyota_namespace={'CV':CV,'isfinite':__import__('math').isfinite}
+  exec(compile(ast.Module(body=toyota_nodes,type_ignores=[]),'final-source:toyota_pcm_speed','exec'),toyota_namespace)
   selected = [node for node in parsed.body if isinstance(node, (ast.ClassDef, ast.FunctionDef)) and node.name in ("VCruiseCarrot", "is_hold_interlock_active")]
   namespace = dict(math=__import__("math"), np=np, car=car, CV=CV, get_carrot_man=get_carrot_man,
     cruise_gap_levels=cruise_gap_levels, next_gap_personality=next_gap_personality, supported_gap_levels=supported_gap_levels,
     BLUETOOTH_CANCEL=bluetooth.BLUETOOTH_CANCEL, REMOTE_BUTTONS=bluetooth.REMOTE_BUTTONS,
     CommandReader=lambda channel: bluetooth.CommandReader(channel, command_root), Params=lambda *args: params,
     GearShifter=car.CarState.GearShifter, ButtonType=car.CarState.ButtonEvent.Type, ButtonEvent=car.CarState.ButtonEvent,
-    V_CRUISE_UNSET=255, AUTO_CRUISE_MAX_STEERING_ANGLE=70.0)
+    ToyotaPcmSetSpeedSync=toyota_namespace["ToyotaPcmSetSpeedSync"], V_CRUISE_UNSET=255, V_CRUISE_MAX=145, AUTO_CRUISE_MAX_STEERING_ANGLE=70.0)
   exec(compile(ast.Module(body=selected, type_ignores=[]), str(SOURCE), "exec"), namespace)
   return namespace["VCruiseCarrot"]
 
@@ -136,6 +142,7 @@ def oracle(case):
         cs=reader.as_builder()
       prints=io.StringIO()
       with contextlib.redirect_stdout(prints):
+        helper.speedcam_gas_tok_consumed=step.get('speedcam_consumed',False)
         helper.update_v_cruise(cs,sm,step["metric"])
         if data["carControl"].enabled and not enabled_last: helper.initialize_v_cruise(previous,False)
       cs.logCarrot=helper.log; cs.vCruise=float(0 if helper._paddle_decel_active else helper.v_cruise_kph)
@@ -143,6 +150,7 @@ def oracle(case):
       cs.softHoldActive=helper._soft_hold_active; cs.activateCruise=helper._activate_cruise
       cs.latEnabled=helper._lat_enabled; cs.useLaneLineSpeed=helper.useLaneLineSpeedApply; cs.carrotCruise=int(helper.carrot_cruise_active)
       snapshot={key:value for key,value in vars(helper).items() if key not in ("CP","params","params_memory","bluetooth_commands")}
+      snapshot['toyota_pcm_speed_sync']=vars(helper.toyota_pcm_speed_sync).copy()
       snapshot["button_prev"]=int(snapshot["button_prev"].raw) if hasattr(snapshot["button_prev"],"raw") else int(snapshot["button_prev"])
       snapshot=json.loads(json.dumps(snapshot,default=lambda value:value.item()))
       result.append(dict(cs=cs.to_dict(), state=snapshot, writes=params.writes[:], prints=prints.getvalue().splitlines()))
@@ -180,7 +188,7 @@ def main() -> None:
     commands=[step for case in expected for step in case if any(line.startswith("Carrot command(cruise.py):") for line in step["prints"])]
     assert commands, "No valid Carrot command reached the original source"
     assert any(step["state"]["nRoadLimitSpeed"]>0 for case in expected for step in case), "No valid navigation limit reached the original source"
-  report=dict(status="pass",cases=len(request),frames=sum(len(case["frames"]) for case in request),source_sha256=hashlib.sha256(SOURCE.read_bytes()).hexdigest(),binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),runtime_python=False,observable="full CarState wire fields, temporal helper state, Params writes, print effects")
+  report=dict(status="pass",cases=len(request),frames=sum(len(case["frames"]) for case in request),source_commit=SOURCE_PIN,source_sha256=hashlib.sha256(pinned('openpilot/selfdrive/car/cruise.py').encode()).hexdigest(),toyota_source_sha256=hashlib.sha256(pinned('openpilot/selfdrive/car/toyota_pcm_speed.py').encode()).hexdigest(),binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),runtime_python=False,observable="full CarState wire fields, temporal helper state, Params writes, print effects")
   (args.evidence/"result.json").write_text(json.dumps(report,indent=2)+"\n"); print(json.dumps(report))
 
 

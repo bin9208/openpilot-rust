@@ -16,6 +16,7 @@ pub struct SafetyConfig {
 pub struct Config {
     pub car: CarParams,
     pub flags: u32,
+    pub front_radar_delay: f64,
     pub alpha_longitudinal_available: bool,
     pub not_car: bool,
     pub passive: bool,
@@ -29,6 +30,13 @@ impl Config {
         Ok(Self {
             car: CarParams::read(cp)?,
             flags: cp.get_flags(),
+            front_radar_delay: if cp.get_brand()?.to_str()? == "volkswagen"
+                && cp.get_flags() & 16 != 0
+            {
+                0.
+            } else {
+                f64::from(cp.get_radar_delay()).max(0.)
+            },
             alpha_longitudinal_available: cp.get_alpha_longitudinal_available(),
             not_car: cp.get_not_car(),
             passive: cp.get_passive(),

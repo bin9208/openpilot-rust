@@ -74,6 +74,7 @@ fn legacy_steering_bytes_when_checksum_and_identity_variants() {
         let frame = legacy_steering::lkas(
             &mut writer,
             &LkasInput {
+                dm_alert: 0,
                 candidate: &case.candidate,
                 flags: case.flags,
                 frame: case.frame,

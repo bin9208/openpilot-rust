@@ -86,6 +86,8 @@ def main() -> None:
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--display', required=True)
   parser.add_argument('--filter', default='')
+  parser.add_argument('--final-source', action='store_true')
+  parser.add_argument('--preserve-native-fixes', action='store_true')
   args = parser.parse_args()
   root = Path(__file__).resolve().parents[2]
   assert shutil.disk_usage(root).free > (25 + 0.5) * 1024**3
@@ -119,6 +121,8 @@ def main() -> None:
           )
         scene = {
           'kind': 'augmented',
+          'final_source': args.final_source,
+          'preserve_native_fixes': args.preserve_native_fixes,
           'config': {'big': big, 'large_viewport': big, 'pc': True, 'scale': 1.0},
           'language': language,
           'rect': {'x': 0.0, 'y': 0.0, 'width': 2160 if big else 536, 'height': 1080 if big else 240},

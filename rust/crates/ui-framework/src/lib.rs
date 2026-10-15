@@ -36,3 +36,6 @@ pub mod toggle;
 pub mod unified_label;
 #[cfg(feature = "native")]
 pub use openpilot_startup_ui::egl;
+
+#[cfg(feature = "native")]
+pub mod overlay;

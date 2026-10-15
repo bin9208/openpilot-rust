@@ -75,6 +75,11 @@ fn configure_realtime() -> Result<(), Error> {
     Ok(())
 }
 
+fn thread_cpu() -> f64 {
+    let now = rustix::time::clock_gettime(rustix::time::ClockId::ThreadCPUTime);
+    now.tv_sec as f64 + now.tv_nsec as f64 * 1e-9
+}
+
 fn timestamp() -> Result<u64, Error> {
     let now = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
     u64::try_from(now.tv_sec)
@@ -181,7 +186,15 @@ fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Re
     )?;
     let mut calibration = Calibration::default();
     let mut frames = 0;
+    let mut phase = (openpilot_hardware_info::for_runtime()
+        .get_device_type()
+        .is_ok_and(|device| device == "mici"))
+    .then(openpilot_jetlink::phase::Gate::device);
+    let mut diagnostics =
+        openpilot_logging::runtime::RuntimeDiagnostics::new("dmonitoringmodeld", 1.0);
     while !stop.load(Ordering::Relaxed) {
+        let loop_started = Instant::now();
+        let cpu_started = thread_cpu();
         if !camera_ready(&client, stop)? {
             break;
         }
@@ -191,13 +204,21 @@ fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Re
             }
             continue;
         };
+        let camera_received = Instant::now();
         let metadata = *frame.metadata();
         if let Some(message) = subscriber.receive(Duration::ZERO)? {
             calibration.update(&message)?;
         }
         let start = Instant::now();
+        if let Some(phase) = &mut phase {
+            phase.wait(metadata.timestamp_sof);
+        }
+        let phase_done = Instant::now();
+        let inference_cpu_started = thread_cpu();
         let gpu_execution_time = runtime.infer(&frame, calibration.values())?;
-        let model_execution_time = start.elapsed().as_secs_f32();
+        let inference_done = Instant::now();
+        let inference_cpu_ms = (thread_cpu() - inference_cpu_started) * 1000.0;
+        let model_execution_time = inference_done.duration_since(start).as_secs_f32();
         let message = runtime.message(
             DriverTiming {
                 log_mono_time: timestamp()?,
@@ -208,6 +229,38 @@ fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Re
             raw,
         )?;
         publisher.send(&message)?;
+        let _ = diagnostics.record(
+            logger,
+            log_site!(),
+            [
+                (
+                    "camera_wait_ms",
+                    camera_received.duration_since(loop_started).as_secs_f64() * 1000.0,
+                ),
+                (
+                    "phase_wait_ms",
+                    phase_done.duration_since(start).as_secs_f64() * 1000.0,
+                ),
+                (
+                    "inference_ms",
+                    inference_done.duration_since(phase_done).as_secs_f64() * 1000.0,
+                ),
+                ("inference_thread_cpu_ms", inference_cpu_ms),
+                (
+                    "postprocess_ms",
+                    inference_done.elapsed().as_secs_f64() * 1000.0,
+                ),
+                ("loop_ms", loop_started.elapsed().as_secs_f64() * 1000.0),
+                ("thread_cpu_ms", (thread_cpu() - cpu_started) * 1000.0),
+            ]
+            .map(|(name, value)| (name.to_owned(), openpilot_logging::Number::Float(value))),
+            [(
+                "frame_id".to_owned(),
+                openpilot_logging::Value::Integer(i128::from(metadata.frame_id)),
+            )]
+            .into_iter()
+            .collect(),
+        );
         frames += 1;
         if options.frames == Some(frames) {
             break;
@@ -245,7 +298,21 @@ mod camera_tests {
             let prefix = format!("driver-restart-{}", std::process::id());
             let directory = PathBuf::from("/dev/shm").join(format!("msgq_{prefix}"));
             std::fs::create_dir(&directory).unwrap();
-            let status = std::process::Command::new(env::current_exe().unwrap())
+            let runner = if cfg!(target_arch = "aarch64") {
+                env::var("CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER").ok()
+            } else {
+                None
+            };
+            let mut command = if let Some(runner) = runner {
+                let mut parts = runner.split_whitespace();
+                let mut command =
+                    std::process::Command::new(parts.next().expect("nonempty target runner"));
+                command.args(parts).arg(env::current_exe().unwrap());
+                command
+            } else {
+                std::process::Command::new(env::current_exe().unwrap())
+            };
+            let status = command
                 .args(["--exact", "camera_tests::driver_generation_change_is_terminal_but_timeout_and_stop_are_not", "--nocapture"])
                 .env("DRIVER_CAMERA_RESTART_CHILD", "1")
                 .env("OPENPILOT_PREFIX", prefix)

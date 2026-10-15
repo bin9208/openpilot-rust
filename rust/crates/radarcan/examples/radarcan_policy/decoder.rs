@@ -24,6 +24,8 @@ struct Action {
     a_ego: f64,
     time: f64,
     packets: Vec<Packet>,
+    #[serde(default)]
+    context_ns: Option<i64>,
 }
 
 pub fn trace(
@@ -48,6 +50,9 @@ pub fn trace(
     )?;
     let mut output = Vec::new();
     for action in request.actions {
+        if let Some(now) = action.context_ns {
+            state.set_bosch_context(now, Default::default(), Default::default());
+        }
         let result = state.update_carrot(
             action.v_ego,
             action.a_ego,
@@ -86,6 +91,7 @@ pub fn snapshot(state: &mut Interface) -> Result<(Value, Vec<String>), Error> {
         Kind::Rivian(s) => json!({"track_id":s.track_id}),
         Kind::Tesla(s) => json!({"track_id":s.track_id}),
         Kind::Toyota(s) => json!({"track_id":s.track_id,"valid_cnt":s.valid_cnt}),
+        Kind::Ars510(state) => serde_json::to_value(state)?,
         Kind::Ford(s) => {
             let mut value = json!({"track_id":s.track_id,"points":s.points,"clusters":s.clusters,
                 "scan_index_invalid_cnt":s.scan_index_invalid_cnt,"radar_unavailable_cnt":s.radar_unavailable_cnt,
@@ -99,17 +105,19 @@ pub fn snapshot(state: &mut Interface) -> Result<(Value, Vec<String>), Error> {
             "_yv_state":s.yv_state.iter().map(|(id,state)| (format!("{id}.0"),state)).collect::<std::collections::BTreeMap<_,_>>()}),
         Kind::Chrysler | Kind::Gm | Kind::Fallback => json!({}),
     };
-    let (parser, warnings) = match &mut state.kind {
+    let (parser, mut warnings) = match &mut state.kind {
         Kind::Hyundai(hyundai) => {
             let (value, warnings) = decoder_hyundai::snapshot(hyundai)?;
             backend = value;
             (Value::Null, warnings)
         }
+        Kind::Ars510(_) => (Value::Null, Vec::new()),
         _ => {
             backend["updated_messages"] = json!(state.updated.iter().collect::<Vec<_>>());
             decoder_parser::snapshot(state.reader.as_mut())?
         }
     };
+    warnings.extend(state.take_warnings());
     Ok((
         json!({"common":common,"bits":bits,"backend":backend,"parser":parser}),
         warnings,

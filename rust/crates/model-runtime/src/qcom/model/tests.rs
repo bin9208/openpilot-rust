@@ -75,6 +75,12 @@ fn model_preserves_aliases_copies_and_state_between_runs() {
     assert!(model.write_input("state", &[0]).is_err());
     assert!(model.write_input("missing", &[0; 8]).is_err());
     assert!(model.read_output("missing").is_err());
+    model.reset_mutable().unwrap();
+    assert_eq!(model.read_output("copy").unwrap(), &[0; 8]);
+    assert_eq!(
+        model.read_output("state").unwrap(),
+        &[5, 6, 7, 8, 9, 10, 11, 12]
+    );
     assert_eq!(submissions.get(), 0);
 }
 

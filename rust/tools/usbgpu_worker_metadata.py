@@ -40,7 +40,7 @@ def export(artifact):
   for name, (shape, dtype, device) in root['input_specs'].items():
     if name == 'new_img' or name.startswith('state_'):
       continue
-    if dtype != '<f4' or device != 'AMD' or name not in ('desire', 'traffic_convention', 'action_t'):
+    if dtype not in ('<f4', 'float32') or device != 'AMD' or name not in ('desire', 'traffic_convention', 'action_t'):
       raise ArtifactError('unsupported worker input')
     inputs.append({'name': name, 'shape': list(shape)})
   return {

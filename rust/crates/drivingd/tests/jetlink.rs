@@ -110,3 +110,22 @@ fn ordinary_external_output_does_not_require_raw_predictions() {
         None
     );
 }
+
+#[test]
+fn source_model_display_status_refreshes_once_per_second_and_on_error_change() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("carrot-jetlink-model.json");
+    let mut writer = jetlink::ModelStatusWriter::new(&path);
+    let current = status();
+    writer.update(&current, "host lost", 10.).unwrap();
+    let initial = std::fs::read(&path).unwrap();
+    writer.update(&current, "host lost", 10.5).unwrap();
+    assert_eq!(std::fs::read(&path).unwrap(), initial);
+    writer.update(&current, "different failure", 10.6).unwrap();
+    let value = openpilot_jetlink::status::read_json(&path);
+    assert_eq!(value["updated"], 10.6);
+    assert_eq!(value["error"], "different failure");
+    assert_eq!(value["active"], false);
+    writer.update(&current, "different failure", 11.6).unwrap();
+    assert_eq!(openpilot_jetlink::status::read_json(&path)["updated"], 11.6);
+}

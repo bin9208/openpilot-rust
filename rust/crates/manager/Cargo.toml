@@ -10,6 +10,8 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-control-policy = { path = "../control-policy", default-features = false }
+openpilot-calibrationd = { path = "../calibrationd" }
 openpilot-bootlog = { path = "../bootlog" }
 openpilot-hardware-control = { path = "../hardware-control" }
 openpilot-hardware-info = { path = "../hardware-info" }

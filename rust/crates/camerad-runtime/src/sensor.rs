@@ -2,7 +2,7 @@ use openpilot_camera_kernel::{
     CallResult, Device, DeviceHandle, DeviceOperation, MemoryPool, Session,
 };
 use openpilot_camerad::{
-    packet::{PacketError, COMMAND_SIZE, PACKET_SIZE},
+    packet::{COMMAND_SIZE, PACKET_SIZE, PacketError},
     sensor::{Register, SensorKind},
     sensor_packets,
 };
@@ -22,7 +22,7 @@ pub enum SensorError {
 pub struct SensorPort<'pool, 'device> {
     request: &'device Device,
     pool: &'pool MemoryPool<'device>,
-    sensor: Device,
+    sensor: Option<Device>,
     port: usize,
     kind: SensorKind,
     enabled: bool,
@@ -31,6 +31,26 @@ pub struct SensorPort<'pool, 'device> {
 }
 
 impl<'pool, 'device> SensorPort<'pool, 'device> {
+    pub(crate) fn unavailable(
+        request: &'device Device,
+        pool: &'pool MemoryPool<'device>,
+        port: usize,
+    ) -> Self {
+        Self {
+            request,
+            pool,
+            sensor: None,
+            port,
+            kind: SensorKind::Ar0231,
+            enabled: false,
+            session: None,
+            handle: None,
+        }
+    }
+    fn device(&self) -> Result<&Device, SensorError> {
+        self.sensor.as_ref().ok_or(SensorError::NotAcquired)
+    }
+
     pub fn probe(
         request: &'device Device,
         pool: &'pool MemoryPool<'device>,
@@ -46,7 +66,7 @@ impl<'pool, 'device> SensorPort<'pool, 'device> {
         let mut output = Self {
             request,
             pool,
-            sensor,
+            sensor: Some(sensor),
             port,
             kind: SensorKind::Ar0231,
             enabled,
@@ -75,7 +95,7 @@ impl<'pool, 'device> SensorPort<'pool, 'device> {
         );
         output.session = Some(session);
         camera_log!(Debug, "-- Accessing sensor");
-        output.handle = Some(output.sensor.acquire_sensor(session)?);
+        output.handle = Some(output.device()?.acquire_sensor(session)?);
         camera_log!(Debug, "acquire sensor dev");
         camera_log!(Info, "-- Configuring sensor");
         output.write_registers(output.kind.config().init_reg_array)?;
@@ -95,7 +115,7 @@ impl<'pool, 'device> SensorPort<'pool, 'device> {
         info.write(0, &data.info)?;
         power.write(0, &data.power)?;
         packet.write(0, data.packet.bytes())?;
-        let result = self.sensor.probe_sensor(packet.handle());
+        let result = self.device()?.probe_sensor(packet.handle());
         camera_log!(Debug, "probing the sensor: {}", result.code);
         if result.code == 0 {
             camera_log!(Debug, "-- Probing sensor {} success", self.port);
@@ -127,7 +147,12 @@ impl<'pool, 'device> SensorPort<'pool, 'device> {
         let (session, device) = self.acquired().ok_or(SensorError::NotAcquired)?;
         let mut packet = self.pool.lease(PACKET_SIZE)?;
         packet.write(0, sensor_packets::poke(request)?.bytes())?;
-        if self.sensor.configure(session, device, packet.handle()).code != 0 {
+        if self
+            .device()?
+            .configure(session, device, packet.handle())
+            .code
+            != 0
+        {
             camera_log!(Error, "** sensor {} FAILED poke, disabling", self.port);
             self.enabled = false;
         }
@@ -151,7 +176,12 @@ impl<'pool, 'device> SensorPort<'pool, 'device> {
         )?;
         payload.write(0, &registers)?;
         packet.write(0, data.bytes())?;
-        if self.sensor.configure(session, device, packet.handle()).code != 0 {
+        if self
+            .device()?
+            .configure(session, device, packet.handle())
+            .code
+            != 0
+        {
             camera_log!(Error, "** sensor {} FAILED i2c, disabling", self.port);
             self.enabled = false;
         }
@@ -160,10 +190,8 @@ impl<'pool, 'device> SensorPort<'pool, 'device> {
 
     pub fn shutdown(&mut self) {
         if let Some(session) = self.session.take() {
-            if let Some(handle) = self.handle.take() {
-                let result = self
-                    .sensor
-                    .control_device(DeviceOperation::Release, session, handle);
+            if let (Some(handle), Some(sensor)) = (self.handle.take(), self.sensor.as_ref()) {
+                let result = sensor.control_device(DeviceOperation::Release, session, handle);
                 camera_log!(Debug, "release sensor: {}", result.code);
             }
             let result = self.request.destroy_session(session);

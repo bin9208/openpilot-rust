@@ -13,6 +13,8 @@ visionipc-ion = ["openpilot-msgq/visionipc-ion"]
 unsafe_op_in_unsafe_fn = "deny"
 
 [dependencies]
+openpilot-jetlink = { path = "../jetlink" }
+openpilot-hardware-info = { path = "../hardware-info" }
 openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-cereal = { path = "../cereal" }
 openpilot-modeld = { path = "../modeld" }

@@ -19,6 +19,7 @@ parser.add_argument('--driver', action='store_true')
 parser.add_argument('--large', action='store_true')
 parser.add_argument('--navigation', action='store_true')
 parser.add_argument('--visibility', action='store_true')
+parser.add_argument('--dm2-visibility', action='store_true')
 args = parser.parse_args()
 args.output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[2]
@@ -81,6 +82,13 @@ for big in ([args.large] if args.driver else [True, False]):
           {'frame':6,'rhd':True,'started_frame':0,'alert_size':0},
           {'frame':12,'rhd':False,'started_frame':0,'alert_size':3},
           {'frame':18,'rhd':False,'started_frame':0,'alert_size':0},
+        ]
+      if args.dm2_visibility:
+        scene['driver']['setup'] = False
+        scene['driver']['visibility_steps'] = [
+          {'frame':i*6,'rhd':False,'started_frame':0,'alert_size':0,
+           'started':started,'dm2_disabled':disabled}
+          for i,(started,disabled) in enumerate([(False,False),(True,True),(False,True),(True,False)])
         ]
       if big:
         scene['capture_effects'] = True
@@ -167,7 +175,7 @@ for big in ([args.large] if args.driver else [True, False]):
     if args.driver and not big:
       messages = [json.loads((args.output / f'{lane}-{label}-messages.json').read_text()) for lane in ['source', 'native']]
       stable = [[row for row in rows if 0 < row['time'] <= 1_000_000_000] for rows in messages]
-      expected = [] if scene['driver']['setup'] else [{'valid': False, 'time': int(index / 20 * 1e9), 'sound': 'none'} for index in range(1, 21)]
+      expected = [] if scene['driver']['setup'] else [{'valid': False, 'time': int(index / 20 * 1e9), 'sound': 'none'} for index in range(1, 6 if args.dm2_visibility else 21)]
       assert stable[0] == stable[1] == expected, (label, messages)
       assert all(row['time'] < 1_100_000_000 for rows in messages for row in rows), (label, messages)
 
@@ -180,7 +188,7 @@ for big in ([args.large] if args.driver else [True, False]):
       assert traces[0][-1]['camera']['enabled'] is False and traces[0][-1]['camera']['frame'] is False
       if name in ['driver','switch']:
         assert {'pop': True} in traces[0][-1]['effects']
-    if args.driver and not big and not args.navigation:
+    if args.driver and not big and not args.navigation and not args.dm2_visibility:
       assert traces[0][20]['camera']['enabled'] is False and traces[0][20]['camera']['timeout'] is None
       assert traces[0][21]['camera']['enabled'] is True and traces[0][21]['camera']['timeout'] == 300
     if args.driver:

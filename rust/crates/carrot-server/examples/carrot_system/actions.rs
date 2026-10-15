@@ -164,11 +164,8 @@ pub fn run(input: Input) -> Result<Value, Box<dyn std::error::Error>> {
             ));
         }
     }
-    let attempted = spawned.exists()
-        || (!input.params
-            && !input.engaged
-            && matches!(input.action, Some(Selected::Reboot))
-            && status == 500);
+    // A device-admission error is not an attempted system reboot.
+    let attempted = spawned.exists();
     let commands = if attempted {
         Value::Array(vec![Value::Array(vec![
             Value::text("sudo"),

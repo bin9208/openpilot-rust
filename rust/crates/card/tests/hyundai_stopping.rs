@@ -1,104 +1,89 @@
 use openpilot_card::brands::hyundai::stopping::{CanfdStopping, StopInput, StopPhase};
-use serde::Deserialize;
-
-#[derive(Deserialize)]
-struct Step {
-    input: StopInput,
-    expected: serde_json::Value,
-}
-
-#[test]
-fn every_state_and_output_when_source_stopping_scenarios() {
-    let path = std::env::var("HYUNDAI_FIXTURE_DIR").expect("HYUNDAI_FIXTURE_DIR source fixture");
-    let scenarios: Vec<Vec<Step>> =
-        serde_json::from_slice(&std::fs::read(format!("{path}/stopping.json")).unwrap()).unwrap();
-    let mut count = 0;
-    for (scenario, steps) in scenarios.iter().enumerate() {
-        let mut controller = CanfdStopping::default();
-        for (tick, step) in steps.iter().enumerate() {
-            let command = controller.update(step.input);
-            let actual = serde_json::json!({"controller":controller,"command":command});
-            assert_eq!(actual, step.expected, "scenario={scenario} tick={tick}");
-            count += 1;
+fn compare(actual: &serde_json::Value, expected: &serde_json::Value, path: &str) {
+    match (actual, expected) {
+        (serde_json::Value::Number(a), serde_json::Value::Number(b)) => {
+            let (a, b) = (a.as_f64().unwrap(), b.as_f64().unwrap());
+            assert_eq!(a.to_bits(), b.to_bits(), "{path}: {a:?} != {b:?}");
         }
-    }
-    std::fs::write(
-        format!("{path}/native-stopping.json"),
-        serde_json::to_vec(&serde_json::json!({"matched_ticks":count,"scenarios":scenarios.len()}))
-            .unwrap(),
-    )
-    .unwrap();
-}
-
-fn request() -> StopInput {
-    StopInput {
-        active: true,
-        requested: true,
-        speed: 0.3,
-        held: false,
-        accel: -0.5,
-        value: -0.5,
-        previous_value: -0.5,
-        jerk_u: 2.,
-        jerk_l: 1.,
-    }
-}
-
-#[test]
-fn bounded_reentry_when_persistent_creep() {
-    let mut controller = CanfdStopping::default();
-    let mut phases = Vec::new();
-    for _ in 0..1400 {
-        let command = controller.update(request()).unwrap();
-        if phases.last() != Some(&controller.phase) {
-            phases.push(controller.phase);
+        (serde_json::Value::Array(a), serde_json::Value::Array(b)) => {
+            assert_eq!(a.len(), b.len(), "{path}");
+            for (i, (a, b)) in a.iter().zip(b).enumerate() {
+                compare(a, b, &format!("{path}/{i}"));
+            }
         }
-        assert!(command.raw <= 0. && command.value <= 0.);
+        (serde_json::Value::Object(a), serde_json::Value::Object(b)) => {
+            assert_eq!(a.len(), b.len(), "{path}");
+            for (k, a) in a {
+                compare(a, &b[k], &format!("{path}/{k}"));
+            }
+        }
+        _ => assert_eq!(actual, expected, "{path}"),
     }
-    assert_eq!(
-        phases,
-        vec![
-            StopPhase::Request,
-            StopPhase::Release,
-            StopPhase::Retry,
-            StopPhase::Fallback
-        ]
-    );
-    assert_eq!(controller.update(request()).unwrap().stop_req, 0);
 }
 
-#[test]
-fn hold_retains_normal_acceleration_when_measured_stopped() {
-    let mut controller = CanfdStopping::default();
-    let input = StopInput {
-        speed: 0.,
-        held: true,
-        accel: -1.,
-        value: -0.3,
-        previous_value: -0.3,
-        ..request()
-    };
-    let command = controller.update(input).unwrap();
-    assert_eq!(
-        (command.stop_req, command.raw, command.value, command.lower),
-        (1, -1., -0.3, 0.2)
-    );
-    assert_eq!(controller.phase, StopPhase::Held);
-}
-
-#[test]
-fn stop_state_resets_when_inactive() {
-    let mut controller = CanfdStopping::default();
-    for _ in 0..200 {
-        controller.update(request());
+fn clean(value: &serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::String(s) if matches!(s.as_str(), "NaN" | "Infinity" | "-Infinity") => {
+            serde_json::json!(0.)
+        }
+        serde_json::Value::Array(a) => serde_json::Value::Array(a.iter().map(clean).collect()),
+        serde_json::Value::Object(o) => {
+            serde_json::Value::Object(o.iter().map(|(k, v)| (k.clone(), clean(v))).collect())
+        }
+        v => v.clone(),
     }
-    assert!(controller.retried);
-    assert!(controller
-        .update(StopInput {
-            active: false,
-            ..request()
-        })
-        .is_none());
-    assert_eq!(controller.phase, StopPhase::Idle);
-    assert!(!controller.retried);
+}
+fn number(value: &serde_json::Value) -> f64 {
+    match value.as_str() {
+        Some("NaN") => f64::NAN,
+        Some("Infinity") => f64::INFINITY,
+        Some("-Infinity") => f64::NEG_INFINITY,
+        _ => value.as_f64().unwrap(),
+    }
+}
+#[test]
+fn all_144_pinned_stopping_tests_match_native_22907_complete_state_transitions() {
+    let data =
+        zstd::stream::decode_all(include_bytes!("fixtures/stopping-final.json.zst").as_slice())
+            .unwrap();
+    let fixture: serde_json::Value = serde_json::from_slice(&data).unwrap();
+    for (i, row) in fixture["rows"].as_array().unwrap().iter().enumerate() {
+        let mut controller: CanfdStopping = serde_json::from_value(clean(&row["before"])).unwrap();
+        if row["before"].get("last_scc_jerk_upper").is_some() {
+            controller.last_scc_jerk_upper = number(&row["before"]["last_scc_jerk_upper"]);
+        }
+        let input = &row["input"];
+        let result = match row["operation"].as_str().unwrap() {
+            "update" => {
+                let mut args: StopInput = serde_json::from_value(clean(input)).unwrap();
+                args.speed = number(&input["speed"]);
+                args.accel = number(&input["accel"]);
+                args.previous_value = number(&input["previous_value"]);
+                args.jerk_u = number(&input["jerk_u"]);
+                args.jerk_l = number(&input["jerk_l"]);
+                serde_json::json!(controller.update(args))
+            }
+            "reset" => {
+                controller.reset();
+                serde_json::Value::Null
+            }
+            "enter" => {
+                let phase: StopPhase = serde_json::from_value(input["phase"].clone()).unwrap();
+                controller.enter(phase, input["reason"].as_str().unwrap().to_owned());
+                serde_json::Value::Null
+            }
+            "limit_scc_jerk_upper" => serde_json::json!(controller.limit_scc_jerk_upper(
+                u8::try_from(input["stop_req"].as_u64().unwrap()).unwrap(),
+                number(&input["jerk_upper"])
+            )),
+            other => panic!("unknown operation {other}"),
+        };
+        compare(&result, &row["result"], &format!("result/{i}"));
+        compare(
+            &serde_json::to_value(controller).unwrap(),
+            &row["state"],
+            &format!("state/{i}"),
+        );
+    }
+    assert_eq!(fixture["rows"].as_array().unwrap().len(), 22907);
 }

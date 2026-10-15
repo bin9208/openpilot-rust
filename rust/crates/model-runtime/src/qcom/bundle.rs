@@ -14,7 +14,23 @@ impl QcomBundle {
         fs::File::open(directory.join("graph.json"))?
             .take(64 * 1024 * 1024 + 1)
             .read_to_end(&mut manifest)?;
-        let graph = QcomGraph::parse(&manifest)?;
+        Self::from_manifest(directory, &manifest)
+    }
+
+    /// Bind the exact graph snapshot to a digest supplied by an authenticated
+    /// package. The graph recursively binds weights and all kernel binaries.
+    /// This checks content identity, not the authority of the supplied digest.
+    pub fn load_verified(directory: &Path, expected_graph_sha256: &str) -> Result<Self, Error> {
+        let manifest = read_verified(
+            &directory.join("graph.json"),
+            expected_graph_sha256,
+            64 * 1024 * 1024,
+        )?;
+        Self::from_manifest(directory, &manifest)
+    }
+
+    fn from_manifest(directory: &Path, manifest: &[u8]) -> Result<Self, Error> {
+        let graph = QcomGraph::parse(manifest)?;
         let weight_bytes = graph
             .allocations
             .iter()

@@ -18,6 +18,8 @@ pub struct GapSample {
     pub distance: f64,
     pub desired_distance: f64,
     pub base_tf: f64,
+    #[serde(default = "default_stop_distance")]
+    pub stop_distance: f64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -44,6 +46,18 @@ pub(super) fn recovery_tau(level: i32) -> Option<f64> {
     }
 }
 
+const fn default_stop_distance() -> f64 {
+    6.
+}
+
+pub fn distance_recovery_weight(distance: f64, speed: f64, base_tf: f64, stop: f64) -> f64 {
+    let reference = maximum(1e-3, speed * base_tf + stop);
+    entry_weight(minimum(
+        1.,
+        maximum(0., (distance / reference - 1.2) / (1.5 - 1.2)),
+    ))
+}
+
 pub fn entry_weight(strength: f64) -> f64 {
     strength * strength * (3. - 2. * strength)
 }
@@ -64,6 +78,7 @@ impl LeadGapState {
                 input.distance,
                 input.desired_distance,
                 input.base_tf,
+                input.stop_distance,
             ]
             .iter()
             .all(|value| value.is_finite())
@@ -71,6 +86,7 @@ impl LeadGapState {
             || input.ego_speed < 0.
             || input.distance <= 0.
             || input.base_tf < 0.
+            || input.stop_distance < 0.
         {
             *self = Self::default();
             return 0.;
@@ -109,6 +125,12 @@ impl LeadGapState {
                     lead_speed: input.lead_speed,
                     tau,
                     cap,
+                    release: distance_recovery_weight(
+                        input.distance,
+                        input.ego_speed,
+                        input.base_tf,
+                        input.stop_distance,
+                    ),
                 },
             );
             self.recovery_tf = result.reservoir;

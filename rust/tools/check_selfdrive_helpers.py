@@ -13,9 +13,15 @@ import numpy as np
 
 from openpilot.cereal import log
 from openpilot.selfdrive.locationd.helpers import Measurement, Pose, PoseCalibrator
-from openpilot.selfdrive.selfdrived.camera_config import get_camera_packets
+
 
 ROOT = Path(__file__).resolve().parents[2]
+
+DM2_PIN = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
+CAMERA_SOURCE = subprocess.check_output(['git', 'show', f'{DM2_PIN}:openpilot/selfdrive/selfdrived/camera_config.py'], cwd=ROOT, text=True)
+_camera_scope = {}
+exec(compile(ast.parse(CAMERA_SOURCE), 'final-source:camera_config.py', 'exec'), _camera_scope)
+get_camera_packets = _camera_scope['get_camera_packets']
 
 
 def constant(path, name):
@@ -128,7 +134,7 @@ def original(rows):
                    'actuation': {'excessive_counter': check._excessive_counter, 'engaged_counter': check._engaged_counter},
                    'excessive': excessive,
                    'error': error,
-                   'cameras': get_camera_packets(cameras['wide'], cameras['disable_dm'], cameras['simulation']) if cameras else None})
+                   'cameras': get_camera_packets(cameras['wide']) if cameras else None})
   return result
 
 
@@ -172,8 +178,9 @@ def main():
            'openpilot/selfdrive/selfdrived/camera_config.py', 'openpilot/common/realtime.py',
            'opendbc_repo/opendbc/car/interfaces.py', 'opendbc_repo/opendbc/car/lateral.py', 'opendbc_repo/opendbc/car/__init__.py']
   report = {'passed': True, 'steps': len(rows), 'numeric_atol_rtol': 2e-12,
-            'source_hashes': {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths},
-            'native_sha256': hashlib.sha256(args.native.read_bytes()).hexdigest()}
+            'source_hashes': {path: hashlib.sha256(CAMERA_SOURCE.encode() if path.endswith('/camera_config.py') else (ROOT / path).read_bytes()).hexdigest() for path in paths},
+            'native_sha256': hashlib.sha256(args.native.read_bytes()).hexdigest(),
+            'camera_source_commit': DM2_PIN, 'camera_source_sha256': hashlib.sha256(CAMERA_SOURCE.encode()).hexdigest()}
   (args.output / 'report.json').write_text(json.dumps(report, indent=2))
   print(json.dumps({'passed': True, 'steps': len(rows)}))
 

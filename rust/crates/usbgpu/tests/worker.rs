@@ -9,6 +9,10 @@ struct Owned {
     nonfinite: bool,
 }
 impl Runtime for Owned {
+    fn reset(&mut self) -> Result<(), Error> {
+        self.runs = 0;
+        Ok(())
+    }
     fn run(&mut self, _: &[u8], _: &Info, output: &mut [u8]) -> Result<(), Error> {
         self.runs += 1;
         for value in output.chunks_exact_mut(4) {
@@ -69,7 +73,7 @@ fn nonfinite_output_stops_before_publication_and_next_command() {
     let text = String::from_utf8(control).unwrap();
     assert_eq!(
         text.lines().skip(1).collect::<Vec<_>>(),
-        ["ERROR \"invalid precompiled model output\""]
+        ["ERROR \"ValueError: invalid precompiled model output\""]
     );
     let mut output = [0; 16];
     file.read_exact_at(&mut output, info.input_bytes as u64)
@@ -91,4 +95,29 @@ fn invalid_command_never_dispatches() {
     )
     .is_err());
     assert_eq!(runtime.runs, 0);
+}
+
+#[test]
+fn reset_acknowledges_fresh_recurrence_and_clears_shared_output() {
+    let info = info();
+    let file = tempfile::tempfile().unwrap();
+    let mut runtime = Owned {
+        runs: 0,
+        nonfinite: false,
+    };
+    let mut control = Vec::new();
+    worker::serve(&mut runtime, &file, &info, &mut &b"rrzq"[..], &mut control).unwrap();
+    assert_eq!(runtime.runs, 0);
+    assert_eq!(
+        String::from_utf8(control)
+            .unwrap()
+            .lines()
+            .skip(1)
+            .collect::<Vec<_>>(),
+        ["1", "1", "1"]
+    );
+    let mut output = [1; 16];
+    file.read_exact_at(&mut output, info.input_bytes as u64)
+        .unwrap();
+    assert_eq!(output, [0; 16]);
 }

@@ -11,7 +11,10 @@ use openpilot_camerad::{
 };
 use openpilot_msgq::{Publisher, VisionServer, VisionStream};
 use openpilot_params::Params;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::{
+    collections::VecDeque,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum RuntimeError {
@@ -45,6 +48,8 @@ impl RuntimeOptions {
 }
 
 pub struct RuntimeCamera<'pool, 'device> {
+    driver: bool,
+    queued_events: VecDeque<FrameEvent>,
     publication: Option<Publication>,
     camera: CameraPort<'pool, 'device>,
 }
@@ -91,6 +96,8 @@ impl<'pool, 'device> RuntimeCamera<'pool, 'device> {
             None
         };
         Ok(Self {
+            driver: matches!(id, CameraId::Driver),
+            queued_events: VecDeque::with_capacity(32),
             publication,
             camera,
         })
@@ -118,6 +125,57 @@ impl<'pool, 'device> RuntimeCamera<'pool, 'device> {
             .and_then(|result| result.frame)
         {
             self.send_state(frame, clock, options, params)?;
+        }
+        Ok(())
+    }
+
+    fn complete_wait(
+        &mut self,
+        sync: &mut FrameSync,
+        clock: &mut impl FrameClock,
+        options: RuntimeOptions,
+        params: &mut Option<Params>,
+    ) -> Result<(), RuntimeError> {
+        if let Some(frame) = self
+            .camera
+            .complete_frame_wait(sync, clock)?
+            .and_then(|result| result.frame)
+        {
+            self.send_state(frame, clock, options, params)?;
+        }
+        Ok(())
+    }
+    fn receive_event(
+        &mut self,
+        event: FrameEvent,
+        sync: &mut FrameSync,
+        clock: &mut impl FrameClock,
+        options: RuntimeOptions,
+        params: &mut Option<Params>,
+    ) -> Result<(), RuntimeError> {
+        if self.driver {
+            if self.queued_events.len() >= 32 {
+                self.queued_events.pop_front();
+                camera_log!(Error, "driver camera event backlog overflow");
+            }
+            self.queued_events.push_back(event);
+            Ok(())
+        } else {
+            self.handle_event(event, sync, clock, options, params)
+        }
+    }
+    fn drain_events(
+        &mut self,
+        sync: &mut FrameSync,
+        clock: &mut impl FrameClock,
+        options: RuntimeOptions,
+        params: &mut Option<Params>,
+    ) -> Result<(), RuntimeError> {
+        while !self.camera.frame_wait_pending() {
+            let Some(event) = self.queued_events.pop_front() else {
+                break;
+            };
+            self.handle_event(event, sync, clock, options, params)?;
         }
         Ok(())
     }
@@ -251,7 +309,13 @@ pub fn run(stop: &AtomicBool) -> Result<(), RuntimeError> {
     }
     camera_log!(Info, "-- Dequeueing Video events");
     while !stop.load(Ordering::Relaxed) {
-        let polled = master.request.poll_priority(1000);
+        let (polled, completed) = {
+            let fds: Vec<_> = cameras
+                .iter()
+                .map(|camera| camera.camera.frame_wait_fd())
+                .collect();
+            master.request.poll_frames(&fds, 1000)
+        };
         if polled.result.code < 0 {
             if polled.retry() {
                 continue;
@@ -264,37 +328,57 @@ pub fn run(stop: &AtomicBool) -> Result<(), RuntimeError> {
             );
             break;
         }
-        if !polled.priority() {
-            continue;
+        for (port, camera) in cameras.iter_mut().enumerate() {
+            if completed[port] {
+                clock.set_camera(port);
+                camera.complete_wait(&mut sync, &mut clock, options, &mut params)?;
+            }
         }
-        let (result, event) = master.request.dequeue_event();
-        if result.code != 0 {
-            camera_log!(Error, "VIDIOC_DQEVENT failed, errno={}", result.errno);
-            continue;
-        }
-        if event.kind != 0x0800_0000 {
-            camera_log!(Error, "unhandled event {}\n", event.kind);
-            continue;
-        }
-        if options.debug_frames {
-            println!("sess_hdl 0x{:6X}, link_hdl 0x{:6X}, frame_id {}, req_id {}, timestamp {:.2} ms, sof_status {}",
-                event.session.0 as u32, event.link as u32, event.frame.frame_id, event.frame.request_id,
-                event.frame.timestamp as f64 / 1e6, event.frame.sof_status);
-            if event.frame.frame_id > 20 {
-                stop.store(true, Ordering::Relaxed);
+        if polled.priority() {
+            let (result, event) = master.request.dequeue_event();
+            if result.code != 0 {
+                camera_log!(Error, "VIDIOC_DQEVENT failed, errno={}", result.errno);
+            } else if event.kind != 0x0800_0000 {
+                camera_log!(Error, "unhandled event {}\n", event.kind);
+            } else {
+                if options.debug_frames {
+                    println!(
+                        "sess_hdl 0x{:6X}, link_hdl 0x{:6X}, frame_id {}, req_id {}, timestamp {:.2} ms, sof_status {}",
+                        event.session.0 as u32,
+                        event.link as u32,
+                        event.frame.frame_id,
+                        event.frame.request_id,
+                        event.frame.timestamp as f64 / 1e6,
+                        event.frame.sof_status
+                    );
+                    if event.frame.frame_id > 20 {
+                        stop.store(true, Ordering::Relaxed);
+                    }
+                }
+                for (port, camera) in cameras.iter_mut().enumerate() {
+                    if camera
+                        .session()
+                        .is_some_and(|session| session.0 == event.session.0)
+                    {
+                        clock.set_camera(port);
+                        camera.receive_event(
+                            event.frame,
+                            &mut sync,
+                            &mut clock,
+                            options,
+                            &mut params,
+                        )?;
+                        break;
+                    }
+                }
             }
         }
         for (port, camera) in cameras.iter_mut().enumerate() {
-            if camera
-                .session()
-                .is_some_and(|session| session.0 == event.session.0)
-            {
-                clock.set_camera(port);
-                camera.handle_event(event.frame, &mut sync, &mut clock, options, &mut params)?;
-                break;
-            }
+            clock.set_camera(port);
+            camera.drain_events(&mut sync, &mut clock, options, &mut params)?;
         }
     }
+
     drop(cameras);
     pool.close()?;
     Ok(())

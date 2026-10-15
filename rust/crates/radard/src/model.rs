@@ -3,19 +3,28 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize)]
 pub struct VisionLead {
+    #[serde(with = "crate::wire_float::scalar")]
     pub probability: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub d_rel: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub y_rel: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub velocity: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub x_std: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub y_std: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub v_std: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub acceleration: f64,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ModelLead {
+    #[serde(with = "crate::wire_float::scalar")]
     pub probability: f64,
     #[serde(with = "crate::wire_float::optional")]
     pub x: Option<Vec<f64>>,
@@ -36,7 +45,9 @@ pub struct ModelLead {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Position {
+    #[serde(with = "crate::wire_float")]
     pub x: Vec<f64>,
+    #[serde(with = "crate::wire_float")]
     pub y: Vec<f64>,
 }
 
@@ -44,8 +55,14 @@ pub struct Position {
 #[serde(default, deny_unknown_fields)]
 pub struct Model {
     pub position: Position,
+    #[serde(with = "crate::wire_float")]
     pub velocity: Vec<f64>,
+    #[serde(with = "crate::wire_float")]
     pub lane_probabilities: Vec<f64>,
+    pub lane_lines: Vec<Position>,
+    #[serde(with = "crate::wire_float")]
+    pub lane_stds: Vec<f64>,
+    pub lane_change_state: String,
     pub leads: Vec<ModelLead>,
 }
 

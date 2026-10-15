@@ -23,6 +23,10 @@ pub struct Visibility {
     pub rhd: bool,
     pub started_frame: i64,
     pub alert_size: u16,
+    #[serde(default)]
+    pub started: bool,
+    #[serde(default)]
+    pub dm2_disabled: bool,
 }
 pub fn before(
     context: &Context,
@@ -71,6 +75,7 @@ pub fn before(
         .init_root::<openpilot_cereal::log_capnp::event::Builder<'_>>()
         .init_driver_monitoring_state();
     data.set_is_r_h_d(rhd);
+    data.set_dm2_disabled(visibility.is_some_and(|step| step.dm2_disabled));
     data.set_active_policy(
         openpilot_cereal::log_capnp::driver_monitoring_state::MonitoringPolicy::Vision,
     );
@@ -83,6 +88,7 @@ pub fn before(
     ];
     if let Some(visibility) = visibility {
         context.ui.borrow_mut().started_frame = visibility.started_frame;
+        context.ui.borrow_mut().started = visibility.started;
         let mut state = capnp::message::Builder::new_default();
         state
             .init_root::<openpilot_cereal::log_capnp::event::Builder>()

@@ -1,10 +1,14 @@
-use crate::{math::finite, model::VisionLead, path::Path, point::Point, Error, Lead};
+use crate::{Error, Lead, math::finite, model::VisionLead, path::Path, point::Point};
 
 pub fn from_point(point: &Point, d_path: f64, probability: f64, score: f64) -> Result<Lead, Error> {
     Ok(Lead {
         d_rel: point.d_rel,
-        y_rel: point.y_rel,
-        d_path,
+        y_rel: if point.source == "scc" {
+            0.
+        } else {
+            point.y_rel
+        },
+        d_path: if point.source == "scc" { 0. } else { d_path },
         v_rel: point.v_rel,
         a_rel: point.a_rel,
         v_lead: point.v_lead,
@@ -13,7 +17,11 @@ pub fn from_point(point: &Point, d_path: f64, probability: f64, score: f64) -> R
         a_lead_k: point.a_lead,
         a_lead_tau: 1.5,
         j_lead: point.j_lead,
-        v_lat: point.yv_rel,
+        v_lat: if point.source == "scc" {
+            0.
+        } else {
+            point.yv_rel
+        },
         status: true,
         fcw: false,
         model_prob: probability,

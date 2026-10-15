@@ -27,17 +27,29 @@ pub struct Request {
 pub struct Scheduler {
     pub enabled: bool,
     pub core: usize,
+    pub include_little: bool,
+    pub extra_onroad_cores: Vec<usize>,
     pub onroad: Option<bool>,
     pub next_check: f64,
 }
 impl Scheduler {
     pub fn new(enabled: bool) -> Self {
         Self {
-            enabled,
+            enabled: enabled && cfg!(target_os = "linux"),
             core: 6,
+            include_little: false,
+            extra_onroad_cores: Vec::new(),
             onroad: None,
             next_check: 0.0,
         }
+    }
+    pub fn for_ui(enabled: bool, device_type: &str) -> Self {
+        let mut value = Self::new(enabled);
+        if enabled && matches!(device_type, "tici" | "tizi") {
+            value.include_little = true;
+            value.extra_onroad_cores.push(7);
+        }
+        value
     }
     pub fn update(&mut self, request: Request, platform: &mut impl Platform) -> io::Result<()> {
         if !self.enabled {
@@ -48,18 +60,28 @@ impl Scheduler {
         }
         self.onroad = Some(request.onroad);
         self.next_check = request.now + 0.5;
-        let big = request.onroad && platform.online(self.core);
-        let cores = if big {
-            BTreeSet::from([self.core])
-        } else {
-            little()
-        };
+        let big: BTreeSet<_> = std::iter::once(self.core)
+            .chain(self.extra_onroad_cores.iter().copied())
+            .filter(|core| request.onroad && platform.online(*core))
+            .collect();
+        let low_priority = !big.is_empty() || (request.onroad && self.include_little);
+        let mut cores = if big.is_empty() { little() } else { big };
+        if request.onroad && self.include_little {
+            cores.extend(little());
+        }
         let mut workers = platform.threads(None)?;
         if let Some(pid) = request.child_pid {
             workers.extend(platform.threads(Some(pid))?);
         }
         for tid in workers {
-            match worker(platform, tid, Placement { cores: &cores, big }) {
+            match worker(
+                platform,
+                tid,
+                Placement {
+                    cores: &cores,
+                    big: low_priority,
+                },
+            ) {
                 Err(error) if error.raw_os_error() == Some(3) => {}
                 result => result?,
             }

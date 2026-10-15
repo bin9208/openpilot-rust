@@ -54,6 +54,24 @@ pub fn parse(bytes: &[u8]) -> Result<VisionResult, Error> {
     }
     let left = object(field(&data, "lane")?, "lane/blindspot")?;
     let blindspot = object(field(&data, "blindspot")?, "lane/blindspot")?;
+    let blindspot_received = timestamp(
+        field(&blindspot, "receivedMonoTimeNanos")?,
+        "blindspot.receivedMonoTimeNanos",
+    )?;
+    let by_side = match blindspot.get("receivedMonoTimeNanosBySide") {
+        Some(value) => object(value.get(), "blindspot.receivedMonoTimeNanosBySide")?,
+        None => Object::new(),
+    };
+    let left_received = by_side
+        .get("left")
+        .map(|value| timestamp(value.get(), "blindspot.receivedMonoTimeNanosBySide.left"))
+        .transpose()?
+        .unwrap_or(blindspot_received);
+    let right_received = by_side
+        .get("right")
+        .map(|value| timestamp(value.get(), "blindspot.receivedMonoTimeNanosBySide.right"))
+        .transpose()?
+        .unwrap_or(blindspot_received);
     Ok(VisionResult {
         left_lane: lane(field(&left, "leftLine")?, "lane.leftLine")?,
         right_lane: lane(field(&left, "rightLine")?, "lane.rightLine")?,
@@ -65,9 +83,7 @@ pub fn parse(bytes: &[u8]) -> Result<VisionResult, Error> {
         left_blindspot: boolean(field(&blindspot, "left")?, "blindspot.left")?,
         right_blindspot: boolean(field(&blindspot, "right")?, "blindspot.right")?,
         blindspot_valid: boolean(field(&blindspot, "valid")?, "blindspot.valid")?,
-        blindspot_received: timestamp(
-            field(&blindspot, "receivedMonoTimeNanos")?,
-            "blindspot.receivedMonoTimeNanos",
-        )?,
+        blindspot_received,
+        blindspot_received_by_side: [left_received, right_received],
     })
 }

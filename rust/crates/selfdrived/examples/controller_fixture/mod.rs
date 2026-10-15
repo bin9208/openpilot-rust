@@ -123,9 +123,13 @@ impl Fixture {
                 trace.now = now;
                 let (controller, state) = self.parts()?;
                 state.update(now, &inputs)?;
-                let car = CarFrame::read(
+                let has_current = current.is_some();
+                let mut car = CarFrame::read(
                     current.unwrap_or_else(|| controller.previous_bytes().to_vec()),
                 )?;
+                if has_current {
+                    car.timestamp = Some((now * 1e9) as u64);
+                }
                 controller.step((&car, state, lagging), trace, messages)?;
             }
             Request::Events {
@@ -149,6 +153,7 @@ impl Fixture {
                 let (controller, state) = self.parts()?;
                 state.update(now, &inputs)?;
                 let car = CarFrame::read(current)?;
+                controller.observe_car_state_timestamp((now * 1e9) as u64);
                 controller.data_sample(car.state()?, state, trace)?;
             }
             Request::Alerts { current } => {

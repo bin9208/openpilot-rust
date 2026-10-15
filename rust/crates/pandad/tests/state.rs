@@ -176,3 +176,14 @@ fn unhealthy_ignition_state_is_published_invalid_and_reconnects_without_enumerat
     assert!(!io.calls.contains(&Call::List));
     assert!(io.calls.ends_with(&[Call::Exit, Call::Heartbeat(0, true)]));
 }
+
+#[test]
+fn wake_evidence_does_not_start_onroad_without_ignition() {
+    let mut io = recorder();
+    io.health[0].wake_on_can = 1;
+    let mut state = Publisher::default();
+    assert_eq!(
+        state.update(Input::default(), &mut io).unwrap(),
+        Some(false)
+    );
+}

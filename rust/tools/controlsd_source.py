@@ -106,6 +106,8 @@ def load(store):
   )
   tree = ast.parse((root / 'openpilot/selfdrive/controls/controlsd.py').read_text())
   tree.body = [node for node in tree.body if not isinstance(node, (ast.Import, ast.ImportFrom, ast.If))]
+  from lateral_readiness_source import patch_controlsd
+  patch_controlsd(tree, scope)
   exec(compile(tree, 'source-controlsd', 'exec'), scope)
   return scope, messaging, environment, logs
 
@@ -175,6 +177,8 @@ def reader_car(data):
 def snapshot(controls):
   lateral = controls.LaC
   state = {
+    'startup_ready': controls.lateral_startup.ready,
+    'lateral_started': controls.lateral_started,
     'curvature': controls.curvature,
     'desired': controls.desired_curvature,
     'safety_limited': controls.steer_limited_by_safety,

@@ -1,12 +1,14 @@
 """Run original hardware method bodies with filesystem and command fixture boundaries."""
 
 import ast
+import builtins
 from functools import cache, cached_property
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
+SOURCE = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
 METHODS = {
   'booted',
   'reboot',
@@ -27,6 +29,16 @@ METHODS = {
 
 def definitions(path, names, scope):
   tree = ast.parse((ROOT / path).read_text())
+  if path == 'openpilot/system/hardware/tici/hardware.py':
+    # Preserve this Rust branch's established board policy; splice only the
+    # pinned final reboot method. The helper itself has its independent source
+    # policy/PCM/process gates; this fixture observes its native exec boundary.
+    final = ast.parse(subprocess.check_output(['git', 'show', f'{SOURCE}:{path}'], cwd=ROOT, text=True))
+    reboot = next(m for n in final.body if isinstance(n, ast.ClassDef) and n.name == 'Tici'
+                  for m in n.body if isinstance(m, ast.FunctionDef) and m.name == 'reboot')
+    for node in tree.body:
+      if isinstance(node, ast.ClassDef) and node.name == 'Tici':
+        node.body = [reboot if isinstance(m, ast.FunctionDef) and m.name == 'reboot' else m for m in node.body]
   tree.body = [node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in names]
   for node in tree.body:
     if isinstance(node, ast.ClassDef):
@@ -113,7 +125,16 @@ def run(config):
       record({'kind': 'amp_initialize', 'model': model})
       return config.get('amplifier_result', True)
 
+  def reboot_device():
+    command(['openpilot-reboot'])
+
+  def imports(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == 'openpilot.common.reboot':
+      return SimpleNamespace(reboot_device=reboot_device)
+    return builtins.__import__(name, globals, locals, fromlist, level)
+
   scope = {
+    '__builtins__': vars(builtins) | {'__import__': imports},
     'open': Open,
     'print': lambda value: record({'kind': 'print', 'value': value}),
     'os': SimpleNamespace(system=system, sync=lambda: record({'kind': 'sync'})),

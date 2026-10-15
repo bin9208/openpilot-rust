@@ -15,6 +15,7 @@ impl Target {
 #[derive(Clone, Copy, Debug, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DiagnosticLevel {
+    Info,
     Warning,
     Error,
     Exception,

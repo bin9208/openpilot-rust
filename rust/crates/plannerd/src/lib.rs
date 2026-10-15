@@ -1,5 +1,7 @@
 //! Project-owned planning policies derived from the original planning daemon.
 
+pub mod signal;
+pub mod braking_gap;
 pub mod car_state;
 pub mod car_state_decode;
 pub mod carrot;
@@ -12,6 +14,7 @@ pub mod following;
 pub mod gap_recovery;
 pub mod lane_change_gap;
 pub mod lane_departure;
+pub mod lane_model_speed;
 pub mod lane_planner;
 #[cfg(feature = "native-skip-miri")]
 pub mod lateral_mpc;

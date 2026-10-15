@@ -18,12 +18,14 @@ path = "src/bin/ui.rs"
 unsafe_code = "deny"
 
 [dependencies]
+openpilot-impact-dashcam = { path = "../impact-dashcam" }
 openpilot-managed-entry = { path = "../managed-entry" }
 rustls-native-certs = "=0.8.4"
 openpilot-process-supervision = { path = "../process-supervision" }
 openpilot-agnos = { path = "../agnos" }
 openpilot-runtime-core = { path = "../runtime-core" }
 openpilot-msgq = { path = "../msgq" }
+openpilot-jetlink = { path = "../jetlink" }
 openpilot-usbgpu = { path = "../usbgpu", default-features = false }
 openpilot-wifi = { path = "../wifi" }
 openpilot-logmessaged = { path = "../logmessaged" }

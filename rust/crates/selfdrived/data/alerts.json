@@ -2,8 +2,8 @@
   "sources": {
     "openpilot/selfdrive/selfdrived/events.py": "a2667e1a2ddcbc4e33d5457de8ca8909867ff651605845f3632ff2f598f0d05f",
     "openpilot/common/realtime.py": "6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e",
-    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
-    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda"
+    "openpilot/cereal/log.capnp": "141888a2bf61c82e26b0bc9f8af0db5de9090d80df1a46f465c7278a72fce967",
+    "opendbc_repo/opendbc/car/car.capnp": "717ca33ead4f8c597f30a83e39df1d59e143c92fdb43e320a0dee85fd14e149b"
   },
   "tici": [
     {
@@ -3957,6 +3957,149 @@
               "visual_alert": 0,
               "audible_alert": 6,
               "duration": 800,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 130,
+      "name": "driverMonitorFallback",
+      "definitions": []
+    },
+    {
+      "event": 128,
+      "name": "impactDetected",
+      "definitions": [
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 0,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 6,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 129,
+      "name": "impactDashcamReboot",
+      "definitions": [
+        {
+          "category": "immediateDisable",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "TAKE CONTROL IMMEDIATELY",
+              "alert_text_2": "Rebooting into Dashcam Mode",
+              "alert_status": 2,
+              "alert_size": 3,
+              "priority": "highest",
+              "visual_alert": 2,
+              "audible_alert": 5,
+              "duration": 400,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "noEntry",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "openpilot Unavailable",
+              "alert_text_2": "Dashcam Mode",
+              "alert_status": 0,
+              "alert_size": 2,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 3,
+              "duration": 300,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "Rebooting into Dashcam Mode",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 1,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 0,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 127,
+      "name": "systemReady",
+      "definitions": [
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 0,
+              "priority": "lowest",
+              "visual_alert": 0,
+              "audible_alert": 37,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 124,
+      "name": "radarStationaryLead",
+      "definitions": [
+        {
+          "category": "warning",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "전방 물체 주의",
+              "alert_text_2": "전방을 확인하고 감속을 준비하세요",
+              "alert_status": 0,
+              "alert_size": 2,
+              "priority": "high",
+              "visual_alert": 0,
+              "audible_alert": 6,
+              "duration": 200,
               "creation_delay": 0.0,
               "alert_type": "",
               "event_type": null
@@ -7925,6 +8068,156 @@
           }
         }
       ]
+    },
+    {
+      "event": 130,
+      "name": "driverMonitorFallback",
+      "definitions": []
+    },
+    {
+      "event": 128,
+      "name": "impactDetected",
+      "definitions": [
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 0,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 6,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 129,
+      "name": "impactDashcamReboot",
+      "definitions": [
+        {
+          "category": "immediateDisable",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "TAKE CONTROL IMMEDIATELY",
+              "alert_text_2": "Rebooting into Dashcam Mode",
+              "alert_status": 2,
+              "alert_size": 3,
+              "priority": "highest",
+              "visual_alert": 2,
+              "audible_alert": 5,
+              "duration": 400,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "noEntry",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "Dashcam Mode",
+              "alert_text_2": "openpilot Unavailable",
+              "alert_status": 0,
+              "alert_size": 2,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 3,
+              "duration": 300,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        },
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "Rebooting into Dashcam Mode",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 1,
+              "priority": "low",
+              "visual_alert": 0,
+              "audible_alert": 0,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 127,
+      "name": "systemReady",
+      "definitions": [
+        {
+          "category": "permanent",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "",
+              "alert_text_2": "",
+              "alert_status": 0,
+              "alert_size": 0,
+              "priority": "lowest",
+              "visual_alert": 0,
+              "audible_alert": 37,
+              "duration": 20,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "event": 124,
+      "name": "radarStationaryLead",
+      "definitions": [
+        {
+          "category": "warning",
+          "definition": {
+            "kind": "static",
+            "alert": {
+              "alert_text_1": "전방 물체 주의",
+              "alert_text_2": "전방을 확인하고 감속을 준비하세요",
+              "alert_status": 0,
+              "alert_size": 2,
+              "priority": "high",
+              "visual_alert": 0,
+              "audible_alert": 6,
+              "duration": 200,
+              "creation_delay": 0.0,
+              "alert_type": "",
+              "event_type": null
+            }
+          }
+        }
+      ]
     }
-  ]
+  ],
+  "dm2_event_mapping": {
+    "source": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+    "event": "driverMonitorFallback",
+    "source_ordinal": 126,
+    "native_ordinal": 130,
+    "reason": "native ordinal126 already jetlinkLost; source event has no alert categories"
+  }
 }

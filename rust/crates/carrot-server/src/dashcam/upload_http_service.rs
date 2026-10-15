@@ -5,7 +5,7 @@ use std::{path::PathBuf, sync::Arc, thread};
 use tokio::sync::{mpsc, oneshot};
 
 enum Operation {
-    Start(Vec<String>),
+    Start(Vec<String>, bool),
     Snapshot(String),
     Cancel(String),
 }
@@ -66,9 +66,12 @@ impl Uploads {
                 let mut manager = Manager::new(executable);
                 while let Some(command) = receiver.blocking_recv() {
                     let result = match command.operation {
-                        Operation::Start(segments) => {
-                            manager.start(&worker_root, &segments, settings.clone())
-                        }
+                        Operation::Start(segments, include_all_files) => manager.start_scoped(
+                            &worker_root,
+                            &segments,
+                            settings.clone(),
+                            include_all_files,
+                        ),
                         Operation::Snapshot(id) => manager.snapshot(&id),
                         Operation::Cancel(id) => manager.cancel(&id),
                     };
@@ -108,12 +111,17 @@ impl Uploads {
             .map_err(failure)?;
         value(&result)
     }
-    pub(super) fn summary(&self, segments: &[String]) -> Result<Value, Failure> {
+    pub(super) fn summary(
+        &self,
+        segments: &[String],
+        include_all_files: bool,
+    ) -> Result<Value, Failure> {
         let segments = catalog::validate_selection(&self.root, segments).map_err(failure)?;
         let mut summaries = Vec::with_capacity(segments.len());
         for segment in segments {
             let directory = catalog::segment_dir(&self.root, &segment).map_err(failure)?;
-            let files = catalog::file_summary(&directory).map_err(failure)?;
+            let files =
+                catalog::file_summary_scoped(&directory, include_all_files).map_err(failure)?;
             let total = files.iter().try_fold(0_u64, |total, file| {
                 total
                     .checked_add(file.size)
@@ -143,8 +151,13 @@ impl Uploads {
             ("summaries", Value::Array(summaries)),
         ]))
     }
-    pub(super) async fn start(&self, segments: Vec<String>) -> Result<Value, Failure> {
-        self.request(Operation::Start(segments)).await
+    pub(super) async fn start(
+        &self,
+        segments: Vec<String>,
+        include_all_files: bool,
+    ) -> Result<Value, Failure> {
+        self.request(Operation::Start(segments, include_all_files))
+            .await
     }
     pub(super) async fn snapshot(&self, id: String) -> Result<Value, Failure> {
         self.request(Operation::Snapshot(id)).await

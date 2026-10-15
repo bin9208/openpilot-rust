@@ -30,6 +30,11 @@ pub trait Platform {
     /// # Errors
     /// Returns an unrecovered source startup-wait failure.
     fn startup(&mut self, params: &Reader) -> Result<(), Error>;
+    /// # Errors
+    /// Preserves invalid/unreadable registration failures from the source loader.
+    fn wifi_registered(&mut self) -> Result<bool, Error> {
+        Ok(false)
+    }
     fn find(&mut self, product: u16) -> Option<u16>;
     fn dim(&mut self, product: u16, reason: &str) -> bool;
     fn events(&mut self) -> Events;
@@ -67,13 +72,16 @@ pub fn run(
             continue;
         }
         platform.startup(params)?;
-        if platform.find(expected).is_none() {
+        let wifi = platform.wifi_registered()?;
+        if wifi {
+            println!("[cluster_autorun] discovering registered S3 Wi-Fi HUD");
+        } else if platform.find(expected).is_none() {
             if !platform.board() {
                 println!(
                     "[cluster_autorun] {} not found on PC; starting window-only HUD",
                     super::usb::label(expected)
                 );
-                match entry::run_once(
+                if let Err(error) = entry::run_once(
                     entrypoint,
                     settings.hud_mode,
                     settings.encoder,
@@ -81,26 +89,25 @@ pub fn run(
                     false,
                     platform.board(),
                 ) {
-                    Ok(()) => continue,
-                    Err(error) => {
-                        eprintln!(
-                            "[cluster_autorun] cluster HUD window failed: {error}; retrying in 5s"
-                        );
-                        eprintln!("{error}");
-                        platform.sleep(Duration::from_secs(5))?;
-                        continue;
-                    }
+                    eprintln!(
+                        "[cluster_autorun] cluster HUD window failed: {error}; retrying in 5s"
+                    );
+                    eprintln!("{error}");
+                    platform.sleep(Duration::from_secs(5))?;
                 }
+                continue;
             }
-            let Some(found) = super::wait::supported_device(params, platform, expected) else {
+            let Some(found) = super::wait::supported_device(params, platform, expected)? else {
                 continue;
             };
             expected = found;
         }
-        println!(
-            "[cluster_autorun] found {}; starting cluster HUD",
-            super::usb::label(expected)
-        );
+        if !wifi {
+            println!(
+                "[cluster_autorun] found {}; starting cluster HUD",
+                super::usb::label(expected)
+            );
+        }
         let active = params.boolean("UsbGpuActive")?;
         match entry::run_once(
             entrypoint,
@@ -130,7 +137,9 @@ pub fn run(
                 println!("[cluster_autorun] cluster HUD exited; retrying in 5s");
             }
             Err(error) => {
-                if entry::disconnected(&error) {
+                if let Some(reason) = entry::s3_transport_failure_reason(&error) {
+                    println!("[cluster_autorun] S3 Wi-Fi disconnected ({reason}); retrying in 5s");
+                } else if entry::disconnected(&error) {
                     println!("[cluster_autorun] USB display disconnected; retrying in 5s");
                 } else {
                     eprintln!("[cluster_autorun] cluster HUD failed: {error}; retrying in 5s");

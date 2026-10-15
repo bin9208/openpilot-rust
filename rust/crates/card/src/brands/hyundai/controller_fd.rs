@@ -68,6 +68,23 @@ pub fn messages(
             config.bus,
             captures.get("lfahda_cluster"),
             [cc.get_long_active(), cc.get_lat_active()],
+            &canfd_cluster::LfaClusterAlert {
+                dm_alert: if captures.get("adrv_0x161").is_none()
+                    || (camera && !config.longitudinal)
+                {
+                    cc.get_hud_control()?.get_driver_monitoring_alert()
+                } else {
+                    0
+                },
+                suppress: camera
+                    && matches!(
+                        config.candidate.as_str(),
+                        "GENESIS_GV70_1ST_GEN" | "KIA_SORENTO_HEV_4TH_GEN"
+                    ),
+                lfa: captures.get("lfa"),
+                mdps: captures.get("mdps"),
+                scc: captures.get("scc_control"),
+            },
         )?);
         if !camera {
             result.extend(canfd_cluster::lfa_icon(
@@ -81,6 +98,7 @@ pub fn messages(
                         .get_root_as_reader::<car_state::Reader<'_>>()?
                         .get_lat_enabled(),
                 ],
+                cc.get_hud_control()?.get_driver_monitoring_alert(),
             )?);
         }
     }
@@ -101,6 +119,12 @@ pub fn messages(
             c.lane_check = super::parameters::setting_int(&state.settings, "LaneLineCheck")?;
         }
         let cs = state.out.get_root_as_reader::<car_state::Reader<'_>>()?;
+        let blink_hold = if c.frame.is_multiple_of(5) && captures.get("adrv_0x1ea").is_some() {
+            c.blink_hold
+                .update(model.desire, model.lane_pair, model.blinker_hold)
+        } else {
+            0
+        };
         let cluster = ClusterInput {
             bus: config.bus,
             flags: config.flags,
@@ -114,7 +138,7 @@ pub fn messages(
             stopping: command.stopping,
             interlock: cs.get_brake_hold_active() || cs.get_parking_brake(),
             button_name: config.button_message(),
-            lane_changing: model.changing,
+            lane_changing: blink_hold,
             corner_radar: c.settings.corner,
             debug: c.settings.debug,
             leads: &model.leads,

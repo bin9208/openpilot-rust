@@ -72,6 +72,53 @@ impl CarSpecificParams for Trace<'_> {
     }
 }
 impl Effects for Trace<'_> {
+    fn impact_new(&mut self) -> Result<Option<openpilot_impact_dashcam::ImpactDashcam>, Error> {
+        self.effects.push(Effect::GetBool {
+            key: openpilot_impact_dashcam::REBOOT_KEY.into(),
+        });
+        let memory = Params::open(
+            &self
+                .directory
+                .parent()
+                .expect("fixture root")
+                .join("memory"),
+            "d",
+        )
+        .map_err(callbacks::Error::Parameter)?;
+        Ok(Some(openpilot_impact_dashcam::ImpactDashcam::new(
+            &mut self.params,
+            &mut &memory,
+        )?))
+    }
+    fn impact_update(
+        &mut self,
+        impact: &mut openpilot_impact_dashcam::ImpactDashcam,
+        now: f64,
+        allowed: bool,
+        trigger: bool,
+        quiet: Option<bool>,
+        details: serde_json::Value,
+    ) -> Result<(), Error> {
+        let memory = Params::open(
+            &self
+                .directory
+                .parent()
+                .expect("fixture root")
+                .join("memory"),
+            "d",
+        )
+        .map_err(callbacks::Error::Parameter)?;
+        impact.update(
+            now,
+            allowed,
+            trigger,
+            quiet,
+            details,
+            &mut self.params,
+            &mut &memory,
+        )?;
+        Ok(())
+    }
     fn presence(&mut self, key: &str) -> Result<bool, Error> {
         self.effects.push(Effect::Get {
             key: key.into(),

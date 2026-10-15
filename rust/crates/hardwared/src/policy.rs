@@ -169,9 +169,6 @@ impl Policy {
                 self.off_ts = Some(input.now);
             }
         }
-        if input.tesla && self.started_ts.is_none() && self.started_seen {
-            self.started_ts = Some(input.now);
-        }
         let rising_edge = start && !self.previous_start;
         self.previous_start = start;
         self.count += 1;

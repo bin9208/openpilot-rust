@@ -17,6 +17,20 @@ impl LongitudinalPlanner {
         wall_clock: &mut impl FnMut() -> f64,
         mono_clock: &mut impl FnMut() -> f64,
     ) -> Result<Option<i32>, Error> {
+        self.update_with_signals(input, carrot, parameters, wall_clock, mono_clock, None)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_with_signals(
+        &mut self,
+        input: &Input<'_>,
+        carrot: &mut CarrotPlanner,
+        parameters: &mut impl Parameters,
+        wall_clock: &mut impl FnMut() -> f64,
+        mono_clock: &mut impl FnMut() -> f64,
+        signals: Option<&mut dyn crate::carrot::SignalSource>,
+    ) -> Result<Option<i32>, Error> {
+        let signal_owner = signals.is_some();
         self.coasting_param_time += self.dt;
         if self.coasting_param_time >= 1. {
             self.coasting_param_time = 0.;
@@ -30,13 +44,14 @@ impl LongitudinalPlanner {
         let car = input.carrot.car;
         let speed = car.v_ego;
         let cruise_kph = minimum(car.v_cruise, 145.);
-        self.cruise_kph = carrot.update(
+        self.cruise_kph = carrot.update_with_signals(
             &input.carrot,
             cruise_kph,
             self.mpc.mode,
             parameters,
             wall_clock,
             mono_clock,
+            signals,
         )?;
         self.mpc.mode = carrot.mode;
         let mut cruise = self.cruise_kph * (1. / 3.6);
@@ -163,6 +178,23 @@ impl LongitudinalPlanner {
             },
             mono_clock,
         );
+        if signal_owner {
+            self.apply_signal_constraints(&crate::signal::longitudinal::Input {
+                now: mono_clock(),
+                dt: self.dt,
+                prepare_active: carrot.prepare_decision.as_ref().is_some_and(|d| d.active),
+                control_active: carrot.prepare_control_active,
+                hold: carrot.start_decision.as_ref().is_some_and(|d| d.hold),
+                reset,
+                gas: car.gas_pressed,
+                brake: car.brake_pressed,
+                acc: self.mpc.mode == PlannerMode::Acc,
+                lead_one: input.carrot.radar.lead_one.status,
+                lead_two: input.carrot.radar.lead_two.status,
+                ego_speed: car.v_ego,
+                ego_accel: car.a_ego,
+            });
+        }
         Ok(warning)
     }
 }

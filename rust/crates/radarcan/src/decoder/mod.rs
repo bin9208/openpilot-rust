@@ -5,7 +5,7 @@ mod honda;
 pub mod hyundai;
 mod rivian;
 mod tesla;
-mod toyota;
+pub mod toyota;
 mod volkswagen;
 
 use crate::{
@@ -22,6 +22,8 @@ fn rounded<'de, D: Deserializer<'de>>(deserializer: D) -> Result<f32, D::Error> 
 #[derive(Clone, Deserialize)]
 pub struct Config {
     pub candidate: String,
+    #[serde(default)]
+    pub brand: Option<String>,
     #[serde(deserialize_with = "rounded")]
     pub delay: f32,
     #[serde(deserialize_with = "rounded")]
@@ -47,6 +49,7 @@ pub enum Kind {
     Rivian(rivian::Rivian),
     Tesla(tesla::Tesla),
     Toyota(toyota::Toyota),
+    Ars510(Box<toyota::ars510::receiver::Receiver>),
     Volkswagen(volkswagen::Volkswagen),
     Fallback,
 }
@@ -58,6 +61,7 @@ pub struct Interface {
     pub updated: IntegerSet,
     pub trigger: u32,
     pub unavailable: bool,
+    warnings: Vec<String>,
 }
 
 impl Interface {
@@ -84,6 +88,22 @@ impl Interface {
     ) -> Result<Self, Error> {
         let platform = openpilot_card::vehicle_params::platform(&config.candidate)?;
         let mut base = Base::new(config.delay, config.period)?;
+        if toyota::ars510::receiver::is_supported(
+            config.brand.as_deref().unwrap_or(&platform.brand),
+            &config.candidate,
+            config.flags,
+        ) {
+            toyota::ars510::receiver::Receiver::configure(&mut base);
+            return Ok(Self {
+                base,
+                kind: Kind::Ars510(Box::default()),
+                reader: None,
+                updated: IntegerSet::default(),
+                trigger: 0,
+                unavailable: config.unavailable,
+                warnings: Vec::new(),
+            });
+        }
         if platform.brand == "hyundai" {
             let state =
                 hyundai::Hyundai::new(&config, &mut base, platform.dbc_pt.as_deref(), environment)?;
@@ -94,6 +114,7 @@ impl Interface {
                 updated: IntegerSet::default(),
                 trigger: 0,
                 unavailable: config.unavailable,
+                warnings: Vec::new(),
             });
         }
         let (kind, messages, trigger, create) = match platform.brand.as_str() {
@@ -174,6 +195,7 @@ impl Interface {
             updated: IntegerSet::default(),
             trigger,
             unavailable: config.unavailable,
+            warnings: Vec::new(),
         })
     }
 
@@ -182,6 +204,11 @@ impl Interface {
         packets: &[Packet],
         numerics: &Numerics,
     ) -> Result<Option<Data>, Error> {
+        if let Kind::Ars510(state) = &mut self.kind {
+            return state.update(&mut self.base, packets, &mut |line| {
+                self.warnings.push(line.to_owned())
+            });
+        }
         if let Kind::Hyundai(state) = &mut self.kind {
             return state.update(&mut self.base, packets);
         }
@@ -211,6 +238,11 @@ impl Interface {
             Kind::Rivian(state) => state.update(&mut self.base, reader)?,
             Kind::Tesla(state) => state.update(&mut self.base, reader)?,
             Kind::Toyota(state) => state.update(&mut self.base, reader, &self.updated)?,
+            Kind::Ars510(_) => {
+                return Err(Error::Contract(
+                    "ARS510 unexpectedly has shared radar reader",
+                ))
+            }
             Kind::Volkswagen(state) => state.update(&mut self.base, reader)?,
             Kind::Fallback => {
                 return Err(Error::Contract("fallback unexpectedly has radar reader"))
@@ -229,8 +261,59 @@ impl Interface {
         numerics: &mut Numerics,
         emit: &mut impl FnMut(&str),
     ) -> Result<Option<Data>, Error> {
+        if let Kind::Ars510(state) = &mut self.kind {
+            return state.update_carrot(
+                &mut self.base,
+                (v_ego, a_ego, time),
+                packets,
+                numerics,
+                &mut |line| self.warnings.push(line.to_owned()),
+            );
+        }
         self.base.push_ego(v_ego, a_ego)?;
         let result = self.update(packets, numerics)?;
-        self.base.finish(result, time, numerics, emit)
+        let mut result = self.base.finish(result, time, numerics, emit)?;
+        if let (Some(data), Kind::Hyundai(state)) = (result.as_mut(), &mut self.kind) {
+            if let Some(bosch) = state.bosch.as_mut() {
+                bosch.append(data, self.base.v_ego)?;
+            }
+        }
+        Ok(result)
+    }
+
+    pub fn supports_bosch(&self) -> bool {
+        matches!(&self.kind,Kind::Hyundai(state) if state.bosch.is_some())
+    }
+    pub fn set_bosch_context(
+        &mut self,
+        now: i64,
+        pose: hyundai::bosch::context::Message<hyundai::bosch::context::Pose>,
+        model: hyundai::bosch::context::Message<hyundai::bosch::model_snapshot::Input>,
+    ) {
+        if let Kind::Hyundai(state) = &mut self.kind {
+            if let Some(bosch) = state.bosch.as_mut() {
+                bosch.set_context(now, pose, model);
+            }
+        }
+    }
+
+    pub fn supports_display(&self) -> bool {
+        matches!(self.kind, Kind::Ars510(_))
+    }
+
+    pub fn take_warnings(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.warnings)
+    }
+
+    pub fn recover_from_input_fault(&mut self, previous: &Self) -> Result<(), Error> {
+        if let Kind::Ars510(state) = &mut self.kind {
+            let Kind::Ars510(previous) = &previous.kind else {
+                return Err(Error::ArsValue(
+                    "ARS510 복구 상태는 같은 수신기에서만 전달할 수 있습니다".into(),
+                ));
+            };
+            state.recover_from_input_fault(previous, &mut self.base);
+        }
+        Ok(())
     }
 }

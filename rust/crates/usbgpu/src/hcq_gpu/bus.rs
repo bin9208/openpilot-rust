@@ -103,9 +103,11 @@ pub fn transfer(
             )?;
             transport.checked(code, "HCQ USB control transfer failed")?;
             if code != i32::from(size) {
-                return Err(Error::Protocol(format!(
-                    "HCQ USB control short transfer: {code}/{size}"
-                )));
+                return Err(Error::UsbShortTransfer {
+                    operation: "HCQ USB control short transfer",
+                    actual: code as u64,
+                    expected: u64::from(size),
+                });
             }
             Ok(u64::from(size))
         }
@@ -121,10 +123,11 @@ pub fn transfer(
             }
             transport.checked(result.code, "HCQ USB bulk transfer failed")?;
             if u64::from(result.actual) != args[3] {
-                return Err(Error::Protocol(format!(
-                    "HCQ USB bulk short transfer: {}/{}",
-                    result.actual, args[3]
-                )));
+                return Err(Error::UsbShortTransfer {
+                    operation: "HCQ USB bulk short transfer",
+                    actual: u64::from(result.actual),
+                    expected: args[3],
+                });
             }
             Ok(0)
         }

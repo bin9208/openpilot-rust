@@ -71,32 +71,41 @@ pub fn thumbnail(
     if output.is_file() && fs::metadata(&output).is_ok_and(|metadata| metadata.len() > 0) {
         return Ok(output);
     }
-    let args = [
-        OsString::from("-ss"),
-        OsString::from("1"),
-        OsString::from("-i"),
-        path.into_os_string(),
-        OsString::from("-vframes"),
-        OsString::from("1"),
-        OsString::from("-vf"),
-        OsString::from("scale=320:-1"),
-        output.clone().into_os_string(),
-    ];
-    let result = run(program, &args, Duration::from_secs(90))?;
-    if !result.status.success()
-        || !output.is_file()
-        || !fs::metadata(&output).is_ok_and(|metadata| metadata.len() > 0)
-    {
-        return Err(Failure::http(
-            500,
-            if !result.stderr.is_empty() {
-                &result.stderr
-            } else if !result.stdout.is_empty() {
-                &result.stdout
-            } else {
-                "screenrecord thumbnail generation failed"
-            },
-        ));
+    let mut last_error = String::new();
+    for seek in ["1", "0"] {
+        if output.is_file() {
+            let _ = fs::remove_file(&output);
+        }
+        let args = [
+            OsString::from("-ss"),
+            OsString::from(seek),
+            OsString::from("-i"),
+            path.clone().into_os_string(),
+            OsString::from("-vframes"),
+            OsString::from("1"),
+            OsString::from("-vf"),
+            OsString::from("scale=320:-1"),
+            output.clone().into_os_string(),
+        ];
+        let result = run(program, &args, Duration::from_secs(90))?;
+        if result.status.success()
+            && output.is_file()
+            && fs::metadata(&output).is_ok_and(|metadata| metadata.len() > 0)
+        {
+            return Ok(output);
+        }
+        if !result.stderr.is_empty() {
+            last_error = result.stderr;
+        } else if !result.stdout.is_empty() {
+            last_error = result.stdout;
+        }
     }
-    Ok(output)
+    Err(Failure::http(
+        500,
+        if last_error.is_empty() {
+            "screenrecord thumbnail generation failed"
+        } else {
+            &last_error
+        },
+    ))
 }

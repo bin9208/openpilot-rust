@@ -153,6 +153,19 @@ impl Renderer {
             releases: self.resource_queue(),
         })
     }
+    pub(super) fn overlay_target(&mut self, dimensions: (i32, i32)) -> Result<RenderTarget, Error> {
+        self.release_resources()?;
+        let id = self
+            .surface
+            .pin_mut()
+            .overlay_create(dimensions.0, dimensions.1)?;
+        Ok(RenderTarget {
+            id,
+            width: dimensions.0,
+            height: dimensions.1,
+            releases: self.resource_queue(),
+        })
+    }
     pub fn target_info(&self, target: &RenderTarget) -> Result<TargetInfo, Error> {
         self.check_resource(&target.releases)?;
         let value = self.surface.target_info(target.id)?;

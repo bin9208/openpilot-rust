@@ -4,6 +4,7 @@ mod integer;
 mod number;
 mod pedals;
 mod state;
+pub mod toyota_pcm;
 use crate::{
     brands::hyundai::{parameters::setting_int, settings_float},
     core::{Error, StateTail},
@@ -23,6 +24,8 @@ pub struct CruiseCarrot {
     s: state::CruiseState,
     params: Params,
     pcm_cruise: bool,
+    brand: String,
+    fingerprint: String,
     openpilot_longitudinal: bool,
     commands: CommandReader,
     writes: Vec<(String, Vec<u8>)>,
@@ -45,11 +48,16 @@ impl CruiseCarrot {
             s,
             params,
             pcm_cruise: cp.get_pcm_cruise(),
+            brand: cp.get_brand()?.to_str()?.to_owned(),
+            fingerprint: cp.get_car_fingerprint()?.to_str()?.to_owned(),
             openpilot_longitudinal: cp.get_openpilot_longitudinal_control(),
             commands: CommandReader::new(root, "cruise", started),
             writes: Vec::new(),
             prints: Vec::new(),
         })
+    }
+    pub fn set_speedcam_gas_tok_consumed(&mut self, consumed: bool) {
+        self.s.speedcam_gas_tok_consumed = consumed;
     }
     pub fn snapshot(&self) -> impl serde::Serialize + '_ {
         &self.s
@@ -134,6 +142,7 @@ impl CruiseCarrot {
         is_metric: bool,
         now: f64,
     ) -> Result<(), Error> {
+        let prior_speed = self.s.v_cruise_kph.value;
         self.add_log("");
         self.update_params(is_metric)?;
         self.s.frame += 1;
@@ -173,6 +182,16 @@ impl CruiseCarrot {
             self.s._cruise_ready = false;
         }
         let mut speed = self.update_buttons(cs, cc.get_enabled(), self.s.v_cruise_kph, now)?;
+        let eligible = self.fingerprint == "TOYOTA_RAV4_TSS2_2022"
+            && self.brand == "toyota"
+            && self.pcm_cruise
+            && self.openpilot_longitudinal
+            && self.s.speed_from_pcm == 0;
+        let pcm_speed = self.s.toyota_pcm_speed_sync.update(
+            eligible,
+            cs,
+            (speed.value - prior_speed).abs() > 1e-3,
+        )?;
         if self.s._activate_cruise > 0 {
             self.s._cruise_ready = false;
         } else if self.s._activate_cruise < 0 {
@@ -187,13 +206,21 @@ impl CruiseCarrot {
                 self.s.v_cruise_kph =
                     speed.clip(self.s._cruise_speed_min, self.s._cruise_speed_max);
                 self.s.v_cruise_cluster_kph = self.s.v_cruise_kph;
-            } else if self.s.speed_from_pcm == 1 {
+            } else if self.s.speed_from_pcm == 1
+                || (self.s.speed_from_pcm == 3 && self.brand == "toyota")
+            {
                 self.s.v_cruise_kph = Number::float(f64::from(cruise.get_speed()) * 3.6);
                 self.s.v_cruise_cluster_kph =
                     Number::float(f64::from(cruise.get_speed_cluster()) * 3.6);
             } else {
+                if let Some([value, _]) = pcm_speed {
+                    speed = Number::float(value);
+                }
                 self.s.v_cruise_kph = speed.clip(30., self.s._cruise_speed_max);
-                self.s.v_cruise_cluster_kph = self.s.v_cruise_kph;
+                self.s.v_cruise_cluster_kph = pcm_speed
+                    .map_or(self.s.v_cruise_kph, |[_, cluster]| {
+                        Number::float(cluster).clip(30., self.s._cruise_speed_max)
+                    });
             }
         } else {
             self.s.v_cruise_kph = speed.clip(self.s._cruise_speed_min, self.s._cruise_speed_max);
@@ -308,6 +335,12 @@ impl CruiseCarrot {
     }
 }
 impl StateTail for CruiseCarrot {
+    fn cruise_speed_kph(&self) -> f64 {
+        self.s.v_cruise_kph.value
+    }
+    fn set_speedcam_gas_tok_consumed(&mut self, consumed: bool) {
+        self.s.speedcam_gas_tok_consumed = consumed;
+    }
     fn update(
         &mut self,
         cs: car_state::Builder<'_>,

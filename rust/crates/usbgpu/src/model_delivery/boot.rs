@@ -112,7 +112,7 @@ fn installed_attempt(
 }
 
 pub fn prepare(config: &Config, cancelled: &AtomicBool) -> Result<bool, Error> {
-    let Some(model) = model::active_manifest(&config.paths) else {
+    let Some(model) = model::selected_manifest(&config.paths) else {
         return Ok(false);
     };
     let installed = precompiled::ensure_fallible(
@@ -159,12 +159,13 @@ pub fn prepare(config: &Config, cancelled: &AtomicBool) -> Result<bool, Error> {
             Err(error @ Error::Native(crate::Error::Cancelled)) => return Err(error),
             Err(error) => Failed::from(error),
         };
-        let rejected = failure::record(
+        let rejected = failure::record_with_worker(
             &path,
             &failed.detail,
             failed.kind,
             "boot_validation",
             smoke::wall_time()?,
+            failed.worker.as_ref(),
         )?;
         if !rejected {
             write(

@@ -11,6 +11,11 @@ use std::{
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 enum Operation {
+    Attention {
+        address: String,
+        action: Action,
+        at: Seconds,
+    },
     Send {
         address: String,
         action: Action,
@@ -49,6 +54,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for line in io::stdin().lock().lines() {
         let operation: Operation = serde_json::from_str(&line?)?;
         match operation {
+            Operation::Attention {
+                address,
+                action,
+                at,
+            } => {
+                writer.attention(Address::parse(&address)?, action, at)?;
+            }
             Operation::Send {
                 address,
                 action,

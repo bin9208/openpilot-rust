@@ -18,6 +18,7 @@ def main():
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--evidence', type=Path, required=True)
   parser.add_argument('--smoke', action='store_true')
+  parser.add_argument('--overlay', action='store_true')
   args = parser.parse_args()
   args.evidence.mkdir(parents=True, exist_ok=True)
   root = Path.cwd()
@@ -31,7 +32,7 @@ def main():
       name = 'big' if big else 'small'
       output = args.evidence / name
       output.mkdir(exist_ok=True)
-      data = {'config': {'big': big, 'large_viewport': big, 'pc': True, 'scale': 1.0}, 'language': 'en-US', 'cases': suite(big, args.smoke)}
+      data = {'config': {'big': big, 'large_viewport': big, 'pc': True, 'scale': 1.0}, 'overlay': args.overlay, 'language': 'en-US', 'cases': suite(big, args.smoke)}
       input_path = output / 'input.json'
       input_path.write_text(json.dumps(data))
       commands = [

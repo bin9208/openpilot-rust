@@ -157,7 +157,11 @@ async fn handle(
                 .map_err(|_| Error::value("invalid websocket accept"))?,
         );
         let upgraded = hyper::upgrade::on(&mut request);
-        let session = Session { route, peer };
+        let session = Session {
+            route,
+            peer,
+            identity: std::sync::Arc::new(()),
+        };
         let owner = shared.clone();
         shared.spawn(async move {
             match upgraded.await {

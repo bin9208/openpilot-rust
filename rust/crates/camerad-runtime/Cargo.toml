@@ -24,7 +24,7 @@ openpilot-msgq = { path = "../msgq", default-features = false }
 openpilot-logging = { path = "../logging", optional = true }
 openpilot-params = { path = "../params", optional = true }
 signal-hook = { version = "0.3", optional = true }
-rustix = { version = "1", features = ["time", "thread", "process"] }
+rustix = { version = "1", features = ["time", "thread", "process", "event"] }
 thiserror = "2"
 
 [[bin]]

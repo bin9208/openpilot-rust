@@ -22,6 +22,7 @@ def source(case):
 def cases():
   data = {'apilot': 'fixture', 'params': [
     {'name': 'z', 'group': 'Z'},
+    {'name': 'search', 'group': 'Z', 'search_only': True},
     {'name': 'other'},
     {'name': 'CruiseGapLevels', 'group': 'A', 'min': 2, 'max': 4, 'default': 4,
      'options': {'ko': ['2', '3', '4'], 'en': ['two', 'three', 'four']}},
@@ -30,7 +31,7 @@ def cases():
   ], 'menu': [{'id': 'top', 'ko': '최상위', 'groups': [
     {'id': 'nested', 'en': 'Nested', 'groups': [{'id': 'outer', 'ko': '바깥', 'groups': [
       {'id': 'inner', 'ko': '안쪽', 'params': ['CruiseGapLevels', 'detail', 'hidden', 'missing']}]}]},
-    {'id': 'direct', 'params': ['z', 'other']},
+    {'id': 'direct', 'params': ['z', 'other', 'search']},
   ]}]}
   for maximum in (3, 4, 5):
     for brand in ('', ' Hyundai ', 'toyota'):

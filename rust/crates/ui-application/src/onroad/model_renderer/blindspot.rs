@@ -13,7 +13,7 @@ impl ModelRenderer {
         input: &Input<'_>,
         draw: &mut dyn Draw,
     ) -> Result<(), Error> {
-        if !input.valid("modelV2")? || !input.valid("carState")? || !input.valid("radarState")? {
+        if !input.valid("modelV2")? || !input.valid("carState")? {
             return Ok(());
         }
         let meta = input.model.get_meta()?;
@@ -25,8 +25,10 @@ impl ModelRenderer {
         ];
         let leads = [input.radar.get_lead_left()?, input.radar.get_lead_right()?];
         let assist_distance = f64::from(input.car.get_v_ego()) * 3.;
+        let radar_valid = input.valid("radarState")?;
         let assist = std::array::from_fn::<_, 2, _>(|i| {
-            !warning[i]
+            radar_valid
+                && !warning[i]
                 && leads[i].get_status()
                 && f64::from(leads[i].get_d_rel()) < assist_distance
                 && preparing
@@ -46,6 +48,12 @@ impl ModelRenderer {
             return Ok(());
         }
         let end = index(points, 40.);
+        use num_traits::ToPrimitive;
+        let now = ((self.context.now_monotonic)() * 1e9)
+            .to_i128()
+            .ok_or(Error::Contract("blindspot clock overflow"))?;
+        let packet = crate::vision_status::blindspot::packet(input.messages, now);
+        let sources = crate::vision_status::blindspot::sides(input.car, packet.as_ref());
         for i in 0..2 {
             if warning[i] || assist[i] {
                 self.carrot.barriers[i] = road_markings::project_blindspot_barrier(
@@ -54,7 +62,7 @@ impl ModelRenderer {
                     if i == 0 { -1.7 } else { 1.7 },
                 );
                 let tint = if warning[i] {
-                    color(255, 215, 0, 150)
+                    crate::vision_status::blindspot::tint(sources[i])
                 } else {
                     color(0, 204, 0, 150)
                 };

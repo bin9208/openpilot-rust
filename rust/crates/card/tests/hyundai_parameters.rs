@@ -12,6 +12,8 @@ struct Case {
     radar_tracks: i32,
     alpha_long: bool,
     diagnostics: Vec<String>,
+    #[serde(default)]
+    cluster_direct_tx: bool,
 }
 
 #[test]
@@ -32,6 +34,9 @@ fn complete_schema_parameters_when_source_matrix() {
         ] {
             settings.put(key, value.to_string().as_bytes()).unwrap();
         }
+        settings
+            .put_bool("HyundaiCanfdClusterDirectTx", case.cluster_direct_tx)
+            .unwrap();
         let input = ParamsInput {
             candidate: &case.candidate,
             fingerprints: &case.fingerprints,

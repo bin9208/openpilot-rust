@@ -1,3 +1,7 @@
+mod capture;
+mod clock;
+mod failure;
+mod model;
 mod paths;
 mod services;
 mod system;
@@ -32,25 +36,17 @@ fn wait(stopped: &AtomicBool) {
 }
 
 fn error_screen(paths: &Paths, message: &str, stopped: &AtomicBool) {
-    eprintln!("{message}");
-    match Command::new(paths.binary("openpilot-text-window"))
-        .arg("--source-root")
-        .arg(&paths.repository)
-        .arg("--text")
-        .arg(message)
-        .spawn()
-    {
-        Ok(child) => {
-            if let Err(error) = Server(child).finish(stopped) {
-                eprintln!("startup error screen: {error}");
-            }
-        }
-        Err(error) => eprintln!("startup error screen unavailable: {error}"),
+    if let Err(error) = failure::run(paths, message, stopped) {
+        eprintln!("startup recovery unavailable: {error}");
     }
 }
 
 fn verify_package(repository: &std::path::Path) -> Result<(), Error> {
-    let manifest = Manifest::read(repository)?;
+    verified_package_identity(repository).map(|_| ())
+}
+
+fn verified_package_identity(repository: &std::path::Path) -> Result<String, Error> {
+    let (manifest, digest) = Manifest::read_with_digest(repository)?;
     manifest.verify_identity(repository)?;
     manifest.verify(
         repository,
@@ -59,6 +55,8 @@ fn verify_package(repository: &std::path::Path) -> Result<(), Error> {
             "rust/bin/openpilot-runtime-install",
             "rust/bin/openpilot-manager",
             "rust/bin/openpilot-process-child",
+            "rust/bin/openpilot-reboot",
+            "rust/bin/openpilot-startup-recovery",
             "rust/bin/openpilot-carrot-recovery",
             "rust/bin/openpilot-carrot-web-watchdog",
             "rust/bin/openpilot-carrot-server",
@@ -67,7 +65,8 @@ fn verify_package(repository: &std::path::Path) -> Result<(), Error> {
             "rust/bin/openpilot-text-window",
             "rust/bin/openpilot-usbgpu-model",
         ],
-    )
+    )?;
+    Ok(digest)
 }
 
 fn ready(
@@ -79,7 +78,7 @@ fn ready(
     if stopped.load(Ordering::Relaxed) {
         return Ok(());
     }
-    verify_package(&paths.repository)?;
+    let package_digest = verified_package_identity(&paths.repository)?;
     if env::var("CARROT_WEB_EXTERNAL").is_ok_and(|value| value == "1") {
         background(
             paths,
@@ -88,7 +87,15 @@ fn ready(
             "carrot_server.log",
         )?;
     }
+    let startup_failed = model::prepare(paths, stopped)?;
+    if stopped.load(Ordering::Relaxed) {
+        return Ok(());
+    }
     let mut model = Command::new(paths.binary("openpilot-usbgpu-model"));
+    model.env_remove("CARROT_BIG_MODEL_STARTUP_FAILED");
+    if startup_failed {
+        model.env("CARROT_BIG_MODEL_STARTUP_FAILED", "1");
+    }
     model
         .args(["--boot", "--root"])
         .arg(&paths.repository)
@@ -118,11 +125,27 @@ fn ready(
     } else {
         Command::new(paths.binary("openpilot-manager"))
     };
+    Manifest::bind_descendant(&mut manager, &paths.repository, &package_digest)?;
     manager
+        .env_remove("CARROT_BIG_MODEL_STARTUP_FAILED")
         .arg("--root")
         .arg(&paths.repository)
         .current_dir(&paths.repository);
-    let status = handoff::run_locked_with_signals(manager, lock, stopped, signals)?;
+    if startup_failed {
+        manager.env("CARROT_BIG_MODEL_STARTUP_FAILED", "1");
+    }
+    let capture = capture::Capture::start(
+        &mut manager,
+        &paths.temporary.join("carrot_startup_failure.log"),
+    )?;
+    let result = handoff::run_locked_with_signals(manager, lock, stopped, signals);
+    capture.finish()?;
+    let status = result?;
+    if !status.success() && !stopped.load(Ordering::Relaxed) {
+        return Err(Error::Configuration(format!(
+            "native manager failed: {status}"
+        )));
+    }
     println!("native manager exited: {status}");
     Ok(())
 }
@@ -191,8 +214,15 @@ pub fn main() -> Result<(), Error> {
     }
     system::enable_recovery_ssh(&paths)?;
     recovery(&paths);
-    let result =
-        system::agnos(&paths, &stopped).and_then(|()| ready(&paths, &lock, &stopped, &mut signals));
+    let result = system::agnos(&paths, &stopped)
+        .and_then(|()| {
+            if stopped.load(Ordering::Relaxed) {
+                Ok(())
+            } else {
+                clock::prepare(&paths)
+            }
+        })
+        .and_then(|()| ready(&paths, &lock, &stopped, &mut signals));
     lock.unlock()?;
     if let Err(error) = result {
         error_screen(

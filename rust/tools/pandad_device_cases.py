@@ -24,7 +24,7 @@ def cases() -> list[Case]:
   for hardware in range(256):
     output.append({'replies': [{'request': 0xc1, 'count': 1, 'bytes': [hardware]}], 'operations': []})
   rng = random.Random(175)
-  for request, operation, size in [(0xd2, 'health', 58), (0xc2, 'can_health', 64), (0xb2, 'fan_speed', 2), (0xd0, 'serial', 16)]:
+  for request, operation, size in [(0xd2, 'health', 59), (0xc2, 'can_health', 64), (0xb2, 'fan_speed', 2), (0xd0, 'serial', 16)]:
     for count in [-4, -1, *range(size + 1)]:
       for pattern in [0, 255, 73]:
         payload = [pattern] * max(0, count)
@@ -37,7 +37,7 @@ def cases() -> list[Case]:
                                    {'request': request, 'count': count, 'bytes': payload}], 'operations': [op]})
   for _ in range(1000):
     output.append({'replies': [{'request': 0xc1, 'count': -4, 'bytes': []},
-                               {'request': 0xd2, 'count': 58, 'bytes': [rng.randrange(256) for _ in range(58)]},
+                               {'request': 0xd2, 'count': 59, 'bytes': [rng.randrange(256) for _ in range(59)]},
                                {'request': 0xc2, 'count': 64, 'bytes': [rng.randrange(256) for _ in range(64)]}],
                    'operations': [{'op': 'health'}, {'op': 'can_health', 'bus': rng.randrange(65536)}]})
   for first in [-4, 0, 63, 64]:

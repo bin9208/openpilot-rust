@@ -44,6 +44,7 @@ impl Diagnostics {
                     width: scaled_dimensions(renderer)?.0,
                     height: scaled_dimensions(renderer)?.1,
                     fps: target_fps,
+                    capture_every: 1,
                     speed: options.record_speed,
                     quality: options.record_quality,
                     bitrate: options.record_bitrate.clone(),
@@ -109,6 +110,7 @@ impl Diagnostics {
                 width: number::integer(renderer.dimensions().0)?,
                 height: number::integer(renderer.dimensions().1)?,
                 fps: self.target_fps,
+                capture_every: self.record_every,
                 speed: 1,
                 quality: 23,
                 bitrate: String::new(),
@@ -176,10 +178,13 @@ impl Diagnostics {
         renderer.present();
         self.profile
             .record("render.present", presentation.elapsed());
-        if self.options.record || self.dynamic_recording {
+        if (self.options.record || self.dynamic_recording) && renderer.has_capture_frame() {
             self.recording_frames = self.recording_frames.saturating_add(1);
-            if self.record_every > 0 && self.recording_frames.is_multiple_of(self.record_every) {
-                let bytes = renderer.capture_pixels()?;
+            if self.record_every > 0
+                && self.recording_frames.is_multiple_of(self.record_every)
+                && self.recorder.as_ref().is_some_and(Recorder::can_accept)
+            {
+                let bytes = renderer.capture_frame_pixels()?;
                 self.recorder
                     .as_mut()
                     .ok_or(Error::Contract("recording writer missing"))?
@@ -189,6 +194,13 @@ impl Diagnostics {
                 self.stop_recording()?;
                 self.start_recording(renderer)?;
             }
+        }
+        if !self.dynamic_recording
+            && !self.options.record
+            && !self.options.burn_in
+            && renderer.config.scale == 1.0
+        {
+            renderer.release_render_target()?;
         }
         let fps = renderer.fps();
         let decision = self.fps_monitor.observe(fps::Sample {

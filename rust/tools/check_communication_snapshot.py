@@ -7,8 +7,8 @@ import types
 import capnp
 
 from check_message_state import fixtures, source
-from check_runtime_diagnostics import compare
-from openpilot.common import runtime_diagnostics
+from check_runtime_diagnostics import compare, load_source
+runtime_diagnostics = load_source()
 
 
 def main():

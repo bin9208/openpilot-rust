@@ -25,6 +25,7 @@ ALLOWED = frozenset(
     'tinygrad.dtype.DType',
     'tinygrad.dtype.AddrSpace',
     'tinygrad.uop.ops.CallInfo',
+    'tinygrad.uop.ops.CustomFunction',
     'tinygrad.uop.ops.AxisType',
     'tinygrad.uop.ops.KernelInfo',
     'tinygrad.renderer.Estimates',
@@ -57,10 +58,24 @@ class Record:
     self.state = state
 
 
+class PersistentBuffer:
+  def __init__(self, offset: int, size: int):
+    self.offset, self.size = offset, size
+
+
 class DataUnpickler(pickle.Unpickler):
-  def __init__(self, stream: io.BytesIO, buffers: list[memoryview]):
+  def __init__(self, stream: io.BytesIO, buffers: list[memoryview], arena: tuple[int, int] | None = None):
     super().__init__(stream, buffers=buffers)
     self.records: list[Record] = []
+    self.arena = arena
+
+  def persistent_load(self, pid: Value) -> PersistentBuffer:
+    if self.arena is None or not isinstance(pid, tuple) or len(pid) != 2:
+      raise ArtifactError('unsupported persistent buffer reference')
+    size, offset = pid
+    if type(size) is not int or type(offset) is not int or size < 0 or offset < 0 or offset + size > self.arena[1]:
+      raise ArtifactError('persistent buffer outside weight arena')
+    return PersistentBuffer(self.arena[0] + offset, size)
 
   def find_class(self, module: str, name: str) -> type[Record]:
     qualified = f'{module}.{name}'
@@ -120,11 +135,13 @@ class Artifact:
     if not 0 < length <= min(len(self._mapped) - 8, 64 << 20):
       raise ArtifactError('invalid artifact pickle length')
     self.opcodes = self._mapped[8 : 8 + length]
-    if any(op.name in {'EXT1', 'EXT2', 'EXT4', 'PERSID', 'BINPERSID'} for op, _, _ in pickletools.genops(self.opcodes)):
+    ops = list(pickletools.genops(self.opcodes))
+    persistent = any(op.name == 'BINPERSID' for op, _, _ in ops)
+    if any(op.name in {'EXT1', 'EXT2', 'EXT4', 'PERSID'} for op, _, _ in ops):
       raise ArtifactError('external pickle references are unsupported')
     self.blobs: dict[tuple[int, str], int] = {}
     offset = 8 + length
-    while offset < len(self._mapped):
+    while not persistent and offset < len(self._mapped):
       count = struct.unpack_from('<q', self._mapped, offset)[0]
       offset += 8
       if not 0 <= count <= len(self._mapped) - offset:
@@ -133,7 +150,8 @@ class Artifact:
       self._views.append(view)
       self.blobs[(count, hashlib.sha256(view).hexdigest())] = offset
       offset += count
-    unpickler = DataUnpickler(io.BytesIO(self.opcodes), buffers=self._views)
+    unpickler = DataUnpickler(io.BytesIO(self.opcodes), buffers=self._views,
+                              arena=(8 + length, len(self._mapped) - 8 - length) if persistent else None)
     self.value: Value = unpickler.load()
     self.records = unpickler.records
     self.values = walk(self.value)
@@ -159,6 +177,11 @@ class Artifact:
     return self.ops[number]
 
   def blob(self, value: Value) -> dict[str, Json]:
+    if isinstance(value, PersistentBuffer):
+      view = memoryview(self._mapped)[value.offset:value.offset + value.size]
+      digest = hashlib.sha256(view).hexdigest()
+      view.release()
+      return {'offset': value.offset, 'bytes': value.size, 'sha256': digest}
     if not isinstance(value, (bytes, memoryview)):
       raise ArtifactError('expected artifact byte data')
     digest = hashlib.sha256(value).hexdigest()

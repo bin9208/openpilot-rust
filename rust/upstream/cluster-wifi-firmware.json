@@ -1,0 +1,95 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "scope": "exact native ESP-IDF firmware; no flashing or device execution",
+  "files": {
+    "tools/esp32s3_display/firmware/.gitignore": {
+      "bytes": 34,
+      "sha256": "a370698fd8ae586e80cfde658e272922e92d388c7b20aea357a8ca01804d0611",
+      "git_blob": "a90ab6f1e57d5a9fe3aaea9fd04d8ffa937b11c3"
+    },
+    "tools/esp32s3_display/firmware/CMakeLists.txt": {
+      "bytes": 114,
+      "sha256": "d6a8b556288d26ccb2cc1257960d14cb854bc75811f1f3230312acb696c47dd6",
+      "git_blob": "8578306454171f04acb4b5d609245f4252aff639"
+    },
+    "tools/esp32s3_display/firmware/main/CMakeLists.txt": {
+      "bytes": 248,
+      "sha256": "38899dee40dc9488f8cb2aedafb94a89b944740033b9e29ce28227dc743cf0e8",
+      "git_blob": "58c0bfa675dd9bd98f0c7bca3e5e11aa8c6b2697"
+    },
+    "tools/esp32s3_display/firmware/main/display_status.c": {
+      "bytes": 4804,
+      "sha256": "774dd5cf4d3e13a7b4e875a6f2f0aa684a9d5e8afe33967906a22b3146894926",
+      "git_blob": "e97685159c17b3edd1eff30972fec072be410162"
+    },
+    "tools/esp32s3_display/firmware/main/display_status.h": {
+      "bytes": 274,
+      "sha256": "3e9631f08c7d8a43cd5ad382889290747509be6716b1d1599db0f12681fd11b1",
+      "git_blob": "aa8b2227a12a57014b3ac09a4262aa322531d7ab"
+    },
+    "tools/esp32s3_display/firmware/main/network.c": {
+      "bytes": 7665,
+      "sha256": "8dded316ea8a7f28cdf523814c52b42a152e770f9e20c770908b3a3b327d693f",
+      "git_blob": "f79ab15e51f1efa96437f25c7ecf75100ade9968"
+    },
+    "tools/esp32s3_display/firmware/main/network.h": {
+      "bytes": 770,
+      "sha256": "14c0baac7ded573f84ec586e2c1478759a3917ca98cd60bf14eafcd5b4c0fb30",
+      "git_blob": "aeb084c704a466c0f540069f08282bbb2354e25d"
+    },
+    "tools/esp32s3_display/firmware/main/provision.c": {
+      "bytes": 15602,
+      "sha256": "fa3831d41ef3dc8b379f85ddf212b701f1c6c4f9bb4b0111c4d36a7c30c79f4b",
+      "git_blob": "6e1e87101e110cc3795a2a94a6a1d435cdc37b25"
+    },
+    "tools/esp32s3_display/firmware/main/provision.h": {
+      "bytes": 206,
+      "sha256": "e23a9f20d5f16bb8b4bbf105a13aa480d215cb75e0f852c98456de8aff8c5753",
+      "git_blob": "7c84800d5e8c07e0982c06a902e0f6745201cfe7"
+    },
+    "tools/esp32s3_display/firmware/main/usb_bridge.c": {
+      "bytes": 11682,
+      "sha256": "d558e0842d980043a194333ef468435629686d209b9aa6f7d25b81bf8020c11f",
+      "git_blob": "9d4919dd67ca7f51381e38b2f679b12575b6d5c2"
+    },
+    "tools/esp32s3_display/firmware/partitions.csv": {
+      "bytes": 144,
+      "sha256": "6e730e4068bd2552cc5a2a7cfee39f6256c9435842a385656a83fe6dc8a8505e",
+      "git_blob": "236802777447179aab3b4961f089949fc6304462"
+    },
+    "tools/esp32s3_display/firmware/sdkconfig.defaults": {
+      "bytes": 1006,
+      "sha256": "acab6b3f9ddca0b2a64a5a1a7f513388360b79701a5a5931858bf5af1b8dbbcf",
+      "git_blob": "d3234d4f22a03f69e2e7c1e49b4dba2f0ba3c3e3"
+    }
+  },
+  "local_build": {
+    "sdk_version": "ESP-IDF v5.4 (5.4.0)",
+    "sdk_commit": "67c1de1eebe095d554d281952fde63c16ee2dca0",
+    "sdk_tools_manifest_sha256": "1ecd91545c6be1c75e5d328c419ee43f912b235622968141878b889bcde12a87",
+    "compiler": "xtensa-esp-elf-gcc (crosstool-NG esp-14.2.0_20241119) 14.2.0",
+    "compiler_sha256": "d968578945d9f62c2769e03a786d8853eb0ba226cfff1e8ee6588550927941a3",
+    "parallel_jobs": 2,
+    "configure_passed": true,
+    "link_passed": true,
+    "target_execution": false,
+    "artifacts": {
+      "carrot_s3_display.elf": {
+        "bytes": 9373388,
+        "sha256": "aa1e125dd10a22d3d99885ec648d46fefbba4b1a9bb0588d03c2440a0e8db3ab"
+      },
+      "carrot_s3_display.bin": {
+        "bytes": 875344,
+        "sha256": "b58ecc05022dba6ec2c9206d5ac628fe9160b710372f2a55bf529e3645e57b77"
+      },
+      "bootloader/bootloader.bin": {
+        "bytes": 21008,
+        "sha256": "1562c46c4950bb14febb65acbe89bac4cec55faebf68e1f4250e0668a497f5fd"
+      },
+      "partition_table/partition-table.bin": {
+        "bytes": 3072,
+        "sha256": "73c0b5c3e5fcba3a151cc70c453c93dd5f4798899e7f2f8cca76da1f32ffc501"
+      }
+    }
+  }
+}

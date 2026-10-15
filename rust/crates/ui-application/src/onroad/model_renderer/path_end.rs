@@ -69,10 +69,11 @@ impl ModelRenderer {
                 200.,
                 f64::from(self.widget.rect.height) - 80.,
             );
-            c.filtered_x = c.filtered_x * 0.85 + x * (1. - 0.85);
-            c.filtered_y = c.filtered_y * 0.85 + y * (1. - 0.85);
+            let retain = self.clock.retention(0.85);
+            c.filtered_x = c.filtered_x * retain + x * (1. - retain);
+            c.filtered_y = c.filtered_y * retain + y * (1. - retain);
             let width = clip(width, 120., 800.);
-            c.filtered_width = c.filtered_width * 0.85 + width * (1. - 0.85);
+            c.filtered_width = c.filtered_width * retain + width * (1. - retain);
             c.path_x = integer(c.filtered_x)?;
             c.path_y = integer(c.filtered_y)?;
             c.path_width = integer(c.filtered_width)?;
@@ -100,9 +101,10 @@ impl ModelRenderer {
                     projection.point(SamplePoint([f64::from(two.get_d_rel()), y + 1.2, z + 1.22]));
                 if let (Some(left), Some(right)) = (left, right) {
                     if c.lead_two_status > 0 {
-                        c.lead_two_left = c.lead_two_left * 0.8 + left.0[0] * 0.2;
-                        c.lead_two_right = c.lead_two_right * 0.8 + right.0[0] * 0.2;
-                        c.lead_two_y = c.lead_two_y * 0.8 + left.0[1] * 0.2;
+                        let retain = self.clock.retention(0.8);
+                        c.lead_two_left = c.lead_two_left * retain + left.0[0] * (1. - retain);
+                        c.lead_two_right = c.lead_two_right * retain + right.0[0] * (1. - retain);
+                        c.lead_two_y = c.lead_two_y * retain + left.0[1] * (1. - retain);
                     } else {
                         c.lead_two_left = left.0[0];
                         c.lead_two_right = right.0[0];

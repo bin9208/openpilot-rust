@@ -79,6 +79,7 @@ impl SyncUploads {
         &self,
         admission: Admission,
         segments: Vec<String>,
+        include_all_files: bool,
     ) -> Result<Value, Failure> {
         let commands = match &self.owner {
             Owner::Running { commands, .. } => commands.clone(),
@@ -100,6 +101,7 @@ impl SyncUploads {
                     .send(owner::Start {
                         admission,
                         segments,
+                        include_all_files,
                         response,
                     })
                     .await

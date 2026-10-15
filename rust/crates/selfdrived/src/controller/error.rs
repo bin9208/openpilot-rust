@@ -1,6 +1,8 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
+    Radar(#[from] openpilot_radard::Error),
+    #[error(transparent)]
     Cereal(#[from] capnp::Error),
     #[error(transparent)]
     Enum(#[from] capnp::NotInSchema),

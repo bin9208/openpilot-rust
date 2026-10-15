@@ -92,6 +92,18 @@ impl NativeBackend {
             },
         })
     }
+    fn tesla_wake_enabled(&self) -> Result<bool, Fault> {
+        let persistent = self.params.get("CarParamsPersistent").map_err(fault)?;
+        let current = self.params.get("CarParams").map_err(fault)?;
+        let selected = self.params.get("CarSelected3").map_err(fault)?;
+        Ok(crate::firmware::tesla_wake::enabled(
+            self.params.get_bool("TeslaWakeOnCAN").map_err(fault)?,
+            persistent.as_deref(),
+            current.as_deref(),
+            selected.as_deref(),
+        ))
+    }
+
     fn flush_interrupts(&mut self) -> Result<(), Fault> {
         for _ in 0..self.children.take_interrupts().map_err(fault)? {
             self.emit(Log::Info("Caught signal 2, exiting".into()))?;
@@ -138,9 +150,12 @@ impl Backend for NativeBackend {
         self.environment.panda_list()
     }
     fn connect(&mut self, serial: &str) -> Result<Self::Device, Fault> {
-        Client::open(self.environment.clone(), serial.into())
+        let mut client = Client::open(self.environment.clone(), serial.into())?;
+        client.select_tesla_wake(self.tesla_wake_enabled()?);
+        Ok(client)
     }
     fn expected_signature(&mut self, panda: &mut Self::Device) -> Result<Vec<u8>, Fault> {
+        panda.selected_firmware_path()?;
         panda.expected_signature()
     }
     fn has_internal(&mut self) -> Result<bool, Fault> {
@@ -154,6 +169,13 @@ impl Backend for NativeBackend {
     }
     fn run_child(&mut self, serials: &[String]) -> Result<(), Fault> {
         self.flush_interrupts()?;
+        // The supervisor verified the exact selected image signature. The
+        // legacy child checker only knows stock names, as in source pandad.py.
+        if self.tesla_wake_enabled()? {
+            std::env::set_var("BOARDD_SKIP_FW_CHECK", "1");
+        } else {
+            std::env::remove_var("BOARDD_SKIP_FW_CHECK");
+        }
         self.command.argv.truncate(1);
         self.command.argv.extend(serials.iter().map(Into::into));
         let logger = &mut self.logger;

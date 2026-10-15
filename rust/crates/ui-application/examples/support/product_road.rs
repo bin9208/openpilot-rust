@@ -67,7 +67,7 @@ pub fn before(
         .borrow_mut()
         .state
         .update(f64::from(index) / 20.0, &step.messages)?;
-    if !root {
+    if !root && widget.get::<Road>().is_ok() {
         widget
             .get_mut::<Road>()?
             .set_cluster_hud_connected(step.suppress, false);

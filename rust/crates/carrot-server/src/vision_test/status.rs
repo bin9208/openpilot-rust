@@ -1,7 +1,7 @@
 use super::{storage, Config};
 use crate::{
     json_fields::set,
-    youtube_test::{process, status::streams},
+    vision_test::{process, support::streams},
     Error, Value,
 };
 use num_traits::ToPrimitive;

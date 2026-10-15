@@ -6,6 +6,7 @@ pub mod native_environment;
 #[cfg(feature = "native-skip-miri")]
 pub mod native_spi;
 pub mod spi;
+pub mod tesla_wake;
 #[cfg(feature = "native-skip-miri")]
 pub mod usb;
 
@@ -39,6 +40,16 @@ impl Mcu {
         match self {
             Self::F4 => "panda.bin.signed",
             Self::H7 => "panda_h7.bin.signed",
+        }
+    }
+
+    pub fn app_filename_for_wake(self, wake: bool) -> &'static str {
+        if !wake {
+            return self.app_filename();
+        }
+        match self {
+            Self::F4 => "panda_tesla_wake.bin.signed",
+            Self::H7 => "panda_h7_tesla_wake.bin.signed",
         }
     }
 

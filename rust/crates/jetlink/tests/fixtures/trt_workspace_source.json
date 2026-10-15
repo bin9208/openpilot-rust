@@ -1,0 +1,854 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "source_sha256": "35e9a5f57b1a875ce5d8acac2a3e774051351a38fcd3738f99663628a3c6bba8",
+  "cases": [
+    {
+      "available": 0,
+      "expected": 4294967296
+    },
+    {
+      "available": 1,
+      "expected": 268435456
+    },
+    {
+      "available": 2,
+      "expected": 268435456
+    },
+    {
+      "available": 671088620,
+      "expected": 268435456
+    },
+    {
+      "available": 671088621,
+      "expected": 268435456
+    },
+    {
+      "available": 671088622,
+      "expected": 268435456
+    },
+    {
+      "available": 671088623,
+      "expected": 268435456
+    },
+    {
+      "available": 671088624,
+      "expected": 268435456
+    },
+    {
+      "available": 671088625,
+      "expected": 268435456
+    },
+    {
+      "available": 671088626,
+      "expected": 268435456
+    },
+    {
+      "available": 671088627,
+      "expected": 268435456
+    },
+    {
+      "available": 671088628,
+      "expected": 268435456
+    },
+    {
+      "available": 671088629,
+      "expected": 268435456
+    },
+    {
+      "available": 671088630,
+      "expected": 268435456
+    },
+    {
+      "available": 671088631,
+      "expected": 268435456
+    },
+    {
+      "available": 671088632,
+      "expected": 268435456
+    },
+    {
+      "available": 671088633,
+      "expected": 268435456
+    },
+    {
+      "available": 671088634,
+      "expected": 268435456
+    },
+    {
+      "available": 671088635,
+      "expected": 268435456
+    },
+    {
+      "available": 671088636,
+      "expected": 268435456
+    },
+    {
+      "available": 671088637,
+      "expected": 268435456
+    },
+    {
+      "available": 671088638,
+      "expected": 268435456
+    },
+    {
+      "available": 671088639,
+      "expected": 268435456
+    },
+    {
+      "available": 671088640,
+      "expected": 268435456
+    },
+    {
+      "available": 671088641,
+      "expected": 268435456
+    },
+    {
+      "available": 671088642,
+      "expected": 268435456
+    },
+    {
+      "available": 671088643,
+      "expected": 268435457
+    },
+    {
+      "available": 671088644,
+      "expected": 268435457
+    },
+    {
+      "available": 671088645,
+      "expected": 268435458
+    },
+    {
+      "available": 671088646,
+      "expected": 268435458
+    },
+    {
+      "available": 671088647,
+      "expected": 268435458
+    },
+    {
+      "available": 671088648,
+      "expected": 268435459
+    },
+    {
+      "available": 671088649,
+      "expected": 268435459
+    },
+    {
+      "available": 671088650,
+      "expected": 268435460
+    },
+    {
+      "available": 671088651,
+      "expected": 268435460
+    },
+    {
+      "available": 671088652,
+      "expected": 268435460
+    },
+    {
+      "available": 671088653,
+      "expected": 268435461
+    },
+    {
+      "available": 671088654,
+      "expected": 268435461
+    },
+    {
+      "available": 671088655,
+      "expected": 268435462
+    },
+    {
+      "available": 671088656,
+      "expected": 268435462
+    },
+    {
+      "available": 671088657,
+      "expected": 268435462
+    },
+    {
+      "available": 671088658,
+      "expected": 268435463
+    },
+    {
+      "available": 671088659,
+      "expected": 268435463
+    },
+    {
+      "available": 10737418220,
+      "expected": 4294967288
+    },
+    {
+      "available": 10737418221,
+      "expected": 4294967288
+    },
+    {
+      "available": 10737418222,
+      "expected": 4294967288
+    },
+    {
+      "available": 10737418223,
+      "expected": 4294967289
+    },
+    {
+      "available": 10737418224,
+      "expected": 4294967289
+    },
+    {
+      "available": 10737418225,
+      "expected": 4294967290
+    },
+    {
+      "available": 10737418226,
+      "expected": 4294967290
+    },
+    {
+      "available": 10737418227,
+      "expected": 4294967290
+    },
+    {
+      "available": 10737418228,
+      "expected": 4294967291
+    },
+    {
+      "available": 10737418229,
+      "expected": 4294967291
+    },
+    {
+      "available": 10737418230,
+      "expected": 4294967292
+    },
+    {
+      "available": 10737418231,
+      "expected": 4294967292
+    },
+    {
+      "available": 10737418232,
+      "expected": 4294967292
+    },
+    {
+      "available": 10737418233,
+      "expected": 4294967293
+    },
+    {
+      "available": 10737418234,
+      "expected": 4294967293
+    },
+    {
+      "available": 10737418235,
+      "expected": 4294967294
+    },
+    {
+      "available": 10737418236,
+      "expected": 4294967294
+    },
+    {
+      "available": 10737418237,
+      "expected": 4294967294
+    },
+    {
+      "available": 10737418238,
+      "expected": 4294967295
+    },
+    {
+      "available": 10737418239,
+      "expected": 4294967295
+    },
+    {
+      "available": 10737418240,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418241,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418242,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418243,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418244,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418245,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418246,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418247,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418248,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418249,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418250,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418251,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418252,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418253,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418254,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418255,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418256,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418257,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418258,
+      "expected": 4294967296
+    },
+    {
+      "available": 10737418259,
+      "expected": 4294967296
+    },
+    {
+      "available": 11668096931,
+      "expected": 4294967296
+    },
+    {
+      "available": 14336996853,
+      "expected": 4294967296
+    },
+    {
+      "available": 16402266658,
+      "expected": 4294967296
+    },
+    {
+      "available": 22285896163,
+      "expected": 4294967296
+    },
+    {
+      "available": 23998196088,
+      "expected": 4294967296
+    },
+    {
+      "available": 25512836178,
+      "expected": 4294967296
+    },
+    {
+      "available": 27308217627,
+      "expected": 4294967296
+    },
+    {
+      "available": 47049562625,
+      "expected": 4294967296
+    },
+    {
+      "available": 53454855485,
+      "expected": 4294967296
+    },
+    {
+      "available": 56856480596,
+      "expected": 4294967296
+    },
+    {
+      "available": 65945480180,
+      "expected": 4294967296
+    },
+    {
+      "available": 89539637710,
+      "expected": 4294967296
+    },
+    {
+      "available": 92374008771,
+      "expected": 4294967296
+    },
+    {
+      "available": 98082298812,
+      "expected": 4294967296
+    },
+    {
+      "available": 100619678319,
+      "expected": 4294967296
+    },
+    {
+      "available": 103737720606,
+      "expected": 4294967296
+    },
+    {
+      "available": 104149430958,
+      "expected": 4294967296
+    },
+    {
+      "available": 116931613754,
+      "expected": 4294967296
+    },
+    {
+      "available": 128861883259,
+      "expected": 4294967296
+    },
+    {
+      "available": 131442462339,
+      "expected": 4294967296
+    },
+    {
+      "available": 136889684307,
+      "expected": 4294967296
+    },
+    {
+      "available": 153234276782,
+      "expected": 4294967296
+    },
+    {
+      "available": 172005192125,
+      "expected": 4294967296
+    },
+    {
+      "available": 185859450232,
+      "expected": 4294967296
+    },
+    {
+      "available": 186711244600,
+      "expected": 4294967296
+    },
+    {
+      "available": 207573301207,
+      "expected": 4294967296
+    },
+    {
+      "available": 227586091221,
+      "expected": 4294967296
+    },
+    {
+      "available": 230304721723,
+      "expected": 4294967296
+    },
+    {
+      "available": 233108922219,
+      "expected": 4294967296
+    },
+    {
+      "available": 238412508944,
+      "expected": 4294967296
+    },
+    {
+      "available": 249936742052,
+      "expected": 4294967296
+    },
+    {
+      "available": 250299704825,
+      "expected": 4294967296
+    },
+    {
+      "available": 265233479646,
+      "expected": 4294967296
+    },
+    {
+      "available": 276318176519,
+      "expected": 4294967296
+    },
+    {
+      "available": 287298253207,
+      "expected": 4294967296
+    },
+    {
+      "available": 288990581215,
+      "expected": 4294967296
+    },
+    {
+      "available": 291646639065,
+      "expected": 4294967296
+    },
+    {
+      "available": 295731895752,
+      "expected": 4294967296
+    },
+    {
+      "available": 302432762995,
+      "expected": 4294967296
+    },
+    {
+      "available": 304598133831,
+      "expected": 4294967296
+    },
+    {
+      "available": 308184604649,
+      "expected": 4294967296
+    },
+    {
+      "available": 327399471040,
+      "expected": 4294967296
+    },
+    {
+      "available": 330124521546,
+      "expected": 4294967296
+    },
+    {
+      "available": 359792078992,
+      "expected": 4294967296
+    },
+    {
+      "available": 362695929581,
+      "expected": 4294967296
+    },
+    {
+      "available": 374130995101,
+      "expected": 4294967296
+    },
+    {
+      "available": 382211129265,
+      "expected": 4294967296
+    },
+    {
+      "available": 402645345830,
+      "expected": 4294967296
+    },
+    {
+      "available": 419459300162,
+      "expected": 4294967296
+    },
+    {
+      "available": 423672792953,
+      "expected": 4294967296
+    },
+    {
+      "available": 429706019396,
+      "expected": 4294967296
+    },
+    {
+      "available": 435520899916,
+      "expected": 4294967296
+    },
+    {
+      "available": 440217362587,
+      "expected": 4294967296
+    },
+    {
+      "available": 442567779975,
+      "expected": 4294967296
+    },
+    {
+      "available": 444543984850,
+      "expected": 4294967296
+    },
+    {
+      "available": 450241239050,
+      "expected": 4294967296
+    },
+    {
+      "available": 464405646399,
+      "expected": 4294967296
+    },
+    {
+      "available": 471832581830,
+      "expected": 4294967296
+    },
+    {
+      "available": 485946109252,
+      "expected": 4294967296
+    },
+    {
+      "available": 497825711152,
+      "expected": 4294967296
+    },
+    {
+      "available": 514005984377,
+      "expected": 4294967296
+    },
+    {
+      "available": 515338178555,
+      "expected": 4294967296
+    },
+    {
+      "available": 542369655830,
+      "expected": 4294967296
+    },
+    {
+      "available": 542525301396,
+      "expected": 4294967296
+    },
+    {
+      "available": 555587145637,
+      "expected": 4294967296
+    },
+    {
+      "available": 555910310466,
+      "expected": 4294967296
+    },
+    {
+      "available": 561064354344,
+      "expected": 4294967296
+    },
+    {
+      "available": 570519201924,
+      "expected": 4294967296
+    },
+    {
+      "available": 582547261639,
+      "expected": 4294967296
+    },
+    {
+      "available": 584009744083,
+      "expected": 4294967296
+    },
+    {
+      "available": 586159300357,
+      "expected": 4294967296
+    },
+    {
+      "available": 596657016057,
+      "expected": 4294967296
+    },
+    {
+      "available": 596658146639,
+      "expected": 4294967296
+    },
+    {
+      "available": 608032099541,
+      "expected": 4294967296
+    },
+    {
+      "available": 608589068180,
+      "expected": 4294967296
+    },
+    {
+      "available": 619209072331,
+      "expected": 4294967296
+    },
+    {
+      "available": 619251323971,
+      "expected": 4294967296
+    },
+    {
+      "available": 639857768824,
+      "expected": 4294967296
+    },
+    {
+      "available": 643124407030,
+      "expected": 4294967296
+    },
+    {
+      "available": 664235142495,
+      "expected": 4294967296
+    },
+    {
+      "available": 667215030068,
+      "expected": 4294967296
+    },
+    {
+      "available": 674633001609,
+      "expected": 4294967296
+    },
+    {
+      "available": 678669956331,
+      "expected": 4294967296
+    },
+    {
+      "available": 682820864134,
+      "expected": 4294967296
+    },
+    {
+      "available": 696543528970,
+      "expected": 4294967296
+    },
+    {
+      "available": 710350656864,
+      "expected": 4294967296
+    },
+    {
+      "available": 721095366707,
+      "expected": 4294967296
+    },
+    {
+      "available": 722578600128,
+      "expected": 4294967296
+    },
+    {
+      "available": 737554209484,
+      "expected": 4294967296
+    },
+    {
+      "available": 764407616736,
+      "expected": 4294967296
+    },
+    {
+      "available": 768911502439,
+      "expected": 4294967296
+    },
+    {
+      "available": 775674158199,
+      "expected": 4294967296
+    },
+    {
+      "available": 790388866567,
+      "expected": 4294967296
+    },
+    {
+      "available": 804269296634,
+      "expected": 4294967296
+    },
+    {
+      "available": 804884904731,
+      "expected": 4294967296
+    },
+    {
+      "available": 814338805957,
+      "expected": 4294967296
+    },
+    {
+      "available": 814508531723,
+      "expected": 4294967296
+    },
+    {
+      "available": 823670696072,
+      "expected": 4294967296
+    },
+    {
+      "available": 844475855454,
+      "expected": 4294967296
+    },
+    {
+      "available": 869047119719,
+      "expected": 4294967296
+    },
+    {
+      "available": 880178690009,
+      "expected": 4294967296
+    },
+    {
+      "available": 887132100444,
+      "expected": 4294967296
+    },
+    {
+      "available": 888929565557,
+      "expected": 4294967296
+    },
+    {
+      "available": 893766274171,
+      "expected": 4294967296
+    },
+    {
+      "available": 897536954303,
+      "expected": 4294967296
+    },
+    {
+      "available": 904301883605,
+      "expected": 4294967296
+    },
+    {
+      "available": 906708546536,
+      "expected": 4294967296
+    },
+    {
+      "available": 916848602740,
+      "expected": 4294967296
+    },
+    {
+      "available": 931276605039,
+      "expected": 4294967296
+    },
+    {
+      "available": 945525727684,
+      "expected": 4294967296
+    },
+    {
+      "available": 960503530269,
+      "expected": 4294967296
+    },
+    {
+      "available": 962878204888,
+      "expected": 4294967296
+    },
+    {
+      "available": 978865937682,
+      "expected": 4294967296
+    },
+    {
+      "available": 992120300397,
+      "expected": 4294967296
+    },
+    {
+      "available": 1003835079734,
+      "expected": 4294967296
+    },
+    {
+      "available": 1005492246307,
+      "expected": 4294967296
+    },
+    {
+      "available": 1014922162306,
+      "expected": 4294967296
+    },
+    {
+      "available": 1016734915753,
+      "expected": 4294967296
+    },
+    {
+      "available": 1023394622760,
+      "expected": 4294967296
+    },
+    {
+      "available": 1023790188200,
+      "expected": 4294967296
+    },
+    {
+      "available": 1027701991775,
+      "expected": 4294967296
+    },
+    {
+      "available": 1029492850658,
+      "expected": 4294967296
+    },
+    {
+      "available": 1029532922431,
+      "expected": 4294967296
+    },
+    {
+      "available": 1031487158483,
+      "expected": 4294967296
+    },
+    {
+      "available": 1046537816621,
+      "expected": 4294967296
+    },
+    {
+      "available": 1049803334420,
+      "expected": 4294967296
+    },
+    {
+      "available": 1063434758662,
+      "expected": 4294967296
+    },
+    {
+      "available": 1075263202201,
+      "expected": 4294967296
+    },
+    {
+      "available": 18446744073709551615,
+      "expected": 4294967296
+    }
+  ]
+}

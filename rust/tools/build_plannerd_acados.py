@@ -125,6 +125,7 @@ def build(args: argparse.Namespace) -> None:
     ACADOS_SOURCE_DIR=str(acados / 'install'),
     ACADOS_PYTHON_INTERFACE_PATH=str(acados / 'acados_template'),
     TERA_PATH=str(acados / 'install/bin/t_renderer'),
+    PLANNER_SOURCE_FIXTURE=str(args.source_fixture.resolve()) if args.source_fixture else '',
   )
   compiler_path = Path(shutil.which(args.cc) or args.cc).resolve(strict=True)
   compiler_identity = {
@@ -138,8 +139,15 @@ def build(args: argparse.Namespace) -> None:
     directory = output / 'generated' / kind
     directory.mkdir(parents=True, exist_ok=True)
     disk_guard(directory)
-    shutil.copy2(source, directory / source.name)
-    source_hashes[str(source.relative_to(ROOT))] = digest(source)
+    staged_source = directory / source.name
+    if args.source_fixture:
+      from planner_source import source as final_source
+      if args.source_fixture.resolve() != ROOT / 'rust/upstream/planner-source.json':
+        raise ValueError('only the hash-verified final planner source fixture is supported')
+      staged_source.write_text(final_source(str(source.relative_to(ROOT))))
+    else:
+      shutil.copy2(source, staged_source)
+    source_hashes[str(source.relative_to(ROOT))] = digest(staged_source)
     run([python, str(ROOT / 'rust/tools/plannerd_generate_source.py'), str(directory / source.name)], directory, 'generate', environment)
     generated = directory / 'c_generated_code'
     sources = [generated / f'acados_solver_{name}.c']
@@ -213,6 +221,7 @@ def main():
   parser.add_argument('--generator-wheel', type=Path, help='pinned host wheel; required when the target differs from the host')
   parser.add_argument('--architecture', required=True, choices=tuple(WHEELS))
   parser.add_argument('--cc', default='gcc')
+  parser.add_argument('--source-fixture', type=Path, help='hash-verified final planner source pin')
   parser.add_argument('--sanitize', action='store_true', help='instrument generated C for the isolated native-boundary checks')
   build(parser.parse_args())
 

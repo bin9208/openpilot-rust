@@ -10,6 +10,7 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-model-runtime = { path = "../model-runtime" }
 rsa = "=0.9.10"
 sha1 = "=0.10.7"
 base64 = "=0.22.1"

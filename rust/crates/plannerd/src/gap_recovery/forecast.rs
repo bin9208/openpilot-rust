@@ -7,6 +7,7 @@ pub struct GapForecast<'a, const N: usize> {
     pub ego_speeds: &'a [f64; N],
     pub lead_speeds: &'a [f64; N],
     pub base_tf: f64,
+    pub stop_distance: f64,
     pub lead_distances: Option<&'a [f64; N]>,
     pub desired_distances: Option<&'a [f64; N]>,
 }
@@ -62,6 +63,7 @@ impl LeadGapState {
                     distance: maximum(1e-3, distances[i]),
                     desired_distance: desired[i],
                     base_tf: input.base_tf,
+                    stop_distance: input.stop_distance,
                 });
             }
             let margin = maximum(0., input.ego_speeds[i])

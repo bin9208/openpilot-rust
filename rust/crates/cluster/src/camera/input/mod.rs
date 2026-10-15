@@ -77,6 +77,24 @@ impl Input {
     pub const fn frame(&self) -> Option<&Frame> {
         self.frame.as_ref()
     }
+    /// Source display identity is valid only while the retained slot still holds this image.
+    #[must_use]
+    pub fn display_frame(&self) -> Option<(u32, f64, usize, usize, bool)> {
+        let frame = self.frame.as_ref()?;
+        let retained = self.retained_buffer().ok()?;
+        if retained.frame_id().ok()? != u64::from(frame.metadata.frame_id) {
+            return None;
+        }
+        #[allow(clippy::cast_precision_loss)]
+        let eof = frame.metadata.timestamp_eof as f64 / 1e9;
+        Some((
+            frame.metadata.frame_id,
+            eof,
+            frame.metadata.width,
+            frame.metadata.height,
+            self.is_wide(),
+        ))
+    }
     #[must_use]
     pub const fn revision(&self) -> u64 {
         self.revision

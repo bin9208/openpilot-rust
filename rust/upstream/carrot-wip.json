@@ -6,7 +6,7 @@
   "rust_base": "b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a",
   "source_repo": "https://github.com/ajouatom/openpilot",
   "source_branch": "carrot-wip",
-  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
   "common_ancestor": "43203371004e035bdb70a00a8dad29a4b657c6c3",
   "coverage_complete": false,
   "commits": [
@@ -6155,6 +6155,143 @@
       ],
       "disposition": "pending",
       "evidence": []
+    },
+    {
+      "sha": "8864280c9c67a7ef5c835cc62844c9056d3b02ee",
+      "subject": "Select Mountain Dew v3 and its verified isolated runtime on wip",
+      "paths": [
+        ".github/workflows/mdm-model.yaml",
+        "AGENTS.md",
+        "docs/md_v3_20261015.md",
+        "openpilot/selfdrive/carrot/web/generated/asset-manifest.json",
+        "openpilot/selfdrive/carrot/web/js/generated/tools.js",
+        "openpilot/selfdrive/carrot/web/src/features/tools/egpu_model.js",
+        "openpilot/selfdrive/modeld/big_model.py",
+        "openpilot/selfdrive/modeld/egpu_usb_wait.py",
+        "openpilot/selfdrive/modeld/precompiled_model.py",
+        "openpilot/selfdrive/modeld/tests/fixtures/md_v3_metadata.json",
+        "openpilot/selfdrive/modeld/tests/test_big_model.py",
+        "openpilot/selfdrive/modeld/tests/test_egpu_failure_containment.py",
+        "openpilot/selfdrive/modeld/tests/test_precompiled_artifact.py",
+        "openpilot/selfdrive/modeld/tests/test_precompiled_model.py",
+        "tools/modeld/build_md_v3_package.py"
+      ],
+      "disposition": "pending",
+      "evidence": []
+    },
+    {
+      "sha": "303a9e330bba5b77ed496c135e3d9e2ae3b61430",
+      "subject": "Record MD v3 Linux runtime and delivery verification",
+      "paths": [
+        "AGENTS.md",
+        "docs/md_v3_20261015.md"
+      ],
+      "disposition": "pending",
+      "evidence": []
+    },
+    {
+      "sha": "9e00517607445fa884270d10222adb3b3055f002",
+      "subject": "fix: confirm S3 shutdown and publish beginner firmware installer",
+      "paths": [
+        "AGENTS.md",
+        "docs/s3_release_20261015.md",
+        "docs/user/en/settings.md",
+        "docs/user/ko/settings.md",
+        "openpilot/selfdrive/carrot/cluster/cluster_wifi_display.py",
+        "openpilot/selfdrive/carrot/cluster_autorun.py",
+        "openpilot/selfdrive/carrot/tests/test_cluster_wifi.py",
+        "tools/carrot_route_vault/tests/test_viewer.py",
+        "tools/carrot_route_vault/viewer.py",
+        "tools/esp32s3_display/INSTALL_KO.md",
+        "tools/esp32s3_display/README.md",
+        "tools/esp32s3_display/firmware/CMakeLists.txt",
+        "tools/esp32s3_display/firmware/main/usb_bridge.c",
+        "tools/esp32s3_display/installer/index.html",
+        "tools/esp32s3_display/installer/installer.js",
+        "tools/esp32s3_display/installer/manifest.mjs",
+        "tools/esp32s3_display/installer/tests/install_flow.test.mjs",
+        "tools/esp32s3_display/installer/tests/manifest.test.mjs",
+        "tools/esp32s3_display/package_release.py",
+        "tools/esp32s3_display/provision.py"
+      ],
+      "disposition": "pending",
+      "evidence": []
+    },
+    {
+      "sha": "31254e6538aa4a7b863077d9bcb3ef1f275cbcbd",
+      "subject": "fix: load bundled C4 UART dependencies for S3 registration",
+      "paths": [
+        "docs/s3_release_20261015.md",
+        "tools/esp32s3_display/INSTALL_KO.md",
+        "tools/esp32s3_display/README.md",
+        "tools/esp32s3_display/installer/index.html",
+        "tools/esp32s3_display/provision.py"
+      ],
+      "disposition": "pending",
+      "evidence": []
+    },
+    {
+      "sha": "1b82bcaaad13e1f94ae90618d781c43adf5af74d",
+      "subject": "fix: release frozen HUD failure cycles between retries",
+      "paths": [
+        "AGENTS.md",
+        "docs/hud_retry_memory_20261015.md",
+        "openpilot/selfdrive/carrot/cluster/cluster_profile.py",
+        "openpilot/selfdrive/carrot/cluster/main.py",
+        "openpilot/selfdrive/carrot/tests/test_cluster_gc_lifecycle.py"
+      ],
+      "disposition": "pending",
+      "evidence": []
+    },
+    {
+      "sha": "3930ddf7417e50e73484531e86da11c9c45a48a2",
+      "subject": "fix: report expected S3 transport retries concisely",
+      "paths": [
+        "docs/hud_retry_memory_20261015.md",
+        "openpilot/selfdrive/carrot/cluster_autorun.py",
+        "openpilot/selfdrive/carrot/tests/test_cluster_retry_logging.py"
+      ],
+      "disposition": "pending",
+      "evidence": []
+    },
+    {
+      "sha": "1d548f2e0206680c1006f5f41e591d4635bafb61",
+      "subject": "docs: distinguish historical HUD memory baseline from retry leaks",
+      "paths": [
+        "AGENTS.md",
+        "docs/hud_retry_memory_20261015.md"
+      ],
+      "disposition": "pending",
+      "evidence": []
+    },
+    {
+      "sha": "d329752ab017e2f0cab60e6c84225e78e1472874",
+      "subject": "docs: record live retry reporter activation and buffer recurrence",
+      "paths": [
+        "AGENTS.md",
+        "docs/hud_retry_memory_20261015.md"
+      ],
+      "disposition": "pending",
+      "evidence": []
+    },
+    {
+      "sha": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "subject": "fix: integrate reviewed Tesla control and permission corrections from PR #551",
+      "paths": [
+        "AGENTS.md",
+        "docs/tesla_pr551_review_20261015.md",
+        "opendbc_repo/opendbc/car/tesla/carcontroller.py",
+        "opendbc_repo/opendbc/car/tesla/coop_steering.py",
+        "opendbc_repo/opendbc/car/tesla/tests/test_controller_feedback.py",
+        "opendbc_repo/opendbc/car/tesla/tests/test_coop_steering.py",
+        "opendbc_repo/opendbc/safety/safety/safety_tesla.h",
+        "opendbc_repo/opendbc/safety/tests/test_tesla.py",
+        "openpilot/selfdrive/controls/lib/latcontrol_angle.py",
+        "openpilot/selfdrive/controls/tests/test_angle_saturation.py",
+        "openpilot/system/tests/test_panda_firmware_version.py"
+      ],
+      "disposition": "pending",
+      "evidence": []
     }
   ],
   "files": [
@@ -6189,8 +6326,10 @@
       "disposition": "excluded_source_ci",
       "rust_targets": [],
       "evidence": [
-        "Preserve independent openpilot-rust checks and publication guards; original repository workflows must not overwrite native CI or enable source publishing. dev-md routing is implemented separately."
-      ]
+        "Source model publication workflow is not enabled in isolated dev-md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "c34099a3ed392843a80e96f0fa1fddb6d1fd34d4d73ad09cce485abef570656d"
     },
     {
       "path": ".github/workflows/native-cpu.yaml",
@@ -6232,8 +6371,10 @@
       "disposition": "reference_only",
       "rust_targets": [],
       "evidence": [
-        "Source engineering/provenance documentation is retained in pinned Git history; it does not execute in the candidate. Native feature scope is tracked in docs/naver/dev-md-*-audit.md."
-      ]
+        "Retain local branch-isolation and corrected user scope; upstream repository instructions do not replace them."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "ca463209adcfd0ebbcb55869c896edca9584783625d33f16341ea06fdd74eb22"
     },
     {
       "path": "README.md",
@@ -7926,9 +8067,15 @@
     {
       "path": "docs/user/en/settings.md",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "reference_only",
+      "rust_targets": [
+        "docs/user/en/settings.md"
+      ],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "b1aefde8c53a460a784b2a04b433ffe2c2be4be0e529a710605e5f362b1b22d1"
     },
     {
       "path": "docs/user/en/speed-deceleration.md",
@@ -7996,9 +8143,15 @@
     {
       "path": "docs/user/ko/settings.md",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "reference_only",
+      "rust_targets": [
+        "docs/user/ko/settings.md"
+      ],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "7138b0a3533eaa6663e5ba9bbd3b94b7adb7e2b32aa2f9d0381f3357cbcaaa8a"
     },
     {
       "path": "docs/user/ko/speed-deceleration.md",
@@ -8122,16 +8275,28 @@
     {
       "path": "opendbc_repo/opendbc/car/hyundai/navi_speedcam.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/card/src/brands/hyundai/navigation/speedcam.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All24 original source regressions232method transitions+14343 profiledecode vectors; existing host/ARM checks tightened to float bits with no production changes. Selected navigation owner2400transitions+engaged640schema ticks pass HOST/ARM."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/hyundai/radar_bosch.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/hyundai/bosch/",
+        "rust/crates/radarcan/src/native/bosch.rs",
+        "rust/crates/radard/src/replay/raw.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All 88 definitions /175 methods mapped; complete source components and original ARM arithmetic checks; selected factory 3600 transitions exact, actual NativeIo IPC plus raw replay each four mode/flip families 880 batches/172 complete publications HOST and ARM. Offline header is recorded timeline, source wall-clock header retained separately. See bosch-source-definitions.json closure_evidence."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/hyundai/radar_interface.py",
@@ -8143,37 +8308,64 @@
     {
       "path": "opendbc_repo/opendbc/car/hyundai/scalar.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/control-policy/src/math.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "File contains only clip_float:729 original operand bit combinations HOST+ARM exact, including NaN payloads/reversed bounds/signed zero."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/hyundai/section_average.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/card/src/brands/hyundai/navigation/section_average.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All7 original source regressions28389operations; existing HOST+actualARM source state/allowance checks tightened to float bits, GREEN. Production navigation owner integrated in same CarState chain."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/hyundai/steering_handover.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/card/src/brands/hyundai/steering_handover.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All48original source tests /13484complete-state updates strictly bit exact on host/ARM; independent actual ARM original source2126614numeric comparisons exact. Full coupled controller3520ticks/10196CAN exact; broader vehicle/runtime acceptance remains separate."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/hyundai/steering_touch.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/card/src/brands/hyundai/steering_touch.rs",
+        "rust/crates/card/src/brands/hyundai/state.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "600 original source updates/469validcontacts+independent recordedchecksum vectors and original-bus late-registration/invalidpacket checks HOST+ARM; actual full CarState35520schemas HOST+ARM verifies production publication."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/hyundai/stopping.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/card/src/brands/hyundai/stopping.rs",
+        "rust/crates/card/src/brands/hyundai/fd_stopping.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All144 original source regressions22907complete state transitions now HOST+actualARM float bits, plus9353 actual packet builder calls exactCAN and returnedacceleration/counter/warning checks; original first-packet mismatch reproduced RED before production fix."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/hyundai/tests/test_blink_hold.py",
@@ -8395,65 +8587,125 @@
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510/__init__.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/mod.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/config.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/interface.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/objects.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/record.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/transport.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "Public profile/type/decoder/transport semantic exports covered by44profile defaults, complete interface frames and outer production factory gates; Rust uses typed native module paths. No Python package loader required."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510/constants.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/config.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/fields.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/objects.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/record.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/transport.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "Wire/address/length/field/layout constants consumed by native codecs and complete source interface/factory gates;44profile defaults checked. Native field definitions preserve source nominal conversions."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510/interface.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/interface.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/config.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/fusion.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "44configuration defaults,1851complete payload transitions/35881completeCANframe transitions/2736filter transitions HOST+actualARM finite float bits; constructor/cache/point/error state checked. Private jLead coefficient source architecture distinction applies only in outer receiver, documented explicitly."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510/objects.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/objects.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/fields.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "Native bitfield metadata, slot encode/decode/init geometry and relative-velocity behavior checked by source record/property vectors plus full1851payload/35881frame gate HOST+ARM. MIT license retained."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510/record.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/record.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "512 original source CRC/slot vectors plus full1851payload/35881frame gate, HOST+ARM finite bits and bytes exact."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510/shell85.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/shell85.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "Complete library CRC/parser/cell fields/prefix short-circuit+error-order scope512records/128prefixprobes HOST+actualARM float-bit exact. Standalone export is not selected for control. MIT provenance retained."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510/support.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "1024 source CAN-support decoder/property/CRC vectors plus complete interface and receiver tests HOST+actualARM; typed byte/float domain preserved."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510/tracks.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/tracks.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "380 complete source allocator updates/errors/idempotence states plus full interface/factory source gates HOST+actualARM; IDs/age/reset/cache/order checked."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510/transport.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/transport.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "4210 complete source assembler operations across record families/restarts/badlength/nonfinite time; full35881CANframe source gate HOST+ARM checks all assembler/cache mutable data."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/ars510_carrot.py",
@@ -8465,9 +8717,16 @@
     {
       "path": "opendbc_repo/opendbc/car/toyota/interface.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/card/src/brands/toyota/parameters.rs",
+        "rust/crates/card/src/brands/toyota/mod.rs",
+        "rust/crates/card/src/brands/toyota/runtime.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "Complete pinned Toyota package oracle1348scenarios/24008frames HOST+actualARM, full CP/state/actuator/temporal/orderedCAN/Params/lifecycle float-bit equality with disclosed type/error projections. ARS CP RED->32configuration+1824capability HOST/ARM exact. Actual registry/setup recomputes CP after cached identity. Manifest toyota-whole-gate-manifest.json."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/car/toyota/radar_interface.py",
@@ -8519,23 +8778,38 @@
     {
       "path": "opendbc_repo/opendbc/safety/safety/safety_hyundai_canfd.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "opendbc/safety/safety/safety_hyundai_canfd.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "348 original safety tests/11669 executed actualARM C hook calls exact; all6 full firmware images linked/signed/verified with251exactpinnedpublicinputs. External C safety retained; no device."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/safety/safety/safety_hyundai_canfd_cluster.h",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "opendbc/safety/safety/safety_hyundai_canfd_cluster.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "348 original safety tests/11669 executed actualARM C hook calls exact; all6 full firmware images linked/signed/verified with251exactpinnedpublicinputs. External C safety retained; no device."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/safety/safety_declarations.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "opendbc/safety/safety_declarations.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "348 original safety tests/11669 executed actualARM C hook calls exact; all6 full firmware images linked/signed/verified with251exactpinnedpublicinputs. External C safety retained; no device."
+      ]
     },
     {
       "path": "opendbc_repo/opendbc/safety/tests/hyundai_canfd_cluster.c",
@@ -8613,16 +8887,30 @@
     {
       "path": "openpilot/common/build_time.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/runtime-launcher/src/bootstrap/clock.rs",
+        "rust/crates/runtime-launcher/src/bootstrap.rs",
+        "rust/fixtures/build-time-utc-final.json"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-clock-validation.md",
+        "HOST+ARM original policy cases and759UTC source cases;13actual launcher scenarios each; no real system clock changes."
+      ]
     },
     {
       "path": "openpilot/common/display_scheduling.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-application/src/scheduling/mod.rs",
+        "rust/crates/ui-application/src/scheduling/native.rs",
+        "rust/upstream/display-scheduling-source.json"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-cluster-transport-validation.md",
+        "880 complete source scheduling sweeps/11 configurations HOST/ARM; actual UI constructors, hotplug, workers/child, failure order."
+      ]
     },
     {
       "path": "openpilot/common/egpu_diagnostics.py",
@@ -8641,9 +8929,14 @@
     {
       "path": "openpilot/common/impact_dashcam.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/impact-dashcam/src/lib.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-dm2-validation.md",
+        "1,125 complete original-source transitions/Params effects plus real filesystem readback; shared policy host/ARM verified. UI/manager/recording caller integration is parent-owned."
+      ]
     },
     {
       "path": "openpilot/common/jetlink_peer.py",
@@ -8656,15 +8949,23 @@
       "path": "openpilot/common/jetlink_status.py",
       "change": "A",
       "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "rust_targets": [
+        "rust/crates/jetlink/src/status.rs",
+        "rust/crates/jetlink/tests/status.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-model-audit.md: 6048 HOST/ARM schema cases and actual UI/server consumers; numeric coercion RED fixed with 252 source coercions passing HOST/ARM. Malformed container/string-order semantics still require final file audit; closure remains pending."
+      ]
     },
     {
       "path": "openpilot/common/params_keys.h",
       "change": "M",
       "disposition": "pending",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "docs/naver/dev-md-manager-validation.md",
+        "Remaining producer/lifecycle/removed-feature integration stays pending."
+      ]
     },
     {
       "path": "openpilot/common/poll_timeout.h",
@@ -8676,9 +8977,17 @@
     {
       "path": "openpilot/common/reboot.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/hardware-control/src/reboot/mod.rs",
+        "rust/crates/hardware-control/src/reboot/sound.rs",
+        "rust/crates/hardware-control/src/bin/reboot.rs",
+        "rust/crates/portaudio/src/blocking.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-reboot-validation.md",
+        "HOST and QEMU ARM fixed-asset PCM, bounded policy, actual owned child/ABI and caller gates passed. Complete source-frozen runtime and physical acceptance remain pending."
+      ]
     },
     {
       "path": "openpilot/common/rebuild_request.py",
@@ -8690,9 +8999,15 @@
     {
       "path": "openpilot/common/runtime_diagnostics.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/logging/src/diagnostics.rs",
+        "rust/crates/logging/src/runtime.rs",
+        "rust/crates/logging/src/communication.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-validation.md: final-source18314 metric updates and11205 actual message-state snapshots exact HOST/ARM; mutable Metric is the native in-place sample optimization, no history/tuple allocation. Live scheduler and failed-sink reset tests pass. Whole runtime/package acceptance remains separate."
+      ]
     },
     {
       "path": "openpilot/common/scons_cache_lock.py",
@@ -8704,16 +9019,29 @@
     {
       "path": "openpilot/common/startup_recovery.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/startup-recovery",
+        "rust/crates/carrot-recovery/src/actions/startup_action.rs",
+        "rust/crates/carrot-recovery/src/actions/startup_worker.rs",
+        "rust/crates/carrot-recovery/src/actions/repo_update/startup.rs",
+        "rust/crates/runtime-launcher/src/bootstrap/capture.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-startup-recovery-validation.md: source state5120, logs160/capture48, schedule4096, touch3072, logger768, platform160 HOST/ARM; raw84 + explicitly native-composed84 exact HOST RGBA layouts; actual GUI pointer/automatic/headless/cancel and owned action cleanup;14bootstrap HOST/ARM; native offline current-generation repair, installer48 HOST/ARM; original text exits0/1/2/-9 HOST/ARM.",
+        "Native source/package staging replaces active-checkout Git merge and SCons rebuild. Verified compressed archive is reused for same-source offline repair only after full identity/size/SHA checks; missing old cache needs download. Isolated action logger uses bounded interprocess lock. Physical boot/reboot and whole-runtime validation are not claimed."
+      ]
     },
     {
       "path": "openpilot/common/startup_touch_log.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/startup-recovery/src/touch_log.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-startup-recovery-validation.md: complete TouchLog source768 filesystem operations HOST/ARM; exact JSON/rotation/fsync/error-order; split UI/action owners add bounded shared process locking with a separate test."
+      ]
     },
     {
       "path": "openpilot/common/stopping_params.py",
@@ -8725,9 +9053,16 @@
     {
       "path": "openpilot/common/tests/test_build_time.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/runtime-launcher/src/bootstrap/clock.rs",
+        "rust/crates/runtime-launcher/src/bootstrap.rs",
+        "rust/fixtures/build-time-utc-final.json"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-clock-validation.md",
+        "HOST+ARM original policy cases and759UTC source cases;13actual launcher scenarios each; no real system clock changes."
+      ]
     },
     {
       "path": "openpilot/common/tests/test_display_scheduling.py",
@@ -8753,9 +9088,15 @@
     {
       "path": "openpilot/common/text_window.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/startup-ui/src/children.rs",
+        "rust/crates/startup-ui/src/native_children.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-startup-recovery-validation.md: source state5120, logs160/capture48, schedule4096, touch3072, logger768, platform160 HOST/ARM; raw84 + explicitly native-composed84 exact HOST RGBA layouts; actual GUI pointer/automatic/headless/cancel and owned action cleanup;14bootstrap HOST/ARM; native offline current-generation repair, installer48 HOST/ARM; original text exits0/1/2/-9 HOST/ARM.",
+        "Native source/package staging replaces active-checkout Git merge and SCons rebuild. Verified compressed archive is reused for same-source offline repair only after full identity/size/SHA checks; missing old cache needs download. Isolated action logger uses bounded interprocess lock. Physical boot/reboot and whole-runtime validation are not claimed."
+      ]
     },
     {
       "path": "openpilot/selfdrive/assets/fonts/process.py",
@@ -8816,16 +9157,24 @@
     {
       "path": "openpilot/selfdrive/carrot/bluetooth/daemon.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/bluetooth/src/activity.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-manager-validation.md"
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/bluetooth/model.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/bluetooth/src/journal.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-manager-validation.md"
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/bluetooth/tests/test_daemon.py",
@@ -8865,9 +9214,16 @@
     {
       "path": "openpilot/selfdrive/carrot/carrot_navi.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/carrot-navi/src/native/session.rs",
+        "rust/crates/carrot-navi/src/native/shared.rs",
+        "rust/crates/carrot-navi/src/native/socket.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-navigation-validation.md:source/native two-phone WebSocket ownership/1013/reconnect; sourcefilefinal onlyowner delta.",
+        "Whole source coverage, exact-head CI/package and user device acceptance remain separate open gates."
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/carrot_navi_cereal.py",
@@ -8921,9 +9277,15 @@
     {
       "path": "openpilot/selfdrive/carrot/cluster/cluster_wifi_display.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/cluster/src/usb/wifi.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-cluster-transport-validation.md (latest refresh; changed behavior only)"
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "14dd2ea07231a7eefa7be4ac7cf6c4ec1ddd6b7bc3e3c6530674f76ec44bc6a5"
     },
     {
       "path": "openpilot/selfdrive/carrot/cluster/cluster_wifi_protocol.py",
@@ -8942,16 +9304,29 @@
     {
       "path": "openpilot/selfdrive/carrot/cluster/main.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "native_equivalent",
+      "rust_targets": [
+        "rust/crates/cluster/src/jpeg_async"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-cluster-transport-validation.md: Pipeline owns and joins worker; Shared has no Pipeline back-reference; Rust errors do not retain Python traceback frames/frozen GC cycles."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "29a75b0ea874a62fbdcfc1ea7e2485c5f5755953bfe0d7a74c3e975cd097e5f2"
     },
     {
       "path": "openpilot/selfdrive/carrot/cluster_autorun.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/cluster/src/autorun/usb.rs",
+        "rust/crates/cluster/src/autorun/entry.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-cluster-transport-validation.md (latest refresh; changed behavior only)"
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "ec9ab3b211447a70768894d563fe16f94c1eda384213e9871fa6f972f40376fd"
     },
     {
       "path": "openpilot/selfdrive/carrot/cluster_run.py",
@@ -9103,23 +9478,42 @@
     {
       "path": "openpilot/selfdrive/carrot/server/features/dashcam/catalog.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/dashcam-upload/src/catalog.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-upload-validation.md:actualdefault/all-file scope source comparison and real transferbytes/hashes; explicitnonUTF8filename rejection retained.",
+        "Whole source coverage, exact-head CI/package and user device acceptance remain separate open gates."
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/server/features/dashcam/routes.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/carrot-server/src/dashcam/upload_http.rs",
+        "rust/crates/carrot-server/src/dashcam/upload_sync_http.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-upload-validation.md:45asyncHTTPboundaries+11syncpairs, strictBoolean, default/allfilesactualtransfers.",
+        "Whole source coverage, exact-head CI/package and user device acceptance remain separate open gates."
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/server/features/dashcam/upload_jobs.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/dashcam-upload/src/state.rs",
+        "rust/crates/dashcam-upload/src/manager.rs",
+        "rust/crates/dashcam-upload/src/worker.rs",
+        "rust/crates/dashcam-upload/src/engine.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-upload-validation.md:21jobs/2099transitions sourceexact; async/syncscopeflag propagatedtoactualchild and recipientbytes.",
+        "Whole source coverage, exact-head CI/package and user device acceptance remain separate open gates."
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/server/features/egpu_model.py",
@@ -9145,23 +9539,37 @@
     {
       "path": "openpilot/selfdrive/carrot/server/features/params.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/carrot-server/src/params_http.rs",
+        "rust/crates/carrot-server/src/restore_http.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-settings-validation.md"
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/server/features/screenrecord/catalog.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/carrot-server/src/screenrecord/info.rs",
+        "rust/crates/carrot-server/src/screenrecord/mod.rs"
+      ],
+      "evidence": [
+        "HOST+ARM240MP4/63timezone+Unicode cases; actual28policy/60HTTP/13FFmpeg subprocess pairs exact. Externalcodec provider is hostx86 during targetlogic gate; no deviceclaim. docs/naver/dev-md-screenrecord-validation.md."
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/server/features/screenrecord/routes.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/carrot-server/src/screenrecord/http.rs"
+      ],
+      "evidence": [
+        "HOST+ARM actual60HTTP responses exact inclinfo/cache/delete/retry/Range/conditionalmedia. docs/naver/dev-md-screenrecord-validation.md."
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/server/features/stream.py",
@@ -9194,23 +9602,40 @@
     {
       "path": "openpilot/selfdrive/carrot/server/services/params.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/carrot-server/src/params.rs",
+        "rust/crates/carrot-server/src/param_read.rs",
+        "rust/crates/carrot-server/src/param_qr",
+        "rust/crates/carrot-server/src/param_restore"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-settings-validation.md"
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/server/services/setting_profiles.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/carrot-server/src/setting_profiles"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-settings-validation.md"
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/server/services/settings.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/carrot-server/src/settings.rs",
+        "rust/crates/carrot-server/src/settings_menu.rs",
+        "rust/crates/carrot-server/src/settings_brand.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-settings-validation.md"
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/server/services/vision_test.py",
@@ -9432,9 +9857,16 @@
     {
       "path": "openpilot/selfdrive/carrot/signal_stop_prepare.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/plannerd/src/signal/prepare",
+        "rust/crates/plannerd/src/signal/mod.rs",
+        "rust/crates/plannerd/src/signal/geometry.rs",
+        "rust/crates/plannerd/src/signal/priority.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-signal-validation.md: full algorithm symbol closure; 7680 states, 576 strict geometry cases, 360 complete owners, 189 real-IO/fault owners per architecture; HOST and actual ARM original-source/record comparisons. Runtime subscription exceptional construction, QCOM and final package remain separate open gates."
+      ]
     },
     {
       "path": "openpilot/selfdrive/carrot/signal_stop_prepare_runtime.py",
@@ -9495,9 +9927,13 @@
     {
       "path": "openpilot/selfdrive/carrot/tests/test_cluster_wifi.py",
       "change": "A",
-      "disposition": "pending",
+      "disposition": "reference_only",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "8cb6946bebb13cef49042000e34bcd02a895625b77800b6bcfa137b7e3b658d2"
     },
     {
       "path": "openpilot/selfdrive/carrot/tests/test_cutout_mpc_integration.py",
@@ -9782,9 +10218,15 @@
     {
       "path": "openpilot/selfdrive/carrot/web/generated/asset-manifest.json",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "openpilot/selfdrive/carrot/web/generated/asset-manifest.json"
+      ],
+      "evidence": [
+        "Exact selected native/web source; generated web bundles rebuilt using existing builder. Firmware source/version updated, not flashed."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "c012fb4da64ecd76f5df52d7830163be0dc1e64571d325bcd0744d5499055a8e"
     },
     {
       "path": "openpilot/selfdrive/carrot/web/index.html",
@@ -9817,9 +10259,15 @@
     {
       "path": "openpilot/selfdrive/carrot/web/js/generated/tools.js",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "openpilot/selfdrive/carrot/web/js/generated/tools.js"
+      ],
+      "evidence": [
+        "Exact selected native/web source; generated web bundles rebuilt using existing builder. Firmware source/version updated, not flashed."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "326d4534c6fe5d78463a8d66f7adf55fd9e528f52789ed5488c7c89985bab871"
     },
     {
       "path": "openpilot/selfdrive/carrot/web/js/pages/car.js",
@@ -10027,9 +10475,15 @@
     {
       "path": "openpilot/selfdrive/carrot/web/src/features/tools/egpu_model.js",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "openpilot/selfdrive/carrot/web/src/features/tools/egpu_model.js"
+      ],
+      "evidence": [
+        "Exact selected native/web source; generated web bundles rebuilt using existing builder. Firmware source/version updated, not flashed."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "aafdccf082ffb263275845019e5684dd91290543ec41c2dc9af9ddffceb3454b"
     },
     {
       "path": "openpilot/selfdrive/carrot/web/src/features/tools/runtime.js",
@@ -10300,9 +10754,15 @@
     {
       "path": "openpilot/selfdrive/controls/lib/radar_only_warning.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/selfdrived/src/radar_only_warning.rs",
+        "rust/crates/selfdrived/src/controller/radar_warning.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-dm2-validation.md",
+        "960 actual-source updates including warnings/rejection/cooldown/rearm, host/ARM; source lane confidence helper shared with radard."
+      ]
     },
     {
       "path": "openpilot/selfdrive/controls/lib/steer_ratio.py",
@@ -10438,9 +10898,15 @@
     {
       "path": "openpilot/selfdrive/modeld/big_model.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/model-runtime/src"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-model-runtime-validation.md (latest refresh; changed behavior only)"
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "d404da11f2e341d53bae99c3c550ae012f0c63bcdc5080fe78517cfdb00e2621"
     },
     {
       "path": "openpilot/selfdrive/modeld/big_model_status.py",
@@ -10473,9 +10939,15 @@
     {
       "path": "openpilot/selfdrive/modeld/egpu_usb_wait.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/model-runtime/src"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-model-runtime-validation.md (latest refresh; changed behavior only)"
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "73f6beab418373e7147690b9b56ff70388cbfd32527f33724aee0cc608bf359f"
     },
     {
       "path": "openpilot/selfdrive/modeld/egpu_worker_progress.py",
@@ -10578,9 +11050,16 @@
     {
       "path": "openpilot/selfdrive/modeld/jetlink/phase.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/jetlink/src/phase.rs",
+        "rust/crates/jetlink/tests/phase.rs",
+        "rust/crates/jetlink/src/client.rs",
+        "rust/crates/dmonitoringmodeld/src/main.rs"
+      ],
+      "evidence": [
+        "Complete 93-line helper audit in docs/naver/dev-md-model-audit.md; source512 HOST/ARM plus real UDS/RPC owner gates; upload-completion publisher and C4 DM wait wired. Preserves16-byte packets,16-message drain,75ms freshness,5ms camera skew and25ms bounded wait. Rust socket failure/drop owns close; device timing remains unvalidated."
+      ]
     },
     {
       "path": "openpilot/selfdrive/modeld/jetlink/prepare.py",
@@ -10648,9 +11127,15 @@
     {
       "path": "openpilot/selfdrive/modeld/precompiled_model.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/model-runtime/src"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-model-runtime-validation.md (latest refresh; changed behavior only)"
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "f926b7c151d64c4967548ba4282f9db477f3f9dfd0273526f8cdcd1c1955bf92"
     },
     {
       "path": "openpilot/selfdrive/modeld/precompiled_runner.py",
@@ -10725,9 +11210,13 @@
     {
       "path": "openpilot/selfdrive/modeld/tests/test_big_model.py",
       "change": "M",
-      "disposition": "pending",
+      "disposition": "reference_only",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "96100767325b1bfe7168c6f695947293dc2876d9e04ca83b4e1b506261e5d2b3"
     },
     {
       "path": "openpilot/selfdrive/modeld/tests/test_big_model_delivery.py",
@@ -10753,9 +11242,13 @@
     {
       "path": "openpilot/selfdrive/modeld/tests/test_egpu_failure_containment.py",
       "change": "A",
-      "disposition": "pending",
+      "disposition": "reference_only",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "9e999030bd51f4aa7fcbae58862f44fe304dc5a93797cb04fe698ce5054e702b"
     },
     {
       "path": "openpilot/selfdrive/modeld/tests/test_egpu_recovery.py",
@@ -10830,16 +11323,24 @@
     {
       "path": "openpilot/selfdrive/modeld/tests/test_precompiled_artifact.py",
       "change": "A",
-      "disposition": "pending",
+      "disposition": "reference_only",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "704e574963a95528a13dfdfba3b61cc9a567cdfb937c461c4fb6af7d5fd78f2b"
     },
     {
       "path": "openpilot/selfdrive/modeld/tests/test_precompiled_model.py",
       "change": "M",
-      "disposition": "pending",
+      "disposition": "reference_only",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "be0d5c6793a2fb45c2e8e1c387e22d96186c5d340dda1a9d61a10e366c47c497"
     },
     {
       "path": "openpilot/selfdrive/modeld/tests/test_precompiled_rejection_retry.py",
@@ -10886,16 +11387,25 @@
     {
       "path": "openpilot/selfdrive/monitoring/config.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/manager/src/parameters.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-manager-validation.md"
+      ]
     },
     {
       "path": "openpilot/selfdrive/monitoring/dm2.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/monitoring/src/dm2.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-dm2-validation.md",
+        "Actual full DM2 policy fixtures plus 329 exact schema publications on host/ARM daemon; hidden policy checkpoints use 1e-10 tolerance."
+      ]
     },
     {
       "path": "openpilot/selfdrive/monitoring/dm2_cadence.py",
@@ -10907,16 +11417,29 @@
     {
       "path": "openpilot/selfdrive/monitoring/dm2_context.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/monitoring/src/context.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-dm2-validation.md",
+        "All context classes native; whole final dispatcher source and 329 exact host/ARM native IPC publications, including camera recovery/soft hold/cancel/pedal/steering edges."
+      ]
     },
     {
       "path": "openpilot/selfdrive/monitoring/dm2d.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/dmonitoringd/src/controller.rs",
+        "rust/crates/dmonitoringd/src/lib.rs",
+        "rust/crates/dmonitoringd/src/wire.rs",
+        "rust/crates/dmonitoringd/src/main.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-dm2-validation.md",
+        "Complete final run_dm2 loop + helpers/reference closure; 329 full host/ARM publications and SIGINT/SIGTERM checks. Native main selects this dispatcher."
+      ]
     },
     {
       "path": "openpilot/selfdrive/monitoring/dm_alerts.py",
@@ -11012,9 +11535,14 @@
     {
       "path": "openpilot/selfdrive/selfdrived/camera_config.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/selfdrived/src/helpers.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-dm2-validation.md",
+        "File contains only get_camera_packets(bool); both road-only/road+wide branches native, driver camera removed as final source. Helpers10241-step host report and final SelfdriveD host/ARM corpus bind exact final camera source SHA562613ba. No driver-model inference claim."
+      ]
     },
     {
       "path": "openpilot/selfdrive/selfdrived/events.py",
@@ -11026,16 +11554,27 @@
     {
       "path": "openpilot/selfdrive/selfdrived/impact_detector.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/selfdrived/src/impact_detector.rs",
+        "rust/crates/selfdrived/src/controller/impact.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-dm2-validation.md",
+        "Original source IMU fixture plus rejection/trigger cases, 43 focused host/ARM checks and whole controller 295 requests/9436 steps host/ARM."
+      ]
     },
     {
       "path": "openpilot/selfdrive/selfdrived/selfdrived.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/selfdrived/src/controller"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-dm2-validation.md",
+        "Whole final SelfdriveD class +16dependency hashes:295requests/9436steps HOST+ARM exact state/effects/publications; manager-cache optimization included. Native daemon lifecycle/integrated project acceptance remain separate."
+      ]
     },
     {
       "path": "openpilot/selfdrive/selfdrived/tests/test_camera_config.py",
@@ -11131,16 +11670,28 @@
     {
       "path": "openpilot/selfdrive/ui/dm_preview.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-application/src/onroad/driver_preview/policy.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-ui-validation.md:902actual-source vectors,144realVisionIPC/softwareGL exactRGB frames acrossbothlayouts.",
+        "Whole source coverage, exact-head CI/package and user device acceptance remain separate open gates."
+      ]
     },
     {
       "path": "openpilot/selfdrive/ui/impact_dashcam.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-application/src/impact_prompt.rs",
+        "rust/crates/ui-application/src/runtime/mod.rs",
+        "rust/crates/ui-framework/src/application.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-ui-validation.md:159sourceclass scenarios/2643transitions; realnav/render14frames perlayout plusKorean; no leakedcancel gesture.",
+        "Whole source coverage, exact-head CI/package and user device acceptance remain separate open gates."
+      ]
     },
     {
       "path": "openpilot/selfdrive/ui/layouts/settings/usbgpu.py",
@@ -11166,9 +11717,13 @@
     {
       "path": "openpilot/selfdrive/ui/mici/onroad/driver_state.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-application/src/mici/onroad/driver_state/data.rs"
+      ],
+      "evidence": [
+        "DM2 condition exact actualVisionIPC/RGBA24frames compact plus actual invalidmonitoring publications. docs/naver/dev-md-ui-validation.md."
+      ]
     },
     {
       "path": "openpilot/selfdrive/ui/mici/onroad/hud_renderer.py",
@@ -11215,16 +11770,26 @@
     {
       "path": "openpilot/selfdrive/ui/onroad/driver_preview.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-application/src/onroad/driver_preview/mod.rs",
+        "rust/crates/ui-application/src/onroad/camera/mod.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-ui-validation.md:144realVisionIPC/softwareGL exactRGB frames; passiveParam/touch ownership; deviceEGL remains usergate.",
+        "Whole source coverage, exact-head CI/package and user device acceptance remain separate open gates."
+      ]
     },
     {
       "path": "openpilot/selfdrive/ui/onroad/driver_state.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-application/src/onroad/driver_state/mod.rs"
+      ],
+      "evidence": [
+        "DM2 onroad-disabled condition exact actualVisionIPC/RGBA24frames large; offroad remains visible. docs/naver/dev-md-ui-validation.md."
+      ]
     },
     {
       "path": "openpilot/selfdrive/ui/onroad/hud_renderer.py",
@@ -11250,16 +11815,25 @@
     {
       "path": "openpilot/selfdrive/ui/overlay_state.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-application/src/overlay_state.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-ui-validation.md: all40fields/urgent rules384 source Cereal states HOST/ARM and512 actualVisionIPC fullowner frames; final-source complete graphics reference. Narrow source-file closure, final runtime remains open."
+      ]
     },
     {
       "path": "openpilot/selfdrive/ui/radar_display.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-application/src/radar_display.rs",
+        "rust/crates/ui-application/src/onroad/model_renderer/radar.rs"
+      ],
+      "evidence": [
+        "Exact pinned source selection1370cases HOST+ARM/QEMU; actual big modelrenderer510frames includes support/error/empty/stale/displaypoint replacement. docs/naver/dev-md-ui-validation.md."
+      ]
     },
     {
       "path": "openpilot/selfdrive/ui/road_markings.py",
@@ -11278,9 +11852,15 @@
     {
       "path": "openpilot/selfdrive/ui/soundd.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/soundd/src/policy.rs",
+        "rust/crates/soundd/src/runtime.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-sound-validation.md:6scenarios/153steps/6672samples bitexact HOSTandARM/QEMU; noaudiohardware.",
+        "Whole source coverage, exact-head CI/package and user device acceptance remain separate open gates."
+      ]
     },
     {
       "path": "openpilot/selfdrive/ui/tests/test_carrot_hud_renderer.py",
@@ -11432,65 +12012,116 @@
     {
       "path": "openpilot/selfdrive/ui/vision_status.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-application/src/vision_status/mod.rs",
+        "rust/crates/ui-application/src/vision_status/blindspot.rs"
+      ],
+      "evidence": [
+        "Pinned parse/display685cases plus provenance1024cases HOST+ARM/QEMU; actual large510/compact318modelrenderer frames include OEM/vision/combinedcolor and invalid-radar fallback. docs/naver/dev-md-ui-validation.md."
+      ]
     },
     {
       "path": "openpilot/system/camerad/SConscript",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/camerad-runtime/Cargo.toml"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-camera-validation.md",
+        "512 source scenarios/72493 transitions exact HOST+ARM original/native;20 complete native daemon IPC gates (10 HOST/10 ARM), actual owned kernel ABI, exposure/cereal/VisionIPC and resource cleanup. No real camera device."
+      ]
     },
     {
       "path": "openpilot/system/camerad/cameras/async_frame_wait.h",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/camerad-runtime/src/frame_wait.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-camera-validation.md",
+        "512 source scenarios/72493 transitions exact HOST+ARM original/native;20 complete native daemon IPC gates (10 HOST/10 ARM), actual owned kernel ABI, exposure/cereal/VisionIPC and resource cleanup. No real camera device."
+      ]
     },
     {
       "path": "openpilot/system/camerad/cameras/camera_qcom2.cc",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/camerad-runtime/src/runtime.rs",
+        "rust/crates/camera-kernel/src/native/events.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-camera-validation.md",
+        "512 source scenarios/72493 transitions exact HOST+ARM original/native;20 complete native daemon IPC gates (10 HOST/10 ARM), actual owned kernel ABI, exposure/cereal/VisionIPC and resource cleanup. No real camera device."
+      ]
     },
     {
       "path": "openpilot/system/camerad/cameras/spectra.cc",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/camerad/src/requests.rs",
+        "rust/crates/camerad-runtime/src/camera.rs",
+        "rust/crates/camerad-runtime/src/sensor.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-camera-validation.md",
+        "512 source scenarios/72493 transitions exact HOST+ARM original/native;20 complete native daemon IPC gates (10 HOST/10 ARM), actual owned kernel ABI, exposure/cereal/VisionIPC and resource cleanup. No real camera device."
+      ]
     },
     {
       "path": "openpilot/system/camerad/cameras/spectra.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/camerad-runtime/src/camera.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-camera-validation.md",
+        "512 source scenarios/72493 transitions exact HOST+ARM original/native;20 complete native daemon IPC gates (10 HOST/10 ARM), actual owned kernel ABI, exposure/cereal/VisionIPC and resource cleanup. No real camera device."
+      ]
     },
     {
       "path": "openpilot/system/camerad/test/SConscript",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/camerad-runtime/Cargo.toml",
+        "rust/tools/check_camerad_ci.py"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-camera-validation.md",
+        "512 source scenarios/72493 transitions exact HOST+ARM original/native;20 complete native daemon IPC gates (10 HOST/10 ARM), actual owned kernel ABI, exposure/cereal/VisionIPC and resource cleanup. No real camera device."
+      ]
     },
     {
       "path": "openpilot/system/camerad/test/test_async_frame_wait.cc",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/camerad-runtime/src/frame_wait.rs",
+        "rust/tools/camerad_runtime_check.py"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-camera-validation.md",
+        "512 source scenarios/72493 transitions exact HOST+ARM original/native;20 complete native daemon IPC gates (10 HOST/10 ARM), actual owned kernel ABI, exposure/cereal/VisionIPC and resource cleanup. No real camera device."
+      ]
     },
     {
       "path": "openpilot/system/hardware/hardwared.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/hardwared/src/policy.rs",
+        "rust/crates/hardwared/tests/contracts.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-validation.md",
+        "Pinned source Tesla ignition-off RED reproduced;15 complete hardware scenarios/953 observations HOST/ARM after removal of stale started latch; power-awake policy preserved."
+      ]
     },
     {
       "path": "openpilot/system/hardware/tici/hardware.py",
@@ -11574,7 +12205,10 @@
       "change": "M",
       "disposition": "pending",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "docs/naver/dev-md-manager-validation.md",
+        "Remaining producer/lifecycle/removed-feature integration stays pending."
+      ]
     },
     {
       "path": "openpilot/system/manager/process.py",
@@ -11588,7 +12222,10 @@
       "change": "M",
       "disposition": "pending",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "docs/naver/dev-md-manager-validation.md",
+        "Remaining producer/lifecycle/removed-feature integration stays pending."
+      ]
     },
     {
       "path": "openpilot/system/manager/process_crash.py",
@@ -11635,9 +12272,14 @@
     {
       "path": "openpilot/system/manager/xiaoge_startup.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/manager/src/xiaoge_startup.rs",
+        "rust/crates/manager/src/runtime.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-manager-validation.md"
+      ]
     },
     {
       "path": "openpilot/system/proclog_smaps.py",
@@ -11724,9 +12366,19 @@
     {
       "path": "openpilot/system/tests/test_startup_recovery.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/startup-recovery/src/state/tests.rs",
+        "rust/crates/startup-recovery/src/logs/tests.rs",
+        "rust/crates/startup-ui/src/recovery/layout/tests.rs",
+        "rust/crates/carrot-recovery/tests/startup_recovery.rs",
+        "rust/crates/runtime-installer/tests/cli.rs",
+        "rust/crates/startup-ui/src/children.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-startup-recovery-validation.md: source state5120, logs160/capture48, schedule4096, touch3072, logger768, platform160 HOST/ARM; raw84 + explicitly native-composed84 exact HOST RGBA layouts; actual GUI pointer/automatic/headless/cancel and owned action cleanup;14bootstrap HOST/ARM; native offline current-generation repair, installer48 HOST/ARM; original text exits0/1/2/-9 HOST/ARM.",
+        "Native source/package staging replaces active-checkout Git merge and SCons rebuild. Verified compressed archive is reused for same-source offline repair only after full identity/size/SHA checks; missing old cache needs download. Isolated action logger uses bounded interprocess lock. Physical boot/reboot and whole-runtime validation are not claimed."
+      ]
     },
     {
       "path": "openpilot/system/tests/test_startup_touch_log.py",
@@ -11787,9 +12439,14 @@
     {
       "path": "openpilot/system/ui/lib/overlay_cache.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/startup-ui/src/overlay_cache.rs",
+        "rust/crates/ui-application/src/display_clock.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-ui-validation.md: all OverlayLayer state/FBO operations2048 HOST/ARM; DisplayClock source600states and integrated model828frames; actualGPU320 plus ES2stub320 frames. NativeCanvas,model,HUD,Road selected; no targetGPU/device claim."
+      ]
     },
     {
       "path": "openpilot/system/ui/lib/shader_polygon.py",
@@ -11808,37 +12465,67 @@
     {
       "path": "openpilot/system/ui/lib/text_draw.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-framework/src/styled_text.rs",
+        "rust/crates/startup-ui/src/renderer/fonts.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-ui-validation.md",
+        "Final font selection and native styled text:72 raw font renders/measurements exact;828 model and512 real VisionIPC Road frames revalidated with pinned final graphics owners."
+      ]
     },
     {
       "path": "openpilot/system/ui/lib/text_measure.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-framework/src/text_layout.rs",
+        "rust/crates/startup-ui/src/renderer/fonts.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-ui-validation.md",
+        "Native direct typed-font measurement has no global hash-only cache, eliminating collision/unbounded retention.72 measurements/renders exact; no CPU savings claim."
+      ]
     },
     {
       "path": "openpilot/system/ui/lib/wrap_text.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-framework/src/text_layout.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-ui-validation.md",
+        "Whole-text font resolution; mixed ASCII/Hangul wrap/elision/emoji source pixel regression passes."
+      ]
     },
     {
       "path": "openpilot/system/ui/startup_recovery.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/startup-ui/src/recovery",
+        "rust/crates/startup-ui/src/bin/startup_recovery.rs",
+        "rust/crates/runtime-launcher/src/bootstrap/failure.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-startup-recovery-validation.md: source state5120, logs160/capture48, schedule4096, touch3072, logger768, platform160 HOST/ARM; raw84 + explicitly native-composed84 exact HOST RGBA layouts; actual GUI pointer/automatic/headless/cancel and owned action cleanup;14bootstrap HOST/ARM; native offline current-generation repair, installer48 HOST/ARM; original text exits0/1/2/-9 HOST/ARM.",
+        "Native source/package staging replaces active-checkout Git merge and SCons rebuild. Verified compressed archive is reused for same-source offline repair only after full identity/size/SHA checks; missing old cache needs download. Isolated action logger uses bounded interprocess lock. Physical boot/reboot and whole-runtime validation are not claimed."
+      ]
     },
     {
       "path": "openpilot/system/ui/widgets/label.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/ui-framework/src/label.rs",
+        "rust/crates/ui-framework/src/unified_label.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-ui-validation.md",
+        "Complete label effective font and cache invalidation;9 scene union matches original state/pixels, including three mixed-language regressions."
+      ]
     },
     {
       "path": "openpilot/tools/jotpluggler/sketch_layout.cc",
@@ -11850,93 +12537,158 @@
     {
       "path": "panda/board/SConscript",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "rust/crates/dev-tools/src/panda_build.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/drivers/bootkick.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/drivers/bootkick.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/drivers/bootkick_declarations.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/drivers/bootkick_declarations.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/drivers/can_common.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/drivers/can_common.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/drivers/can_common_declarations.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/drivers/can_common_declarations.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/drivers/fdcan.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/drivers/fdcan.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/drivers/timers.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/drivers/timers.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/fake_stm.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/fake_stm.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/health.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/health.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/main.c",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/main.c"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/main_comms.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/main_comms.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/stm32h7/llfdcan.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/stm32h7/llfdcan.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/board/stm32h7/sound.h",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "panda/board/stm32h7/sound.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All251 public inputs equal pin; native Rust build tool compiled/linked all6 complete images and verified signatures/bootstubs with pinned GCC13.2.rel1. External safety firmware retained as C, not a Rust conversion claim."
+      ]
     },
     {
       "path": "panda/python/__init__.py",
@@ -11976,23 +12728,41 @@
     {
       "path": "panda/tests/test_bootkick.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/dev-tools/src/panda_hooks/ignition.rs",
+        "rust/crates/dev-tools/data/panda-hooks/ignition-final.json.gz"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All45 original source tests pass before capture;1001 actual original wake/stock calls with complete globals/bootkick state after every operation and explicit reads/writes migrated to data fixture+native Rust/C driver. Repeated HOST+actualARM C execution passes without Python/CFFI; native CLI admits173 pinned productionC/H sources. Full broader libpanda API/build option migration remains separate."
+      ]
     },
     {
       "path": "panda/tests/test_ignition_can.py",
       "change": "M",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/dev-tools/src/panda_hooks/ignition.rs",
+        "rust/crates/dev-tools/data/panda-hooks/ignition-final.json.gz"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All45 original source tests pass before capture;1001 actual original wake/stock calls with complete globals/bootkick state after every operation and explicit reads/writes migrated to data fixture+native Rust/C driver. Repeated HOST+actualARM C execution passes without Python/CFFI; native CLI admits173 pinned productionC/H sources. Full broader libpanda API/build option migration remains separate."
+      ]
     },
     {
       "path": "panda/tests/test_tesla_stock_ignition.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/dev-tools/src/panda_hooks/ignition.rs",
+        "rust/crates/dev-tools/data/panda-hooks/ignition-final.json.gz"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md",
+        "All45 original source tests pass before capture;1001 actual original wake/stock calls with complete globals/bootkick state after every operation and explicit reads/writes migrated to data fixture+native Rust/C driver. Repeated HOST+actualARM C execution passes without Python/CFFI; native CLI admits173 pinned productionC/H sources. Full broader libpanda API/build option migration remains separate."
+      ]
     },
     {
       "path": "scripts/ensure_params_build.sh",
@@ -12277,9 +13047,18 @@
     {
       "path": "third_party/jetlink/jetlink/server/telemetry.py",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "implemented_host_validated",
+      "rust_targets": [
+        "rust/crates/jetlink/src/host_telemetry.rs",
+        "rust/crates/jetlink/src/host_telemetry_source.rs",
+        "rust/crates/jetlink/src/host_telemetry_snapshot.rs",
+        "rust/crates/jetlink/src/host_telemetry_tegra.rs",
+        "rust/crates/jetlink/src/host_telemetry_nvml.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-model-runtime-validation.md",
+        "104 lib HOST/ARM including83 source sysfs cases,2 thread lifecycles,7 inert NVML ABI cases, real loaded/reconnect Session health through HELLO/STATE/WANT_STATE; all-target Clippy and CLI/TCP/status gates. No physical sensor/GPU."
+      ]
     },
     {
       "path": "third_party/jetlink/jetlink/spec.py",
@@ -12389,16 +13168,24 @@
     {
       "path": "tools/carrot_route_vault/tests/test_viewer.py",
       "change": "M",
-      "disposition": "pending",
+      "disposition": "outside_runtime_scope",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "514d7f4abc92ebeae7761b5f86d85fe4607e9aed6498c94a4989521d822c6e09"
     },
     {
       "path": "tools/carrot_route_vault/viewer.py",
       "change": "M",
-      "disposition": "pending",
+      "disposition": "outside_runtime_scope",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "eeb17199601e112cb9c91c47f2b8179ce7706ab4deeeba0d6147b5e9e3121950"
     },
     {
       "path": "tools/docs/wiki_settings/patches/README.md",
@@ -12445,9 +13232,13 @@
     {
       "path": "tools/esp32s3_display/README.md",
       "change": "A",
-      "disposition": "pending",
+      "disposition": "outside_runtime_scope",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "e0fd29fbcd47125998ce731ff446366dc7b466b6abd77ac5499aa6678cf36a40"
     },
     {
       "path": "tools/esp32s3_display/firmware/.gitignore",
@@ -12459,9 +13250,15 @@
     {
       "path": "tools/esp32s3_display/firmware/CMakeLists.txt",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "tools/esp32s3_display/firmware/CMakeLists.txt"
+      ],
+      "evidence": [
+        "Exact selected native/web source; generated web bundles rebuilt using existing builder. Firmware source/version updated, not flashed."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "d91b07ef5a00e9da96f4177fdcac7064d503a4d5ad33baf4a23eff086cded2fa"
     },
     {
       "path": "tools/esp32s3_display/firmware/main/CMakeLists.txt",
@@ -12515,9 +13312,15 @@
     {
       "path": "tools/esp32s3_display/firmware/main/usb_bridge.c",
       "change": "A",
-      "disposition": "pending",
-      "rust_targets": [],
-      "evidence": []
+      "disposition": "external_native_boundary",
+      "rust_targets": [
+        "tools/esp32s3_display/firmware/main/usb_bridge.c"
+      ],
+      "evidence": [
+        "Exact selected native/web source; generated web bundles rebuilt using existing builder. Firmware source/version updated, not flashed."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "5eead2520c96ff5ba56b1c5bf28217503b4e30ae98751296765388e2bc179370"
     },
     {
       "path": "tools/esp32s3_display/firmware/partitions.csv",
@@ -12536,9 +13339,13 @@
     {
       "path": "tools/esp32s3_display/provision.py",
       "change": "A",
-      "disposition": "pending",
+      "disposition": "outside_runtime_scope",
       "rust_targets": [],
-      "evidence": []
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "5c18a36b2acd363efec3f1b5f7edc94f876f30e920399734afd69178de0ec459"
     },
     {
       "path": "tools/jetlink/OFFLINE-HOTFIX.md",
@@ -13694,6 +14501,353 @@
       "disposition": "pending",
       "rust_targets": [],
       "evidence": []
+    },
+    {
+      "path": "docs/hud_retry_memory_20261015.md",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "83f083fb50332148535a162b6702efde67a8614b28d394ff58dd70f1024f9fc1"
+    },
+    {
+      "path": "docs/md_v3_20261015.md",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "affa656f00192f627c0974f71583ea88ccf7e7e2baf713c5396c6755a7b3965c"
+    },
+    {
+      "path": "docs/s3_release_20261015.md",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "a220b5d54128b31d11bc050ebdf70221920e7c16f50face9e5a563fe2f66e724"
+    },
+    {
+      "path": "docs/tesla_pr551_review_20261015.md",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "c485e66eb34b92c3588ee21dc03234fdbb99f1558134e0d4f4e155840c59ab31"
+    },
+    {
+      "path": "opendbc_repo/opendbc/car/tesla/carcontroller.py",
+      "change": "M",
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/card/src/brands/tesla/controller.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md (latest refresh; changed behavior only)"
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "b930ebec89be9f2dfc46df60a79df9136800a0c4da846fb2fc0f64cc7683428c"
+    },
+    {
+      "path": "opendbc_repo/opendbc/car/tesla/coop_steering.py",
+      "change": "M",
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/card/src/brands/tesla/steering.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md (latest refresh; changed behavior only)"
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "96e811c9f950b9d05bdeae2e522f18bd11e9887ce93741be34585caa7085a1c2"
+    },
+    {
+      "path": "opendbc_repo/opendbc/car/tesla/tests/test_controller_feedback.py",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "b5f4ace0b82c4391edbef08eb9a84726534619ef185dc4a0a52eeacaa7561c26"
+    },
+    {
+      "path": "opendbc_repo/opendbc/car/tesla/tests/test_coop_steering.py",
+      "change": "M",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "ecba3f3587884a840e9af1c1775ec928a54ac917756de44a4cb3b2fb10d40444"
+    },
+    {
+      "path": "opendbc_repo/opendbc/safety/safety/safety_tesla.h",
+      "change": "M",
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "opendbc_repo/opendbc/safety/safety/safety_tesla.h"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-vehicle-validation.md (latest refresh; changed behavior only)"
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "2d8af53185ce2cb55c9a1516dc300803391715127a6c7dfa1115d36e426f1b28"
+    },
+    {
+      "path": "opendbc_repo/opendbc/safety/tests/test_tesla.py",
+      "change": "M",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "ed7d9ef37f1f57d4e30e0843249ec013f8178ecfb3c173ad58ec6b588dbe9e78"
+    },
+    {
+      "path": "openpilot/selfdrive/carrot/cluster/cluster_profile.py",
+      "change": "M",
+      "disposition": "native_equivalent",
+      "rust_targets": [
+        "rust/crates/cluster/src/jpeg_async"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-cluster-transport-validation.md: Pipeline owns and joins worker; Shared has no Pipeline back-reference; Rust errors do not retain Python traceback frames/frozen GC cycles."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "7fa345325b68b04b1b8f01a4bf5b56af4606409c1a31ccad5ec5217cdeb08f0d"
+    },
+    {
+      "path": "openpilot/selfdrive/carrot/tests/test_cluster_gc_lifecycle.py",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "6fddac01d4272090e5f6d3afc1c9458aa128e652653fb4c976c9642986be6cab"
+    },
+    {
+      "path": "openpilot/selfdrive/carrot/tests/test_cluster_retry_logging.py",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "27b250135f8875e797d66b90d31c3a63f282c176afe45d163481b9a3b0bcbbcc"
+    },
+    {
+      "path": "openpilot/selfdrive/controls/lib/latcontrol_angle.py",
+      "change": "M",
+      "disposition": "implemented_focused_validated",
+      "rust_targets": [
+        "rust/crates/controlsd/src/lateral.rs"
+      ],
+      "evidence": [
+        "docs/naver/dev-md-latest-refresh.md (latest refresh; changed behavior only)"
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "d01c571d063538f18d47c74b0e8ba6c444fe7c8dff2bb7d8a01d492f48c57dad"
+    },
+    {
+      "path": "openpilot/selfdrive/controls/tests/test_angle_saturation.py",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "fa482b0ae8e45c63acf6d2058c17cec6547290518b28f17596e2d31ec82e9a3d"
+    },
+    {
+      "path": "openpilot/selfdrive/modeld/tests/fixtures/md_v3_metadata.json",
+      "change": "A",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "b50521bb1b55a65ffbb2f7e82b4cae2e9bb9f6dd6d2ff9712006a0b69c6a7208"
+    },
+    {
+      "path": "openpilot/system/tests/test_panda_firmware_version.py",
+      "change": "M",
+      "disposition": "reference_only",
+      "rust_targets": [],
+      "evidence": [
+        "Source documentation or reference test; corresponding runtime evidence is in docs/naver/dev-md-latest-refresh.md."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "36b02189bfec2cf35d9d29cccae5866be5c19053a73560d95288d15f8457f733"
+    },
+    {
+      "path": "tools/esp32s3_display/INSTALL_KO.md",
+      "change": "A",
+      "disposition": "outside_runtime_scope",
+      "rust_targets": [],
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "7c803d4da978519dc23c63306a1cf19931d10e7ab57f9ead16ebe27a3668cc6e"
+    },
+    {
+      "path": "tools/esp32s3_display/installer/index.html",
+      "change": "A",
+      "disposition": "outside_runtime_scope",
+      "rust_targets": [],
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "7f32153e914804f8fde6427f4e5e65a10a171d7fb8e9300362dddb89d8c3ebbd"
+    },
+    {
+      "path": "tools/esp32s3_display/installer/installer.js",
+      "change": "A",
+      "disposition": "outside_runtime_scope",
+      "rust_targets": [],
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "77aa79392d6b0b99781125fdcd9cea259735d6b80aecb97a6854ac1351435a43"
+    },
+    {
+      "path": "tools/esp32s3_display/installer/manifest.mjs",
+      "change": "A",
+      "disposition": "outside_runtime_scope",
+      "rust_targets": [],
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "8031ea761e35def95ca1ad5d4bc348114d85c356a4547f7c3c1b4b4a0a56e28c"
+    },
+    {
+      "path": "tools/esp32s3_display/installer/tests/install_flow.test.mjs",
+      "change": "A",
+      "disposition": "outside_runtime_scope",
+      "rust_targets": [],
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "a623c1122e0b6e9015802bf2feed16e10e6ec29e709629f3193d398aa298da6e"
+    },
+    {
+      "path": "tools/esp32s3_display/installer/tests/manifest.test.mjs",
+      "change": "A",
+      "disposition": "outside_runtime_scope",
+      "rust_targets": [],
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "3cbe1ac4495298e483069b038b83825dface66d270a912d835bc3d4875eab5eb"
+    },
+    {
+      "path": "tools/esp32s3_display/package_release.py",
+      "change": "A",
+      "disposition": "outside_runtime_scope",
+      "rust_targets": [],
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "a9ab0874e8a556e6ab61749b01c74a251592a2d491f9fee60b927ea8d44124f9"
+    },
+    {
+      "path": "tools/modeld/build_md_v3_package.py",
+      "change": "A",
+      "disposition": "outside_runtime_scope",
+      "rust_targets": [],
+      "evidence": [
+        "Upstream service/installer/development-tool change retained by source SHA; no repository-wide tool conversion or stable NAS publication in this dev-md runtime task."
+      ],
+      "reviewed_source_commit": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+      "source_sha256": "d9b333d119cd8904bf11dd3a8ec30e2702ee5ef06631e71a203364b3487e8660"
     }
-  ]
+  ],
+  "scope": "Only upstream changed runtime behavior and necessary compatibility; development/build/test-tool conversion is owned by separate #296 session. Baseline API parity and broad full-project tests are not gates.",
+  "previous_source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "latest_refresh": {
+    "from": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+    "to": "8e7eec049241b6ba384e9197aacdfb01f7d88ed3",
+    "commits": 9,
+    "runtime_status": "implemented_focused_validation",
+    "scope": "MD v3 selection/runtime, Tesla control/safety/angle saturation, S3 shutdown/retry behavior, web model name. No development tool conversion.",
+    "files": [
+      ".github/workflows/mdm-model.yaml",
+      "AGENTS.md",
+      "docs/hud_retry_memory_20261015.md",
+      "docs/md_v3_20261015.md",
+      "docs/s3_release_20261015.md",
+      "docs/tesla_pr551_review_20261015.md",
+      "docs/user/en/settings.md",
+      "docs/user/ko/settings.md",
+      "opendbc_repo/opendbc/car/tesla/carcontroller.py",
+      "opendbc_repo/opendbc/car/tesla/coop_steering.py",
+      "opendbc_repo/opendbc/car/tesla/tests/test_controller_feedback.py",
+      "opendbc_repo/opendbc/car/tesla/tests/test_coop_steering.py",
+      "opendbc_repo/opendbc/safety/safety/safety_tesla.h",
+      "opendbc_repo/opendbc/safety/tests/test_tesla.py",
+      "openpilot/selfdrive/carrot/cluster/cluster_profile.py",
+      "openpilot/selfdrive/carrot/cluster/cluster_wifi_display.py",
+      "openpilot/selfdrive/carrot/cluster/main.py",
+      "openpilot/selfdrive/carrot/cluster_autorun.py",
+      "openpilot/selfdrive/carrot/tests/test_cluster_gc_lifecycle.py",
+      "openpilot/selfdrive/carrot/tests/test_cluster_retry_logging.py",
+      "openpilot/selfdrive/carrot/tests/test_cluster_wifi.py",
+      "openpilot/selfdrive/carrot/web/generated/asset-manifest.json",
+      "openpilot/selfdrive/carrot/web/js/generated/tools.js",
+      "openpilot/selfdrive/carrot/web/src/features/tools/egpu_model.js",
+      "openpilot/selfdrive/controls/lib/latcontrol_angle.py",
+      "openpilot/selfdrive/controls/tests/test_angle_saturation.py",
+      "openpilot/selfdrive/modeld/big_model.py",
+      "openpilot/selfdrive/modeld/egpu_usb_wait.py",
+      "openpilot/selfdrive/modeld/precompiled_model.py",
+      "openpilot/selfdrive/modeld/tests/fixtures/md_v3_metadata.json",
+      "openpilot/selfdrive/modeld/tests/test_big_model.py",
+      "openpilot/selfdrive/modeld/tests/test_egpu_failure_containment.py",
+      "openpilot/selfdrive/modeld/tests/test_precompiled_artifact.py",
+      "openpilot/selfdrive/modeld/tests/test_precompiled_model.py",
+      "openpilot/system/tests/test_panda_firmware_version.py",
+      "tools/carrot_route_vault/tests/test_viewer.py",
+      "tools/carrot_route_vault/viewer.py",
+      "tools/esp32s3_display/INSTALL_KO.md",
+      "tools/esp32s3_display/README.md",
+      "tools/esp32s3_display/firmware/CMakeLists.txt",
+      "tools/esp32s3_display/firmware/main/usb_bridge.c",
+      "tools/esp32s3_display/installer/index.html",
+      "tools/esp32s3_display/installer/installer.js",
+      "tools/esp32s3_display/installer/manifest.mjs",
+      "tools/esp32s3_display/installer/tests/install_flow.test.mjs",
+      "tools/esp32s3_display/installer/tests/manifest.test.mjs",
+      "tools/esp32s3_display/package_release.py",
+      "tools/esp32s3_display/provision.py",
+      "tools/modeld/build_md_v3_package.py"
+    ],
+    "record": "docs/naver/dev-md-latest-refresh.md"
+  },
+  "coverage_note": "coverage_complete remains false for the historical whole-file inventory. It is not a count of missing changed-runtime ports. Latest refresh dispositions cover all49 changed source paths; no claim of whole-project API parity or device acceptance."
 }

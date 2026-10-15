@@ -80,7 +80,7 @@ pub(crate) fn count_items(sections: &[Value], by_name: &Value) -> Result<usize, 
     for section in sections {
         for name in array(section.get("items"))? {
             if let Some(item) = field(fields(by_name)?, &key(name)?) {
-                if !item.get("detail_parent").truth() {
+                if !item.get("detail_parent").truth() && !item.get("search_only").truth() {
                     count += 1;
                 }
             }

@@ -8,6 +8,34 @@ use std::{collections::HashMap, fs, io::Write, path::PathBuf};
 mod read;
 pub use read::BackupSchema;
 
+pub fn internal_session(name: &str) -> bool {
+    matches!(
+        name,
+        "DriverMonitoringSessionDisabled" | "JetsonLegacyUpdatePending"
+    )
+}
+
+pub fn backup_excluded(name: &str) -> bool {
+    internal_session(name) || name == "DriverMonitoringEnabled"
+}
+
+pub fn filter_backup(values: &Value) -> Result<Value, Error> {
+    let Value::Object(fields) = values else {
+        return Err(Error::Source("bad json format (must be object)".into()));
+    };
+    Ok(Value::Object(
+        fields
+            .iter()
+            .filter(|(key, _)| {
+                !Value::Text(key.clone())
+                    .string()
+                    .is_ok_and(|name| backup_excluded(&name))
+            })
+            .cloned()
+            .collect(),
+    ))
+}
+
 pub struct Backend {
     native: Option<Params>,
     memory: HashMap<String, String>,
@@ -204,6 +232,9 @@ impl Backend {
     }
 
     pub fn put(&mut self, name: &str, value: &Value, setting: Option<&Value>) -> Result<(), Error> {
+        if internal_session(name) {
+            return Err(Error::Source(format!("{name} is controlled internally")));
+        }
         let Some(params) = &self.native else {
             self.memory.insert(name.into(), value.string()?);
             return Ok(());
@@ -256,10 +287,17 @@ impl Backend {
         };
         if kind.is_some() {
             // Original Cython registered puts discard the C++ filesystem status.
-            return match params.put(name, raw.as_bytes()) {
-                Ok(()) | Err(openpilot_params::Error::Io(_)) => Ok(()),
-                Err(error) => Err(error.into()),
-            };
+            match params.put(name, raw.as_bytes()) {
+                Ok(()) | Err(openpilot_params::Error::Io(_)) => {}
+                Err(error) => return Err(error.into()),
+            }
+            if name == "DriverMonitoringEnabled"
+                && !bool_value(value)?
+                && params.get("IsOnroad").ok().flatten().as_deref() != Some(b"1")
+            {
+                self.remove("Offroad_DriverMonitoringUncertain")?;
+            }
+            return Ok(());
         }
         if setting.is_none() {
             return Err(crate::param_native::unknown(name));

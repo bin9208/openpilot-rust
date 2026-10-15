@@ -3,7 +3,7 @@ mod copy;
 mod digest_cache;
 mod record;
 
-use super::{assets, pinned_manifest, Error};
+use super::{assets, known_manifest, Error};
 use crate::model::{Manifest, Paths};
 use record::Record;
 use std::{
@@ -12,8 +12,8 @@ use std::{
 };
 
 fn supported(model: &Manifest) -> bool {
-    let pinned = pinned_manifest();
-    model.sha256 == pinned.sha256 && model.size == pinned.size && model.precompiled_only()
+    known_manifest(&model.sha256)
+        .is_some_and(|pinned| model.size == pinned.size && model.precompiled_only())
 }
 
 pub fn seed(paths: &Paths, model: &Manifest) -> Result<bool, Error> {
@@ -23,6 +23,9 @@ pub fn seed(paths: &Paths, model: &Manifest) -> Result<bool, Error> {
     let Some(record) = Record::read(&paths.assets)? else {
         return Ok(false);
     };
+    if record.model_sha256 != model.sha256 {
+        return Ok(false);
+    }
     record.package(&paths.assets)?;
     let source = record.model(&paths.assets)?;
     copy::materialize(&source, &paths.cache.join(model.cache_filename()), model)?;
@@ -40,7 +43,7 @@ pub fn installed(model: &Manifest, cache: &Path, assets: &Path) -> Result<Option
     let Some(record) = Record::read(&root)? else {
         return Ok(None);
     };
-    if Record::read(assets)?.as_ref() != Some(&record) {
+    if record.model_sha256 != model.sha256 || Record::read(assets)?.as_ref() != Some(&record) {
         return Err(Error::Invalid(
             "cached native provider differs from installed package".into(),
         ));
@@ -48,7 +51,7 @@ pub fn installed(model: &Manifest, cache: &Path, assets: &Path) -> Result<Option
     record.package(assets)?;
     record.model(assets)?;
     let path = root.join("model.pkl");
-    Ok(digest_cache::verified(&path)?.then_some(path))
+    Ok(digest_cache::verified(&path, model)?.then_some(path))
 }
 
 pub fn ensure(model: &Manifest, cache: &Path, assets: &Path) -> Result<Option<PathBuf>, Error> {
@@ -58,11 +61,23 @@ pub fn ensure(model: &Manifest, cache: &Path, assets: &Path) -> Result<Option<Pa
     let Some(record) = Record::read(assets)? else {
         return Ok(None);
     };
+    if record.model_sha256 != model.sha256 {
+        return Ok(None);
+    }
     record.package(assets)?;
     let source = record.model(assets)?;
     let root = cache.join("precompiled").join(&model.sha256);
     if fs::read_to_string(root.join("rejected")).is_ok_and(|value| value == model.sha256) {
-        return Ok(None);
+        if !super::failure::retry_rejection(&root, &model.sha256, &super::failure::boot_identity())
+        {
+            return Ok(None);
+        }
+        fs::remove_file(root.join("rejected"))?;
+        match fs::remove_file(root.join("boot_validation.json")) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
     }
     let target = root.join("model.pkl");
     copy::materialize(&source, &target, model)?;
@@ -71,7 +86,8 @@ pub fn ensure(model: &Manifest, cache: &Path, assets: &Path) -> Result<Option<Pa
 }
 
 pub(crate) fn present(assets: &Path, model: &Manifest) -> Result<bool, Error> {
-    Ok(supported(model) && Record::read(assets)?.is_some())
+    Ok(supported(model)
+        && Record::read(assets)?.is_some_and(|record| record.model_sha256 == model.sha256))
 }
 
 pub(crate) fn worker_package(model: &Path, assets: &Path) -> Result<assets::Package, Error> {
@@ -91,7 +107,7 @@ pub(crate) fn worker_package(model: &Path, assets: &Path) -> Result<assets::Pack
     record.package(assets)
 }
 
-pub(crate) fn identity(model: &Path) -> Result<serde_json::Value, Error> {
+pub fn identity(model: &Path) -> Result<serde_json::Value, Error> {
     let root = model
         .parent()
         .ok_or_else(|| Error::Invalid("installed model has no directory".into()))?;

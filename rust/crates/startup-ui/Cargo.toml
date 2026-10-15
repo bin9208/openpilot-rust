@@ -8,9 +8,11 @@ publish = false
 
 [features]
 default = ["native"]
-native = ["dep:cxx"]
+native = ["dep:cxx", "dep:openpilot-carrot-recovery", "dep:openpilot-startup-recovery"]
 
 [dependencies]
+openpilot-carrot-recovery = { path = "../carrot-recovery", optional = true }
+openpilot-startup-recovery = { path = "../startup-recovery", optional = true }
 cxx = { version = "1", optional = true }
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
@@ -30,10 +32,16 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 cxx-build = "1"
 
 [dev-dependencies]
+sha2 = "0.10"
 tempfile = "3"
 
 [lints.rust]
 unsafe_code = "deny"
+
+[[bin]]
+name = "openpilot-startup-recovery"
+path = "src/bin/startup_recovery.rs"
+required-features = ["native"]
 
 [[bin]]
 name = "openpilot-spinner"
@@ -63,4 +71,20 @@ required-features = ["native"]
 
 [[example]]
 name = "diagnostic_render"
+required-features = ["native"]
+
+[[example]]
+name = "startup_recovery_render"
+required-features = ["native"]
+
+[[example]]
+name = "overlay_gpu"
+required-features = ["native"]
+
+[[example]]
+name = "recording_boundary"
+required-features = ["native"]
+
+[[example]]
+name = "recording_pipeline"
 required-features = ["native"]

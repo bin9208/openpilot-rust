@@ -123,11 +123,12 @@ impl UnifiedLabel {
     }
     fn update_cache(&mut self, draw: &dyn Draw, width: f64) {
         let value = self.text.get();
+        let font = draw.resolve_font(self.font, &value);
         let spacing = self.size * self.letter_spacing;
         let key = CacheKey {
             text: value.clone(),
             width,
-            font: self.font,
+            font,
             size: self.size,
             spacing,
             padding: self.padding,
@@ -141,7 +142,7 @@ impl UnifiedLabel {
         }
         let content = (width - self.padding * 2.0).max(1.0);
         let lines = if self.wrap && !self.scroll {
-            text::wrap(draw, self.font, &value, self.size, spacing, content)
+            text::wrap(draw, font, &value, self.size, spacing, content)
         } else {
             value.split('\n').map(str::to_owned).collect()
         };
@@ -149,7 +150,7 @@ impl UnifiedLabel {
             .into_iter()
             .map(|line| {
                 if self.elide && !self.scroll {
-                    text::elide(draw, self.font, &line, self.size, spacing, content, false)
+                    text::elide(draw, font, &line, self.size, spacing, content, false)
                 } else {
                     line
                 }
@@ -167,7 +168,7 @@ impl UnifiedLabel {
                         y: float(self.size * draw.font_scale()),
                     }
                 } else {
-                    text::measure(draw, self.font, &value, self.size, spacing)
+                    text::measure(draw, font, &value, self.size, spacing)
                 };
                 let emojis = emoji::spans(&value);
                 Line {
@@ -220,6 +221,7 @@ impl UnifiedLabel {
         now: f64,
     ) -> Result<(), Error> {
         let rect = self.state.rect;
+        let font = self.cache.as_ref().map_or(self.font, |key| key.font);
         let x = f64::from(rect.x)
             + match self.horizontal {
                 Horizontal::Left => self.padding,
@@ -244,7 +246,7 @@ impl UnifiedLabel {
                 let char_width = f64::from(
                     text::measure(
                         draw,
-                        self.font,
+                        font,
                         &value,
                         self.size,
                         self.size * self.letter_spacing,
@@ -258,7 +260,7 @@ impl UnifiedLabel {
                     .ok_or(Error::Contract("shimmer alpha out of range"))?;
                 text::draw_text(
                     draw,
-                    self.font,
+                    font,
                     &value,
                     Point {
                         x: float(cursor),
@@ -281,7 +283,7 @@ impl UnifiedLabel {
                     y: float(y),
                 },
                 text::TextStyle {
-                    font: self.font,
+                    font,
                     size: self.size,
                     spacing: self.size * self.letter_spacing,
                     color: self.color,
@@ -314,6 +316,7 @@ impl Widget for UnifiedLabel {
             .max_width
             .map_or(f64::from(rect.width), |max| max.min(f64::from(rect.width)));
         self.update_cache(draw, width.trunc());
+        let font = self.cache.as_ref().map_or(self.font, |key| key.font);
         let mut visible = Vec::new();
         let mut height = 0.0;
         let mut broke = false;
@@ -330,7 +333,7 @@ impl Widget for UnifiedLabel {
             if let Some(last) = visible.last_mut() {
                 last.text = text::elide(
                     draw,
-                    self.font,
+                    font,
                     &last.text,
                     self.size,
                     self.size * self.letter_spacing,
@@ -339,7 +342,7 @@ impl Widget for UnifiedLabel {
                 );
                 last.size = text::measure(
                     draw,
-                    self.font,
+                    font,
                     &last.text,
                     self.size,
                     self.size * self.letter_spacing,

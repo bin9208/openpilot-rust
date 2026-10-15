@@ -49,6 +49,7 @@ impl Data {
             ],
             glasses: f64::from(driver.get_sunglasses_prob()),
             drawable: messages::selfdrive_state(state)?.get_alert_size()? == AlertSize::None
+                && (!context.ui.borrow().started || !dm.get_dm2_disabled())
                 && state.topic("driverStateV2")?.receive_frame > context.ui.borrow().started_frame,
         })
     }

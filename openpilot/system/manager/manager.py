@@ -17,6 +17,9 @@ from openpilot.common.repo_update import release_boot_lock
 from openpilot.common.text_window import TextWindow
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.manager.camera_config import configure_wide_camera
+from openpilot.selfdrive.monitoring.config import configure_monitoring
+from openpilot.common.stopping_params import get_stopping_speed
+from openpilot.system.manager.xiaoge_startup import XiaogeStartupGate
 from openpilot.system.manager.helpers import unblock_stdout, write_onroad_params, save_bootlog
 from openpilot.system.manager.process import ensure_running
 from openpilot.system.manager.process_config import managed_processes
@@ -79,12 +82,15 @@ def manager_init() -> UpdateStatus:
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
 
+  configure_monitoring(params)
+
   # set unset params to their default value
   for k in params.all_keys():
     default_value = params.get_default_value(k)
     if default_value is not None and params.get(k) is None:
       params.put(k, default_value)
 
+  get_stopping_speed(params, blocking=True)
   configure_wide_camera(params)
 
   # Create folders needed for msgq
@@ -148,6 +154,13 @@ def manager_cleanup() -> None:
 
   cloudlog.info("everything is dead")
 
+def clear_ignition_on_params(params: Params) -> None:
+  # dm2d can have a session-disable write queued in Params' async writer. Stop
+  # it first so an old-session write cannot land after the ignition reset.
+  managed_processes["dmonitoringd"].stop(block=True)
+  params.clear_all(ParamKeyFlag.CLEAR_ON_IGNITION_ON)
+
+
 def read_rss_kb(pid: int) -> int:
   try:
     with open(f"/proc/{pid}/status") as f:
@@ -176,8 +189,9 @@ def manager_thread(update_status: UpdateStatus) -> None:
     ignore += ["micd", "soundd", "loggerd"]
     params.put_bool("RecordAudio", False)
 
-  sm = messaging.SubMaster(['deviceState', 'carParams', 'pandaStates'], poll='deviceState')
+  sm = messaging.SubMaster(['deviceState', 'carParams', 'pandaStates', 'selfdriveState', 'modelV2', 'carState'], poll='deviceState')
   pm = messaging.PubMaster(['managerState'])
+  xiaoge_startup = XiaogeStartupGate()
 
   write_onroad_params(False, params)
   ensure_running(managed_processes.values(), False, params=params, CP=sm['carParams'], not_run=ignore)
@@ -200,7 +214,7 @@ def manager_thread(update_status: UpdateStatus) -> None:
 
     ignition = any(ps.ignitionLine or ps.ignitionCan for ps in sm['pandaStates'] if ps.pandaType != log.PandaState.PandaType.unknown)
     if ignition and not ignition_prev:
-      params.clear_all(ParamKeyFlag.CLEAR_ON_IGNITION_ON)
+      clear_ignition_on_params(params)
 
     # update onroad params, which drives pandad's safety setter thread
     if started != started_prev:
@@ -209,7 +223,9 @@ def manager_thread(update_status: UpdateStatus) -> None:
     started_prev = started
     ignition_prev = ignition
 
-    ensure_running(managed_processes.values(), started, params=params, CP=sm['carParams'], not_run=ignore)
+    xiaoge_ready = xiaoge_startup.update(started, sm, sm['carParams'], params.get_bool('ControlsReady'), now)
+    not_run = ignore if xiaoge_ready else [*ignore, 'xiaoge_data']
+    ensure_running(managed_processes.values(), started, params=params, CP=sm['carParams'], not_run=not_run)
 
     running = ' '.join("{}{}\u001b[0m".format("\u001b[32m" if p.proc.is_alive() else "\u001b[31m", p.name)
                        for p in managed_processes.values() if p.proc)

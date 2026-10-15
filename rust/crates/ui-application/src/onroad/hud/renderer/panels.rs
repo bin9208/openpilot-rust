@@ -5,8 +5,6 @@ use crate::{
 };
 impl Hud {
     pub(super) fn panels(&mut self, draw: &mut dyn Draw) -> Result<(), Error> {
-        self.blink = (self.blink + 1) % 16;
-        self.display = (self.display + 1) % 64;
         let rect = self.state.rect;
         let x = (f64::from(rect.x) + 140.0).trunc();
         let y = (f64::from(rect.y) + f64::from(rect.height) - 230.0).trunc();
@@ -42,7 +40,10 @@ impl Hud {
         let red = man.get_traffic_state() == 1;
         let green = man.get_traffic_state() == 2;
         let (red_size, green_size) = (64.0, 64.0);
-        if red {
+        let signal = crate::signal_status::Status::from_messages(&sm.state)?;
+        if signal.paused {
+            crate::signal_status::draw_pause(draw, x, y + 270., 32.)?;
+        } else if red {
             Self::image(
                 draw,
                 self.traffic_red,
@@ -65,6 +66,9 @@ impl Hud {
                 ],
             )?;
         }
+        if !signal.paused {
+            signal.draw_assist(draw, x, y + 270., 32.)?;
+        }
         Self::image(draw, self.speed_bg, [x - 100.0, y - 60.0, 350.0, 150.0])?;
         let speed = if self.debug_speed {
             "123".into()
@@ -86,13 +90,7 @@ impl Hud {
         } else {
             "--".into()
         };
-        if cruise != self.cruise_text_last {
-            self.cruise_text_last = cruise.clone();
-            if cruise != "--" {
-                self.animation_text = cruise.clone();
-                self.animation_time = 120;
-            }
-        }
+
         Self::text(
             draw,
             &cruise,

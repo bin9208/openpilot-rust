@@ -99,8 +99,9 @@ impl CruiseCarrot {
                 );
             }
         } else {
-            self.s._gas_tok =
-                0 < self.s._gas_pressed_count && self.s._gas_pressed_count < self.s._gas_tok_timer;
+            self.s._gas_tok = 0 < self.s._gas_pressed_count
+                && self.s._gas_pressed_count < self.s._gas_tok_timer
+                && !self.s.speedcam_gas_tok_consumed;
             self.s._gas_pressed_count = (self.s._gas_pressed_count - 1).min(-1);
             if self.s._gas_pressed_count < -1 {
                 self.s._gas_pressed_count_last = 0;
@@ -366,9 +367,6 @@ impl CruiseCarrot {
         Ok(self.auto_speed_up(speed))
     }
     pub(super) fn auto_speed_up(&mut self, mut speed: Number) -> Number {
-        if self.s.n_road_limit_speed <= 0. {
-            return speed;
-        }
         if !self.s._pause_auto_speed_up && self.s.apply_model_speed != 0. {
             let model = self.s.model_v_kph * self.s.apply_model_speed.abs();
             let apply = model.min(self.s.n_road_limit_speed * 1.1);

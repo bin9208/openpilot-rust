@@ -1,22 +1,22 @@
 //! Managed child diagnostic boundary, called inside the translated daemon.
 #![forbid(unsafe_code)]
 mod runtime;
-pub use runtime::{runtime, RuntimeError};
+pub use runtime::{RuntimeError, runtime};
 
 use openpilot_crash_reporting::{Inputs, NativeException, Reporter, Sdk};
 use openpilot_logging::{
-    log_site,
+    Fields, Value, log_site,
     record::{Level, Record},
-    Fields, Value,
 };
 use openpilot_logmessaged::JsonValue;
 use std::{
     error::Error,
     ffi::CString,
     fmt,
+    io::Write,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
 };
 
@@ -167,13 +167,26 @@ pub fn launch<S: Sdk, I: Inputs, P, C>(
                 .map_err(EntryError::InterruptLog)?;
             Ok(Outcome::Interrupted)
         }
-        Err(StepError::Raised(error)) => match reporter.capture_exception(&error.exception, true) {
-            Ok(()) => Err(EntryError::Raised { stage, error }),
-            Err(reporting) => Err(EntryError::Reporting {
-                stage,
-                error,
-                reporting,
-            }),
-        },
+        Err(StepError::Raised(error)) => {
+            // Preserve the original diagnostic before Params, logging or the SDK
+            // can fail or block. A broken stderr must not replace that error.
+            {
+                let mut stderr = std::io::stderr().lock();
+                let _ = writeln!(
+                    stderr,
+                    "Managed native failure ({process}, {stage:?})\n{}",
+                    error.exception.diagnostic()
+                );
+                let _ = stderr.flush();
+            }
+            match reporter.capture_exception(&error.exception, true) {
+                Ok(()) => Err(EntryError::Raised { stage, error }),
+                Err(reporting) => Err(EntryError::Reporting {
+                    stage,
+                    error,
+                    reporting,
+                }),
+            }
+        }
     }
 }

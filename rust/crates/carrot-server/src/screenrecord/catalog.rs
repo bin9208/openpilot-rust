@@ -189,7 +189,11 @@ pub fn build_videos(directories: &[PathBuf], now: i64) -> Vec<Value> {
                 .extension()
                 .map(|value| String::from_utf8_lossy(value.as_bytes()).to_lowercase())
                 .unwrap_or_default();
-            videos.push(Value::object([
+            let start_epoch = name
+                .string()
+                .ok()
+                .and_then(|name| super::info::start_epoch(&name));
+            let mut item = Value::object([
                 ("id", Value::text(&token(&text(path.as_os_str())))),
                 ("name", name),
                 ("folder", text(directory.as_os_str())),
@@ -201,7 +205,20 @@ pub fn build_videos(directories: &[PathBuf], now: i64) -> Vec<Value> {
                     Value::text(&relative_time(modified, now)),
                 ),
                 ("ext", Value::text(&extension)),
-            ]));
+            ]);
+            if let (Some(start), Value::Object(fields)) = (start_epoch, &mut item) {
+                fields.extend([
+                    (
+                        "startEpoch".chars().map(u32::from).collect(),
+                        Value::integer(start),
+                    ),
+                    (
+                        "startLabel".chars().map(u32::from).collect(),
+                        Value::text(&date_label(start)),
+                    ),
+                ]);
+            }
+            videos.push(item);
         }
     }
     videos.sort_by(|left, right| {

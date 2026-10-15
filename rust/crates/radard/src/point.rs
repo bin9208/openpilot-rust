@@ -15,13 +15,21 @@ pub struct Identity(pub String, pub TrackId);
 pub struct Point {
     pub track_id: TrackId,
     pub source: String,
+    #[serde(with = "crate::wire_float::scalar")]
     pub d_rel: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub y_rel: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub v_rel: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub a_rel: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub yv_rel: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub v_lead: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub a_lead: f64,
+    #[serde(with = "crate::wire_float::scalar")]
     pub j_lead: f64,
     pub measured: bool,
     pub radar_track_state: i32,

@@ -13,6 +13,7 @@ fn state_wire_preserves_unknown_enum_ordinals_and_source_fault_list_allocation()
             serial: vec![],
         },
         health: Health {
+            wake_on_can: 1,
             safety_model: 250,
             fault_status: 240,
             harness_status: 230,
@@ -40,6 +41,8 @@ fn state_wire_preserves_unknown_enum_ordinals_and_source_fault_list_allocation()
         panic!("wrong event")
     };
     let state = states.unwrap().get(0);
+    assert!(state.get_wake_on_can());
+    assert!(!state.get_ignition_can());
     assert_eq!(state.get_panda_type(), Err(capnp::NotInSchema(255)));
     assert_eq!(state.get_safety_model(), Err(capnp::NotInSchema(250)));
     assert_eq!(state.get_fault_status(), Err(capnp::NotInSchema(240)));

@@ -65,3 +65,38 @@ fn commands(root: &std::path::Path) -> Vec<serde_json::Value> {
         serde_json::from_slice(&std::fs::read(root.join("cruise.json")).unwrap()).unwrap();
     value["events"].as_array().unwrap().clone()
 }
+
+#[test]
+fn unmapped_physical_press_records_attention_without_synthesizing_cruise() {
+    let root = tempfile::tempdir().unwrap();
+    let config = Config::parse(r#"{"devices":{"00:11:22:33:44:55":{"profile":"generic","enabled":true,"mapping":{"key:115":"none"}}}}"#).unwrap();
+    let address = Address::parse("00:11:22:33:44:55").unwrap();
+    let mut engine = Engine::new(root.path(), Config::default()).unwrap();
+    engine.reload(
+        config,
+        None,
+        &IndexMap::from([("input-0".to_owned(), address.clone())]),
+        Seconds(10.),
+    );
+    engine.connect("input-0", &address).unwrap();
+    engine.update(VehicleSnapshot {
+        device_alive: true,
+        started: true,
+        car_alive: true,
+        car_valid: true,
+        can_valid: true,
+        controls_alive: true,
+        enabled: true,
+        gear_drive: true,
+        ..VehicleSnapshot::default()
+    });
+    key(&mut engine, 1, 10.1);
+    key(&mut engine, 0, 10.2);
+    assert!(commands(root.path()).is_empty());
+    let attention: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.path().join("attention.json")).unwrap())
+            .unwrap();
+    assert_eq!(attention["events"].as_array().unwrap().len(), 1);
+    assert_eq!(attention["events"][0]["action"], "none");
+    assert_eq!(attention["events"][0]["repeat"], false);
+}

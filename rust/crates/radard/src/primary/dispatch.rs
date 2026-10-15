@@ -1,4 +1,4 @@
-use super::{constants::*, stationary_geometry::equivalent, Frame, Matcher, VisionMatch};
+use super::{Frame, Matcher, VisionMatch, constants::*, stationary_geometry::equivalent};
 use crate::{point::Point, scope::turning_entry_allowed};
 use std::collections::HashSet;
 
@@ -11,6 +11,7 @@ impl Matcher {
         self.update_vision_fallback(frame.vision);
         let mut points = frame.points.to_vec();
         let mut stationary_points = stationary_points.unwrap_or(frame.points).to_vec();
+        stationary_points.retain(|p| p.source != "scc");
         if frame.yaw_rate.is_finite()
             && frame.yaw_rate.abs() >= STATIONARY_TURN_MIN_ABS_YAW_RATE_RAD_S
         {
@@ -58,6 +59,7 @@ impl Matcher {
                 self._observed_last_s.shift_remove(&identity);
             }
         }
+        self.update_corner_motion_history(&stationary_points, frame.time);
         self.update_front_evidence(
             frame.vision,
             &stationary_points,
@@ -112,6 +114,13 @@ impl Matcher {
             })
             .cloned()
             .collect();
+        let closing = self.match_closing_range(
+            frame.vision,
+            &outputs,
+            frame.path,
+            frame.time,
+            frame.yaw_rate,
+        );
         let far = self.match_far_corroborated(frame.vision, &outputs, frame.path, frame.time);
         if self.closer_handoff_ready(
             stationary.as_ref(),
@@ -165,7 +174,7 @@ impl Matcher {
         }
         let corroborated = self
             .match_corroborated(frame.vision, &outputs, frame.path, frame.time)
-            .or(far);
+            .or(closing.or(far));
         if radar_moving.as_ref().is_some_and(|radar| {
             corroborated
                 .as_ref()

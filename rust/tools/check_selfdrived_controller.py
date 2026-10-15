@@ -24,7 +24,7 @@ import tempfile
 import capnp
 from openpilot.cereal import car, log
 from original_params_binding import load as load_binding
-from selfdrived_source import Fixture, SOURCE
+from selfdrived_source import Fixture, SOURCE, DM2_PIN
 from selfdrived_snapshot import source_snapshot, source_health, native_snapshot, normalize, compress_buffers
 
 
@@ -95,14 +95,19 @@ def execute(fixture, row, params_root, prefix):
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--binary', type=Path, required=True)
+  parser.add_argument('--runner', action='append', default=[], help='Runner prefix for a linked ARM binary')
   parser.add_argument('--binding', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
+  parser.add_argument('--limit', type=int, help='Bound requests for diagnosis; omitted runs the full corpus')
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=False)
   prefix = 'selfdrive' + str(os.getpid())
   os.environ['OPENPILOT_PREFIX'] = prefix
   from selfdrived_cases import cases
   rows = cases()
+  if args.limit is not None:
+    assert args.limit > 0
+    rows = rows[:args.limit]
   with tempfile.TemporaryDirectory(prefix='selfdrive-controller-') as temporary:
     temporary = Path(temporary)
     module, _logger = load_binding(args.binding.resolve(), 'ipc://' + str(temporary / 'source-log'), temporary / 'logs')
@@ -110,7 +115,7 @@ def main():
     expected = []
     executed = set()
     def trace(frame, action, _argument):
-      if action == 'line' and frame.f_code.co_filename == str(SOURCE):
+      if action == 'line' and frame.f_code.co_filename.startswith(str(SOURCE)):
         executed.add(frame.f_lineno)
       return trace
     sys.settrace(trace)
@@ -122,7 +127,7 @@ def main():
     payload = ''.join(json.dumps(row) + '\n' for row in rows)
     (args.output / 'input.jsonl').write_text(payload)
     (args.output / 'source.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in expected))
-    result = subprocess.run([str(args.binary.resolve()), str(temporary / 'native'), prefix, 'ipc://' + str(temporary / 'native-log')],
+    result = subprocess.run([*args.runner, str(args.binary.resolve()), str(temporary / 'native'), prefix, 'ipc://' + str(temporary / 'native-log')],
                             input=payload, capture_output=True, text=True, timeout=120)
     (args.output / 'native.jsonl').write_text(result.stdout)
     (args.output / 'native.stderr').write_text(result.stderr or 'no native stderr\n')
@@ -153,17 +158,31 @@ def main():
       if native != source:
         (args.output / 'difference.json').write_text(json.dumps({'index': index, 'request': rows[index], 'native': native, 'source': source}, indent=2)+'\n')
         raise AssertionError(('controller mismatch', index, args.output / 'difference.json'))
-  tree = ast.parse(SOURCE.read_text())
+  pinned_source = subprocess.check_output(["git","show",f"{DM2_PIN}:openpilot/selfdrive/selfdrived/selfdrived.py"],text=True)
+  tree = ast.parse(pinned_source)
   cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'SelfdriveD')
   statements = {node.lineno for method in cls.body if isinstance(method, ast.FunctionDef) and method.name != 'run'
                 for node in ast.walk(method) if isinstance(node, ast.stmt) and not isinstance(node, ast.FunctionDef)}
   coverage = {'executed_lines': sorted(executed), 'missing_statement_lines': sorted(statements-executed)}
   (args.output / 'source-coverage.json').write_text(json.dumps(coverage, indent=2)+'\n')
-  report = {'result': 'PASS', 'requests': len(rows), 'source_sha256': hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
+  from selfdrived_final_dependencies import HASHES
+  for dependency in ('openpilot/selfdrive/selfdrived/events.py','openpilot/cereal/messaging/__init__.py',
+                     'openpilot/selfdrive/selfdrived/camera_config.py','openpilot/selfdrive/car/car_specific.py'):
+    content=subprocess.check_output(['git','show',f'{DM2_PIN}:{dependency}'])
+    HASHES[dependency]=hashlib.sha256(content).hexdigest()
+  for dependency in ('openpilot/selfdrive/selfdrived/helpers.py','openpilot/selfdrive/locationd/helpers.py',
+                     'openpilot/common/transformations/orientation.py','openpilot/common/transformations/transformations.py',
+                     'openpilot/common/realtime.py','openpilot/common/utils.py'):
+    content=subprocess.check_output(['git','show',f'{DM2_PIN}:{dependency}'])
+    assert (SOURCE.parents[3]/dependency).read_bytes()==content, f'unpinned reference dependency {dependency}'
+    HASHES[dependency]=hashlib.sha256(content).hexdigest()
+  report = {'result': 'PASS', 'requests': len(rows), 'source_sha256': hashlib.sha256(pinned_source.encode()).hexdigest(),
             'binary_sha256': hashlib.sha256(args.binary.read_bytes()).hexdigest(), 'input_sha256': hashlib.sha256(payload.encode()).hexdigest(),
             'controller_steps': sum(row.get('count', 1) for row in rows if row['operation'] in ('step', 'advance')),
             'source_exceptions': [{'index': index, 'type': row['error']} for index, row in enumerate(expected) if row['error'] is not None],
-            'observed_events': sorted({event for row in expected if row['state'] for event in row['state']['events']})}
+            'observed_events': sorted({event for row in expected if row['state'] for event in row['state']['events']}),
+            'source_commit': DM2_PIN, 'source_dependency_hashes': HASHES, 'retained_jetlink_source_sha256': hashlib.sha256(SOURCE.read_bytes()).hexdigest(), 'source_scope': 'complete final SelfdriveD class and pinned dependencies plus retained Rust-base Jetlink clauses',
+            'coverage_note': 'Controlled OS/IPC adapters; retained Jetlink required_process_failures and loss-latch blocks come from Rust-base source'}
   (args.output / 'manifest.json').write_text(json.dumps(report, indent=2) + '\n')
   print(json.dumps(report))
 

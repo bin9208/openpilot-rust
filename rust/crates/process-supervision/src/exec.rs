@@ -34,6 +34,12 @@ pub(crate) fn environment(name: Option<&str>) -> Result<Vec<CString>, Error> {
             environment.push(CString::new(format!("MANAGER_DAEMON={name}"))?);
         }
     }
+    // The original managed launcher enables fatal diagnostics before importing
+    // a daemon. Keep native panic stacks available without changing an explicit
+    // operator setting or the environment of unrelated captured commands.
+    if name.is_some() && std::env::var_os("RUST_BACKTRACE").is_none() {
+        environment.push(CString::new("RUST_BACKTRACE=1")?);
+    }
     Ok(environment)
 }
 

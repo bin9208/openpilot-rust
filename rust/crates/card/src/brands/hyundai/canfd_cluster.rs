@@ -136,6 +136,7 @@ pub fn messages(
         }
         if let Some(original) = source.ccnc162 {
             let mut data = original.clone();
+            let counter = remove_counter(&mut data)?;
             cluster_fields::normalize_corner(&mut data, true)?;
             let front = get(&data, "FF_DETECT")?;
             if [1., 2.].contains(&front) {
@@ -151,7 +152,7 @@ pub fn messages(
             if i.debug > 0 {
                 set(&mut data, &[("FAULT_LSS", 0.), ("FAULT_DAS", 0.)]);
             }
-            result.push(writer.frame("CCNC_0x162", i.bus.ecan, &data, None)?);
+            result.push(writer.frame("CCNC_0x162", i.bus.ecan, &data, counter)?);
         }
     }
     if i.corner_radar > 0 && hda == 0. {
@@ -172,11 +173,20 @@ pub fn messages(
     Ok(result)
 }
 
+pub struct LfaClusterAlert<'a> {
+    pub dm_alert: u8,
+    pub suppress: bool,
+    pub lfa: Option<&'a Values>,
+    pub mdps: Option<&'a Values>,
+    pub scc: Option<&'a Values>,
+}
+
 pub fn lfa_cluster(
     writer: &mut CanWriter,
     bus: CanBus,
     source: Option<&Values>,
     active: [bool; 2],
+    alert: &LfaClusterAlert<'_>,
 ) -> Result<Vec<Frame>, Error> {
     let Some(original) = source else {
         return Ok(Vec::new());
@@ -190,6 +200,29 @@ pub fn lfa_cluster(
             ("HDA_LFA_SymSta", if active[1] { 2. } else { 0. }),
         ],
     );
+    if alert.suppress
+        && active[1]
+        && data.get("HDA_InfoPUDis") == Some(&3.)
+        && data.get("HDA_InfoPUDis1") == Some(&0.)
+        && data.get("HDA_LFA_WrnSnd") == Some(&0.)
+        && alert
+            .lfa
+            .is_some_and(|v| v.get("FCA_SYSWARN") == Some(&1.) && v.get("VALUE63") == Some(&15.))
+        && alert
+            .mdps
+            .is_some_and(|v| v.get("LKA_FAULT") == Some(&0.) && v.get("LFA2_FAULT") == Some(&0.))
+        && alert
+            .scc
+            .is_some_and(|v| v.get("SysFailState") == Some(&0.))
+    {
+        data.insert("HDA_InfoPUDis".into(), 0.);
+    }
+    if (1..=3).contains(&alert.dm_alert)
+        && data.get("HDA_InfoPUDis") == Some(&0.)
+        && data.get("HDA_InfoPUDis1") == Some(&0.)
+    {
+        data.insert("HDA_InfoPUDis".into(), 5.);
+    }
     Ok(vec![writer.frame(
         "LFAHDA_CLUSTER",
         bus.ecan,
@@ -203,6 +236,7 @@ pub fn lfa_icon(
     bus: CanBus,
     source: Option<&Values>,
     active: [bool; 2],
+    dm_alert: u8,
 ) -> Result<Vec<Frame>, Error> {
     let Some(original) = source else {
         return Ok(Vec::new());
@@ -235,6 +269,7 @@ pub fn lfa_icon(
         ],
     );
     cluster_fields::hide_alerts(&mut data, false, 0, false)?;
+    cluster_fields::driver_monitoring_alert(&mut data, dm_alert, original)?;
     Ok(vec![writer.frame(
         "ADRV_0x161",
         bus.ecan,

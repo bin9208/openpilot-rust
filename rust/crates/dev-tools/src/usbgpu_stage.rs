@@ -116,8 +116,17 @@ struct Pickle<'a> {
 }
 
 pub fn stage(root: &Path, bundle: &Bundle) -> Result<Value> {
-    let pinned = openpilot_usbgpu::model_delivery::pinned_manifest();
-    stage_pinned(root, bundle, &pinned.sha256, pinned.size)
+    if bundle.model.is_none() {
+        let pinned = openpilot_usbgpu::model_delivery::pinned_manifest();
+        return stage_pinned(root, bundle, &pinned.sha256, pinned.size);
+    }
+    let manifest = read_json(&regular(&bundle.path, "manifest.json")?)?;
+    let digest = manifest["model_sha256"]
+        .as_str()
+        .ok_or("native source model identity missing")?;
+    let selected = openpilot_usbgpu::model_delivery::known_manifest(digest)
+        .ok_or("native provider model is not a supported source-pinned PKL")?;
+    stage_pinned(root, bundle, &selected.sha256, selected.size)
 }
 fn stage_pinned(root: &Path, bundle: &Bundle, pinned_sha: &str, pinned_size: u64) -> Result<Value> {
     let root = root.canonicalize()?;

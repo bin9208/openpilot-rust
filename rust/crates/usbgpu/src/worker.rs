@@ -179,6 +179,11 @@ impl Info {
     }
 }
 pub trait Runtime {
+    fn reset(&mut self) -> Result<(), Error> {
+        Err(Error::Contract(
+            "model worker does not support recurrent reset",
+        ))
+    }
     fn run(&mut self, packed: &[u8], info: &Info, output: &mut [u8]) -> Result<(), Error>;
     fn prepare(&mut self, packed: &[u8], info: &Info, output: &mut [u8]) -> Result<bool, Error> {
         self.run(packed, info, output)?;
@@ -186,13 +191,19 @@ pub trait Runtime {
     }
 }
 pub fn watch_parent() -> bool {
+    watch_parent_progress(None)
+}
+/// Watch the parent process, independent of the lifetime of its loading thread.
+pub fn watch_parent_progress(progress: Option<std::path::PathBuf>) -> bool {
     let parent = rustix::process::getppid();
     if parent.is_none_or(|pid| pid.as_raw_nonzero().get() == 1) {
         return false;
     }
     std::thread::spawn(move || {
+        let mut watchdog = crate::worker_progress::Watchdog::new(progress);
         while rustix::process::getppid() == parent {
-            std::thread::sleep(std::time::Duration::from_millis(200));
+            watchdog.tick();
+            std::thread::sleep(std::time::Duration::from_millis(50));
         }
         std::process::exit(1);
     });
@@ -205,6 +216,7 @@ pub fn serve(
     control_in: &mut impl Read,
     control_out: &mut impl Write,
 ) -> Result<(), Error> {
+    crate::worker_progress::mark("bind_buffers");
     file.set_len(info.size as u64)?;
     let mut packed = vec![0; info.input_bytes];
     let mut output = vec![0; info.output_count * 4];
@@ -212,11 +224,22 @@ pub fn serve(
     serde_json::to_writer(&mut *control_out, info)?;
     control_out.write_all(b"\n")?;
     control_out.flush()?;
+    crate::worker_progress::mark("idle");
     let mut command = [0];
     while control_in.read(&mut command)? != 0 {
         match command[0] {
             b'q' => break,
+            b'z' => {
+                runtime.reset()?;
+                packed.fill(0);
+                output.fill(0);
+                file.write_all_at(&packed, 0)?;
+                file.write_all_at(&output, info.input_bytes as u64)?;
+                control_out.write_all(b"1\n")?;
+                control_out.flush()?;
+            }
             b'r' | b'p' => {
+                crate::worker_progress::next_frame();
                 file.read_exact_at(&mut packed, 0)?;
                 let publish = if command[0] == b'p' {
                     runtime.prepare(&packed, info, &mut output)?
@@ -225,6 +248,7 @@ pub fn serve(
                     true
                 };
                 if !publish {
+                    crate::worker_progress::mark("idle");
                     control_out.write_all(b"0\n")?;
                     control_out.flush()?;
                     continue;
@@ -235,17 +259,51 @@ pub fn serve(
                 {
                     return Err(Error::Contract("invalid precompiled model output"));
                 }
+                crate::worker_progress::mark("publish");
                 file.write_all_at(&output, info.input_bytes as u64)?;
                 control_out.write_all(b"1\n")?;
                 control_out.flush()?;
+                crate::worker_progress::mark("idle");
             }
             _ => return Err(Error::Contract("invalid model worker command")),
         }
     }
     Ok(())
 }
+/// Preserve the pinned source's terminal exception identity across process IPC.
+pub fn diagnostic(error: &Error) -> String {
+    match error.worker_cause() {
+        Error::UsbApi {
+            operation: "HCQ USB control transfer failed",
+            message,
+            ..
+        } => format!("libusb_control_transfer: {message}"),
+        Error::UsbApi {
+            operation: "HCQ USB bulk transfer failed",
+            message,
+            ..
+        } => format!("libusb_bulk_transfer: {message}"),
+        Error::UsbShortTransfer {
+            operation: "HCQ USB control short transfer" | "HCQ USB bulk short transfer",
+            ..
+        } => "RuntimeError: AMD failed with -1".to_owned(),
+        Error::Timeout {
+            operation,
+            milliseconds,
+            last: Some(last),
+            expected,
+        } if operation == "BL not ready" => format!(
+            "TimeoutError: BL not ready. Timed out after {milliseconds} ms, condition not met: {last} != {expected}"
+        ),
+        Error::Contract("invalid precompiled model output") => {
+            "ValueError: invalid precompiled model output".to_owned()
+        }
+        _ => error.to_string(),
+    }
+}
+
 pub fn report_error(error: &Error, control: &mut impl Write) -> std::io::Result<()> {
-    let text = error.to_string();
+    let text = diagnostic(error);
     let mut start = text.len().saturating_sub(16384);
     while !text.is_char_boundary(start) {
         start += 1;

@@ -1,6 +1,7 @@
 mod diagnostics;
 mod input;
 mod publication;
+mod readiness;
 mod step;
 use crate::{firmware_query::StartupIo, toggle::MainToggle, xiaoge::VisionResult};
 use capnp::message::{Builder, HeapAllocator};
@@ -14,7 +15,7 @@ use openpilot_messaging::state::State;
 use openpilot_params::Params;
 
 pub type Message = Builder<HeapAllocator>;
-pub const SERVICES: [&str; 9] = [
+pub const SERVICES: [&str; 13] = [
     "pandaStates",
     "carControl",
     "onroadEvents",
@@ -24,10 +25,16 @@ pub const SERVICES: [&str; 9] = [
     "modelV2",
     "drivingModelData",
     "customReservedRawData0",
+    "liveParameters",
+    "livePose",
+    "selfdriveState",
+    "lateralPlan",
 ];
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error(transparent)]
+    Utf8(#[from] std::str::Utf8Error),
     #[error(transparent)]
     Schema(#[from] capnp::Error),
     #[error(transparent)]
@@ -144,6 +151,10 @@ pub trait Vehicle {
     fn take_warnings(&mut self) -> Vec<String> {
         Vec::new()
     }
+    fn set_speedcam_context(&mut self, _engaged: bool, _cruise_kph: f64) {}
+    fn speedcam_gas_tok_consumed(&self) -> bool {
+        false
+    }
     fn update(&mut self, packets: &[Packet], now_ns: u64) -> Result<Message, Error>;
     fn init(&mut self, io: &mut impl StartupIo) -> Result<(), Error>;
     fn apply(&mut self, input: ApplyInput<'_>) -> Result<ApplyOutput, Error>;
@@ -151,6 +162,10 @@ pub trait Vehicle {
     fn set_soft_hold(&mut self, active: i16);
 }
 pub trait StateTail {
+    fn cruise_speed_kph(&self) -> f64 {
+        0.
+    }
+    fn set_speedcam_gas_tok_consumed(&mut self, _consumed: bool) {}
     fn take_prints(&mut self) -> Vec<String> {
         Vec::new()
     }
@@ -177,6 +192,9 @@ pub trait StepIo: StartupIo {
     }
     fn vehicle_log(&mut self, diagnostic: &VehicleLog) -> Result<(), Error> {
         match diagnostic.level {
+            crate::query::DiagnosticLevel::Info => {
+                Err(Error::Event("vehicle info diagnostic needs a typed sink"))
+            }
             crate::query::DiagnosticLevel::Warning => self.warning(&diagnostic.message),
             crate::query::DiagnosticLevel::Error | crate::query::DiagnosticLevel::Exception => {
                 Err(Error::Event("vehicle error diagnostic needs a typed sink"))
@@ -206,6 +224,7 @@ pub struct Card {
     pub params: Message,
     pub settings: Params,
     pub initialized_previous: bool,
+    lateral_startup: openpilot_control_policy::lateral_readiness::Gate,
     pub can_timeouts: u64,
     pub last_actuators: Message,
     previous_state: Message,
@@ -240,6 +259,7 @@ impl Card {
             params,
             settings,
             initialized_previous: false,
+            lateral_startup: Default::default(),
             can_timeouts: 0,
             last_actuators,
             previous_state,

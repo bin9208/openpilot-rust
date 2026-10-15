@@ -1,6 +1,6 @@
 use super::{
-    constants::*, source::position_continuous, stationary_geometry::front_corner_pairs, Matcher,
-    PositionEvidence,
+    Matcher, PositionEvidence, constants::*, source::position_continuous,
+    stationary_geometry::front_corner_pairs,
 };
 use crate::{
     math::{maximum, minimum},
@@ -316,6 +316,7 @@ impl Matcher {
             .iter()
             .filter(|point| {
                 point.measured
+                    && (!point.corner() || self.corner_motion_consistent(point, now))
                     && 0.5 < point.d_rel
                     && point.d_rel < 180.
                     && (point.source == "frontRadar" || point.source == "scc" || point.corner())

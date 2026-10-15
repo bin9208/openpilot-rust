@@ -45,6 +45,7 @@ pub struct Session {
     gadget: PathBuf,
     mount: PathBuf,
     state: File,
+    speed: PathBuf,
     offroad: Offroad,
     stopped: AtomicBool,
     host_ready_until: Mutex<Option<Instant>>,
@@ -98,12 +99,22 @@ impl Session {
             gadget: gadget.to_owned(),
             mount: mount.to_owned(),
             state,
+            speed: udc_root.join(controller).join("current_speed"),
             offroad,
             stopped: AtomicBool::new(false),
             host_ready_until: Mutex::new(None),
         }))
     }
-    fn configured(&self) -> Result<bool, Error> {
+    pub fn speed(&self) -> Result<String, Error> {
+        Ok(fs::read_to_string(&self.speed)?.trim().to_owned())
+    }
+    pub fn bound(&self) -> Result<bool, Error> {
+        Ok(!self.stopped.load(Ordering::Acquire)
+            && !fs::read_to_string(self.gadget.join("UDC"))?
+                .trim()
+                .is_empty())
+    }
+    pub fn configured(&self) -> Result<bool, Error> {
         let mut buffer = [0; 64];
         let n = self.state.read_at(&mut buffer, 0)?;
         Ok(buffer[..n].trim_ascii() == b"configured")
@@ -172,6 +183,7 @@ struct Watch {
     stopped: AtomicBool,
 }
 pub struct FfsTransport {
+    version: wire::Version,
     session: Arc<Session>,
     writer: Option<File>,
     chunks: Option<Receiver<Result<Vec<u8>, Error>>>,
@@ -184,6 +196,7 @@ impl FfsTransport {
     pub fn new(session: Arc<Session>) -> Self {
         Self {
             session,
+            version: wire::Version::V2,
             writer: None,
             chunks: None,
             free: Arc::new(Mutex::new(Vec::new())),
@@ -196,12 +209,18 @@ impl FfsTransport {
             receive: VecDeque::with_capacity(256 << 10),
         }
     }
-    fn endpoints(&mut self) -> Result<(), Error> {
+    pub fn with_version(session: Arc<Session>, version: wire::Version) -> Self {
+        let mut transport = Self::new(session);
+        transport.version = version;
+        transport
+    }
+    fn endpoints(&mut self, deadline: Deadline) -> Result<(), Error> {
         if self.writer.is_some() {
             return Ok(());
         }
+        let bound = Deadline::after(Duration::from_secs(10))?;
         self.session
-            .wait_configured(Deadline::after(Duration::from_secs(10))?)?;
+            .wait_configured(Deadline(bound.0.min(deadline.0)))?;
         let reader = OpenOptions::new()
             .read(true)
             .write(true)
@@ -256,7 +275,10 @@ impl FfsTransport {
                 .as_ref()
                 .ok_or(Error::Closed)?
                 .recv_timeout(deadline.remaining()?)
-                .map_err(|_| Error::Deadline)??;
+                .map_err(|error| match error {
+                    mpsc::RecvTimeoutError::Timeout => Error::Deadline,
+                    mpsc::RecvTimeoutError::Disconnected => Error::Closed,
+                })??;
             self.receive.extend(chunk.iter().copied());
             chunk.clear();
             let mut free = self
@@ -334,8 +356,11 @@ fn read_loop(
     Ok(())
 }
 impl Transport for FfsTransport {
+    fn version(&self) -> wire::Version {
+        self.version
+    }
     fn send(&mut self, mut bytes: &[u8], deadline: Deadline) -> Result<(), Error> {
-        self.endpoints()?;
+        self.endpoints(deadline)?;
         if self.watch.aborted.load(Ordering::Acquire) {
             return Err(Error::Closed);
         }
@@ -379,13 +404,13 @@ impl Transport for FfsTransport {
         result
     }
     fn receive(&mut self, deadline: Deadline) -> Result<Message, Error> {
-        self.endpoints()?;
+        self.endpoints(deadline)?;
         self.fill(32, deadline)?;
         let mut bytes = [0; 32];
         for (target, source) in bytes.iter_mut().zip(self.receive.iter()) {
             *target = *source;
         }
-        let header = Header::decode(&bytes)?;
+        let header = Header::decode_version(&bytes, self.version)?;
         let length = usize::try_from(header.length).map_err(|_| Error::Contract("wire length"))?;
         if length > MAX_MESSAGE {
             return Err(Error::Contract("wire message cap"));

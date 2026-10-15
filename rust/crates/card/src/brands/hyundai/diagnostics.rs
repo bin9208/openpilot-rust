@@ -9,6 +9,7 @@ use openpilot_can::{parser::Parser, Packet};
 pub struct Diagnostics {
     pub prints: Vec<String>,
     pub warnings: Vec<String>,
+    pub logs: Vec<crate::core::VehicleLog>,
     seen: [IntegerSet; 3],
 }
 

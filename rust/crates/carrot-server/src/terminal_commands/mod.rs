@@ -1,12 +1,11 @@
-//! Seven active handlers and CLI bridge from terminal_commands/{cli,registry,custom_commands}.
+//! Six active handlers and CLI bridge from terminal_commands/{cli,registry,custom_commands}.
 mod arguments;
 pub mod registry;
-use crate::{vision_test, web_settings::WebSettings, youtube_test, Error};
+use crate::{vision_test, web_settings::WebSettings, Error};
 
 pub struct Config {
     pub web: WebSettings,
     pub vision: Option<vision_test::Config>,
-    pub youtube: Option<youtube_test::Config>,
 }
 impl Config {
     pub fn original() -> Result<Self, Error> {
@@ -20,7 +19,6 @@ impl Config {
                     .join("src/features/drive/core/content_catalog.json"),
             ),
             vision: None,
-            youtube: None,
         })
     }
 }
@@ -165,19 +163,6 @@ async fn handler(config: &Config, name: &str, args: &[String]) -> Result<i32, Er
                 &owned
             };
             vision_test::run_command(vision, &args).await
-        }
-        "youtube-test" => {
-            if youtube_test::help(args) {
-                return Ok(0);
-            }
-            let owned;
-            let youtube = if let Some(youtube) = &config.youtube {
-                youtube
-            } else {
-                owned = youtube_test::Config::original()?;
-                &owned
-            };
-            youtube_test::run_command(youtube, args).await
         }
         _ => Err(Error::Source("unregistered terminal command".into())),
     }

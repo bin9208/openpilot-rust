@@ -25,6 +25,7 @@ use std::time::Duration;
 
 pub struct NativeIo {
     pub subscriptions: MultiSubscriber,
+    pub(super) bosch: Option<super::bosch::Context>,
     settings: Native,
     databases: Databases,
     numerics: Numerics,
@@ -51,6 +52,7 @@ impl NativeIo {
         let publisher = PubMaster::for_runtime(&["liveTracks"])?;
         Ok(Self {
             subscriptions,
+            bosch: None,
             settings: Native(Params::for_runtime()?),
             databases,
             numerics,
@@ -60,6 +62,20 @@ impl NativeIo {
             diagnostics: None,
             fixture: None,
         })
+    }
+    pub fn enable_bosch_context(&mut self, enabled: bool, replay: bool) -> Result<(), Error> {
+        self.bosch = if enabled {
+            Some(super::bosch::Context::new(replay)?)
+        } else {
+            None
+        };
+        Ok(())
+    }
+    pub fn update_bosch_context(&mut self) -> Result<(), Error> {
+        if let Some(context) = self.bosch.as_mut() {
+            context.update()?;
+        }
+        Ok(())
     }
     pub fn car_params(&self) -> Result<Option<Vec<u8>>, Error> {
         let bytes = self.settings.raw("CarParams")?;
@@ -141,6 +157,9 @@ impl NativeIo {
                 drain(reader, &self.carlog);
             }
         }
+        for warning in state.take_warnings() {
+            self.carlog.warning(&warning);
+        }
     }
 }
 
@@ -175,6 +194,9 @@ impl Io for NativeIo {
         ego: Ego,
         packets: &[Packet],
     ) -> Result<Option<Data>, Error> {
+        if let Some(context) = self.bosch.as_mut() {
+            context.apply(state, ego, packets)?;
+        }
         let result = state.update_carrot(
             ego.v_ego,
             ego.a_ego,

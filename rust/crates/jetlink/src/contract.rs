@@ -12,6 +12,9 @@ pub fn contract() -> Result<Value, Error> {
     Ok(serde_json::from_str(CONTRACT_JSON)?)
 }
 pub fn validation_matches(raw: Option<&[u8]>, identity: &Identity) -> bool {
+    validation_matches_model(raw, identity, SHA256)
+}
+pub fn validation_matches_model(raw: Option<&[u8]>, identity: &Identity, sha256: &str) -> bool {
     const KEYS: [&str; 6] = [
         "android_api",
         "app_version",
@@ -36,8 +39,8 @@ pub fn validation_matches(raw: Option<&[u8]>, identity: &Identity) -> bool {
     record["approved"] == true
         && record["device_test"] == true
         && record["numerical_parity"] == true
-        && record["model_sha256"] == SHA256
-        && identity.get("artifact_sha256").is_some_and(|v| v == SHA256)
+        && record["model_sha256"] == sha256
+        && identity.get("artifact_sha256").is_some_and(|v| v == sha256)
         && serde_json::to_value(identity).is_ok_and(|v| record["identity"] == v)
         && record["warp_contract"] == "native-c3x-512x256-v1"
         && record["duration_seconds"]

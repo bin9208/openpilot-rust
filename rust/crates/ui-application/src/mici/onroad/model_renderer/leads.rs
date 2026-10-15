@@ -42,9 +42,10 @@ impl ModelRenderer {
                 (left.0[1] + right.0[1]) * 0.5,
             ]);
             let width = clip((right.0[0] - left.0[0]).abs(), 60., 400.);
+            let alpha = 1. - self.clock.retention(0.8);
             let point = if let Some(previous) = self.lead_filter {
                 ScreenPoint(std::array::from_fn(|i| {
-                    previous.0[i] + (center.0[i] - previous.0[i]) * 0.2
+                    previous.0[i] + (center.0[i] - previous.0[i]) * alpha
                 }))
             } else {
                 center

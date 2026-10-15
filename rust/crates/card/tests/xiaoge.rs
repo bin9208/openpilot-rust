@@ -34,3 +34,34 @@ fn payload_rejects_boolean_lane_and_accepts_source_integer_domain() {
     let cs = message.init_root::<car_state::Builder>();
     assert!(!xiaoge::apply(cs, Some(&result), u64::MAX));
 }
+
+#[test]
+fn final_pinned_payloads_match_independent_side_freshness_and_legacy_fallback() {
+    let bytes =
+        zstd::stream::decode_all(include_bytes!("fixtures/xiaoge-final.json.zst").as_slice())
+            .unwrap();
+    let fixture: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let rows = fixture["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 573);
+    for (index, row) in rows.iter().enumerate() {
+        let input = &row["input"];
+        let bytes: Vec<u8> = serde_json::from_value(input["bytes"].clone()).unwrap();
+        let result = xiaoge::parse(&bytes);
+        let mut message = capnp::message::Builder::new_default();
+        let mut state = message.init_root::<openpilot_cereal::car_capnp::car_state::Builder>();
+        let lanes: [i16; 2] = serde_json::from_value(input["lanes"].clone()).unwrap();
+        let spots: [bool; 2] = serde_json::from_value(input["spots"].clone()).unwrap();
+        state.set_left_lane_line(lanes[0]);
+        state.set_right_lane_line(lanes[1]);
+        state.set_left_blindspot(spots[0]);
+        state.set_right_blindspot(spots[1]);
+        let applied = xiaoge::apply(
+            state.reborrow(),
+            result.as_ref().ok(),
+            input["now"].as_u64().unwrap(),
+        );
+        let state = state.reborrow_as_reader();
+        let actual = serde_json::json!({"accepted":result.is_ok(),"applied":applied,"lanes":[state.get_left_lane_line(),state.get_right_lane_line()],"spots":[state.get_left_blindspot(),state.get_right_blindspot()]});
+        assert_eq!(actual, row["expected"], "source payload {index}");
+    }
+}

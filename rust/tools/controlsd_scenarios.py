@@ -184,4 +184,20 @@ def cases():
   result.append(case('zero-neural-jerk-time', 'GMC_ACADIA', 'torque', [frame(i) for i in range(30)], {'NNFFLite': '1', 'SteerActuatorDelay': '-30'}))
   for camera in ('0', '1'):
     result.append(case('hyundai-hda2-bus-' + camera, 'HYUNDAI_IONIQ_5', 'torque', [frame(i) for i in range(35)], {'HyundaiCameraSCC': camera}, {'flags': 8193}))
+  rows=[]
+  for i in range(45):
+    values={'selfdriveState':{'enabled':True,'active':True},'carState':{'steeringAngleDeg':8.},
+            'liveParameters':{'valid':i>=10 and i<25,'stiffnessFactor':1. if i>=10 else float('nan'),'steerRatio':15. if i>=10 else 0.,'angleOffsetDeg':0. if i>=10 else float('nan'),'roll':0. if i>=10 else float('nan')}}
+    if i>=25: values['liveParameters'].update(stiffnessFactor=1.,steerRatio=15.,angleOffsetDeg=0.,roll=0.)
+    rows.append(change(frame(i),values))
+  result.append(case('startup-invalid-live-recovery-and-one-way-latch','HONDA_CIVIC','pid',rows))
+  rows=[]
+  for i in range(30):
+    rows.append(change(frame(i),{'selfdriveState':{'active':True,'enabled':True},'lateralPlan':{'useLaneLines':True,'mpcSolutionValid':True,'psis':[0.]*(16 if i<10 else 17)}}))
+  result.append(case('startup-lane-plan-exact-length','HONDA_CIVIC','pid',rows))
+  rows=[]
+  for i in range(40):
+    rows.append(change(frame(i),{'driverMonitoringState':{'dm2Disabled':bool((i//5)%2),'alertLevel':'three' if (i//10)%2 else 'none'},'selfdriveState':{'state':'softDisabling' if i>=20 else 'enabled'}}))
+  result.append(case('published-dm-disable-and-soft-disabling-force-decel','HONDA_CIVIC','pid',rows))
+  result.append(case('raw-disable-dm-is-not-a-controlsd-input','HONDA_CIVIC','pid',[frame(i) for i in range(20)],{'DisableDM':'not-an-integer'}))
   return result

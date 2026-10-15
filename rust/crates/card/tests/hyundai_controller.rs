@@ -29,6 +29,12 @@ struct Case {
 }
 #[derive(Deserialize)]
 struct Step {
+    #[serde(default)]
+    state_override: Option<StateOverride>,
+    #[serde(default = "present")]
+    model_present: bool,
+    #[serde(default)]
+    logs: Vec<serde_json::Value>,
     diagnostics: Vec<String>,
     warnings: Vec<String>,
     soft_hold: i16,
@@ -36,6 +42,19 @@ struct Step {
     can: Vec<openpilot_can::Frame>,
 }
 
+fn present() -> bool {
+    true
+}
+#[derive(Deserialize)]
+struct StateOverride {
+    can_valid: bool,
+    temporary: bool,
+    permanent: bool,
+    angle: f32,
+    speed: f32,
+    driver: f32,
+    pressed: bool,
+}
 #[test]
 fn controller_when_model_override_settings_and_canfd_legacy_cadence() {
     let root = PathBuf::from(std::env::var("HYUNDAI_FIXTURE_DIR").unwrap());
@@ -109,6 +128,15 @@ fn controller_when_model_override_settings_and_canfd_legacy_cadence() {
             } else {
                 -12.
             });
+            if let Some(input) = &step.state_override {
+                out.set_can_valid(input.can_valid);
+                out.set_steer_fault_temporary(input.temporary);
+                out.set_steer_fault_permanent(input.permanent);
+                out.set_steering_angle_deg(input.angle);
+                out.set_v_ego_raw(input.speed);
+                out.set_steering_torque(input.driver);
+                out.set_steering_pressed(input.pressed);
+            }
             vehicle.commit_state(out.into_reader()).unwrap();
             vehicle.set_soft_hold(step.soft_hold);
             let control =
@@ -124,12 +152,24 @@ fn controller_when_model_override_settings_and_canfd_legacy_cadence() {
                 .apply(ApplyInput {
                     control: control.get_root::<car_control::Reader<'_>>().unwrap(),
                     now_ns: input.now,
-                    model: Some(model.get_root::<model_data_v2::Reader<'_>>().unwrap()),
+                    model: step
+                        .model_present
+                        .then(|| model.get_root::<model_data_v2::Reader<'_>>().unwrap()),
                     radar: Some(radar.get_root::<radar_state::Reader<'_>>().unwrap()),
                 })
                 .unwrap();
             let lines = vehicle.take_diagnostics();
             let warnings = vehicle.take_warnings();
+            let logs: Vec<_> = vehicle
+                .take_logs()
+                .into_iter()
+                .map(|log| serde_json::json!({"level":log.level,"message":log.message}))
+                .collect();
+            assert_eq!(
+                logs, step.logs,
+                "{} typed logs tick {tick}",
+                state.candidate
+            );
             diagnostics_output
                 .write_all(&serde_json::to_vec(&(&lines, &warnings)).unwrap())
                 .unwrap();

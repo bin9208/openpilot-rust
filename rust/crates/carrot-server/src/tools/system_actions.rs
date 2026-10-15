@@ -4,20 +4,8 @@ use super::{
     runner::{Command, Failure},
 };
 use crate::{Error, Value};
-use std::{fs, path::Path, process::Command as Process};
+use std::fs;
 
-fn detached(args: &[String]) -> Result<(), Failure> {
-    let mut child = Process::new(&args[0])
-        .args(&args[1..])
-        .spawn()
-        .map_err(|error| crate::state::io_error(error, Path::new(&args[0])))?;
-    std::thread::spawn(move || {
-        if let Err(error) = child.wait() {
-            eprintln!("Tools detached child: {error}");
-        }
-    });
-    Ok(())
-}
 pub(super) async fn run(context: &Context, action: Action) -> Result<Reply, Failure> {
     match action {
         Action::CaptureTmux => {
@@ -84,15 +72,15 @@ pub(super) async fn run(context: &Context, action: Action) -> Result<Reply, Fail
                 }
                 let mut stopped = context.runner.stopped.clone();
                 tokio::select! {_=tokio::time::sleep(std::time::Duration::from_secs(1))=>{},_=stopped.changed()=>return Err(Failure::Cancelled)}
-                detached(&["sudo".into(), "reboot".into()])?;
+                crate::system::actions::spawn_reboot(0.0)?;
             } else {
-                detached(&["bash".into(), "-lc".into(), "sleep 1 && sudo reboot".into()])?;
+                crate::system::actions::spawn_reboot(1.0)?;
             }
             Ok(result)
         }
         Action::Reboot => {
             context.progress("request reboot", 1, 1)?;
-            detached(&["sudo".into(), "reboot".into()])?;
+            crate::system::actions::spawn_reboot(0.0)?;
             Ok(Reply::ok(Value::object([
                 ("ok", Value::Bool(true)),
                 ("out", Value::text("reboot requested")),
@@ -104,7 +92,7 @@ pub(super) async fn run(context: &Context, action: Action) -> Result<Reply, Fail
                 return context.result(result, None);
             }
             // Package repair completed in staging; normal reboot activates it.
-            detached(&["sudo".into(), "reboot".into()])?;
+            crate::system::actions::spawn_reboot(0.0)?;
             Ok(Reply::ok(Value::object([
                 ("ok", Value::Bool(true)),
                 ("staged", Value::Bool(true)),

@@ -7,7 +7,7 @@ import json
 import math
 from pathlib import Path
 
-from usbgpu_hcq_data import Artifact, ArtifactError, Json, Record, record, state
+from usbgpu_hcq_data import Artifact, ArtifactError, Json, Record, PersistentBuffer, record, state
 from usbgpu_hcq_dispatch import dispatcher, dtype, sources
 
 
@@ -34,6 +34,11 @@ class Exporter:
             'initial': artifact.blob(initial),
           }
         )
+
+    self.persistent = None
+    if any(isinstance(value, PersistentBuffer) for value in artifact.values):
+      from usbgpu_hcq_export2 import PersistentExporter
+      self.persistent = PersistentExporter(self).export()
 
   def view(self, node: Record) -> dict[str, Json]:
     op, src = self.artifact.op(node), sources(node)
@@ -149,9 +154,19 @@ class Exporter:
       raise ArtifactError('expected one HCQ host program call')
     program = sources(call)[0]
     info = state(record(call.arguments[2], '.CallInfo').arguments[4])
+    if self.persistent is not None and (info['device'] != ('AMD',) or info['slots'] != () or info['skip_wait'] is not False):
+      raise ArtifactError('unsupported persistent HCQ device/slot/fence contract')
     patches = self.patches(linear)
-    arguments = [self.view(node) for node in sources(call)[1:]]
-    nodes, parameters = dispatcher(self.artifact, program)
+    if self.persistent is None:
+      arguments = [self.view(node) for node in sources(call)[1:]]
+      nodes, parameters = dispatcher(self.artifact, program)
+      argument_values = None
+    else:
+      from usbgpu_hcq_dispatch2 import dispatcher as persistent_dispatcher
+      arguments = []
+      argument_values = [self.expression(node) if self.artifact.op(node) in {'GETADDR','CONST','ADD','SHR','CAST'}
+                         else {'kind':'address','view':self.view(node),'space':'host'} for node in sources(call)[1:]]
+      nodes, parameters = persistent_dispatcher(self.artifact, program)
     inputs, outputs = root['input_specs'], root['output_specs']
     if not isinstance(inputs, dict) or not isinstance(outputs, dict):
       raise ArtifactError('model input/output specifications missing')
@@ -175,19 +190,20 @@ class Exporter:
         }
       )
     table = []
-    for value, device, offset in info['inputs']:
+    for value, device, offset in info.get('inputs', []):
       if device != 'AMD' or self.artifact.op(value) != 'PARAM':
         raise ArtifactError('unsupported dynamic input address')
       table.append({'slot': state(value.arguments[2])['slot'], 'offset': offset})
     return {
-      'version': 1,
+      'version': 2 if self.persistent else 1,
       'model_sha256': self.artifact.sha256,
       'model_bytes': self.artifact.path.stat().st_size,
       'buffers': self.buffers,
       'patches': patches,
       'arguments': arguments,
       'bindings': bindings,
-      'input_table': {'argument': info['table'], 'entries': table},
+      'input_table': {'argument': info['table'], 'entries': table} if self.persistent is None else None,
+      **({'argument_values':argument_values} if self.persistent else {}),
       'dispatcher': nodes,
       'parameters': parameters,
       'kernel_count': len(info['kernels']),

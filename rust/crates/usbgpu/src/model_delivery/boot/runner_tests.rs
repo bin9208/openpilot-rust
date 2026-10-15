@@ -1,6 +1,6 @@
 use super::{wait, OwnedChild};
 use crate::model_delivery::Error;
-use rustix::process::{getpid, set_child_subreaper, waitpid, Pid, WaitOptions};
+use rustix::process::{set_child_subreaper, waitpid, Pid, WaitOptions};
 use std::{
     io::{BufRead, BufReader},
     os::unix::process::CommandExt,
@@ -12,7 +12,13 @@ use std::{
 #[test]
 fn timeout_reaps_runner_and_terminates_noncooperative_worker() -> std::io::Result<()> {
     // Given an owned runner and worker that both ignore TERM.
-    set_child_subreaper(Some(getpid()))?;
+    // QEMU8.2 does not emulate this setup prctl. The native test launcher can
+    // verify/set it on the same host process before exec; the cleanup below is unchanged.
+    let inherited =
+        std::env::var_os("OPENPILOT_TEST_SUBREAPER_INHERITED").is_some_and(|value| value == "1");
+    if !inherited {
+        set_child_subreaper(Pid::from_raw(1))?;
+    }
     let mut command = Command::new("/bin/sh");
     command
         .process_group(0)
@@ -63,7 +69,9 @@ fn timeout_reaps_runner_and_terminates_noncooperative_worker() -> std::io::Resul
         assert!(started.elapsed() < Duration::from_secs(4));
         std::thread::sleep(Duration::from_millis(5));
     };
-    set_child_subreaper(None)?;
+    if !inherited {
+        set_child_subreaper(None)?;
+    }
     assert!(reaped);
     assert!(!std::path::Path::new(&format!("/proc/{raw}")).exists());
     println!(

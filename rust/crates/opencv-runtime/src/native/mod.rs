@@ -3,8 +3,14 @@ use crate::{Dimensions, Error, ImageLayout};
 use std::sync::OnceLock;
 mod image;
 mod net;
+mod primitives;
 pub use image::{apply_mask, bgr_to_gray, bounding_rect, nv12_to_rgb, polygon_mask, resize_linear};
 pub use net::DnnNet;
+pub use primitives::{
+    connected_components, distance_transform, external_contours, match_template,
+    match_template_ccorr, morphology_open, morphology_tophat, rgb_to_gray, rgb_to_hsv, Component,
+    Components, Contour,
+};
 
 static THREADS: OnceLock<(u32, Result<(), String>)> = OnceLock::new();
 
@@ -66,7 +72,7 @@ fn size(dimensions: Dimensions) -> ffi::Dimensions {
 fn layout(value: ImageLayout) -> ffi::Layout {
     let channels = match value.format() {
         crate::Format::Gray => 1,
-        crate::Format::Rgb | crate::Format::Bgr => 3,
+        crate::Format::Rgb | crate::Format::Bgr | crate::Format::Hsv => 3,
     };
     ffi::Layout {
         size: size(value.dimensions()),

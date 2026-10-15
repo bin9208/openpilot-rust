@@ -8,6 +8,7 @@ pub fn config(bytes: &[u8]) -> Result<Config, Error> {
     let cp = message.get_root::<car_params::Reader>()?;
     Ok(Config {
         candidate: cp.get_car_fingerprint()?.to_str()?.to_owned(),
+        brand: Some(cp.get_brand()?.to_str()?.to_owned()),
         delay: cp.get_radar_delay(),
         period: cp.get_radar_time_step(),
         unavailable: cp.get_radar_unavailable(),

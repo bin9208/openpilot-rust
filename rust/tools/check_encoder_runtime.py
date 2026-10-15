@@ -24,10 +24,6 @@ CASES = [
   "main",
   "--stream",
   "--carrot-vision-road",
-  "--youtube-low",
-  "--youtube-medium",
-  "--youtube",
-  "--youtube-wide",
   "main-multi",
   "main-restart",
   "main-lag",
@@ -51,13 +47,13 @@ class Peer:
     for key, value in {"RecordRoadCam": "2", "RecordFront": "1", "RecordAudio": "0", "CarrotVisionActive": "0"}.items():
       (self.params / key).write_text(value)
     os.environ["OPENPILOT_PREFIX"] = self.prefix
-    self.streams = STREAMS if case == "main-multi" else [STREAMS[2] if case == "--youtube-wide" else STREAMS[0]]
+    self.streams = STREAMS if case == "main-multi" else [STREAMS[0]]
     if case.startswith("main"):
       self.services = ["roadEncodeData", "qRoadEncodeData", "thumbnail"]
       if case == "main-multi":
         self.services += ["driverEncodeData", "wideRoadEncodeData"]
     else:
-      self.services = ["livestreamRoadEncodeData" if case in ["--stream", "--carrot-vision-road"] else "youtubeRoadEncodeData"]
+      self.services = ["livestreamRoadEncodeData"]
     self.sockets = {service: messaging.sub_sock(service, conflate=False, timeout=0) for service in self.services}
     self.rows: dict[str, list[dict[str, object]]] = {service: [] for service in self.services}
     self.raw = (directory / "messages.bin").open("wb")

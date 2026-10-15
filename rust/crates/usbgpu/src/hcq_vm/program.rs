@@ -23,6 +23,13 @@ impl Program {
             }
             let valid = match node.op {
                 Op::Argument { .. } | Op::Constant { .. } => node.src.is_empty(),
+                Op::Data { ref bytes } => {
+                    local_bytes = local_bytes
+                        .checked_add(bytes.len())
+                        .ok_or(Error::Contract("HCQ local size overflow"))?;
+                    !bytes.is_empty() && node.src.is_empty() && local_bytes <= 16 << 20
+                }
+                Op::ClockGettime => node.src.len() == 2,
                 Op::Local { bytes } => {
                     local_bytes = local_bytes
                         .checked_add(bytes)
@@ -30,12 +37,15 @@ impl Program {
                     bytes > 0 && node.src.is_empty() && local_bytes <= 16 << 20
                 }
                 Op::Index { stride } => node.src.len() >= 2 && [1, 2, 4, 8].contains(&stride),
-                Op::Cast | Op::Bitcast | Op::Load | Op::Function { .. } => node.src.len() == 1,
+                Op::Cast | Op::Bitcast | Op::Load | Op::Neg | Op::Function { .. } => {
+                    node.src.len() == 1
+                }
                 Op::Store => node.src.len() == 2,
                 Op::After => !node.src.is_empty(),
                 Op::Add
                 | Op::Sub
                 | Op::Mul
+                | Op::Cdiv
                 | Op::And
                 | Op::Or
                 | Op::Xor
@@ -55,15 +65,29 @@ impl Program {
                     _ => false,
                 }),
                 Op::Range => {
-                    stack.push(index);
+                    stack.push((index, false));
                     !node.src.is_empty()
                 }
                 Op::End => {
-                    if !(2..=3).contains(&node.src.len()) || stack.pop() != node.src.get(1).copied()
+                    if !(2..=3).contains(&node.src.len())
+                        || stack.pop() != node.src.get(1).map(|&index| (index, false))
                     {
                         return Err(Error::Contract("HCQ loop nesting mismatch"));
                     }
                     ends[node.src[1]] = index;
+                    true
+                }
+                Op::If => {
+                    stack.push((index, true));
+                    node.src.len() == 1 && nodes[node.src[0]].bits == 1
+                }
+                Op::Endif => {
+                    if node.src.len() != 1
+                        || stack.pop() != node.src.first().map(|&index| (index, true))
+                    {
+                        return Err(Error::Contract("HCQ conditional nesting mismatch"));
+                    }
+                    ends[node.src[0]] = index;
                     true
                 }
                 Op::Noop => true,
@@ -88,6 +112,7 @@ impl Program {
                     .get(slot)
                     .ok_or(Error::Contract("missing HCQ argument"))?,
                 Op::Local { bytes } => memory.allocate(vec![0; bytes])?,
+                Op::Data { ref bytes } => memory.allocate(bytes.clone())?,
                 _ => 0,
             };
         }

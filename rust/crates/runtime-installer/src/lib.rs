@@ -31,6 +31,7 @@ pub struct Options {
     pub reserve_bytes: u64,
 }
 const DEFAULT_RESERVE: u64 = 2 * 1024 * 1024 * 1024;
+pub(crate) const CACHED_ARCHIVE: &str = ".archive.tar.gz";
 
 impl Options {
     pub fn parse(args: impl Iterator<Item = std::ffi::OsString>) -> Result<Self> {
@@ -105,7 +106,7 @@ pub fn run(options: &Options, download: &impl Download) -> Result<()> {
         .prefix(".pending-")
         .tempdir_in(&packages)?;
     let descriptor_path = staging.path().join(".runtime-release.json");
-    let archive_path = staging.path().join(".archive.tar.gz");
+    let archive_path = staging.path().join(CACHED_ARCHIVE);
     let base = format!("https://github.com/bin9208/openpilot-rust/releases/download/runtime-{sha}");
     match &options.offline {
         Some((_, descriptor)) => copy_bounded(descriptor, &descriptor_path, MAX_JSON_BYTES)?,
@@ -139,10 +140,48 @@ pub fn run(options: &Options, download: &impl Download) -> Result<()> {
         return Err(invalid("archive bytes or SHA-256 mismatch"));
     }
     archive::extract(&archive_path, staging.path(), &descriptor)?;
-    fs::remove_file(&archive_path)?;
+    // Keep exactly this generation's verified compressed package for offline
+    // repair. The space reservation above already includes these bytes; normal
+    // generation cleanup also retires the cache with its owning generation.
     identity::verify_generation(staging.path(), &descriptor)?;
     activation::activate(&root, staging, &descriptor)?;
     check_installed(&root, &sha)
+}
+
+/// Only reuse a complete, regular, exact-source archive; active executables may
+/// be damaged, which is precisely why repair must not depend on their hashes.
+pub(crate) fn repair_package(root: &Path, sha: &str) -> Option<(PathBuf, PathBuf)> {
+    let read = || -> Result<(PathBuf, PathBuf)> {
+        let generation = activation::active_generation(root)?;
+        let descriptor_path = generation.join(".runtime-release.json");
+        let archive_path = generation.join(CACHED_ARCHIVE);
+        if !fs::symlink_metadata(&descriptor_path)?.is_file()
+            || !fs::symlink_metadata(&archive_path)?.is_file()
+        {
+            return Err(invalid("offline repair cache must contain regular files"));
+        }
+        let descriptor: Descriptor = identity::read_json(&descriptor_path)?;
+        descriptor.validate(sha)?;
+        let expected_prefix = format!("gen-{sha}-{}-", descriptor.archive.sha256);
+        if !generation
+            .file_name()
+            .and_then(|s| s.to_str())
+            .is_some_and(|s| s.starts_with(&expected_prefix))
+            || fs::metadata(&archive_path)?.len() != descriptor.archive.bytes
+            || identity::digest(&archive_path)? != descriptor.archive.sha256
+        {
+            return Err(invalid("offline repair cache identity or digest mismatch"));
+        }
+        Ok((archive_path, descriptor_path))
+    };
+    match read() {
+        Ok(package) => Some(package),
+        Err(Error::Io(error)) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => {
+            eprintln!("Local repair package unavailable: {error}");
+            None
+        }
+    }
 }
 
 pub(crate) fn checkout_sha(root: &Path) -> Result<String> {

@@ -2,6 +2,7 @@ pub mod drive;
 #[cfg(feature = "numerics")]
 pub mod flux;
 pub mod identity;
+pub mod lateral_readiness;
 pub mod math;
 #[cfg(feature = "numerics")]
 pub mod nano;
@@ -11,6 +12,7 @@ pub mod numerics;
 pub mod numpy_exp;
 pub mod pid;
 pub mod similarity;
+pub mod stopping;
 pub mod vehicle;
 
 #[derive(Debug, thiserror::Error)]

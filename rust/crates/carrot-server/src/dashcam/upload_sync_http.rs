@@ -48,7 +48,10 @@ pub async fn handle(request: Request<RequestBody>, service: Arc<SyncUploads>) ->
             }
         };
         let segments = parse::segments(&body)?;
-        service.upload(admission, segments).await.map(Ok)
+        service
+            .upload(admission, segments, parse::include_all_files(&body)?)
+            .await
+            .map(Ok)
     }
     .await;
     let (status, payload) = match result {

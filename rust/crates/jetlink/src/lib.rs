@@ -2,13 +2,26 @@
 pub mod adapter;
 pub mod client;
 pub mod contract;
+pub mod fault;
 pub mod ffs;
 pub mod gadget;
+pub mod mobile;
+pub mod model_spec;
 pub mod owner;
+pub mod peer;
+pub mod phase;
+pub mod physical;
+mod plan_hypothesis;
 pub mod platform;
+pub mod protocol_choice;
 pub mod rpc;
 pub mod runtime;
+pub mod selection;
+pub mod session_contract;
+pub mod status;
+pub mod tcp;
 pub mod transition;
+pub mod wifi;
 pub mod wire;
 
 use std::time::Duration;

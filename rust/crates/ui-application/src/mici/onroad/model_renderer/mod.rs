@@ -48,10 +48,14 @@ impl Default for Filters {
     }
 }
 pub struct ModelRenderer {
+    overlay: openpilot_ui_framework::overlay::PaintLayer<Option<crate::overlay_state::Key>>,
+    overlay_state: Option<crate::overlay_state::Shared>,
+    clock: crate::display_clock::DisplayClock,
     widget: WidgetState,
     context: Context,
     pub common: Common,
     pub filters: Filters,
+    radar_frame: i64,
     pub marking_codes: [i16; 4],
     pub marking_segments: [Vec<Vec<openpilot_ui_framework::geometry::Point>>; 4],
     pub lead: Option<LeadRectangle>,
@@ -62,10 +66,14 @@ pub struct ModelRenderer {
 impl ModelRenderer {
     pub fn new(context: Context) -> Result<Self, Error> {
         Ok(Self {
+            overlay: openpilot_ui_framework::overlay::PaintLayer::new(0),
+            overlay_state: None,
+            clock: Default::default(),
             widget: WidgetState::default(),
             common: Common::new(&context)?,
             context,
             filters: Filters::default(),
+            radar_frame: -1,
             marking_codes: [-1; 4],
             marking_segments: std::array::from_fn(|_| Vec::new()),
             lead: None,
@@ -74,15 +82,19 @@ impl ModelRenderer {
             gradient: Gradient::new((0., 1.), (0., 0.), Vec::new(), Vec::new()),
         })
     }
+    pub fn set_overlay_state(&mut self, state: crate::overlay_state::Shared) {
+        self.overlay_state = Some(state);
+    }
     pub fn set_transform(&mut self, transform: [[f64; 3]; 3]) {
         self.common.projection.set_transform(transform);
         self.common.transform_dirty = true;
     }
     fn render_model(&mut self, draw: &mut dyn Draw) -> Result<(), Error> {
+        self.clock.tick((self.context.now_monotonic)());
         let context = self.context.clone();
         let messages = context.messages.borrow();
         let input = Input::new(&messages.state)?;
-        let alpha = 0.05 / (0.1 + 0.05);
+        let alpha = 1. - self.clock.retention(1. - 0.05 / (0.1 + 0.05));
         self.filters.torque = (1. - alpha) * self.filters.torque
             + alpha * (-f64::from(input.output.get_actuators_output()?.get_torque()));
         if !input.current(context.ui.borrow().started_frame)? {
@@ -91,9 +103,14 @@ impl ModelRenderer {
         self.common.header(&input, self.widget.rect)?;
         let radar = input.valid("radarState")?;
         let leads = self.common.longitudinal && radar;
-        if input.updated("modelV2")? || input.updated("radarState")? || self.common.transform_dirty
+        let radar_frame = input.messages.topic("radarState")?.receive_frame;
+        if input.messages.topic("modelV2")?.receive_frame != self.common.model_frame
+            || radar_frame != self.radar_frame
+            || self.common.transform_dirty
         {
-            if input.updated("modelV2")? {
+            self.radar_frame = radar_frame;
+            if input.messages.topic("modelV2")?.receive_frame != self.common.model_frame {
+                self.common.model_frame = input.messages.topic("modelV2")?.receive_frame;
                 self.common.raw(input.model)?;
             }
             if self.common.path.raw.is_empty() {
@@ -133,10 +150,29 @@ impl Widget for ModelRenderer {
     }
     fn paint(
         &mut self,
-        _frame: &Frame<'_>,
+        frame: &Frame<'_>,
         draw: &mut dyn Draw,
     ) -> Result<RenderResult, openpilot_ui_framework::Error> {
-        self.render_model(draw)?;
+        let state = self
+            .overlay_state
+            .as_ref()
+            .map(|s| s.borrow().clone())
+            .unwrap_or_default();
+        let mut overlay = std::mem::replace(
+            &mut self.overlay,
+            openpilot_ui_framework::overlay::PaintLayer::new(0),
+        );
+        let clock = self.context.now_monotonic.clone();
+        let result = overlay.paint(
+            draw,
+            self.widget.rect,
+            state.key.clone(),
+            state.control(frame.index),
+            || clock(),
+            |draw| Ok(self.render_model(draw)?),
+        );
+        self.overlay = overlay;
+        result?;
         Ok(RenderResult::None)
     }
 }

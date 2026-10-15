@@ -1,5 +1,5 @@
 use super::{status, storage, Config};
-use crate::{json_fields::set, youtube_test::process, Error, Value};
+use crate::{json_fields::set, vision_test::process, Error, Value};
 use openpilot_process_supervision::CapturedCommand;
 use std::{fs, process::Stdio, time::Duration};
 

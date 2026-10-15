@@ -132,17 +132,45 @@ impl Geometry {
         }
         let rgb = cv::nv12_to_rgb(&cropped, region.mask.view().layout().dimensions())?;
         let masked = cv::apply_mask(rgb.view(), region.mask.view())?;
-        let resized = cv::resize_linear(masked.view(), Dimensions::new(352, 256)?)?;
-        let mut values = Vec::with_capacity(3 * 352 * 256);
-        for channel in 0..3 {
-            values.extend(
-                resized
-                    .view()
-                    .data()
-                    .chunks_exact(3)
-                    .map(|pixel| f32::from(pixel[channel]) / 255.0),
-            );
+        let scale = 352.0
+            / width
+                .max(height)
+                .to_f64()
+                .ok_or(Error::Contract("crop dimension overflow"))?;
+        let resized_width = (width
+            .to_f64()
+            .ok_or(Error::Contract("crop width overflow"))?
+            * scale)
+            .round_ties_even()
+            .max(1.0)
+            .to_usize()
+            .ok_or(Error::Contract("resize width overflow"))?;
+        let resized_height = (height
+            .to_f64()
+            .ok_or(Error::Contract("crop height overflow"))?
+            * scale)
+            .round_ties_even()
+            .max(1.0)
+            .to_usize()
+            .ok_or(Error::Contract("resize height overflow"))?;
+        let resized = cv::resize_linear(
+            masked.view(),
+            Dimensions::new(
+                u32::try_from(resized_width)
+                    .map_err(|_| Error::Contract("resize width overflow"))?,
+                u32::try_from(resized_height)
+                    .map_err(|_| Error::Contract("resize height overflow"))?,
+            )?,
+        )?;
+        let left = (352 - resized_width) / 2;
+        let top = (352 - resized_height) / 2;
+        let mut values = vec![0.0; 3 * 352 * 352];
+        for (index, pixel) in resized.view().data().chunks_exact(3).enumerate() {
+            let position = (top + index / resized_width) * 352 + left + index % resized_width;
+            for channel in 0..3 {
+                values[channel * 352 * 352 + position] = f32::from(pixel[channel]) / 255.0;
+            }
         }
-        Ok(Some(Tensor::from_parts(vec![1, 3, 256, 352], values)?))
+        Ok(Some(Tensor::from_parts(vec![1, 3, 352, 352], values)?))
     }
 }

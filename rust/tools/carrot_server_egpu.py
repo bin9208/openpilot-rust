@@ -1,6 +1,6 @@
 import argparse
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 import os
 from pathlib import Path
@@ -18,6 +18,9 @@ SHA = 'a' * 64
 NOW = 1700000123.125
 STATUS = '/api/egpu/model'
 RESTART = STATUS + '/compile-restart'
+DIAGNOSTICS = STATUS + '/diagnostics'
+MONOTONIC = 100.0
+PIN = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
 
 
 @dataclass(frozen=True)
@@ -58,6 +61,14 @@ def cases() -> list[Scenario]:
                Scenario('options-restart', 'OPTIONS', RESTART, 405),
                Scenario('encoded-route', path='/api/egpu/%6dodel'),
                Scenario('gzip-request-no-compression')))
+  rows.extend(Scenario(name) for name in ['phase-waiting_for_network','phase-installing','phase-installed',
+    'failure-current','failure-old-boot','failure-wrong-pickle','failure-malformed','failure-oversized',
+    'failure-no-installed','failure-active','failure-loading','status-rejected-code','status-retries',
+    'recovery-waiting','recovery-recovering','recovery-ready','recovery-stopped','recovery-stale',
+    'recovery-future','recovery-active','recovery-startup-failed'])
+  rows.extend([Scenario('diagnostics-current',path=DIAGNOSTICS),Scenario('diagnostics-old-boot',path=DIAGNOSTICS),
+    Scenario('diagnostics-wrong-pickle',path=DIAGNOSTICS,status=404),Scenario('diagnostics-missing',path=DIAGNOSTICS,status=404),
+    Scenario('diagnostics-head','HEAD',DIAGNOSTICS),Scenario('diagnostics-method','POST',DIAGNOSTICS,405)])
   return rows
 
 
@@ -81,16 +92,17 @@ class Files:
     self.assets = self.repository / 'openpilot/selfdrive/assets'
     self.web.mkdir(parents=True)
     self.assets.mkdir(parents=True)
+    self.telemetry = root / 'telemetry'
     self.settings = root / 'settings.json'
     self.settings.write_text('{"params":[]}')
 
   def setup(self, name: str) -> None:
     if name == 'restart-repeat':
       return
-    for path in (self.cache, self.models, self.usb):
+    for path in (self.cache, self.models, self.usb, self.telemetry):
       remove(path)
       path.mkdir()
-    for key in ('UsbGpuHardwareSeen', 'IsEngaged', 'DoReboot'):
+    for key in ('UsbGpuHardwareSeen', 'IsEngaged', 'DoReboot', 'UsbGpuActive','UsbGpuLoading','UsbGpuStartupFailed'):
       remove(self.directory / key)
     self.params.put_bool('UsbGpuHardwareSeen', name not in ('never-connected', 'restart-never-connected'))
     self.params.put_bool('IsEngaged', name == 'restart-engaged')
@@ -148,12 +160,37 @@ class Files:
         (installed / 'rejected').write_text('')
       if name == 'installed-invalid-runtime':
         remove(runtime / 'tinygrad/__init__.py')
+    (self.telemetry/'boot_id').write_text('owned-current-boot')
+    if name.startswith(('failure-','diagnostics-')) and name!='diagnostics-missing':
+      installed=self.cache/'precompiled'/SHA;installed.mkdir(parents=True,exist_ok=True)
+      (installed/'installed.json').write_text(json.dumps({'pickle':{'sha256':SHA}}))
+      failure={'time':NOW,'phase':'inference','rejected':False,'pickle_sha256':SHA,'error':'precompiled eGPU worker timed out',
+        'boot_id':'owned-current-boot','worker':{'stage':'model_call','frame':42},'unrelated_device_data':'must not export'}
+      if name.endswith('old-boot'):failure['boot_id']='previous-boot'
+      if name.endswith('wrong-pickle'):failure['pickle_sha256']='b'*64
+      (installed/'last_failure.json').write_text(json.dumps(failure))
+      if name.endswith('malformed'):(installed/'last_failure.json').write_text('{bad')
+      if name.endswith('oversized'):(installed/'last_failure.json').write_text(' '*32768+json.dumps(failure))
+      if name.endswith('no-installed'):(installed/'installed.json').unlink()
+      if name.startswith('failure-'):self.params.put_bool('UsbGpuStartupFailed',True)
+      if name in ('failure-active','failure-loading'):self.params.put_bool('UsbGpuActive',True)
+      if name=='failure-loading':self.params.put_bool('UsbGpuLoading',True)
+    if name.startswith('recovery-'):
+      state=name.removeprefix('recovery-')
+      value={'state':state if state in ('waiting','recovering','ready','stopped') else 'recovering','updated':MONOTONIC,'attempt':2,'next_attempt':105.0}
+      if state=='stale':value['updated']=MONOTONIC-3
+      if state=='future':value['updated']=MONOTONIC+1
+      if state=='active':self.params.put_bool('UsbGpuActive',True)
+      if state=='startup-failed':self.params.put_bool('UsbGpuStartupFailed',True)
+      (self.telemetry/'carrot-egpu-recovery.json').write_text(json.dumps(value))
     value = {'schema_version': 1, 'state': 'ready', 'sha256': SHA, 'model_id': 'status-model'}
     needs_status = name.startswith(('phase-', 'progress-', 'invalid-count-', 'restart-waiting-')) or name in (
       'same-status', 'different-status', 'no-status-identity', 'schema-true', 'invalid-schema',
-      'invalid-phase', 'status-pass-through', 'restart-error', 'restart-updating', 'huge-count')
+      'invalid-phase', 'status-pass-through', 'restart-error', 'restart-updating', 'huge-count','status-rejected-code','status-retries')
     if name.startswith('phase-'):
       value['state'] = name.removeprefix('phase-')
+    if name == 'status-rejected-code':value.update(state='error',error_code='rejected')
+    if name == 'status-retries':value.update(state='waiting_for_network',error_code='dns',retry_count=3,retry_in_seconds=30,detail='owned retry')
     if name == 'restart-updating':
       value['state'] = 'downloading'
     if name == 'restart-error':
@@ -244,11 +281,28 @@ async def compare(args) -> None:
     package = ModuleType('openpilot.selfdrive.carrot.server.features')
     package.__path__ = [str(Path(__file__).resolve().parents[2] / 'openpilot/selfdrive/carrot/server/features')]
     sys.modules[package.__name__] = package
-    from openpilot.selfdrive.carrot.server.features import egpu_model as source
+    def pinned_module(name,path):
+      module=ModuleType(name);module.__file__=path;sys.modules[name]=module
+      exec(compile(subprocess.check_output(['git','show',PIN+':'+path]),path,'exec'),module.__dict__)
+      return module
+    peer=pinned_module('openpilot.common.jetlink_peer','openpilot/common/jetlink_peer.py')
+    jetlink=pinned_module('openpilot.common.jetlink_status','openpilot/common/jetlink_status.py')
+    recovery=pinned_module('openpilot.common.egpu_recovery_status','openpilot/common/egpu_recovery_status.py')
+    progress=pinned_module('openpilot.selfdrive.modeld.egpu_worker_progress','openpilot/selfdrive/modeld/egpu_worker_progress.py')
+    source=pinned_module('openpilot.selfdrive.carrot.server.features.egpu_model','openpilot/selfdrive/carrot/server/features/egpu_model.py')
     from openpilot.selfdrive.modeld import big_model, big_model_status, helpers, precompiled_model
     original, native = (Files(root / side, module.Params) for side in ('original', 'native'))
     source.model_cache_dir = big_model.model_cache_dir = precompiled_model.model_cache_dir = lambda: original.cache
     source.Params = lambda: original.params
+    if args.native_readiness:
+      # All ordinary Files fixtures contain synthetic Python artifacts only.
+      # They cannot prove readiness of the native executor. The independent
+      # --positive-native gate verifies the immutable actual native package.
+      source.active_model_compiled=lambda:False
+    jetlink.LINK_STATUS=original.telemetry/'carrot-jetlink.json';jetlink.MODEL_STATUS=original.telemetry/'carrot-jetlink-model.json'
+    jetlink.time=SimpleNamespace(monotonic=lambda:MONOTONIC)
+    source.read_egpu_recovery=lambda:recovery.read_status(original.telemetry/'carrot-egpu-recovery.json',MONOTONIC)
+    progress.boot_identity=lambda:(original.telemetry/'boot_id').read_text().strip()
     helpers.MODELS_DIR = original.models
     helpers.Path = lambda value: original.usb if value == '/sys/bus/usb/devices' else Path(value)
     big_model_status.time = SimpleNamespace(time=lambda: NOW)
@@ -263,7 +317,7 @@ async def compare(args) -> None:
                              stderr=subprocess.PIPE, text=True, bufsize=1)
     config = {'repository': str(native.repository), 'data': str(native.root / 'data'), 'settings': str(native.settings),
               'params': str(native.root / 'params'), 'models': str(native.models), 'model_cache': str(native.cache),
-              'usb_devices': str(native.usb), 'egpu_timestamp': NOW,
+              'usb_devices': str(native.usb), 'egpu_timestamp': NOW,'egpu_monotonic':MONOTONIC,
               'web': str(native.web), 'shared_assets': str(native.assets), 'training_assets': str(native.assets),
               'legacy_state': str(native.root / 'legacy'), 'unavailable': args.unavailable}
     child.stdin.write(json.dumps(config) + '\n')
@@ -273,6 +327,8 @@ async def compare(args) -> None:
       native_port = json.loads(await asyncio.wait_for(asyncio.to_thread(child.stdout.readline), 10))['port']
       source.HAS_PARAMS = not args.unavailable
       scenarios = [Scenario('unavailable-status'), Scenario('unavailable-restart', 'POST', RESTART, 500)] if args.unavailable else cases()
+      if args.native_readiness:scenarios=[replace(case,status=200) if case.name=='restart-compiled' else case for case in scenarios]
+      if args.final_only:scenarios=[case for case in scenarios if case.name.startswith(('failure-','recovery-','diagnostics-','phase-waiting_for_network','phase-install','status-reject','status-retries'))]
       if args.first:
         scenarios = scenarios[:1]
       async with ClientSession(auto_decompress=False) as session:
@@ -295,7 +351,7 @@ async def compare(args) -> None:
           rows.append(row)
           if pair['original'] != pair['native'] or pair['original']['status'] != scenario.status:
             differences.append(row)
-        result = {'passed': not differences, 'observations': len(rows), 'differences': differences, 'rows': rows}
+        result = {'native_artifact_admission': args.native_readiness, 'source_pin':PIN, 'passed': not differences, 'observations': len(rows), 'differences': differences, 'rows': rows}
         (args.output / 'result.json').write_text(json.dumps(result, indent=2))
         print(json.dumps({'passed': result['passed'], 'observations': len(rows), 'differences': len(differences)}))
     finally:
@@ -309,11 +365,62 @@ async def compare(args) -> None:
       raise AssertionError(f'eGPU comparison failed: exit={code}, differences={len(differences)}')
 
 
+async def native_package(args):
+  import hashlib
+  args.output.mkdir(parents=True,exist_ok=True)
+  assets=args.native_assets.resolve()
+  identity=json.loads((assets/'native-provider.json').read_text())
+  sha=identity['model_sha256'];pickle=identity['pickle'];source=assets/pickle['path']
+  assert source.is_file() and source.stat().st_size==pickle['size']
+  with tempfile.TemporaryDirectory(prefix='native-egpu-http-') as temp:
+    root=Path(temp);module,_=load(args.binding,f'ipc://{root}/source-log.sock',args.output/'binding-logs');files=Files(root,module.Params)
+    files.setup('active-ready')
+    manifest={'model_id':'owned-final-native-mdm','filename':'big_driving_tinygrad.pkl','size':pickle['size'],'sha256':sha,'url':'https://owned.invalid/model.pkl'}
+    (files.cache/'state.json').write_text(json.dumps({'active':manifest,'previous':None}))
+    assert shutil.disk_usage(files.cache).free >= 25*1024**3+pickle['size'], 'insufficient free space for owned native fixture'
+    cached=files.cache/f'big_driving_tinygrad-{sha[:16]}.pkl';shutil.copyfile(source,cached)
+    installed=files.cache/'precompiled'/sha;installed.mkdir(parents=True)
+    (installed/'native-provider.json').write_text(json.dumps(identity));os.link(cached,installed/'model.pkl')
+    config={'repository':str(files.repository),'data':str(root/'data'),'settings':str(files.settings),'params':str(root/'params'),
+      'models':str(files.models),'model_cache':str(files.cache),'usb_devices':str(files.usb),'native_assets':str(assets),
+      'egpu_timestamp':NOW,'egpu_monotonic':MONOTONIC}
+    child=subprocess.Popen([str(args.binary.resolve())],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    child.stdin.write(json.dumps(config)+'\n');child.stdin.flush();rows=[]
+    try:
+      port=json.loads(await asyncio.wait_for(asyncio.to_thread(child.stdout.readline),30))['port']
+      async with ClientSession(timeout=__import__('aiohttp').ClientTimeout(total=240)) as http:
+        async def request(label,path=STATUS,method='GET'):
+          async with http.request(method,f'http://127.0.0.1:{port}{path}') as response:
+            payload=await response.json();rows.append({'case':label,'status':response.status,'payload':payload,'headers':dict(response.headers)});return response.status,payload
+        code,value=await request('verified-native-package');assert code==200 and value['compiled'] and not value['can_restart'] and value['sha256']==sha,value
+        code,value=await request('verified-native-restart-refused',RESTART,'POST');assert code==409 and value['state']=='compiled',value
+        (files.cache/'status.json').write_text(json.dumps({'schema_version':1,'state':'installed','sha256':sha,'model_id':manifest['model_id']}))
+        code,value=await request('installed-phase');assert value['state']=='installed' and value['compiled'],value
+        failure={'time':NOW,'phase':'inference','rejected':False,'pickle_sha256':pickle['sha256'],'boot_id':'owned-current-boot','error':'libusb bulk in failed','worker':{'stage':'output_read','frame':5},'unrelated':'not exported'}
+        (installed/'last_failure.json').write_text(json.dumps(failure));files.params.put_bool('UsbGpuStartupFailed',True)
+        code,value=await request('native-current-failure');assert value['state']=='error' and value['error_code']=='usb' and value['detail']=='Last worker stage: output_read',value
+        code,value=await request('native-diagnostic-download',DIAGNOSTICS);assert code==200 and value['failure']=={k:v for k,v in failure.items() if k!='unrelated'},value
+        (installed/'rejected').write_text(sha)
+        code,value=await request('native-rejected');assert not value['compiled'] and not value['can_restart'],value
+        files.params.put_bool('UsbGpuStartupFailed',False);(installed/'rejected').unlink()
+        value=dict(identity);value['assets_manifest_sha256']='0'*64;(installed/'native-provider.json').write_text(json.dumps(value))
+        code,value=await request('native-identity-mismatch');assert not value['compiled'],value
+    finally:
+      child.stdin.write('stop\n');child.stdin.flush();code=await asyncio.wait_for(asyncio.to_thread(child.wait),15)
+      (args.output/'stderr.log').write_text(child.stderr.read());assert code==0
+    (args.output/'native-package.json').write_text(json.dumps({'pass':True,'asset_manifest_sha256':identity['assets_manifest_sha256'],'provider_sha256':hashlib.sha256((assets/'native-provider.json').read_bytes()).hexdigest(),'model_sha256':sha,'rows':rows,'scope':'verified immutable native model copied into owned regular-filecache; source untouched, no GPU/device'},indent=2))
+    print(f'PASS {len(rows)} actual native packaged model HTTP/diagnostic states')
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--binding', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--first', action='store_true')
+  parser.add_argument('--final-only',action='store_true')
+  parser.add_argument('--native-assets',type=Path)
+  parser.add_argument('--positive-native',action='store_true')
+  parser.add_argument('--native-readiness',action='store_true',help='synthetic Python artifacts do not satisfy native executor admission; pair with --positive-native actual package gate')
   parser.add_argument('--unavailable', action='store_true')
-  asyncio.run(compare(parser.parse_args()))
+  args=parser.parse_args()
+  asyncio.run(native_package(args) if args.positive_native else compare(args))

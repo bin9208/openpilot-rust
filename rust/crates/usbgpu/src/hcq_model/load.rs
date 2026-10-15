@@ -105,54 +105,6 @@ impl<D: Device> Model<D> {
             }
             buffers.push(bound);
         }
-        for patch in &manifest.patches {
-            match patch {
-                Patch::Blob { view, blob } => {
-                    let bound = storage::buffer(&buffers, *view)?;
-                    storage::load_blob(&mut file, blob, |offset, data| {
-                        bound.write(
-                            view.offset
-                                .checked_add(offset)
-                                .ok_or(Error::Contract("HCQ patch offset overflow"))?,
-                            data,
-                            &mut memory,
-                            &mut device,
-                        )
-                    })?;
-                }
-                Patch::Word { view, bytes, value } => {
-                    if ![1, 2, 4, 8].contains(bytes) {
-                        return Err(Error::Contract("HCQ patch scalar width"));
-                    }
-                    let value = storage::expression(value, &buffers)?.to_le_bytes();
-                    storage::buffer(&buffers, *view)?.write(
-                        view.offset,
-                        &value[..usize::from(*bytes)],
-                        &mut memory,
-                        &mut device,
-                    )?;
-                }
-            }
-        }
-        let arguments = manifest
-            .arguments
-            .iter()
-            .map(|view| storage::buffer(&buffers, *view)?.address(view.offset, Space::Host))
-            .collect::<Result<Vec<_>, _>>()?;
-        for parameter in &manifest.parameters {
-            if parameter.name.is_empty() {
-                return Err(Error::Contract("HCQ parameter name missing"));
-            }
-            let address = *arguments
-                .get(parameter.slot)
-                .ok_or(Error::Contract("HCQ parameter missing"))?;
-            memory.read(
-                address,
-                usize::try_from(parameter.bytes)
-                    .map_err(|_| Error::Contract("HCQ parameter size overflow"))?,
-            )?;
-        }
-        let execution = program.bind(&mut memory, &arguments)?;
         let mut bindings = Vec::with_capacity(manifest.bindings.len());
         for binding in &manifest.bindings {
             let allocation = if let Some(alias) = binding.alias {
@@ -182,6 +134,80 @@ impl<D: Device> Model<D> {
             };
             bindings.push(allocation);
         }
+        for patch in &manifest.patches {
+            match patch {
+                Patch::Blob { view, blob } => {
+                    let bound = storage::buffer(&buffers, *view)?;
+                    storage::load_blob(&mut file, blob, |offset, data| {
+                        bound.write(
+                            view.offset
+                                .checked_add(offset)
+                                .ok_or(Error::Contract("HCQ patch offset overflow"))?,
+                            data,
+                            &mut memory,
+                            &mut device,
+                        )
+                    })?;
+                }
+                Patch::Word { view, bytes, value } => {
+                    if ![1, 2, 4, 8].contains(bytes) {
+                        return Err(Error::Contract("HCQ patch scalar width"));
+                    }
+                    let value = storage::expression(value, &buffers, &bindings)?.to_le_bytes();
+                    storage::buffer(&buffers, *view)?.write(
+                        view.offset,
+                        &value[..usize::from(*bytes)],
+                        &mut memory,
+                        &mut device,
+                    )?;
+                }
+            }
+        }
+        let arguments = if let Some(values) = &manifest.argument_values {
+            values
+                .iter()
+                .map(|value| storage::expression(value, &buffers, &bindings))
+                .collect::<Result<Vec<_>, _>>()?
+        } else {
+            manifest
+                .arguments
+                .iter()
+                .map(|view| storage::buffer(&buffers, *view)?.address(view.offset, Space::Host))
+                .collect::<Result<Vec<_>, _>>()?
+        };
+        for parameter in &manifest.parameters {
+            if parameter.name.is_empty() {
+                return Err(Error::Contract("HCQ parameter name missing"));
+            }
+            let address = *arguments
+                .get(parameter.slot)
+                .ok_or(Error::Contract("HCQ parameter missing"))?;
+            if parameter.bytes == 0 {
+                continue;
+            }
+            if let Some(values) = &manifest.argument_values {
+                if let super::manifest::Expression::Address { view, .. } = &values[parameter.slot] {
+                    if let Bound::Device(_) = storage::buffer(&buffers, *view)? {
+                        storage::buffer(&buffers, *view)?.address(
+                            view.offset
+                                .checked_add(parameter.bytes)
+                                .ok_or(Error::Contract("HCQ parameter extent overflow"))?,
+                            Space::Host,
+                        )?;
+                        if address == 0 {
+                            return Err(Error::Contract("HCQ remote host mapping missing"));
+                        }
+                        continue;
+                    }
+                }
+            }
+            memory.read(
+                address,
+                usize::try_from(parameter.bytes)
+                    .map_err(|_| Error::Contract("HCQ parameter size overflow"))?,
+            )?;
+        }
+        let execution = program.bind(&mut memory, &arguments)?;
         Ok(Self {
             manifest,
             device,

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 
 pub const LANE_TIMEOUT_NS: u64 = 4_000_000_000;
 pub const BLINDSPOT_TIMEOUT_NS: u64 = 1_500_000_000;
@@ -26,21 +25,13 @@ impl Side {
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Direction {
-    None,
-    Left,
-    Right,
-}
-
 #[derive(Debug, Deserialize)]
 pub struct GateInput {
     pub alive_valid: bool,
-    pub speed: f64,
-    pub direction: Direction,
     pub left_width: f64,
     pub right_width: f64,
+    pub configured: [bool; 2],
+    pub next_side: Side,
 }
 
 #[derive(Debug, Serialize)]
@@ -51,6 +42,17 @@ pub struct Gate {
     pub side: Option<Side>,
     pub reason: &'static str,
     pub lane_width: f64,
+    pub eligible_sides: Vec<Side>,
+    #[serde(serialize_with = "gate_widths")]
+    pub lane_widths: [f64; 2],
+}
+
+fn gate_widths<S: serde::Serializer>(widths: &[f64; 2], serializer: S) -> Result<S::Ok, S::Error> {
+    use serde::ser::SerializeMap;
+    let mut map = serializer.serialize_map(Some(2))?;
+    map.serialize_entry("left", &widths[0])?;
+    map.serialize_entry("right", &widths[1])?;
+    map.end()
 }
 
 fn gate_side<S: serde::Serializer>(side: &Option<Side>, serializer: S) -> Result<S::Ok, S::Error> {
@@ -58,35 +60,35 @@ fn gate_side<S: serde::Serializer>(side: &Option<Side>, serializer: S) -> Result
 }
 
 pub fn gate(input: GateInput) -> Gate {
-    let stopped = |reason| Gate {
-        active: false,
-        side: None,
-        reason,
-        lane_width: 0.0,
+    let widths = if input.alive_valid {
+        [input.left_width, input.right_width]
+    } else {
+        [0.0; 2]
     };
-    if !input.alive_valid {
-        return stopped("carState or modelV2 is unavailable");
-    }
-    if input.speed.partial_cmp(&(30.0 / 3.6)) == Some(Ordering::Less)
-        || input.speed.partial_cmp(&(120.0 / 3.6)) == Some(Ordering::Greater)
-    {
-        return stopped("speed outside 30-120 km/h");
-    }
-    let (side, lane_width) = match input.direction {
-        Direction::None => return stopped("no lane-change direction"),
-        Direction::Left => (Side::Left, input.left_width),
-        Direction::Right => (Side::Right, input.right_width),
+    let eligible_sides: Vec<_> = [Side::Left, Side::Right]
+        .into_iter()
+        .filter(|side| {
+            input.alive_valid && input.configured[side.index()] && widths[side.index()] >= 2.0
+        })
+        .collect();
+    let side = if eligible_sides.contains(&input.next_side) {
+        Some(input.next_side)
+    } else {
+        eligible_sides.first().copied()
     };
-    let active = lane_width >= 3.0;
     Gate {
-        active,
-        side: Some(side),
-        lane_width,
-        reason: if active {
-            ""
+        active: !eligible_sides.is_empty(),
+        side,
+        reason: if !input.alive_valid {
+            "carState or modelV2 is unavailable"
+        } else if eligible_sides.is_empty() {
+            "configured lane widths below 2.0 m"
         } else {
-            "target lane width below 3.0 m"
+            ""
         },
+        lane_width: side.map_or(0.0, |side| widths[side.index()]),
+        eligible_sides,
+        lane_widths: widths,
     }
 }
 
@@ -113,16 +115,12 @@ impl Blindspot {
 
     pub fn update(&mut self, side: Side, confidence: f64, threshold: f64, smoothing: f64, dt: f64) {
         let result = &mut self.sides[side.index()];
-        let delta = (dt / smoothing.max(0.001)).min(1.0);
-        result.score = if confidence >= threshold {
-            (result.score + delta).min(1.0)
-        } else {
-            (result.score - delta).max(0.0)
-        };
+        let alpha = (dt / smoothing.max(0.001)).min(1.0);
+        result.score = (1.0 - alpha) * result.score + alpha * confidence;
         result.confidence = confidence;
-        if result.score >= 0.65 {
+        if !result.active && result.score >= threshold {
             result.active = true;
-        } else if result.score <= 0.25 {
+        } else if result.active && result.score < (threshold - 0.15).max(0.0) {
             result.active = false;
         }
     }

@@ -16,8 +16,6 @@ impl Hud {
         } else {
             self.wheel
         };
-        self.wheel_alpha.update(255.0 * 0.95);
-        self.wheel_y.update(0.0);
         let x = (f64::from(self.state.rect.x) + 18.0 + f64::from(wheel.width) / 2.0).trunc();
         let y =
             (f64::from(self.state.rect.y) + 18.0 + f64::from(wheel.height) / 2.0 + self.wheel_y.x)

@@ -32,6 +32,7 @@ pub struct NativeRuntime<B> {
     pub boundary: B,
     pub signals: crate::signals::Signals,
     pub loop_time: Duration,
+    pub xiaoge_startup: crate::xiaoge_startup::Gate,
 }
 
 pub fn subscriptions(isolated: bool) -> Result<(SubMaster, PubMaster), Error> {
@@ -39,7 +40,14 @@ pub fn subscriptions(isolated: bool) -> Result<(SubMaster, PubMaster), Error> {
         poll: Poll::One("deviceState".into()),
         ..Options::default()
     };
-    let services = &["deviceState", "carParams", "pandaStates"];
+    let services = &[
+        "deviceState",
+        "carParams",
+        "pandaStates",
+        "selfdriveState",
+        "modelV2",
+        "carState",
+    ];
     Ok(if isolated {
         (
             SubMaster::isolated(services, options)?,
@@ -68,6 +76,90 @@ impl<B: ExitBoundary> NativeRuntime<B> {
     }
 }
 impl<B: ExitBoundary> Runtime for NativeRuntime<B> {
+    fn stop_monitoring(&mut self) -> Result<(), Error> {
+        self.processes.stop_named("dmonitoringd")
+    }
+
+    fn xiaoge_ready(&mut self, started: bool, controls_ready: bool) -> Result<bool, Error> {
+        use openpilot_cereal::car_capnp::car_params::SafetyModel;
+        if !started {
+            self.xiaoge_startup.reset();
+            return Ok(false);
+        }
+        if self.xiaoge_startup.ready() {
+            return Ok(true);
+        }
+        let state = &self.subscriber.state;
+        let services = [
+            "deviceState",
+            "selfdriveState",
+            "modelV2",
+            "carState",
+            "pandaStates",
+        ];
+        let mut times = [0; 5];
+        for (time, service) in times.iter_mut().zip(services) {
+            *time = state.topic(service)?.event()?.get_log_mono_time();
+        }
+        if self.xiaoge_startup.needs_initial_messages() {
+            return Ok(self.xiaoge_startup.update(
+                true,
+                &crate::xiaoge_startup::Snapshot {
+                    times,
+                    valid: false,
+                    safety_ready: false,
+                    engageable: false,
+                    can_valid: false,
+                    can_timeout: false,
+                },
+                controls_ready,
+                self.loop_time.as_secs_f64(),
+            ));
+        }
+        let event::CarParams(cp) = state.topic("carParams")?.event()?.which()? else {
+            return Err(Error::Contract("wrong carParams union"));
+        };
+        let configs = cp?.get_safety_configs()?;
+        let event::PandaStates(pandas) = state.topic("pandaStates")?.event()?.which()? else {
+            return Err(Error::Contract("wrong pandaStates union"));
+        };
+        let pandas = pandas?;
+        let mut safety_ready = !configs.is_empty() && pandas.len() >= configs.len();
+        for (i, panda) in pandas.iter().enumerate() {
+            if !safety_ready {
+                break;
+            }
+            let model = panda.get_safety_model()?;
+            safety_ready = if (i as u32) < configs.len() {
+                let config = configs.get(i as u32);
+                model == config.get_safety_model()?
+                    && panda.get_safety_param() == config.get_safety_param()
+            } else {
+                matches!(model, SafetyModel::Silent | SafetyModel::NoOutput)
+            };
+        }
+        let event::SelfdriveState(selfdrive) = state.topic("selfdriveState")?.event()?.which()?
+        else {
+            return Err(Error::Contract("wrong selfdriveState union"));
+        };
+        let event::CarState(car) = state.topic("carState")?.event()?.which()? else {
+            return Err(Error::Contract("wrong carState union"));
+        };
+        let car = car?;
+        Ok(self.xiaoge_startup.update(
+            started,
+            &crate::xiaoge_startup::Snapshot {
+                times,
+                valid: state.all_checks(&services)?,
+                safety_ready,
+                engageable: selfdrive?.get_engageable(),
+                can_valid: car.get_can_valid(),
+                can_timeout: car.get_can_timeout(),
+            },
+            controls_ready,
+            self.loop_time.as_secs_f64(),
+        ))
+    }
     fn start(&mut self) -> Result<(), Error> {
         crate::diagnostics::start(&mut self.logger)
     }

@@ -21,7 +21,9 @@ use openpilot_messaging::{
 };
 use openpilot_model_runtime::catalog::Catalog;
 use openpilot_modeld::{
-    calibration::DrivingCalibration, camera::receive_pair, inputs::DropTracker,
+    calibration::DrivingCalibration,
+    camera::{receive_pair, CameraSource},
+    inputs::DropTracker,
     model_wire::ModelTiming,
 };
 use std::{
@@ -66,7 +68,24 @@ pub fn run(
         u32::try_from(layout.height).map_err(|_| Error::Contract("camera height"))?,
     ];
     match usb_selection::start(&usb_config, &params, camera) {
-        Ok(Some(model)) => runtime.enable_usb(model),
+        Ok(Some(model)) => {
+            let started = Instant::now();
+            let image = loop {
+                if let Some(frame) = main.receive()? {
+                    break frame;
+                }
+                if stop.load(Ordering::Relaxed) {
+                    return Ok(());
+                }
+                if started.elapsed() >= Duration::from_secs(2) {
+                    return Err(Error::Contract(
+                        "camera unavailable for internal standby warmup",
+                    ));
+                }
+            };
+            runtime.warm_internal(&image.buffer.bytes)?;
+            runtime.enable_usb(model);
+        }
         Ok(None) => {}
         Err(error) => {
             logger.emit(
@@ -78,6 +97,21 @@ pub fn run(
             )?;
         }
     }
+    let mut recovery = if runtime.uses_usb() {
+        openpilot_usbgpu::model::compiled_path(&usb_config.paths).and_then(|path| {
+            openpilot_driving_modeld::recovery_prepare::Preparation::capture(
+                &path,
+                &usb_config.worker,
+                &usb_config.paths.assets,
+                camera,
+            )
+            .and_then(openpilot_driving_modeld::recovery::Recovery::new)
+            .map_err(|error| eprintln!("eGPU background recovery unavailable: {error}"))
+            .ok()
+        })
+    } else {
+        None
+    };
     let mut subscribers = SubMaster::for_runtime(bus::TOPICS, SubscriberOptions::default())?;
     let mut publishers = PubMaster::for_runtime(bus::OUTPUTS)?;
     let Some(car_params) = process::car_params(&params, stop)? else {
@@ -130,6 +164,9 @@ pub fn run(
         params.get_bool("JetlinkActive")? || params.get_bool("JetlinkLossLatched")?,
     )?;
     let mut external_stored = None;
+    let mut external_display = jetlink::ModelStatusWriter::new(std::path::Path::new(
+        openpilot_jetlink::status::MODEL_STATUS,
+    ));
     let mut frame_count = 0u64;
     let mut diagnostics = RuntimeDiagnostics::new("modeld", 1.0);
     while !stop.load(Ordering::Relaxed) {
@@ -214,6 +251,7 @@ pub fn run(
                 mode,
                 controls,
                 frame: frame.metadata.frame_id,
+                source_sof: frame.metadata.timestamp_sof,
                 prepare_only: dropped.prepare_only,
                 camera_ready: calibration.seen()
                     && controls_fresh
@@ -250,19 +288,33 @@ pub fn run(
                         format!("eGPU model failed, falling back to internal GPU: {error}"),
                     ),
                 )?;
+                if let Some(active_recovery) = &mut recovery {
+                    if let Err(arm_error) =
+                        active_recovery.failed(process::monotonic(), &error.to_string())
+                    {
+                        eprintln!("eGPU recovery could not be armed: {arm_error}");
+                        recovery = None;
+                    }
+                }
                 usb_selection::fail(&params)?;
                 runtime.disable_usb();
-                runtime.infer(
-                    &frame.buffer.bytes,
-                    &extra_frame.buffer.bytes,
-                    [calibration.main(), calibration.extra()],
-                    dropped.prepare_only,
-                )?
+                runtime.reset_internal_after_usb()?;
+                drops.reset_warmup();
+                // A failed USB wait can outlive this camera pair. The consumed
+                // frame is already accounted for by DropTracker; receive a fresh
+                // synchronized pair before native inference or publication.
+                continue;
             }
             Err(error) => return Err(error),
         };
         let prediction = external.finish(prediction);
         jetlink::persist(&params, &mut external_stored, &external.status)?;
+        external_display.update_selected(
+            &external.status,
+            &external.detail,
+            openpilot_jetlink::now_ns() as f64 / 1e9,
+            external.selected_sha(),
+        )?;
         let model_execution_time = start.elapsed().as_secs_f64();
         let inference_finished = process::monotonic();
         let inference_cpu_ms = (thread_cpu() - inference_cpu_start) * 1000.0;
@@ -314,6 +366,48 @@ pub fn run(
             publishers.send("cameraOdometry", &messages.pose)?;
             if runtime.uses_usb() {
                 usb_selection::published(&params)?;
+            }
+        }
+        if !runtime.uses_usb() {
+            if let Some(active_recovery) = &mut recovery {
+                let now = process::monotonic();
+                let camera_age = now - frame.metadata.timestamp_eof as f64 * 1e-9;
+                let healthy = published && calibration.seen() && (0. ..0.15).contains(&camera_age);
+                let join_topics = ["carState", "selfdriveState", "carControl"];
+                let mut valid = [false; 3];
+                let mut received = [0.; 3];
+                for (index, name) in join_topics.into_iter().enumerate() {
+                    let topic = subscribers.state.topic(name)?;
+                    valid[index] = topic.valid && topic.alive;
+                    received[index] = topic.receive_time;
+                }
+                let join = openpilot_driving_modeld::recovery::may_join(
+                    now,
+                    valid,
+                    received,
+                    sources.car.get_standstill(),
+                    f64::from(sources.car.get_v_ego()),
+                    sources.car.get_steering_pressed(),
+                );
+                let recovered = active_recovery
+                    .observe(now, healthy, now - camera_ready, dropped.dropped > 0)
+                    .and_then(|()| {
+                        active_recovery.tick(now, params.get_bool("UsbGpuPresent")?, join)
+                    });
+                match recovered {
+                    Ok(Some(model)) => {
+                        runtime.enable_usb(model);
+                        params.put_bool("UsbGpuStartupFailed", false)?;
+                        params.put_bool("UsbGpuActive", true)?;
+                        params.put_bool("UsbGpuLoading", true)?;
+                        drops.reset_warmup();
+                    }
+                    Ok(None) => {}
+                    Err(error) => {
+                        eprintln!("eGPU recovery disabled; retaining internal model: {error}");
+                        recovery = None;
+                    }
+                }
             }
         }
         FrameTiming {

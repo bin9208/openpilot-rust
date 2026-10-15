@@ -20,3 +20,15 @@ This is a one-shot diagnostic, not a background service. It does not publish
 vehicle commands. Host tests and generic aarch64 builds do not validate AGNOS
 compatibility, CPU savings, temperature improvements, or safe vehicle operation.
 Do not deploy the generic CI build to a vehicle; target validation remains open.
+
+The `dev-md` native Jetlink candidate binds each App session to the model selected
+offroad. Shadow preserves native-model control; Active still requires a matching
+device and numerical validation record and the existing stopped/disengaged gate.
+Readiness, host tests and ARM emulation do not supply that record. See the
+[Jetlink settings](settings.md#jetlink-external-model-experimental).
+
+For a compatible host, the candidate forwards saved Wi-Fi profiles over the
+private Jetlink connection and waits for host preparation before inference.
+Wi-Fi passwords are excluded from status files and logs. A legacy host can
+request the pinned model; its download is verified before transfer, and
+preparation stops if the device goes onroad or the cable disconnects.

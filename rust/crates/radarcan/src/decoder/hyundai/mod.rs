@@ -1,3 +1,4 @@
+pub mod bosch;
 mod constructor;
 pub mod group3;
 pub mod identity;
@@ -18,6 +19,8 @@ pub struct Hyundai {
     pub radar_msg_count: u32,
     pub radar_required_msg_count: u32,
     pub radar_tracks: bool,
+    pub radar_track_mode: i32,
+    pub bosch: Option<bosch::receiver::Receiver>,
     pub corner_object_tracks: bool,
     pub corner_object_180_tracks: bool,
     pub corner_object_430_tracks: bool,

@@ -12,6 +12,8 @@ import ast
 from collections import deque
 from pathlib import Path
 import sys
+import subprocess
+import hashlib
 from types import SimpleNamespace
 
 from openpilot.cereal import car, log
@@ -46,21 +48,22 @@ def load(params):
   from opendbc.car.hyundai.carstate import PREV_BUTTON_SAMPLES
   from openpilot.selfdrive.carrot.bluetooth.model import BLUETOOTH_CANCEL
 
-  tree = ast.parse(SOURCE.read_text())
+  source = subprocess.check_output(['git', 'show', 'e8e152dbcfd9574a1791ed12026d1880e87689b3:openpilot/selfdrive/car/car_specific.py'], cwd=ROOT, text=True)
+  tree = ast.parse(source)
   cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'CarSpecificEvents')
   namespace = {'car': car, 'structs': structs, 'deque': deque, 'DT_CTRL': DT_CTRL, 'MAX_CTRL_SPEED': MAX_CTRL_SPEED,
                'VWCarControllerParams': CarControllerParams, 'HYUNDAI_ENABLE_BUTTONS': ENABLE_BUTTONS,
                'HYUNDAI_PREV_BUTTON_SAMPLES': PREV_BUTTON_SAMPLES, 'BLUETOOTH_CANCEL': BLUETOOTH_CANCEL,
                'ButtonType': structs.CarState.ButtonEvent.Type, 'GearShifter': structs.CarState.GearShifter,
                'EventName': log.OnroadEvent.EventName, 'NetworkLocation': structs.CarParams.NetworkLocation,
-               'Params': lambda: params}
+               'Params': lambda: params, 'TESLA_STANDSTILL_STEER_FAULT_DEBOUNCE_FRAMES': 200, 'TESLA_STANDSTILL_STEER_FAULT_SPEED': 0.5}
   events = load_source('tici')
   namespace.update(Events=events['Events'], ET=events['ET'])
   exec(compile(ast.Module(body=[cls], type_ignores=[]), str(SOURCE), 'exec'), namespace)
   add_lines = {node.lineno for node in ast.walk(cls) if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
                and node.func.attr == 'add' and isinstance(node.func.value, ast.Name) and node.func.value.id == 'events'}
   conditions = [(node.lineno, node.test.end_lineno, node.body[0].lineno) for node in ast.walk(cls) if isinstance(node, ast.If)]
-  return SimpleNamespace(cls=namespace['CarSpecificEvents'], add_lines=add_lines, conditions=conditions,
+  return SimpleNamespace(source_commit='e8e152dbcfd9574a1791ed12026d1880e87689b3', source_sha256=hashlib.sha256(source.encode()).hexdigest(), cls=namespace['CarSpecificEvents'], add_lines=add_lines, conditions=conditions,
                          constants={'DT_CTRL': DT_CTRL, 'MAX_CTRL_SPEED': MAX_CTRL_SPEED,
                                     'VW_DEFAULT_MIN_STEER_SPEED': CarControllerParams.DEFAULT_MIN_STEER_SPEED,
                                     'HYUNDAI_ENABLE_BUTTONS': list(ENABLE_BUTTONS), 'HYUNDAI_PREV_BUTTON_SAMPLES': PREV_BUTTON_SAMPLES,

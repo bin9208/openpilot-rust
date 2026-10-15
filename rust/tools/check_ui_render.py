@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--binary', type=Path, required=True)
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--display', required=True)
+parser.add_argument('--filter', default='')
 args = parser.parse_args()
 args.output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[2]
@@ -25,6 +26,9 @@ def element(kind, text, x, y, w, h, **props):
 
 
 scenes = [
+  ('mixed-label', False, 'en', 3, [element('label', 'ASCII prefix 😀 한국어 ABCDEF end', 10, 10, 230, 220, size=32),element('unified', 'English 먼저 LongAsciiSuffix After 😀 한국어 tail', 260, 10, 260, 220,size=32)]),
+  ('mixed-elide', False, 'en', 3,[element('label','LongAsciiPrefix123456789 한글',10,15,220,90,size=38,elide=True),element('unified','English and 한국어 more words',260,15,260,90,size=38,elide=True,wrap=False)]),
+  ('mixed-shimmer',False,'en',20,[element('unified','ABC 한국어 xyz',10,20,510,180,size=38,shimmer=True)]),
   ('wrapped', False, 'en', 3, [element('unified', 'Shared native UI\nA verylongwordwithoutspaces crosses the next line.\n\nTail', 18, 12, 500, 210, size=28)]),
   ('emoji', False, 'en', 3, [element('label', 'Ready 😀\nWi-Fi 🇰🇷', 20, 15, 496, 210, size=38)]),
   ('scroll', False, 'en', 80, [element('unified', 'Scrolling a long shared framework label through the viewport', 30, 60, 460, 80, size=38, scroll=True)]),
@@ -53,6 +57,7 @@ scenes = [
     ],
   ),
 ]
+if args.filter:scenes=[scene for scene in scenes if any(part in scene[0] for part in args.filter.split(','))]
 results = []
 for name, big, language, frames, elements in scenes:
   scene = {'config': {'big': big, 'large_viewport': big, 'pc': True, 'scale': 1.0}, 'language': language, 'frames': frames, 'elements': elements}
@@ -82,4 +87,4 @@ for name, big, language, frames, elements in scenes:
   print(json.dumps(result), flush=True)
 (args.output / 'render-results.json').write_text(json.dumps(results, indent=2))
 assert all(item['different_pixels'] == 0 and item['state_equal'] for item in results), results
-print('PASS: six actual-source/native shared widget scenes and state snapshots')
+print(f'PASS: {len(scenes)} actual-source/native shared widget scenes and state snapshots')

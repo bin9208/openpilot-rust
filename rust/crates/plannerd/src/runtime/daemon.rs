@@ -1,24 +1,23 @@
-use super::{NativeOutput, Planner, PUBLICATIONS, SERVICES};
+use super::{NativeOutput, PUBLICATIONS, Planner, SERVICES};
 use crate::{
+    Error,
     config::Config,
     native_parameters::RuntimeParameters,
     platform::{self, Clock, SystemClock},
-    Error,
 };
 use openpilot_logging::{
-    log_site,
+    Number, log_site,
     producer::Factory,
     record::{Level, Record},
     runtime::RuntimeDiagnostics,
-    Number,
 };
 use openpilot_messaging::runtime::{PubMaster, SubMaster};
 use openpilot_params::Params;
 use std::{
     path::Path,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     thread,
     time::Duration,

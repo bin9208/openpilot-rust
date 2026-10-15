@@ -1,5 +1,8 @@
 use super::Error;
-use crate::{data::Data, point::Source};
+use crate::{
+    data::Data,
+    point::{Point, Source},
+};
 use capnp::message::Builder;
 use openpilot_cereal::{car_capnp::radar_data::radar_point::RadarSource, log_capnp::event};
 
@@ -10,35 +13,50 @@ pub fn encode(data: &Data, valid: bool, mono_time: u64) -> Result<Vec<u8>, Error
     event.set_log_mono_time(mono_time);
     let mut tracks = event.init_live_tracks();
     tracks.set_radar_track_flipped(data.radar_track_flipped);
+    tracks.set_has_display_data(data.has_display_data);
     let mut errors = tracks.reborrow().init_errors();
     errors.set_can_error(data.errors.can_error);
     errors.set_radar_fault(data.errors.radar_fault);
     errors.set_wrong_config(data.errors.wrong_config);
     errors.set_radar_unavailable_temporary(data.errors.radar_unavailable_temporary);
+    if data.display_points_present || !data.display_points.is_empty() {
+        let mut points = tracks
+            .reborrow()
+            .init_display_points(u32::try_from(data.display_points.len())?);
+        for (index, point) in data.display_points.iter().enumerate() {
+            encode_point(point, points.reborrow().get(u32::try_from(index)?));
+        }
+    }
     if !data.points_present && data.points.is_empty() {
         return Ok(capnp::serialize::write_message_to_words(&message));
     }
     let mut points = tracks.init_points(u32::try_from(data.points.len())?);
     for (index, point) in data.points.iter().enumerate() {
-        let mut output = points.reborrow().get(u32::try_from(index)?);
-        output.set_track_id(point.track_id);
-        output.set_d_rel(point.d_rel);
-        output.set_y_rel(point.y_rel);
-        output.set_v_rel(point.v_rel);
-        output.set_a_rel(point.a_rel);
-        output.set_yv_rel(point.yv_rel);
-        output.set_measured(point.measured);
-        output.set_v_lead(point.v_lead);
-        output.set_a_lead(point.a_lead);
-        output.set_j_lead(point.j_lead);
-        output.set_track_state(point.track_state);
-        output.set_radar_source(match point.radar_source {
-            Source::FrontRadar => RadarSource::FrontRadar,
-            Source::Scc => RadarSource::Scc,
-            Source::Corner235 => RadarSource::Corner235,
-            Source::Corner180 => RadarSource::Corner180,
-            Source::Corner430 => RadarSource::Corner430,
-        });
+        encode_point(point, points.reborrow().get(u32::try_from(index)?));
     }
     Ok(capnp::serialize::write_message_to_words(&message))
+}
+
+fn encode_point(
+    point: &Point,
+    mut output: openpilot_cereal::car_capnp::radar_data::radar_point::Builder<'_>,
+) {
+    output.set_track_id(point.track_id);
+    output.set_d_rel(point.d_rel);
+    output.set_y_rel(point.y_rel);
+    output.set_v_rel(point.v_rel);
+    output.set_a_rel(point.a_rel);
+    output.set_yv_rel(point.yv_rel);
+    output.set_measured(point.measured);
+    output.set_v_lead(point.v_lead);
+    output.set_a_lead(point.a_lead);
+    output.set_j_lead(point.j_lead);
+    output.set_track_state(point.track_state);
+    output.set_radar_source(match point.radar_source {
+        Source::FrontRadar => RadarSource::FrontRadar,
+        Source::Scc => RadarSource::Scc,
+        Source::Corner235 => RadarSource::Corner235,
+        Source::Corner180 => RadarSource::Corner180,
+        Source::Corner430 => RadarSource::Corner430,
+    });
 }

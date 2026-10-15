@@ -38,6 +38,16 @@ impl QcomModel {
         Ok(Self(Model::new(bundle, Linux::open(priority)?)?))
     }
 
+    /// Construct from the already loaded, package-bound snapshot without
+    /// re-reading mutable graph paths before opening the GPU.
+    ///
+    /// # Safety
+    /// The bundle must contain authenticated QCOMCL a630 kernels whose argument
+    /// order, layouts, launch sizes and bounds satisfy `load`'s trust contract.
+    pub unsafe fn from_bundle(bundle: QcomBundle, priority: u8) -> Result<Self, Error> {
+        Ok(Self(Model::new(bundle, Linux::open(priority)?)?))
+    }
+
     pub fn write_input(&mut self, name: &str, bytes: &[u8]) -> Result<(), Error> {
         self.0.write_input(name, bytes)
     }
@@ -49,6 +59,9 @@ impl QcomModel {
     }
     pub fn run_entry(&mut self, name: &str) -> Result<(), Error> {
         self.0.run_entry(name)
+    }
+    pub fn reset_mutable(&mut self) -> Result<(), Error> {
+        self.0.reset_mutable()
     }
 }
 
@@ -173,6 +186,28 @@ impl<D: Driver> Model<D> {
             .find(|binding| binding.name == name)
             .ok_or_else(|| Error::Binding(name.to_owned()))?;
         Ok(&self.bundle.graph.views[binding.view])
+    }
+
+    fn reset_mutable(&mut self) -> Result<(), Error> {
+        let zeroes = [0u8; 16384];
+        for (allocation, &buffer) in self.bundle.graph.allocations.iter().zip(&self.allocations) {
+            if let Some(offset) = allocation.weight_offset {
+                self.device.write(
+                    buffer,
+                    0,
+                    &self.bundle.weights[offset..offset + allocation.bytes],
+                )?;
+                continue;
+            }
+            for offset in (0..allocation.bytes).step_by(zeroes.len()) {
+                self.device.write(
+                    buffer,
+                    offset,
+                    &zeroes[..(allocation.bytes - offset).min(zeroes.len())],
+                )?;
+            }
+        }
+        Ok(())
     }
 
     fn write_input(&mut self, name: &str, bytes: &[u8]) -> Result<(), Error> {

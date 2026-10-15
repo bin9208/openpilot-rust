@@ -15,6 +15,18 @@ pub(super) fn pt(state: &mut State, input: (&str, &str), now: u64) -> Result<f64
 
 pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> Result<(), Error> {
     let flags = state.config.flags;
+    let observation = state.steering_touch.update_parser(&mut state.inputs.pt)?;
+    let mut touch = ret.reborrow().init_steering_touch();
+    if let Some(observation) = observation {
+        touch.set_available(observation.available);
+        touch.set_valid(observation.valid);
+        touch.set_touched(observation.touched);
+        touch.set_sample_mono_time(observation.sample_mono_time);
+        touch.set_raw_status(observation.raw_status);
+        touch.set_raw_touch1(observation.raw_touch1);
+        touch.set_raw_touch2(observation.raw_touch2);
+    }
+
     let brake = super::fd_powertrain::update(state, ret.reborrow(), now)?;
     state_fields::wheels(
         state,
@@ -86,6 +98,19 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
         pt(state, ("MDPS", "LKA_FAULT"), now)? != 0.
             || pt(state, ("MDPS", "LFA2_FAULT"), now)? != 0.,
     );
+    let stalk_sample = match state.inputs.captured("blinker_stalks")? {
+        Some(data) => Some([
+            get(&data, "LEFT_BLINKER")? != 0.,
+            get(&data, "RIGHT_BLINKER")? != 0.,
+            get(&data, "LEFT_BLINKER_TAP")? != 0.,
+            get(&data, "RIGHT_BLINKER_TAP")? != 0.,
+        ]),
+        None => None,
+    };
+    let [lever, left_count, right_count] = state.stalks.update(stalk_sample);
+    ret.set_blinker_lever(lever);
+    ret.set_left_blinker_stalk_count(left_count);
+    ret.set_right_blinker_stalk_count(right_count);
     let blink = state
         .inputs
         .captured("blinkers")?
@@ -223,7 +248,13 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
     ret.set_acc_faulted(pt(state, ("TCS", "ACCEnable"), now)? != 0.);
     let speed = pt(state, ("CRUISE_BUTTONS_ALT", "CLU_SPEED"), now)? / 3.6;
     state_fields::cluster_speed(state, ret.reborrow(), speed)?;
-    super::state_navigation::update(state, ret.reborrow(), camera, true)?;
     let events = super::fd_buttons::events(state, previous_main, now)?;
+    let accel_rising = events
+        .iter()
+        .any(|(pressed, kind)| *pressed && *kind == car_state::button_event::Type::AccelCruise);
+    super::state_navigation::update(state, ret.reborrow(), camera, true, accel_rising)?;
+    let events = state
+        .navigation_policy
+        .filter_buttons(events, state.navigation_long_press);
     state_fields::button_list(ret, &events)
 }

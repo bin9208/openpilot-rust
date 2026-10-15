@@ -17,7 +17,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            threshold: 0.45,
+            threshold: 0.94,
             smoothing_seconds: 0.2,
             base_interval_seconds: 0.25,
             lane_threshold: 0.25,
@@ -49,12 +49,7 @@ impl Settings {
             lane_interval_seconds: field("laneIntervalSeconds", self.lane_interval_seconds)?,
         };
         for (value, minimum, maximum, error) in [
-            (
-                result.threshold,
-                0.25,
-                1.0,
-                "threshold must be 0.25 to 1.00",
-            ),
+            (result.threshold, 0.0, 1.0, "threshold must be 0.00 to 1.00"),
             (
                 result.smoothing_seconds,
                 0.1,
@@ -69,9 +64,9 @@ impl Settings {
             ),
             (
                 result.lane_threshold,
-                0.05,
+                0.0,
                 1.0,
-                "laneThreshold must be 0.05 to 1.0",
+                "laneThreshold must be 0.0 to 1.0",
             ),
             (
                 result.lane_interval_seconds,
@@ -100,10 +95,10 @@ impl Settings {
             value.clamp(minimum, maximum) / scale
         };
         Self {
-            threshold: integer("OnnxBsdThreshold", 45.0, 25.0, 100.0, 100.0),
+            threshold: integer("OnnxBsdThreshold", 94.0, 0.0, 100.0, 100.0),
             smoothing_seconds: integer("OnnxBsdSmoothingMs", 200.0, 100.0, 500.0, 1000.0),
             base_interval_seconds: integer("OnnxBsdIntervalMs", 250.0, 50.0, 1000.0, 1000.0),
-            lane_threshold: integer("OnnxLaneThreshold", 25.0, 5.0, 100.0, 100.0),
+            lane_threshold: integer("OnnxLaneThreshold", 25.0, 0.0, 100.0, 100.0),
             lane_interval_seconds: integer("OnnxLaneIntervalMs", 400.0, 50.0, 2000.0, 1000.0),
         }
     }

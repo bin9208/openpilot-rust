@@ -59,6 +59,20 @@ pub struct Ring {
     pub color: u32,
 }
 pub trait Draw: Measure {
+    /// Concrete canvases expose the same renderer for brief framebuffer changes;
+    /// the painter still receives this Draw, retaining its fonts/assets/input.
+    #[cfg(feature = "native")]
+    fn native_renderer(&mut self) -> Option<&mut crate::renderer::Renderer> {
+        None
+    }
+    fn rectangle_lines_ex(
+        &mut self,
+        _rect: Rect,
+        _thickness: f32,
+        _color: u32,
+    ) -> Result<(), Error> {
+        Err(Error::Contract("rectangle outline drawing unavailable"))
+    }
     fn circle_lines(
         &mut self,
         _center: (i32, i32),

@@ -53,7 +53,16 @@ impl Controller {
                 self.events.add(E::PosenetInvalid, false);
             }
             if state.topic("livePose")?.seen && !views.pose()?.get_inputs_o_k() {
-                self.events.add(E::LocationdTemporaryError, false);
+                if self.model_starting_current
+                    && views.pose()?.get_sensors_o_k()
+                    && views.pose()?.get_posenet_o_k()
+                {
+                    if !self.events.names().contains(&E::SelfdriveInitializing) {
+                        self.events.add(E::SelfdriveInitializing, false);
+                    }
+                } else {
+                    self.events.add(E::LocationdTemporaryError, false);
+                }
             }
             if state.topic("liveParameters")?.seen
                 && !views.parameters()?.get_valid()

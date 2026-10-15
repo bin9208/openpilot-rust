@@ -1,5 +1,5 @@
 use openpilot_carrot_server::{
-    terminal_commands, vision_test, web_settings::WebSettings, youtube_test::CommandSpec, Value,
+    terminal_commands, vision_test, vision_test::CommandSpec, web_settings::WebSettings, Value,
 };
 use std::path::{Path, PathBuf};
 
@@ -62,7 +62,6 @@ pub(super) fn configuration(
             &root.join("content-catalog.json"),
         ),
         vision: Some(vision.clone()),
-        youtube: None,
     };
     Ok((commands, vision))
 }

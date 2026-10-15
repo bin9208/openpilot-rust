@@ -15,6 +15,7 @@ pub fn float(value: f64) -> f32 {
     })
 }
 pub fn measure(draw: &dyn Draw, font: Font, text: &str, size: f64, spacing: f64) -> Point {
+    let font = draw.resolve_font(font, text);
     let (plain, count) = crate::text::strip_emoji(text);
     let scaled = float(size * draw.font_scale());
     let spacing = (spacing * 10000.0).round_ties_even() / 10000.0;
@@ -55,6 +56,7 @@ pub fn draw_emoji_line(
     spacing: f64,
     color: u32,
 ) -> Result<(), Error> {
+    let font = draw.resolve_font(font, text);
     let mut previous = 0;
     for (start, end) in emoji::find(text) {
         let before = &text[previous..start];
@@ -64,7 +66,7 @@ pub fn draw_emoji_line(
         }
         let emoji_size = float(size * draw.font_scale());
         draw.emoji(&text[start..end], position, emoji_size, color)?;
-        position.x += emoji_size;
+        position.x = float(f64::from(position.x) + size * draw.font_scale());
         previous = end;
     }
     let after = &text[previous..];
@@ -82,6 +84,7 @@ pub fn elide(
     width: f64,
     force: bool,
 ) -> String {
+    let font = draw.resolve_font(font, text);
     let text_width = f64::from(measure(draw, font, text, size, spacing).x);
     if text_width <= width {
         if !force {
@@ -117,6 +120,7 @@ pub fn wrap(
     spacing: f64,
     width: f64,
 ) -> Vec<String> {
+    let font = draw.resolve_font(font, text);
     if text.is_empty() || width <= 0.0 {
         return Vec::new();
     }
@@ -215,6 +219,7 @@ pub fn draw_emoji_spans(
         spacing,
         color,
     } = style;
+    let font = draw.resolve_font(font, value);
     let chars: Vec<_> = value.chars().collect();
     let mut previous = 0;
     for span in spans {
@@ -227,7 +232,7 @@ pub fn draw_emoji_spans(
         }
         let scaled = float(size * draw.font_scale());
         draw.emoji(&span.text, position, scaled, color)?;
-        position.x += scaled;
+        position.x = float(f64::from(position.x) + size * draw.font_scale());
         previous = span.end;
     }
     let after: String = chars[previous.min(chars.len())..].iter().collect();

@@ -39,7 +39,7 @@ impl LongitudinalMpc {
                     0.,
                     0.,
                     self.change_cost,
-                    input.jerk_factor * self.jerk_cost_factor * 5.,
+                    input.jerk_factor * self.jerk_cost_factor * 20.,
                 ]
             }
             PlannerMode::Blended => {
@@ -52,6 +52,18 @@ impl LongitudinalMpc {
                 [0., 0.1, 0.2, 5., self.change_cost, 1.]
             }
         };
+        let values = [
+            costs[0], costs[1], costs[2], costs[3], costs[4], costs[5], 1e6, 1e6, 1e6, 100.,
+        ];
+        let key = values
+            .iter()
+            .all(|v| v.is_finite())
+            .then(|| (self.mode, values.map(f64::to_bits)));
+        // The private solver is created once per owner and never replaced; reset invalidates this key.
+        if key.is_some() && key == self.cost_key {
+            return Ok(());
+        }
+        self.cost_key = None;
         let mut weights = [0.; 36];
         for i in 0..6 {
             weights[i * 6 + i] = costs[i];
@@ -71,6 +83,7 @@ impl LongitudinalMpc {
             self.solver
                 .set(stage, Field::LowerSlack, &[1e6, 1e6, 1e6, 100.])?;
         }
+        self.cost_key = key;
         Ok(())
     }
 }

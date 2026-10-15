@@ -104,12 +104,33 @@ impl Hyundai {
             (0x500, 64)
         };
         let required = if !canfd && !group4 { 32 } else { count };
-        let tracks = environment.settings.integer("EnableRadarTracks")? >= 1;
+        let track_mode = environment.settings.integer("EnableRadarTracks")?;
+        let tracks = track_mode >= 1;
+        let bosch = if tracks && config.ext_flags & (1 << 17) != 0 {
+            let (a, e, cam) = environment.buses(config)?;
+            Some(
+                super::bosch::receiver::Receiver::new(super::bosch::provider::Config {
+                    bus: i32::try_from(if config.ext_flags & (1 << 18) != 0 {
+                        a
+                    } else {
+                        cam
+                    })
+                    .map_err(|_| Error::IntegerOverflow)?,
+                    camera_bus: i32::try_from(a).map_err(|_| Error::IntegerOverflow)?,
+                    scc_bus: i32::try_from(if config.flags & 8 != 0 { cam } else { e })
+                        .map_err(|_| Error::IntegerOverflow)?,
+                    ..super::bosch::provider::Config::default()
+                })
+                .map_err(Error::BoschValue)?,
+            )
+        } else {
+            None
+        };
         let corner235 = config.ext_flags & (1 << 12) != 0
             && environment.settings.integer("EnableCornerRadar")? > 0;
         let corner180 = config.ext_flags & (1 << 13) != 0
             && environment.settings.integer("EnableCornerRadar")? > 0;
-        let rcp_tracks = if tracks {
+        let rcp_tracks = if tracks && bosch.is_none() {
             (environment.emit)("RadarInterface: RadarTracks...\n");
             let (name, bus) = if canfd {
                 let (bus, _, _) = environment.buses(config)?;
@@ -139,7 +160,7 @@ impl Hyundai {
             5,
             "0x180",
         )?;
-        let rcp_scc = if tracks && !canfd && config.flags & 8 == 0 {
+        let rcp_scc = if bosch.is_none() && tracks && !canfd && config.flags & 8 == 0 {
             None
         } else {
             let (_, e, cam) = environment.buses(config)?;
@@ -156,7 +177,7 @@ impl Hyundai {
             )?)
         };
         let corners_available = rcp_corner_objects.is_some() || rcp_corner_objects_180.is_some();
-        let radar_off_can = config.unavailable && !corners_available;
+        let radar_off_can = config.unavailable && !corners_available && bosch.is_none();
         (environment.emit)(&format!("RadarInterface: radarUnavailable={} radarTracks={} group4={} corner235={} corner180={} corner430=False radarOffCan={}\n",
             python_bool(config.unavailable),python_bool(tracks),python_bool(group4),python_bool(rcp_corner_objects.is_some()),
             python_bool(rcp_corner_objects_180.is_some()),python_bool(radar_off_can)));
@@ -207,6 +228,8 @@ impl Hyundai {
             radar_msg_count: count,
             radar_required_msg_count: required,
             radar_tracks: tracks,
+            radar_track_mode: track_mode,
+            bosch,
             corner_object_tracks: corner235,
             corner_object_180_tracks: corner180,
             corner_object_430_tracks: false,

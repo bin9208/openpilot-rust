@@ -1,0 +1,236 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "solver_branch": "Pinned default dependency set: NumPy fallback; SciPy absent from pyproject.toml and uv.lock. No claim for separately installed SciPy tie policy.",
+  "source_files": {
+    "opendbc_repo/opendbc/car/hyundai/radar_bosch.py": "8c4cf75bcf371980cedc77432d22950c5ca490eff8a300a97685f2f84419a2f6",
+    "opendbc_repo/opendbc/car/radar_lead_filter.py": "55ab0ad700459c3c9b02fcfb8f9dcae54fd8626aee515d4b3e473422c70d5528",
+    "pyproject.toml": "393ce3bd5eb0c497bc0454a8336d0745b59c0253055864f94c89585a1cd81076",
+    "uv.lock": "3d3a7e31e04e654a86ed332fb8b97d67f5648905ee0b276bc53cfbc87fe5dcdf",
+    "opendbc_repo/opendbc/car/hyundai/radar_interface.py": "aced89b68c779fff7a352ee6fda3a082beb966b4730dfd3b6afb1f546e712ddb"
+  },
+  "fixtures": {
+    "bosch-graph-final.json.zst": {
+      "cases": 3072,
+      "sha256": "31e9d115197205dbf808869432d082e7ab1b518030b537b1b85b85603930ad2a"
+    },
+    "bosch-tracking-final.json.zst": {
+      "cases": 768,
+      "sha256": "5ad356b6aaf4db33f1147d837377d4cb28e9261a8075bd72970ec7cbef78d7a5"
+    },
+    "bosch-physical-graph-final.json.zst": {
+      "cases": 2048,
+      "sha256": "af6f0448936a5b82b7151d3d57184d9bf2ce7f1d917b763b7d4749619ba625df"
+    },
+    "bosch-representative-final.json.zst": {
+      "cases": 4096,
+      "sha256": "6fc864765a2dba0395ae3e384ea8d96ed8f580a39b3ba5c831e8a9c54b9a24f7"
+    },
+    "bosch-group-config-final.json.zst": {
+      "cases": {
+        "constructors": 171,
+        "gates": 4096
+      },
+      "sha256": "3325613dc5ec15d757d8d2d798bd768f5250ffc4217eda4ade83bf0393990fc6"
+    },
+    "bosch-cluster-final.json.zst": {
+      "cases": 1297,
+      "sha256": "b8aac0683694149fe5490700d64f3d0feea66cbe7b5d814442d34a38fb21911a"
+    },
+    "bosch-acceleration-final.jsonl.zst": {
+      "cases": 2544,
+      "sha256": "4aadc0a919bcdf3ed29dbc7ad59da8a9c4bf516cfebbc92ccc128e99d7c1a43f"
+    },
+    "bosch-alias-final.json.zst": {
+      "cases": 2048,
+      "sha256": "68003a537a7f97a20236c6e0661a98885c0172fa168f7ea8661059b0e3566751"
+    },
+    "bosch-pair-final.json.zst": {
+      "cases": 1297,
+      "sha256": "5fd18c2546bb73dfb553d5b1ac42d9d579e301a69c8a7ced6305508cf0e7c69e"
+    },
+    "bosch-retention-final.json.zst": {
+      "cases": 1090,
+      "sha256": "f9164e24163caf6f2271621793497963a5ae9face87a537fe9d54ba6ebcad54b"
+    },
+    "python-norm-final.json.zst": {
+      "cases": 4105,
+      "sha256": "cec5bfd7d4a4517216e983fa5f8162405d86790bf90be536dc80dffaace35fc6"
+    },
+    "bosch-group-final.jsonl.zst": {
+      "cases": 1439,
+      "sha256": "de55d7c9636596656f9c176d17b71824b12b1c9dbb50da71d7b2ba6b1b9f3dea"
+    },
+    "bosch-ancestry-final.jsonl.zst": {
+      "cases": 1539,
+      "sha256": "7e725d5988b13dbac68ca7e3efa926db6a841df7ea89efad50db54d50d47eda4"
+    },
+    "bosch-tracker-final.jsonl.zst": {
+      "cases": 89,
+      "sha256": "ae6472f384e4f46c9f0cba062766243e12fcbde1380d01324788741d893bd7a2"
+    },
+    "bosch-family-final.jsonl.zst": {
+      "cases": 692,
+      "sha256": "3c92032a9a5a23dde7941a84c3e72d25a161a1f6aed71577ab8722ba8cd0779b"
+    },
+    "bosch-burst-final.jsonl.zst": {
+      "cases": 97,
+      "sha256": "d4d375262810d3b20afff98d20bc0cfe071a5781c2ae6c052b5126bfecc8bbb3"
+    },
+    "bosch-oem-intent-final.jsonl.zst": {
+      "cases": 837,
+      "sha256": "86c4c0af26ae11b4766284ba694e57e4c7e188cb5304ab05604c0a548df5a58c"
+    },
+    "bosch-oem-gate-final.jsonl.zst": {
+      "cases": 233,
+      "sha256": "ef73318e78815ff07cb83bf73d362561ad1ed94574904b26c189d20438fd20b9"
+    },
+    "bosch-publication-constructors.json": {
+      "cases": 20,
+      "sha256": "3d953bc2bafae9510f6f584e1a7e8d7f441e32f27970978574b83da6c8995e85"
+    },
+    "bosch-sidepass-final.jsonl.zst": {
+      "cases": 1184,
+      "sha256": "501891196205d59bb4bc3e0c709c995ad7debc5e785fe5e522338e5efdda985c"
+    },
+    "bosch-persistent-clone-final.jsonl.zst": {
+      "cases": 350,
+      "sha256": "7980c008006c19f34c4fc5b21f75d31009e73788fdd59afefc50beebba161398"
+    },
+    "bosch-lateral-publication-constructors.json": {
+      "cases": 10,
+      "sha256": "0d31a38fdc84de3fd5198be908790e0c112844eeb2e532308a6b2ea3dd8caf78"
+    },
+    "bosch-b5-final.jsonl.zst": {
+      "cases": 6812,
+      "sha256": "74c77ee0d01c6af9f2e64dc63609002878b4f76c6a809ab1d3bafe6a6614533d"
+    },
+    "bosch-b5-math-final.jsonl.zst": {
+      "cases": 231,
+      "sha256": "4f861acdc84678f91040a959f32ad119817e8eacb3f1966fffe527ebdb835ef7"
+    },
+    "bosch-b5-ingest-final.json.zst": {
+      "cases": 256,
+      "sha256": "9dcdf51b0b6a03850e176c4d2a0023e80be4c37d022681e5c41203de53ffc9a7"
+    },
+    "bosch-b5-constructors.json": {
+      "cases": 5,
+      "sha256": "0db884c22394c18ccb714ce21b6f1d8fd0ea7d67f0f8ff62e6907f3ca7030c45"
+    },
+    "bosch-mirror-birth-final.jsonl.zst": {
+      "cases": 2693,
+      "sha256": "5b97f84fd7c6d510373a0c38b02c96364fbc662adf8c27efc864a9c43a8e3a59"
+    },
+    "bosch-mirror-extra-final.json.zst": {
+      "cases": 50,
+      "sha256": "52d19d20d7db8bc4a457241005171f813c5e474f2b88b39edcfb2b961a0a4820"
+    },
+    "bosch-mirror-constructors.json": {
+      "cases": 5,
+      "sha256": "39b898e75629b47f65f5ffe0b89595a11442f040d992a055563e5a92560d97f6"
+    },
+    "bosch-round-one-final.json.zst": {
+      "cases": 32775,
+      "sha256": "243cc344ff71da392d598a7bbcb89c175e3e78ca88e72a682e388e72ca20341a"
+    },
+    "bosch-m3-final.jsonl.zst": {
+      "cases": 2766,
+      "sha256": "ceb9489770ab626b1c0b5114a5f8bbc41aeac1dd568bea8041c2742a7cb781e4"
+    },
+    "bosch-m3-edge-final.json.zst": {
+      "cases": 240,
+      "sha256": "8a4903468dea4afbf760df755450f8cf432780bd79806a9f2c19232a21761253"
+    },
+    "bosch-m3-constructors.json": {
+      "cases": 5,
+      "sha256": "49b5ecc602a6085e20fbe4540bf1e8caa4bf74ef6e7884459dfbf027c70b9567"
+    },
+    "bosch-round-three-final.json.zst": {
+      "cases": 32775,
+      "sha256": "232f33d766a2c7c7632fb695b6af98842916063116c8a936791873cc5d02291b"
+    },
+    "bosch-unsupported-path-final.json.zst": {
+      "cases": 2912,
+      "sha256": "160b03faea546e28170b5776f89989702be4a39d7fbb94cdeb6dfd18518dd817"
+    },
+    "bosch-association-final.json.zst": {
+      "cases": 4096,
+      "sha256": "c3cacaca926ca774bcc6dfbceccd54c683bbea194f334a41d65068f0105a1994"
+    },
+    "bosch-association-regression.jsonl.zst": {
+      "cases": 108,
+      "sha256": "caece64cf13e2c07a284f2d41d2502a377f83032ce2ca7d69cef03819a74c878"
+    },
+    "bosch-unsupported-birth-final.json.zst": {
+      "cases": 2141,
+      "sha256": "e1da0ca633e6658ffe15b0c5777fba16bec9c48f2ba5630de2a058b62ff0d1dd"
+    },
+    "bosch-road-edge-final.jsonl.zst": {
+      "cases": 921,
+      "sha256": "4c12129f5b929052a7e791b3682c295a5b93d6776ead6e6a370afccd76eafd18"
+    },
+    "bosch-road-surface-final.json.zst": {
+      "cases": 894,
+      "sha256": "52e55ab4fa0b34226f0cd19e9bb34b50cb2d1edaf4b53da57fab6dc0059ac0d9"
+    },
+    "bosch-camera-extended-final.json.zst": {
+      "cases": 3303,
+      "sha256": "abba9daef9b9aa3a6a202642e35a45461b9bbc8896b2ca6c5def84bd75ede15e"
+    },
+    "bosch-camera-extended-constructors.json": {
+      "cases": 30,
+      "sha256": "379235c80d1ed67f81684080029171da517035b442118d6b19e2350ac8ad7c9d"
+    },
+    "bosch-points-final.json.zst": {
+      "cases": 2048,
+      "sha256": "b8fb4c604fa6ce340e1e3c5d2be94c1b4b37f22612b1a6c0b4d72e7f29b81a8f"
+    },
+    "bosch-model-final.json.zst": {
+      "cases": 1024,
+      "sha256": "6d0d3339046888a84fadb7b13861c7d83fb2a69881d1f332eb3195a71b7693ad"
+    },
+    "bosch-processed-final.json.zst": {
+      "cases": 2048,
+      "sha256": "e9f80a982f83d56fe6bd8fec00ce29e62a03118b057e43fb7bfd3d06802bcecb"
+    },
+    "bosch-provider-update-final.jsonl.zst": {
+      "cases": 124,
+      "sha256": "74a91006bab9a1d114730da8aad9afba604119cf428eabca4548d93f4989c258"
+    },
+    "bosch-provider-publication-final.jsonl.zst": {
+      "cases": 622,
+      "sha256": "b0364a23543bbf8a6da3c879b3f12f8a8cc93e5859be1b89b2bdb3d0d455eeb1"
+    },
+    "bosch-provider-sequences-final.jsonl.zst": {
+      "cases": 2784,
+      "sha256": "82a76551abcb8b3cbed42976ffb44ef5106359d306719866e73e654f84f1f7e8"
+    },
+    "bosch-provider-constructors.json": {
+      "cases": 46,
+      "sha256": "b51758634e3ca4d479b6e04c8f1f303017546a8b6f0bed0843a8fb33948693e8"
+    },
+    "bosch-context-final.json.zst": {
+      "cases": 1536,
+      "sha256": "9a89d789b1d16b5fc4495d31ef466ce7f77d084168d6c403c904447b2c2733f0"
+    },
+    "bosch-wire-final.json.zst": {
+      "cases": 512,
+      "sha256": "244711b18725df662971d6411d1cf2babdf36b5396d73507fdabc28a775ef9ed"
+    },
+    "bosch-factory-final.json.zst": {
+      "cases": 3600,
+      "sha256": "39338686f0281110da40ff4eb6ceb1a85eba06c8e7f32ff6d49f461538a1c7fe"
+    }
+  },
+  "norm_source_reference": {
+    "host_python": "3.12.15",
+    "arm_python": "3.12.3",
+    "finite_bit_differences": 0,
+    "cases": 4105,
+    "native_origin": "Existing PSF-licensed CPython3.12.14 vector_norm translation, moved from radard::math into radarcan::scalar with API-preserving re-export."
+  },
+  "whole_group_query_probes": "Two source ancestry queries replace unrelated physical states with None; native queries compare the complete lineage input/output independently, because typed physical states cannot hold None.",
+  "b5_clock_probes": "Three original private provider probes pass now_ns=None and no newborn objects; native oracle asserts the clock is unread and supplies zero only for those calls. Production native Frame requires integer monotonic time.",
+  "mirror_publication_probes": "Source publication probes may contain only physical_track_id; the native Object wrapper and generic publication_by adapter share the same filtering and counter implementation.",
+  "m3_input_types": "The source M3 component reads only a subset of M1 fields and original direct probes allow an absent representative ID. Native M3 accepts an optional representative and narrow BirthDecision fields without inventing values for those source inputs.",
+  "road_edge_cache_representation": "Native immutable Arc<Model> cache compares the exact validated geometry bits/arrays, read model edge/std values, publication clock and invalid-sample flag. Python object type/address, missing optional cache attribute versus None and unread model fields are not native control state."
+}

@@ -29,6 +29,12 @@ pub enum Error {
         code: i32,
         message: String,
     },
+    #[error("{operation}: {actual}/{expected}")]
+    UsbShortTransfer {
+        operation: &'static str,
+        actual: u64,
+        expected: u64,
+    },
     #[error("{0}")]
     Protocol(String),
     #[error("{0}")]
@@ -44,8 +50,28 @@ pub enum Error {
         last: Option<u64>,
         expected: u64,
     },
+    #[error("{source}")]
+    Worker {
+        source: Box<Error>,
+        progress: serde_json::Value,
+    },
     #[error("GPU check cancelled")]
     Cancelled,
+}
+
+impl Error {
+    pub fn worker_cause(&self) -> &Self {
+        match self {
+            Self::Worker { source, .. } => source.worker_cause(),
+            _ => self,
+        }
+    }
+    pub fn worker_snapshot(&self) -> Option<&serde_json::Value> {
+        match self {
+            Self::Worker { progress, .. } => Some(progress),
+            _ => None,
+        }
+    }
 }
 
 pub mod usb3;
@@ -104,6 +130,7 @@ pub mod worker;
 pub mod worker_artifact;
 pub mod worker_local;
 pub mod worker_native;
+pub mod worker_progress;
 
 pub mod gpu_memory;
 

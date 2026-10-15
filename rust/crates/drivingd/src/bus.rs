@@ -17,6 +17,7 @@ pub const TOPICS: &[&str] = &[
     "liveCalibration",
     "driverMonitoringState",
     "carControl",
+    "selfdriveState",
     "liveDelay",
     "carrotMan",
     "radarState",

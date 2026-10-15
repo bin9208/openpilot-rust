@@ -50,10 +50,6 @@ pub fn cameras(mode: Mode, recording: Recording) -> Vec<CameraInfo> {
         .map(|&camera| {
             let thread = match (mode, camera) {
                 (Mode::CarrotVision, _) => "carrot_vision_road_encoder",
-                (Mode::YoutubeLow, _) => "youtube_road_low_encoder",
-                (Mode::YoutubeMedium, _) => "youtube_road_medium_encoder",
-                (Mode::Youtube, _) => "youtube_road_encoder",
-                (Mode::YoutubeWide, _) => "youtube_wide_road_encoder",
                 (_, Camera::Road) => "road_cam_encoder",
                 (_, Camera::Driver) => "driver_cam_encoder",
                 (_, Camera::WideRoad) => "wide_road_cam_encoder",
@@ -71,10 +67,6 @@ pub fn cameras(mode: Mode, recording: Recording) -> Vec<CameraInfo> {
                 (Mode::Stream | Mode::CarrotVision, Camera::WideRoad) => {
                     ("livestreamWideRoadEncodeData", Quality::Stream)
                 }
-                (Mode::YoutubeLow, _) => ("youtubeRoadEncodeData", Quality::YoutubeLow),
-                (Mode::YoutubeMedium, _) => ("youtubeRoadEncodeData", Quality::YoutubeMedium),
-                (Mode::Youtube, _) => ("youtubeRoadEncodeData", Quality::Youtube),
-                (Mode::YoutubeWide, _) => ("youtubeRoadEncodeData", Quality::YoutubeWide),
             };
             let mut info = encoder(publish, quality);
             if mode == Mode::Main {
@@ -88,10 +80,6 @@ pub fn cameras(mode: Mode, recording: Recording) -> Vec<CameraInfo> {
                 if camera == Camera::Road {
                     info.thumbnail = Some("thumbnail");
                 }
-            }
-            if mode == Mode::Youtube {
-                info.width = 1920;
-                info.height = 1080;
             }
             let mut encoders = vec![info];
             if mode == Mode::Main && camera == Camera::Road {

@@ -34,6 +34,8 @@ pub use isp_port::{IspConfig, IspPort, IspPortError, OutputMode};
 #[cfg(feature = "native-skip-miri")]
 mod camera;
 #[cfg(feature = "native-skip-miri")]
+mod frame_wait;
+#[cfg(feature = "native-skip-miri")]
 mod images;
 #[cfg(feature = "native-skip-miri")]
 mod phy;

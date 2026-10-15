@@ -16,6 +16,7 @@ impl Lateral {
         let Request {
             vm,
             input,
+            live,
             active,
             curvature,
             limited,
@@ -24,7 +25,6 @@ impl Lateral {
         } = request;
         self.refresh(params)?;
         let cs = &input.car;
-        let live = &input.live;
         if !active {
             return Ok((-0., cs.steer_angle, Log::default()));
         }

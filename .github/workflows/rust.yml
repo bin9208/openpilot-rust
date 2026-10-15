@@ -1338,6 +1338,13 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo clippy -p openpilot-radarcan -p openpilot-can --all-targets --locked -- -D warnings
           python -m pytest -c /dev/null --noconftest -p no:cacheprovider tools/tests/test_radarcan_ci.py tools/tests/test_radarcan_exact.py -q
+      - name: Verify candidate native replay bundle without publishing
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" --locked -p openpilot-radard --bin openpilot-radar-replay -- bundle "$GITHUB_WORKSPACE" "$RUNNER_TEMP/radar-native/replay-bundle" "$RUNNER_TEMP/radar-native/numerics"
+          "$RUNNER_TEMP/radar-native/replay-bundle/openpilot-radar-replay" identity
+          test -f "$RUNNER_TEMP/radar-native/replay-bundle/manifest.json"
+          test -f "$RUNNER_TEMP/radar-native/replay-bundle/dbc/radarcan-assets.json"
       - name: Require complete original and native RadarCAN functional gates
         run: python rust/tools/check_radarcan_ci.py --phase reference --probe "$GITHUB_WORKSPACE/rust/target/debug/examples/radarcan-policy" --daemon "$GITHUB_WORKSPACE/rust/target/debug/openpilot-radarcan" --numerics "$RUNNER_TEMP/radar-native/numerics" --binding "$RADAR_PARAMS_BINDING" --dbc "$RUNNER_TEMP/radar-native/dbc" --evidence "$RUNNER_TEMP/radar-native/reference"
       - name: Require independent actual RadarCAN IPC and signal lifecycle
@@ -1993,7 +2000,7 @@ jobs:
         run: |
           rustc --version
           cargo --version
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged -p openpilot-process-supervision --bins --examples --locked
       - name: Build original telemetry message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/telemetry-msgq-python"
@@ -2325,6 +2332,7 @@ jobs:
           python rust/tools/check_control_neural.py --trace "$PWD/rust/target/debug/examples/neural_trace" --numerics "$CONTROLS_NUMERICS" --evidence "$RUNNER_TEMP/controls/neural"
       - name: Compare full control loop, malformed startup and continuous native IPC
         run: |
+          python rust/tools/check_lateral_readiness.py --binary "$PWD/rust/target/debug/examples/lateral_readiness_trace"
           python rust/tools/check_controlsd.py --trace "$PWD/rust/target/debug/examples/controlsd_trace" --numerics "$CONTROLS_NUMERICS" --evidence "$RUNNER_TEMP/controls/loop"
           python rust/tools/check_control_failures.py --trace "$PWD/rust/target/debug/examples/controlsd_trace" --numerics "$CONTROLS_NUMERICS" --evidence "$RUNNER_TEMP/controls/rejections"
           python rust/tools/check_controlsd_daemon.py --target "$PWD/rust/target" --numerics "$CONTROLS_NUMERICS" --evidence "$RUNNER_TEMP/controls/native"

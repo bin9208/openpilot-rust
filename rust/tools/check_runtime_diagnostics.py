@@ -1,5 +1,4 @@
 import argparse
-import importlib.util
 import json
 import math
 from pathlib import Path
@@ -8,7 +7,13 @@ import struct
 import subprocess
 import types
 
-SOURCE = Path(__file__).resolve().parents[2] / "openpilot/common/runtime_diagnostics.py"
+SOURCE_COMMIT = "e8e152dbcfd9574a1791ed12026d1880e87689b3"
+SOURCE_PATH = "openpilot/common/runtime_diagnostics.py"
+def load_source():
+  module=types.ModuleType("original_runtime_diagnostics")
+  text=subprocess.check_output(["git","show",SOURCE_COMMIT+":"+SOURCE_PATH])
+  exec(compile(text,SOURCE_COMMIT+":"+SOURCE_PATH,"exec"),module.__dict__)
+  return module
 
 
 def sample(name, value):
@@ -32,9 +37,7 @@ def compare(expected, actual, path=""):
 
 
 def source_trace(setup, steps):
-  specification = importlib.util.spec_from_file_location("original_runtime_diagnostics", SOURCE)
-  module = importlib.util.module_from_spec(specification)
-  specification.loader.exec_module(module)
+  module = load_source()
   state = {"now": setup["started"], "scheduler": setup["scheduler"]}
   output = []
   module.time = types.SimpleNamespace(monotonic=lambda: state["now"])

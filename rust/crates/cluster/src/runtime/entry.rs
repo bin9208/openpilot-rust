@@ -89,7 +89,7 @@ fn parsed(root: &Path, arguments: &[String]) -> Result<Option<RuntimeArgs>> {
     }
 }
 fn select_output(root: &Path, args: &mut RuntimeArgs) {
-    if args.usb_output() && !Path::new("/TICI").is_file() {
+    if args.usb_output() && args.wifi_fps.is_none() && !Path::new("/TICI").is_file() {
         let mut scanner = autorun::usb::Usb::new(root, Path::new("/tmp/carrot_usbgpu_bus.lock"));
         let available = match args.cluster_hud_mode.and_then(autorun::product_id) {
             Some(product) => scanner.find(product).is_some(),
@@ -110,8 +110,18 @@ fn demo(
     let Some(mut args) = parsed(root, arguments)? else {
         return Ok(());
     };
+    let wifi = if args.usb_output() {
+        openpilot_cluster_wifi::Registration::load(&openpilot_cluster_wifi::config_path())
+            .map_err(|error| Error::Io(std::io::Error::other(error)))?
+    } else {
+        None
+    };
+    args.wifi_fps = wifi.as_ref().map(|config| config.fps);
     select_output(root, &mut args);
-    let encoder_source = Reader::for_runtime().apply_encoder(&mut args);
+    let mut encoder_source = Reader::for_runtime().apply_encoder(&mut args);
+    if let Some(config) = wifi {
+        encoder_source = args.apply_wifi(&config);
+    }
     if args.transport.usb_async && args.usb_codec != crate::runtime_args::Codec::Jpeg {
         return Err(Error::Invalid(
             "--usb-async only supports --usb-codec jpeg".into(),

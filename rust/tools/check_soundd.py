@@ -76,7 +76,7 @@ def source(config, binding, root):
       params.put('SoundLanguageSetting', step['language'])
       sound.update_language()
     sm = Messages(
-      selfdriveState=SimpleNamespace(enabled=value['enabled'], alertSound=SimpleNamespace(raw=value['alert'])),
+      selfdriveState=SimpleNamespace(enabled=value['enabled'], alertSound=SimpleNamespace(raw=value['alert']), alertType=value.get('alert_type', '')),
       carrotMan=SimpleNamespace(leftSec=value['countdown']),
     )
     sm.updated = {'selfdriveState': value['updated_selfdrive'], 'carrotMan': value['updated_carrot']}
@@ -95,6 +95,7 @@ def source(config, binding, root):
       {
         'state': {
           'alert': sound.current_alert,
+          'alert_type': sound.current_alert_type,
           'frame': sound.current_sound_frame,
           'volume': sound.current_volume,
           'adjust': sound.soundVolumeAdjust,
@@ -119,6 +120,7 @@ def steps():
       'selfdrive_received': 0.0,
       'enabled': False,
       'alert': alert,
+      'alert_type': '',
       'countdown': -1,
       'pressure': None,
       'main_buttons': [],
@@ -133,6 +135,11 @@ def steps():
     add(alert, frames=2)
     add(alert, frames=17)
     add(0, frames=3)
+  for alert, name in [(8,'driverDistracted2/permanent'), (8,'navigation/permanent'),
+                      (5,'driverUnresponsive3/permanent'), (5,'controlsUnresponsive/permanent'),
+                      (8,'driverUnresponsive2/permanent'), (5,'driverDistracted3/permanent')]:
+    add(alert, frames=7, alert_type=name)
+    add(0, frames=2)
   for count in [12, 11, 11, 10, 3, 1, 0, -1]:
     add(countdown=count, updated_selfdrive=False, updated_carrot=True)
   add(0, pressure=54.0)
@@ -167,6 +174,7 @@ def main():
   parser.add_argument('--binary', type=Path, required=True)
   parser.add_argument('--binding', type=Path, required=True)
   parser.add_argument('--output', type=Path, required=True)
+  parser.add_argument('--runner', nargs=argparse.REMAINDER, default=[])
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=True)
   provenance = json.loads(args.binding.with_name('provenance.json').read_text())
@@ -187,7 +195,7 @@ def main():
       if not rate:
         config['basedir'] = str(ROOT)
       expected = source(config, args.binding, root)
-      result = subprocess.run([str(args.binary)], input=json.dumps(config), text=True, capture_output=True, check=True)
+      result = subprocess.run([*args.runner, str(args.binary)], input=json.dumps(config), text=True, capture_output=True, check=True)
       observed = [json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]
       (args.output / f'{index}-input.json').write_text(json.dumps(config))
       (args.output / f'{index}-source.json').write_text(json.dumps(expected))
@@ -195,7 +203,7 @@ def main():
       (args.output / f'{index}-stderr.log').write_text(result.stderr or 'no stderr\n')
       assert len(observed) == len(expected)
       for step, (left, right) in enumerate(zip(expected, observed, strict=True)):
-        for key in ['alert', 'frame', 'adjust', 'countdown', 'timeout']:
+        for key in ['alert', 'alert_type', 'frame', 'adjust', 'countdown', 'timeout']:
           assert left['state'][key] == right['state'][key], (index, step, key, left['state'], right['state'])
         for key in ['volume', 'filter']:
           assert math.isclose(left['state'][key], right['state'][key], rel_tol=1e-12, abs_tol=1e-12), (index, step, key)

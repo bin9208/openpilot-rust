@@ -71,6 +71,7 @@ async fn packets(child: &mut Child, request: Request) -> Result<Value, Error> {
 pub(super) async fn run(
     config: Arc<Config>,
     segments: Vec<String>,
+    include_all_files: bool,
     mut stopped: watch::Receiver<SyncState>,
 ) -> Result<Value, Error> {
     if stopped.borrow().phase == state::Phase::Force {
@@ -96,6 +97,7 @@ pub(super) async fn run(
     };
     let request = Request {
         parent_pid: std::process::id(),
+        include_all_files,
         root: config.root.clone(),
         id: uuid::Uuid::new_v4().simple().to_string(),
         segments,

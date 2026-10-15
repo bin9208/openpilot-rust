@@ -10,8 +10,8 @@ from PIL import Image
 from openpilot.cereal import log
 
 
-def packet(name, values):
-  event = log.Event.new_message(valid=True)
+def packet(name, values, valid=True):
+  event = log.Event.new_message(valid=valid)
   if name == 'onroadEvents':
     target = event.init(name, len(values))
     for item, value in zip(target, values, strict=True):
@@ -57,7 +57,7 @@ def step(
     'radarState': radar or {},
     'onroadEvents': events,
   }
-  return {'frame': frame, 'messages': [packet(name, value) for name, value in values.items()], 'params': params or {}, 'memory': memory or {}, **options}
+  return {'frame': frame, 'messages': [packet(name, value, options.get('longitudinal_valid',True) if name=='longitudinalPlan' else True) for name, value in values.items()], 'params': params or {}, 'memory': memory or {}, **options}
 
 
 def main():
@@ -67,6 +67,8 @@ def main():
   parser.add_argument('--display', required=True)
   parser.add_argument('--filter', default='')
   parser.add_argument('--large', action='store_true')
+  parser.add_argument('--overlay', action='store_true')
+  parser.add_argument('--preserve-native-fixes',action='store_true',help='explicit baseline b55552d HUD navigation ownership and absent-limit fixes')
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=True)
   root = Path(__file__).resolve().parents[2]
@@ -213,15 +215,26 @@ def main():
         ],
       ),
     ]
+  scenarios.append(('final-signal',[step(i*10,longitudinal={'signalDetectionSuspended':suspended,'signalObservationColor':color,'signalAssistAction':action},longitudinal_valid=valid)
+    for i,(suspended,color,action,valid) in enumerate([(False,0,0,True),(True,1,1,True),(True,2,2,False),(False,1,1,True),(False,2,3,True),(False,3,2,True),(False,0,1,True),(False,255,255,True),(False,1,2,False),(True,0,0,True),(False,0,0,True)])]))
+  badge_models={
+    'delivery':{'delivery_badge':{'text':'eGPU 다운로드 중','style':'loading'}},
+    'jetlink':{'delivery_badge':{'text':'eGPU MODEL','style':'ready'},'jetlink_badge':{'text':'MAC','style':'loading'}},
+    'recovery':{'jetlink_badge':{'text':'Android','style':'ready'},'recovery_badge':{'text':'eGPU RETRY','style':'loading'}},
+    'recovery-alone':{'recovery_badge':{'text':'eGPU ERROR','style':'error'}},
+    'active':{'delivery_badge':{'text':'eGPU MODEL','style':'loading'},'jetlink_badge':{'text':'jetSON ERROR','style':'error'},'recovery_badge':{'text':'eGPU RETRY','style':'loading'}},
+  }
+  scenarios.extend(('final-badge-'+name,[step(0,params={'UsbGpuActive':'1' if name=='active' else '0'})]) for name in badge_models)
   results = []
   for name, steps in scenarios:
-    if args.filter and args.filter not in name:
+    if args.filter and not any(fragment in name for fragment in args.filter.split(",")):
       continue
     for language in ['en', 'ko']:
       slug = f'{name}-{language}'
-      frame_count = 320 if name == 'plot-modes' else 120
+      frame_count = 12 if name.startswith('final-badge-') else 320 if name == 'plot-modes' else 120
       scene = {
         'kind': 'hud',
+        'preserve_native_fixes': args.preserve_native_fixes,
         'config': {'big': args.large, 'large_viewport': args.large, 'pc': True, 'scale': 1.0},
         'language': language,
         'rect': {'x': 20.3, 'y': 30.7, 'width': 2080.4 if args.large else 1080.4, 'height': 980.2 if args.large else 450.2},
@@ -231,8 +244,9 @@ def main():
         'car': {'alpha_longitudinal_available': False, 'openpilot_longitudinal_control': True, 'max_lateral_accel': 3.0},
         'background': [31, 37, 43, 255],
         'capture_frames': list(range(frame_count)),
-        'hud': {'steps': steps},
+        'hud': {'steps': steps, 'overlay': args.overlay},
       }
+      if name.startswith('final-badge-'):scene['models']={'compiled':True,'compile_pending':False,**badge_models[name.removeprefix('final-badge-')]}
       path = args.output / f'{slug}.json'
       path.write_text(json.dumps(scene))
       outputs = []
@@ -261,7 +275,7 @@ def main():
         images = [np.asarray(Image.open(output.with_name(f'{output.stem}-frame-{frame:04}.png'))) for output in outputs]
         if not np.array_equal(*images):
           pixels.append({'frame': frame, 'pixels': int(np.any(images[0] != images[1], axis=-1).sum())})
-      result = {'scene': slug, 'frames': len(traces[0]), 'state_differences': states, 'pixel_differences': pixels}
+      result = {'retained_fix_source': 'b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a' if args.preserve_native_fixes else None, 'scene': slug, 'frames': len(traces[0]), 'state_differences': states, 'pixel_differences': pixels}
       if name == 'plot-modes':
         result['observed_modes'] = [sorted({entry['hud']['settings'][3] for entry in trace}) for trace in traces]
         assert result['observed_modes'] == [list(range(1, 9))] * 2, result

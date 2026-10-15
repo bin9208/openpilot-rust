@@ -119,6 +119,7 @@ impl Navigation {
             return;
         }
         self.events.push(Event {
+            cancelled: false,
             id: self.next_event,
             kind,
             speed,

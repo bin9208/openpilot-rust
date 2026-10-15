@@ -2,6 +2,7 @@
 pub mod catalog;
 pub(crate) mod ffmpeg;
 mod http;
+pub mod info;
 use crate::{config::Config, Value};
 pub use http::{handle, matches};
 use num_traits::ToPrimitive;
@@ -17,6 +18,8 @@ pub enum Failure {
     Http { status: u16, message: String },
     #[error("screenrecord operation failed")]
     Internal,
+    #[error("{message}")]
+    Json { status: u16, message: String },
 }
 impl Failure {
     pub fn http(status: u16, message: &str) -> Self {
@@ -38,6 +41,7 @@ pub struct Screenrecord {
     wall: Option<i64>,
     monotonic: Mutex<Option<f64>>,
     videos: Mutex<Cache>,
+    details: Mutex<std::collections::HashMap<PathBuf, (std::time::SystemTime, u64, Value)>>,
 }
 
 pub fn find_file(directories: &[PathBuf], id: &str, wall: i64) -> Result<PathBuf, Failure> {
@@ -82,6 +86,7 @@ impl Screenrecord {
     ) -> Arc<Self> {
         Arc::new(Self {
             directories,
+            details: Mutex::default(),
             cache,
             ffmpeg,
             wall,
@@ -136,6 +141,83 @@ impl Screenrecord {
     }
     pub fn find_file(&self, id: &str) -> Result<PathBuf, Failure> {
         find_file(&self.directories, id, self.wall())
+    }
+    pub fn info(&self, id: &str) -> Result<Value, Failure> {
+        let path = self.find_file(id)?;
+        let metadata = std::fs::metadata(&path).map_err(|e| Failure::Json {
+            status: 500,
+            message: e.to_string(),
+        })?;
+        let modified = metadata.modified().map_err(|_| Failure::Internal)?;
+        let mut cache = self.details.lock().map_err(|_| Failure::Internal)?;
+        let info = if let Some((time, size, value)) = cache
+            .get(&path)
+            .filter(|(time, size, _)| *time == modified && *size == metadata.len())
+        {
+            let _ = (time, size);
+            value.clone()
+        } else {
+            let value = info::probe(&path).map_err(|e| Failure::Json {
+                status: 500,
+                message: e.to_string(),
+            })?;
+            cache.insert(path.clone(), (modified, metadata.len(), value.clone()));
+            value
+        };
+        let mut result = Value::object([
+            ("ok", Value::Bool(true)),
+            (
+                "name",
+                catalog::text(path.file_name().ok_or(Failure::Internal)?),
+            ),
+        ]);
+        if let (Value::Object(fields), Value::Object(info)) = (&mut result, info) {
+            fields.extend(info);
+        }
+        Ok(result)
+    }
+    pub fn delete(&self, id: &str) -> Result<Value, Failure> {
+        let path = self.find_file(id)?;
+        let real = std::fs::canonicalize(path).map_err(|error| Failure::Json {
+            status: if error.kind() == std::io::ErrorKind::NotFound {
+                404
+            } else {
+                500
+            },
+            message: if error.kind() == std::io::ErrorKind::NotFound {
+                "not found".into()
+            } else {
+                error.to_string()
+            },
+        })?;
+        if !self
+            .directories
+            .iter()
+            .filter_map(|folder| std::fs::canonicalize(folder).ok())
+            .any(|folder| real.starts_with(folder))
+        {
+            return Err(Failure::Json {
+                status: 403,
+                message: "path not allowed".into(),
+            });
+        }
+        std::fs::remove_file(real).map_err(|error| Failure::Json {
+            status: if error.kind() == std::io::ErrorKind::NotFound {
+                404
+            } else {
+                500
+            },
+            message: if error.kind() == std::io::ErrorKind::NotFound {
+                "not found".into()
+            } else {
+                error.to_string()
+            },
+        })?;
+        self.details.lock().map_err(|_| Failure::Internal)?.clear();
+        let mut videos = self.videos.lock().map_err(|_| Failure::Internal)?;
+        videos.time = 0.0;
+        videos.videos.clear();
+        Ok(Value::object([("ok", Value::Bool(true))]))
     }
     pub fn thumbnail(&self, id: &str) -> Result<PathBuf, Failure> {
         ffmpeg::thumbnail(

@@ -25,7 +25,6 @@ impl Intro {
             ("web_settings.json", "web_settings_exists"),
             ("setting_profiles.json", "setting_profiles_exists"),
             ("setting_favorites.json", "setting_favorites_exists"),
-            ("youtube_live.json", "youtube_live_exists"),
         ] {
             if self.config.state.join(file).is_file() {
                 return Ok(label.into());

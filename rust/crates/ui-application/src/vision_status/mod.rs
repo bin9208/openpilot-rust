@@ -1,3 +1,4 @@
+pub mod blindspot;
 mod encoding;
 use openpilot_logmessaged::{JsonValue, JsonView};
 use serde::Serialize;
@@ -62,6 +63,8 @@ pub struct VisionResult {
     pub right_blindspot: bool,
     pub blindspot_valid: bool,
     pub blindspot_received_nanos: Nanoseconds,
+    pub left_blindspot_received_nanos: Nanoseconds,
+    pub right_blindspot_received_nanos: Nanoseconds,
 }
 #[derive(Clone, Debug)]
 pub struct Packet {
@@ -134,6 +137,18 @@ impl Packet {
         if !lanes.is_object() || !blindspot.is_object() {
             return Err(Error::Field("lane/blindspot object"));
         }
+        let received = timestamp(field(&blindspot, "receivedMonoTimeNanos")?)?;
+        let by_side = blindspot.get("receivedMonoTimeNanosBySide");
+        if by_side.as_ref().is_some_and(|value| !value.is_object()) {
+            return Err(Error::Field("receivedMonoTimeNanosBySide"));
+        }
+        let side_timestamp = |side| {
+            by_side
+                .as_ref()
+                .and_then(|value| value.get(side))
+                .map(timestamp)
+                .unwrap_or_else(|| Ok(received.clone()))
+        };
         let result = VisionResult {
             left_lane: lane(field(&lanes, "leftLine")?)?,
             right_lane: lane(field(&lanes, "rightLine")?)?,
@@ -142,7 +157,9 @@ impl Packet {
             left_blindspot: boolean(field(&blindspot, "left")?)?,
             right_blindspot: boolean(field(&blindspot, "right")?)?,
             blindspot_valid: boolean(field(&blindspot, "valid")?)?,
-            blindspot_received_nanos: timestamp(field(&blindspot, "receivedMonoTimeNanos")?)?,
+            left_blindspot_received_nanos: side_timestamp("left")?,
+            right_blindspot_received_nanos: side_timestamp("right")?,
+            blindspot_received_nanos: received,
         };
         let side = blindspot.get("side");
         let side = match side {
@@ -186,10 +203,20 @@ impl DisplayState {
         let result = &packet.result;
         let lane_fresh =
             result.lane_valid && result.lane_received_nanos.fresh(now, LANE_TIMEOUT_NS);
+        let side_received = match packet.blindspot_side.as_str() {
+            "left" => Some(&result.left_blindspot_received_nanos),
+            "right" => Some(&result.right_blindspot_received_nanos),
+            _ => None,
+        };
         let blindspot_fresh = result.blindspot_valid
-            && result
-                .blindspot_received_nanos
-                .fresh(now, BLINDSPOT_TIMEOUT_NS);
+            && side_received.is_some_and(|received| {
+                let received = if received.decimal() == "0" {
+                    &result.blindspot_received_nanos
+                } else {
+                    received
+                };
+                received.fresh(now, BLINDSPOT_TIMEOUT_NS)
+            });
         let detected = if packet.blindspot_side == "left" {
             result.left_blindspot
         } else {

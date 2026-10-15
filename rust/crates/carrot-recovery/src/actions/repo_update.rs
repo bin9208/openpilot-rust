@@ -1,3 +1,4 @@
+pub(super) mod startup;
 use super::{git_config, process};
 use crate::{config::Config, Error};
 use num_traits::ToPrimitive;

@@ -28,6 +28,31 @@ pub struct Detection {
     pub bus: CanBus,
 }
 
+pub fn bosch_mrrevo14f_bus(
+    candidate: &str,
+    flags: u32,
+    fingerprints: &Fingerprints,
+    buses: &[u8],
+) -> Option<u8> {
+    if flags & f::CANFD != 0
+        || !matches!(
+            candidate,
+            "HYUNDAI_ELANTRA"
+                | "HYUNDAI_ELANTRA_GT_I30"
+                | "HYUNDAI_KONA"
+                | "HYUNDAI_KONA_EV"
+                | "HYUNDAI_KONA_EV_2022"
+                | "KIA_FORTE"
+        )
+    {
+        return None;
+    }
+    buses
+        .iter()
+        .copied()
+        .find(|bus| (0x601..0x613).all(|address| size(fingerprints, *bus, address) == Some(8)))
+}
+
 pub fn detect(input: DetectionInput<'_>) -> Detection {
     let DetectionInput {
         candidate,
@@ -48,6 +73,12 @@ pub fn detect(input: DetectionInput<'_>) -> Detection {
     } else {
         0
     };
+    if let Some(observed) = bosch_mrrevo14f_bus(candidate, flags, fp, &[bus.cam, bus.acan]) {
+        ext_flags |= ext::BOSCH_RADAR;
+        if observed == bus.acan {
+            ext_flags |= ext::BOSCH_RADAR_BUS1;
+        }
+    }
     let mut safety_param = 0;
     let (bsm, safety_model) = if flags & f::CANFD != 0 {
         if contains(fp, bus.ecan, 0x105) {

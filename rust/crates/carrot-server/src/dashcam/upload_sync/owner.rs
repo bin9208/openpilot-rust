@@ -16,6 +16,7 @@ pub(super) struct Config {
 pub(super) struct Start {
     pub admission: Admission,
     pub segments: Vec<String>,
+    pub include_all_files: bool,
     pub response: oneshot::Sender<Result<Value, Failure>>,
 }
 fn reply(start: Start, result: Result<Value, Failure>) {
@@ -40,7 +41,7 @@ pub(super) async fn run(
                 let stopped = stopped.clone();
                 workers.spawn(async move {
                     let result = match catalog::validate_selection(&config.root, &start.segments) {
-                        Ok(segments) => super::worker::run(config, segments, stopped).await.map_err(Failure::from),
+                        Ok(segments) => super::worker::run(config, segments, start.include_all_files, stopped).await.map_err(Failure::from),
                         Err(openpilot_dashcam_upload::Error::Http { status, text }) => Err(Failure::Http { status, message: text }),
                         Err(error) => Err(Error::Source(error.to_string()).into()),
                     };

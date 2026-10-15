@@ -2,6 +2,13 @@
 
 ## dev-md upstream port isolation (2026-10-15, issue #338)
 
+- Scope clarified on 2026-10-16: this track only ports upstream commit changes
+  into the existing Rust runtime, retaining applicable native optimizations.
+  Repository-wide development/build/test-tool conversion belongs to the other
+  #296 session and must not be duplicated here. Do not require unchanged baseline
+  API parity, full-module re-porting or exhaustive project-wide revalidation.
+  Use focused changed-behavior checks and affected ARM builds. The user tests
+  the device. Preserve unrelated/other-session work when separating scope.
 - `dev-md` starts at dev `b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a`.
   The user expressly forbids integrating any work from this track into `dev`.
   This overrides the ordinary issue-branch -> dev routing for this track only.

@@ -124,7 +124,18 @@ pub fn ensure_fallible(
     let root = cache.join("precompiled").join(&model.sha256);
     let rejected = root.join("rejected");
     if rejected.is_file() && fs::read_to_string(&rejected)? == catalog.pickle.sha256 {
-        return Ok(None);
+        if !super::failure::retry_rejection(
+            &root,
+            &catalog.pickle.sha256,
+            &super::failure::boot_identity(),
+        ) {
+            return Ok(None);
+        }
+        match fs::remove_file(root.join("boot_validation.json")) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
     }
     fs::create_dir_all(&root)?;
     let path = root.join("model.pkl");

@@ -7,6 +7,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
+libm = "0.2"
 openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-can = { path = "../can" }
 openpilot-card = { path = "../card", default-features = false }
@@ -27,6 +28,10 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 thiserror = "2"
 libloading = "0.8"
 sha2 = "0.10"
+crc32fast = "1"
 
 [lints.rust]
 unsafe_code = "deny"
+
+[dev-dependencies]
+zstd = "0.13"

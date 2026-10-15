@@ -18,6 +18,9 @@ impl Controller {
         effects: &mut impl Effects,
     ) -> Result<(), Error> {
         self.events.clear();
+        if effects.jetlink_fault_active() {
+            self.events.add(E::CommIssue, false);
+        }
         let views = Views { state };
         if matches!(
             views.controls()?.get_lateral_control_state().which()?,
@@ -48,6 +51,7 @@ impl Controller {
             return Ok(());
         }
         self.cutin_events(state)?;
+        self.radar_warning_event(cs, state, effects)?;
         let resume = cs
             .get_button_events()?
             .iter()
@@ -156,11 +160,21 @@ impl Controller {
         effects: &mut impl Effects,
     ) -> Result<(), Error> {
         use log_capnp::driver_monitoring_state::{AlertLevel, MonitoringPolicy};
-        if !self.config.not_car && effects.integer("DisableDM")? == 0 {
-            let dm = (Views { state }).dm()?;
-            if dm.get_lockout() && !self.dm_lockout_set {
-                effects.put_bool("DriverTooDistracted", true)?;
-                self.dm_lockout_set = true;
+        let dm = (Views { state }).dm()?;
+        let disabled = dm.get_dm2_disabled();
+        if disabled && !self.dm_disabled_previous {
+            effects.remove("Offroad_DriverMonitoringUncertain")?;
+            self.dm_uncertain_alerted = false;
+        }
+        self.dm_disabled_previous = disabled;
+        if !self.config.not_car && !disabled {
+            if state.all_checks(&["driverMonitoringState"])? {
+                let age = effects.monotonic()
+                    - state.topic("driverMonitoringState")?.log_mono_time as f64 / 1e9;
+                if (0. ..0.25).contains(&age) && dm.get_lockout() != self.dm_lockout_set {
+                    effects.put_bool("DriverTooDistracted", dm.get_lockout())?;
+                    self.dm_lockout_set = dm.get_lockout();
+                }
             }
             if dm.get_lockout() || dm.get_always_on_lockout() {
                 self.events.add(E::TooDistracted, false);
@@ -200,3 +214,7 @@ impl Controller {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "dm_tests.rs"]
+mod dm_tests;

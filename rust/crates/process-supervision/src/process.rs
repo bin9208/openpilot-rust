@@ -177,6 +177,11 @@ impl ManagedProcess {
             }
         }
         let result = self.exit_code()?;
+        if !self.shutting_down {
+            if let Some(child) = &self.child {
+                crate::crash::report(&self.name, child.process.id(), result);
+            }
+        }
         let status = result.map_or_else(|| "None".into(), |value| value.to_string());
         self.logger.emit(
             log_site!(),

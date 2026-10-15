@@ -48,6 +48,9 @@ impl Canvas {
     }
 }
 impl Measure for Canvas {
+    fn resolve_font(&self, font: Font, text: &str) -> Font {
+        self.renderer.resolve_font(font, text)
+    }
     fn measure_default(&self, text: &str, size: i32) -> Result<i32, Error> {
         self.renderer.measure_default(text, size)
     }
@@ -62,6 +65,13 @@ impl Measure for Canvas {
     }
 }
 impl Draw for Canvas {
+    fn native_renderer(&mut self) -> Option<&mut Renderer> {
+        Some(&mut self.renderer)
+    }
+    fn rectangle_lines_ex(&mut self, rect: Rect, thickness: f32, color: u32) -> Result<(), Error> {
+        self.renderer.rectangle_lines_ex(rect, thickness, color);
+        Ok(())
+    }
     fn integer_line(
         &mut self,
         start: (i32, i32),

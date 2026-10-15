@@ -1,6 +1,6 @@
 use crate::{
-    usb::{Display, Options, ParamsRuntime},
     Error,
+    usb::{Display, Options, ParamsRuntime},
 };
 use openpilot_usbgpu::{bus_lock::BusLock, native_usb::Scanner};
 use std::path::{Path, PathBuf};
@@ -63,10 +63,19 @@ impl Usb {
 
     #[must_use]
     pub fn dim(&mut self, expected: u16, reason: &str) -> bool {
-        if self.find(expected).is_none() {
+        let registration = if expected == 0x0092 {
+            match openpilot_cluster_wifi::Registration::load(&openpilot_cluster_wifi::config_path())
+            {
+                Ok(registration) => registration,
+                Err(_) => return false,
+            }
+        } else {
+            None
+        };
+        if registration.is_none() && self.find(expected).is_none() {
             return false;
         }
-        match Display::new(
+        match Display::new_with_wifi(
             Options {
                 brightness: 0,
                 display_fps: 0,
@@ -75,6 +84,7 @@ impl Usb {
             },
             ParamsRuntime::default(),
             &self.lock,
+            registration,
         ) {
             Ok(mut display) => Self::dim_result(display.open(), expected, reason),
             Err(error) => Self::dim_result(Err(error), expected, reason),

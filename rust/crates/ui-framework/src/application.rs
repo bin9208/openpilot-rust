@@ -176,6 +176,20 @@ impl Application {
     }
     pub fn render_cycle(
         &mut self,
+        before: impl FnMut(&Frame<'_>, &mut NavigationStack, &mut Canvas) -> Result<(), Error>,
+        after: impl FnMut(
+            &Frame<'_>,
+            &mut Canvas,
+            &mut Diagnostics,
+            &mut NavigationStack,
+            bool,
+        ) -> Result<(), Error>,
+    ) -> Result<bool, Error> {
+        self.render_cycle_with_input(|_| Ok(()), before, after)
+    }
+    pub fn render_cycle_with_input(
+        &mut self,
+        mut input: impl FnMut(&mut Vec<MouseEvent>) -> Result<(), Error>,
         mut before: impl FnMut(&Frame<'_>, &mut NavigationStack, &mut Canvas) -> Result<(), Error>,
         mut after: impl FnMut(
             &Frame<'_>,
@@ -201,8 +215,15 @@ impl Application {
                 }
             }
         }
+        let had_events = !events.is_empty();
+        input(&mut events)?;
         if let Some(event) = events.last() {
             self.last_event = *event;
+        } else if had_events {
+            // A global modal consumed the gesture; held-state consumers must not see it either.
+            self.last_event.down = false;
+            self.last_event.pressed = false;
+            self.last_event.released = false;
         }
         let native = self.canvas.renderer.keyboard();
         let keyboard = KeyboardInput {

@@ -101,6 +101,12 @@ impl ModelRenderer {
             return Ok(());
         }
         let end = index(points, 40.);
+        use num_traits::ToPrimitive;
+        let now = ((self.context.now_monotonic)() * 1e9)
+            .to_i128()
+            .ok_or(Error::Contract("blindspot clock overflow"))?;
+        let packet = crate::vision_status::blindspot::packet(input.messages, now);
+        let sources = crate::vision_status::blindspot::sides(input.car, packet.as_ref());
         for (i, active) in active.into_iter().enumerate() {
             if active {
                 let barrier = road_markings::project_blindspot_barrier(
@@ -112,7 +118,10 @@ impl ModelRenderer {
                     polygon::polygon(
                         draw,
                         &quad,
-                        (self.widget.rect, Fill::Color(color(255, 215, 0, 150))),
+                        (
+                            self.widget.rect,
+                            Fill::Color(crate::vision_status::blindspot::tint(sources[i])),
+                        ),
                     )?;
                 }
             }
@@ -128,7 +137,7 @@ impl ModelRenderer {
             return Ok(());
         }
         let throttle = input.longitudinal.get_allow_throttle() || !self.common.longitudinal;
-        let alpha = 0.05 / (0.25 + 0.05);
+        let alpha = 1. - self.clock.retention(1. - 0.05 / (0.25 + 0.05));
         self.filters.throttle =
             (1. - alpha) * self.filters.throttle + alpha * f64::from(u8::from(throttle));
         if self.common.experimental {

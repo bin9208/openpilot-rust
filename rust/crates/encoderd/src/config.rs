@@ -5,10 +5,6 @@ pub enum Mode {
     Main,
     Stream,
     CarrotVision,
-    YoutubeLow,
-    YoutubeMedium,
-    Youtube,
-    YoutubeWide,
 }
 impl Mode {
     pub fn parse(argument: Option<&str>) -> Option<Self> {
@@ -16,20 +12,13 @@ impl Mode {
             None => Some(Self::Main),
             Some("--stream") => Some(Self::Stream),
             Some("--carrot-vision-road") => Some(Self::CarrotVision),
-            Some("--youtube-low") => Some(Self::YoutubeLow),
-            Some("--youtube-medium") => Some(Self::YoutubeMedium),
-            Some("--youtube") => Some(Self::Youtube),
-            Some("--youtube-wide") => Some(Self::YoutubeWide),
             Some(_) => None,
         }
     }
     pub fn cameras(self) -> &'static [Camera] {
         match self {
             Self::Main | Self::Stream => &[Camera::Road, Camera::Driver, Camera::WideRoad],
-            Self::CarrotVision | Self::YoutubeLow | Self::YoutubeMedium | Self::Youtube => {
-                &[Camera::Road]
-            }
-            Self::YoutubeWide => &[Camera::WideRoad],
+            Self::CarrotVision => &[Camera::Road],
         }
     }
     pub fn schedule(self, pc: bool) -> Scheduling {
@@ -70,10 +59,6 @@ pub enum Quality {
     Main,
     Qcam,
     Stream,
-    YoutubeLow,
-    YoutubeMedium,
-    Youtube,
-    YoutubeWide,
 }
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 pub struct Settings {
@@ -112,22 +97,7 @@ impl Quality {
             }
             Self::Qcam => value.bitrate = 256_000,
             Self::Stream => value.bitrate = stream_bitrate,
-            Self::YoutubeLow => value = youtube(750_000, 854, 480),
-            Self::YoutubeMedium => value = youtube(2_000_000, 1280, 720),
-            Self::Youtube => value = youtube(4_200_000, 1920, 1080),
-            Self::YoutubeWide => value = youtube(2_700_000, 1280, 720),
         }
         value
-    }
-}
-fn youtube(bitrate: i32, width: i32, height: i32) -> Settings {
-    Settings {
-        codec: Codec::QcameraH264,
-        bitrate,
-        gop: 40,
-        b_frames: 0,
-        cbr: true,
-        width,
-        height,
     }
 }

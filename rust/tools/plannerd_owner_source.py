@@ -47,10 +47,14 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--source-native', type=Path, required=True)
   parser.add_argument('--artifact', type=Path, required=True)
-  parser.add_argument('--binary', type=Path, required=True)
+  parser.add_argument('--binary', type=Path)
+  parser.add_argument('--source-only', action='store_true')
+  parser.add_argument('--reserve-probe', action='store_true', help='inject a stale preceding prediction to exercise post-solve reserve rejection')
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--frames', type=int, default=360)
   args = parser.parse_args()
+  if args.binary is None and not args.source_only:
+    parser.error('--binary is required unless --source-only is selected')
   args.output = args.output.resolve()
   args.output.mkdir(parents=True, exist_ok=False)
   values = parameters()
@@ -92,6 +96,14 @@ def main():
         'checks': checks,
       }
     )
+    if args.reserve_probe and index in (40, 90, 110):
+      import numpy as np
+      from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS
+      speeds=np.maximum(1.,20.-6.*T_IDXS)
+      distances=np.cumsum(np.diff(T_IDXS,prepend=0.)*np.concatenate(([speeds[0]],(speeds[1:]+speeds[:-1])*0.5)))
+      previous=np.column_stack((distances,speeds,np.full_like(speeds,-6.)))
+      long.mpc.x_sol[:]=previous
+      frames[-1]['mpc_previous_x']=previous.tolist()
     source.logs.clear()
     long.update(sm, carrot)
     lat.update(sm, carrot)
@@ -101,6 +113,10 @@ def main():
   data = json.dumps(request, allow_nan=False).encode()
   (args.output / 'input.json').write_bytes(data)
   (args.output / 'expected.json').write_text(json.dumps(expected, allow_nan=False) + '\n')
+  if args.source_only:
+    (args.output / 'receipt.json').write_text(json.dumps({'status':'SOURCE_ONLY','frames':len(expected)})+'\n')
+    print(json.dumps({'frames':len(expected),'status':'SOURCE_ONLY'}))
+    return
   result = subprocess.run([str(args.binary.resolve())], input=data, capture_output=True, check=False)
   (args.output / 'actual.json').write_bytes(result.stdout)
   (args.output / 'stderr.txt').write_bytes(result.stderr)

@@ -20,6 +20,8 @@ mod record;
 #[derive(Deserialize)]
 pub struct Suite {
     config: Config,
+    #[serde(default)]
+    overlay: bool,
     language: String,
     cases: Vec<Scene>,
 }
@@ -65,6 +67,9 @@ impl Model {
             Self::Small(r) => r.as_mut(),
         }
     }
+    fn overlay(&mut self, state: openpilot_ui_application::overlay_state::Shared) {
+        match self { Self::Big(r) => r.set_overlay_state(state), Self::Small(r) => r.set_overlay_state(state) }
+    }
     fn transform(&mut self, t: [[f64; 3]; 3]) {
         match self {
             Self::Big(r) => r.set_transform(t),
@@ -96,20 +101,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let navigation = NavigationQueue::default();
     let mut results = Vec::new();
     for scene in &suite.cases {
-        let context = context::context(
+        let mut context = context::context(
             root,
             scene,
             (&suite, &output.join(format!("{}-owned", scene.name))),
         )?;
+        let fixture_clock = std::rc::Rc::new(std::cell::Cell::new(0.));
+        context.now_monotonic = { let clock = fixture_clock.clone(); std::rc::Rc::new(move || clock.get()) };
         std::io::stderr().write_all(format!("MODEL_PARAMS_BEGIN {}\n", scene.name).as_bytes())?;
         let mut model = if suite.config.big {
             Model::Big(Box::new(Big::new(context.clone())?))
         } else {
             Model::Small(Box::new(Small::new(context.clone())?))
         };
+        let overlay = std::rc::Rc::new(std::cell::RefCell::new(openpilot_ui_application::overlay_state::State::default()));
+        if suite.overlay { model.overlay(overlay.clone()); }
         model.widget().set_rect(scene.rect);
         let mut rows = Vec::new();
         for (index, step) in scene.steps.iter().enumerate() {
+            fixture_clock.set(step.now);
             for (key, value) in &step.params {
                 context.params.put(key, value)?;
             }
@@ -133,8 +143,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(matrix) = step.transform {
                 model.transform(matrix);
             }
+            overlay.borrow_mut().enabled = index % 19 != 18;
+            overlay.borrow_mut().urgent = index % 11 == 7;
             let frame = Frame {
-                index: 0,
+                index: index as u64,
                 now: step.now,
                 monotonic: step.now,
                 keyboard: &keyboard,

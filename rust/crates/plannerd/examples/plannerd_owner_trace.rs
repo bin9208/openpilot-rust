@@ -50,17 +50,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let mut carrot = CarrotPlanner::new(&mut parameters)?;
     let mut outputs = Vec::new();
-    for frame in request.frames {
+    for mut frame in request.frames {
         parameters.values.extend(frame.parameters.clone());
         let decoded = decode::Decoded::read(&frame)?;
+        if let Some(previous) = frame.mpc_previous_x {
+            longitudinal.mpc.x = previous;
+        }
         let mut mono = || frame.time;
         let mut wall = || frame.wall_time;
-        let long_warning = longitudinal.update(
+        let mut signal_request = frame.signals.take();
+        let mut signals = signal_request.as_mut().map(|request| request.owner());
+        let long_warning = longitudinal.update_with_signals(
             &decoded.input(&frame),
             &mut carrot,
             &mut parameters,
             &mut wall,
             &mut mono,
+            signals
+                .as_mut()
+                .map(|s| s as &mut dyn openpilot_plannerd::carrot::SignalSource),
         )?;
         let lat_warning = lateral.update(
             lateral_planner::Input {
@@ -73,14 +81,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &mut parameters,
             &mut mono,
         )?;
-        outputs.push(snapshot::frame(
+        let mut output = snapshot::frame(
             &longitudinal,
             &lateral,
             &carrot,
             long_warning,
             lat_warning,
             &parameters.operations,
-        ));
+        );
+        if signal_request.is_some() {
+            output["signal_owner"] = serde_json::json!({"state":carrot.signal_snapshot(),"start":carrot.start_decision,"prepare":carrot.prepare_decision,"control_active":carrot.prepare_control_active,"suspended":carrot.signal_detection_suspended,"color":carrot.signal_observation_color,"green":carrot.signal_green_active,"constraint":longitudinal.signal_constraint_snapshot()});
+        }
+        if let Some(metadata) = &frame.wire {
+            output["wire"] =
+                plannerd_owner_trace_support::wire::snapshot(&mut longitudinal, &carrot, metadata)?;
+        }
+        outputs.push(output);
         parameters.operations.clear();
     }
     serde_json::to_writer(io::stdout().lock(), &outputs)?;

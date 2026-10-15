@@ -13,6 +13,7 @@ def main():
   parser.add_argument('binding', type=Path)
   parser.add_argument('output', type=Path)
   parser.add_argument('--scenario', action='append')
+  parser.add_argument('--runner', nargs=argparse.REMAINDER, default=[])
   args = parser.parse_args()
   args.binary, args.binding, args.output = (path.resolve() for path in (args.binary, args.binding, args.output))
   args.output.mkdir(parents=True, exist_ok=True)
@@ -24,7 +25,7 @@ def main():
   for scenario in scenarios:
     for kind in ('source', 'native'):
       output = args.output / f'{scenario}-{kind}'
-      command = ([sys.executable, 'rust/tools/manager_reference.py', str(args.binding)] if kind == 'source' else [str(args.binary)]) + [str(output), scenario]
+      command = ([sys.executable, 'rust/tools/manager_reference.py', str(args.binding)] if kind == 'source' else [*args.runner, str(args.binary)]) + [str(output), scenario]
       with (args.output / f'{scenario}-{kind}.log').open('w') as log:
         subprocess.run(command, env=environment, check=True, timeout=60, stdout=log, stderr=subprocess.STDOUT)
     source = json.loads((args.output / f'{scenario}-source/result.json').read_text())

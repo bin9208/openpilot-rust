@@ -3,6 +3,7 @@ pub mod augmented;
 pub mod calibration;
 pub mod camera;
 pub mod driver_camera;
+pub mod driver_preview;
 pub mod driver_state;
 pub mod exp_button;
 pub mod hud;

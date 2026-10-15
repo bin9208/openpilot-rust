@@ -13,10 +13,12 @@ import time
 
 SERVICES = ['wideRoadCameraState', 'roadCameraState', 'driverCameraState']
 CASES = {
+  'driver-blocked': ({}, signal.SIGTERM, [0, 1, 2]),
   'term': ({}, signal.SIGTERM, [0, 1, 2]),
   'int': ({}, signal.SIGINT, [0, 1, 2]),
   'pwr': ({}, signal.SIGPWR, [0, 1, 2]),
   'disabled-road': ({'DISABLE_ROAD': ''}, signal.SIGTERM, [0, 2]),
+  'missing-driver-node': ({'CK_MISSING_NODE': '2'}, signal.SIGTERM, [0, 1]),
   'missing-road': ({'CK_MISSING_PORT': '1'}, signal.SIGTERM, [0, 2]),
   'wait-failure': ({'CK_FAIL_OP': 'sync:6', 'CK_FAIL_SKIP': '8'}, signal.SIGTERM, [0, 1, 2]),
   'poll-error': ({'CK_FAIL_OP': 'poll', 'CK_FAIL_SKIP': '6'}, None, [0, 1, 2]),
@@ -53,10 +55,12 @@ def main() -> None:
     for key, value in os.environ.items()
     if not key.startswith(('CK_', 'SPECTRA_', 'DISABLE_', 'DEBUG_FRAMES', 'LOG_RAW_FRAMES', 'CTRL_EXP_FROM_PARAMS'))
   }
-  asan = '/usr/lib/llvm-18/lib/clang/18/lib/linux'
+  asan = os.environ.get('CAMERA_ASAN_ROOT', '/usr/lib/llvm-18/lib/clang/18/lib/linux')
   environment.update(
     overrides, CK_SENSOR=str(0x5304), CK_TRACE=str(args.output / 'trace.jsonl'), CK_START_GATE=str(args.output / 'go'), PARAMS_ROOT=str(args.output / 'params')
   )
+  if args.case == 'driver-blocked':
+    environment['CK_DRIVER_WAIT_GATE'] = str(args.output / 'driver-go')
   if args.case == 'publication-order':
     environment['CK_REGISTER_GATE'] = str(args.output / 'register-go')
   if args.qemu:
@@ -140,6 +144,15 @@ def main() -> None:
       deadline = time.monotonic() + 10
       while process.poll() is None:
         receive()
+        if args.case == 'driver-blocked':
+          gate = args.output / 'driver-go'
+          if not gate.exists() and gate.with_suffix('.ready').exists():
+            records = [json.loads(line) for line in (args.output / 'trace.jsonl').read_text().splitlines() if line.endswith('}')]
+            events = Counter(row['port'] for row in records if row['op'] == 'runtime-event')
+            if events[0] >= 36 and events[1] >= 36:
+              assert not any(row['op'] == 'runtime-registers' and row['port'] == 2 for row in records)
+              (args.output / 'driver-blocked.json').write_text(json.dumps(dict(events)))
+              gate.write_text('release')
         barrier = args.output / 'register-go'
         if args.case == 'publication-order' and not barrier.exists() and barrier.with_suffix('.ready').exists():
           receive()
@@ -209,10 +222,10 @@ def verify(args) -> None:
   assert len([row for row in records if row['op'] == 'subscribe']) == 1
   assert any(record['msg'] == '-- Starting devices' and record['levelnum'] == 20 for record in logs)
   assert any(record['msg'] == '-- Dequeueing Video events' and record['levelnum'] == 20 for record in logs)
-  if args.case not in ['missing-road']:
+  if args.case not in ['missing-road', 'missing-driver-node', 'driver-blocked']:
     for port in ports:
       assert any(record['msg'].startswith(f'camera {port} synced on frame_id_offset ') and record['levelnum'] == 30 for record in logs)
-  if args.case == 'missing-road':
+  if args.case in ['missing-road', 'missing-driver-node']:
     assert any('first frame sync timed out:' in record['msg'] and record['levelnum'] == 40 for record in logs)
     assert min(row['round'] for row in records if row['op'] == 'runtime-registers') > 40
   elif args.case == 'wait-failure':
@@ -220,11 +233,14 @@ def verify(args) -> None:
     assert any('clearing and requeuing' in record['msg'] and record['levelnum'] == 30 for record in logs)
   elif args.case == 'poll-error':
     assert any('poll failed' in record['msg'] and record['levelnum'] == 40 for record in logs)
+  elif args.case == 'driver-blocked':
+    assert any('driver camera event backlog overflow' in row['msg'] for row in logs)
+    assert any(row['op'] == 'driver-wait-released' for row in records)
   elif args.case == 'publication-order':
     assert json.loads((args.output / 'publication-order.json').read_text()) == {'messages': [0, 0, 0], 'vision': [1, 0, 0]}
     assert len([record for record in records if record['op'] == 'runtime-register-barrier-released']) == 1
 
-  register_records = {(row['port'], row['round']): row for row in records if row['op'] == 'runtime-registers'}
+  register_records = {(row['port'], row['request']): row for row in records if row['op'] == 'runtime-registers'}
   for port in ports:
     if not messages[port]:
       assert args.case == 'poll-error'
@@ -257,7 +273,7 @@ def verify(args) -> None:
       text=True,
       capture_output=True,
       timeout=10,
-      env={**os.environ, 'LD_LIBRARY_PATH': '/usr/lib/llvm-18/lib/clang/18/lib/linux'},
+      env={**os.environ, 'LD_LIBRARY_PATH': os.environ.get('CAMERA_ASAN_ROOT', '/usr/lib/llvm-18/lib/clang/18/lib/linux')},
     )
     (args.output / f'oracle-{port}.stdout').write_text(oracle.stdout)
     (args.output / f'oracle-{port}.stderr').write_text(oracle.stderr)
@@ -274,7 +290,7 @@ def verify(args) -> None:
       assert writes == wanted['state']['writes'], (port, data['requestId'], writes, wanted['state']['writes'])
       assert wanted['actions'] == ['vision', 'registers', 'publish']
   close_counts = Counter(row['fd'] for row in records if row['op'] == 'close')
-  for fd in [501, 503, 504, 505, 510, 511, 512]:
+  for fd in [501, 503, 504, 505, 510, 511] + ([] if args.case == 'missing-driver-node' else [512]):
     assert close_counts[fd] == 1, ('device cleanup', fd, close_counts[fd])
   assert not any('panicked at' in line for line in stderr.splitlines())
   report = {

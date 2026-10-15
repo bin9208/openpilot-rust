@@ -136,9 +136,11 @@ pub fn download_fallible(
         .saturating_sub(offset)
         .saturating_add(256 << 20);
     if available < required {
-        return Err(Error::Invalid(format!(
-            "insufficient storage (need {required} bytes)"
-        )));
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::StorageFull,
+            format!("insufficient storage (need {required} bytes)"),
+        )
+        .into());
     }
     let user_agent = match kind {
         DownloadKind::Model => "carrot-modeld/1",
@@ -170,10 +172,16 @@ pub fn download_fallible(
         }
     } else {
         if response.status().as_u16() != 200 {
-            return Err(Error::Invalid(format!(
-                "unexpected download status {}",
-                response.status().as_u16()
-            )));
+            let status = response.status().as_u16();
+            let message = format!("unexpected download status {status}");
+            return Err(if status >= 400 {
+                Error::HttpStatus {
+                    code: status,
+                    message,
+                }
+            } else {
+                Error::Invalid(message)
+            });
         }
         if matches!(kind, DownloadKind::Precompiled) {
             offset = 0;
@@ -230,6 +238,13 @@ pub fn download_fallible(
     file.flush()?;
     file.sync_all()?;
     let actual = size(&partial)?;
+    if actual < expected_size {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::UnexpectedEof,
+            format!("incomplete model download: expected {expected_size}, got {actual}"),
+        )
+        .into());
+    }
     if actual != expected_size {
         return Err(Error::Invalid(format!(
             "model size mismatch: expected {expected_size}, got {actual}"

@@ -9,6 +9,8 @@ use std::{
 struct Request {
     op: String,
     #[serde(default)]
+    include_all_files: bool,
+    #[serde(default)]
     id: String,
     root: Option<PathBuf>,
     #[serde(default)]
@@ -21,13 +23,14 @@ pub fn run(executable: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     for line in io::stdin().lock().lines() {
         let request: Request = serde_json::from_str(&line?)?;
         let result = match request.op.as_str() {
-            "start" => manager.start(
+            "start" => manager.start_scoped(
                 request
                     .root
                     .as_deref()
                     .unwrap_or(std::path::Path::new("/data/media/0/realdata")),
                 &request.segments,
                 request.settings,
+                request.include_all_files,
             ),
             "snapshot" => manager.snapshot(&request.id),
             "cancel" => manager.cancel(&request.id),

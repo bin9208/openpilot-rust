@@ -30,7 +30,7 @@ fn route(path: &str) -> Option<Route<'_>> {
     if decoded_is(kind, "videos") {
         return segments.next().is_none().then_some(Route::Videos);
     }
-    let kind = ["thumbnail", "video", "download"]
+    let kind = ["thumbnail", "video", "download", "info"]
         .into_iter()
         .find(|literal| decoded_is(kind, literal))?;
     let id = segments.next().filter(|id| !id.is_empty())?;
@@ -46,6 +46,19 @@ fn failure(error: Failure, head: bool) -> Response<Body> {
             &message,
             head,
         ),
+        Failure::Json { status, message } => json_response(
+            StatusCode::from_u16(status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+            Value::object([("ok", Value::Bool(false)), ("error", Value::text(&message))]),
+            head,
+            "",
+        )
+        .unwrap_or_else(|_| {
+            text(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "500 Internal Server Error",
+                head,
+            )
+        }),
         Failure::Internal => {
             let mut response = text(
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -138,6 +151,7 @@ fn videos(service: &Screenrecord, offset: BigInt, limit: BigInt) -> Result<Value
             },
         ),
         ("hasMore", Value::Bool(end < total)),
+        ("now", Value::integer(service.wall())),
     ]))
 }
 pub async fn handle(request: Request<RequestBody>, service: Arc<Screenrecord>) -> Response<Body> {
@@ -145,15 +159,21 @@ pub async fn handle(request: Request<RequestBody>, service: Arc<Screenrecord>) -
     let Some(selected) = route(request.uri().path()) else {
         return text(StatusCode::NOT_FOUND, "404: Not Found", head);
     };
-    if !matches!(request.method(), &Method::GET | &Method::HEAD) {
+    let delete = request.method() == Method::DELETE && matches!(selected, Route::Media("video", _));
+    if !delete && !matches!(request.method(), &Method::GET | &Method::HEAD) {
         let mut response = text(
             StatusCode::METHOD_NOT_ALLOWED,
             "405: Method Not Allowed",
             head,
         );
-        response
-            .headers_mut()
-            .insert(header::ALLOW, HeaderValue::from_static("GET,HEAD"));
+        response.headers_mut().insert(
+            header::ALLOW,
+            HeaderValue::from_static(if matches!(selected, Route::Media("video", _)) {
+                "DELETE,GET,HEAD"
+            } else {
+                "GET,HEAD"
+            }),
+        );
         return response;
     }
     let (kind, id) = match selected {
@@ -197,6 +217,22 @@ pub async fn handle(request: Request<RequestBody>, service: Arc<Screenrecord>) -
         Ok(id) => id.into_owned(),
         Err(_) => return failure(Failure::Internal, head),
     };
+    if kind == "info" || delete {
+        let result = tokio::task::spawn_blocking(move || {
+            if delete {
+                service.delete(&id)
+            } else {
+                service.info(&id)
+            }
+        })
+        .await;
+        return match result {
+            Ok(Ok(value)) => json_response(StatusCode::OK, value, head, "")
+                .unwrap_or_else(|_| failure(Failure::Internal, head)),
+            Ok(Err(error)) => failure(error, head),
+            Err(_) => failure(Failure::Internal, head),
+        };
+    }
     let kind = kind.to_owned();
     let thumbnail = kind == "thumbnail";
     let path = tokio::task::spawn_blocking(move || {

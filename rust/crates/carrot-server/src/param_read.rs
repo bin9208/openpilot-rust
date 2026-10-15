@@ -78,6 +78,9 @@ impl Backend {
     pub fn backup_values(&self) -> Result<Value, Error> {
         let mut values = Vec::new();
         for (info, default) in self.backup_defaults()? {
+            if super::backup_excluded(info.name) {
+                continue;
+            }
             let value = self.typed_value(info.name, false).unwrap_or(default);
             values.push((
                 info.name.chars().map(u32::from).collect(),

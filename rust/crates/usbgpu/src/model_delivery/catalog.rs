@@ -50,6 +50,19 @@ impl Catalog {
             ));
         }
         let generic = value["format"] == "comma-generic-onnx";
+        let serialization = match value.get("serialization") {
+            None => "oob-v1",
+            Some(value) => value
+                .as_str()
+                .ok_or_else(|| Error::Invalid("unsupported precompiled serialization".into()))?,
+        };
+        if !matches!(serialization, "oob-v1" | "persistent-buffer-v1")
+            || (serialization != "oob-v1" && !generic)
+        {
+            return Err(Error::Invalid(
+                "unsupported precompiled serialization".into(),
+            ));
+        }
         let protocol = value["protocol"] == true || value["protocol"].as_f64() == Some(1.0);
         if !protocol
             || value[if generic {
@@ -133,10 +146,10 @@ impl Catalog {
             .header("User-Agent", "carrot-precompiled/1")
             .call()?;
         if response.status().as_u16() >= 400 {
-            return Err(Error::Invalid(format!(
-                "catalog HTTP {}",
-                response.status()
-            )));
+            return Err(Error::HttpStatus {
+                code: response.status().as_u16(),
+                message: format!("catalog HTTP {}", response.status()),
+            });
         }
         let mut data = Vec::new();
         response

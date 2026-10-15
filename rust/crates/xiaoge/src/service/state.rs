@@ -115,10 +115,12 @@ pub struct State {
     pub blindspot_side: Option<Side>,
     pub blindspot_active: [bool; 2],
     pub blindspot_updated: u64,
+    pub blindspot_side_updated: [u64; 2],
+    pub next_side: Side,
     pub lane: ResultData,
     pub lane_updated: u64,
     pub side_at: [f64; 2],
-    pub followup_until: f64,
+    pub followup_until: [f64; 2],
 }
 
 impl State {
@@ -144,15 +146,19 @@ impl State {
                 side: None,
                 reason: "waiting for carState and modelV2",
                 lane_width: 0.0,
+                eligible_sides: Vec::new(),
+                lane_widths: [0.0; 2],
             },
             sides: [Detection::default(); 2],
             blindspot_side: None,
             blindspot_active: [false; 2],
             blindspot_updated: 0,
+            blindspot_side_updated: [0; 2],
+            next_side: Side::Left,
             lane: ResultData::failed(String::new()),
             lane_updated: 0,
             side_at: [0.0; 2],
-            followup_until: 0.0,
+            followup_until: [0.0; 2],
         }
     }
 
@@ -177,10 +183,9 @@ impl State {
         self.cameras[0].available(now)
             && self.models[0].loaded
             && self.gate.active
-            && self.gate.side == Some(side)
-            && self.blindspot_side == Some(side)
+            && self.gate.eligible_sides.contains(&side)
             && crate::vision::fresh(
-                self.blindspot_updated,
+                self.blindspot_side_updated[side.index()],
                 nanos,
                 crate::vision::BLINDSPOT_TIMEOUT_NS,
             )

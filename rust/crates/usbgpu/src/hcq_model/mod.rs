@@ -95,20 +95,34 @@ impl<D: Device> Model<D> {
         Ok(serde_json::json!({"buffers":rows}))
     }
     #[cfg(feature = "fixture-inspection")]
-    pub fn fixture_snapshot(&self) -> Result<serde_json::Value, Error> {
+    pub fn fixture_snapshot(&mut self) -> Result<serde_json::Value, Error> {
         let parameters = self
             .manifest
             .parameters
             .iter()
             .map(|parameter| {
-                let view = self.manifest.arguments[parameter.slot];
-                let address = storage::buffer(&self.buffers, view)?
-                    .address(view.offset, manifest::Space::Host)?;
-                let bytes = self.memory.read(
-                    address,
-                    usize::try_from(parameter.bytes)
-                        .map_err(|_| Error::Contract("HCQ snapshot parameter size"))?,
-                )?;
+                let address = if let Some(values) = &self.manifest.argument_values {
+                    storage::expression(&values[parameter.slot], &self.buffers, &self.bindings)?
+                } else {
+                    let view = self.manifest.arguments[parameter.slot];
+                    storage::buffer(&self.buffers, view)?.address(view.offset, manifest::Space::Host)?
+                };
+                if parameter.bytes == 0 {
+                    return Ok(serde_json::json!({"slot":parameter.slot,"name":parameter.name,"value":address}));
+                }
+                let size = usize::try_from(parameter.bytes)
+                    .map_err(|_| Error::Contract("HCQ snapshot parameter size"))?;
+                let mut remote = None;
+                if let Some(values) = &self.manifest.argument_values {
+                    if let manifest::Expression::Address { view, .. } = &values[parameter.slot] {
+                        if let Bound::Device(allocation) = storage::buffer(&self.buffers, *view)? {
+                            let mut data = vec![0; allocation.bytes as usize];
+                            self.device.read(allocation, &mut data)?;
+                            remote = Some(data[view.offset as usize..view.offset as usize + size].to_vec());
+                        }
+                    }
+                }
+                let bytes = if let Some(data) = &remote { data.as_slice() } else { self.memory.read(address, size)? };
                 Ok(serde_json::json!({
                     "slot": parameter.slot,
                     "name": parameter.name,
@@ -163,35 +177,58 @@ impl<D: Device> Model<D> {
                 &mut self.device,
             )?;
         }
-        let table = &self.manifest.input_table;
-        let view = *self
-            .manifest
-            .arguments
-            .get(table.argument)
-            .ok_or(Error::Contract("HCQ input table argument missing"))?;
-        let buffer = storage::buffer(&self.buffers, view)?;
-        for (index, entry) in table.entries.iter().enumerate() {
-            let binding = self.bindings[entry.slot];
-            let value = binding
-                .device
-                .checked_add(entry.offset)
-                .ok_or(Error::Contract("HCQ input address overflow"))?;
-            let offset = view
-                .offset
-                .checked_add(
-                    u64::try_from(index)
-                        .map_err(|_| Error::Contract("HCQ table offset overflow"))?
-                        * 8,
-                )
-                .ok_or(Error::Contract("HCQ table offset overflow"))?;
-            buffer.write(
-                offset,
-                &value.to_le_bytes(),
-                &mut self.memory,
-                &mut self.device,
-            )?;
+        if let Some(table) = &self.manifest.input_table {
+            let view = *self
+                .manifest
+                .arguments
+                .get(table.argument)
+                .ok_or(Error::Contract("HCQ input table argument missing"))?;
+            let buffer = storage::buffer(&self.buffers, view)?;
+            for (index, entry) in table.entries.iter().enumerate() {
+                let binding = self.bindings[entry.slot];
+                let value = binding
+                    .device
+                    .checked_add(entry.offset)
+                    .ok_or(Error::Contract("HCQ input address overflow"))?;
+                let offset = view
+                    .offset
+                    .checked_add(
+                        u64::try_from(index)
+                            .map_err(|_| Error::Contract("HCQ table offset overflow"))?
+                            * 8,
+                    )
+                    .ok_or(Error::Contract("HCQ table offset overflow"))?;
+                buffer.write(
+                    offset,
+                    &value.to_le_bytes(),
+                    &mut self.memory,
+                    &mut self.device,
+                )?;
+            }
         }
         self.execution.run(&mut self.memory, &mut self.device)
+    }
+    /// Clear recurrent queues after synthetic validation without reallocating
+    /// GPU assets or restarting the source's USB dispatcher queue.
+    pub fn reset_recurrent(&mut self) -> Result<(), Error> {
+        self.attempt(|model| {
+            let lock = model.device.bus_lock();
+            let _guard = lock.as_ref().map(|lock| lock.enter()).transpose()?;
+            model.device.synchronize()?;
+            let zeroes = vec![0; 256 << 10];
+            for (binding, allocation) in model.manifest.bindings.iter().zip(&model.bindings) {
+                if binding.output || !binding.name.starts_with("state_") {
+                    continue;
+                }
+                let mut offset = 0;
+                while offset < binding.bytes {
+                    let count = (binding.bytes - offset).min(zeroes.len() as u64) as usize;
+                    model.device.write(*allocation, offset, &zeroes[..count])?;
+                    offset += count as u64;
+                }
+            }
+            Ok(())
+        })
     }
     pub fn write_input(&mut self, name: &str, bytes: &[u8]) -> Result<(), Error> {
         self.attempt(|model| model.write_input_inner(name, bytes))

@@ -66,6 +66,8 @@ state_module.ui_state = SimpleNamespace(
 attach_refresh(state_module.ui_state, scene)
 sys.modules[state_module.__name__] = state_module
 import pyray as rl
+from final_graphics_source import install as install_final_graphics
+install_final_graphics(widgets=True)
 from openpilot.system.ui.lib.application import gui_app, MouseEvent, MousePos
 from openpilot.system.ui.lib.multilang import multilang
 from openpilot.selfdrive.ui.widgets.prime import PrimeWidget
@@ -77,7 +79,10 @@ gui_app.init_window('Source product widget')
 effects = Effects(scene, state_module.ui_state, gui_app, engaged_callbacks)
 effects.offroad_callbacks = offroad_callbacks
 dialog_results, network, egpu = [], None, None
-if scene.get('root') is not None:
+if scene['kind'] == 'driver-preview':
+  from preview_source import create
+  widget, camera = create(scene, state_module.ui_state)
+elif scene.get('root') is not None:
   from root_source import create
 
   now = 0.0
@@ -289,6 +294,8 @@ try:
       rl.get_mouse_position = lambda: rl.Vector2(*gui_app.last_mouse_event.pos)
       rl.is_mouse_button_down = lambda button: gui_app.last_mouse_event.left_down
     next(loop)
+    # Pinned final application records this after BeginDrawing/BeginTextureMode.
+    gui_app.render_framebuffer=rl.rl_get_active_framebuffer()
     if scene.get('root') is None:
       gui_app._mouse_events = scripted_events
       if scripted_events:

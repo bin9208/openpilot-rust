@@ -559,11 +559,18 @@ pub fn prepare(options: StageOptions, download: &impl super::Download) -> Result
     } else {
         git(&candidate, &["checkout", "--detach", &target])?;
     }
+    let offline = options.offline.or_else(|| {
+        if target == previous {
+            super::repair_package(&root, &target)
+        } else {
+            None
+        }
+    });
     super::run(
         &Options {
             root: candidate.clone(),
             check: false,
-            offline: options.offline,
+            offline,
             reserve_bytes: options.reserve,
         },
         download,

@@ -36,6 +36,9 @@ fn policy(input: &Value) -> Result<Value, Box<dyn std::error::Error>> {
         })
     };
     Ok(match input.get("operation").string()?.as_str() {
+        "info" => screenrecord::info::probe(&PathBuf::from(input.get("path").string()?))?,
+        "start_epoch" => screenrecord::info::start_epoch(&input.get("name").string()?)
+            .map_or(Value::Null, Value::integer),
         "date" => Value::text(&catalog::date_label(integer("epoch")?)),
         "relative" => Value::text(&catalog::relative_time(integer("epoch")?, integer("wall")?)),
         "file_id" => Value::text(&catalog::file_id(&PathBuf::from(

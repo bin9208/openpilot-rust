@@ -5,8 +5,16 @@ use openpilot_encoderd::{
 };
 
 #[test]
-fn youtube_wide_selects_the_original_wide_stream() {
-    assert_eq!(Mode::YoutubeWide.cameras(), &[Camera::WideRoad]);
+fn retired_youtube_encoder_modes_are_not_accepted() {
+    for argument in [
+        "--youtube-low",
+        "--youtube-medium",
+        "--youtube",
+        "--youtube-wide",
+    ] {
+        assert_eq!(Mode::parse(Some(argument)), None);
+    }
+    assert_eq!(Mode::CarrotVision.cameras(), &[Camera::Road]);
 }
 
 #[test]

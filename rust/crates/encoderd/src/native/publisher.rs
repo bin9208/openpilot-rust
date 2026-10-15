@@ -51,7 +51,6 @@ impl VideoPublisher {
             "livestreamRoadEncodeData" => event.init_livestream_road_encode_data(),
             "livestreamDriverEncodeData" => event.init_livestream_driver_encode_data(),
             "livestreamWideRoadEncodeData" => event.init_livestream_wide_road_encode_data(),
-            "youtubeRoadEncodeData" => event.init_youtube_road_encode_data(),
             _ => return Err(Error::Contract("unknown source encoder service")),
         };
         video.set_unix_timestamp_nanos(nanos(rustix::time::ClockId::Realtime)?);

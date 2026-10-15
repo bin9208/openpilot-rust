@@ -3,6 +3,9 @@ mod git_config;
 mod process;
 mod reboot;
 mod repo_update;
+pub mod startup_action;
+pub mod startup_worker;
+pub use repo_update::startup::Native as StartupBackend;
 
 use crate::{config::Config, terminal::Terminal, Error, Value};
 use std::{ffi::OsString, fs, sync::Arc};
@@ -226,6 +229,9 @@ fn capture_tmux(config: &Config) -> Result<Option<String>, Error> {
 }
 
 pub fn internal_command(arguments: &[OsString]) -> Result<Option<i32>, Error> {
+    if let Some(code) = startup_action::command(arguments)? {
+        return Ok(Some(code));
+    }
     repo_update::internal_command(arguments)
 }
 

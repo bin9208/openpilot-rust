@@ -1,0 +1,316 @@
+{
+  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "scope": "Complete standalone ARS510 library source paths; source-value and controlled receiver/factory gates, not device/fullruntime acceptance. Outer ars510_carrot/radar_interface paths reviewed separately.",
+  "files": [
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/__init__.py",
+      "source_sha256": "2b90c995ed9915b3bb83a399524387d3863f4f7db23c6a2c2daeb3be23f8a62c",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/mod.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/config.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/interface.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/objects.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/record.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/transport.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "definitions": []
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/constants.py",
+      "source_sha256": "4c130c12107d895b361663716e7eeea2729458cc0dce4c20284f4f1b575df63a",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/config.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/fields.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/objects.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/record.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/transport.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "definitions": []
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/record.py",
+      "source_sha256": "6f893898eda96d442b70c3b248b943f1c56adc255c0d4768c4c0efdf4945c19b",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/record.rs"
+      ],
+      "definitions": [
+        {
+          "name": "id80_crc_ok",
+          "methods": []
+        },
+        {
+          "name": "id80_crc",
+          "methods": []
+        },
+        {
+          "name": "slot_bytes",
+          "methods": []
+        },
+        {
+          "name": "occupied_slots",
+          "methods": []
+        },
+        {
+          "name": "live_object_count",
+          "methods": []
+        }
+      ]
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/objects.py",
+      "source_sha256": "026ee8ddd038430f4b3e8a4987fd8d94622746b236ea20d24e368988500e0973",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/objects.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/fields.rs"
+      ],
+      "definitions": [
+        {
+          "name": "NativeField",
+          "methods": []
+        },
+        {
+          "name": "slot_bits",
+          "methods": []
+        },
+        {
+          "name": "field_code",
+          "methods": []
+        },
+        {
+          "name": "field_value",
+          "methods": []
+        },
+        {
+          "name": "encode_slot",
+          "methods": []
+        },
+        {
+          "name": "NativeObject",
+          "methods": []
+        },
+        {
+          "name": "is_init_template",
+          "methods": []
+        },
+        {
+          "name": "decode_native_slot",
+          "methods": []
+        },
+        {
+          "name": "relative_velocity",
+          "methods": []
+        }
+      ]
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/support.py",
+      "source_sha256": "8c0a1677612d0c18da272f08f3ec5a61af00f6cf1a13343335ef5311ed59153d",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "definitions": [
+        {
+          "name": "Target192",
+          "methods": [
+            "d_rel",
+            "y_rel"
+          ]
+        },
+        {
+          "name": "parse_0x192",
+          "methods": []
+        },
+        {
+          "name": "CycleHeader",
+          "methods": []
+        },
+        {
+          "name": "parse_0x190",
+          "methods": []
+        },
+        {
+          "name": "Target191",
+          "methods": []
+        },
+        {
+          "name": "parse_0x191",
+          "methods": []
+        },
+        {
+          "name": "Object680",
+          "methods": [
+            "stationary",
+            "oncoming",
+            "seen_moving"
+          ]
+        },
+        {
+          "name": "parse_0x680",
+          "methods": []
+        },
+        {
+          "name": "_be_field",
+          "methods": []
+        },
+        {
+          "name": "parse_acc_target_vrel",
+          "methods": []
+        },
+        {
+          "name": "parse_acc_target_arel",
+          "methods": []
+        },
+        {
+          "name": "parse_acc_target_position",
+          "methods": []
+        },
+        {
+          "name": "parse_acc_target_range_code",
+          "methods": []
+        },
+        {
+          "name": "AccTarget",
+          "methods": []
+        },
+        {
+          "name": "parse_acc_target",
+          "methods": []
+        },
+        {
+          "name": "AccTargetInfo",
+          "methods": []
+        },
+        {
+          "name": "parse_0x239",
+          "methods": []
+        },
+        {
+          "name": "crc8_0x1d_bits",
+          "methods": []
+        },
+        {
+          "name": "crc_0x23b",
+          "methods": []
+        },
+        {
+          "name": "parse_0x23b",
+          "methods": []
+        },
+        {
+          "name": "Target366",
+          "methods": [
+            "y_rel",
+            "v_rel",
+            "d_rel"
+          ]
+        },
+        {
+          "name": "parse_0x366",
+          "methods": []
+        }
+      ]
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/transport.py",
+      "source_sha256": "33dd639634a956759a06f36b3c3d826df8e9af3d9985e014ad129a452430704d",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/transport.rs"
+      ],
+      "definitions": [
+        {
+          "name": "CompletedRecord",
+          "methods": []
+        },
+        {
+          "name": "SegmentedRecordAssembler",
+          "methods": [
+            "__init__",
+            "reset",
+            "_is_start",
+            "push"
+          ]
+        },
+        {
+          "name": "Id80RecordAssembler",
+          "methods": [
+            "__init__"
+          ]
+        },
+        {
+          "name": "Id85RecordAssembler",
+          "methods": [
+            "__init__"
+          ]
+        }
+      ]
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/tracks.py",
+      "source_sha256": "0c59bd460d9191a030e65b6267d3ed98cc14f0b0e3ac04ea006a6d21da5e4561",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/tracks.rs"
+      ],
+      "definitions": [
+        {
+          "name": "NativeTrackIdAssigner",
+          "methods": [
+            "__init__",
+            "update",
+            "_new_id"
+          ]
+        }
+      ]
+    },
+    {
+      "source_path": "opendbc_repo/opendbc/car/toyota/ars510/interface.py",
+      "source_sha256": "fb04d359df44df0bea7c49ed8a8caa93de15d6efa8c1351b786e6fdc465cb6be",
+      "native_targets": [
+        "rust/crates/radarcan/src/decoder/toyota/ars510/interface.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/config.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/fusion.rs",
+        "rust/crates/radarcan/src/decoder/toyota/ars510/support.rs"
+      ],
+      "definitions": [
+        {
+          "name": "NativeInterfaceConfig",
+          "methods": []
+        },
+        {
+          "name": "parse_toyota_yaw_rate",
+          "methods": []
+        },
+        {
+          "name": "parse_toyota_speed_mps",
+          "methods": []
+        },
+        {
+          "name": "Ars510NativeRadarInterface",
+          "methods": [
+            "__init__",
+            "set_ego_speed",
+            "_fresh_ego_speed",
+            "_fresh_yaw_rate",
+            "update_frame",
+            "update_many",
+            "_relink",
+            "_acc_target_match",
+            "_summary_update",
+            "_summary_speed",
+            "_summary_match",
+            "_fused_speed",
+            "_fused_speed_colored",
+            "_fused_range",
+            "_guard",
+            "_yv_rel",
+            "_a_rel",
+            "_payload",
+            "_prune"
+          ]
+        }
+      ]
+    }
+  ],
+  "record": "docs/naver/dev-md-vehicle-validation.md"
+}

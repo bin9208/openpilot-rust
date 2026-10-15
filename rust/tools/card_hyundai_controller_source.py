@@ -6,6 +6,7 @@
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import sys
 from types import SimpleNamespace as NS
@@ -39,7 +40,9 @@ def control(structs,tick:int):
     cc.actuators.aTarget=cc.actuators.accel;cc.actuators.jerk=-0.35 if tick%80<40 else 0.2
     cc.actuators.longControlState="off" if not cc.enabled else "stopping" if 150<=tick<185 else "pid"
     cc.cruiseControl.cancel=260<=tick<265;cc.cruiseControl.resume=240<=tick<250;cc.cruiseControl.override=210<=tick<220
-    hud=cc.hudControl;hud.setSpeed=24.0;hud.leadDistanceBars=3;hud.leadVisible=tick%100<70
+    hud=cc.hudControl
+    if os.environ.get("HYUNDAI_DM_HUD") == "1": hud.driverMonitoringAlert=(tick//20)%4
+    hud.setSpeed=24.0;hud.leadDistanceBars=3;hud.leadVisible=tick%100<70
     hud.leadDistance=25;hud.leadRelSpeed=-1.2;hud.leftLaneVisible=True;hud.rightLaneVisible=tick%30<25
     hud.leftLaneDepart=120<=tick<140;hud.rightLaneDepart=180<=tick<195
     hud.modelDesire=3 if 100<=tick<130 else 4 if 230<=tick<250 else 0
@@ -49,6 +52,9 @@ def control(structs,tick:int):
 
 
 def main()->None:
+    if os.environ.get("HYUNDAI_FINAL_SOURCE") == "1":
+        from card_hyundai_final_source import install
+        install(Path(sys.argv[1]).resolve())
     load()
     from opendbc.car import structs,interfaces
     from opendbc.car.hyundai import carcontroller,carstate,hyundaicanfd,interface
@@ -78,7 +84,7 @@ def main()->None:
         for tick,step in enumerate(row["steps"]):
             clock.monotonic_ns=lambda:step["now"]
             packets=[(packet["mono_time"],[(frame["address"],bytes(frame["data"]),frame["bus"]) for frame in packet["frames"]]) for packet in step["packets"]]
-            printed=io.StringIO();warnings.lines.clear()
+            printed=io.StringIO();warnings.lines.clear();warnings.logs.clear()
             with contextlib.redirect_stdout(printed):result=ci.update(packets)
             result.latEnabled=True;result.carrotCruise=1 if 100<=tick<125 else 0
             result.activateCruise=-1 if 20<=tick<30 else 1 if 10<=tick<20 else 0
@@ -90,6 +96,12 @@ def main()->None:
             model=log.ModelDataV2.new_message();model.position.x=[0,30,80];model.position.y=[0,0.4,1.0]
             model.position.yStd=[0.2]*11;model.meta.desire="laneChangeLeft" if 100<=tick<130 else "none"
             model.meta.desireState=[0.,0.,0.,1. if 100<=tick<130 else 0.,0.]
+            if os.environ.get("HYUNDAI_DEEP_HUD") == "1":
+                model.meta.desire="laneChangeLeft" if 100<=tick<180 else "turnLeft" if 180<=tick<220 else "turnRight" if 220<=tick<250 else "none"
+                model.meta.laneChangeBlinkerHold="right" if 170<=tick<195 else "none"
+                crossings=[(-1.75,1.75),(-.28,3.04),(-1.36,2.21),(-3.46,.12),(-3.11,.32),(-2.62,.76)]
+                left,right=crossings[min(max((tick-100)//10,0),len(crossings)-1)]
+                model.laneLines=[dict(y=[-5.]),dict(y=[left]),dict(y=[right]),dict(y=[5.])]
             model.meta.laneChangeAvailableLeft=True;model.meta.laneChangeAvailableRight=tick%40<20
             radar=log.RadarState.new_message();radar.leadOne.status=cc.hudControl.leadVisible
             radar.leadOne.radar=True;radar.leadOne.radarTrackId=3;radar.leadOne.dRel=25;radar.leadOne.yRel=-0.5;radar.leadOne.vRel=-1.2
@@ -101,7 +113,7 @@ def main()->None:
             for name,message in (("control",cc),("model",model),("radar",radar),("actuators",actuators)):
                 streams[name].write(message.to_bytes())
             records.append(dict(soft_hold=state.softHoldActive,settings=updates,can=[dict(address=address,data=list(data),bus=bus) for address,data,bus in frames],
-                diagnostics=printed.getvalue().splitlines(),warnings=list(warnings.lines)))
+                diagnostics=printed.getvalue().splitlines(),warnings=list(warnings.lines),logs=list(warnings.logs)))
         outputs.append(dict(state_case=index,source_dir=str(output),settings=start_settings,steps=records,constructor=constructor.getvalue().splitlines()))
         for stream in streams.values():stream.close()
     (root / "controller.json").write_text(json.dumps(outputs)+"\n")

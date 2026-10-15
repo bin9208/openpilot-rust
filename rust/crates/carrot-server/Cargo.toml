@@ -14,6 +14,9 @@ allocator-skip-miri = []
 unsafe_code = "deny"
 
 [dependencies]
+openpilot-hardware-control = { path = "../hardware-control" }
+openpilot-jetlink = { path = "../jetlink" }
+regex = "1"
 openpilot-managed-entry = { path = "../managed-entry" }
 openpilot-params = { path = "../params" }
 openpilot-cereal = { path = "../cereal" }
@@ -75,10 +78,6 @@ tempfile = "3"
 [[bin]]
 name = "openpilot-carrot-server"
 path = "src/main.rs"
-
-[[bin]]
-name = "openpilot-youtube-test"
-path = "src/bin/youtube_test.rs"
 
 [[bin]]
 name = "openpilot-carrot-command"

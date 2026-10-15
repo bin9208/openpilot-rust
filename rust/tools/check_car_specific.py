@@ -125,7 +125,7 @@ def main():
             'source_conditions': len(conditions), 'covered_source_condition_outcomes': sum(row['true'] + row['false'] for row in conditions),
             'source_event_branches': len(oracle.add_lines), 'covered_source_event_branches': len(oracle.add_lines & trace.lines),
             'events': sorted(seen_events), 'constants': oracle.constants, 'invalid_inputs': failures,
-            'sources': {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths},
+            'source_commit': oracle.source_commit, 'sources': {str(path.relative_to(ROOT)): (oracle.source_sha256 if path == SOURCE else hashlib.sha256(path.read_bytes()).hexdigest()) for path in paths},
             'owned_sources': {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in
                               [ROOT / 'rust/crates/selfdrived/src/car_specific.rs',
                                *sorted((ROOT / 'rust/crates/selfdrived/src/car_specific').glob('*.rs')),

@@ -32,9 +32,6 @@ fn run() -> Result<(), Error> {
             "expected model, shared file, camera width and height",
         ));
     }
-    if !structural && !worker::watch_parent() {
-        return Ok(());
-    }
     let width = if structural { 1 } else { 2 };
     let camera = [
         args[width]
@@ -44,6 +41,16 @@ fn run() -> Result<(), Error> {
             .parse()
             .map_err(|_| Error::Contract("invalid camera height"))?,
     ];
+    let progress = std::env::var_os("USBGPU_PROGRESS_PATH").map(PathBuf::from);
+    if !structural {
+        if let Some(path) = &progress {
+            openpilot_usbgpu::worker_progress::initialize(path);
+        }
+        if !worker::watch_parent_progress(progress) {
+            return Ok(());
+        }
+    }
+    openpilot_usbgpu::worker_progress::mark("verify_model");
     let path = PathBuf::from(&args[0]);
     let assets = std::env::var_os("USBGPU_ASSETS_ROOT")
         .map(PathBuf::from)
@@ -55,7 +62,7 @@ fn run() -> Result<(), Error> {
         Ok(value) => Some(value),
         Err(std::env::VarError::NotPresent) => None,
         Err(std::env::VarError::NotUnicode(_)) => {
-            return Err(Error::Contract("invalid native asset manifest identity"))
+            return Err(Error::Contract("invalid native asset manifest identity"));
         }
     };
     if openpilot_usbgpu::local_artifact::is_local(&path) {
@@ -91,13 +98,17 @@ fn run() -> Result<(), Error> {
         info,
         ..
     } = artifact;
+    openpilot_usbgpu::worker_progress::mark("load_model");
     let mut firmware = FirmwareDirectory(assets.join("firmware"));
     let cancelled = Arc::new(AtomicBool::new(false));
     let gpu = HcqGpu::new(native_runtime::open(&mut firmware)?, cancelled)?;
     let mut runtime = NativeRuntime::new(Model::load(&descriptor, &path, gpu)?);
+    openpilot_usbgpu::worker_progress::mark("prepare_runtime");
     runtime.load_warp(&warp)?;
     let family = fs::read_to_string("/sys/firmware/devicetree/base/model").unwrap_or_default();
-    if openpilot_usbgpu::warp_validation::device_family(&family) {
+    if std::env::var_os("USBGPU_AMD_ONLY").is_none()
+        && openpilot_usbgpu::warp_validation::device_family(&family)
+    {
         let qcom = assets.join(format!("warp-qcom-a630-{}x{}", camera[0], camera[1]));
         // SAFETY: startup uses the packaged immutable source warp bundle, subject to the native kernel trust boundary.
         let loaded = unsafe { openpilot_usbgpu::qcom_warp::LocalWarp::load(&qcom) }
@@ -150,6 +161,7 @@ fn local(
         )?;
         return Ok(());
     }
+    openpilot_usbgpu::worker_progress::mark("load_model");
     let mut firmware = FirmwareDirectory(artifact.assets.join("firmware"));
     let local = if let Some(path) = &artifact.qcom_warp {
         // SAFETY: the build-time package contains trusted immutable source kernels; Package::open verifies their layout and checksums before this native boundary.
@@ -179,7 +191,7 @@ fn main() -> ExitCode {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             let _ = worker::report_error(&error, &mut io::stdout().lock());
-            eprintln!("{error}");
+            eprintln!("{}", worker::diagnostic(&error));
             ExitCode::FAILURE
         }
     }

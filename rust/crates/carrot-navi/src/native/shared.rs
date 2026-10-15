@@ -1,10 +1,11 @@
 use crate::{receiver::Receiver, Error};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, Weak};
 use tokio::sync::watch;
 
 #[derive(Clone)]
 pub struct Shared {
     state: Arc<(Mutex<Receiver>, Condvar)>,
+    pub control_owner: Arc<Mutex<Option<Weak<()>>>>,
     pub closing: watch::Sender<Close>,
     pub tasks: Arc<Mutex<tokio::task::JoinSet<()>>>,
 }
@@ -21,6 +22,7 @@ impl Shared {
         let (closing, _) = watch::channel(Close::Running);
         Self {
             state: Arc::new((Mutex::new(receiver), Condvar::new())),
+            control_owner: Arc::default(),
             closing,
             tasks: Arc::new(Mutex::new(tokio::task::JoinSet::new())),
         }

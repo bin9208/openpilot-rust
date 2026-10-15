@@ -54,6 +54,7 @@ pub struct DrivingRuntime<'a> {
     output_values: Vec<f32>,
     hidden: [usize; 2],
     usb: Option<UsbModel>,
+    internal_dirty: bool,
 }
 
 impl<'a> DrivingRuntime<'a> {
@@ -99,7 +100,47 @@ impl<'a> DrivingRuntime<'a> {
             output_values: vec![0.0; output / 4],
             hidden,
             usb: None,
+            internal_dirty: false,
         })
+    }
+
+    pub fn reset_internal(&mut self) -> Result<(), Error> {
+        match &mut self.backend {
+            Backend::Cpu(model) => model.reset_mutable()?,
+            Backend::Qcom(model) => model.reset_mutable()?,
+        }
+        self.inputs = PolicyInputs::new(self.hidden[1] - self.hidden[0])?;
+        self.input_bytes.fill(0);
+        self.output_bytes.fill(0);
+        self.output_values.fill(0.);
+        self.internal_dirty = false;
+        Ok(())
+    }
+
+    pub fn reset_internal_after_usb(&mut self) -> Result<(), Error> {
+        if self.internal_dirty {
+            self.reset_internal()?;
+        }
+        Ok(())
+    }
+
+    /// Exercise actual warp, policy and readback, then discard synthetic history.
+    pub fn warm_internal(&mut self, image: &[u8]) -> Result<(), Error> {
+        if self.uses_usb() {
+            return Err(Error::Contract("warm standby before selecting eGPU"));
+        }
+        let identity = [1., 0., 0., 0., 1., 0., 0., 0., 1.];
+        self.inputs.update(0, false, 0., 0.);
+        let result = (|| {
+            for _ in 0..3 {
+                if self.infer(image, image, [identity; 2], false)?.is_none() {
+                    return Err(Error::Contract("internal standby warmup omitted output"));
+                }
+            }
+            Ok(())
+        })();
+        self.reset_internal()?;
+        result
     }
 
     pub fn validate_frame(&self, metadata: &VisionMetadata) -> Result<(), Error> {
@@ -143,6 +184,7 @@ impl<'a> DrivingRuntime<'a> {
             target.copy_from_slice(&value.to_ne_bytes());
         }
         self.backend.write("packed_npy_inputs", &self.input_bytes)?;
+        self.internal_dirty = true;
         self.backend.execute("prepare")?;
         if prepare_only {
             return Ok(None);
@@ -197,6 +239,7 @@ impl<'a> DrivingRuntime<'a> {
             }
             self.backend.write(name, &bytes)?;
         }
+        self.internal_dirty = true;
         self.backend.execute("prepare")?;
         let mut bytes = vec![0; openpilot_jetlink::contract::WARPED_BYTES];
         self.backend.read("warped", &mut bytes)?;

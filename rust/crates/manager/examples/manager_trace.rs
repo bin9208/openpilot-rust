@@ -25,6 +25,16 @@ impl Fixture {
     }
 }
 impl Runtime for Fixture {
+    fn stop_monitoring(&mut self) -> Result<(), Error> {
+        self.record(json!(["stop", "dmonitoringd", true]));
+        // A queued old-session write must finish before manager clears it.
+        self.params
+            .put_bool("DriverMonitoringSessionDisabled", true)?;
+        Ok(())
+    }
+    fn xiaoge_ready(&mut self, _: bool, _: bool) -> Result<bool, Error> {
+        Ok(false)
+    }
     fn start(&mut self) -> Result<(), Error> {
         if self.params.capture_logging {
             openpilot_manager::diagnostics::start(&mut self.params.logger.borrow_mut())?;
@@ -70,6 +80,7 @@ impl Runtime for Fixture {
         not_car: bool,
         ignore: &[String],
     ) -> Result<(), Error> {
+        assert!(!self.params.boolean("DriverMonitoringSessionDisabled")?);
         self.record(json!(["ensure", started, not_car, ignore]));
         Ok(())
     }
@@ -95,7 +106,7 @@ impl Runtime for Fixture {
         Ok(())
     }
     fn stop(&mut self, block: bool) -> Result<(), Error> {
-        self.record(json!(["stop", block]));
+        self.record(json!(["stop", "dmonitoringd", block]));
         Ok(())
     }
     fn capture_exception(&mut self, _: &Error) -> Result<(), Error> {
@@ -137,10 +148,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         params.inner.put("UptimeOnroad", b"1__2.5")?;
     }
     if args[2] == "default_edges" {
+        params.inner.put("VEgoStopping", b"5")?;
         for (key, value) in [
-            ("CarrotYouTubeLive", "_1"),
+            ("ClusterHud", "_1"),
             (
-                "CarrotYouTubeQuality",
+                "ShowDebugUI",
                 "99999999999999999999999999999999999999999999999999999",
             ),
             ("UptimeOffroad", "1_2.5"),

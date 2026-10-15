@@ -32,6 +32,7 @@ impl ModelRenderer {
                     "Signal slowing"
                 }),
                 4 => Some("E2E주행중"),
+                6 => Some("신호 감속 준비"),
                 0..=2 => {
                     distance = true;
                     None
@@ -43,7 +44,17 @@ impl ModelRenderer {
             None
         };
         if let Some(label) = label {
-            drawing::text(draw, Label::center(label, ScreenPoint([x, y]), 50.))?;
+            drawing::text(
+                draw,
+                Label {
+                    color: if label == "신호 감속 준비" {
+                        color(255, 190, 80, 255)
+                    } else {
+                        color(255, 255, 255, 255)
+                    },
+                    ..Label::center(label, ScreenPoint([x, y]), 50.)
+                },
+            )?;
         }
         if distance {
             let tint = match c.x_state {

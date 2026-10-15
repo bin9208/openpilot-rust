@@ -69,7 +69,7 @@ impl RequestIo for Io {
 }
 
 #[test]
-fn wait_clock_surrounds_stress_and_ioctl_and_failure_logs_precede_requeue() {
+fn owner_stress_precedes_wait_clocks_and_failure_logs_precede_requeue() {
     let mut io = Io {
         fail: true,
         ..Io::default()
@@ -94,8 +94,9 @@ fn wait_clock_surrounds_stress_and_ioctl_and_failure_logs_precede_requeue() {
             "timing:0:0",
             "stress:skipping SOF event",
             "stress:sync sleep time",
-            "ms",
             "stress:IFE sync",
+            "stress:BPS sync",
+            "ms",
             "wait:11",
             "ms",
             "failure:IFE sync:0",
@@ -130,12 +131,12 @@ fn successful_bps_also_reads_both_clocks_before_startup_synchronization() {
             "ns",
             "stress:skipping SOF event",
             "stress:sync sleep time",
-            "ms",
             "stress:IFE sync",
+            "stress:BPS sync",
+            "ms",
             "wait:11",
             "ms",
             "ms",
-            "stress:BPS sync",
             "wait:12",
             "ms",
             "synced:true",

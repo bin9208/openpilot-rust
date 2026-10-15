@@ -1,3 +1,5 @@
+mod bosch;
+pub use bosch::{model as bosch_model, pose as bosch_pose};
 mod input;
 mod output;
 pub use input::{can, config, ego};

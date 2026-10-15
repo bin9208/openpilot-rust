@@ -10,6 +10,10 @@ publish = false
 workspace = true
 
 [dependencies]
+serde_json = "1"
+tempfile = "3"
+openpilot-startup-recovery = { path = "../startup-recovery" }
+openpilot-hardware-control = { path = "../hardware-control" }
 openpilot-process-supervision = { path = "../process-supervision" }
 openpilot-carrot-navi = { path = "../carrot-navi", default-features = false }
 openpilot-logmessaged = { path = "../logmessaged" }
@@ -39,4 +43,9 @@ tempfile = "3"
 [[test]]
 name = "staged_updates"
 path = "tests/staged_updates.rs"
+harness = false
+
+[[test]]
+name = "startup_recovery"
+path = "tests/startup_recovery.rs"
 harness = false

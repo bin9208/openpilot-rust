@@ -1,126 +1,91 @@
-"""Actual monitoring loop statements and full cereal fixtures for native daemon QA."""
+"""Pinned final-source DM2 dispatcher oracle; native runtime never imports this tool."""
 from __future__ import annotations
-
 import ast
-from pathlib import Path
+import hashlib
+import math
+import os
+import subprocess
+import time
+from collections import deque
+from dataclasses import dataclass
 from types import SimpleNamespace
+from pathlib import Path
+from check_message_state import source as message_source
+from check_monitoring_reference import original_class, Parameters, message, ROOT, SOURCES
+from openpilot.cereal import car, log
+from openpilot.cereal.services import SERVICE_LIST
 
-from check_message_state import source
-from check_monitoring_reference import Parameters, camel, message, original_class
-from monitoring_fixtures import driver
-from openpilot.cereal import log
+PIN = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
+TOPICS = ('carState','selfdriveState','modelV2','radarState','liveCalibration','carParams','driverStateV2')
 
-TOPICS = ('driverStateV2', 'liveCalibration', 'carState', 'selfdriveState', 'modelV2')
+def pinned(path):
+    return subprocess.check_output(['git','show',f'{PIN}:{path}'],cwd=ROOT,text=True)
 
-
-class LoopParams:
-    """In-memory original Params adapter recording only requested loop writes."""
-    def __init__(self, values):
-        self.values = dict(values)
-        self.writes = []
-
-    def get_bool(self, name):
-        return self.values.get(name, False)
-
-    def put_bool(self, name, value):
-        self.values[name] = value
-        self.writes.append((name, value))
-
-
-class Oracle:
-    """Mutable original policy and original SubMaster state, without native I/O."""
-    def __init__(self, values):
-        Parameters.initial = values['DriverTooDistracted']
-        self.params = LoopParams(values)
-        messaging, environment = source()
-        environment['simulation'] = '1'
-        self.sm = messaging['SubMaster'](list(TOPICS), poll='driverStateV2')
-        self.packet = None
-        self.scope = {'params': self.params, 'sm': self.sm, 'DriverMonitoring': original_class(),
-                      'pm': SimpleNamespace(send=self.publish)}
-        path = Path(__file__).resolve().parents[2] / 'openpilot/selfdrive/monitoring/dmonitoringd.py'
-        module = ast.parse(path.read_text())
-        function = next(node for node in module.body if isinstance(node, ast.FunctionDef) and node.name == 'dmonitoringd_thread')
-        initial = [node for node in function.body if isinstance(node, ast.Assign) and ast.unparse(node.targets[0]) in ('DM', 'demo_mode')]
-        exec(compile(ast.Module(body=initial, type_ignores=[]), str(path), 'exec'), self.scope)
-        loop = next(node for node in function.body if isinstance(node, ast.While))
-        one_iteration = ast.For(target=ast.Name(id='_once', ctx=ast.Store()), iter=ast.Tuple(elts=[ast.Constant(None)], ctx=ast.Load()),
-                                body=loop.body[1:], orelse=[])
-        self.step_code = compile(ast.fix_missing_locations(ast.Module(body=[one_iteration], type_ignores=[])), str(path), 'exec')
-
-    def publish(self, topic, packet):
-        assert topic == 'driverMonitoringState' and self.packet is None
-        self.packet = packet
-
-    def step(self, payloads):
-        self.packet = None
-        decoded = list(log.Event.read_multiple_bytes(b''.join(payloads)))
-        self.sm.update_msgs(1. + (self.sm.frame + 2) * .05, decoded)
-        exec(self.step_code, self.scope)
-        return self.packet
-
-    def snapshot(self):
-        dm = self.scope['DM']
-        return {'always_on': dm.always_on, 'demo': self.scope['demo_mode'], 'wheel_on_right': dm.wheel_on_right,
-                'wheel_samples': dm.wheelpos_offsetter.filtered_stat.n, 'wheel_mean': dm.wheelpos_offsetter.filtered_stat.M,
-                'lockout': dm.too_distracted, 'writes': list(self.params.writes)}
-
-
-def events(frame_id: int, index: int, scenario: str):
-    result = {topic: message(topic) for topic in TOPICS}
-    result['carState'].carState.from_dict({'vEgo': 20., 'gearShifter': 'drive', 'steeringAngleDeg': 33.125})
-    result['selfdriveState'].selfdriveState.enabled = False
-    result['liveCalibration'].liveCalibration.rpyCalib = [0., .01234567, -.02345678]
-    result['modelV2'].modelV2.meta.disengagePredictions.brakeDisengageProbs = [.81234567]
-    left, right = driver(), driver()
-    for side in (left, right):
-        side['face_orientation'] = [.02345678, -.03456789, 0.]
-        side['face_position'] = [.01234567, -.001234567]
-    if scenario == 'gating':
-        if index in (2, 3, 4, 5, 6):
-            result['carState'].valid = False
-        result['driverStateV2'].valid = index != 3 and frame_id != 6000
-        if index <= 6:
-            left['phone_prob'] = right['phone_prob'] = 1.
-        if 7 <= index <= 10:
-            field = ('face_orientation', 'face_position', 'face_orientation_std', 'face_position_std')[index - 7]
-            left[field] = right[field] = []
-    if scenario == 'saved':
-        result['driverStateV2'].valid = index != 0
-        left['face_orientation'] = [0.]
-        if index == 2:
-            right['face_orientation'] += [.123]
-            right['face_position'] += [.123]
-            right['face_orientation_std'] += [.123]
-            right['face_position_std'] = [.123]
-        if index == 3:
-            right['face_orientation'] = []
-            right['face_position'] = [0.]
-            right['face_orientation_std'] = [0.]
-    if scenario == 'malformed':
-        left['face_orientation'] = [0.]
-        if index == 1:
-            right['face_orientation'] = [0.]
-    data = result['driverStateV2'].driverStateV2
-    data.frameId = frame_id
-    data.wheelOnRightProb = 1.
-    data.leftDriverData.from_dict({camel(key): value for key, value in left.items()})
-    data.rightDriverData.from_dict({camel(key): value for key, value in right.items()})
+def closure():
+    paths = [*SOURCES,'openpilot/cereal/messaging/__init__.py',
+             *[f'openpilot/selfdrive/monitoring/{name}.py' for name in ('config','dm2','dm2_context','dm2d','dm2_cadence')]]
+    result = {}
+    for path in paths:
+        text = pinned(path)
+        result[path] = hashlib.sha256(text.encode()).hexdigest()
+        # Native schema retains pre-existing custom events; map policy enums by name.
+        if (path in SOURCES and not path.endswith('.capnp')):
+            assert (ROOT/path).read_text() == text, f'original-class dependency differs from pin: {path}'
     return result
 
+class LoopParams:
+    def __init__(self,values): self.values=dict(values);self.writes=[]
+    def get_bool(self,name): return bool(self.values.get(name,False))
+    def get_int(self,name): return int(self.values.get(name,0))
+    def put_bool(self,name,value): self.values[name]=value;self.writes.append((name,value))
+    put_bool_nonblocking=put_bool
 
-def fixtures(scenario: str):
-    if scenario == 'gating':
-        ids = [0, 1, 2, 3, 40, 41, 42, 43, 44, 45, 46, *range(100, 520), 6000]
-    elif scenario == 'saved':
-        ids = [0, 7, 8, 9]
-    else:
-        assert scenario == 'malformed'
-        ids = [7, 8]
-    for index, frame_id in enumerate(ids):
-        changed = {}
-        if scenario == 'gating' and index in (1, 4):
-            changed = {'AlwaysOnDM': index == 1, 'IsDriverViewEnabled': index == 1}
-        if scenario == 'saved' and index == 1:
-            changed = {'DriverTooDistracted': False}
-        yield frame_id, changed, events(frame_id, index, scenario)
+class Ratekeeper:
+    def __init__(self,*args,**kwargs): self.frame=0
+    def keep_time(self): self.frame+=1
+
+class Oracle:
+    """Execute the original run_dm2 initialization and one whole while body per native publication."""
+    def __init__(self,values):
+        self.hashes=closure()
+        Parameters.initial=values.get('DriverTooDistracted',False)
+        self.params=LoopParams(values);self.packet=None;self.host_now=time.monotonic()
+        messaging,environment=message_source();environment['simulation']='1'
+        tree=ast.parse(pinned('openpilot/cereal/messaging/__init__.py'));tree.body=[n for n in tree.body if isinstance(n,(ast.FunctionDef,ast.ClassDef)) and n.name in ('new_message','FrequencyTracker','SubMaster')]
+        exec(compile(tree,'final-source:messaging','exec'),messaging)
+        self.sm=messaging['SubMaster'](list(TOPICS),poll='modelV2')
+        self.queues={'carState':[],'carControl':[]}
+        def drain(name,**kwargs):
+            result=self.queues[name];self.queues[name]=[];return result
+        adapter=SimpleNamespace(new_message=message,SubMaster=lambda *a,**kw:self.sm,
+            PubMaster=lambda *a:SimpleNamespace(send=self.publish),sub_sock=lambda name,**kw:name,drain_sock=drain)
+        ns={'math':math,'deque':deque,'dataclass':dataclass,'DT_DMON':.05,
+            'DriverMonitoring':original_class(),'AlertLevel':log.DriverMonitoringState.AlertLevel,
+            'MonitoringPolicy':log.DriverMonitoringState.MonitoringPolicy,'car':car,'SERVICE_LIST':SERVICE_LIST,
+            'messaging':adapter,'time':SimpleNamespace(monotonic=lambda:self.host_now),
+            'os':SimpleNamespace(environ={'REPLAY':'1'}),'Ratekeeper':Ratekeeper,'DmRatekeeper':Ratekeeper,
+            'CommandReader':lambda *a:SimpleNamespace(read=lambda **kw:None)}
+        for name in ('config','dm2','dm2_context','dm2d'):
+            path=f'openpilot/selfdrive/monitoring/{name}.py'
+            tree=ast.parse(pinned(path));tree.body=[n for n in tree.body if not isinstance(n,(ast.Import,ast.ImportFrom)) and not (isinstance(n,ast.If) and '__name__' in ast.unparse(n.test))]
+            exec(compile(tree,f'{PIN}:{path}','exec'),ns)
+        function=next(n for n in ast.parse(pinned('openpilot/selfdrive/monitoring/dm2d.py')).body if isinstance(n,ast.FunctionDef) and n.name=='run_dm2')
+        loop=next(n for n in function.body if isinstance(n,ast.While))
+        self.scope=dict(ns,params=self.params,experimental=self.params.get_int('DriverMonitoringMode')==1,initial_car_params=None)
+        initial=function.body[:function.body.index(loop)]
+        exec(compile(ast.Module(body=initial,type_ignores=[]),'final-dm2d:init','exec'),self.scope)
+        # Replace only external blocking receive; every original dispatcher statement remains.
+        body=loop.body[1:]
+        once=ast.For(target=ast.Name(id='_once',ctx=ast.Store()),iter=ast.Tuple(elts=[ast.Constant(None)],ctx=ast.Load()),body=body,orelse=[])
+        self.code=compile(ast.fix_missing_locations(ast.Module(body=[once],type_ignores=[])),'final-dm2d:tick','exec')
+    def publish(self,topic,packet):
+        assert topic=='driverMonitoringState' and self.packet is None
+        self.packet=packet
+    def step(self,packets,host_now):
+        self.host_now=host_now;self.packet=None
+        decoded=[log.Event.from_bytes(packet).__enter__() for packet in packets]
+        self.sm.update_msgs(host_now,decoded)
+        self.queues['carState'] += [p for p in decoded if p.which()=='carState']
+        self.queues['carControl'] += [p for p in decoded if p.which()=='carControl']
+        exec(self.code,self.scope)
+        return self.packet

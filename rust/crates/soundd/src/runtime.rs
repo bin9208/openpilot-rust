@@ -46,6 +46,10 @@ fn input(subscriber: &SubMaster) -> Result<Input, Error> {
     {
         let message = message?;
         input.enabled = message.get_enabled();
+        input.alert_type = message
+            .get_alert_type()?
+            .to_string()
+            .map_err(|_| Error::Contract("alert type UTF-8"))?;
         input.alert = message
             .get_alert_sound()
             .map(u16::from)

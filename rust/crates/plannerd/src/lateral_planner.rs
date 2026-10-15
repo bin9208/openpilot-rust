@@ -1,5 +1,6 @@
 use crate::{
     car_state::CarState,
+    lane_model_speed::LaneModelSpeedGuard,
     lane_planner::{LanePathInput, LanePlanner},
     lateral_mpc::{LateralInput, LateralMpc},
     model::{Model, Trajectory},
@@ -51,7 +52,7 @@ pub struct LateralPlanner {
     pub mpc: LateralMpc,
     pub initial: [f64; 4],
     pub curve_speed: f64,
-    possible_count: u64,
+    model_speed_guard: LaneModelSpeedGuard,
     laneless_only: bool,
     weights: [f64; 5],
 }
@@ -104,7 +105,7 @@ impl LateralPlanner {
             mpc,
             initial: [0.; 4],
             curve_speed: 0.,
-            possible_count: 0,
+            model_speed_guard: LaneModelSpeedGuard::new(20),
             laneless_only: true,
             weights: [1., 0.11, 0., 0.04, 700.],
         })
@@ -134,7 +135,10 @@ impl LateralPlanner {
         self.ego_speed = speed;
         self.curve_speed = input.curve_speed;
         let model = input.model;
-        if model.position.x.len() == 33 && model.orientation.x.len() == 33 {
+        if model.position.x.len() == 33
+            && model.orientation.x.len() == 33
+            && model.velocity.x.len() == 33
+        {
             self.path = columns(&model.position)?;
             self.times.clone_from(&model.position.t);
             self.yaw = array(&model.orientation.z)?;
@@ -142,15 +146,15 @@ impl LateralPlanner {
             self.planned_speed = columns(&model.velocity)?
                 .map(|[x, y, z]| clip((x * x + y * y + z * z).sqrt(), 1., f64::INFINITY));
             self.ego_speed = self.planned_speed[0];
-            if model.velocity.x[32] < model.velocity.x[0] * 0.7 {
-                self.possible_count = 0;
-                self.laneless_only = true;
-            } else {
-                self.possible_count += 1;
-                if self.possible_count > 20 {
-                    self.laneless_only = false;
-                }
-            }
+            self.laneless_only = !self.model_speed_guard.update(
+                input.car.v_ego,
+                model.velocity.x[0],
+                model.velocity.x[32],
+            );
+        } else {
+            self.model_speed_guard
+                .update(input.car.v_ego, f64::NAN, f64::NAN);
+            self.laneless_only = true;
         }
         self.lane.parse_model(model)?;
         if self.lane_speed == 0. || self.laneless_only {

@@ -3,6 +3,8 @@ from __future__ import annotations
 import ctypes
 import datetime
 import os
+import subprocess
+from types import ModuleType
 from pathlib import Path
 import sys
 import time
@@ -49,6 +51,15 @@ def create(scene: Scene, ui: State) -> tuple[Road, CameraProtocol]:
     event.init(name, 0) if name in ['pandaStates', 'onroadEvents', 'customReservedRawData0'] else event.init(name)
     value = getattr(event, name)
     ui.sm[name] = list(value) if name in ['pandaStates', 'onroadEvents'] else bytes(value) if name == 'customReservedRawData0' else value
+  if scene.get('final_source'):
+    # Load the two complete owner modules from the pinned final tree; unrelated
+    # mutable working-tree Python owners are not the oracle for this port.
+    for name in ['openpilot.selfdrive.ui.overlay_state', 'openpilot.selfdrive.ui.' + ('onroad' if scene['config']['big'] else 'mici.onroad') + '.augmented_road_view']:
+      path=name.replace('.', '/')+'.py'
+      module=ModuleType(name);module.__file__=str(Path.cwd()/path)
+      sys.modules[name]=module
+      source=subprocess.check_output(['git','show','e8e152dbcfd9574a1791ed12026d1880e87689b3:'+path])
+      exec(compile(source,'pinned-final:'+path,'exec'),module.__dict__)
   if scene['config']['big']:
     from openpilot.selfdrive.ui.onroad.augmented_road_view import AugmentedRoadView
     import openpilot.selfdrive.ui.onroad.hud_renderer as hud
@@ -67,6 +78,8 @@ def create(scene: Scene, ui: State) -> tuple[Road, CameraProtocol]:
       return datetime.datetime(2026, 10, 1, 12, 34, 56)
 
   hud.datetime = FixedDatetime
+  from hud_source import preserve_fixes
+  preserve_fixes(scene,ui,hud)
   ui.update_params()
   ui.is_metric = ui.params.get_bool('IsMetric')
   ui.always_on_dm = ui.params.get_bool('AlwaysOnDM')
@@ -123,6 +136,8 @@ def before(scene: Scene, ui: State, widget: Road, index: int) -> None:
       ui.sm[name] = list(value) if name in ['pandaStates', 'onroadEvents'] else bytes(value) if name == 'customReservedRawData0' else value.as_builder()
       ui.sm.recv_frame[name] = index * 2 + 3
       ui.sm.recv_time[name] = index / 20
+      if hasattr(ui.sm, "logMonoTime"):
+        ui.sm.logMonoTime[name] = event.logMonoTime
       ui.sm.alive[name] = ui.sm.seen[name] = True
       ui.sm.valid[name] = event.valid
       ui.sm.updated[name] = True

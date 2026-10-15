@@ -79,3 +79,52 @@ pub fn publication(messages: &mut Messages, status: &Status, fresh: bool) -> Res
     }
     Ok(())
 }
+
+/// Keep display freshness independent of Params' change-only restart flags.
+pub struct ModelStatusWriter {
+    path: std::path::PathBuf,
+    next: f64,
+    previous: Option<(bool, String)>,
+}
+impl ModelStatusWriter {
+    pub fn new(path: &std::path::Path) -> Self {
+        Self {
+            path: path.to_owned(),
+            next: 0.0,
+            previous: None,
+        }
+    }
+    pub fn update(&mut self, status: &Status, detail: &str, now: f64) -> Result<(), Error> {
+        self.update_selected(status, detail, now, openpilot_jetlink::contract::SHA256)
+    }
+    pub fn update_selected(
+        &mut self,
+        status: &Status,
+        detail: &str,
+        now: f64,
+        sha256: &str,
+    ) -> Result<(), Error> {
+        let active = status.decision.source == Source::Jetlink;
+        let error = if active {
+            String::new()
+        } else {
+            detail.chars().take(240).collect()
+        };
+        let current = (active, error);
+        if self.previous.as_ref() == Some(&current) && now < self.next {
+            return Ok(());
+        }
+        openpilot_jetlink::status::write(
+            &self.path,
+            &serde_json::json!({
+                "active":active,"updated":now,"error":current.1,"generation":status.generation,
+            "ready":matches!(status.decision.phase,Phase::Ready|Phase::Active),"sha256":sha256,
+            "model":openpilot_jetlink::status::model_name(sha256),
+                "frame_id":status.frame,"validated":status.validated,
+            }),
+        )?;
+        self.previous = Some(current);
+        self.next = now + 1.0;
+        Ok(())
+    }
+}

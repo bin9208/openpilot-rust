@@ -56,6 +56,7 @@ fn pool<T: Send + 'static>(
 pub(crate) fn run(
     mut settings: Settings,
     segments: Vec<String>,
+    include_all_files: bool,
     canceled: Arc<AtomicBool>,
     output: Output,
 ) -> Result<Finish, Error> {
@@ -89,6 +90,7 @@ pub(crate) fn run(
         settings,
         webdav,
         segments,
+        include_all_files,
         canceled,
         output,
         transfer: Mutex::new(Transfer {
@@ -133,7 +135,7 @@ fn execute(context: Arc<Context>) -> Result<Value, Error> {
     let prepare = context.clone();
     let receiver = pool(total, concurrency, move |index| {
         catalog::segment_dir(&prepare.settings.root, &prepare.segments[index])
-            .and_then(|path| catalog::file_summary(&path))
+            .and_then(|path| catalog::file_summary_scoped(&path, prepare.include_all_files))
             .map_err(source_error)
     });
     let mut prepared = vec![Err("segment preparation did not complete".to_owned()); total];

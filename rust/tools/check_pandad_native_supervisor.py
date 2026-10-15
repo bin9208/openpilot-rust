@@ -49,7 +49,7 @@ def original(case, firmware, child=None, live_log=None):
       code = case.get('error', -4)
       steps.append({'ret': code})
       raise {-4: NoDevice, -9: Pipe}.get(code, OSError)('owned transfer failure')
-    defaults = {0xc1: [case['hardware']], 0xdd: [16, 4, 5], 0xd6: list(b'owned-version'),
+    defaults = {0xc1: [case['hardware']], 0xdd: [17, 4, 5], 0xd6: list(b'owned-version'),
                 0xd3: list(range(64)), 0xd4: list(range(64, 128)), 0xd2: case['health']}
     reply = defaults.get(request, []) if data is None else []
     step = {'ret': len(reply), 'data': reply}
@@ -95,6 +95,13 @@ def original(case, firmware, child=None, live_log=None):
       return emit
 
   class Params:
+    def get_bool(self, key):
+      return bytes(params.get(key, [])) == b'1'
+
+    def get(self, key):
+      value = params.get(key)
+      return bytes(value) if value is not None else None
+
     def remove(self, key):
       params.pop(key, None)
 
@@ -167,10 +174,10 @@ def main():
   library_dir = args.output / 'libraries'
   library_dir.mkdir()
   (library_dir / 'libusb-1.0.so.0').symlink_to(args.library.resolve())
-  health = list(bytes(58))
-  health[41] = health[57] = 1
+  health = list(bytes(59))
+  health[42] = health[58] = 1
   default = {'serial': '010002000300040005000600', 'hardware': 9, 'health': health, 'cycles': 2}
-  cases = [default, {**default, 'hardware': 1}, {**default, 'health': [0] * 58},
+  cases = [default, {**default, 'hardware': 1}, {**default, 'health': [0] * 59},
            {**default, 'child_code': 7}, {**default, 'spawn_failure': True}]
   corpus_firmware = args.output / 'corpus-firmware'
   corpus_firmware.mkdir()

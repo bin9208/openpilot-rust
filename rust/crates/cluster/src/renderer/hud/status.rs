@@ -7,7 +7,7 @@ use crate::renderer::tokens::{
     TOP_ICON_SIZE, TOP_STATUS_CENTER_Y, WIFI_STATUS_CENTER_X, WIFI_STATUS_ICON_SIZE,
 };
 use crate::renderer::{
-    with_alpha, Anchor, ClusterUiRenderer, Point, Rect, Result, StaticImage, TextureView,
+    Anchor, ClusterUiRenderer, Point, Rect, Result, StaticImage, TextureView, with_alpha,
 };
 
 #[derive(Clone, Copy)]
@@ -36,27 +36,36 @@ impl ClusterUiRenderer {
             && !cruise_set_visible(state)
             && state.lfa_active.is_none()
             && !state.egpu_active
+            && state.external_compute_label.is_empty()
         {
             return Ok(());
         }
         self.draw_network_status(state, TOP_STATUS_CENTER_Y + WIFI_STATUS_ICON_SIZE * 0.5)?;
-        self.draw_egpu_status(state.egpu_active)?;
+        let label = if state.egpu_active {
+            "eGPU"
+        } else {
+            &state.external_compute_label
+        };
+        self.draw_egpu_status(label)?;
         self.draw_lfa_status_icon(state, TOP_STATUS_CENTER_Y + LFA_STATUS_ICON_SIZE * 0.5)
     }
-    fn draw_egpu_status(&mut self, active: bool) -> Result<()> {
-        if !active {
+    fn draw_egpu_status(&mut self, label: &str) -> Result<()> {
+        if label.is_empty() {
             return Ok(());
         }
+        #[allow(clippy::cast_precision_loss)]
+        let width =
+            EGPU_STATUS_W.max(label.chars().count() as f64 * EGPU_STATUS_FONT_SIZE * 0.7 + 16.0);
         let rect = Rect::new(
-            EGPU_STATUS_CENTER_X - EGPU_STATUS_W * 0.5,
+            EGPU_STATUS_CENTER_X - width * 0.5,
             TOP_STATUS_CENTER_Y - EGPU_STATUS_H * 0.5,
-            EGPU_STATUS_W,
+            width,
             EGPU_STATUS_H,
         );
         self.gfx.rounded(rect, 0.35, 8, [0, 0, 0, 150])?;
         self.gfx.rounded_lines(rect, 0.35, 8, 2.0, GREEN)?;
         self.draw_text(
-            "eGPU",
+            label,
             EGPU_STATUS_CENTER_X,
             TOP_STATUS_CENTER_Y + 1.0,
             EGPU_STATUS_FONT_SIZE,

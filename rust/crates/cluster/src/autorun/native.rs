@@ -30,7 +30,7 @@ impl Native {
             scheduling.set_other(0)?;
         }
         let mut scheduler = Scheduler::new(board);
-        scheduler.core = 7;
+        scheduler.core = 4;
         let started = Instant::now();
         scheduler.update(
             Request {
@@ -104,6 +104,12 @@ impl controller::Platform for Native {
             || self.interrupted(),
         )?;
         Ok(())
+    }
+
+    fn wifi_registered(&mut self) -> Result<bool, controller::Error> {
+        openpilot_cluster_wifi::Registration::load(&openpilot_cluster_wifi::config_path())
+            .map(|registration| registration.is_some())
+            .map_err(|error| std::io::Error::other(error).into())
     }
 
     fn find(&mut self, product: u16) -> Option<u16> {

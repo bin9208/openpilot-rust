@@ -1,0 +1,314 @@
+{
+  "source": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "path": "openpilot/selfdrive/selfdrived/impact_detector.py",
+  "sha256": "a75ff65aceceb29e5542ae7837c2c7ceb9227f28a94aab9a5d8e107c9f238fdd",
+  "cases": [
+    {
+      "now": 1.0,
+      "timestamp": 1.0,
+      "sensor": [
+        9.81,
+        0,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0
+      ],
+      "calibration": [
+        0,
+        0,
+        0
+      ],
+      "valid": true,
+      "trigger": false,
+      "quiet": true,
+      "acceleration": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "now": 1.01,
+      "timestamp": 1.01,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0,
+        0,
+        0
+      ],
+      "calibration": [
+        0,
+        0,
+        0
+      ],
+      "valid": true,
+      "trigger": false,
+      "quiet": false,
+      "acceleration": [
+        16.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "now": 1.02,
+      "timestamp": 1.02,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0,
+        0,
+        0
+      ],
+      "calibration": [
+        0,
+        0,
+        0
+      ],
+      "valid": true,
+      "trigger": true,
+      "quiet": false,
+      "acceleration": [
+        16.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "now": 1.021,
+      "timestamp": 1.02,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0,
+        0,
+        0
+      ],
+      "calibration": [
+        0,
+        0,
+        0
+      ],
+      "valid": true,
+      "trigger": false,
+      "quiet": null,
+      "acceleration": null
+    },
+    {
+      "now": 1.03,
+      "timestamp": 1.03,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0.2,
+        0.1,
+        0.3
+      ],
+      "calibration": [
+        0,
+        0,
+        0
+      ],
+      "valid": true,
+      "trigger": true,
+      "quiet": false,
+      "acceleration": [
+        15.020634182694616,
+        1.9392095223265629,
+        -0.24357909015018464
+      ]
+    },
+    {
+      "now": 1.04,
+      "timestamp": 1.04,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0.2,
+        0.1,
+        0.3
+      ],
+      "calibration": [
+        0.1,
+        0.2,
+        0.3
+      ],
+      "valid": true,
+      "trigger": true,
+      "quiet": false,
+      "acceleration": [
+        14.673764037876616,
+        -2.3012380590079915,
+        2.970566941084888
+      ]
+    },
+    {
+      "now": 1.2,
+      "timestamp": 1.04,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0.2,
+        0.1,
+        0.3
+      ],
+      "calibration": [
+        0.1,
+        0.2,
+        0.3
+      ],
+      "valid": true,
+      "trigger": false,
+      "quiet": false,
+      "acceleration": null
+    },
+    {
+      "now": 1.21,
+      "timestamp": 1.21,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0.2,
+        0.1,
+        0.3
+      ],
+      "calibration": [
+        0.1,
+        0.2,
+        0.3
+      ],
+      "valid": true,
+      "trigger": false,
+      "quiet": false,
+      "acceleration": [
+        14.673764037876616,
+        -2.3012380590079915,
+        2.970566941084888
+      ]
+    },
+    {
+      "now": 1.22,
+      "timestamp": 1.22,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0.2,
+        0.1,
+        0.3
+      ],
+      "calibration": [
+        0.1,
+        0.2,
+        0.3
+      ],
+      "valid": true,
+      "trigger": true,
+      "quiet": false,
+      "acceleration": [
+        14.673764037876616,
+        -2.3012380590079915,
+        2.970566941084888
+      ]
+    },
+    {
+      "now": 1.23,
+      "timestamp": 1.23,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0,
+        0
+      ],
+      "calibration": [
+        0.1,
+        0.2,
+        0.3
+      ],
+      "valid": true,
+      "trigger": false,
+      "quiet": false,
+      "acceleration": null
+    },
+    {
+      "now": 1.24,
+      "timestamp": 1.24,
+      "sensor": [
+        9.81,
+        0,
+        -16
+      ],
+      "orientation": [
+        0.2,
+        0.1,
+        0.3
+      ],
+      "calibration": [
+        0.1,
+        0.2,
+        0.3
+      ],
+      "valid": false,
+      "trigger": false,
+      "quiet": false,
+      "acceleration": null
+    },
+    {
+      "now": 1.25,
+      "timestamp": 1.25,
+      "sensor": [
+        9.81,
+        0,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0
+      ],
+      "calibration": [
+        0,
+        0,
+        0
+      ],
+      "valid": true,
+      "trigger": false,
+      "quiet": true,
+      "acceleration": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ]
+}

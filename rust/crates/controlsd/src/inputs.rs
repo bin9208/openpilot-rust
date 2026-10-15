@@ -4,6 +4,7 @@ pub struct CarState {
     pub accel: f64,
     pub steer_angle: f64,
     pub steer_rate: f64,
+    pub steer_torque: f64,
     pub steering_pressed: bool,
     pub can_valid: bool,
     pub driving_gear: bool,
@@ -22,13 +23,7 @@ pub struct CarState {
     pub cluster_ratio: f64,
     pub steer_curvature: f64,
 }
-#[derive(Default)]
-pub struct LiveParameters {
-    pub stiffness: f64,
-    pub ratio: f64,
-    pub offset: f64,
-    pub roll: f64,
-}
+pub use openpilot_control_policy::lateral_readiness::LiveParameters;
 #[derive(Default)]
 pub struct TorqueParameters {
     pub use_params: bool,
@@ -75,6 +70,7 @@ pub struct LongPlan {
 #[derive(Default)]
 pub struct LateralPlan {
     pub lane_lines: bool,
+    pub solution_valid: bool,
     pub psis: Vec<f64>,
     pub curvatures: Vec<f64>,
     pub distances: Vec<f64>,
@@ -114,6 +110,7 @@ pub struct Pose {
 }
 #[derive(Default)]
 pub struct Inputs {
+    pub startup: openpilot_control_policy::lateral_readiness::State,
     pub car: CarState,
     pub live: LiveParameters,
     pub torque: TorqueParameters,
@@ -129,6 +126,7 @@ pub struct Inputs {
     pub delay: f64,
     pub override_long: bool,
     pub distracted: bool,
+    pub monitoring_disabled: bool,
     pub assistance_valid: bool,
     pub left_depart: bool,
     pub right_depart: bool,
@@ -141,4 +139,33 @@ pub struct Inputs {
     pub model_time: u64,
     pub calibration: Option<[f64; 3]>,
     pub pose: Option<Pose>,
+}
+
+impl Inputs {
+    pub fn startup_inputs(&self) -> openpilot_control_policy::lateral_readiness::Inputs<'_> {
+        use openpilot_control_policy::lateral_readiness::{Car, Inputs as StartupInputs, Lane};
+        StartupInputs {
+            state: &self.startup,
+            live: &self.live,
+            car: Car {
+                can_valid: self.car.can_valid,
+                fault_temporary: self.car.fault_temporary,
+                fault_permanent: self.car.fault_permanent,
+                values: [
+                    self.car.speed,
+                    self.car.steer_angle,
+                    self.car.steer_rate,
+                    self.car.steer_torque,
+                ],
+            },
+            desired_curvature: self.model.desired_curvature,
+            lane: Lane {
+                use_lane_lines: self.lateral.lane_lines,
+                solution_valid: self.lateral.solution_valid,
+                psis: &self.lateral.psis,
+                curvatures: &self.lateral.curvatures,
+                distances: &self.lateral.distances,
+            },
+        }
+    }
 }

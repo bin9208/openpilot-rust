@@ -113,41 +113,74 @@ pub fn styled(
 pub fn badge(context: &Context, draw: &mut dyn Draw, rect: Rect) -> Result<(), Error> {
     let ui = context.ui.borrow();
     let status = &ui.slow;
-    if !(status.usbgpu_present
+    if !(status.jetlink_badge.is_some()
+        || status.delivery_badge.is_some()
+        || status.usbgpu_present
         || status.usbgpu_active
         || status.usbgpu_loading
         || status.usbgpu_startup_failed)
     {
         return Ok(());
     }
-    let (text, tint) = if status.usbgpu_startup_failed {
-        ("eGPU", color(255, 0, 0, 230))
+    let mut style = if status.usbgpu_startup_failed {
+        "error"
     } else if status.usbgpu_loading {
-        ("eGPU", color(255, 255, 0, 230))
+        "loading"
     } else if status.usbgpu_compile_pending {
-        ("eGPU REBOOT", color(255, 165, 0, 230))
+        "compile_pending"
     } else if status.usbgpu_active {
-        ("eGPU", color(0, 255, 0, 230))
+        "active"
     } else if !status.usbgpu_compiled {
-        ("eGPU", color(255, 165, 0, 230))
+        "not_compiled"
     } else {
-        ("eGPU", color(255, 255, 255, 210))
+        "ready"
     };
+    let mut text = if style == "compile_pending" {
+        "eGPU REBOOT"
+    } else if style == "error" {
+        "eGPU ERROR"
+    } else {
+        "eGPU"
+    };
+    if !(status.usbgpu_active || status.usbgpu_loading || status.usbgpu_startup_failed) {
+        if let Some(badge) = &status.delivery_badge {
+            text = &badge.text;
+            style = &badge.style;
+        }
+    }
+    if !status.usbgpu_active {
+        for badge in [&status.jetlink_badge, &status.recovery_badge]
+            .into_iter()
+            .flatten()
+        {
+            text = &badge.text;
+            style = &badge.style;
+        }
+    }
     let big = context.big;
-    let alpha = if big
-        && tint.to_le_bytes()[3] == 230
-        && !text.ends_with("REBOOT")
-        && (status.usbgpu_active || status.usbgpu_loading || status.usbgpu_startup_failed)
-    {
-        210
-    } else {
-        tint.to_le_bytes()[3]
+    let tint = match style {
+        "active" => color(0, 255, 0, if big { 210 } else { 230 }),
+        "loading" => color(255, 255, 0, if big { 210 } else { 230 }),
+        "error" => color(255, 0, 0, if big { 210 } else { 230 }),
+        "compile_pending" | "not_compiled" => color(255, 165, 0, 230),
+        _ => color(255, 255, 255, 210),
     };
-    let [r, g, b, _] = tint.to_le_bytes();
-    let tint = color(r, g, b, alpha);
-    let font_size = if big { 38.0 } else { 22.0 };
+    let font = if text.is_ascii() {
+        Font::SemiBold
+    } else {
+        Font::Display
+    };
+    let font_size = if big {
+        if text.is_ascii() {
+            38.
+        } else {
+            30.
+        }
+    } else {
+        22.
+    };
     let (pad_x, pad_y) = if big { (18.0, 8.0) } else { (10.0, 5.0) };
-    let size = text_layout::measure(draw, Font::SemiBold, text, font_size, 0.0);
+    let size = text_layout::measure(draw, font, text, font_size, 0.0);
     let width = f64::from(size.x) + pad_x * 2.0;
     let badge = Rect {
         x: math::float(
@@ -178,7 +211,7 @@ pub fn badge(context: &Context, draw: &mut dyn Draw, rect: Rect) -> Result<(), E
         },
         crate::paint::Text {
             value: text,
-            font: Font::SemiBold,
+            font,
             size: font_size,
             spacing: 0.0,
             color: tint,

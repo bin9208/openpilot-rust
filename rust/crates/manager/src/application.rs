@@ -173,6 +173,7 @@ pub fn run(installation: &Installation) -> Result<(), Error> {
         boundary,
         signals: openpilot_manager::signals::Signals::install()?,
         loop_time: Duration::ZERO,
+        xiaoge_startup: Default::default(),
     };
     lifecycle::run(&params, &mut runtime, &environment)
 }

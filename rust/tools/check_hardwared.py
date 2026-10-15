@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 import subprocess
 
-from hardwared_source import run
+from hardwared_source import SOURCE_COMMIT, run
 
 
 def cases():
@@ -120,6 +120,14 @@ def cases():
     },
   )
   yield 'tesla-awake-after-start', {'kind': 'policy', 'device': 'tizi', 'steps': steps([{'tesla': True}] * 4 + [{'tesla': True, 'ignition': False}] * 5)}
+  for device in ['tici', 'tizi', 'mici']:
+    yield f'tesla-restart-guards-{device}', {
+      'kind': 'policy', 'device': device,
+      'steps': steps([{'tesla': True}] * 4 + [{'tesla': True, 'ignition': False}] * 5
+                     + [{'tesla': True, 'startup': startup | {'accepted_terms': False}}] * 3
+                     + [{'tesla': True}] * 4 + [{'tesla': True, 'cycle_requested': True}]
+                     + [{'tesla': True}] * 4),
+    }
   yield (
     'ignition-edge-between-ticks',
     {'kind': 'policy', 'device': 'tici', 'steps': steps([{}, {}, {}, {'frame': 11, 'ignition': False}, {'frame': 12, 'ignition': False}, {'frame': 13}])},
@@ -198,7 +206,7 @@ def main():
     compare(expected, actual, name)
     print(f'PASS {name}: {len(expected)} observations')
   (args.output / 'result.json').write_text(
-    json.dumps({'passed': len(tests), 'source': 'unchanged hardwared.py/fan_controller.py/power_monitoring.py', 'device_access': False}, indent=2) + '\n'
+    json.dumps({'passed': len(tests), 'source': SOURCE_COMMIT, 'device_access': False}, indent=2) + '\n'
   )
 
 

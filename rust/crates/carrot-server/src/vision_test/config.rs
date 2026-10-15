@@ -1,4 +1,4 @@
-use crate::{youtube_test::CommandSpec, Error};
+use crate::{vision_test::CommandSpec, Error};
 use openpilot_params::Params;
 use std::path::PathBuf;
 
@@ -76,7 +76,7 @@ impl Config {
             .is_some_and(|bytes| bytes == b"1"))
     }
     pub(super) fn snapshot(&self, active: bool) -> Result<(), Error> {
-        crate::youtube_test::cleanup::snapshot_active(
+        crate::vision_test::support::snapshot_active(
             &self.params()?,
             &self.repository,
             active,

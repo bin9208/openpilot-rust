@@ -40,6 +40,8 @@ const SOURCE_ASSETS: &[&str] = &[
     "panda/board/obj/bootstub.panda_h7.bin",
     "panda/board/obj/panda.bin.signed",
     "panda/board/obj/panda_h7.bin.signed",
+    "panda/board/obj/panda_tesla_wake.bin.signed",
+    "panda/board/obj/panda_h7_tesla_wake.bin.signed",
 ];
 fn require(ok: bool, message: impl Into<String>) -> Result<()> {
     if ok {

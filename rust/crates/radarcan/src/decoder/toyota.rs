@@ -1,3 +1,4 @@
+pub mod ars510;
 use crate::{base::Base, data::Data, integer_set::IntegerSet, point::Point, reader::Reader, Error};
 use indexmap::IndexMap;
 

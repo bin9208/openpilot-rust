@@ -23,7 +23,7 @@ fn floats(values: capnp::primitive_list::Reader<'_, f32>) -> Vec<f64> {
     values.iter().map(f64::from).collect()
 }
 
-fn data(value: driver_state_v2::driver_data::Reader<'_>) -> Result<DriverData, Error> {
+pub fn data(value: driver_state_v2::driver_data::Reader<'_>) -> Result<DriverData, Error> {
     Ok(DriverData {
         face_orientation: Some(floats(value.get_face_orientation()?)),
         face_position: Some(floats(value.get_face_position()?)),
@@ -83,4 +83,74 @@ pub fn input(
         calibration: floats(calibration.get_rpy_calib()?),
         demo,
     })
+}
+
+/// Reject malformed/NaN camera data before native policy arithmetic.
+pub fn camera_usable(state: &State, rhd: bool, demo: bool, now: f64) -> Result<bool, Error> {
+    let required = if demo {
+        &["driverStateV2"][..]
+    } else {
+        &["driverStateV2", "liveCalibration", "modelV2"][..]
+    };
+    if !state.all_checks(required)?
+        || (std::env::var_os("REPLAY").is_some()
+            && !required.iter().all(|name| {
+                state.topic(name).is_ok_and(|t| {
+                    let age = now - t.log_mono_time as f64 / 1e9;
+                    age >= 0. && age < 10. / t.service.frequency
+                })
+            }))
+    {
+        return Ok(false);
+    }
+    let d = driver(state)?;
+    let value = data(if rhd {
+        d.get_right_driver_data()?
+    } else {
+        d.get_left_driver_data()?
+    })?;
+    if ![
+        value.face_prob,
+        value.left_eye_prob,
+        value.right_eye_prob,
+        value.left_blink_prob,
+        value.right_blink_prob,
+        value.sleep_prob,
+        value.phone_prob,
+        value.sunglasses_prob,
+    ]
+    .iter()
+    .all(|v| v.is_finite() && (0. ..=1.).contains(v))
+    {
+        return Ok(false);
+    }
+    if ![
+        value.face_orientation,
+        value.face_position,
+        value.face_orientation_std,
+        value.face_position_std,
+    ]
+    .iter()
+    .all(|v| {
+        v.as_ref()
+            .is_some_and(|v| v.len() >= 2 && v.iter().all(|n| n.is_finite()))
+    }) {
+        return Ok(false);
+    }
+    if !demo {
+        let cal = topic!(state, "liveCalibration", LiveCalibration);
+        let model = topic!(state, "modelV2", ModelV2);
+        let cal = cal.get_rpy_calib()?;
+        let brake = model
+            .get_meta()?
+            .get_disengage_predictions()?
+            .get_brake_disengage_probs()?;
+        if cal.len() < 3
+            || brake.is_empty()
+            || !cal.iter().chain(brake.iter()).all(|v| v.is_finite())
+        {
+            return Ok(false);
+        }
+    }
+    Ok((0. ..0.5).contains(&(now - state.topic("driverStateV2")?.log_mono_time as f64 / 1e9)))
 }

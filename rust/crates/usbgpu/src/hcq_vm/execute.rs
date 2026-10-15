@@ -15,7 +15,7 @@ impl Execution {
             let get = |i: usize| self.values[node.src[i]];
             let a = node.src.first().map_or(0, |&s| self.values[s]);
             let value = match node.op {
-                Op::Argument { .. } | Op::Local { .. } => self.values[pc],
+                Op::Argument { .. } | Op::Local { .. } | Op::Data { .. } => self.values[pc],
                 Op::Constant { value } => value,
                 Op::Index { stride } => a
                     .checked_add(
@@ -36,6 +36,15 @@ impl Execution {
                 Op::Add => a.wrapping_add(get(1)),
                 Op::Sub => a.wrapping_sub(get(1)),
                 Op::Mul => a.wrapping_mul(get(1)),
+                Op::Neg => a.wrapping_neg(),
+                Op::Cdiv => if node.signed {
+                    (a as i64)
+                        .checked_div(get(1) as i64)
+                        .map(|value| value as u64)
+                } else {
+                    a.checked_div(get(1))
+                }
+                .ok_or(Error::Contract("HCQ integer division undefined"))?,
                 Op::And => a & get(1),
                 Op::Or => a | get(1),
                 Op::Xor => a ^ get(1),
@@ -106,7 +115,27 @@ impl Execution {
                     }
                     0
                 }
-                Op::Noop => 0,
+                Op::ClockGettime => {
+                    // HCQ's fence clock is CLOCK_MONOTONIC. Arbitrary host clocks
+                    // are not part of the imported dispatcher contract.
+                    if a != 1 {
+                        return Err(Error::Contract("HCQ fence clock is not monotonic"));
+                    }
+                    let time = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
+                    let mut bytes = [0; 16];
+                    bytes[..8].copy_from_slice(&(time.tv_sec as i64).to_le_bytes());
+                    bytes[8..].copy_from_slice(&(time.tv_nsec as i64).to_le_bytes());
+                    memory.write(get(1), &bytes)?;
+                    0
+                }
+                Op::If => {
+                    if a == 0 {
+                        pc = self.program.ends[pc] + 1;
+                        continue;
+                    }
+                    0
+                }
+                Op::Endif | Op::Noop => 0,
             };
             self.values[pc] = node.normalize(value);
             pc += 1;

@@ -26,6 +26,7 @@ impl Processes {
         paths: &mut impl GpsPaths,
         ignore: &[String],
     ) -> Result<(), Error> {
+        openpilot_process_supervision::crash::flush();
         let mut running = Vec::new();
         for (index, entry) in self.entries.iter_mut().enumerate() {
             if let Some(process) = &mut entry.process {
@@ -83,6 +84,21 @@ impl Processes {
                     ..StopOptions::default()
                 })?;
             }
+        }
+        Ok(())
+    }
+
+    pub fn stop_named(&mut self, name: &str) -> Result<(), Error> {
+        let entry = self
+            .entries
+            .iter_mut()
+            .find(|entry| entry.descriptor.name == name)
+            .ok_or_else(|| Error::Unavailable(name.into()))?;
+        if let Some(process) = &mut entry.process {
+            process.stop(StopOptions {
+                block: true,
+                ..StopOptions::default()
+            })?;
         }
         Ok(())
     }

@@ -21,7 +21,7 @@ fn repository() -> PathBuf {
 #[test]
 fn native_headers_and_version_match_original_public_oracles() {
     let identity = firmware_identity(&repository()).unwrap();
-    assert_eq!(identity, "DEV-1de1c7b1f187-DEBUG");
+    assert_eq!(identity, "DEV-0914fbcd5f62-DEBUG");
     assert_eq!(
         identity.as_bytes(),
         include_bytes!("fixtures/panda/version")
@@ -148,6 +148,15 @@ fn stage_preserves_source_binding_and_accepts_only_verified_immutable_files() {
         fs::read(root.join("panda/board/obj/panda.bin.signed")).unwrap(),
         SIGNED
     );
+    for name in [
+        "panda_tesla_wake.bin.signed",
+        "panda_h7_tesla_wake.bin.signed",
+    ] {
+        assert_eq!(
+            fs::read(root.join("panda/board/obj").join(name)).unwrap(),
+            SIGNED
+        );
+    }
     assert!(!output.join("source/panda/certs/debug").exists());
     let unchanged = fs::read(root.join("rust/bin/licenses/panda/provenance.json")).unwrap();
     fs::write(output.join("source/panda/board/main.c"), b"changed source").unwrap();

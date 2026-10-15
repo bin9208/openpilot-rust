@@ -28,7 +28,6 @@ def main():
     ('CustomSR', b'bad'),
     ('LatSuspendAngleDeg', b'2147483648'),
     ('SpeedFromPCM', b'x'),
-    ('DisableDM', b'x'),
   ]:
     case = copy.deepcopy(basic[0])
     case['frames'] = case['frames'][:5]
@@ -66,7 +65,8 @@ def main():
   fixtures.append(case)
   case = copy.deepcopy(basic[1])
   case['name'] = 'zero-torque-factor'
-  case['frames'] = case['frames'][:5]
+  # Initial readiness must complete before this tests the active torque failure.
+  case['frames'] = case['frames'][:15]
   with car.CarParams.from_bytes(bytes(case['params']['CarParams'])) as original:
     cp = original.as_builder()
     cp.lateralTuning.torque.latAccelFactor = 0.0

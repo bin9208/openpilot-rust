@@ -5,11 +5,23 @@ import json
 from pathlib import Path
 import subprocess
 
+import sys
+import types
+
+PIN = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
+for module_name, path in [
+  ('openpilot.selfdrive.carrot.xiaoge.xiaoge_vision','openpilot/selfdrive/carrot/xiaoge/xiaoge_vision.py'),
+  ('openpilot.selfdrive.ui.vision_status','openpilot/selfdrive/ui/vision_status.py'),
+]:
+  module = types.ModuleType(module_name)
+  sys.modules[module_name] = module
+  exec(compile(subprocess.check_output(['git','show',PIN+':'+path]),path,'exec'),module.__dict__)
 from openpilot.selfdrive.ui.vision_status import parse_vision_display_packet, vision_display_state
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--binary',type=Path,required=True)
 parser.add_argument('--output',type=Path,required=True)
+parser.add_argument('--runner',nargs=argparse.REMAINDER,default=[])
 args=parser.parse_args()
 args.output.mkdir(parents=True,exist_ok=True)
 now=10_000_000_000
@@ -30,6 +42,20 @@ for delta in [-1,0,1,1_499_999_999,1_500_000_000,1_500_000_001,3_999_999_999,4_0
       value=deepcopy(base)
       value['blindspot'].update(side=side,left=left,right=right)
       append(value,f'age-{delta}-{side!r}-{left}-{right}',now+delta)
+# Side clocks are independently authoritative for the display; unlike the car
+# consumer, the UI does not additionally gate on the aggregate timestamp.
+for aggregate in [0, now, now-1_500_000_001]:
+  for side in ['left','right','']:
+    for left in [0,now,now+1,now-1_500_000_000,now-1_500_000_001]:
+      for right in [0,now,now+1,now-1_500_000_000,now-1_500_000_001]:
+        value=deepcopy(base)
+        value['blindspot'].update(side=side,receivedMonoTimeNanos=aggregate,receivedMonoTimeNanosBySide={'left':left,'right':right})
+        append(value,f'side-clock-{aggregate}-{side}-{left}-{right}')
+for by_side in [None,[],True,1,'object',{}, {'left':now}, {'right':now}]+[
+    {side:stamp} for side in ['left','right'] for stamp in [-1,None,True,False,1.0,'1',2**127,10**400]]:
+  value=deepcopy(base)
+  value['blindspot']['receivedMonoTimeNanosBySide']=by_side
+  append(value,f'side-payload-{by_side!r}')
 for group,name,values in [
   ('root','version',[None,0,1,1.0,True,False,'1',float('nan'),float('inf')]),
   ('root','type',[None,True,1,'xiaogeVision','legacy']),
@@ -86,7 +112,7 @@ for step in steps:
     source.append({'accepted':False,'overflow':isinstance(error,OverflowError)})
 (args.output/'input.json').write_text(json.dumps(steps))
 (args.output/'source.json').write_text(json.dumps(source))
-result=subprocess.run([str(args.binary)],input=json.dumps(steps),text=True,capture_output=True,check=True)
+result=subprocess.run([*args.runner,str(args.binary)],input=json.dumps(steps),text=True,capture_output=True,check=True)
 (args.output/'native.json').write_text(result.stdout)
 (args.output/'native.stderr').write_text(result.stderr or '(no stderr)\n')
 native=json.loads(result.stdout)

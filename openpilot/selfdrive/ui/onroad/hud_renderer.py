@@ -2,7 +2,7 @@ import time
 import pyray as rl
 from dataclasses import dataclass
 from openpilot.common.constants import CV
-from openpilot.selfdrive.carrot.deceleration_source import deceleration_source_presentation, navigation_status_presentation
+from openpilot.selfdrive.carrot.deceleration_source import deceleration_source_presentation
 from openpilot.selfdrive.ui.onroad.exp_button import ExpButton
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.hardware.usbgpu import usbgpu_badge_state
@@ -11,6 +11,7 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.text_draw import draw_text_ui_style
 from openpilot.system.ui.widgets import Widget
+from openpilot.system.ui.lib.overlay_cache import OverlayLayer, DisplayClock
 
 # Constants
 SET_SPEED_NA = 255
@@ -122,7 +123,7 @@ class SetSpeedOverride:
       desired_source = ""
 
     if desired_speed is not None and 0 < desired_speed < 200 and desired_speed < set_speed_kph:
-      label, speed_color_mode = deceleration_source_presentation(desired_source, getattr(sm['carrotMan'], 'decelProvider', ''))
+      label, speed_color_mode = deceleration_source_presentation(desired_source)
       return SetSpeedOverrideState(
         active=True,
         speed_kph=desired_speed,
@@ -144,6 +145,11 @@ class SetSpeedOverride:
 class HudRenderer(Widget):
   def __init__(self):
     super().__init__()
+    self._overlay = OverlayLayer(1)
+    self._overlay_state = None
+    self._display_clock = DisplayClock()
+    self._blink_phase = 0.0
+    self._cruise_speed_animation_started = 0.0
     self.is_cruise_set = False
     self.is_cruise_available = True
     self.set_speed = SET_SPEED_NA
@@ -192,7 +198,7 @@ class HudRenderer(Widget):
     self._memory_usage_text = "0%"
     self._disk_usage_text = "100%"
     self._voltage_text = "0.0V"
-    self._plot_renderer = None
+    self._plot_renderer = PlotRenderer()
     self._round_box_rect = rl.Rectangle(0.0, 0.0, 0.0, 0.0)
 
     self._hud_params_next_refresh_time = 0.0
@@ -236,6 +242,9 @@ class HudRenderer(Widget):
 
   def _update_state(self) -> None:
     """Update HUD state based on car state and controls state."""
+    self._blink_phase = (self._blink_phase + self._display_clock.tick()) % 64
+    self._blink_timer = int(self._blink_phase) % 16
+    self._disp_timer = int(self._blink_phase)
     sm = ui_state.sm
     device_info_recv_frames = (sm.recv_frame["deviceState"], sm.recv_frame["peripheralState"])
     if not self._device_info_loaded or device_info_recv_frames != self._device_info_recv_frames:
@@ -263,6 +272,8 @@ class HudRenderer(Widget):
     #  self.set_speed *= KM_TO_MILE
 
     self._engaged = sm['selfdriveState'].enabled
+    display_speed = self.set_speed * (1.0 if ui_state.is_metric else KM_TO_MILE)
+    self._update_cruise_speed_animation(str(int(round(display_speed))) if self._engaged and self.is_cruise_set else "--")
 
     v_ego_cluster = car_state.vEgoCluster
     self.v_ego_cluster_seen = self.v_ego_cluster_seen or v_ego_cluster != 0.0
@@ -273,6 +284,19 @@ class HudRenderer(Widget):
   def _render(self, rect: rl.Rectangle) -> None:
     """Render HUD elements to the screen."""
     self._refresh_hud_params(time.monotonic())
+    self._plot_renderer.update(self._show_plot_mode)
+    state = self._overlay_state
+    key = (state.key if state else None, self._blink_timer <= 8, self._disp_timer < 32, self._show_plot_mode)
+    self._overlay.draw(rect, self._paint, key, enabled=state is not None and state.enabled,
+                       urgent=state is not None and state.urgent)
+
+    # Input handling and the short speed-change popup remain at camera cadence.
+    button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
+    button_y = rect.y + UI_CONFIG.border_size
+    self._exp_button.render(rl.Rectangle(button_x, button_y, UI_CONFIG.button_size, UI_CONFIG.button_size))
+    self._draw_cruise_speed_animation(rect)
+
+  def _paint(self, rect: rl.Rectangle) -> None:
 
     # Draw the header background
     rl.draw_rectangle_gradient_v(
@@ -289,18 +313,11 @@ class HudRenderer(Widget):
 
     #self._draw_current_speed(rect)
 
-    button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
-    button_y = rect.y + UI_CONFIG.border_size
-    self._exp_button.render(rl.Rectangle(button_x, button_y, UI_CONFIG.button_size, UI_CONFIG.button_size))
-
-    if self._plot_renderer is None:
-      self._plot_renderer = PlotRenderer()
-    self._plot_renderer.draw(rect, self._font_display, self._show_plot_mode)
+    self._plot_renderer.paint(rect, self._font_display)
 
     self._draw_date_time(rect)
     self._draw_tpms(rect)
     self._draw_egpu_badge(rect)
-    self._draw_cruise_speed_animation(rect)
 
   def user_interacting(self) -> bool:
     return self._exp_button.is_pressed
@@ -308,14 +325,22 @@ class HudRenderer(Widget):
   def _draw_egpu_badge(self, rect: rl.Rectangle) -> None:
     # Keep runtime state visible while the shared USB hub re-enumerates; a
     # transient missing sysfs sample must not hide loading or failure details.
-    if not (ui_state.usbgpu_present or ui_state.usbgpu_active or
+    if not (getattr(ui_state, 'jetlink_badge', None) or getattr(ui_state, 'usbgpu_delivery_badge', None) or
+            ui_state.usbgpu_present or ui_state.usbgpu_active or
             ui_state.usbgpu_loading or ui_state.usbgpu_startup_failed):
       return
 
     state = usbgpu_badge_state(ui_state.usbgpu_compiled, ui_state.usbgpu_loading,
                                ui_state.usbgpu_active, ui_state.usbgpu_startup_failed,
                                ui_state.usbgpu_compile_pending)
-    text = "eGPU REBOOT" if state == "compile_pending" else "eGPU"
+    text = "eGPU REBOOT" if state == "compile_pending" else "eGPU ERROR" if state == "error" else "eGPU"
+    if (getattr(ui_state, "usbgpu_delivery_badge", None) and
+        not (ui_state.usbgpu_active or ui_state.usbgpu_loading or ui_state.usbgpu_startup_failed)):
+      text, state = ui_state.usbgpu_delivery_badge
+    if getattr(ui_state, 'jetlink_badge', None) and not ui_state.usbgpu_active:
+      text, state = ui_state.jetlink_badge
+    if getattr(ui_state, 'usbgpu_recovery_badge', None) and not ui_state.usbgpu_active:
+      text, state = ui_state.usbgpu_recovery_badge
     color = {
       "active": COLORS.GREEN_210,
       "loading": COLORS.YELLOW_210,
@@ -324,8 +349,9 @@ class HudRenderer(Widget):
       "not_compiled": COLORS.ORANGE_230,
       "ready": COLORS.WHITE_210,
     }[state]
-    font_size = 38
-    text_size = measure_text_cached(self._font_semi_bold, text, font_size)
+    font = gui_app.font(FontWeight.DISPLAY) if not text.isascii() else self._font_semi_bold
+    font_size = 30 if not text.isascii() else 38
+    text_size = measure_text_cached(font, text, font_size)
     pad_x, pad_y = 18, 8
     badge_w = text_size.x + pad_x * 2
     exp_button_left = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
@@ -338,7 +364,7 @@ class HudRenderer(Widget):
     rl.draw_rectangle_rounded(badge, 0.35, 8, rl.Color(0, 0, 0, 150))
     rl.draw_rectangle_rounded_lines_ex(badge, 0.35, 8, 3, color)
     rl.draw_text_ex(
-      self._font_semi_bold,
+      font,
       text,
       rl.Vector2(badge.x + pad_x, badge.y + pad_y),
       font_size,
@@ -616,6 +642,10 @@ class HudRenderer(Widget):
     return False
 
   def _draw_carrot_traffic_light(self, bx: int, by: int):
+    from openpilot.selfdrive.ui.signal_status import signal_detection_paused, draw_signal_pause, draw_signal_assist
+    if signal_detection_paused(ui_state.sm):
+      draw_signal_pause(bx, by + 270, 32)
+      return
     traffic_state = self._get_traffic_state()
     traffic_state_carrot = self._get_traffic_state_carrot()
 
@@ -640,6 +670,7 @@ class HudRenderer(Widget):
       self._draw_texture_rect(self._traffic_red_icon, x - icon_red / 2, y - icon_red / 2, icon_red, icon_red)
     elif green_light:
       self._draw_texture_rect(self._traffic_green_icon, x - icon_green / 2, y - icon_green / 2, icon_green, icon_green)
+    draw_signal_assist(ui_state.sm, x, y, max(icon_red, icon_green) / 2)
 
   def _draw_carrot_speed_panel(self, bx: int, by: int):
     sm = ui_state.sm
@@ -665,8 +696,6 @@ class HudRenderer(Widget):
       cruise_text = str(int(round(set_speed)))
     else:
       cruise_text = "--"
-
-    self._update_cruise_speed_animation(cruise_text)
 
     draw_text_ui_style(
       cruise_text, bx + 170, by + 15, 60, COLORS.CARROT_GREEN,
@@ -722,14 +751,16 @@ class HudRenderer(Widget):
         return
       self._cruise_speed_animation_text = cruise_text
       self._cruise_speed_animation_time = CRUISE_SPEED_ANIMATION_START
+      self._cruise_speed_animation_started = time.monotonic()
 
   def _draw_cruise_speed_animation(self, rect: rl.Rectangle) -> None:
     if self._cruise_speed_animation_time <= 0 or not self._cruise_speed_animation_text:
       return
 
-    # c3-wip's integer state machine, tuned for a smaller and quicker BIG popup.
-    # At 20 Hz this renders for 10 frames and starts shrinking almost at once.
-    self._cruise_speed_animation_time -= CRUISE_SPEED_ANIMATION_STEP
+    elapsed = time.monotonic() - self._cruise_speed_animation_started
+    self._cruise_speed_animation_time = max(0.0, CRUISE_SPEED_ANIMATION_START - CRUISE_SPEED_ANIMATION_STEP * (1.0 + elapsed * 20.0))
+    if elapsed >= 0.5:
+      return
     animation_time = self._cruise_speed_animation_time
     interpolation_time = min(animation_time, CRUISE_SPEED_ANIMATION_MAX)
 
@@ -854,17 +885,10 @@ class HudRenderer(Widget):
 
     # active carrot
     active_carrot = self._get_active_carrot()
-    carrot_man = ui_state.sm['carrotMan']
-    lifecycle = str(getattr(carrot_man, 'naviLifecycle', ''))
-    navi_status = navigation_status_presentation(
-      bool(getattr(carrot_man, 'vehicleNaviAvailable', False)), False,
-      str(getattr(carrot_man, 'naviOwner', '')), lifecycle) if lifecycle else None
-    if lifecycle:
-      active_carrot = 0  # Vehicle safety activity is not external guidance ownership.
     dx = bx + 200
     dy = by + 175
 
-    if navi_status is not None or active_carrot >= 2:
+    if active_carrot >= 2:
       self._draw_round_box(
         dx - 55, dy - 38, 110, 48,
         rl.GREEN,
@@ -874,7 +898,7 @@ class HudRenderer(Widget):
         line_thickness=2,
       )
       draw_text_ui_style(
-        navi_status[0] if navi_status is not None else "APN", dx, dy, 29 if navi_status else 40, rl.WHITE,
+        "APN", dx, dy, 40, rl.WHITE,
         font=self._font_display,
         border_width=2.0,
         shadow_offset=4.0,
@@ -923,15 +947,12 @@ class HudRenderer(Widget):
         limit_color = COLORS.RED_210
       else:
         limit_color = COLORS.YELLOW_210
-    elif road_limit_speed > 0:
+    else:
       disp_speed = int(road_limit_speed if ui_state.is_metric else (road_limit_speed * KM_TO_MILE + 0.5))
       if self.speed > disp_speed + 2:
         limit_color = COLORS.RED_210
       else:
         limit_color = COLORS.WHITE_210
-    else:
-      disp_speed = None
-      limit_color = COLORS.WHITE_210
 
     draw_text_ui_style(
       label, dx, dy - 45, 30, rl.WHITE,
@@ -951,7 +972,7 @@ class HudRenderer(Widget):
     )
 
     draw_text_ui_style(
-      "--" if disp_speed is None else str(disp_speed), dx, dy, 40, rl.WHITE,
+      str(disp_speed), dx, dy, 40, rl.WHITE,
       font=self._font_display,
       border_width=2.0,
       shadow_offset=4.0,
@@ -1366,8 +1387,6 @@ class HudRenderer(Widget):
       )
 
   def _draw_set_speed_carrot(self, rect: rl.Rectangle) -> None:
-    self._blink_timer = (self._blink_timer + 1) % 16
-    self._disp_timer = (self._disp_timer + 1) % 64
 
     # C drawHud anchor
     bx = int(rect.x + 140)
@@ -1401,6 +1420,8 @@ class PlotRenderer:
     self._plot_height = 300.0
     self._plot_dx = 2.0
     self._show_plot_mode_prev = -1
+    self._ready = False
+    self._title = ''
 
   def _clear(self):
     self._plot_size = 0
@@ -1587,6 +1608,11 @@ class PlotRenderer:
       )
 
   def draw(self, rect: rl.Rectangle, font, show_plot_mode: int) -> None:
+    self.update(show_plot_mode)
+    self.paint(rect, font)
+
+  def update(self, show_plot_mode: int) -> None:
+    self._ready = False
     if show_plot_mode == 0:
       return
     try:
@@ -1605,8 +1631,11 @@ class PlotRenderer:
       return
 
     self._update_plot_queue(plot_data)
+    self._title = title
+    self._ready = True
 
-    if rect.width < 1200:
+  def paint(self, rect: rl.Rectangle, font) -> None:
+    if not self._ready or rect.width < 1200:
       return
 
     x_base = rect.x + self._plot_x
@@ -1617,6 +1646,6 @@ class PlotRenderer:
       self._draw_plotting(i, x_base, y_base, colors[i], font)
 
     draw_text_ui_style(
-      title, x_base + 400, y_base - 20, 25, rl.WHITE,
+      self._title, x_base + 400, y_base - 20, 25, rl.WHITE,
       font=font, border_width=2.0, shadow_offset=4.0, align='center_bottom',
     )

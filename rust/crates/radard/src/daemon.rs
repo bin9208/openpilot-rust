@@ -30,34 +30,10 @@ impl Radar {
             return Ok(None);
         }
         let views = Views(state);
-        let model = views.model()?;
-        let car = views.car()?;
         let tracks = views.tracks()?;
         let model_ns = state.topic("modelV2")?.log_mono_time;
         let car_ns = state.topic("carState")?.log_mono_time;
-        let eof = model.get_timestamp_eof();
-        let measured = if eof > 0 { eof } else { model_ns };
-        let model_time = seconds(measured)?;
-        let time = if model_time > 0. {
-            model_time
-        } else {
-            seconds(
-                state
-                    .topics()
-                    .iter()
-                    .map(|topic| topic.log_mono_time)
-                    .max()
-                    .unwrap_or(0),
-            )?
-        };
-        let output = self.controller.update(&Input {
-            time_s: time,
-            v_ego: f64::from(car.get_v_ego()),
-            points: wire::points(tracks)?,
-            model: wire::model(model)?,
-            yaw_rate_rad_s: wire::yaw(views.pose()?)?,
-            radar_to_model_time_s: model_time - seconds(state.topic("liveTracks")?.log_mono_time)?,
-        })?;
+        let output = self.controller.update(&input(state)?)?;
         Ok(Some(wire::publication(
             &output,
             tracks.get_errors()?,
@@ -67,6 +43,37 @@ impl Radar {
             now,
         )?))
     }
+}
+/// Shared model/liveTracks input policy for daemon and offline replay.
+pub fn input(state: &State) -> Result<Input, Error> {
+    let views = Views(state);
+    let model = views.model()?;
+    let car = views.car()?;
+    let tracks = views.tracks()?;
+    let model_ns = state.topic("modelV2")?.log_mono_time;
+    let eof = model.get_timestamp_eof();
+    let measured = if eof > 0 { eof } else { model_ns };
+    let model_time = seconds(measured)?;
+    let time = if model_time > 0. {
+        model_time
+    } else {
+        seconds(
+            state
+                .topics()
+                .iter()
+                .map(|topic| topic.log_mono_time)
+                .max()
+                .unwrap_or(0),
+        )?
+    };
+    Ok(Input {
+        time_s: time,
+        v_ego: f64::from(car.get_v_ego()),
+        points: wire::points(tracks)?,
+        model: wire::model(model)?,
+        yaw_rate_rad_s: wire::yaw(views.pose()?)?,
+        radar_to_model_time_s: model_time - seconds(state.topic("liveTracks")?.log_mono_time)?,
+    })
 }
 fn seconds(value: u64) -> Result<f64, Error> {
     Ok(value

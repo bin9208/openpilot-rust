@@ -216,6 +216,7 @@ pub use dynamic::{DecodedImage, DynamicTexture};
 mod cluster;
 pub use cluster::{RawImage, RawTextDraw, RawTextPaint, TextureFilter};
 mod resources;
+mod overlay;
 mod three_d;
 mod two_d;
 use resources::vector;

@@ -38,10 +38,7 @@ impl Parameters for openpilot_params::Params {
         Ok(raw(self, key)? == b"1")
     }
     fn get_int(&mut self, key: &str) -> Result<i32, Error> {
-        openpilot_beepd::integer(&raw(self, key)?).map_err(|source| Error::Integer {
-            key: key.to_owned(),
-            source,
-        })
+        integer_value(key, &raw(self, key)?)
     }
     fn get_bool_default(&mut self, key: &str) -> Result<bool, Error> {
         let value = raw(self, key)?;
@@ -58,6 +55,14 @@ impl Parameters for openpilot_params::Params {
             Err(error) => Err(error.into()),
         }
     }
+}
+
+/// Preserve the source's Cython integer conversion for startup migrations too.
+pub fn integer_value(key: &str, value: &[u8]) -> Result<i32, Error> {
+    openpilot_beepd::integer(value).map_err(|source| Error::Integer {
+        key: key.to_owned(),
+        source,
+    })
 }
 
 pub trait GpsPaths {
@@ -94,13 +99,10 @@ pub enum Predicate {
     Offroad,
     Updated,
     DriverMonitoring,
+    DriverMonitoringModel,
     ShareData,
     WebRtc,
     C3xLite,
-    YoutubeLow,
-    YoutubeMedium,
-    Youtube,
-    YoutubeWide,
     ClusterHud,
     All(&'static [Predicate]),
     Any(&'static [Predicate]),
@@ -151,33 +153,17 @@ impl Predicate {
             Onroad => started,
             Offroad => !started,
             Updated => !started && params.get_bool("SoftwareMenu")?,
-            DriverMonitoring => {
-                (started || params.get_bool("IsDriverViewEnabled")?)
-                    && params.get_int("DisableDM")? == 0
+            DriverMonitoring => started || params.get_bool("IsDriverViewEnabled")?,
+            DriverMonitoringModel => {
+                (started
+                    && params.get_bool("DriverMonitoringEnabled")?
+                    && !params.get_bool("DriverMonitoringSessionDisabled")?)
+                    || params.get_bool("IsDriverViewEnabled")?
             }
-            ShareData => params.get_bool("ShareData")?,
-            WebRtc => {
-                params.get_int("DisableDM")? == 2
-                    && !caught(params.get_int("ClusterHud").map(|value| value == 1))?
-            }
+            ShareData => started && params.get_bool("ShareData")?,
+            WebRtc => params.get_bool("CarrotVisionEnabled")?,
             C3xLite => started && params.get_bool("HardwareC3xLite")?,
             ClusterHud => caught(params.get_int("ClusterHud").map(|value| value == 1))?,
-            YoutubeLow | YoutubeMedium | Youtube | YoutubeWide => caught((|| {
-                if self == YoutubeWide && !params.get_bool_default("UseWideCamera")? {
-                    return Ok(false);
-                }
-                if params.get_int("CarrotYouTubeLive")? <= 0 {
-                    return Ok(false);
-                }
-                let quality = params.get_int("CarrotYouTubeQuality")?;
-                Ok(match self {
-                    YoutubeLow => !matches!(quality, 1..=3),
-                    YoutubeMedium => quality == 1,
-                    Youtube => quality == 2,
-                    YoutubeWide => quality == 3,
-                    _ => unreachable!(),
-                })
-            })())?,
             All(predicates) => {
                 for predicate in predicates {
                     if !predicate.evaluate(state, params, paths)? {

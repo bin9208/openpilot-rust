@@ -7,6 +7,19 @@ use openpilot_can::Packet;
 use openpilot_cereal::car_capnp::car_state;
 
 impl Vehicle for Interface {
+    fn set_speedcam_context(&mut self, engaged: bool, cruise_kph: f64) {
+        if let Self::Hyundai(vehicle) = self {
+            vehicle.state.speedcam_engaged = engaged;
+            vehicle.state.speedcam_v_cruise = cruise_kph;
+        }
+    }
+    fn speedcam_gas_tok_consumed(&self) -> bool {
+        if let Self::Hyundai(vehicle) = self {
+            vehicle.state.speedcam_gas_tok_consumed
+        } else {
+            false
+        }
+    }
     fn take_param_writes(&mut self) -> Vec<(String, Vec<u8>)> {
         if let Self::Gm(vehicle) = self {
             vehicle.take_param_writes()
@@ -51,6 +64,7 @@ impl Vehicle for Interface {
     }
     fn take_logs(&mut self) -> Vec<crate::core::VehicleLog> {
         match self {
+            Self::Hyundai(vehicle) => vehicle.take_logs(),
             Self::Tesla(vehicle) => vehicle.take_logs(),
             Self::Mazda(vehicle) => vehicle.take_logs(),
             Self::Nissan(vehicle) => vehicle.take_logs(),
@@ -62,7 +76,7 @@ impl Vehicle for Interface {
             Self::Gm(vehicle) => vehicle.take_logs(),
             Self::Honda(vehicle) => vehicle.take_logs(),
             Self::Volkswagen(vehicle) => vehicle.take_logs(),
-            Self::Body(_) | Self::Mock(_) | Self::Hyundai(_) => Vec::new(),
+            Self::Body(_) | Self::Mock(_) => Vec::new(),
         }
     }
     fn update(&mut self, packets: &[Packet], now_ns: u64) -> Result<Message, Error> {

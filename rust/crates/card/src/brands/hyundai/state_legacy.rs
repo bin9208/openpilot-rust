@@ -200,5 +200,5 @@ pub fn update(state: &mut State, mut ret: car_state::Builder<'_>, now: u64) -> R
         ret.set_speed_limit_distance(0.);
         false
     };
-    super::state_navigation::update(state, ret, camera, false)
+    super::state_navigation::update(state, ret, camera, false, false)
 }

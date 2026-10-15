@@ -89,6 +89,14 @@ impl<'a> Restore<'a> {
         }
     }
     pub fn preview(&self, values: &Value, selected: &Value) -> Result<Value, Error> {
+        self.preview_source(values, selected, &Value::text("restore"))
+    }
+    fn preview_source(
+        &self,
+        values: &Value,
+        selected: &Value,
+        source: &Value,
+    ) -> Result<Value, Error> {
         if !self.backend.has_params() {
             return Err(Error::Source("Params/ParamKeyType not available".into()));
         }
@@ -118,30 +126,43 @@ impl<'a> Restore<'a> {
                 Some(name) => read_setting_value(self.backend, name, &Value::integer(0)),
                 None => Value::integer(0),
             };
-            match kind {
-                Kind::Unknown => {
-                    status = Status::Invalid;
-                    reason = "unknown parameter".into();
-                    can_apply = false;
-                }
-                Kind::Json | Kind::Bytes => {
-                    status = Status::Skipped;
-                    reason = "unsupported type".into();
-                    can_apply = false;
-                }
-                Kind::Bool | Kind::Int | Kind::Float | Kind::String | Kind::Time => {
-                    match kind.normalize(raw) {
-                        Ok(normalized) => {
-                            value = normalized;
-                            if kind.equal(&current, &value)? {
-                                status = Status::Same;
+            let protected = name.as_deref().is_some_and(crate::params::internal_session);
+            let excluded = !source.text_eq("reset_defaults")
+                && name.as_deref().is_some_and(crate::params::backup_excluded);
+            if protected {
+                status = Status::Invalid;
+                reason = "controlled internally".into();
+                can_apply = false;
+            } else if excluded {
+                status = Status::Skipped;
+                reason = "excluded from backup restore".into();
+                can_apply = false;
+            } else {
+                match kind {
+                    Kind::Unknown => {
+                        status = Status::Invalid;
+                        reason = "unknown parameter".into();
+                        can_apply = false;
+                    }
+                    Kind::Json | Kind::Bytes => {
+                        status = Status::Skipped;
+                        reason = "unsupported type".into();
+                        can_apply = false;
+                    }
+                    Kind::Bool | Kind::Int | Kind::Float | Kind::String | Kind::Time => {
+                        match kind.normalize(raw) {
+                            Ok(normalized) => {
+                                value = normalized;
+                                if kind.equal(&current, &value)? {
+                                    status = Status::Same;
+                                    can_apply = false;
+                                }
+                            }
+                            Err(error) => {
+                                status = Status::Invalid;
+                                reason = error.to_string();
                                 can_apply = false;
                             }
-                        }
-                        Err(error) => {
-                            status = Status::Invalid;
-                            reason = error.to_string();
-                            can_apply = false;
                         }
                     }
                 }
@@ -157,7 +178,14 @@ impl<'a> Restore<'a> {
             counts[status.index()] += 1;
             entries.push(Value::object([
                 ("key", key_value),
-                ("type", Value::text(kind.name())),
+                (
+                    "type",
+                    Value::text(if protected || excluded {
+                        "unknown"
+                    } else {
+                        kind.name()
+                    }),
+                ),
                 ("current", current),
                 ("value", value),
                 ("status", Value::text(status.name())),
@@ -186,7 +214,7 @@ impl<'a> Restore<'a> {
         selected: &Value,
         source: &Value,
     ) -> Result<Value, Error> {
-        let preview = self.preview(values, selected)?;
+        let preview = self.preview_source(values, selected, source)?;
         let Value::Array(entries) = preview.get("entries") else {
             return Err(Error::Source("expected restore preview entries".into()));
         };
@@ -209,6 +237,11 @@ impl<'a> Restore<'a> {
         for (key, value) in crate::json_fields::fields(values)? {
             let key_value = Value::Text(key.clone());
             let name = key_value.string()?;
+            if crate::params::internal_session(&name)
+                || (!source.text_eq("reset_defaults") && crate::params::backup_excluded(&name))
+            {
+                continue;
+            }
             let definition = self.catalog.by_name.get(&name);
             match Kind::resolve(&name, definition) {
                 Kind::Unknown | Kind::Json | Kind::Bytes => continue,

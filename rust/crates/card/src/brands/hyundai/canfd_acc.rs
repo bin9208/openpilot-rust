@@ -153,7 +153,11 @@ pub fn camera_acc(
         );
     }
     let stopping_input = AccInput { accel, ..*input };
-    apply_stopping(&mut data, state, (controller, &stopping_input, jerk_u))?;
+    apply_stopping(
+        &mut data,
+        state,
+        (controller, &stopping_input, jerk_u, false),
+    )?;
     let value = get(&data, "aReqValue")?;
     Ok((
         Some(writer.frame("SCC_CONTROL", input.bus, &data, None)?),
@@ -212,7 +216,7 @@ pub fn acc(
         ),
         ("ZEROS_7", 0.),
     ]);
-    apply_stopping(&mut data, state, (controller, input, input.jerk_u))?;
+    apply_stopping(&mut data, state, (controller, input, input.jerk_u, true))?;
     let value = get(&data, "aReqValue")?;
     Ok((writer.frame("SCC_CONTROL", input.bus, &data, None)?, value))
 }

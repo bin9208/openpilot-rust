@@ -1,7 +1,4 @@
-use crate::{
-    contract::{self, Identity},
-    Deadline, Error,
-};
+use crate::{contract::Identity, Deadline, Error};
 use serde::{Deserialize, Serialize};
 use std::{
     io::{Read, Write},
@@ -18,6 +15,11 @@ pub struct Hello {
     pub generation: String,
     pub spec: serde_json::Value,
     pub identity: Identity,
+    #[serde(default = "legacy_protocol")]
+    pub protocol: u16,
+}
+fn legacy_protocol() -> u16 {
+    2
 }
 
 pub fn recv_exact(
@@ -89,9 +91,11 @@ pub fn encode_generation(bytes: [u8; 16]) -> String {
 }
 
 pub struct ProxyClient {
+    source_sof: u64,
     stream: Option<UnixStream>,
     pub generation: [u8; 16],
     pub identity: Identity,
+    pub session: crate::session_contract::SessionContract,
 }
 impl ProxyClient {
     pub fn connect(path: &Path) -> Result<Self, Error> {
@@ -128,14 +132,22 @@ impl ProxyClient {
             return Err(Error::Contract("owner handshake"));
         }
         let hello: Hello = serde_json::from_slice(&reply[1..])?;
-        if !hello.ready || hello.spec != contract::contract()? {
+        if !hello.ready {
             return Err(Error::Contract("owner readiness/model"));
         }
         Ok(Self {
             stream: Some(stream),
+            source_sof: 0,
             generation: generation(&hello.generation)?,
+            session: crate::session_contract::SessionContract::parse(
+                hello.spec,
+                crate::wire::Version::from_u16(hello.protocol)?,
+            )?,
             identity: hello.identity,
         })
+    }
+    pub fn set_source_sof(&mut self, source_sof: u64) {
+        self.source_sof = source_sof;
     }
     pub fn dead(&self) -> bool {
         self.stream.is_none()
@@ -165,12 +177,15 @@ impl ProxyClient {
         deadline: Deadline,
         reset: bool,
     ) -> Result<Vec<f32>, Error> {
-        contract::check_input(warped, packed)?;
+        self.session.check_input(warped, packed)?;
         let stream = self.stream.as_mut().ok_or(Error::Closed)?;
-        let request = encode_request(self.generation, frame, deadline, reset, warped, packed);
+        let mut request = encode_request(self.generation, frame, deadline, reset, warped, packed);
+        if self.source_sof > 0 {
+            request.extend(self.source_sof.to_le_bytes());
+        }
         send_packet(stream, &request, deadline)?;
         let reply = recv_packet(stream, deadline)?;
-        if reply.len() != 21 + contract::OUTPUT_FLOATS * 4
+        if reply.len() != 21 + self.session.spec.output_count()? * 4
             || reply[0] != b'R'
             || reply[1..17] != self.generation
             || reply[17..21] != frame.to_le_bytes()
@@ -178,7 +193,7 @@ impl ProxyClient {
             return Err(Error::Contract("output identity"));
         }
         let output = decode_floats(&reply[21..])?;
-        contract::check_output(&output)?;
+        self.session.check_output(&output)?;
         deadline.remaining()?;
         Ok(output)
     }

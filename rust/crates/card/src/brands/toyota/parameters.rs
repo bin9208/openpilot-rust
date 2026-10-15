@@ -152,6 +152,11 @@ pub fn parameters(input: ParamsInput<'_>) -> Result<Message, Error> {
         }
     }
     cp.set_flags(flags);
+    if super::supports_ars510("toyota", input.candidate, flags) {
+        cp.set_radar_unavailable(false);
+        cp.set_radar_time_step(0.06);
+        cp.set_radar_delay(0.);
+    }
     let mut config = cp.reborrow().init_safety_configs(1).get(0);
     config.set_safety_model(SafetyModel::Toyota);
     config.set_safety_param(safety);

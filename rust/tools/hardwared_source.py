@@ -6,6 +6,7 @@ import io
 from numbers import Number
 from pathlib import Path
 import queue
+import subprocess
 import threading
 from types import SimpleNamespace
 
@@ -13,10 +14,11 @@ import numpy as np
 from openpilot.cereal import car, log
 
 ROOT = Path(__file__).resolve().parents[2]
+SOURCE_COMMIT = 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
 
 
 def load(path, scope):
-  tree = ast.parse((ROOT / path).read_text())
+  tree = ast.parse(subprocess.check_output(['git', 'show', f'{SOURCE_COMMIT}:{path}'], cwd=ROOT))
   tree.body = [
     node for node in tree.body if not isinstance(node, (ast.Import, ast.ImportFrom)) and not (isinstance(node, ast.If) and isinstance(node.test, ast.Compare))
   ]

@@ -3,6 +3,7 @@
 static int runtime_sessions = 0, runtime_port = 0, runtime_round = 0, runtime_cursor = 0;
 static int runtime_ports[3], runtime_count = 0;
 static uint64_t runtime_sof = 0;
+static int64_t runtime_completed[3] = {};
 
 static uint64_t runtime_now() {
   timespec value{};
@@ -25,6 +26,7 @@ static int runtime_open(const char* path, int flags) {
   if (sscanf(path, "/dev/v4l-subdev%d%n", &index, &consumed) == 1 && path[consumed] == 0) {
     if (index == 0) return 503;
     if (index == 1) return 504;
+    if (index >= 2 && index <= 4 && setting("CK_MISSING_NODE", -1) == index - 2) { errno = ENOENT; return -2; }
     if (index >= 2 && index <= 4) { runtime_port = index - 2; return 510 + runtime_port; }
     if (index >= 5 && index <= 7) return 520 + index - 5;
     errno = ENOENT; return -2;
@@ -37,29 +39,45 @@ static void runtime_pause() {
   syscall(SYS_nanosleep, &delay, nullptr);
 }
 
-static void runtime_poll() {
+static int runtime_poll(struct pollfd* fds, nfds_t count, int timeout) {
   static bool initialized = false;
   if (!initialized) {
     const char* names[] = {"DISABLE_WIDE_ROAD", "DISABLE_ROAD", "DISABLE_DRIVER"};
     for (int port = 0; port < 3; ++port) {
-      if (!getenv(names[port]) && setting("CK_MISSING_PORT", -1) != port) runtime_ports[runtime_count++] = port;
+      if (!getenv(names[port]) && setting("CK_MISSING_PORT", -1) != port && setting("CK_MISSING_NODE", -1) != port)
+        runtime_ports[runtime_count++] = port;
     }
     trace("{\"op\":\"runtime-ready\",\"streams\":%d}", runtime_count);
     initialized = true;
   }
   const char* gate = getenv("CK_START_GATE");
-  while (gate && syscall(SYS_faccessat, AT_FDCWD, gate, F_OK) != 0) {
-    runtime_pause();
-  }
+  while (gate && syscall(SYS_faccessat, AT_FDCWD, gate, F_OK) != 0) runtime_pause();
   if (runtime_cursor == 0) {
-    uint64_t now = runtime_now();
-    if (!runtime_sof) runtime_sof = now;
-    else runtime_sof += 50000000;
-    while (runtime_now() < runtime_sof + 40000000) runtime_pause();
+    uint64_t next = runtime_sof ? runtime_sof + 50000000 : runtime_now();
+    uint64_t deadline = next + 40000000, now = runtime_now();
+    if (now < deadline) {
+      uint64_t remaining = deadline - now;
+      timespec delay{static_cast<time_t>(remaining / 1000000000), static_cast<long>(remaining % 1000000000)};
+      int completed = syscall(SYS_ppoll, fds + 1, count - 1, &delay, nullptr, 0);
+      if (completed != 0) return completed;
+    }
+    runtime_sof = next;
     ++runtime_round;
   }
-  trace("{\"op\":\"runtime-poll\",\"round\":%d,\"port\":%d,\"sof\":%llu}", runtime_round, runtime_ports[runtime_cursor],
-        static_cast<unsigned long long>(runtime_sof));
+  // Real eventfds are polled alongside the controlled request-manager source.
+  timespec zero{};
+  int completed = syscall(SYS_ppoll, fds + 1, count - 1, &zero, nullptr, 0);
+  if (completed < 0) return completed;
+  trace("{\"op\":\"runtime-poll\",\"round\":%d,\"port\":%d,\"sof\":%llu}", runtime_round,
+        runtime_ports[runtime_cursor], static_cast<unsigned long long>(runtime_sof));
+  int ret = setting("CK_POLL_RETURN", 1), error = 0;
+  failure("poll", ret, error);
+  short before = fds[0].revents;
+  fds[0].revents = setting("CK_POLL_EVENTS", POLLPRI);
+  trace("{\"op\":\"poll\",\"fd\":501,\"count\":%lu,\"timeout\":%d,\"events\":%d,\"before\":%d,\"after\":%d,\"ret\":%d,\"errno\":%d}",
+        static_cast<unsigned long>(count), timeout, fds[0].events, before, fds[0].revents, ret, error);
+  errno = error;
+  return ret < 0 ? ret : ret + completed;
 }
 
 static void runtime_event(cam_req_mgr_message* data) {

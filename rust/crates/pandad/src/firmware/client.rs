@@ -51,6 +51,7 @@ pub struct Client<E: Environment> {
     assume_f4: bool,
     mcu: Option<Mcu>,
     versions: [u8; 3],
+    tesla_wake: bool,
 }
 
 impl<E: Environment> Client<E> {
@@ -64,6 +65,7 @@ impl<E: Environment> Client<E> {
             assume_f4: false,
             mcu: None,
             versions: [0; 3],
+            tesla_wake: false,
         };
         client.connect(true, false)?;
         Ok(client)
@@ -138,9 +140,27 @@ impl<E: Environment> Client<E> {
             .ok_or_else(|| Fault::Other("Panda MCU is not initialized".into()))
     }
 
-    pub fn expected_signature(&mut self) -> Result<Vec<u8>, Fault> {
+    pub fn select_tesla_wake(&mut self, enabled: bool) {
+        self.tesla_wake = enabled;
+    }
+
+    pub fn selected_firmware_path(&mut self) -> Result<PathBuf, Fault> {
         let mcu = self.mcu_type()?;
-        let path = self.environment.firmware_dir().join(mcu.app_filename());
+        let path = self
+            .environment
+            .firmware_dir()
+            .join(mcu.app_filename_for_wake(self.tesla_wake));
+        if self.tesla_wake && !self.environment.file_exists(&path)? {
+            return Err(Fault::Other(format!(
+                "Tesla wake firmware is missing: {}",
+                path.display()
+            )));
+        }
+        Ok(path)
+    }
+
+    pub fn expected_signature(&mut self) -> Result<Vec<u8>, Fault> {
+        let path = self.selected_firmware_path()?;
         self.environment.file_read(&path, Some(128))
     }
 
@@ -205,7 +225,7 @@ impl<E: Environment> Client<E> {
             None => self
                 .environment
                 .firmware_dir()
-                .join(self.cached_mcu()?.app_filename()),
+                .join(self.cached_mcu()?.app_filename_for_wake(self.tesla_wake)),
         };
         if !self.environment.file_exists(&path)? {
             return Err(Fault::Other("firmware file missing".into()));
@@ -328,16 +348,16 @@ impl<E: Environment> Panda for Client<E> {
         self.recover_with_timeout(Some(60.0), reset).map(|_| ())
     }
     fn health(&mut self) -> Result<Health, Fault> {
-        if self.versions[0] != 16 {
+        if self.versions[0] != Health::PACKET_VERSION {
             return Err(Fault::Other(format!(
-                "health packet version mismatch: panda's firmware v{}, library v16. Reflash panda.",
+                "health packet version mismatch: panda's firmware v{}, library v17. Reflash panda.",
                 self.versions[0]
             )));
         }
         let bytes = self.read(0xd2, Health::PACKET_SIZE)?;
         let packet = bytes
             .try_into()
-            .map_err(|_| Fault::Other("health packet length is not 58".into()))?;
+            .map_err(|_| Fault::Other("health packet length is not 59".into()))?;
         Ok(Health::from_packet(&packet))
     }
     fn reset(&mut self) -> Result<(), Fault> {

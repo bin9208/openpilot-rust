@@ -58,7 +58,7 @@ impl NativeException {
             kind: std::any::type_name::<E>().into(),
             message: error.to_string(),
             causes,
-            backtrace: Some(std::backtrace::Backtrace::capture().to_string()),
+            backtrace: Some(std::backtrace::Backtrace::force_capture().to_string()),
         }
     }
     pub fn diagnostic(&self) -> String {

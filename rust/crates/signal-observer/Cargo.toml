@@ -1,0 +1,140 @@
+[package]
+name = "openpilot-signal-observer"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT AND BSD-3-Clause"
+publish = false
+
+[lints.rust]
+unsafe_code = "deny"
+
+[features]
+default = ["native-skip-miri"]
+native-skip-miri = ["openpilot-opencv-runtime/native-skip-miri"]
+
+neural-numerics = ["dep:openpilot-signal-numerics", "openpilot-signal-numerics/native-skip-miri"]
+
+neural-qcom = ["neural-numerics", "native-skip-miri", "dep:openpilot-model-runtime", "dep:openpilot-runtime-package"]
+
+neural-ort = ["neural-numerics","native-skip-miri", "dep:openpilot-onnx-runtime", "openpilot-onnx-runtime/native-skip-miri"]
+
+daemon = ["native-skip-miri", "dep:openpilot-beepd", "dep:openpilot-msgq", "dep:openpilot-params", "dep:openpilot-logging", "dep:openpilot-managed-entry", "dep:signal-hook"]
+
+[dependencies]
+openpilot-model-runtime = { path = "../model-runtime", optional = true }
+openpilot-runtime-package = { path = "../runtime-package", optional = true }
+openpilot-beepd = { path = "../beepd", optional = true }
+openpilot-signal-numerics = { path = "../signal-numerics", optional = true }
+openpilot-onnx-runtime = { path = "../onnx-runtime", optional = true }
+openpilot-msgq = { path = "../msgq", optional = true }
+openpilot-params = { path = "../params", optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+openpilot-managed-entry = { path = "../managed-entry", optional = true }
+signal-hook = { version = "0.3", optional = true }
+openpilot-opencv-runtime = { path = "../opencv-runtime", default-features = false }
+openpilot-control-policy = { path = "../control-policy", default-features = false }
+openpilot-plannerd = { path = "../plannerd", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+thiserror = "2"
+sha2 = "0.10"
+libc = "0.2"
+rustix = { version = "1", features = ["time", "process", "thread", "fs"] }
+
+[[example]]
+name = "signal_pixels_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "signal_detector_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "signal_process_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "signal_scheduling_trace"
+
+[[example]]
+name = "signal_publication_trace"
+
+[[example]]
+name = "signal_backend_trace"
+
+[[example]]
+name = "signal_nv12_trace"
+required-features = ["native-skip-miri"]
+
+[[bin]]
+name = "openpilot-signalcolord"
+path = "src/main.rs"
+required-features = ["daemon"]
+
+[[example]]
+name = "signal_runtime_trace"
+required-features = ["daemon"]
+
+[[example]]
+name = "signal_neural_sequence_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "signal_neural_math_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "signal_neural_inference_trace"
+required-features = ["neural-ort"]
+
+[[example]]
+name = "signal_neural_real_sequence_trace"
+required-features = ["neural-ort"]
+
+[[example]]
+name = "signal_numpy_dispatch_trace"
+required-features = ["neural-numerics"]
+
+[[example]]
+name = "signal_neural_warmup_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "signal_neural_runtime_trace"
+required-features = ["daemon", "neural-ort"]
+
+[[example]]
+name = "signal_auto_runtime_trace"
+required-features = ["daemon"]
+
+[[example]]
+name = "signal_mode_parameter_trace"
+required-features = ["daemon"]
+
+[[example]]
+name = "signal_flag_files_trace"
+required-features = ["daemon"]
+
+[[example]]
+name = "signal_entry_runtime_trace"
+required-features = ["daemon", "neural-ort"]
+
+[[example]]
+name = "signal_classical_publication_trace"
+required-features = ["daemon"]
+
+[[example]]
+name = "signal_entry_phases_trace"
+required-features = ["daemon"]
+
+[[example]]
+name = "signal_neural_publication_trace"
+required-features = ["daemon", "neural-ort"]
+
+[[example]]
+name = "signal_live_worker_trace"
+required-features = ["daemon"]
+
+[dev-dependencies]
+tempfile = "3"

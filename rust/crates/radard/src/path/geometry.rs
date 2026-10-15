@@ -63,7 +63,41 @@ impl Geometry {
                 };
             }
         }
+        if let Some((tx, ty, total, max_x)) = self.terminal_tangent() {
+            if x > max_x && best.path_s >= total - 2. {
+                best.tangent_x = tx;
+                best.tangent_y = ty;
+                best.d_path = -ty * (x - best.center_x) + tx * (y - best.center_y);
+            }
+        }
         best
+    }
+
+    fn terminal_tangent(&self) -> Option<(f64, f64, f64, f64)> {
+        let mut remaining = 2.;
+        for &[x, y, tx, ty, length, _] in self.segments.iter().rev() {
+            if length < remaining {
+                remaining -= length;
+                continue;
+            }
+            let anchor_x = x + tx * (length - remaining);
+            let anchor_y = y + ty * (length - remaining);
+            let end = self.points.last()?;
+            let dx = end[0] - anchor_x;
+            let dy = end[1] - anchor_y;
+            let span = norm(&[dx, dy]);
+            if dx <= 0. || span < 1. {
+                return None;
+            }
+            let last = self.segments.last()?;
+            let max_x = self
+                .points
+                .iter()
+                .map(|p| p[0])
+                .fold(f64::NEG_INFINITY, f64::max);
+            return Some((dx / span, dy / span, last[5] + last[4], max_x));
+        }
+        None
     }
 
     pub fn at(&self, distance: f64, offset: f64) -> [f64; 2] {

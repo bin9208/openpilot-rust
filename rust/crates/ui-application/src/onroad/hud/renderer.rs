@@ -30,13 +30,16 @@ pub struct Snapshot {
     pub cluster_seen: bool,
     pub engaged: bool,
     pub animation_text: String,
-    pub animation_time: i32,
+    pub animation_time: f64,
     pub blink: i32,
     pub display: i32,
     pub settings: [i32; 5],
     pub params_next: f64,
 }
+type OverlayKey = (Option<crate::overlay_state::Key>, bool, bool, i32);
 pub struct Hud {
+    overlay: openpilot_ui_framework::overlay::PaintLayer<OverlayKey>,
+    overlay_state: Option<crate::overlay_state::Shared>,
     state: WidgetState,
     context: Context,
     pub exp: ExpButton,
@@ -52,6 +55,8 @@ pub struct Hud {
     traffic_green: Texture,
     turns: [Texture; 5],
     blink: i32,
+    blink_phase: f64,
+    clock: crate::display_clock::DisplayClock,
     display: i32,
     cpu_temp: f64,
     memory_usage: i8,
@@ -62,10 +67,14 @@ pub struct Hud {
     settings: [i32; 5],
     cruise_text_last: String,
     animation_text: String,
-    animation_time: i32,
+    animation_time: f64,
+    animation_started: f64,
     plot: plot::Plot,
 }
 impl Hud {
+    pub fn set_overlay_state(&mut self, state: crate::overlay_state::Shared) {
+        self.overlay_state = Some(state);
+    }
     pub fn new(context: Context, canvas: &mut Canvas) -> Result<Self, Error> {
         let mut turns = Vec::with_capacity(5);
         for path in [
@@ -78,6 +87,8 @@ impl Hud {
             turns.push(canvas.texture(&format!("images/{path}.png"), Default::default())?);
         }
         Ok(Self {
+            overlay: openpilot_ui_framework::overlay::PaintLayer::new(1),
+            overlay_state: None,
             state: WidgetState::default(),
             exp: ExpButton::new(context.clone(), canvas, 192, 144)?,
             context,
@@ -95,6 +106,8 @@ impl Hud {
                 .try_into()
                 .map_err(|_| Error::Contract("HUD turn textures"))?,
             blink: 0,
+            blink_phase: 0.,
+            clock: Default::default(),
             display: 0,
             cpu_temp: 0.0,
             memory_usage: 0,
@@ -105,7 +118,8 @@ impl Hud {
             settings: [0, 0, 1, 0, 7],
             cruise_text_last: String::new(),
             animation_text: String::new(),
-            animation_time: -1,
+            animation_time: -1.,
+            animation_started: 0.,
             plot: plot::Plot::default(),
         })
     }
@@ -210,11 +224,15 @@ impl Hud {
         )
     }
     fn animate(&mut self, draw: &mut dyn Draw) -> Result<(), Error> {
-        if self.animation_time <= 0 || self.animation_text.is_empty() {
+        if self.animation_time <= 0. || self.animation_text.is_empty() {
             return Ok(());
         }
-        self.animation_time -= 12;
-        let t = f64::from(self.animation_time.min(100));
+        let elapsed = (self.context.now_monotonic)() - self.animation_started;
+        self.animation_time = (120. - 12. * (1. + elapsed * 20.)).max(0.);
+        if elapsed >= 0.5 {
+            return Ok(());
+        }
+        let t = self.animation_time.min(100.);
         let rect = self.state.rect;
         let [x, y, w, h] = [rect.x, rect.y, rect.width, rect.height].map(f64::from);
         let position = [
@@ -228,12 +246,34 @@ impl Hud {
             position,
             ((300.0 * t + 60.0 * (100.0 - t)) / 100.0).trunc(),
             paint::color(0, 203, 0, 255),
-            if self.animation_time >= 100 {
+            if self.animation_time >= 100. {
                 [9.0, 8.0]
             } else {
                 [3.0, 0.0]
             },
         )
+    }
+}
+impl Hud {
+    fn paint_layer(&mut self, draw: &mut dyn Draw, rect: Rect) -> Result<(), Error> {
+        let top = paint::color(0, 0, 0, 114);
+        draw.gradient(
+            Rect {
+                x: rect.x.trunc(),
+                y: rect.y.trunc(),
+                width: rect.width.trunc(),
+                height: 300.0,
+            },
+            [top, 0, 0, top],
+        )?;
+        if self.cruise_available {
+            self.panels(draw)?;
+        }
+        self.plot.paint(draw, rect)?;
+        self.date(draw)?;
+        self.tpms(draw)?;
+        common::badge(&self.context, draw, rect)?;
+        Ok(())
     }
 }
 impl Widget for Hud {
@@ -244,6 +284,10 @@ impl Widget for Hud {
         &mut self.state
     }
     fn update(&mut self, _: &Frame<'_>, _: &mut dyn Draw) -> Result<(), Error> {
+        self.blink_phase =
+            (self.blink_phase + self.clock.tick((self.context.now_monotonic)())) % 64.;
+        self.display = math::integer(self.blink_phase)?;
+        self.blink = self.display % 16;
         let sm = self.context.messages.borrow();
         let frames = (
             sm.state
@@ -294,6 +338,20 @@ impl Widget for Hud {
         self.cruise_set = self.set_speed > 0.0 && self.set_speed < 255.0;
         self.cruise_available = self.set_speed != -1.0;
         self.engaged = messages::selfdrive_state(&sm.state)?.get_enabled();
+        let metric = self.context.ui.borrow().realtime.value.is_metric;
+        let cruise = if self.engaged && self.cruise_set {
+            format!("{:.0}", self.set_speed * if metric { 1. } else { 0.621371 })
+        } else {
+            "--".into()
+        };
+        if cruise != self.cruise_text_last {
+            self.cruise_text_last = cruise.clone();
+            if cruise != "--" {
+                self.animation_text = cruise;
+                self.animation_time = 120.;
+                self.animation_started = (self.context.now_monotonic)();
+            }
+        }
         let cluster = f64::from(car.get_v_ego_cluster());
         self.cluster_seen |= cluster != 0.0;
         let speed = if self.cluster_seen {
@@ -313,19 +371,33 @@ impl Widget for Hud {
     fn paint(&mut self, frame: &Frame<'_>, draw: &mut dyn Draw) -> Result<RenderResult, Error> {
         self.refresh((self.context.now_monotonic)());
         let rect = self.state.rect;
-        let top = paint::color(0, 0, 0, 114);
-        draw.gradient(
-            Rect {
-                x: rect.x.trunc(),
-                y: rect.y.trunc(),
-                width: rect.width.trunc(),
-                height: 300.0,
-            },
-            [top, 0, 0, top],
-        )?;
-        if self.cruise_available {
-            self.panels(draw)?;
-        }
+        self.plot.update(&self.context, self.settings[3])?;
+        let state = self
+            .overlay_state
+            .as_ref()
+            .map(|s| s.borrow().clone())
+            .unwrap_or_default();
+        let key = (
+            state.key.clone(),
+            self.blink <= 8,
+            self.display < 32,
+            self.settings[3],
+        );
+        let mut overlay = std::mem::replace(
+            &mut self.overlay,
+            openpilot_ui_framework::overlay::PaintLayer::new(1),
+        );
+        let clock = self.context.now_monotonic.clone();
+        let result = overlay.paint(
+            draw,
+            rect,
+            key,
+            state.control(frame.index),
+            || clock(),
+            |draw| self.paint_layer(draw, rect),
+        );
+        self.overlay = overlay;
+        result?;
         self.exp.set_rect(Rect {
             x: math::float(f64::from(rect.x) + f64::from(rect.width) - 30.0 - 192.0),
             y: math::float(f64::from(rect.y) + 30.0),
@@ -333,11 +405,6 @@ impl Widget for Hud {
             height: 192.0,
         });
         self.exp.render(frame, draw)?;
-        self.plot
-            .draw(&self.context, draw, rect, self.settings[3])?;
-        self.date(draw)?;
-        self.tpms(draw)?;
-        common::badge(&self.context, draw, rect)?;
         self.animate(draw)?;
         Ok(RenderResult::None)
     }
