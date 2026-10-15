@@ -158,3 +158,70 @@ fn positional_mode_preserves_literal_terminator_and_deferred_extras() {
     assert!(scan_with_positionals(&["out".into(), "--".into()], &specs, 1).is_ok());
     assert!(scan(&["--".into(), "--help".into()], &specs).is_err());
 }
+#[test]
+fn pinned_python_unicode_fifteen_decimal_inventory_and_newer_digit_rejections() {
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/panda-cli/python-decimal.json")).unwrap();
+    assert_eq!(fixture["unicode_version"], "15.0.0");
+    let specs = [OptionSpec::value("--output", true)];
+    let mut count = 0;
+    for range in fixture["ranges"].as_array().unwrap() {
+        for point in range[0].as_u64().unwrap()..=range[1].as_u64().unwrap() {
+            let digit = char::from_u32(point as u32).unwrap();
+            for value in [
+                format!("-{digit}"),
+                format!("-.{digit}"),
+                format!("-{digit}.{digit}\n"),
+            ] {
+                let parsed = scan(&["--output".into(), value.clone()], &specs).unwrap();
+                assert_eq!(parsed.values["--output"], value);
+            }
+            count += 1;
+        }
+    }
+    assert_eq!(count, 680);
+    for digit in ['\u{10d40}', '\u{1ccf0}', '²', '①'] {
+        assert!(scan(
+            &["--output".into(), format!("-{digit}"), "--help".into()],
+            &specs
+        )
+        .is_err());
+    }
+}
+#[test]
+fn append_actions_preserve_order_inline_values_and_raw_bytes() {
+    use openpilot_dev_tools::argparse_scan::scan_os_with_positionals;
+    use std::{
+        ffi::OsString,
+        os::unix::ffi::{OsStrExt, OsStringExt},
+    };
+    let raw = OsString::from_vec(b"prefix-\xff".to_vec());
+    let args = vec![
+        "--runner=first".into(),
+        "--r".into(),
+        raw.clone(),
+        "--runner=--flag".into(),
+        "binary".into(),
+        "original".into(),
+        "output".into(),
+    ];
+    let parsed = scan_os_with_positionals(&args, &[OptionSpec::append("--runner")], 3).unwrap();
+    assert_eq!(
+        parsed.append_values["--runner"],
+        [
+            OsString::from("first"),
+            raw.clone(),
+            OsString::from("--flag")
+        ]
+    );
+    assert_eq!(
+        parsed.append_values["--runner"][1].as_bytes(),
+        raw.as_bytes()
+    );
+    assert!(scan_os_with_positionals(
+        &["--runner".into(), "--help".into()],
+        &[OptionSpec::append("--runner")],
+        3
+    )
+    .is_err());
+}

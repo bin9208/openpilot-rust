@@ -86,9 +86,11 @@ class UiCheck:
       [str(examples / 'calibration_geometry'), str(self.output / 'calibration'), display])
     self.check('torque', 'check_ui_torque_geometry.py',
       ['--binary', str(examples / 'torque_geometry'), '--output', str(self.output / 'torque')])
-    self.check('native-safety', 'check_ui_native_safety.py', ['--target', str(self.binaries),
+    require_space(self.output, 3 * 1024**3)
+    run([str(self.binaries / 'check-ui-native-safety'), '--target', str(self.binaries),
       '--output', str(self.output / 'native-safety'), '--display', display,
-      '--raylib-root', os.environ['STARTUP_UI_RAYLIB_ROOT'], '--raylib-library', os.environ['STARTUP_UI_RAYLIB_LIBRARY']])
+      '--raylib-root', os.environ['STARTUP_UI_RAYLIB_ROOT'], '--raylib-library', os.environ['STARTUP_UI_RAYLIB_LIBRARY']],
+      self.commands, 'native-safety')
     for kind in ('model', 'training'):
       require_space(self.output, 3 * 1024**3)
       run(['env', f'DISPLAY={display}', str(self.binaries / f'check-ui-{kind}-adapter'),
@@ -122,7 +124,7 @@ def main() -> None:
   source_paths = [Path(__file__), ROOT / 'rust/Cargo.lock', ROOT / 'uv.lock']
   source_paths += list(TOOLS.glob('check_ui_*.py')) + list((TOOLS / 'ui_application_qa').glob('*.py'))
   source_paths += [TOOLS / name for name in ('ui_model_qa/bridge_asan.cc', 'ui_home_qa/bridge_asan.cc',
-    'startup_ui_qa/cxx_runtime.rs')]
+    'startup_ui_qa/cxx_runtime.rs', 'startup_ui_qa/bridge_asan.cc', 'ui_application_qa/params_numeric_asan.cc')]
   for name in ('dev-tools', 'log-format', 'disk-space', 'runtime-core'):
     source_paths += list((ROOT / 'rust/crates' / name / 'src').rglob('*.rs'))
     source_paths += [ROOT / 'rust/crates' / name / 'Cargo.toml']
@@ -132,6 +134,7 @@ def main() -> None:
   executables = [binaries / 'openpilot-ui', peer, Path(os.environ['STARTUP_UI_RAYLIB_LIBRARY'])]
   executables += [binaries / 'examples' / name for name in EXAMPLES]
   executables += [binaries / f'check-ui-{kind}-adapter' for kind in ('model', 'training')]
+  executables += [binaries / 'check-ui-native-safety']
   receipt = {'argv': sys.argv, 'source_sha256': hashes(source_paths), 'python_imports': imports,
     'versions': {name: importlib.metadata.version(name) for name in ('numpy', 'pillow', 'comma-deps-raylib',
       'cffi', 'python-xlib', 'pyzmq', 'pycapnp', 'requests', 'qrcode', 'setproctitle', 'Cython', 'setuptools')},

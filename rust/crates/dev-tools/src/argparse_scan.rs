@@ -14,6 +14,7 @@ pub struct OptionSpec {
     takes_value: bool,
     required: bool,
     group: Option<&'static str>,
+    append: bool,
 }
 impl OptionSpec {
     pub const fn value(name: &'static str, required: bool) -> Self {
@@ -22,6 +23,16 @@ impl OptionSpec {
             takes_value: true,
             required,
             group: None,
+            append: false,
+        }
+    }
+    pub const fn append(name: &'static str) -> Self {
+        Self {
+            name,
+            takes_value: true,
+            required: false,
+            group: None,
+            append: true,
         }
     }
     pub const fn flag(name: &'static str, group: Option<&'static str>) -> Self {
@@ -30,6 +41,7 @@ impl OptionSpec {
             takes_value: false,
             required: false,
             group,
+            append: false,
         }
     }
 }
@@ -37,19 +49,29 @@ pub struct Parsed {
     pub values: BTreeMap<String, String>,
     pub help: bool,
     pub positionals: Vec<String>,
+    pub append_values: BTreeMap<String, Vec<String>>,
+}
+mod python_decimal;
+fn decimal(value: &str) -> bool {
+    value.chars().all(|ch| {
+        python_decimal::RANGES
+            .iter()
+            .any(|&(first, last)| (first..=last).contains(&u32::from(ch)))
+    })
+}
+fn negative_number(value: &str) -> bool {
+    let value = value.strip_suffix('\n').unwrap_or(value);
+    let Some(body) = value.strip_prefix('-') else {
+        return false;
+    };
+    if let Some((before, after)) = body.split_once('.') {
+        !after.is_empty() && decimal(before) && decimal(after)
+    } else {
+        !body.is_empty() && decimal(body)
+    }
 }
 fn option(value: &str) -> bool {
-    static NEGATIVE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-    // argparse treats unknown strings containing ASCII spaces as positional values.
-    !value.contains(' ')
-        && value != "-"
-        && value.starts_with('-')
-        && !NEGATIVE
-            .get_or_init(|| {
-                regex::Regex::new(r"^-\d+$|^-\d*\.\d+$").expect("fixed negative-number pattern")
-            })
-            // Python's `$` also matches immediately before one final newline.
-            .is_match(value.strip_suffix('\n').unwrap_or(value))
+    !value.contains(' ') && value != "-" && value.starts_with('-') && !negative_number(value)
 }
 pub fn scan(args: &[String], specs: &[OptionSpec]) -> Result<Parsed, ArgumentError> {
     scan_with_positionals(args, specs, 0)
@@ -98,6 +120,7 @@ pub fn scan_with_positionals(
         });
     }
     let mut values = BTreeMap::new();
+    let mut append_values: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut groups = BTreeMap::new();
     let mut extras = false;
     let mut positionals = Vec::new();
@@ -134,6 +157,7 @@ pub fn scan_with_positionals(
                     values,
                     help: true,
                     positionals,
+                    append_values,
                 });
             }
             if let Some(group) = spec.group {
@@ -156,7 +180,14 @@ pub fn scan_with_positionals(
                     .filter(|v| classified[i].is_none() && !option(v))
                     .ok_or_else(|| ArgumentError(format!("{} requires a value", spec.name)))?
             };
-            values.insert(spec.name.to_owned(), value.to_owned());
+            if spec.append {
+                append_values
+                    .entry(spec.name.to_owned())
+                    .or_default()
+                    .push(value.to_owned());
+            } else {
+                values.insert(spec.name.to_owned(), value.to_owned());
+            }
         }
         i += 1;
     }
@@ -164,7 +195,10 @@ pub fn scan_with_positionals(
         return Err(ArgumentError("unrecognized arguments".into()));
     }
     for spec in specs {
-        if spec.required && !values.contains_key(spec.name) {
+        if spec.required
+            && !values.contains_key(spec.name)
+            && !append_values.contains_key(spec.name)
+        {
             return Err(ArgumentError(format!("{} required", spec.name)));
         }
     }
@@ -172,6 +206,7 @@ pub fn scan_with_positionals(
         values,
         help: false,
         positionals,
+        append_values,
     })
 }
 
@@ -182,6 +217,7 @@ pub struct ParsedOs {
     pub values: BTreeMap<String, std::ffi::OsString>,
     pub help: bool,
     pub positionals: Vec<std::ffi::OsString>,
+    pub append_values: BTreeMap<String, Vec<std::ffi::OsString>>,
 }
 pub fn scan_os(
     args: &[std::ffi::OsString],
@@ -258,5 +294,10 @@ pub fn scan_os_with_positionals(
             .collect(),
         help: parsed.help,
         positionals: parsed.positionals.iter().map(|v| decode(v)).collect(),
+        append_values: parsed
+            .append_values
+            .into_iter()
+            .map(|(key, values)| (key, values.iter().map(|value| decode(value)).collect()))
+            .collect(),
     })
 }

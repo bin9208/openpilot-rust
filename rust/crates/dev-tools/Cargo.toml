@@ -9,6 +9,14 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-ui-native-safety"
+path = "src/bin/check_ui_native_safety.rs"
+
+[[bin]]
+name = "check-ui-native-resources"
+path = "src/bin/check_ui_native_resources.rs"
+
+[[bin]]
 name = "check-ui-model-adapter"
 path = "src/bin/check_ui_model_adapter.rs"
 

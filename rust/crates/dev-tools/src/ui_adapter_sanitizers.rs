@@ -10,7 +10,7 @@ use std::{
     collections::BTreeMap,
     ffi::OsString,
     fs,
-    os::unix::{ffi::OsStrExt, fs::MetadataExt},
+    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -45,7 +45,10 @@ fn report(commands: &[Vec<OsString>], capture_bytes: u64) -> Result<String> {
             Ok(format!("    [\n{}\n    ]", args.join(",\n")))
         })
         .collect::<Result<Vec<_>>>()?;
-    Ok(format!("{{\n  \"passed\": true,\n  \"invocations\": [\n{}\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": {capture_bytes}\n}}",invocations.join(",\n")))
+    Ok(format!(
+        "{{\n  \"passed\": true,\n  \"invocations\": [\n{}\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": {capture_bytes}\n}}",
+        invocations.join(",\n")
+    ))
 }
 fn newest(root: &Path, candidates: Vec<PathBuf>) -> Result<PathBuf> {
     let mut best: Option<(PathBuf, f64)> = None;
@@ -59,13 +62,6 @@ fn newest(root: &Path, candidates: Vec<PathBuf>) -> Result<PathBuf> {
     best.map(|(p, _)| p)
         .ok_or_else(|| "no matching UI adapter build artifact".into())
 }
-fn entries(path: &Path) -> Result<Vec<fs::DirEntry>> {
-    match fs::read_dir(path) {
-        Ok(entries) => Ok(entries.collect::<std::io::Result<_>>()?),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(vec![]),
-        Err(error) => Err(error.into()),
-    }
-}
 pub fn check(
     root: &Path,
     target: &Path,
@@ -77,42 +73,18 @@ pub fn check(
 ) -> Result<()> {
     let evidence_path = physical(root, evidence);
     fs::create_dir_all(&evidence_path)?;
-    let mut headers = vec![];
-    for entry in entries(&physical(root, &target.join("build")))? {
-        if entry
-            .file_name()
-            .as_bytes()
-            .starts_with(b"openpilot-startup-ui-")
-        {
-            let candidate = target
-                .join("build")
-                .join(entry.file_name())
-                .join("out/cxxbridge/include/openpilot-startup-ui/src/bridge.rs.h");
-            match fs::symlink_metadata(physical(root, &candidate)) {
-                Ok(_) => headers.push(candidate),
-                Err(e)
-                    if matches!(
-                        e.kind(),
-                        std::io::ErrorKind::NotFound | std::io::ErrorKind::NotADirectory
-                    ) => {}
-                Err(e) => return Err(e.into()),
-            }
-        }
-    }
+    let headers = crate::python_glob::glob(
+        root,
+        target,
+        "build/openpilot-startup-ui-*/out/cxxbridge/include/openpilot-startup-ui/src/bridge.rs.h",
+    )?;
     let header = newest(root, headers)?;
     let include = header
         .parent()
         .and_then(Path::parent)
         .and_then(Path::parent)
         .ok_or("missing include parent")?;
-    let mut libraries = vec![];
-    for entry in entries(&physical(root, &target.join("deps")))? {
-        let name = entry.file_name();
-        let text = name.as_bytes();
-        if text.starts_with(b"libcxx-") && text.ends_with(b".rlib") {
-            libraries.push(target.join("deps").join(name));
-        }
-    }
+    let libraries = crate::python_glob::glob(root, target, "deps/libcxx-*.rlib")?;
     let cxx = newest(root, libraries)?;
     let runtime = evidence.join("libcxx_runtime.a");
     let (name, source) = match kind {

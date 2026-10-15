@@ -587,3 +587,99 @@ fn eighteen_original_glob_admissions_preserve_non_directories_and_dangling_failu
         }
     }
 }
+
+#[test]
+fn original_unscannable_prefixes_use_valid_alternate_for_both_adapters() {
+    use std::os::unix::fs::PermissionsExt;
+    assert_ne!(
+        rustix::process::geteuid().as_raw(),
+        0,
+        "permission oracle requires non-root execution"
+    );
+    struct PermissionPeer<'a> {
+        root: &'a Path,
+        calls: Vec<Vec<String>>,
+    }
+    impl Runner for PermissionPeer<'_> {
+        fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
+            let argv = spec.effective_argv();
+            self.calls.push(
+                argv.iter()
+                    .map(|v| {
+                        v.to_str()
+                            .unwrap()
+                            .replace(self.root.to_str().unwrap(), "ROOT")
+                    })
+                    .collect(),
+            );
+            fs::write(
+                Path::new(argv.last().unwrap()),
+                [b"archive".as_slice(), b"program", b"png"][self.calls.len() - 1],
+            )?;
+            Ok(Captured {
+                code: 0,
+                stdout: b"controlled\xff\r".to_vec(),
+                stderr: vec![],
+            })
+        }
+    }
+    let fixture: Value = serde_json::from_str(include_str!(
+        "fixtures/ui-adapter-sanitizers/permissions.json"
+    ))
+    .unwrap();
+    for row in fixture["cases"].as_array().unwrap() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let target = root.join("target");
+        for (name, seconds) in [("valid", 100), ("denied", 300)] {
+            let h = target.join(format!("build/openpilot-startup-ui-{name}/out/cxxbridge/include/openpilot-startup-ui/src/bridge.rs.h"));
+            fs::create_dir_all(h.parent().unwrap()).unwrap();
+            fs::write(&h, b"header").unwrap();
+            fs::File::open(h)
+                .unwrap()
+                .set_modified(UNIX_EPOCH + Duration::from_secs(seconds))
+                .unwrap();
+        }
+        fs::create_dir_all(target.join("deps")).unwrap();
+        fs::write(target.join("deps/libcxx-valid.rlib"), b"rlib").unwrap();
+        let denied = target.join("build/openpilot-startup-ui-denied");
+        fs::set_permissions(
+            &denied,
+            fs::Permissions::from_mode(row["mode"].as_u64().unwrap() as u32),
+        )
+        .unwrap();
+        let mut peer = PermissionPeer {
+            root,
+            calls: vec![],
+        };
+        let result = check(
+            root,
+            &target,
+            &root.join("raylib"),
+            &root.join("evidence"),
+            if row["family"] == "model" {
+                Kind::Model
+            } else {
+                Kind::Training
+            },
+            &mut peer,
+            &mut |_| Ok(()),
+        );
+        fs::set_permissions(denied, fs::Permissions::from_mode(0o755)).unwrap();
+        result.unwrap();
+        assert_eq!(json!(peer.calls), row["calls"]);
+        let actual: BTreeMap<String, String> = fs::read_dir(root.join("evidence"))
+            .unwrap()
+            .map(|entry| {
+                let path = entry.unwrap().path();
+                let bytes = fs::read(&path).unwrap();
+                let normalized = replace_bytes(&bytes, root.to_str().unwrap().as_bytes(), b"ROOT");
+                (
+                    path.file_name().unwrap().to_str().unwrap().into(),
+                    normalized.iter().map(|v| format!("{v:02x}")).collect(),
+                )
+            })
+            .collect();
+        assert_eq!(json!(actual), row["files"]);
+    }
+}

@@ -2138,8 +2138,8 @@ rust/tools/check_ui_mici_offroad_alerts.py	000a39c6789b001d4cbe1966bea98ec8271b1
 rust/tools/check_ui_model_adapter.py	3c06ce95033cf53255349790b2b956192f54f524	replaced-local	rust/crates/dev-tools/src/ui_adapter_sanitizers.rs
 rust/tools/check_ui_model_geometry.py	95b173320e2116bdec39b529ce6906d8648e6807	pending	-
 rust/tools/check_ui_model_render.py	945ac4b797722c858744d866e9eeee6aabaed80f	pending	-
-rust/tools/check_ui_native_resources.py	28a96b6c76051a055609a0d9c436bc0e1cb6f28d	pending	-
-rust/tools/check_ui_native_safety.py	7026cc048cf5e7cc7119cd72494368aa4c5cc407	pending	-
+rust/tools/check_ui_native_resources.py	28a96b6c76051a055609a0d9c436bc0e1cb6f28d	replaced-local	rust/crates/dev-tools/src/startup_adapter_sanitizers.rs;check-ui-native-resources
+rust/tools/check_ui_native_safety.py	7026cc048cf5e7cc7119cd72494368aa4c5cc407	replaced-local	rust/crates/dev-tools/src/startup_adapter_sanitizers.rs;check-ui-native-safety
 rust/tools/check_ui_navigation.py	d1f15851260ed84c58d360e76b70d9df5024b099	pending	-
 rust/tools/check_ui_network.py	fffbc51ffe8cc096159e07c873dfaf99d3a75594	pending	-
 rust/tools/check_ui_onboarding_cards.py	91f99692279cd91099e723a26baa0e3933d3a0b9	pending	-

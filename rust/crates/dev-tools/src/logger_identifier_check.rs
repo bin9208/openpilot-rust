@@ -7,6 +7,7 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
+    ffi::OsString,
     fs,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
@@ -80,6 +81,21 @@ pub fn run_case(
     prefix: &[String],
     runner: &mut dyn Runner,
 ) -> Result<Value> {
+    run_case_os(
+        binary,
+        case,
+        directory,
+        &prefix.iter().map(OsString::from).collect::<Vec<_>>(),
+        runner,
+    )
+}
+pub fn run_case_os(
+    binary: &Path,
+    case: &Case,
+    directory: &Path,
+    prefix: &[OsString],
+    runner: &mut dyn Runner,
+) -> Result<Value> {
     fs::create_dir_all(directory.parent().ok_or("identifier case parent missing")?)?;
     fs::create_dir(directory)?;
     let params = directory.join("params/d");
@@ -96,19 +112,19 @@ pub fn run_case(
         _ => {}
     }
     let mut argv = prefix.to_vec();
-    argv.extend([binary.display().to_string(), case.key.clone()]);
-    let mut spec = CommandSpec::new(argv.clone(), Duration::from_secs(30));
-    spec.env = BTreeMap::from([
+    argv.extend([binary.as_os_str().to_owned(), OsString::from(&case.key)]);
+    let mut spec = CommandSpec::new_os(argv.clone(), Duration::from_secs(30));
+    spec.set_os_env(BTreeMap::from([
         (
-            "PARAMS_ROOT".into(),
+            OsString::from("PARAMS_ROOT"),
             params
                 .parent()
                 .ok_or("missing Params parent")?
-                .display()
-                .to_string(),
+                .as_os_str()
+                .to_owned(),
         ),
-        ("OPENPILOT_PREFIX".into(), "d".into()),
-    ]);
+        (OsString::from("OPENPILOT_PREFIX"), OsString::from("d")),
+    ]));
     let output = runner.run(&spec)?;
     // Match the original ordering: repair fixture access, retain raw outputs and
     // invocation provenance, and only then reject status/encoding/format errors.
@@ -118,10 +134,17 @@ pub fn run_case(
     }
     log(&directory.join("stdout.log"), &output.stdout)?;
     log(&directory.join("stderr.log"), &output.stderr)?;
-    write_json(
-        &directory.join("invocation.json"),
-        &json!({"argv":argv,"exit":output.code,"binary_sha256":format!("{:x}",Sha256::digest(fs::read(binary)?))}),
-    )?;
+    let quoted = argv
+        .iter()
+        .map(|arg| Ok(format!("    {}", crate::python_fs::json_string(arg)?)))
+        .collect::<Result<Vec<_>>>()?;
+    let invocation = format!(
+        "{{\n  \"argv\": [\n{}\n  ],\n  \"exit\": {},\n  \"binary_sha256\": \"{:x}\"\n}}",
+        quoted.join(",\n"),
+        output.code,
+        Sha256::digest(fs::read(binary)?)
+    );
+    fs::write(directory.join("invocation.json"), invocation)?;
     require(
         output.code == 0,
         format!(
@@ -151,49 +174,46 @@ struct Options {
     binary: PathBuf,
     original: PathBuf,
     output: PathBuf,
-    runner: Vec<String>,
+    runner: Vec<OsString>,
+}
+pub use crate::argparse_scan::ArgumentError;
+fn parse_arguments(
+    args: &[OsString],
+) -> std::result::Result<crate::argparse_scan::ParsedOs, ArgumentError> {
+    crate::argparse_scan::scan_os_with_positionals(
+        args,
+        &[crate::argparse_scan::OptionSpec::append("--runner")],
+        3,
+    )
 }
 impl Options {
-    fn parse(args: &[String]) -> Result<Self> {
-        let mut positional = vec![];
-        let mut runner = vec![];
-        let mut i = 0;
-        while i < args.len() {
-            let arg = &args[i];
-            i += 1;
-            if arg == "--runner" {
-                runner.push(args.get(i).ok_or("--runner requires a value")?.clone());
-                i += 1;
-            } else if let Some(value) = arg.strip_prefix("--runner=") {
-                runner.push(value.into());
-            } else {
-                require(
-                    !arg.starts_with('-'),
-                    format!("unknown identifier option {arg}"),
-                )?;
-                positional.push(arg);
-            }
+    fn parse(args: &[OsString]) -> Result<Self> {
+        let mut parsed = parse_arguments(args)?;
+        if parsed.help {
+            return Err(ArgumentError("help is handled by the CLI".into()).into());
         }
-        require(positional.len() == 3, "expected BINARY ORIGINAL OUTPUT")?;
         Ok(Self {
-            binary: PathBuf::from(positional[0]).canonicalize()?,
-            original: PathBuf::from(positional[1]).canonicalize()?,
-            output: resolve_output(Path::new(positional[2]))?,
-            runner,
+            binary: PathBuf::from(&parsed.positionals[0]).canonicalize()?,
+            original: PathBuf::from(&parsed.positionals[1]).canonicalize()?,
+            output: resolve_output(Path::new(&parsed.positionals[2]))?,
+            runner: parsed.append_values.remove("--runner").unwrap_or_default(),
         })
     }
 }
 pub use crate::path_resolve::resolve_non_strict as resolve_output;
 
 pub fn run(args: &[String], runner: &mut dyn Runner) -> Result<Value> {
+    run_os(&args.iter().map(OsString::from).collect::<Vec<_>>(), runner)
+}
+pub fn run_os(args: &[OsString], runner: &mut dyn Runner) -> Result<Value> {
     let options = Options::parse(args)?;
     let mut results = vec![];
     for (ordinal, case) in cases().iter().enumerate() {
         let index = ordinal / 4 % 10;
         let label = format!("{}-{index}-{}", case.key, case.failure);
         let root = options.output.join(&label);
-        let expected = run_case(&options.original, case, &root.join("source"), &[], runner)?;
-        let actual = run_case(
+        let expected = run_case_os(&options.original, case, &root.join("source"), &[], runner)?;
+        let actual = run_case_os(
             &options.binary,
             case,
             &root.join("native"),
@@ -212,11 +232,64 @@ pub fn run(args: &[String], runner: &mut dyn Runner) -> Result<Value> {
     Ok(result)
 }
 pub fn cli() -> Result<()> {
-    let args = std::env::args().skip(1).collect::<Vec<_>>();
-    if matches!(args.as_slice(),[arg]if arg=="--help"||arg=="-h") {
+    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    if parse_arguments(&args)?.help {
         println!("Usage: check-logger-identifier BINARY ORIGINAL OUTPUT [--runner ARG ...]");
         return Ok(());
     }
-    run(&args, &mut NativeRunner)?;
+    run_os(&args, &mut NativeRunner)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod cli_original {
+    #[test]
+    fn original_append_and_positional_grammar() {
+        use std::ffi::OsString;
+        let rows: serde_json::Value =
+            serde_json::from_str(include_str!("../tests/fixtures/logger-identifier/cli.json"))
+                .unwrap();
+        for row in rows.as_array().unwrap() {
+            let args = row["args"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| OsString::from(v.as_str().unwrap()))
+                .collect::<Vec<_>>();
+            let result = super::parse_arguments(&args);
+            assert_eq!(result.is_ok(), row["original_exit"] == 0, "{row}");
+            if let Ok(parsed) = result {
+                assert_eq!(parsed.help, row["help"].as_bool().unwrap(), "{row}");
+                if !parsed.help {
+                    assert_eq!(
+                        parsed
+                            .positionals
+                            .iter()
+                            .map(|v| v.to_str().unwrap())
+                            .collect::<Vec<_>>(),
+                        [
+                            row["parsed"]["binary"].as_str().unwrap(),
+                            row["parsed"]["original"].as_str().unwrap(),
+                            row["parsed"]["output"].as_str().unwrap()
+                        ],
+                        "{row}"
+                    );
+                    assert_eq!(
+                        parsed
+                            .append_values
+                            .get("--runner")
+                            .cloned()
+                            .unwrap_or_default(),
+                        row["parsed"]["runner"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|v| OsString::from(v.as_str().unwrap()))
+                            .collect::<Vec<_>>(),
+                        "{row}"
+                    );
+                }
+            }
+        }
+    }
 }

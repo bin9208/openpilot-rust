@@ -1,0 +1,242 @@
+[
+  {
+    "case": "baseline",
+    "args": [
+      "binary",
+      "original",
+      "out"
+    ],
+    "original_exit": 0,
+    "help": false,
+    "parsed": {
+      "binary": "binary",
+      "original": "original",
+      "output": "out",
+      "runner": []
+    }
+  },
+  {
+    "case": "shorthelp",
+    "args": [
+      "-hfoo"
+    ],
+    "original_exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "case": "cluster-equals",
+    "args": [
+      "-hfoo=bar"
+    ],
+    "original_exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "case": "explicithelp",
+    "args": [
+      "--help=yes"
+    ],
+    "original_exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "case": "unknown-help",
+    "args": [
+      "--unknown",
+      "--help"
+    ],
+    "original_exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "case": "missing-help",
+    "args": [
+      "--runner",
+      "--help"
+    ],
+    "original_exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "case": "missing-value",
+    "args": [
+      "--runner"
+    ],
+    "original_exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "case": "duplicate",
+    "args": [
+      "binary",
+      "original",
+      "out",
+      "--runner",
+      "last"
+    ],
+    "original_exit": 0,
+    "help": false,
+    "parsed": {
+      "binary": "binary",
+      "original": "original",
+      "output": "out",
+      "runner": [
+        "last"
+      ]
+    }
+  },
+  {
+    "case": "equals",
+    "args": [
+      "binary",
+      "original",
+      "out",
+      "--runner=last"
+    ],
+    "original_exit": 0,
+    "help": false,
+    "parsed": {
+      "binary": "binary",
+      "original": "original",
+      "output": "out",
+      "runner": [
+        "last"
+      ]
+    }
+  },
+  {
+    "case": "abbrev",
+    "args": [
+      "binary",
+      "original",
+      "out",
+      "--r",
+      "last"
+    ],
+    "original_exit": 0,
+    "help": false,
+    "parsed": {
+      "binary": "binary",
+      "original": "original",
+      "output": "out",
+      "runner": [
+        "last"
+      ]
+    }
+  },
+  {
+    "case": "flag-value",
+    "args": [
+      "binary",
+      "original",
+      "out",
+      "--runner",
+      "--unknown"
+    ],
+    "original_exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "case": "space-value",
+    "args": [
+      "binary",
+      "original",
+      "out",
+      "--runner",
+      "-unknown value"
+    ],
+    "original_exit": 0,
+    "help": false,
+    "parsed": {
+      "binary": "binary",
+      "original": "original",
+      "output": "out",
+      "runner": [
+        "-unknown value"
+      ]
+    }
+  },
+  {
+    "case": "negativeLF",
+    "args": [
+      "binary",
+      "original",
+      "out",
+      "--runner",
+      "-1\n"
+    ],
+    "original_exit": 0,
+    "help": false,
+    "parsed": {
+      "binary": "binary",
+      "original": "original",
+      "output": "out",
+      "runner": [
+        "-1\n"
+      ]
+    }
+  },
+  {
+    "case": "terminator",
+    "args": [
+      "binary",
+      "original",
+      "out",
+      "--"
+    ],
+    "original_exit": 0,
+    "help": false,
+    "parsed": {
+      "binary": "binary",
+      "original": "original",
+      "output": "out",
+      "runner": []
+    }
+  },
+  {
+    "case": "append",
+    "args": [
+      "binary",
+      "original",
+      "out",
+      "--runner",
+      "first",
+      "--runner=second"
+    ],
+    "original_exit": 0,
+    "help": false,
+    "parsed": {
+      "binary": "binary",
+      "original": "original",
+      "output": "out",
+      "runner": [
+        "first",
+        "second"
+      ]
+    }
+  },
+  {
+    "case": "positional-literal",
+    "args": [
+      "--",
+      "-binary",
+      "-original",
+      "-out"
+    ],
+    "original_exit": 0,
+    "help": false,
+    "parsed": {
+      "binary": "-binary",
+      "original": "-original",
+      "output": "-out",
+      "runner": []
+    }
+  }
+]

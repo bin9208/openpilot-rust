@@ -75,8 +75,13 @@ def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path:
   owner = module.UiCheck(output, binaries, tmp_path / 'peer')
   owner.execute('owned-display')
   assert old_calls == ['state', 'scheduler', 'qr', 'root', 'augmented', 'camera', 'runtime', 'pages',
-                       'hud-eight-modes', 'hud-traffic', 'calibration', 'torque', 'native-safety']
+                       'hud-eight-modes', 'hud-traffic', 'calibration', 'torque']
   assert native_calls == [
+    ([str(binaries / 'check-ui-native-safety'), '--target', str(binaries),
+      '--output', str(output / 'native-safety'), '--display', 'owned-display',
+      '--raylib-root', str(raylib), '--raylib-library', str(raylib / 'lib/libopenpilot-raylib.so')],
+      output / 'commands', 'native-safety'),
+  ] + [
     (['env', 'DISPLAY=owned-display', str(binaries / f'check-ui-{kind}-adapter'), '--target', str(binaries), '--raylib', str(raylib),
       '--evidence', str(output / f'native-{kind}-adapter')], output / 'commands', f'native-{kind}-adapter')
     for kind in ('model', 'training')

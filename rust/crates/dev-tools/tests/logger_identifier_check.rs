@@ -258,3 +258,90 @@ fn mismatched_source_and_native_results_never_publish_overall_success() {
         assert_eq!(actual, captured[kind]);
     }
 }
+#[test]
+fn runner_flag_values_are_parse_errors_before_any_output_or_source_execution() {
+    let temp = tempfile::tempdir().unwrap();
+    let marker = temp.path().join("executed");
+    let binary = temp.path().join("binary");
+    fs::write(
+        &binary,
+        format!(
+            "#!/bin/sh\ntouch '{}'\nprintf '0000002a--0123456789\\n'\n",
+            marker.display()
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(&binary, fs::Permissions::from_mode(0o755)).unwrap();
+    for value in ["--unknown", "--help"] {
+        let output = temp.path().join(value.trim_start_matches('-'));
+        let result = Command::new(env!("CARGO_BIN_EXE_check-logger-identifier"))
+            .arg(&binary)
+            .arg(&binary)
+            .arg(&output)
+            .args(["--runner", value])
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(2), "{result:?}");
+        assert!(!output.exists());
+        assert!(!marker.exists());
+    }
+}
+#[test]
+fn actual_raw_paths_and_ordered_append_runners_preserve_invocation_and_environment_bytes() {
+    use std::{
+        ffi::OsString,
+        os::unix::ffi::{OsStrExt, OsStringExt},
+    };
+    let temp = tempfile::tempdir().unwrap();
+    let binary = temp.path().join(OsString::from_vec(b"peer-\xff".to_vec()));
+    let output = temp.path().join(OsString::from_vec(b"out-\xff".to_vec()));
+    let marker = temp.path().join("env");
+    fs::write(&binary,b"#!/bin/sh\nprintf '%s\\0' \"$PARAMS_ROOT\" >> \"$ENV_BYTES\"\nprintf '0000002a--0123456789\\n'\n").unwrap();
+    fs::set_permissions(&binary, fs::Permissions::from_mode(0o755)).unwrap();
+    let prefix = temp
+        .path()
+        .join(OsString::from_vec(b"runner-\xff".to_vec()));
+    fs::write(
+        &prefix,
+        b"#!/bin/sh\n[ \"$1\" = marker ] || exit 9\nshift\nexec \"$@\"\n",
+    )
+    .unwrap();
+    fs::set_permissions(&prefix, fs::Permissions::from_mode(0o755)).unwrap();
+    let mut inline = OsString::from("--r=");
+    inline.push(&prefix);
+    let result = Command::new(env!("CARGO_BIN_EXE_check-logger-identifier"))
+        .arg(&binary)
+        .arg(&binary)
+        .arg(&output)
+        .arg(inline)
+        .arg("--runner=marker")
+        .env("ENV_BYTES", &marker)
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let env = fs::read(marker).unwrap();
+    let entries = env
+        .split(|&b| b == 0)
+        .filter(|v| !v.is_empty())
+        .collect::<Vec<_>>();
+    assert_eq!(entries.len(), 160);
+    assert!(entries.iter().all(|v| v.contains(&255)));
+    assert!(entries
+        .iter()
+        .all(|v| v.starts_with(output.as_os_str().as_bytes())));
+    let invocation =
+        fs::read_to_string(output.join("RouteCount-0-ordinary/native/invocation.json")).unwrap();
+    assert!(invocation.contains("runner-\\udcff"));
+    assert!(invocation.contains("peer-\\udcff"));
+    assert!(!invocation.contains('\u{fffd}'));
+    let json = openpilot_log_format::JsonValue::parse(&invocation).unwrap();
+    let openpilot_log_format::JsonView::Array(argv) = json.get("argv").unwrap().view() else {
+        panic!("argv")
+    };
+    assert_eq!(argv.len(), 4);
+    assert!(argv[1].text_eq("marker"));
+}

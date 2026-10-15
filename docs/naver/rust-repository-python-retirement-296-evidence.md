@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Thirty sources have locally verified replacements and migrated
-callers; 3,550 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Thirty-two sources have locally verified replacements and migrated
+callers; 3,548 entries remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -512,6 +512,65 @@ strict Clippy pass, and independent review found no Important issue. The final
 routing run includes this repair; workspace formatting, diff checks and all six
 UI orchestration tests pass.
 
+The CPU logical-half limitation above is now repaired for the independently
+captured Cast, static-view and basic arithmetic families. A separate physical
+storage projection keeps unheld logical-half intermediates in float32, while
+preserving real F16 inputs, constants, selected outputs and their view ancestors.
+Scheduling, allocation sizes, kernel loads/stores and wrapper pointer types use
+the same projection. Thirteen held/unheld/view cases and fresh joint-first-nine
+float32 exports match original bytes. True-final calibration and image prefixes
+0/1/2/8/9 are exact. The known prefix-93 fusion mismatch remains unchanged.
+
+An independently reproduced scalar-infinity division difference is also fixed:
+the original CPU compiler folds the captured division contexts to positive zero,
+including special numerators. Eight same-context ONNX cases cover both bindings,
+f32/physical F16 and both memory modes; literal cases retain their own evidence.
+Unproved shared/standalone infinity reciprocals still reject. All 134 model tests
+pass on the final source, strict Clippy passes, independent review found no
+Important issue, and the refreshed genuine A630 Add binary remains byte-identical.
+No model/compiler/training Python has been removed.
+
+The Panda and identifier CLI audit found seven raw-path failures and six logger
+argument-admission differences. Native process arguments, environment overlays
+and filesystem JSON now retain Unix bytes, while ordered runner options and
+syntax errors follow the original parser before any child or output is created.
+The negative-number classifier uses the pinned Python 3.12 Unicode 15 decimal
+set: 680 digits in 64 ranges. Newer Unicode digits no longer bypass original
+argument errors. Twenty-nine original Panda cases preserve modes, raw paths,
+commands and partial failure products. Another 42 captures preserve strict
+UTF-8 decoding and universal newlines across all seven compiler stages: invalid
+bytes leave the already-created compiler product but no new command/success
+receipt. The 110 focused tests and strict Clippy pass; actual original/native
+raw-path, argument, Unicode and invalid-output comparisons also agree.
+
+The native startup safety/resource sanitizer drivers replace two additional
+Python sources, bringing the local retirement count to 32 of 3,580 baseline
+entries (3,548 remain pending). Seventy-four original cases preserve compiler
+commands, raw invocation-prefixed logs, 180-second deadlines, failure artifacts,
+disk checks and filesystem behavior. The common Path.glob implementation now
+scans every literal component, skipping inaccessible branches like Python while
+retaining final dangling candidates for the original strict stat failure. Six
+additional original model/training cases exercise this shared permission fix.
+Safety path resolution preserves output creation before later library/target
+resolution failures. Independent review found no Important issue.
+
+Both complete original and native drivers passed on owned private Xvfb displays.
+The bridge/Params ASan executables, CXX runtime archive, PNGs, full result reports
+and driver streams match byte-for-byte. All command/program logs match after
+replacing only each family's output directory. Resource disk receipts keep their
+actual measured free-byte values and the same 1-GiB growth estimate; free bytes
+are intentionally not presented as equal across separate runs. The native safety
+CLI adds a 25-GiB reserve plus 1 GiB before each compiler, retaining its original
+strict initial 25.25-GiB check. The remaining shared startup UI orchestrator and
+its original adapter function stay pending because other callers still use them.
+
+Final local validation for this checkpoint passes 247 selected dev-tools tests
+(the routing suite plus the newly routed glob test), 16 service-tools tests and
+all 134 model-runtime tests. All-target dev-tools/model Clippy, workspace
+formatting, six remaining UI orchestration tests, Ruff and diff checks pass.
+These are exact local scope results; the newly published head needs its own
+Actions results and does not inherit earlier checkpoint success.
+
 ## Outstanding delivery evidence
 
 Checkpoint `30866c90dc246fddf2c963b3e5f0947390bee30d` was pushed to the
@@ -537,9 +596,9 @@ hardware fixture and SPI library comparisons are recorded above. These are local
 results; the latest remote checkpoint `777bd1c7cd4830d28bd426154eb302d0e156a06e`
 has passed push/PR fast checks, user docs and integration, and its complete [Rust workspace/aarch64 run](https://github.com/bin9208/openpilot-rust/actions/runs/38719609086) passed.
 Checkpoint `7668b660bc89da7cb605878d574c5d97f340bcd1` was subsequently pushed;
-its push/PR fast checks, user docs and integration pass, with the
-[new Rust run](https://github.com/bin9208/openpilot-rust/actions/runs/38729020029)
-still running. No later commit inherits earlier CI evidence.
+its push/PR fast checks, user docs and integration pass, and its complete
+[Rust workspace/aarch64 run](https://github.com/bin9208/openpilot-rust/actions/runs/38729020029)
+also passed. No later commit inherits earlier CI evidence.
 
 Continue the [implementation plan](rust-repository-python-retirement-296-plan.md)
 through every remaining source family, actual consumer migration, a zero-Python

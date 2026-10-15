@@ -4,9 +4,14 @@ use crate::{
     qa_process::{CommandSpec, NativeRunner, Runner},
     seal::Result,
 };
-use serde_json::{json, Value};
+mod receipt;
+use receipt::Receipt;
+macro_rules! receipt {
+    ({$($key:literal:$value:expr),* $(,)?}) => {Receipt::object(vec![$((std::ffi::OsString::from($key),Receipt::from($value))),*])};
+}
 use sha2::{Digest, Sha256};
 use std::{
+    ffi::OsString,
     fs,
     path::{Path, PathBuf},
     time::Duration,
@@ -42,22 +47,22 @@ struct Options {
     json11: PathBuf,
     capnp: Option<PathBuf>,
     usb: Option<PathBuf>,
-    compiler: String,
+    compiler: OsString,
     sanitize: bool,
     mode: String,
 }
 impl Options {
-    fn parse(family: &str, args: &[String]) -> Result<Self> {
+    fn parse(family: &str, args: &[OsString]) -> Result<Self> {
         if !["protocol", "usb", "spi", "peripheral", "runtime-fixture"].contains(&family) {
             return Err("unknown Panda build family".into());
         }
-        let mut values = crate::argparse_scan::scan(args, &specs(family))?.values;
+        let mut values = crate::argparse_scan::scan_os(args, &specs(family))?.values;
         let sanitize = values.remove("--sanitize").is_some();
         let mode = ["--safety", "--device", "--state", "--can-io"]
             .into_iter()
             .find(|key| values.contains_key(*key))
             .map(|key| key[2..].to_owned());
-        let mut take = |key: &str| -> Result<String> {
+        let mut take = |key: &str| -> Result<OsString> {
             values
                 .remove(key)
                 .ok_or_else(|| format!("{key} required").into())
@@ -90,18 +95,23 @@ impl Options {
 fn absolute(path: &Path) -> Result<PathBuf> {
     crate::path_resolve::resolve_non_strict(path)
 }
-fn s(path: impl AsRef<Path>) -> String {
-    path.as_ref().to_string_lossy().into_owned()
+fn s(path: impl AsRef<Path>) -> OsString {
+    path.as_ref().as_os_str().to_owned()
+}
+fn prefixed(prefix: &str, path: impl AsRef<Path>) -> OsString {
+    let mut value = OsString::from(prefix);
+    value.push(path.as_ref());
+    value
 }
 fn hash(path: &Path) -> Result<String> {
     Ok(format!("{:x}", Sha256::digest(fs::read(path)?)))
 }
-fn write_json(path: &Path, value: &Value) -> Result<()> {
-    fs::write(path, format!("{}\n", serde_json::to_string_pretty(value)?))?;
+fn write_json(path: &Path, value: &Receipt) -> Result<()> {
+    fs::write(path, format!("{}\n", value.json(true)?))?;
     Ok(())
 }
-fn hashes(root: &Path, files: &[PathBuf], relative: bool) -> Result<Value> {
-    let mut result = serde_json::Map::new();
+fn hashes(root: &Path, files: &[PathBuf], relative: bool) -> Result<Receipt> {
+    let mut result = std::collections::BTreeMap::new();
     for file in files {
         result.insert(
             s(if relative {
@@ -109,21 +119,21 @@ fn hashes(root: &Path, files: &[PathBuf], relative: bool) -> Result<Value> {
             } else {
                 file
             }),
-            json!(hash(file)?),
+            Receipt::from(hash(file)?),
         );
     }
-    Ok(Value::Object(result))
+    Ok(Receipt::Object(result))
 }
 fn paths(root: &Path, names: &[&str]) -> Vec<PathBuf> {
     names.iter().map(|name| root.join(name)).collect()
 }
-fn strings(parts: &[&str]) -> Vec<String> {
+fn strings(parts: &[&str]) -> Vec<OsString> {
     parts.iter().map(|p| (*p).into()).collect()
 }
-fn includes(command: &mut Vec<String>, items: &[PathBuf]) {
-    command.extend(items.iter().map(|p| format!("-I{}", p.display())));
+fn includes(command: &mut Vec<OsString>, items: &[PathBuf]) {
+    command.extend(items.iter().map(|p| prefixed("-I", p)));
 }
-fn sanitize(command: &mut Vec<String>, enabled: bool) {
+fn sanitize(command: &mut Vec<OsString>, enabled: bool) {
     if enabled {
         command.splice(
             1..1,
@@ -165,20 +175,39 @@ fn extract(text: &str, start: &str, end: &str) -> Result<String> {
 }
 fn captured(
     runner: &mut dyn Runner,
-    command: Vec<String>,
+    command: Vec<OsString>,
     file: &Path,
-    records: &mut Vec<Value>,
+    records: &mut Vec<Receipt>,
     shape: &str,
     list: bool,
 ) -> Result<()> {
-    let result = runner.run(&CommandSpec::new(command.clone(), Duration::from_secs(300)))?;
+    let result = runner.run(&CommandSpec::new_os(
+        command.clone(),
+        Duration::from_secs(300),
+    ))?;
+    // Python subprocess(text=True) decodes both streams strictly before the
+    // caller can update command records, then applies universal newlines.
+    let text = |bytes: Vec<u8>| -> Result<String> {
+        Ok(String::from_utf8(bytes)?
+            .replace("\r\n", "\n")
+            .replace('\r', "\n"))
+    };
+    let stdout = text(result.stdout)?;
+    let stderr = text(result.stderr)?;
     let record = if shape == "build" {
-        json!({"command":command,"exit":result.code,"stdout":String::from_utf8_lossy(&result.stdout),"stderr":String::from_utf8_lossy(&result.stderr)})
+        receipt!({"command":command,"exit":result.code,"stdout":stdout,"stderr":stderr})
     } else {
-        json!({"argv":command,"exit_code":result.code,"stdout":String::from_utf8_lossy(&result.stdout),"stderr":String::from_utf8_lossy(&result.stderr)})
+        receipt!({"argv":command,"exit_code":result.code,"stdout":stdout,"stderr":stderr})
     };
     records.push(record.clone());
-    write_json(file, &if list { json!(records) } else { record })?;
+    write_json(
+        file,
+        &if list {
+            Receipt::Array(records.clone())
+        } else {
+            record
+        },
+    )?;
     if result.code != 0 {
         return Err(format!("Panda source compiler exited {}", result.code).into());
     }
@@ -190,6 +219,21 @@ pub fn run(
     root: &Path,
     family: &str,
     args: &[String],
+    runner: &mut dyn Runner,
+    free_bytes: u64,
+) -> Result<()> {
+    run_os(
+        root,
+        family,
+        &args.iter().map(OsString::from).collect::<Vec<_>>(),
+        runner,
+        free_bytes,
+    )
+}
+pub fn run_os(
+    root: &Path,
+    family: &str,
+    args: &[OsString],
     runner: &mut dyn Runner,
     free_bytes: u64,
 ) -> Result<()> {
@@ -290,7 +334,7 @@ fn simple(root: &Path, family: &str, o: &Options, runner: &mut dyn Runner) -> Re
                 "sched_yield",
                 "usleep",
             ]
-            .map(|name| format!("-Wl,--wrap={name}")),
+            .map(|name| OsString::from(format!("-Wl,--wrap={name}"))),
         );
     }
     sanitize(&mut command, o.sanitize);
@@ -369,14 +413,14 @@ fn simple(root: &Path, family: &str, o: &Options, runner: &mut dyn Runner) -> Re
         );
     }
     let report = if usb {
-        json!({"binary":s(&binary),"sha256":hash(&binary)?,"fixture":s(&fixture),"fixture_sha256":hash(&fixture)?,"sources":hashes(root,&sources,false)?,"sanitize":o.sanitize,"scope":"unchanged C++ USB lifecycle and retry policies with scripted libusb ABI and clock; no physical USB"})
+        receipt!({"binary":s(&binary),"sha256":hash(&binary)?,"fixture":s(&fixture),"fixture_sha256":hash(&fixture)?,"sources":hashes(root,&sources,false)?,"sanitize":o.sanitize,"scope":"unchanged C++ USB lifecycle and retry policies with scripted libusb ABI and clock; no physical USB"})
     } else if spi {
-        json!({"binary":s(&binary),"sha256":hash(&binary)?,"sources":hashes(root,&sources,false)?,"sanitize":o.sanitize,"scope":"unchanged SPI and utility implementation; scripted Linux syscalls only; no hardware access"})
+        receipt!({"binary":s(&binary),"sha256":hash(&binary)?,"sources":hashes(root,&sources,false)?,"sanitize":o.sanitize,"scope":"unchanged SPI and utility implementation; scripted Linux syscalls only; no hardware access"})
     } else {
-        json!({"result":"PASS","binary":s(&binary),"sha256":hash(&binary)?,"source_sha256":hashes(root,&sources,false)?,"scope":"owned virtual libusb device, captured control/bulk calls, no physical USB delegation"})
+        receipt!({"result":"PASS","binary":s(&binary),"sha256":hash(&binary)?,"source_sha256":hashes(root,&sources,false)?,"scope":"owned virtual libusb device, captured control/bulk calls, no physical USB delegation"})
     };
     write_json(&o.output.join("manifest.json"), &report)?;
-    println!("{}", serde_json::to_string(&report)?);
+    println!("{}", report.json(false)?);
     Ok(())
 }
 fn peripheral(root: &Path, o: &Options, runner: &mut dyn Runner) -> Result<()> {
@@ -431,9 +475,9 @@ fn peripheral(root: &Path, o: &Options, runner: &mut dyn Runner) -> Result<()> {
         "build",
         false,
     )?;
-    let report = json!({"scope":"unchanged process_peripheral_state body and original C++ FirstOrderFilter/map_val; recorded message/Params/hardware boundaries","binary":s(&binary),"binary_sha256":hash(&binary)?,"body_sha256":format!("{:x}",Sha256::digest(body.as_bytes())),"sanitize":o.sanitize,"sources":hashes(root,&[source,fixture,root.join("openpilot/common/util.h")],true)?});
+    let report = receipt!({"scope":"unchanged process_peripheral_state body and original C++ FirstOrderFilter/map_val; recorded message/Params/hardware boundaries","binary":s(&binary),"binary_sha256":hash(&binary)?,"body_sha256":format!("{:x}",Sha256::digest(body.as_bytes())),"sanitize":o.sanitize,"sources":hashes(root,&[source,fixture,root.join("openpilot/common/util.h")],true)?});
     write_json(&o.output.join("manifest.json"), &report)?;
-    println!("{}", serde_json::to_string(&report)?);
+    println!("{}", report.json(false)?);
     Ok(())
 }
 fn protocol(root: &Path, o: &Options, runner: &mut dyn Runner) -> Result<()> {
@@ -523,9 +567,9 @@ fn protocol(root: &Path, o: &Options, runner: &mut dyn Runner) -> Result<()> {
     let mut records = vec![];
     let mut command = strings(&["capnp", "compile"]);
     command.extend([
-        format!("-I{}", schema.display()),
-        format!("--src-prefix={}", schema.display()),
-        format!("-oc++:{}", generated.display()),
+        prefixed("-I", &schema),
+        prefixed("--src-prefix=", &schema),
+        prefixed("-oc++:", &generated),
     ]);
     command.extend(sorted_extension(&schema, "capnp")?.iter().map(s));
     captured(
@@ -565,8 +609,8 @@ fn protocol(root: &Path, o: &Options, runner: &mut dyn Runner) -> Result<()> {
     command.extend(sorted_extension(&generated, "c++")?.iter().map(s));
     command.extend([
         s(o.json11.join("lib/libjson11.a")),
-        format!("-L{}", library.display()),
-        format!("-Wl,-rpath,{}", library.display()),
+        prefixed("-L", &library),
+        prefixed("-Wl,-rpath,", &library),
     ]);
     command.extend(strings(&["-lcapnp", "-lkj", "-pthread", "-o"]));
     command.push(s(&binary));
@@ -589,15 +633,15 @@ fn protocol(root: &Path, o: &Options, runner: &mut dyn Runner) -> Result<()> {
         "safety"=>"unchanged PandaSafety, native Params and control command methods; fixture transport and logging sinks",
         _=>"unchanged original CAN pack/unpack and SPI alert methods; fixture only replaces transport reset and logging sinks"
     };
-    let report = json!({"binary":s(&binary),"binary_sha256":hash(&binary)?,"sources":hashes(root,&sources,true)?,"scope":scope,"sanitize":o.sanitize});
+    let report = receipt!({"binary":s(&binary),"binary_sha256":hash(&binary)?,"sources":hashes(root,&sources,true)?,"scope":scope,"sanitize":o.sanitize});
     write_json(&o.output.join("manifest.json"), &report)?;
-    println!("{}", serde_json::to_string(&report)?);
+    println!("{}", report.json(false)?);
     Ok(())
 }
 /// CLI shared by the five build entrypoints. `--root` adds explicit checkout selection.
 pub fn cli(family: &str) -> Result<()> {
-    let args = std::env::args().skip(1).collect::<Vec<_>>();
-    let parsed = crate::argparse_scan::scan(&args, &specs(family))?;
+    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    let parsed = crate::argparse_scan::scan_os(&args, &specs(family))?;
     if parsed.help {
         let name = if family == "runtime-fixture" {
             "build-pandad-runtime-fixture".to_owned()
@@ -625,5 +669,5 @@ pub fn cli(family: &str) -> Result<()> {
     let root = root.canonicalize()?;
     let options = Options::parse(family, &args)?;
     let space = disk_space::inspect(&options.output, 256 * 1024 * 1024)?;
-    run(&root, family, &args, &mut NativeRunner, space.free_bytes)
+    run_os(&root, family, &args, &mut NativeRunner, space.free_bytes)
 }
