@@ -1485,9 +1485,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
       - name: Reserve capacity for pinned interpreter dependencies
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
@@ -1506,7 +1503,9 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo +nightly-2026-09-29 miri setup --print-sysroot > "$RUNNER_TEMP/radar-memory/sysroot.txt" 2> "$RUNNER_TEMP/radar-memory/setup.log"
           export MIRI_SYSROOT="$(cat "$RUNNER_TEMP/radar-memory/sysroot.txt")"
-          python -c 'import hashlib, json, os; from pathlib import Path; root=Path(os.environ["MIRI_SYSROOT"]); paths=sorted(root.glob("lib/rustlib/*/lib/libcore-*.rlib")); assert paths; print(json.dumps({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}, indent=2))' > "$RUNNER_TEMP/radar-memory/core-hashes.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin hash-miri-core --locked
+          "$CARGO_TARGET_DIR/debug/hash-miri-core" > "$RUNNER_TEMP/radar-memory/core-hashes.json"
           for radar_level in default strict preemption tree; do
             radar_flags='-Zmiri-no-extra-rounding-error'
             if test "$radar_level" != default; then radar_flags="$radar_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-backtrace=full"; fi

@@ -351,3 +351,7 @@ path = "src/bin/check_communication_snapshot.rs"
 [[bin]]
 name = "check-message-state"
 path = "src/bin/check_message_state.rs"
+
+[[bin]]
+name = "hash-miri-core"
+path = "src/bin/hash_miri_core.rs"

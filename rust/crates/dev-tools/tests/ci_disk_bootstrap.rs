@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 195);
+    assert_eq!(text.matches(marker).count(), 196);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -237,6 +237,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut translation_checker = vec![];
     let mut diagnostic_checkers = vec![];
     let mut artifact_list = vec![];
+    let mut miri_hashes = vec![];
     let mut message_state = vec![];
     let mut egl_reference = vec![];
     let mut command_checkers = vec![];
@@ -261,6 +262,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 diagnostic_checkers.push(tail.to_owned());
             } else if i + 1 < lines.len() && lines[i + 1].contains("--bin list-cargo-tests") {
                 artifact_list.push(tail.to_owned());
+            } else if i + 1 < lines.len() && lines[i + 1].contains("--bin hash-miri-core") {
+                miri_hashes.push(tail.to_owned());
             } else if i + 1 < lines.len() && lines[i + 1].contains("--bin check-message-state") {
                 message_state.push(tail.to_owned());
             } else if i + 1 < lines.len()
@@ -277,6 +280,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         }
     }
     assert_eq!(arguments.len(), 179);
+    assert_eq!(
+        miri_hashes,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+    );
     assert_eq!(
         params_reference,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]

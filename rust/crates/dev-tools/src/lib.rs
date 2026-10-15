@@ -5,6 +5,7 @@ pub mod brotli_stage;
 pub mod filter_reference;
 pub mod media_validation;
 pub mod message_state_check;
+pub mod miri_provenance;
 pub mod opencv_build;
 pub mod opencv_stage;
 pub mod package;

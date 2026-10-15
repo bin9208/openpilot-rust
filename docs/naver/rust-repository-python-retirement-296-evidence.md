@@ -1114,3 +1114,42 @@ this subsequent tools checkpoint; its exact-head CI is a separate required gate.
 The model compiler still has incomplete driving-model numerical/scheduling
 coverage and remains a separate unfinished implementation unit. No model Python
 was removed, and these tooling checks do not complete repository-wide conversion.
+
+### Native Miri core-library hash collection
+
+`hash-miri-core` replaces the embedded Python expression in the RadarCAN Miri
+workflow. It scans the actual `MIRI_SYSROOT`, preserves pathlib's component
+sorting, dot/parent/double-slash spelling, hidden entries, symlink traversal,
+filesystem surrogate escapes and JSON formatting, and hashes every selected
+library. Empty selection and any selected read failure prevent JSON publication.
+Thirty independently captured original executions and the real existing Miri
+sysroot match. The latter native command ran with PATH=/nonexistent and produced
+stdout SHA-256 `1d88caa42ab506cdb3c5d1d7137837d5f70b4b35cd5f5a5115e2de2dc1f7e528`.
+
+The workflow removes its now-unused Python setup, reserves an additional 512 MiB
+before building the collector, and still runs all four original Miri levels and
+both numerical/scheduler filters with artifact publication. No original disk
+reservation was removed. This is the fifth replaced embedded command; the source
+inventory remains 51 retired / 3,529 pending. Hash equality is not evidence of a
+new Miri numerical run, complete tooling conversion or device acceptance.
+
+Independent review found a valid mismatch before publication: directly opening
+the literal `lib/rustlib` prefix skipped pathlib's directory listing of each
+component, accepting an execute-only sysroot that the original rejected. The
+replacement now reuses the audited Python glob selector. Five original permission
+cases and a late unreadable-file case cover that repair; no expected result was
+changed to match the replacement.
+
+After the permission repair, 46 focused Miri/workflow/disk regression tests and
+strict scoped Clippy pass. The actual sysroot comparison was repeated against the
+current source-matched native binary and remains byte-identical. The workflow now
+has 196 disk reservations, retaining all 179 original ordinary reservations.
+
+A second review probe preserved absolute-root hashing from an already removed
+working directory: the replacement no longer adds a `getcwd()` requirement.
+Its independent original capture and native regression now pass, bringing focused
+test coverage to 47 tests and original command scenarios to 31. The current
+source-matched binary's real Miri hash output remains unchanged.
+
+Final scoped Clippy passes with warnings denied after both review repairs. The
+independent Miri review is closed with no remaining actionable findings.
