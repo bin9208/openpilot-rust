@@ -32,8 +32,8 @@ explicit. No CPU savings or device acceptance follows from host tests.
 
 - [x] Create `dev-md` from the fetched stable dev tip; preserve original branches.
 - [x] Pin source and common ancestor; create issue #338.
-- [ ] Inventory every commit and net changed path, with disposition/evidence.
-- [ ] Add CI coverage for dev-md and a required-fast-check rejection of this
+- [x] Inventory every commit and net changed path, with disposition/evidence.
+- [x] Add CI coverage for dev-md and a required-fast-check rejection of this
   track when its target is dev. Keep publishing guards intact.
 - [ ] Port additive wire-schema, Params and shared support contracts first;
   preserve existing fork ordinals and regenerate native consumers through the
@@ -63,6 +63,12 @@ explicit. No CPU savings or device acceptance follows from host tests.
    a vehicle through normal stable update/publication jobs.
 
 ## Working record
+
+Initial native slices are implemented and host-tested: additive schemas with
+an explicit fork event-number adaptation; VW manual/scaled steering ratio and
+single-point Ki; deferred one-shot NNFF startup notice; paced incremental PSS
+collection. They do not complete the subsystem tasks above. The source coverage
+ledger retains all outstanding work; no full-runtime acceptance is claimed.
 
 The three subsystem audit documents refine the concrete file/test task lists.
 `rust/upstream/carrot-wip.json` is the coverage ledger. `pending` is an explicit

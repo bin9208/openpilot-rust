@@ -1163,6 +1163,7 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-selfdrived -p openpilot-messaging --locked
       - name: Compare complete selfdrived policy and source effects
         run: |
+          python -m unittest discover -s rust/tools/tests -p test_nnff_reference.py -v
           selfdrive_examples="$GITHUB_WORKSPACE/rust/target/debug/examples"
           selfdrive_evidence="$RUNNER_TEMP/selfdrived-native/reference"
           run_reference() {
