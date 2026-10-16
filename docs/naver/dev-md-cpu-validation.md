@@ -126,6 +126,9 @@ plus estimated growth. Existing native SDK, FFmpeg and libyuv were reused.
 - The existing encoder CI isolation-policy test passed. CI now executes both
   dependency-only and explicit ION policy configurations, with disk guards,
   alongside its existing PC/source-oracle checks.
+- All 13 disk-guard tests passed after accounting for those two added guards.
+  The original 179 guard arguments and their hash remain unchanged; the two
+  encoder guards are checked separately at exactly 1,024 MiB each.
 
 Parent review checked that every actual sample read still validates its offset
 before the atomic accessor, that incremental additions only advance to a real

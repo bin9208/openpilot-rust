@@ -84,7 +84,7 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     workflow = ROOT / '.github/workflows/rust.yml'
     text = workflow.read_text()
     assert 'card_ci_space.py' not in text
-    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 185
+    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 187
     jobs = yaml.safe_load(text)['jobs']
     guarded = [job for job in jobs.values() if any('check-disk-space' in step.get('run', '') for step in job.get('steps', []))]
     assert len(guarded) == 26
@@ -98,7 +98,7 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     # Preserve the original179 migration baseline independently of the five
     # #326 guards added specifically before compiling its native stager.
     lines = text.splitlines()
-    arguments, raylib_guards, replay_guards = [], [], []
+    arguments, raylib_guards, replay_guards, encoder_guards = [], [], [], []
     for index, line in enumerate(lines):
         match = re.search(r'"\$GITHUB_WORKSPACE/rust/tools/check-disk-space"([^\n]*)', line)
         if match:
@@ -106,11 +106,14 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
                 raylib_guards.append(match.group(1))
             elif index + 1 < len(lines) and '--bin openpilot-radar-replay -- bundle' in lines[index + 1]:
                 replay_guards.append(match.group(1))
+            elif index + 1 < len(lines) and '-p openpilot-encoderd --lib --features' in lines[index + 1]:
+                encoder_guards.append(match.group(1))
             else:
                 arguments.append(match.group(1))
     assert replay_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 1024']
     assert len(arguments) == 179
     assert raylib_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 2048'] * 5
+    assert encoder_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 1024'] * 2
     native_calls = [index for index, line in enumerate(lines) if '--bin stage-startup-ui-raylib' in line]
     assert len(native_calls) == 5
     native_arguments = re.findall(r'--bin stage-startup-ui-raylib -- ([^\n]*)', text)
