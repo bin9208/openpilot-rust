@@ -143,7 +143,10 @@ impl<'a> ImageMemory<'a> {
         destination: &mut [u8],
     ) -> Result<(), Error> {
         if offsets.clone().count() != destination.len()
-            || offsets.clone().any(|offset| offset >= self.data_length)
+            || offsets
+                .clone()
+                .last()
+                .is_some_and(|offset| offset >= self.data_length)
         {
             return Err(Error::Invalid(
                 "VisionIPC sample indices or destination length invalid",
@@ -368,5 +371,34 @@ mod tests {
                 .is_err());
             assert_eq!(memory.frame_id(), 0x1122334455667788);
         }
+    }
+
+    #[test]
+    fn sample_preflight_last_is_not_a_full_offset_validation() {
+        let storage = Storage::<112>::new();
+        // SAFETY: aligned owned initialized storage remains live for this test;
+        // ImageMemory validates the disjoint complete-word and byte-tail ranges.
+        let memory = unsafe { ImageMemory::new(storage.pointer(), 41, 112) }.unwrap();
+        let bytes: Vec<_> = (0..41).map(|index| (index * 31) as u8).collect();
+        memory.write(0, &bytes).unwrap();
+        memory.set_frame_id(0x9988776655443322);
+
+        // A valid final offset does not authorize an invalid middle one: the
+        // preflight last() check passes, then the per-read recheck rejects the
+        // out-of-range index before any unsafe accessor runs.
+        let mut sampled = [0_u8; 3];
+        assert!(memory
+            .copy_samples([5, 41, 0].into_iter(), &mut sampled)
+            .is_err());
+        assert_eq!(memory.frame_id(), 0x9988776655443322);
+
+        // Valid nonmonotone offsets are copied in the caller's order,
+        // exercising the single-byte tail and the complete-word region.
+        let mut sampled = [0_u8; 3];
+        memory
+            .copy_samples([40, 7, 33].into_iter(), &mut sampled)
+            .unwrap();
+        assert_eq!(sampled, [bytes[40], bytes[7], bytes[33]]);
+        assert_eq!(memory.frame_id(), 0x9988776655443322);
     }
 }

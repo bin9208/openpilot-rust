@@ -87,6 +87,7 @@ fn compact_samples_preserve_original_offsets_median_and_validation() {
                                 };
                                 assert_eq!(plan.clone().collect::<Vec<_>>(), expected);
                                 assert_eq!(plan.len(), expected.len());
+                                assert_eq!(plan.clone().last(), expected.last().copied());
                                 let samples: Vec<_> = plan.map(|offset| pixels[offset]).collect();
                                 assert_eq!(old.to_bits(), luminance_samples(&samples).to_bits());
                             }
@@ -141,4 +142,41 @@ fn compact_samples_preserve_original_offsets_median_and_validation() {
         luminance_samples(&[17]).to_bits(),
         (255_f32 / 256.0).to_bits()
     );
+}
+
+#[test]
+fn sample_indices_stops_exactly_at_the_final_sample() {
+    use openpilot_camerad::geometry::sample_indices;
+    let region = Region {
+        x: 0,
+        y: 0,
+        width: 1,
+        height: 2,
+    };
+    let sampling = Sampling {
+        width: usize::MAX / 2 + 1,
+        x_skip: 1,
+        y_skip: 1,
+    };
+    // Valid plan: sample offsets {0, usize::MAX / 2 + 1} at
+    // pixel_length == usize::MAX. No buffer is allocated; offsets only.
+    let plan = sample_indices(region, sampling, usize::MAX).unwrap();
+    // O(1) count/last on clones leave the original iterator untouched.
+    assert_eq!(plan.clone().count(), 2);
+    assert_eq!(plan.clone().last(), Some(sampling.width));
+    let mut plan = plan;
+    assert_eq!(plan.len(), 2);
+    assert_eq!(plan.next(), Some(0));
+    // A partially consumed iterator keeps exact remaining count/last.
+    assert_eq!(plan.len(), 1);
+    assert_eq!(plan.clone().count(), 1);
+    assert_eq!(plan.clone().last(), Some(sampling.width));
+    // The final sample must be returned without adding row_step one more
+    // time; that second row_step addition overflows usize::MAX here.
+    assert_eq!(plan.next(), Some(sampling.width));
+    assert_eq!(plan.len(), 0);
+    assert_eq!(plan.clone().count(), 0);
+    assert_eq!(plan.clone().last(), None);
+    assert_eq!(plan.next(), None);
+    assert_eq!(plan.next(), None);
 }

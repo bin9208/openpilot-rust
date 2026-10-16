@@ -989,6 +989,10 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           cargo test --manifest-path rust/Cargo.toml -p openpilot-encoderd -p openpilot-msgq --features openpilot-encoderd/native --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-encoderd --lib --features native,openpilot-msgq/visionipc-ion --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-encoderd --lib --features visionipc-ion --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-encoderd --features native --all-targets --locked -- -D warnings
       - name: Build native encoder and record current JPEG and messaging outputs
         run: |

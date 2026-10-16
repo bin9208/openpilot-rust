@@ -115,31 +115,47 @@ fn histogram_luminance(histogram: &[u32; 256], total: u32) -> f32 {
 /// This intentionally does not reinterpret the source algorithm using NV12 stride.
 #[derive(Clone, Debug)]
 pub struct SampleIndices {
-    start: usize,
+    row_start: usize,
+    offset: usize,
+    last: usize,
     row_step: usize,
     x_step: usize,
     columns: usize,
-    count: usize,
-    next: usize,
+    column: usize,
+    remaining: usize,
 }
 impl Iterator for SampleIndices {
     type Item = usize;
     fn next(&mut self) -> Option<usize> {
-        if self.next == self.count {
+        if self.remaining == 0 {
             return None;
         }
-        let offset = self.start
-            + self.next / self.columns * self.row_step
-            + self.next % self.columns * self.x_step;
-        self.next += 1;
+        let offset = self.offset;
+        self.remaining -= 1;
+        if self.remaining == 0 {
+            // Final sample: return without advancing row_start/offset. A valid
+            // plan may end in its last row, where one more row_step would
+            // overflow even though no further sample exists.
+            return Some(offset);
+        }
+        self.column += 1;
+        if self.column == self.columns {
+            self.column = 0;
+            self.row_start += self.row_step;
+            self.offset = self.row_start;
+        } else {
+            self.offset += self.x_step;
+        }
         Some(offset)
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let remaining = self.count - self.next;
-        (remaining, Some(remaining))
+        (self.remaining, Some(self.remaining))
     }
     fn count(self) -> usize {
-        self.count - self.next
+        self.remaining
+    }
+    fn last(self) -> Option<usize> {
+        (self.remaining != 0).then_some(self.last)
     }
 }
 impl ExactSizeIterator for SampleIndices {}
@@ -200,12 +216,19 @@ pub fn sample_indices(
     } else {
         0
     };
+    let last = if count == 0 {
+        0
+    } else {
+        start + (rows - 1) * row_step + (columns - 1) * sampling.x_skip
+    };
     Ok(SampleIndices {
-        start,
+        row_start: start,
+        offset: start,
+        last,
         row_step,
         x_step: sampling.x_skip,
         columns,
-        count,
-        next: 0,
+        column: 0,
+        remaining: count,
     })
 }

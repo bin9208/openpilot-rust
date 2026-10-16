@@ -7,6 +7,7 @@ compile_error!("openpilot-msgq requires the original 64-bit little-endian Linux 
 
 mod error;
 pub use error::Error;
+pub const VISIONIPC_ION: bool = cfg!(feature = "visionipc-ion");
 #[cfg(feature = "native-skip-miri")]
 mod mapped;
 #[cfg(any(feature = "native-skip-miri", test))]

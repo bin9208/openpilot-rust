@@ -13,7 +13,7 @@ pub enum Video {
 }
 impl Video {
     pub fn new(info: &EncoderInfo, input: (i32, i32)) -> Result<Self, Error> {
-        let pc = !cfg!(feature = "visionipc-ion");
+        let pc = platform::is_pc();
         let settings = info
             .quality
             .settings(input.0, pc, platform::stream_bitrate());

@@ -4,16 +4,14 @@ use openpilot_logging::{native::Logger, record::Level, site::Site};
 use openpilot_params::Params;
 use std::{ffi::CString, sync::OnceLock};
 
+pub const fn is_pc() -> bool {
+    !openpilot_msgq::VISIONIPC_ION
+}
 static LOGGER: OnceLock<Logger> = OnceLock::new();
 pub fn initialize() {
-    if let Ok(logger) = Logger::for_runtime(
-        env!("ENCODER_VERSION"),
-        if cfg!(feature = "visionipc-ion") {
-            "tici"
-        } else {
-            "pc"
-        },
-    ) {
+    if let Ok(logger) =
+        Logger::for_runtime(env!("ENCODER_VERSION"), if is_pc() { "pc" } else { "tici" })
+    {
         let _ = LOGGER.set(logger);
     }
 }
@@ -28,7 +26,7 @@ pub fn close() {
     }
 }
 pub fn schedule(mode: Mode) -> Result<(), Error> {
-    let policy = mode.schedule(!cfg!(feature = "visionipc-ion"));
+    let policy = mode.schedule(is_pc());
     if let Some(priority) = policy.priority {
         // SAFETY: GNU/MUSL sched_param contains only C integers, integer timespecs,
         // and reserved storage; all-zero is valid for every field.
@@ -110,4 +108,92 @@ pub fn recording() -> Result<Recording, Error> {
         front: Params::for_runtime()?.get_bool("RecordFront")?,
         audio: Params::for_runtime()?.get_bool("RecordAudio")?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_pc;
+    use crate::config::{Codec, Mode, Quality, Scheduling};
+
+    const INPUT_WIDTH: i32 = 3840;
+    const STREAM_BITRATE: i32 = 600_000;
+
+    fn expected_pc() -> bool {
+        !openpilot_msgq::VISIONIPC_ION
+    }
+
+    #[test]
+    fn main_codec_and_scheduling_follow_compiled_transport() {
+        let pc = is_pc();
+        let main = Mode::Main.schedule(pc);
+        let stream = Mode::Stream.schedule(pc);
+        let carrot_vision = Mode::CarrotVision.schedule(pc);
+        let codec = Quality::Main
+            .settings(INPUT_WIDTH, pc, STREAM_BITRATE)
+            .codec;
+        if expected_pc() {
+            assert_eq!(codec, Codec::BigBoxLossless);
+            assert_eq!(
+                main,
+                Scheduling {
+                    priority: None,
+                    core: None
+                }
+            );
+            assert_eq!(
+                stream,
+                Scheduling {
+                    priority: None,
+                    core: None
+                }
+            );
+            assert_eq!(
+                carrot_vision,
+                Scheduling {
+                    priority: None,
+                    core: None
+                }
+            );
+        } else {
+            assert_eq!(codec, Codec::FullHevc);
+            assert_eq!(
+                main,
+                Scheduling {
+                    priority: Some(52),
+                    core: Some(3)
+                }
+            );
+            assert_eq!(
+                stream,
+                Scheduling {
+                    priority: Some(52),
+                    core: Some(3)
+                }
+            );
+            assert_eq!(
+                carrot_vision,
+                Scheduling {
+                    priority: None,
+                    core: Some(0)
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn qcam_and_stream_stay_qcamera_h264() {
+        let pc = is_pc();
+        assert_eq!(
+            Quality::Qcam
+                .settings(INPUT_WIDTH, pc, STREAM_BITRATE)
+                .codec,
+            Codec::QcameraH264
+        );
+        assert_eq!(
+            Quality::Stream
+                .settings(INPUT_WIDTH, pc, STREAM_BITRATE)
+                .codec,
+            Codec::QcameraH264
+        );
+    }
 }
