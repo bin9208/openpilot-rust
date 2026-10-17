@@ -1,0 +1,800 @@
+{
+  "source_sha256": "a1aeb0a2448230d42f42c353c338737e960807a0fa19efc5577c371d8f9bff46",
+  "capture": "Unchanged original checker; independent injected child images/process failures. Original Pillow/NumPy decode and arithmetic remain live.",
+  "cases": [
+    {
+      "name": "pass",
+      "binary_hex": "6e6174697665",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "burn-in",
+            "@OUTPUT@/native-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "grid",
+            "@OUTPUT@/source-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "grid",
+            "@OUTPUT@/native-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "touches",
+            "@OUTPUT@/source-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "touches",
+            "@OUTPUT@/native-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"mode\": \"burn-in\", \"different_pixels\": 0, \"max_channel_difference\": 0}\n{\"mode\": \"grid\", \"different_pixels\": 0, \"max_channel_difference\": 0}\n{\"mode\": \"touches\", \"different_pixels\": 0, \"max_channel_difference\": 0}\nPASS: unchanged-source/native burn-in shader, grid and touch trail final-frame pixels\n",
+      "files": {
+        "results.json": "[\n  {\n    \"mode\": \"burn-in\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  },\n  {\n    \"mode\": \"grid\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  },\n  {\n    \"mode\": \"touches\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  }\n]",
+        "native-touches.log": "",
+        "source-grid.log": "",
+        "native-grid.log": "",
+        "source-touches.log": "",
+        "source-burn-in.log": "",
+        "native-burn-in.log": ""
+      },
+      "images": {
+        "native-touches.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-touches.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-grid.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-burn-in.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-burn-in.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-grid.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": null,
+      "exit": 0
+    },
+    {
+      "name": "different",
+      "binary_hex": "6e6174697665",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "burn-in",
+            "@OUTPUT@/native-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "grid",
+            "@OUTPUT@/source-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "grid",
+            "@OUTPUT@/native-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "touches",
+            "@OUTPUT@/source-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "touches",
+            "@OUTPUT@/native-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"mode\": \"burn-in\", \"different_pixels\": 1, \"max_channel_difference\": 4}\n{\"mode\": \"grid\", \"different_pixels\": 1, \"max_channel_difference\": 4}\n{\"mode\": \"touches\", \"different_pixels\": 1, \"max_channel_difference\": 4}\n",
+      "files": {
+        "results.json": "[\n  {\n    \"mode\": \"burn-in\",\n    \"different_pixels\": 1,\n    \"max_channel_difference\": 4\n  },\n  {\n    \"mode\": \"grid\",\n    \"different_pixels\": 1,\n    \"max_channel_difference\": 4\n  },\n  {\n    \"mode\": \"touches\",\n    \"different_pixels\": 1,\n    \"max_channel_difference\": 4\n  }\n]",
+        "native-touches.log": "",
+        "source-grid.log": "",
+        "native-grid.log": "",
+        "source-touches.log": "",
+        "source-burn-in.log": "",
+        "native-burn-in.log": ""
+      },
+      "images": {
+        "native-touches.png": "ea606418ff37d17ebfdfab22b6638d90ca2f05e93b33a21792a71e713add5193",
+        "source-touches.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-grid.png": "ea606418ff37d17ebfdfab22b6638d90ca2f05e93b33a21792a71e713add5193",
+        "native-burn-in.png": "ea606418ff37d17ebfdfab22b6638d90ca2f05e93b33a21792a71e713add5193",
+        "source-burn-in.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-grid.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "AssertionError",
+      "exit": 1
+    },
+    {
+      "name": "shape",
+      "binary_hex": "6e6174697665",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "burn-in",
+            "@OUTPUT@/native-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "source-burn-in.log": "",
+        "native-burn-in.log": ""
+      },
+      "images": {
+        "native-burn-in.png": "73adb6848c3d585c197d8dcb664a01526dc8fd57f424f23be7861a1bfe2fd7d3",
+        "source-burn-in.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "ValueError",
+      "exit": 1
+    },
+    {
+      "name": "source-error",
+      "binary_hex": "6e6174697665",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "source-burn-in.log": ""
+      },
+      "images": {},
+      "error": "CalledProcessError",
+      "exit": 1
+    },
+    {
+      "name": "native-error",
+      "binary_hex": "6e6174697665",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "burn-in",
+            "@OUTPUT@/native-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "source-burn-in.log": "",
+        "native-burn-in.log": ""
+      },
+      "images": {
+        "source-burn-in.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "CalledProcessError",
+      "exit": 1
+    },
+    {
+      "name": "missing",
+      "binary_hex": "6e6174697665",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "burn-in",
+            "@OUTPUT@/native-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "source-burn-in.log": "",
+        "native-burn-in.log": ""
+      },
+      "images": {
+        "source-burn-in.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "FileNotFoundError",
+      "exit": 1
+    },
+    {
+      "name": "invalid",
+      "binary_hex": "6e6174697665",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "burn-in",
+            "@OUTPUT@/native-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "source-burn-in.log": "",
+        "native-burn-in.log": ""
+      },
+      "images": {
+        "native-burn-in.png": "c82c343621d28033fc04408eb1ed4f2359351a66051fa087ac311a38cea47b05",
+        "source-burn-in.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "UnidentifiedImageError",
+      "exit": 1
+    },
+    {
+      "name": "gray",
+      "binary_hex": "6e6174697665",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "burn-in",
+            "@OUTPUT@/native-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "grid",
+            "@OUTPUT@/source-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "grid",
+            "@OUTPUT@/native-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "touches",
+            "@OUTPUT@/source-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "touches",
+            "@OUTPUT@/native-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"mode\": \"burn-in\", \"different_pixels\": 0, \"max_channel_difference\": 0}\n{\"mode\": \"grid\", \"different_pixels\": 0, \"max_channel_difference\": 0}\n{\"mode\": \"touches\", \"different_pixels\": 0, \"max_channel_difference\": 0}\nPASS: unchanged-source/native burn-in shader, grid and touch trail final-frame pixels\n",
+      "files": {
+        "results.json": "[\n  {\n    \"mode\": \"burn-in\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  },\n  {\n    \"mode\": \"grid\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  },\n  {\n    \"mode\": \"touches\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  }\n]",
+        "native-touches.log": "",
+        "source-grid.log": "",
+        "native-grid.log": "",
+        "source-touches.log": "",
+        "source-burn-in.log": "",
+        "native-burn-in.log": ""
+      },
+      "images": {
+        "native-touches.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "source-touches.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "native-grid.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "native-burn-in.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "source-burn-in.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "source-grid.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b"
+      },
+      "error": null,
+      "exit": 0
+    },
+    {
+      "name": "int16",
+      "binary_hex": "6e6174697665",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "burn-in",
+            "@OUTPUT@/native-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "grid",
+            "@OUTPUT@/source-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "grid",
+            "@OUTPUT@/native-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "touches",
+            "@OUTPUT@/source-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "touches",
+            "@OUTPUT@/native-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"mode\": \"burn-in\", \"different_pixels\": 0, \"max_channel_difference\": 0}\n{\"mode\": \"grid\", \"different_pixels\": 0, \"max_channel_difference\": 0}\n{\"mode\": \"touches\", \"different_pixels\": 0, \"max_channel_difference\": 0}\nPASS: unchanged-source/native burn-in shader, grid and touch trail final-frame pixels\n",
+      "files": {
+        "results.json": "[\n  {\n    \"mode\": \"burn-in\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  },\n  {\n    \"mode\": \"grid\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  },\n  {\n    \"mode\": \"touches\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  }\n]",
+        "native-touches.log": "",
+        "source-grid.log": "",
+        "native-grid.log": "",
+        "source-touches.log": "",
+        "source-burn-in.log": "",
+        "native-burn-in.log": ""
+      },
+      "images": {
+        "native-touches.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "source-touches.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "native-grid.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "native-burn-in.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "source-burn-in.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "source-grid.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf"
+      },
+      "error": null,
+      "exit": 0
+    },
+    {
+      "name": "surrogate",
+      "binary_hex": "6e6174697665ff",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "burn-in",
+            "@OUTPUT@/source-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "burn-in",
+            "@OUTPUT@/native-burn-in.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "grid",
+            "@OUTPUT@/source-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "grid",
+            "@OUTPUT@/native-grid.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_qa/diagnostic_source.py",
+            "touches",
+            "@OUTPUT@/source-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@BINARY@",
+            "@ROOT@",
+            "touches",
+            "@OUTPUT@/native-touches.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"mode\": \"burn-in\", \"different_pixels\": 0, \"max_channel_difference\": 0}\n{\"mode\": \"grid\", \"different_pixels\": 0, \"max_channel_difference\": 0}\n{\"mode\": \"touches\", \"different_pixels\": 0, \"max_channel_difference\": 0}\nPASS: unchanged-source/native burn-in shader, grid and touch trail final-frame pixels\n",
+      "files": {
+        "results.json": "[\n  {\n    \"mode\": \"burn-in\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  },\n  {\n    \"mode\": \"grid\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  },\n  {\n    \"mode\": \"touches\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0\n  }\n]",
+        "native-touches.log": "",
+        "source-grid.log": "",
+        "native-grid.log": "",
+        "source-touches.log": "",
+        "source-burn-in.log": "",
+        "native-burn-in.log": ""
+      },
+      "images": {
+        "native-touches.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-touches.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-grid.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-burn-in.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-burn-in.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-grid.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": null,
+      "exit": 0
+    }
+  ]
+}

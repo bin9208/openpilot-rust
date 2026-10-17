@@ -25,7 +25,7 @@ checks = [
   ('forms', 'check_ui_forms.py', 'form_render', True),
   ('network', 'check_ui_network.py', 'network_render', True),
   ('polygon', None, 'polygon_render', True),
-  ('diagnostics', 'check_ui_diagnostics.py', 'diagnostic_render', True),
+  ('diagnostics', None, 'diagnostic_render', True),
   ('application', 'check_ui_application.py', 'application_run', True),
   ('fps', None, 'fps_trace', False),
   ('egl', None, 'egl_trace', False),

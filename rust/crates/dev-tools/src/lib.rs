@@ -28,6 +28,9 @@ pub mod selfdrive_helpers_check;
 pub mod selfdrive_state_check;
 pub mod stats_clock_check;
 pub mod stats_numbers_check;
+#[cfg(feature = "image-array-native")]
+pub mod ui_diagnostic_check;
+pub mod ui_diagnostic_reference;
 #[cfg(feature = "egl-reference")]
 pub mod ui_egl_check;
 #[cfg(feature = "egl-reference")]

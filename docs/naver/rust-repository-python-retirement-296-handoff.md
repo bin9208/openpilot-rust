@@ -10,7 +10,7 @@
 
 기존 원격 a077b0d2의 Rust CI 38777900468은 최종 success다. 로컬에는
 후속 도구 전환·최적화와 검증 중인 모델/이미지 변경이 있으므로 범위별로 나누어
-커밋한다. 인벤토리는 69 replaced-local / 3,511 pending이며 전체 전환은 미완료다.
+커밋한다. 인벤토리는 71 replaced-local / 3,509 pending이며 전체 전환은 미완료다.
 최신 검증 결과는 evidence 및 runtime-module-audit 문서를 따른다.
 공유 primary/dev-md 캐시 대신 아래의 cargo-target-retirement-296을 사용한다.
 

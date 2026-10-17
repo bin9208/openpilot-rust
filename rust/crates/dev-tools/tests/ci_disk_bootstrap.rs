@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 208);
+    assert_eq!(text.matches(marker).count(), 210);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -250,6 +250,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut cutin = vec![];
     let mut selfdrive_state = vec![];
     let mut alert_family = vec![];
+    let mut ui_diagnostics = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
             if i + 1 < lines.len() && (lines[i + 1].contains("--bin check-ratekeeper") || lines[i + 1].contains("rust/target/debug/check-ratekeeper --binary")) {
@@ -260,6 +261,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 selfdrive_state.push(tail.to_owned());
             } else if i + 1 < lines.len() && ["rust/target/debug/check-alert-manager --binary", "rust/target/debug/check-selfdrive-events --binary", "rust/target/debug/check-alert-callbacks --binary", "rust/target/debug/check-selfdrive-helpers --native"].iter().any(|command| lines[i+1].contains(command)) {
                 alert_family.push(tail.to_owned());
+            } else if i + 1 < lines.len() && (lines[i + 1].contains("--features image-array-native --test ui_diagnostic_reference") || lines[i + 1].contains("rust/target/debug/build-ui-diagnostic-reference --output")) {
+                ui_diagnostics.push(tail.to_owned());
             } else if i + 1 < lines.len() && lines[i + 1].contains("--bin stage-startup-ui-raylib") {
                 raylib.push(tail.to_owned());
             } else if i + 1 < lines.len()
@@ -304,6 +307,13 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         }
     }
     assert_eq!(arguments.len(), 179);
+    assert_eq!(
+        ui_diagnostics,
+        vec![
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 16"
+        ]
+    );
     assert_eq!(
         alert_family,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"; 4]

@@ -1636,3 +1636,38 @@ across the three native workers; Python/Android and service checks are retained.
 Published8881f354 fast PR/push, Integration and mapped-doc gates pass; Rust CI had
 36 successful jobs and9 outstanding at last inspection, with no reported failure.
 Those results do not substitute for this later commit's exact-source gates.
+
+### Native diagnostic scenes and raster checker (2026-10-18)
+
+The diagnostic source helper and checker are retired after independently porting
+scene policy into Rust. A narrow owned C++ raw raylib ABI exposes drawing/resource
+calls; it contains no candidate Renderer policy or Python execution. Original
+shader, geometry, font, touch colors, inherited environment behavior and three
+scene comparisons remain. The checker uses the full native image-array decoder
+and existing NumPy-equivalent integer comparison, including shape/broadcast errors.
+
+Six fresh original/reference PNGs are byte-identical; sixteen independently
+captured environment cases match exit, image and FFmpeg arguments. The actual
+current diagnostic_render candidate passes burn-in/grid/touches with zero differing
+pixels. Eight integration tests, two unit tests, scoped strict Clippy, all three
+tool builds and current candidate build pass. Parent repeats all eight integration
+tests and actual three-scene checker after deleting the two Python files with
+PATH=/nonexistent. Native exec traces contain no interpreter. Source/font/layout
+and all five dependency records remain guarded; a newly importable Params binding
+requires independent language/font recapture instead of silently assuming English.
+
+PROFILE_STARTUP retains initialization-only exit, no PNG writes, initialization
+failure precedence and cleanup. Its output intentionally reports actual native
+initialization time instead of CPython cProfile's function counts/cumulative table;
+this implementation-specific report is not a Python profile or speed comparison.
+RECORD starts the original FFmpeg argument list, feeds no frames in this helper,
+and closes/reaps its owned recorder; failure also reaps the raw drawing child.
+
+The complete UI orchestrator now selects check-ui-diagnostics. Required CI builds
+all three tools, runs both native suites and builds/exports the raw helper under
+explicit 512MiB/16MiB growth checks. The new routing assertion first failed before
+migration, then all28 affected routing/disk tests passed. The other four Python UI
+children and the orchestrator itself remain pending; a Rust wrapper around those
+children is not counted as their conversion. Inventory:71 replaced-local /
+3,509 pending baseline sources. Evidence:2026-10-18-ui-diagnostics/{production-final,
+production-final-six.json,parent-retired-proof,parent-retired-tests.log}.

@@ -25,6 +25,23 @@ name = "check-alert-callbacks"
 path = "src/bin/check_alert_callbacks.rs"
 
 [[bin]]
+name = "build-ui-diagnostic-reference"
+path = "src/bin/build_ui_diagnostic_reference.rs"
+
+[[bin]]
+name = "ui-diagnostic-reference"
+path = "src/bin/ui_diagnostic_reference.rs"
+
+[[bin]]
+name = "check-ui-diagnostics"
+path = "src/bin/check_ui_diagnostics.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_diagnostic_check"
+required-features = ["image-array-native"]
+
+[[bin]]
 name = "check-selfdrive-state"
 path = "src/bin/check_selfdrive_state.rs"
 

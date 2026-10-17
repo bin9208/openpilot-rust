@@ -7,6 +7,50 @@ fn root() -> PathBuf {
 }
 
 #[test]
+fn native_diagnostics_are_built_tested_and_selected_by_the_complete_ui_gate() {
+    let root = root();
+    let workflow =
+        parse(&fs::read_to_string(root.join(".github/workflows/rust.yml")).unwrap()).unwrap();
+    let steps = workflow["jobs"]["ui-connectivity"]["steps"]
+        .as_array()
+        .unwrap();
+    let command = steps
+        .iter()
+        .filter_map(|s| s["run"].as_str())
+        .find(|r| r.contains("--bin check-ui-diagnostics"))
+        .expect("diagnostic tools must be built");
+    for bin in [
+        "--bin check-ui-diagnostics",
+        "--bin ui-diagnostic-reference",
+        "--bin build-ui-diagnostic-reference",
+    ] {
+        assert!(command.contains(bin));
+    }
+    assert!(command.contains("--features egl-reference,polygon-reference"));
+    assert!(command.contains("--features image-array-native --test ui_diagnostic_reference --test ui_diagnostic_check --locked"));
+    let build = "rust/target/debug/build-ui-diagnostic-reference --output \"$RUNNER_TEMP/ui-diagnostic-raw\" --raylib-root \"$STARTUP_UI_RAYLIB_ROOT\"";
+    assert!(command.contains(build));
+    assert!(command.contains("UI_DIAGNOSTIC_RAW_HELPER=%s/ui-diagnostic-raw/ui-diagnostic-raw"));
+    assert!(command.contains("\"$GITHUB_ENV\""));
+    let caller = fs::read_to_string(root.join("rust/tools/check_ui_framework.py")).unwrap();
+    assert!(caller.contains("('diagnostics', None, 'diagnostic_render', True)"));
+    assert!(!caller.contains("check_ui_diagnostics.py"));
+    let manifest: toml::Value =
+        toml::from_str(&fs::read_to_string(root.join("rust/crates/dev-tools/Cargo.toml")).unwrap())
+            .unwrap();
+    let bin = manifest["bin"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|v| v["name"].as_str() == Some("check-ui-diagnostics"))
+        .unwrap();
+    assert_eq!(
+        bin["required-features"].as_array().unwrap()[0].as_str(),
+        Some("image-array-native")
+    );
+}
+
+#[test]
 fn production_polygon_requires_native_codecs_and_ci_runs_the_real_gate() {
     let root = root();
     let manifest: toml::Value =
