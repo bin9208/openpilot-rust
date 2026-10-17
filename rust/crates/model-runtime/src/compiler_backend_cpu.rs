@@ -1,7 +1,11 @@
-//! Initial native ONNX-to-CPU artifact backend. Only expressions admitted by the
-//! explicit elementwise renderer compile; unsupported graphs fail before spawning
-//! a compiler or publishing a destination. This does not replace the full model,
-//! image/fusion compiler or any Python consumer yet.
+//! Bounded native ONNX-to-CPU artifact backend. Source admission precedes
+//! contraction and physical scheduling; explicitly configured LLVM providers
+//! can compile selected packed IMAGE residuals. Unsupported graphs fail without
+//! publishing a destination. This does not replace the full model compiler or
+//! any Python consumer yet.
+mod contraction;
+pub mod image;
+pub mod llvm;
 use crate::{
     compiler_onnx::{
         self,
@@ -13,7 +17,7 @@ use crate::{
 };
 use sha2::{Digest, Sha256};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     ffi::{CString, OsString},
     fs::{self, File},
     io::Read,
@@ -28,6 +32,9 @@ pub struct CompileOptions {
     pub timeout: Duration,
     pub offline_bindings: bool,
     pub memory_planning: bool,
+    /// Explicit provider and isolated worker for IMAGE LLVM kernels. No host
+    /// CPU/library guessing occurs when this optional backend is selected.
+    pub llvm: Option<(llvm::Config, PathBuf)>,
 }
 impl Default for CompileOptions {
     fn default() -> Self {
@@ -37,6 +44,7 @@ impl Default for CompileOptions {
             timeout: Duration::from_secs(60),
             offline_bindings: false,
             memory_planning: true,
+            llvm: None,
         }
     }
 }
@@ -66,16 +74,66 @@ fn require_space(path: &Path, growth: u64) -> Result<(), String> {
 }
 struct ChildGroup {
     child: Child,
+    reaped: bool,
+}
+impl ChildGroup {
+    fn try_wait(&mut self) -> std::io::Result<Option<std::process::ExitStatus>> {
+        if self.reaped {
+            return self.child.try_wait();
+        }
+        let mut status = std::mem::MaybeUninit::<libc::siginfo_t>::zeroed();
+        // SAFETY: the output is writable; WNOWAIT observes without reaping, so
+        // the child still reserves the process-group ID during cleanup.
+        if unsafe {
+            libc::waitid(
+                libc::P_PID,
+                self.child.id(),
+                status.as_mut_ptr(),
+                libc::WEXITED | libc::WNOHANG | libc::WNOWAIT,
+            )
+        } != 0
+        {
+            let error = std::io::Error::last_os_error();
+            if error.raw_os_error() == Some(libc::ECHILD) {
+                self.reaped = true;
+            }
+            if error.kind() == std::io::ErrorKind::Interrupted {
+                return Ok(None);
+            }
+            return Err(error);
+        }
+        // SAFETY: waitid initialized status; a zero PID means no exited child.
+        if unsafe { status.assume_init().si_pid() } == 0 {
+            return Ok(None);
+        }
+        self.terminate_group();
+        let result = self.child.try_wait();
+        if matches!(result, Ok(Some(_)))
+            || result
+                .as_ref()
+                .err()
+                .is_some_and(|error| error.raw_os_error() == Some(libc::ECHILD))
+        {
+            // A reaped leader no longer reserves its PID/process-group ID.
+            // Never signal that number again after losing child ownership.
+            self.reaped = true;
+        }
+        result
+    }
+    fn terminate_group(&self) {
+        if let Ok(pid) = i32::try_from(self.child.id()) {
+            // SAFETY: this unreaped child owns its dedicated process-group ID.
+            // Kill descendants before reaping the leader releases that ID.
+            unsafe { libc::kill(-pid, libc::SIGKILL) };
+        }
+    }
 }
 impl Drop for ChildGroup {
     fn drop(&mut self) {
-        if let Ok(pid) = i32::try_from(self.child.id()) {
-            // SAFETY: the child was created in its own process group. Terminating that
-            // group also cleans compiler/linker descendants; no pointer is involved.
-            unsafe {
-                libc::kill(-pid, libc::SIGKILL);
-            }
+        if self.reaped {
+            return;
         }
+        self.terminate_group();
         let _ = self.child.kill();
         let _ = self.child.wait();
     }
@@ -108,6 +166,7 @@ fn command(
         child: process
             .spawn()
             .map_err(|e| format!("native CPU compiler process: {e}"))?,
+        reaped: false,
     };
     let start = Instant::now();
     loop {
@@ -118,7 +177,7 @@ fn command(
                 return Err("native CPU compiler output limit exceeded".into());
             }
         }
-        if let Some(status) = child.child.try_wait().map_err(|e| e.to_string())? {
+        if let Some(status) = child.try_wait().map_err(|e| e.to_string())? {
             let error_bytes = read_bounded(&stderr, 1 << 20)?;
             let stdout_bytes = read_bounded(&stdout, 1 << 20)?;
             if !status.success() {
@@ -349,13 +408,79 @@ pub fn compile_onnx(
     if options.offline_bindings {
         compiler_onnx::storage::apply_cpu_image_aliases(&mut lowered, &model)?;
     }
-    let physical = compiler_onnx::storage_half::physical_graph(&lowered)?;
+    let mut physical = compiler_onnx::storage_half::physical_graph(&lowered)?;
+    // Source admission precedes optimization: contracting a computed divisor
+    // must not obscure its original unsupported arithmetic ancestry.
+    let source_schedule = schedule::schedule_plans(&physical, "CPU", true)?;
+    for (index, call) in source_schedule.calls.iter().enumerate() {
+        render::render_cpu_elementwise(&physical, call.buffers[0], &format!("admit_{index}"))?;
+    }
+    contraction::apply(&mut physical, &model)?;
     compiler_onnx::storage::admit_cpu_observable_fusion(&physical, &model)?;
-    let schedule = schedule::schedule_plans(&physical, "CPU", true)?;
+    let mut schedule = schedule::schedule_plans(&physical, "CPU", true)?;
+    let mut image_calls = BTreeMap::new();
+    let mut extra_initial = BTreeMap::new();
+    let mut scratch_buffers = BTreeSet::new();
+    if options.llvm.is_some() && options.offline_bindings {
+        for closure in image::residual_closures(&lowered, &model)? {
+            // External residuals and independently held convolutions require
+            // distinct original signatures; leave their established path intact.
+            if closure.residual_storage != image::ResidualStorage::PackedHalf
+                || closure.retain_convolution
+            {
+                continue;
+            }
+            let layout = closure.image.layout()?;
+            let Some(raw_weights) = initialized(&lowered, closure.weights) else {
+                return Err("IMAGE packed weights require initialized f32 source".into());
+            };
+            let mut packed = vec![0; layout.weight_elements * 2];
+            closure.image.pack_weights_into(raw_weights, &mut packed)?;
+            let scratch = schedule.buffers.len();
+            schedule.buffers.push(memory::BufferSpec {
+                device: "CPU".into(),
+                bytes: layout.input_elements * 2,
+                held: false,
+                supports_offset: true,
+            });
+            scratch_buffers.insert(scratch);
+            let weight = schedule.buffers.len();
+            schedule.buffers.push(memory::BufferSpec {
+                device: "CPU".into(),
+                bytes: packed.len(),
+                held: true,
+                supports_offset: true,
+            });
+            extra_initial.insert(weight, packed);
+            schedule
+                .calls
+                .retain(|c| c.buffers[0] != closure.convolution);
+            let call = schedule
+                .calls
+                .iter_mut()
+                .find(|c| c.buffers[0] == closure.output)
+                .ok_or("IMAGE residual has no scheduled output call")?;
+            call.buffers = vec![closure.output, closure.input, scratch, weight];
+            image_calls.insert(closure.output, closure.image);
+        }
+    }
     let memory =
         memory::plan_memory_enabled(&schedule.buffers, &schedule.calls, options.memory_planning)?;
     let mut kernels = Vec::new();
     for (index, call) in schedule.calls.iter().enumerate() {
+        if let Some(image) = image_calls.get(&call.buffers[0]) {
+            let kernel = image.logical_artifact(
+                &format!("native_image_{index}"),
+                &format!("op_kernel_{index}"),
+            )?;
+            kernels.push(render::Kernel {
+                function: format!("native_image_{index}"),
+                source: kernel.source,
+                inputs: call.buffers[1..].to_vec(),
+                global: [1, 1, 1],
+            });
+            continue;
+        }
         let kernel = render::render_cpu_elementwise(
             &physical,
             call.buffers[0],
@@ -369,7 +494,7 @@ pub fn compile_onnx(
     if kernels.is_empty() {
         return Err("native CPU compilation currently requires a rendered expression".into());
     }
-    let descriptors = (0..lowered.plans.len())
+    let descriptors = (0..schedule.buffers.len())
         .map(|id| {
             if let Some(view) = memory.views.get(&id) {
                 Buffer {
@@ -412,9 +537,51 @@ pub fn compile_onnx(
     let mut calls = Vec::new();
     for (index, (call, kernel)) in schedule.calls.iter().zip(&kernels).enumerate() {
         let output = call.buffers[0];
+        if image_calls.contains_key(&output) {
+            // LLVM's original IMAGE arguments promise noalias and 32-byte
+            // alignment. Verify the actual planned views, including scratch,
+            // before allowing those promises into a loadable artifact.
+            let abi = image_calls[&output].logical_artifact(
+                &format!("native_image_{index}"),
+                &format!("op_kernel_{index}"),
+            )?;
+            if call.buffers.len() != abi.bytes.len()
+                || call
+                    .buffers
+                    .iter()
+                    .zip(abi.bytes)
+                    .any(|(&id, bytes)| descriptors[id].bytes != bytes)
+            {
+                return Err("IMAGE LLVM argument storage differs from typed ABI".into());
+            }
+            for (position, &id) in call.buffers.iter().enumerate() {
+                let a = descriptors[id];
+                if !a.offset.is_multiple_of(32) {
+                    return Err("IMAGE LLVM view is not 32-byte aligned".into());
+                }
+                for &other in &call.buffers[position + 1..] {
+                    let b = descriptors[other];
+                    if a.base == b.base
+                        && a.offset < b.offset + b.bytes
+                        && b.offset < a.offset + a.bytes
+                    {
+                        return Err("IMAGE LLVM argument views overlap".into());
+                    }
+                }
+            }
+        }
         let mut args = vec![table.view(descriptors[output])?];
         for &id in &kernel.inputs {
-            table.read_initialized(descriptors[id], initialized(&lowered, id))?;
+            if scratch_buffers.contains(&id) {
+                table.write(descriptors[id])?;
+            }
+            let initial = extra_initial.get(&id).map(Vec::as_slice).or_else(|| {
+                lowered
+                    .plans
+                    .get(id)
+                    .and_then(|_| initialized(&lowered, id))
+            });
+            table.read_initialized(descriptors[id], initial)?;
             args.push(table.view(descriptors[id])?);
         }
         table.write(descriptors[output])?;
@@ -432,7 +599,12 @@ pub fn compile_onnx(
     let (allocations, weights) = table.weights();
     let graph = Graph {
         version: 1,
-        backend: "cpu-clang".into(),
+        backend: if image_calls.is_empty() {
+            "cpu-clang"
+        } else {
+            "cpu-llvm"
+        }
+        .into(),
         arch: std::env::consts::ARCH.into(),
         weights_sha256: digest(&weights),
         library_sha256: "0".repeat(64),
@@ -473,6 +645,46 @@ pub fn compile_onnx(
     let mut object_paths = Vec::new();
     let mut source_bytes = 0usize;
     for (index, kernel) in kernels.iter().enumerate() {
+        if let Some(image) = image_calls.get(&schedule.calls[index].buffers[0]) {
+            let (config, worker) = options.llvm.as_ref().ok_or("IMAGE LLVM provider missing")?;
+            let generated = image.logical_artifact(
+                &format!("native_image_{index}"),
+                &format!("op_kernel_{index}"),
+            )?;
+            source_bytes = source_bytes
+                .checked_add(generated.source.len())
+                .and_then(|n| n.checked_add(generated.staging_source.len()))
+                .filter(|n| *n <= 64 * 1024 * 1024)
+                .ok_or("native CPU compiler sources exceed64MiB")?;
+            let packed =
+                llvm::compile_isolated(worker, config, &generated.source, options.timeout)?;
+            let staged =
+                llvm::compile_isolated(worker, config, &generated.staging_source, options.timeout)?;
+            let packed_path = temporary.path().join(format!("image-{index}.o"));
+            let stage_path = temporary.path().join(format!("image-{index}-stage.o"));
+            let object = temporary.path().join(format!("kernel-{index}.o"));
+            require_space(
+                temporary.path(),
+                (packed.object.len() + staged.object.len()) as u64 + (64 << 20),
+            )?;
+            fs::write(&packed_path, &packed.object).map_err(|e| e.to_string())?;
+            fs::write(&stage_path, &staged.object).map_err(|e| e.to_string())?;
+            let args = [
+                OsString::from("-r"),
+                packed_path.into_os_string(),
+                stage_path.into_os_string(),
+                "-o".into(),
+                object.as_os_str().to_owned(),
+            ];
+            command(options, &args, temporary.path(), &object, 64 << 20)?;
+            let object_bytes = read_bounded(&object, 64 << 20)?;
+            elf_header(&object_bytes, 1)?;
+            wrappers.push(format!("/* IMAGE LLVM packed receipt: {}\n IMAGE LLVM staging receipt: {}\n Staging module:\n{}\n*/",serde_json::to_string(&packed.receipt).map_err(|e|e.to_string())?,serde_json::to_string(&staged.receipt).map_err(|e|e.to_string())?,generated.staging_source));
+            sources.push(generated.source);
+            objects.push(object_bytes);
+            object_paths.push(object);
+            continue;
+        }
         let cpu_storage = |dtype| {
             if dtype == 10 {
                 Ok("ushort")
@@ -552,4 +764,90 @@ pub fn compile_onnx(
         graph,
         model_sha256: identity,
     })
+}
+
+#[cfg(test)]
+mod process_lifecycle_tests {
+    use super::*;
+    use std::os::unix::process::CommandExt;
+
+    fn descendant_terminated(pid_file: &Path) {
+        let started = Instant::now();
+        let descendant: u32 = fs::read_to_string(pid_file)
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        loop {
+            // An orphan may await init's reap; a zombie has already terminated.
+            let alive = fs::read_to_string(format!("/proc/{descendant}/stat"))
+                .ok()
+                .and_then(|s| s.rsplit_once(") ").map(|(_, rest)| rest.starts_with('Z')))
+                == Some(false);
+            if !alive {
+                break;
+            }
+            assert!(
+                started.elapsed() < Duration::from_secs(5),
+                "compiler descendant survived leader cleanup"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    #[test]
+    fn exited_leader_still_owns_group_during_descendant_cleanup() {
+        let directory = tempfile::tempdir().unwrap();
+        let pid_file = directory.path().join("descendant.pid");
+        let child = Command::new("/bin/sh")
+            .args(["-c", "sleep 60 & echo $! > \"$1\"", "compiler-test"])
+            .arg(&pid_file)
+            .process_group(0)
+            .spawn()
+            .unwrap();
+        let mut owned = ChildGroup {
+            child,
+            reaped: false,
+        };
+        let started = Instant::now();
+        loop {
+            if let Some(status) = owned.try_wait().unwrap() {
+                assert!(status.success());
+                break;
+            }
+            assert!(started.elapsed() < Duration::from_secs(5));
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(owned.reaped);
+        assert!(owned.try_wait().unwrap().unwrap().success());
+        drop(owned);
+        descendant_terminated(&pid_file);
+    }
+
+    #[test]
+    fn timeout_stops_and_reaps_compiler_with_background_descendant() {
+        let directory = tempfile::tempdir().unwrap();
+        let pid_file = directory.path().join("descendant.pid");
+        let options = CompileOptions {
+            program: "/bin/sh".into(),
+            arguments: vec![
+                "-c".into(),
+                "sleep 60 & echo $! > \"$1\"; wait".into(),
+                "compiler-test".into(),
+                pid_file.as_os_str().to_owned(),
+            ],
+            timeout: Duration::from_millis(100),
+            ..CompileOptions::default()
+        };
+        let error = command(
+            &options,
+            &[],
+            directory.path(),
+            &directory.path().join("output"),
+            1024,
+        )
+        .unwrap_err();
+        assert!(error.contains("timeout"), "{error}");
+        descendant_terminated(&pid_file);
+    }
 }

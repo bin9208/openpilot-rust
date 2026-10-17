@@ -352,3 +352,190 @@ all seven renderer/backend/lowering/storage source hashes match the final files.
 The earlier151-test run is explicitly pre-review-repair evidence; only the
 reviewed-final run establishes this checkpoint. Full compiler/Python retirement
 remains pending.
+
+Pending CPU norm unit: `original-norm.json` records unmodified CPU:LLVM
+single-final-realization ONNX outputs and exact raw float32 Sqrt/Log2 inputs.
+Source hashes, original LLVM kernel sources, optimizer options and binary hashes
+are embedded. Sqrt uses the pinned xlog2/pow-half/xexp2 decomposition, not libm
+sqrt. Native admission is direct float32 input Sqrt and a single contiguous
+trailing-axis reduced scalar from direct input. Batched, strided and computed
+norms remain original-valid unsupported controls, including jointly exported
+computed inputs: selecting another graph output does not prove a source
+materialization barrier. Cross-row LLVM SLP changed original rounding (5x7 row3
+native40618655/original40618657); no batching threshold is inferred.
+
+All normalization outputs remain unsupported. Original finite inputs require
+reciprocal reuse rather than strict FDIV, while SIMD packing changes which NaN
+payload survives (width2 numerator payloads, width4 reciprocal payload, width34
+mixed main/tail behavior). An attempted universal reciprocal NaN-priority helper
+was removed. These successful original outputs are rejection controls, not native
+equivalence positives. Proper normalization needs the native LLVM scheduling
+port. The preceding151-test checkpoint does not validate this pending norm unit.
+
+Pending CPU contraction unit: `original-mulacc-f32.json` retains290 independent
+original joint-output ONNX captures:66 direct/runtime and ordinary-initializer positives and224 source-valid
+held/view-held/shared/moved/aliased/computed/broadcast/symbolic-special unsupported
+controls.
+All carry raw finite/nonfinite inputs and complete original output bytes.
+Contraction changes the physical graph before liveness/scheduling/memory planning;
+only direct-buffer f32 single-consumer Mul+Add with distinct source operands is
+admitted. Original multiplicand-ordered NaN selection is scoped to those new
+nodes, preserving payloads and signaling-NaN quieting without changing existing
+MulAcc behavior. Held33-element Add already differs in NaN operand priority even
+without FMA, so those original successes are explicitly rejected, not normalized.
+`original-driving-contraction21.json` records the pinned source/prefix identity,
+original optimized kernels/binary hashes and true final-f32 output hash. Complete
+prefix21 output524288 bytes matches original56ee839f...94b9bb after contraction;
+previous13750 differing bytes were not accepted. Later prefix survey22/24/30/
+109/115 is exact for the bounded fixed input, not an all-input/full-compiler proof.
+
+Current review expansion retains435 norm records:83 scalar norm positives,
+350 original-valid rejection controls (including9 jointly selected square/CSE
+contexts), plus raw Sqrt/Log2 captures. Normalization remains unsupported.
+The IMAGE residual corpus separately retains32 positive graphs and128 rejected
+swapped/symbolic-special controls. It distinguishes unheld multiply recomputation
+from held source loads. Conv accumulator-first Add NaN priority is scoped to this
+computed residual family; generic Add behavior is unchanged. The attempted manual first-product initialization remains a known wrong,
+uncommitted implementation: C8/W1 original returns -0, whereas C12/W1 returns
++0 and C12/W3 returns -0. `original-image-muladd-wide-pending.json` retains all72
+independent wide cases; these are unresolved evidence, not passing regressions.
+A source-derived packed layout/LLVM schedule must replace that approximation.
+Neither a channel/width whitelist nor a tolerance change is acceptable.
+All old36 storage-alias positive graphs remain required without relaxed bytes.
+Computed half addends remain unsupported except supported source bindings or
+already proved contraction/IMAGE residual producers; a storage-round marker alone
+is not a proof of arbitrary upstream arithmetic. Non-growing movement checks
+reject repeated Expand/Slice maps despite equal endpoint sizes. Original source
+successes in all rejected families are explicitly retained and are not counted
+as native equivalence passes. Final whole-package verification is still pending.
+
+
+Pending native LLVM provider: `original-llvm-provider.json` retains three original
+LLVM kernel sources and independent object/optimized-IR SHA256 expectations for
+LLVM18.1.3 and20.1 separately. The same source has different binaries across
+versions; only same-configured-provider equality is asserted. Optimized IR hashes
+remove exactly the additional newline from the original Python DEBUG print.
+The original compiler contributor hash is embedded with each provider; capture
+calls unmodified `CPULLVMCompiler.compile_to_obj` on those independently captured
+sources with DEBUG7, recording its object and LLVMPrintModuleToString output.
+Explicit triple, CPU, feature string, O2 pipeline and all four pass options are
+retained; object-only znver4 fixtures never execute unsupported ISA on CI hosts.
+
+LLVM18 local provenance: Ubuntu noble-updates `libllvm18:amd64` version
+`1:18.1.3-1ubuntu1`, upstream package
+`pool/main/l/llvm-toolchain-18/libllvm18_18.1.3-1ubuntu1_amd64.deb`,27518500bytes,
+packageSHA256 `af6197096ce3b89aab86de59f01c1b5feb008b2ae1514a03906c0664edb8b0b1`.
+Extracted `/usr/lib/llvm-18/lib/libLLVM.so.1` SHA256
+`5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`.
+LLVM20.1 selected library SHA256
+`4b93481bd1c9d42c0951275dd275d4a9d30db78c309ae2cc0405669bc6dbbf8a`.
+The mandatory provider gate fails if the configured library is absent or has no
+independent capture; it never skips or silently selects another provider.
+
+`offline-llvm-compile` loads one pinned library per disposable process, verifies
+IR, records source/object/optimized-IR/library/target/pass identities and writes
+owned create-new outputs with the receipt last. `compile_isolated` applies group
+termination/time/output bounds and validates the receipt and all payload hashes,
+then rehashes the actual library before returning any product. No compiler
+artifact is published by this provider. Five focused tests passed independently on LLVM20.1 and explicit LLVM18;
+strict provider/library/worker Clippy passed with warnings denied, and scoped
+independent read-only provider review found no Important issue. IMAGE layout/scheduling integration
+and full model package verification are still outstanding; Python is retained.
+
+`original-image-packed.json` preserves 36 materialized final IMAGE residual
+kernel cases per pinned LLVM provider. `compiler_image_packed` compares exact
+float32 output bytes, including NaN payloads and signed zero, and the 12 captured
+reduction schedules. The native `Image1x1` primitive derives channel-block/lane
+strides, bank-conflict padding, compatible affine-axis merging and reduction
+unrolling from the retained source rules. It preserves looped +0 accumulators,
+the original expanded reduction identity rewrite, emulated-half conversion and
+the `nsz arcp contract afn` flags. This boundary does not admit ONNX graphs.
+
+`original-image-packed-controls.json` adds 24 independent controls per provider:
+channels4/20/36/64, widths1/3/5, deterministic nonuniform signed weights, payload
+inputs and positive-weight negative-zero controls. These include the channel>32
+looped reduction path. Captures use unmodified original OnnxRunner,
+compile_linear, CPULLVMCompiler and jit_loader, with explicit baseline x86-64
+CPU and no additional features. Inputs and weights come from original complete
+graph materialization; the captured expected output belongs to the final
+materialized-input kernel. Each provider has its own original output bytes.
+Additional source contributors pin the axis merge, half decomposition, late
+linearizer, operation order and dtype order used by the native primitive.
+Native verification passed all60 exact output-byte cases per provider (the
+original36 plus these24) and all12 schedule observations on2026-10-18. The five
+provider regression tests passed for each version, and scoped library/worker/
+packed-test/provider-test Clippy passed with warnings denied. These controls do
+not establish whole-export parity, general convolution or normalization support.
+The subsequent units below cover typed artifact packaging, materialization and
+bounded ONNX integration. General convolution/fusion and whole-model compiler
+equivalence remain pending.
+
+The subsequent materialization/ABI unit independently captures11 original
+NCHW-f32 input and weight packing programs in
+`original-image-materialization.json`. Original kernels run into32-byte-aligned,
+sentinel-filled destinations. Exact full-buffer comparisons retain the gated
+padding-write contract as well as half overflow/underflow, round-to-even ties,
+NaN payloads and signed zero. Native host packing and the typed three-buffer
+LLVM runtime ABI passed on LLVM18 and20.1, including offset views, repeated
+inputs and output canaries. Those runs retained all60 earlier output cases and
+all12 schedules; scoped Clippy passed before the next logical-staging additions.
+
+`original-image-logical-artifact.json` retains24 cases per provider, adding the
+original separately materialized logical f32 multiply output and the raw source
+graph/input to the original final-kernel capture. Native four-buffer logical
+staging passed all24 cases on LLVM18 and20.1. Its
+packing module must compile separately from the residual kernel to preserve the
+physical half materialization boundary. An external f32 input residual is a
+distinct original four-argument kernel and must not be confused with the
+computed unheld residual's packed-half input.
+
+The first full graph integration run passed all48 LLVM18 compilations and
+executions (24 original graphs with memory planning both disabled and enabled),
+including exact NaN payloads and signed zero. This path explicitly selects a
+pinned provider and isolated worker, stages logical NCHW inputs at a separate
+object boundary, plans packed scratch/constant weights and emits the existing
+runtime ABI. The default C20/W1 negative-zero regression also passed after the
+first-product initializer was derived from source reduction strides instead of
+channel alignment. Subsequent final-source validation passed178 tests across28
+LLVM18 module binaries, with no failed or ignored tests. This includes all old
+positive storage/fusion/norm/contraction checks and real-model comparisons,
+the typed-byte/source-size gates,12 held-output graph cases, provider failure
+without fallback/publication and the process-group lifecycle repair. Two
+lifecycle tests plus an independent syscall trace confirm descendant cleanup
+on normal exit and timeout, with every group signal before leader reaping.
+LLVM20.1 passed all16 packed/projection/provider tests, including the same48
+complete graph executions and12 held-output cases. Strict all-target Clippy
+passed with warnings denied. These are bounded host software results; no
+device execution or complete driving-model compiler parity is claimed.
+The fresh aarch64 GNU release QCOM helper also built successfully; the current
+typed renderer and that helper reproduced the original Add source and all2144
+A630 binary bytes exactly. The proof records the actual final helper, native
+contributors, provider, emulator and loader hashes.
+
+Remaining compiler work is separate from this bounded residual unit:
+
+- The pinned full driving model (`f73a9e535523d5e9acb9e642c64e33d631825dc8ba74123757d107cedd047bb5`)
+  currently rejects before publication with `CPU IMAGE matrix requires f32/half
+  rank-two operands`. The first offending matrix is node274,
+  `policy/node_MatMul_13`: f32 `policy/index` `[1,9,512]` times f16
+  `policy/val_12` `[512,512]`, producing `policy/val_13`. The next RED unit
+  should capture that original dependency closure and its packed/intermediate
+  bytes on each pinned provider, including held outputs and equivalent
+  flattened/noncontiguous controls. Port batched matrix packing and inverse
+  alias maps before widening admission; removing the rank check alone is not
+  an implementation. Re-run the full-model admission probe after that unit to
+  identify the next barrier rather than assuming this is the last one.
+- The LLVM closure currently covers computed-input, equal-channel1x1 residuals
+  with batch1/height1. Direct external-f32 residuals and separately retained
+  convolution outputs need their original signatures/staging proofs before
+  LLVM selection. General kernel shapes, groups, stride/pad/crop, unequal
+  channels and complete fusion schedules still need source-derived lowering
+  and independent original controls.
+- Scalar contiguous-row norms and direct Sqrt coverage do not prove general
+  batched normalization. Port the original reduction/materialization and
+  contraction order before admitting the rejected computed/aliased cases.
+- The A630 Add source/binary proof is one unchanged kernel. It does not prove
+  GPU IMAGE descriptors, graph execution, full driving outputs or performance.
+  Preserve the passing whole-driver and real-prefix CPU comparisons while
+  extending the compiler. Migrate actual exporter callers and verify the
+  complete supported graph paths before retiring their Python sources.

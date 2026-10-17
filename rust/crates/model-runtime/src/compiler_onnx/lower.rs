@@ -148,7 +148,10 @@ pub struct LoweredGraph {
     offline_images: bool,
     pub plans: Vec<Plan>,
     // Source-operator provenance for bounded CPU dynamic-divisor movement.
-    pub(super) cpu_divisor_views: std::collections::BTreeSet<usize>,
+    pub(crate) cpu_divisor_views: std::collections::BTreeSet<usize>,
+    // Original CPU late-contracted nodes retain ordered hardware NaN operands.
+    pub(crate) cpu_ordered_image_adds: std::collections::BTreeSet<usize>,
+    pub(crate) cpu_contractions: std::collections::BTreeSet<usize>,
     pub names: BTreeMap<String, usize>,
     pub outputs: BTreeMap<String, usize>,
 }
@@ -177,7 +180,7 @@ fn index_from_coordinates(
             add(mul(index, size), c)
         })
 }
-fn broadcast_index(input: &[usize], output: &[usize]) -> IndexExpr {
+pub(crate) fn broadcast_index(input: &[usize], output: &[usize]) -> IndexExpr {
     let offset = output.len() - input.len();
     index_from_coordinates(
         input,
@@ -186,6 +189,22 @@ fn broadcast_index(input: &[usize], output: &[usize]) -> IndexExpr {
                 IndexExpr::Constant(0)
             } else {
                 coordinate(output, offset + i)
+            }
+        }),
+    )
+}
+pub(super) fn trailing_reduction_index(input: &[usize], start: usize, keep: bool) -> IndexExpr {
+    let mut output = input[..start].to_vec();
+    if keep {
+        output.extend(std::iter::repeat_n(1, input.len() - start));
+    }
+    index_from_coordinates(
+        input,
+        (0..input.len()).map(|i| {
+            if i < start {
+                coordinate(&output, i)
+            } else {
+                reduction::reduce_coordinate(&input[start..], i - start)
             }
         }),
     )

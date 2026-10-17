@@ -1414,3 +1414,39 @@ review findings or constitute device validation. CI now calls the native beep
 clock tool and includes its regression tests. Inventory: 58 replaced-local /
 3,522 pending baseline sources. Full retirement and user-owned device acceptance
 remain open.
+
+### Pinned LLVM worker and packed IMAGE compiler integration (2026-10-18)
+
+The native compiler now isolates explicitly pinned LLVM providers in a bounded
+worker, verifies source/object/optimized-IR receipts and rolls back failed
+outputs. Selected Conv/residual IMAGE closures use the original packed-half
+layout and reduction scheduling, with checked argument lengths, disjoint views
+and 32-byte alignment before LLVM alias/alignment promises. Original held raw
+outputs remain observable. Provider failure cannot silently fall back to C.
+The former aligned-channel accumulator shortcut is replaced by the source affine
+reduction-axis rule, retaining loop identity and signed-zero/NaN behavior.
+
+Compiler process-group cleanup now observes an exited leader with WNOWAIT,
+terminates its descendants while the leader still reserves the group identity,
+then reaps it. Normal-exit and timeout lifecycle tests and independent syscall
+ordering checks pass; cleanup never signals the group after losing ownership.
+
+Latest source passed the complete LLVM18 model-runtime all-target suite: 178
+checks across 28 binaries, none failed or ignored. The affected LLVM20.1 suites
+passed all 16 checks, including 48 complete graph compilations/executions with
+both memory plans and 12 held-output cases. Strict all-target Clippy passed.
+A newly built aarch64 offline QCOM helper running under QEMU reproduced the
+original A630 OpenCL source and all 2,144 binary bytes. The helper SHA256 is
+1473639dd5e6eb6e3ac260380353fa6ea7642be08da3bfd7553f2ae09eab42a8;
+this is host/QEMU compiler evidence, not physical target execution.
+CI stages the exact independently captured LLVM18 library with archive and
+library hash verification; no uncaptured provider or skipped numerical check is
+accepted. Independent source review found no remaining issue in this bounded
+implementation; evidence is indexed in the compiler fixture README.
+
+Full compiler conversion remains open. A fresh full-driving admission probe
+rejects node274 `policy/node_MatMul_13`, shape [1,9,512] x [512,512], at the
+rank-two IMAGE matrix boundary without publishing an artifact. Batched packing,
+general normalization, other scheduling/GPU/training paths and caller migration
+still require their own original comparisons. No model Python files are removed
+by this change and this result is not a full-model parity claim.

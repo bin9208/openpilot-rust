@@ -32,7 +32,7 @@ fn run(case: &serde_json::Value, actual: bool) -> Vec<(String, Vec<u8>)> {
         },
         &dest,
     )
-    .unwrap();
+    .unwrap_or_else(|error| panic!("{}: {error}", case["name"]));
     let mut model = unsafe { CpuModel::load(&dest) }.unwrap();
     if actual {
         model

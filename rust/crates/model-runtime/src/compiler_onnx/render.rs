@@ -392,16 +392,31 @@ impl Renderer<'_> {
                 self.cpu_math = true;
                 Ok(format!("native_exp2({})", self.expression(value)?))
             }
+            ScalarExpr::Sqrt { dtype: 1, value } if self.cpu_emulated_half => {
+                if !self.sqrt_value_supported(value) {
+                    return Err("CPU sqrt requires a direct float32 input or proved single-scalar contiguous square reduction".into());
+                }
+                self.cpu_math = true;
+                Ok(format!("native_sqrt({})", self.expression(value)?))
+            }
             ScalarExpr::Sign { dtype: 1, value } if self.cpu_emulated_half => {
                 self.cpu_math = true;
                 Ok(format!("native_sign({})", self.expression(value)?))
             }
-            ScalarExpr::MulAcc { dtype: 1, a, b, c } if self.cpu_emulated_half => Ok(format!(
-                "__builtin_fmaf((float)({}),(float)({}),(float)({}))",
-                self.expression(a)?,
-                self.expression(b)?,
-                self.expression(c)?
-            )),
+            ScalarExpr::MulAcc { dtype: 1, a, b, c } if self.cpu_emulated_half => {
+                let function = if self.graph.cpu_contractions.contains(&self.output) {
+                    self.cpu_math = true;
+                    "native_contracted_fma"
+                } else {
+                    "__builtin_fmaf"
+                };
+                Ok(format!(
+                    "{function}((float)({}),(float)({}),(float)({}))",
+                    self.expression(a)?,
+                    self.expression(b)?,
+                    self.expression(c)?
+                ))
+            }
             ScalarExpr::FloatLiteral { dtype, value } if matches!(dtype, 1 | 10) => {
                 self.round(*dtype, float(*value)?)
             }
@@ -455,6 +470,17 @@ impl Renderer<'_> {
                 left,
                 right,
             } if matches!(dtype, 1 | 10) => {
+                if *dtype == 1
+                    && *kind == Binary::Add
+                    && self.graph.cpu_ordered_image_adds.contains(&self.output)
+                {
+                    self.cpu_math = true;
+                    return Ok(format!(
+                        "native_image_residual_add({},{})",
+                        self.expression(left)?,
+                        self.expression(right)?
+                    ));
+                }
                 if *dtype == 10 && matches!(kind, Binary::Minimum | Binary::Maximum) {
                     return Err("half minimum/maximum rendering not implemented".into());
                 }
