@@ -688,3 +688,22 @@ The actual uploader with original msgq/full cereal passes the daemon scenarios,
 including upload requests, startup lock cleanup, logging, shutdown and startup
 failures. Source-derived storage/allocation reduction is not a device CPU claim.
 Local evidence: `2026-10-18-uploader-buffer/{gate.log,reference/report.json,daemon.log}`.
+
+### Torque history interpolation scratch (2026-10-18)
+
+Four interpolation calls per accepted pose formerly allocated separate time and
+value vectors from the bounded 100-row history. Two 100-element stack arrays now
+hold those columns, preserving logical VecDeque order and the unchanged NumPy
+search/arithmetic implementation. The maximum added stack scratch is 1,600 bytes
+per lookup; query/result allocation and history retention remain unchanged.
+
+The dedicated allocation regression first observed 1,300 allocations over 100
+poses and then passed at 500 after the change. It uses a wrapped warmed history,
+checks exact returned points and reset behavior. All six torqued tests and strict
+all-target Clippy pass. The unchanged original estimator comparison passes 3,613
+steps / 298,537 packet fields / five expected errors; pre/post native traces are
+byte-identical. The original loop comparison passes 2,250 steps / 1,293,144 packet
+fields and 12 persistence steps / 101,564 persisted fields. Independent source
+review found no actionable issue. No period, fit invocation, interpolation, lag,
+state or control policy changed; device CPU savings remain unmeasured.
+Evidence: `2026-10-18-torque-history/{red.log,green.log,baseline,native,loop}`.
