@@ -496,3 +496,12 @@ path = "src/bin/check_message_state.rs"
 [[bin]]
 name = "hash-miri-core"
 path = "src/bin/hash_miri_core.rs"
+
+[[bin]]
+name = "check-ui-emoji"
+path = "src/bin/check_ui_emoji.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_emoji_check"
+required-features = ["image-array-native"]

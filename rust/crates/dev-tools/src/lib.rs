@@ -39,6 +39,8 @@ pub mod ui_diagnostic_reference;
 pub mod ui_egl_check;
 #[cfg(feature = "egl-reference")]
 pub mod ui_egl_reference;
+#[cfg(feature = "image-array-native")]
+pub mod ui_emoji_check;
 pub mod user_docs;
 
 pub mod elf_audit;

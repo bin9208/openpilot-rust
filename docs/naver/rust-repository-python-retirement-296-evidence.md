@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Seventy-two sources have locally verified replacements and migrated
-callers; two are partially replaced and3,506 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Seventy-three sources have locally verified replacements and migrated
+callers; two are partially replaced and3,505 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -1842,3 +1842,35 @@ native-failure,caller-green}.log and2026-10-18-plot-independent-review/REVIEW.md
 These are host tool-equivalence checks, not device/driving validation. Baseline
 inventory now72 replaced-local,2 partially-replaced,3,506 pending; full
 repository conversion and exact-head remote acceptance remain open.
+
+### Native fixed emoji raster gate (2026-10-18)
+
+`check-ui-emoji` now replaces `rust/tools/check_ui_emoji.py` in mandatory UI
+connectivity CI. All seven original texts and independently captured source
+rasters remain exact. The generic `emoji.py` implementation stays separately
+pending; this fixed checker does not claim to replace its callable renderer.
+The native decoder retains Pillow array modes and content-based format selection.
+
+Retain the existing21 original process/codec scenarios and12 new original cases,
+including TGA/TIFF/losslessWebP/RGBA16, grayscale/palette broadcasting, hiddenRGB,
+malformed/missing/truncated outputs, source-file rewrite, report-write errors and
+late child failure. Missing-module RED was followed by two actual behavior REDs:
+the draft reread a mutable source PNG and accepted changed reference dependency
+versions. Compare immutable captured pixels and verify selected Pillow/NumPy
+lock versions after fixing these. Independent review identified the latter gap.
+Both regressions now pass without relaxing pixel equality or failure order.
+
+Native6test suite passes, including33 original scenarios, exact artifact hashes,
+source/font/dependency drift, CLI arguments and real inherited stdin/stdout/stderr.
+The47 CI isolation/disk/routing tests and strictClippy pass. Current candidate
+`emoji_raster` SHA256 is
+99cc517371ba8a72cc71db53e7de774b0229f86cfc995bb3ccfd58edc9208152.
+Actual seven-image comparison passes before and after Python checker removal;
+PATH=/nonexistent execve contains only the native checker and candidate. Seven
+post-deletion tests pass. Evidence:2026-10-18-emoji-check and independent review
+2026-10-18-emoji-independent-review/REVIEW.md. Inventory:73 replaced-local,
+2 partially-replaced,3505 pending. Full repository conversion remains open.
+
+Prior exact-head89a6294c Fast PR39070586386, Fast push39070580714,
+Integration39070586387 and mapped-docs39070586381 passed. Rust39070586378
+continues; no device result or uncompleted Rust-job success is inferred.
