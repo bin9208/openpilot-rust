@@ -1686,3 +1686,21 @@ assertion in ui_egl_ci and failed there. Both copies now include all diagnostic
 tools. All49 isolation, EGL/polygon routing and disk-bootstrap tests pass together
 on the final local commands (2026-10-18-ui-forms/parent-default.log). No workflow
 coverage was removed; exact-head CI must be rerun after this correction.
+
+### Fast alert worker timeout correction (2026-10-18)
+
+On a8189aec, the fast native alert worker exhausted its seven-minute bound:
+alert_callbacks completed in23.37s, alert_manager in243.36s and selfdrive_events
+in20.08s; selfdrive_helpers was cancelled during its final corpus test. Split
+alert_manager into its own mandatory seven-minute worker. Every prior suite
+still runs exactly once, and the aggregate requires all five workers to succeed.
+Missing/failure/cancelled/skipped/empty results remain failures. The new routing
+and result-binding tests first failed twice against the old workflow, then all
+52 CI routing/isolation/disk tests passed with the split. Evidence is in
+2026-10-18-ci-diagnostic-routing/alert-split-{red,green}.log. Remote timing
+confirmation remains pending; this does not establish runtime improvement.
+
+The same exact-head Rust run39066510840 exposed a selfdrived source comparator
+still importing deleted checker helpers and a planner IPC first-cycle validity
+difference (three records at the second model input on x86_64; ARM passed).
+Both remain under investigation; neither is treated as a passing required gate.

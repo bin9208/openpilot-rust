@@ -36,7 +36,7 @@ pub fn parse(source: &str) -> Result<Value, String> {
                 return anchors
                     .get(anchor)
                     .cloned()
-                    .ok_or_else(|| format!("unresolved YAML alias {anchor}"))
+                    .ok_or_else(|| format!("unresolved YAML alias {anchor}"));
             }
             Event::SequenceStart(anchor, _) => {
                 let mut values = Vec::new();
@@ -223,7 +223,7 @@ pub fn run_shell(script: &str, environment: &BTreeMap<String, String>) -> io::Re
     }))
 }
 
-/// Preserve the required fast-check status while its four mandatory workers run
+/// Preserve the required fast-check status while its five mandatory workers run
 /// independently. Execute the aggregate shell to reject accidental fail-open
 /// edits, including absent results that GitHub exposes as empty strings.
 pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
@@ -231,6 +231,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
         ("NATIVE", "native"),
         ("NATIVE_CORPUS", "native-corpus"),
         ("NATIVE_ALERTS", "native-alerts"),
+        ("NATIVE_ALERT_MANAGER", "native-alert-manager"),
         ("PYTHON_ANDROID", "python-android"),
     ];
     let jobs = workflow["jobs"].as_object().ok_or("missing fast jobs")?;
@@ -263,7 +264,13 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
     )?;
     require(
         strings(&gate["needs"])?
-            == expected_strings(&["native", "native-corpus", "native-alerts", "python-android"]),
+            == expected_strings(&[
+                "native",
+                "native-corpus",
+                "native-alerts",
+                "native-alert-manager",
+                "python-android",
+            ]),
         "fast aggregate dependencies changed",
     )?;
     let steps = gate["steps"]

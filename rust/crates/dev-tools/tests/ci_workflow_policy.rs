@@ -97,10 +97,17 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         ("NATIVE".into(), "success".into()),
         ("NATIVE_CORPUS".into(), "success".into()),
         ("NATIVE_ALERTS".into(), "success".into()),
+        ("NATIVE_ALERT_MANAGER".into(), "success".into()),
         ("PYTHON_ANDROID".into(), "success".into()),
     ]);
     assert!(run_shell(script, &success).unwrap().success());
-    for name in ["NATIVE", "NATIVE_CORPUS", "NATIVE_ALERTS", "PYTHON_ANDROID"] {
+    for name in [
+        "NATIVE",
+        "NATIVE_CORPUS",
+        "NATIVE_ALERTS",
+        "NATIVE_ALERT_MANAGER",
+        "PYTHON_ANDROID",
+    ] {
         for state in [
             None,
             Some(""),
@@ -121,7 +128,13 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
             );
         }
     }
-    for dependency in ["native", "native-corpus", "native-alerts", "python-android"] {
+    for dependency in [
+        "native",
+        "native-corpus",
+        "native-alerts",
+        "native-alert-manager",
+        "python-android",
+    ] {
         let mut missing = original.clone();
         missing["jobs"].as_object_mut().unwrap().remove(dependency);
         assert!(validate_fast_gate(&missing).is_err());
@@ -144,7 +157,13 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         ignored_step["jobs"][dependency]["steps"][0]["continue-on-error"] = "true".into();
         assert!(validate_fast_gate(&ignored_step).is_err());
     }
-    for name in ["NATIVE", "NATIVE_CORPUS", "NATIVE_ALERTS", "PYTHON_ANDROID"] {
+    for name in [
+        "NATIVE",
+        "NATIVE_CORPUS",
+        "NATIVE_ALERTS",
+        "NATIVE_ALERT_MANAGER",
+        "PYTHON_ANDROID",
+    ] {
         let mut missing = original.clone();
         missing["jobs"]["fast"]["steps"][0]["env"]
             .as_object_mut()
@@ -161,6 +180,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         assert!(validate_fast_gate(&bypass).is_err());
     }
     for needs in [
+        serde_json::json!(["native", "native-corpus", "native-alerts", "python-android"]),
         serde_json::json!(["native"]),
         serde_json::json!(["python-android"]),
         serde_json::json!(["native", "python-android"]),
@@ -272,14 +292,18 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "selfdrive_state_check",
     ];
     let alerts = [
-        "alert_manager_check",
         "selfdrive_events_check",
         "alert_callbacks_check",
         "selfdrive_helpers_check",
     ];
     let mut seen = BTreeMap::<String, usize>::new();
     let mut all_commands = Vec::new();
-    for worker in ["native", "native-corpus", "native-alerts"] {
+    for worker in [
+        "native",
+        "native-corpus",
+        "native-alerts",
+        "native-alert-manager",
+    ] {
         let job = &workflow["jobs"][worker];
         assert_eq!(job["runs-on"], "ubuntu-24.04");
         for (key, value) in [
@@ -333,9 +357,14 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             .iter()
             .copied()
             .filter(|name| match worker {
+                "native-alert-manager" => *name == "alert_manager_check",
                 "native-alerts" => alerts.contains(name),
                 "native-corpus" => corpus.contains(name),
-                _ => !corpus.contains(name) && !alerts.contains(name),
+                _ => {
+                    !corpus.contains(name)
+                        && !alerts.contains(name)
+                        && *name != "alert_manager_check"
+                }
             })
             .collect::<Vec<_>>();
         assert_eq!(selected, assigned, "{worker} suite selection changed");
