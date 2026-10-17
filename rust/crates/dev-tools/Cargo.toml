@@ -9,6 +9,10 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-selfdrive-state"
+path = "src/bin/check_selfdrive_state.rs"
+
+[[bin]]
 name = "check-cutin-alert"
 path = "src/bin/check_cutin_alert.rs"
 

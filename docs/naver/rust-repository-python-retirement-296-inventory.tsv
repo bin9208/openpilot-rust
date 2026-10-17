@@ -2063,7 +2063,7 @@ rust/tools/check_sdk_receiver.py	92ed5a900919358781a92f66311a72a3fdc285ba	pendin
 rust/tools/check_selfdrive_events.py	dc75e1bb617c20649619964bfb4c793b7c7e5e61	pending	-
 rust/tools/check_selfdrive_helpers.py	012cd1500189c8d8bbd2622cf89d8f096c75045d	pending	-
 rust/tools/check_selfdrive_params.py	08743565044854e13870048bd601c37392668e26	pending	-
-rust/tools/check_selfdrive_state.py	3f1e26aea49998ecf680968560b7e438bc629969	pending	-
+rust/tools/check_selfdrive_state.py	3f1e26aea49998ecf680968560b7e438bc629969	replaced-local	openpilot-dev-tools check-selfdrive-state; independent complete 51023-case state-machine and failure corpus
 rust/tools/check_selfdrived_controller.py	85538ebb50e9fa744cfcc12441256d59879eba29	pending	-
 rust/tools/check_selfdrived_failures.py	c17a5bf7383f4bc7f77375299ce6d7c1f611174a	pending	-
 rust/tools/check_selfdrived_ipc.py	0f5e004287bf3f6e93dded3a05456a3e4e8d2925	pending	-

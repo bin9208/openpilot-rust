@@ -247,6 +247,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "ratekeeper_ci",
         "cutin_alert_check",
         "cutin_alert_ci",
+        "selfdrive_state_check",
     ];
     let corpus = [
         "amplifier_policy_check",
@@ -259,6 +260,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "beep_integer_check",
         "ratekeeper_check",
         "cutin_alert_check",
+        "selfdrive_state_check",
     ];
     let mut seen = BTreeMap::<String, usize>::new();
     let mut all_commands = Vec::new();

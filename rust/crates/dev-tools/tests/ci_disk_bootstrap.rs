@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 203);
+    assert_eq!(text.matches(marker).count(), 204);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -248,12 +248,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut llvm_provider = vec![];
     let mut ratekeeper = vec![];
     let mut cutin = vec![];
+    let mut selfdrive_state = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
             if i + 1 < lines.len() && (lines[i + 1].contains("--bin check-ratekeeper") || lines[i + 1].contains("rust/target/debug/check-ratekeeper --binary")) {
                 ratekeeper.push(tail.to_owned());
             } else if i + 1 < lines.len() && lines[i + 1].contains("rust/target/debug/check-cutin-alert --binary") {
                 cutin.push(tail.to_owned());
+            } else if i + 1 < lines.len() && lines[i + 1].contains("rust/target/debug/check-selfdrive-state --binary") {
+                selfdrive_state.push(tail.to_owned());
             } else if i + 1 < lines.len() && lines[i + 1].contains("--bin stage-startup-ui-raylib") {
                 raylib.push(tail.to_owned());
             } else if i + 1 < lines.len()
@@ -298,6 +301,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         }
     }
     assert_eq!(arguments.len(), 179);
+    assert_eq!(
+        selfdrive_state,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"]
+    );
     assert_eq!(
         cutin,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"]

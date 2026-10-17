@@ -1,0 +1,109 @@
+[
+  {
+    "blocked": "input.jsonl",
+    "error": "IsADirectoryError",
+    "calls": 0,
+    "stdout": "",
+    "files": {}
+  },
+  {
+    "blocked": "source.json",
+    "error": "IsADirectoryError",
+    "calls": 0,
+    "stdout": "",
+    "files": {
+      "input.jsonl": {
+        "bytes": 5065263,
+        "sha256": "fc04e5775be9c73c23edee903e7a222156eed13bb5d21d8f00ae18a9ffdd5ab1"
+      }
+    }
+  },
+  {
+    "blocked": "native.stdout",
+    "error": "IsADirectoryError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "source.json": {
+        "bytes": 6892192,
+        "sha256": "61fe811b697bc58ab82b99844bb80406462108d68b7bfb97e1a0a48b19e701f7"
+      },
+      "input.jsonl": {
+        "bytes": 5065263,
+        "sha256": "fc04e5775be9c73c23edee903e7a222156eed13bb5d21d8f00ae18a9ffdd5ab1"
+      }
+    }
+  },
+  {
+    "blocked": "native.stderr",
+    "error": "IsADirectoryError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stdout": {
+        "bytes": 6841169,
+        "sha256": "1afdf1878750b6db321cb73b41e35196aeb8c24541de6f774f0517af4afcea29"
+      },
+      "source.json": {
+        "bytes": 6892192,
+        "sha256": "61fe811b697bc58ab82b99844bb80406462108d68b7bfb97e1a0a48b19e701f7"
+      },
+      "input.jsonl": {
+        "bytes": 5065263,
+        "sha256": "fc04e5775be9c73c23edee903e7a222156eed13bb5d21d8f00ae18a9ffdd5ab1"
+      }
+    }
+  },
+  {
+    "blocked": "result.json",
+    "error": "IsADirectoryError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stdout": {
+        "bytes": 6841169,
+        "sha256": "1afdf1878750b6db321cb73b41e35196aeb8c24541de6f774f0517af4afcea29"
+      },
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source.json": {
+        "bytes": 6892192,
+        "sha256": "61fe811b697bc58ab82b99844bb80406462108d68b7bfb97e1a0a48b19e701f7"
+      },
+      "input.jsonl": {
+        "bytes": 5065263,
+        "sha256": "fc04e5775be9c73c23edee903e7a222156eed13bb5d21d8f00ae18a9ffdd5ab1"
+      }
+    }
+  },
+  {
+    "blocked": "printed-stdout",
+    "error": "OSError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stdout": {
+        "bytes": 6841169,
+        "sha256": "1afdf1878750b6db321cb73b41e35196aeb8c24541de6f774f0517af4afcea29"
+      },
+      "result.json": {
+        "bytes": 246,
+        "sha256": "4aa5bf6c8cc015b926e1230b08bbb1ffca242885bbbbd83ed1c275fd9985ec57"
+      },
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source.json": {
+        "bytes": 6892192,
+        "sha256": "61fe811b697bc58ab82b99844bb80406462108d68b7bfb97e1a0a48b19e701f7"
+      },
+      "input.jsonl": {
+        "bytes": 5065263,
+        "sha256": "fc04e5775be9c73c23edee903e7a222156eed13bb5d21d8f00ae18a9ffdd5ab1"
+      }
+    }
+  }
+]

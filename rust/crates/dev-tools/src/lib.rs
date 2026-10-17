@@ -20,6 +20,7 @@ pub mod publish;
 pub mod qa_process;
 pub mod ratekeeper_check;
 pub mod seal;
+pub mod selfdrive_state_check;
 pub mod stats_clock_check;
 pub mod stats_numbers_check;
 #[cfg(feature = "egl-reference")]

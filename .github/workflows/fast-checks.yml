@@ -78,7 +78,7 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
             --test amplifier_policy_check --test hardware_control_policy_check --test amplifier_linux_check --test stats_numbers_check \
             --test stats_clock_check --test beep_clock_check --test beep_sleep_check --test beep_integer_check \
-            --test ratekeeper_check --test cutin_alert_check
+            --test ratekeeper_check --test cutin_alert_check --test selfdrive_state_check
   python-android:
     name: fast Python and Android checks
     runs-on: ubuntu-24.04

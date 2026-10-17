@@ -1561,3 +1561,28 @@ passed, but its workspace job117482992011 failed formatting at the newly added
 Ratekeeper module declaration. The declaration is now rustfmt-sorted. Current
 uncommitted model work remains separately owned and is not part of this commit.
 Full exact-head CI and the user-owned device checks are still outstanding.
+
+### Selfdrived state-machine checker retirement (2026-10-18)
+
+check-selfdrive-state retains all 51,023 independently captured original steps:
+30,720 exhaustive single-step combinations, the full soft-disable transition and
+20,000 deterministic sequence steps. Exact input/source bytes, 17 process/failure
+captures, artifact failures, CLI and all three live-source pins are retained.
+No state transition, event priority, timing constant or validity policy changes.
+
+All four checker tests pass before and after deleting the original checker;
+25 affected disk/routing/workflow tests and scoped strict Clippy also pass.
+The actual state-machine example builds and matches the original checker with
+byte-identical input.jsonl, source.json, native.stdout, native.stderr, result.json
+and command stdout/stderr. PATH=/nonexistent after deletion repeats those bytes.
+This fixed comparison does not replace the generic state.py/events.py/realtime.py
+implementations, which remain live source-drift guards and pending conversion.
+
+CI selects the native state tool with its own 2 GiB growth guard. Mandatory fast
+corpus coverage grows to 64 total integration targets across the two native jobs;
+source checks surrounding this conversion remain in their original order.
+Inventory: 65 replaced-local / 3,515 pending baseline sources. Published3c194582
+PR and push fast gates, Integration and mapped-doc checks passed; its separate
+Rust workspace formatting failure is corrected by c2dcf2ea. Later exact-head
+checks remain required. No device is connected or requested; user owns final
+boot/recording/upload checks after source integration.

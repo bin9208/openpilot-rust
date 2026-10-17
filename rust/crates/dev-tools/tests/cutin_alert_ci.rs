@@ -3,7 +3,7 @@ use openpilot_dev_tools::ci_policy::parse;
 use serde_json::Value;
 use std::{fs, path::PathBuf, process::Command};
 
-const BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --bin check-cutin-alert --locked";
+const BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --bin check-cutin-alert --bin check-selfdrive-state --locked";
 const CHECK: &str = "rust/target/debug/check-cutin-alert --binary \"$selfdrive_examples/cutin_alerts\" --output \"$selfdrive_evidence/cutin\"";
 const GUARD: &str = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048";
 const BUILD_GUARD: &str = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024";
@@ -11,7 +11,7 @@ const EXAMPLES: &str = "selfdrive_examples=\"$GITHUB_WORKSPACE/rust/target/debug
 const EVIDENCE: &str = "selfdrive_evidence=\"$RUNNER_TEMP/selfdrived-native/reference\"";
 const REFERENCES: [&str; 9] = [
     "run_reference rust/tools/generate_selfdrive_alerts.py --output rust/crates/selfdrived/data/alerts.json --check",
-    "run_reference rust/tools/check_selfdrive_state.py --binary \"$selfdrive_examples/selfdrive_state\" --output \"$selfdrive_evidence/state\"",
+    "rust/target/debug/check-selfdrive-state --binary \"$selfdrive_examples/selfdrive_state\" --output \"$selfdrive_evidence/state\"",
     "run_reference rust/tools/check_alert_manager.py --binary \"$selfdrive_examples/alert_manager\" --output \"$selfdrive_evidence/alert-manager\"",
     "run_reference rust/tools/check_selfdrive_events.py --binary \"$selfdrive_examples/events_trace\" --output \"$selfdrive_evidence/events\"",
     "run_reference rust/tools/check_alert_callbacks.py --binary \"$selfdrive_examples/alert_callbacks\" --output \"$selfdrive_evidence/callbacks\"",
@@ -36,7 +36,7 @@ fn check(workflow: &Value) -> Result<(), String> {
         let Some(script) = step["run"].as_str() else {
             continue;
         };
-        if script.contains("check_cutin_alerts.py") {
+        if script.contains("check_cutin_alerts.py") || script.contains("check_selfdrive_state.py") {
             return Err("retired Python cut-in checker routed".into());
         }
         let lines = script.lines().map(str::trim).collect::<Vec<_>>();
@@ -71,6 +71,17 @@ fn check(workflow: &Value) -> Result<(), String> {
                             "existing comparison dropped or duplicated: {command}"
                         ));
                     }
+                }
+                let state_index = lines
+                    .iter()
+                    .position(|line| *line == REFERENCES[1])
+                    .unwrap();
+                if state_index < 2
+                    || lines[state_index - 1] != GUARD
+                    || lines[state_index - 2] != REFERENCES[0]
+                    || lines.get(state_index + 1) != Some(&REFERENCES[2])
+                {
+                    return Err("native state check moved or lost growth guard".into());
                 }
             }
             if (*line == BUILD || *line == CHECK)
@@ -131,7 +142,9 @@ fn missing_optional_softened_python_or_changed_source_routes_are_rejected() {
     let helper = format!("run_reference() {{\n{GUARD}\npython \"$@\"\n}}");
     let run = format!(
         "{EXAMPLES}\n{EVIDENCE}\n{helper}\n{}\n{GUARD}\n{CHECK}\n{}",
-        REFERENCES[..8].join("\n"),
+        REFERENCES[..8]
+            .join("\n")
+            .replace(REFERENCES[1], &format!("{GUARD}\n{}", REFERENCES[1])),
         REFERENCES[8]
     );
     let good = serde_json::json!({"jobs":{"selfdrive-runtime":{"runs-on":"ubuntu-24.04","steps":[{"run":build},{"run":run}]}}});
@@ -155,6 +168,8 @@ fn missing_optional_softened_python_or_changed_source_routes_are_rejected() {
         "wrong-output",
         "helper",
         "unrelated-check",
+        "state-no-guard",
+        "state-softened",
     ] {
         let mut bad = good.clone();
         let job = &mut bad["jobs"]["selfdrive-runtime"];
@@ -195,6 +210,16 @@ fn missing_optional_softened_python_or_changed_source_routes_are_rejected() {
                     run.replace("python \"$@\"", "python \"$@\" || true").into()
             }
             "unrelated-check" => job["steps"][1]["run"] = run.replace(REFERENCES[0], "true").into(),
+            "state-no-guard" => {
+                job["steps"][1]["run"] = run
+                    .replace(&format!("{GUARD}\n{}", REFERENCES[1]), REFERENCES[1])
+                    .into()
+            }
+            "state-softened" => {
+                job["steps"][1]["run"] = run
+                    .replace(REFERENCES[1], &format!("{} || true", REFERENCES[1]))
+                    .into()
+            }
             _ => unreachable!(),
         }
         assert!(check(&bad).is_err(), "accepted {mutation}");

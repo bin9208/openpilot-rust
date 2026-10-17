@@ -1201,7 +1201,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           cargo build --manifest-path rust/Cargo.toml -p openpilot-selfdrived --bins --examples --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --bin check-cutin-alert --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --bin check-cutin-alert --bin check-selfdrive-state --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-selfdrived --all-targets --locked -- -D warnings
       - name: Require selfdrived and messaging seam tests
@@ -1217,7 +1217,8 @@ jobs:
             python "$@"
           }
           run_reference rust/tools/generate_selfdrive_alerts.py --output rust/crates/selfdrived/data/alerts.json --check
-          run_reference rust/tools/check_selfdrive_state.py --binary "$selfdrive_examples/selfdrive_state" --output "$selfdrive_evidence/state"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          rust/target/debug/check-selfdrive-state --binary "$selfdrive_examples/selfdrive_state" --output "$selfdrive_evidence/state"
           run_reference rust/tools/check_alert_manager.py --binary "$selfdrive_examples/alert_manager" --output "$selfdrive_evidence/alert-manager"
           run_reference rust/tools/check_selfdrive_events.py --binary "$selfdrive_examples/events_trace" --output "$selfdrive_evidence/events"
           run_reference rust/tools/check_alert_callbacks.py --binary "$selfdrive_examples/alert_callbacks" --output "$selfdrive_evidence/callbacks"
