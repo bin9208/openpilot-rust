@@ -139,6 +139,7 @@ pub fn check_workflow_policy(files: &[(String, String)]) -> Result<(), String> {
     for event in ["push", "pull_request"] {
         absent(&fast["on"][event], &["paths", "paths-ignore"])?;
     }
+    validate_fast_gate(fast)?;
     let integration = get("integration.yml")?;
     for event in ["push", "pull_request"] {
         require(
@@ -220,6 +221,104 @@ pub fn run_shell(script: &str, environment: &BTreeMap<String, String>) -> io::Re
     } else {
         -output.code
     }))
+}
+
+/// Preserve the required fast-check status while its two mandatory workers run
+/// independently. Execute the aggregate shell to reject accidental fail-open
+/// edits, including absent results that GitHub exposes as empty strings.
+pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
+    let bindings = [("NATIVE", "native"), ("PYTHON_ANDROID", "python-android")];
+    let jobs = workflow["jobs"].as_object().ok_or("missing fast jobs")?;
+    for (_, name) in bindings {
+        let worker = jobs
+            .get(name)
+            .ok_or_else(|| format!("missing fast worker {name}"))?;
+        absent(worker, &["if", "continue-on-error", "needs"])?;
+        require(
+            worker["timeout-minutes"] == "7",
+            format!("fast worker {name} must retain its seven-minute bound"),
+        )?;
+        let steps = worker["steps"]
+            .as_array()
+            .ok_or("missing fast worker steps")?;
+        require(!steps.is_empty(), "fast worker has no checks")?;
+        for step in steps {
+            absent(step, &["if", "continue-on-error"])?;
+        }
+    }
+    let gate = jobs.get("fast").ok_or("missing fast aggregate")?;
+    absent(gate, &["continue-on-error"])?;
+    require(
+        gate["name"] == "fast checks",
+        "required fast check name changed",
+    )?;
+    require(
+        gate["if"] == "${{ always() }}",
+        "fast aggregate must always run",
+    )?;
+    require(
+        strings(&gate["needs"])? == expected_strings(&["native", "python-android"]),
+        "fast aggregate dependencies changed",
+    )?;
+    let steps = gate["steps"]
+        .as_array()
+        .ok_or("missing fast aggregate steps")?;
+    require(
+        steps.len() == 1,
+        "fast aggregate must have one mandatory result check",
+    )?;
+    let step = &steps[0];
+    absent(step, &["if", "continue-on-error"])?;
+    let environment = step["env"]
+        .as_object()
+        .ok_or("missing fast result bindings")?;
+    require(
+        environment.len() == bindings.len(),
+        "fast result binding count changed",
+    )?;
+    for (variable, job) in bindings {
+        require(
+            environment.get(variable)
+                == Some(&Value::String(format!("${{{{ needs.{job}.result }}}}"))),
+            format!("fast result binding changed: {variable}"),
+        )?;
+    }
+    let script = step["run"]
+        .as_str()
+        .ok_or("missing fast aggregate script")?;
+    let success = bindings
+        .iter()
+        .map(|(name, _)| ((*name).into(), "success".into()))
+        .collect::<BTreeMap<_, _>>();
+    require(
+        run_shell(script, &success)
+            .map_err(|e| e.to_string())?
+            .success(),
+        "fast aggregate rejects successful workers",
+    )?;
+    for (variable, _) in bindings {
+        for result in [
+            Some("failure"),
+            Some("cancelled"),
+            Some("skipped"),
+            Some(""),
+            None,
+        ] {
+            let mut values = success.clone();
+            if let Some(result) = result {
+                values.insert(variable.into(), result.into());
+            } else {
+                values.remove(variable);
+            }
+            require(
+                !run_shell(script, &values)
+                    .map_err(|e| e.to_string())?
+                    .success(),
+                format!("fast aggregate accepts {variable}={result:?}"),
+            )?;
+        }
+    }
+    Ok(())
 }
 
 pub fn process_alive_from(read: impl FnOnce() -> io::Result<String>) -> io::Result<bool> {

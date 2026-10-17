@@ -11,8 +11,41 @@ concurrency:
   group: fast-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  fast:
-    name: fast checks
+  native:
+    name: fast native checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
+      - name: Prepare native CI validation
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+      - name: Check CI routing and upstream synchronization guards
+        run: |
+          python -m unittest discover -s tools/ci/tests -v
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --lib \
+            --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe \
+            --test panda_oracle_build --test upstream_sync --test native_build_closure --test updated_process_check \
+            --test native_logging_build --test release_files --test logger_identifier_check --test qa_process \
+            --test logging_oracle_build --test path_resolve --test bridge_source_build --test jpeg_sanitizers_check \
+            --test ci_native_staging --test encoder_source_build --test ui_updater_handshake --test athena_vision_build \
+            --test hardware_command_check --test pandad_firmware_spi_build --test panda_cli --test msgq_sanitizers_check --test control_tools_policy_check --test five_cli --test registration_vendor_check --test ui_adapter_sanitizers --test unix_argv --test python_fs --test unix_cli_paths --test panda_raw --test startup_adapter_sanitizers --test python_glob --test ui_fixed_corpus_check --test ui_ci_runtime --test ui_state_scheduler_check --test ui_translation_check --test ui_application_logic_check --test ui_headless_check --test ui_scroll_check --test diagnostic_check --test message_state_ci --test ci_artifact_list --test miri_provenance --test image_array_math --test ui_egl_ci --test command_reference_check --test params_reference_check --test amplifier_policy_check --test hardware_control_policy_check --test amplifier_linux_check --test stats_numbers_check --test stats_clock_check
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked
+  python-android:
+    name: fast Python and Android checks
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     env:
@@ -34,20 +67,6 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python tools/ci/check_changed_files.py
-      - name: Prepare native CI validation
-        run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-      - name: Check CI routing and upstream synchronization guards
-        run: |
-          python -m unittest discover -s tools/ci/tests -v
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --lib \
-            --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe \
-            --test panda_oracle_build --test upstream_sync --test native_build_closure --test updated_process_check \
-            --test native_logging_build --test release_files --test logger_identifier_check --test qa_process \
-            --test logging_oracle_build --test path_resolve --test bridge_source_build --test jpeg_sanitizers_check \
-            --test ci_native_staging --test encoder_source_build --test ui_updater_handshake --test athena_vision_build \
-            --test hardware_command_check --test pandad_firmware_spi_build --test panda_cli --test msgq_sanitizers_check --test control_tools_policy_check --test five_cli --test registration_vendor_check --test ui_adapter_sanitizers --test unix_argv --test python_fs --test unix_cli_paths --test panda_raw --test startup_adapter_sanitizers --test python_glob --test ui_fixed_corpus_check --test ui_ci_runtime --test ui_state_scheduler_check --test ui_translation_check --test ui_application_logic_check --test ui_headless_check --test ui_scroll_check --test diagnostic_check --test message_state_ci --test ci_artifact_list --test miri_provenance --test image_array_math --test ui_egl_ci --test command_reference_check --test params_reference_check --test amplifier_policy_check --test hardware_control_policy_check --test amplifier_linux_check --test stats_numbers_check --test stats_clock_check
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked
       - name: Fast navigation regressions
         run: |
           python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/selfdrive/carrot/tests -q \
@@ -64,3 +83,17 @@ jobs:
         with: {distribution: temurin, java-version: '17'}
       - name: Android Jetlink core regressions
         run: bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test
+  fast:
+    name: fast checks
+    if: ${{ always() }}
+    needs: [native, python-android]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require every fast worker to succeed
+        env:
+          NATIVE: ${{ needs.native.result }}
+          PYTHON_ANDROID: ${{ needs.python-android.result }}
+        run: |
+          test "$NATIVE" = success
+          test "$PYTHON_ANDROID" = success

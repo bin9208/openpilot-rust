@@ -1335,3 +1335,33 @@ filesystems and validates library receipts. Five standalone tests pass, includin
 stale directories, dangling links, overlapping paths and mutated SDK libraries.
 The new full SDK build and image-format completion are still pending; these
 uncommitted image/model changes are excluded from the clock retirement commit.
+
+### Exact-head CI findings and follow-up
+
+PR head `8174191e9fee1d90fc128f482226d56f1ce6224a` passed Integration
+[39055899763](https://github.com/bin9208/openpilot-rust/actions/runs/39055899763)
+and mapped user docs. Both fast-check runs reached the seven-minute limit after
+all native/navigation/Jetlink tests executed so far had passed; Android had not
+run. Cancellation is not a successful gate. The follow-up separates independent
+native and Python/Android workers and keeps an always-run `fast checks` aggregate
+that requires both results. Every original test command remains present.
+
+The same head's Rust workspace job
+[117463838960](https://github.com/bin9208/openpilot-rust/actions/runs/39055899612/job/117463838960)
+failed rustfmt at the Miri provenance glob call before workspace testing.
+`2f18ac50` applies the exact Rust 1.94.0 formatting correction. Later source and
+CI fixes require fresh exact-head runs; prior successes do not clear them.
+
+Clock checker follow-up: importing carrot-navi solely for integer normalization
+would also require its runtime/schema build graph in the minimal CI bootstrap.
+A dependency-graph regression reproduced that chain, then passed after replacing
+arithmetic with equivalent canonical decimal text. The existing lightweight
+Unicode decimal table is reused. Independent CPython evidence covers all 680
+Unicode 15.0 decimal digits, all other Unicode scalars, 29 whitespace classes,
+the prior 38 lexical cases and the same 4,300-digit limit. The final lightweight
+checker again matches original report/stdout bytes without Python. Five clock,
+five workflow, 32 Rust-isolation and 13 disk-policy integrations all pass
+(55 unfiltered tests), plus the exhaustive Unicode unit and strict Clippy.
+Parallel fast-check gate mutations and actual shell tests reject failed,
+cancelled, skipped, empty or missing worker results. Seven-minute worker limits
+and every prior test command are preserved.
