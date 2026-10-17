@@ -1783,3 +1783,22 @@ Update both expected invocations and add failure-stop cases for each child,
 retaining all order/log/exit/remaining-Python checks. Original two failures then
 all12 caller tests pass. Evidence:2026-10-18-ci-diagnostic-routing/
 ui-routing-{red,green}.log. This changes only regression expectations.
+
+### Separate complete Ratekeeper fast worker (2026-10-18)
+
+Head5fbc1193 Fast checks run39068241807 timed out in native-corpus after
+Ratekeeper passed all four cases in167.60s and SelfdriveD passed in48.61s;
+the job then reached stats_numbers before its seven-minute bound. Routing,
+alerts, alert-manager and Python/Android workers all passed. Preserve every
+suite and move the complete Ratekeeper corpus into its own mandatory
+native-timing worker, retaining the bound, disk guard and failure aggregation.
+Two routing/admission regressions failed before the workflow/policy change;
+all57 selected CI/UI routing tests passed afterward, including absent,
+cancelled, skipped, failed and bypassed timing-worker mutations. Evidence:
+2026-10-18-ci-diagnostic-routing/timing-worker-{red,green}.log.
+The source Ratekeeper behavior and corpus are unchanged; remote exact-head
+execution still determines whether the split fits the hosted-runner bound.
+
+Head5fbc1193 Integration completed successfully in run39068241794 and mapped
+docs in39068241738. Rust run39068241872 remains in progress at this checkpoint.
+These results do not validate subsequent source changes or device behavior.

@@ -96,6 +96,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     let success = BTreeMap::from([
         ("NATIVE".into(), "success".into()),
         ("NATIVE_CORPUS".into(), "success".into()),
+        ("NATIVE_TIMING".into(), "success".into()),
         ("NATIVE_ALERTS".into(), "success".into()),
         ("NATIVE_ALERT_MANAGER".into(), "success".into()),
         ("PYTHON_ANDROID".into(), "success".into()),
@@ -104,6 +105,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     for name in [
         "NATIVE",
         "NATIVE_CORPUS",
+        "NATIVE_TIMING",
         "NATIVE_ALERTS",
         "NATIVE_ALERT_MANAGER",
         "PYTHON_ANDROID",
@@ -131,6 +133,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     for dependency in [
         "native",
         "native-corpus",
+        "native-timing",
         "native-alerts",
         "native-alert-manager",
         "python-android",
@@ -160,6 +163,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     for name in [
         "NATIVE",
         "NATIVE_CORPUS",
+        "NATIVE_TIMING",
         "NATIVE_ALERTS",
         "NATIVE_ALERT_MANAGER",
         "PYTHON_ANDROID",
@@ -287,10 +291,10 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "beep_clock_check",
         "beep_sleep_check",
         "beep_integer_check",
-        "ratekeeper_check",
         "cutin_alert_check",
         "selfdrive_state_check",
     ];
+    let timing = ["ratekeeper_check"];
     let alerts = [
         "selfdrive_events_check",
         "alert_callbacks_check",
@@ -301,6 +305,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
     for worker in [
         "native",
         "native-corpus",
+        "native-timing",
         "native-alerts",
         "native-alert-manager",
     ] {
@@ -360,8 +365,10 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                 "native-alert-manager" => *name == "alert_manager_check",
                 "native-alerts" => alerts.contains(name),
                 "native-corpus" => corpus.contains(name),
+                "native-timing" => timing.contains(name),
                 _ => {
                     !corpus.contains(name)
+                        && !timing.contains(name)
                         && !alerts.contains(name)
                         && *name != "alert_manager_check"
                 }

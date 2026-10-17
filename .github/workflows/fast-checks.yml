@@ -78,7 +78,7 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
             --test amplifier_policy_check --test hardware_control_policy_check --test amplifier_linux_check --test stats_numbers_check \
             --test stats_clock_check --test beep_clock_check --test beep_sleep_check --test beep_integer_check \
-            --test ratekeeper_check --test cutin_alert_check --test selfdrive_state_check
+            --test cutin_alert_check --test selfdrive_state_check
   native-alerts:
     name: fast native alert checks
     runs-on: ubuntu-24.04
@@ -122,6 +122,27 @@ jobs:
       - name: Check complete native alert manager corpus and failure behavior
         run: |
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test alert_manager_check
+  native-timing:
+    name: fast native timing checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare native timing validation
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+      - name: Check complete native timing corpus and failure behavior
+        run: |
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ratekeeper_check
   python-android:
     name: fast Python and Android checks
     runs-on: ubuntu-24.04
@@ -164,7 +185,7 @@ jobs:
   fast:
     name: fast checks
     if: ${{ always() }}
-    needs: [native, native-corpus, native-alerts, native-alert-manager, python-android]
+    needs: [native, native-corpus, native-timing, native-alerts, native-alert-manager, python-android]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
@@ -172,12 +193,14 @@ jobs:
         env:
           NATIVE: ${{ needs.native.result }}
           NATIVE_CORPUS: ${{ needs.native-corpus.result }}
+          NATIVE_TIMING: ${{ needs.native-timing.result }}
           NATIVE_ALERTS: ${{ needs.native-alerts.result }}
           NATIVE_ALERT_MANAGER: ${{ needs.native-alert-manager.result }}
           PYTHON_ANDROID: ${{ needs.python-android.result }}
         run: |
           test "$NATIVE" = success
           test "$NATIVE_CORPUS" = success
+          test "$NATIVE_TIMING" = success
           test "$NATIVE_ALERTS" = success
           test "$NATIVE_ALERT_MANAGER" = success
           test "$PYTHON_ANDROID" = success

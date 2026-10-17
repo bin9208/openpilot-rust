@@ -223,13 +223,14 @@ pub fn run_shell(script: &str, environment: &BTreeMap<String, String>) -> io::Re
     }))
 }
 
-/// Preserve the required fast-check status while its five mandatory workers run
+/// Preserve the required fast-check status while its six mandatory workers run
 /// independently. Execute the aggregate shell to reject accidental fail-open
 /// edits, including absent results that GitHub exposes as empty strings.
 pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
     let bindings = [
         ("NATIVE", "native"),
         ("NATIVE_CORPUS", "native-corpus"),
+        ("NATIVE_TIMING", "native-timing"),
         ("NATIVE_ALERTS", "native-alerts"),
         ("NATIVE_ALERT_MANAGER", "native-alert-manager"),
         ("PYTHON_ANDROID", "python-android"),
@@ -267,6 +268,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
             == expected_strings(&[
                 "native",
                 "native-corpus",
+                "native-timing",
                 "native-alerts",
                 "native-alert-manager",
                 "python-android",
