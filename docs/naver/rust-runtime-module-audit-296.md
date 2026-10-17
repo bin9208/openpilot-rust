@@ -623,3 +623,10 @@ allocation probe still reports 1,000 calls. Logs are in the local
 `2026-10-18-proc-stat-296` scratch directory. This is measured host allocation
 work, not device CPU or drive data. Physical acceptance is user-owned: the user
 confirmed no device is currently available and will test after pulling.
+
+Exact-SHA fast CI on 55464c01 found the new 64 MiB probe reservation missing
+from the disk-policy test's inventory (197 actual versus 196 expected). The
+test now classifies and asserts that reservation separately, retaining all
+179 original ordinary reservation arguments and their hash. All 13 disk guard
+tests pass after the correction. This was a CI accounting failure, not an
+allocation probe or runtime failure.
