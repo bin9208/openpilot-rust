@@ -134,7 +134,7 @@ fn integer(line: &str) -> Result<String> {
         magnitude.into()
     })
 }
-fn integers(text: &str) -> Result<Vec<String>> {
+pub(crate) fn integers(text: &str) -> Result<Vec<String>> {
     let mut lines = text
         .split([
             '\n', '\x0b', '\x0c', '\x1c', '\x1d', '\x1e', '\u{85}', '\u{2028}', '\u{2029}',
@@ -146,66 +146,6 @@ fn integers(text: &str) -> Result<Vec<String>> {
     lines.into_iter().map(integer).collect()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::integer;
-    #[test]
-    fn every_original_unicode_decimal_and_whitespace_admission_is_preserved() {
-        let oracle: serde_json::Value = serde_json::from_str(include_str!(
-            "../tests/fixtures/stats-clock/unicode-integers.json"
-        ))
-        .unwrap();
-        let expected_digits = oracle["decimal_digits"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|digit| {
-                (
-                    digit[0].as_u64().unwrap() as u32,
-                    digit[1].as_u64().unwrap() as u8,
-                )
-            })
-            .collect::<std::collections::BTreeMap<_, _>>();
-        for point in 0..=0x10ffff {
-            if let Some(character) = char::from_u32(point) {
-                assert_eq!(
-                    crate::argparse_scan::decimal_value(character),
-                    expected_digits.get(&point).copied(),
-                    "U+{point:04X}"
-                );
-            }
-        }
-        for digit in oracle["decimal_digits"].as_array().unwrap() {
-            let ch = char::from_u32(digit[0].as_u64().unwrap() as u32).unwrap();
-            let value = digit[1].as_u64().unwrap();
-            assert_eq!(
-                integer(&format!(" +0_{ch}_0 ")).unwrap(),
-                (value * 10).to_string()
-            );
-            assert_eq!(
-                integer(&format!("-0_{ch}_0")).unwrap(),
-                if value == 0 {
-                    "0".into()
-                } else {
-                    format!("-{}", value * 10)
-                }
-            );
-        }
-        for row in oracle["whitespace"].as_array().unwrap() {
-            let ch = char::from_u32(row["point"].as_u64().unwrap() as u32).unwrap();
-            let result = integer(&format!("{ch}1{ch}"));
-            assert_eq!(
-                result.is_err(),
-                !row["error"].is_null(),
-                "U+{:04X}",
-                u32::from(ch)
-            );
-            if let Ok(value) = result {
-                assert_eq!(value, row["expected"].as_str().unwrap());
-            }
-        }
-    }
-}
 fn command(binary: &Path, input: String, monotonic: bool) -> CommandSpec {
     let mut argv = vec![binary.as_os_str().to_owned()];
     if monotonic {
@@ -326,4 +266,65 @@ pub fn cli() -> Result<()> {
         &mut NativeRunner,
         &mut std::io::stdout(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::integer;
+    #[test]
+    fn every_original_unicode_decimal_and_whitespace_admission_is_preserved() {
+        let oracle: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/stats-clock/unicode-integers.json"
+        ))
+        .unwrap();
+        let expected_digits = oracle["decimal_digits"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|digit| {
+                (
+                    digit[0].as_u64().unwrap() as u32,
+                    digit[1].as_u64().unwrap() as u8,
+                )
+            })
+            .collect::<std::collections::BTreeMap<_, _>>();
+        for point in 0..=0x10ffff {
+            if let Some(character) = char::from_u32(point) {
+                assert_eq!(
+                    crate::argparse_scan::decimal_value(character),
+                    expected_digits.get(&point).copied(),
+                    "U+{point:04X}"
+                );
+            }
+        }
+        for digit in oracle["decimal_digits"].as_array().unwrap() {
+            let ch = char::from_u32(digit[0].as_u64().unwrap() as u32).unwrap();
+            let value = digit[1].as_u64().unwrap();
+            assert_eq!(
+                integer(&format!(" +0_{ch}_0 ")).unwrap(),
+                (value * 10).to_string()
+            );
+            assert_eq!(
+                integer(&format!("-0_{ch}_0")).unwrap(),
+                if value == 0 {
+                    "0".into()
+                } else {
+                    format!("-{}", value * 10)
+                }
+            );
+        }
+        for row in oracle["whitespace"].as_array().unwrap() {
+            let ch = char::from_u32(row["point"].as_u64().unwrap() as u32).unwrap();
+            let result = integer(&format!("{ch}1{ch}"));
+            assert_eq!(
+                result.is_err(),
+                !row["error"].is_null(),
+                "U+{:04X}",
+                u32::from(ch)
+            );
+            if let Ok(value) = result {
+                assert_eq!(value, row["expected"].as_str().unwrap());
+            }
+        }
+    }
 }

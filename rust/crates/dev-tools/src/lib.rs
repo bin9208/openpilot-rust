@@ -3,6 +3,7 @@ pub mod amplifier_linux_check;
 pub mod amplifier_policy_check;
 pub mod argparse_scan;
 pub mod athena_vision_build;
+pub mod beep_clock_check;
 pub mod brotli_stage;
 pub mod filter_reference;
 pub mod media_validation;

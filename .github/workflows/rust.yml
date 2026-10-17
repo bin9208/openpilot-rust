@@ -2061,7 +2061,7 @@ jobs:
         run: |
           python rust/tools/check_beepd_reference.py --binary rust/target/debug/examples/beep_trace --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-reference"
           python rust/tools/check_beepd_integer.py --binary rust/target/debug/examples/beep_trace --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-integer"
-          python rust/tools/check_beepd_clock.py --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-clock"
+          rust/target/debug/check-beep-clock --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-clock"
           python rust/tools/check_beepd_sleep.py --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-sleep"
       - name: Compare continuous alert IPC and owned worker shutdown
         run: python rust/tools/check_beepd_daemon.py --binary rust/target/debug/openpilot-beepd --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-daemon"

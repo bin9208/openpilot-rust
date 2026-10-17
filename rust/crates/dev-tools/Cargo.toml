@@ -9,6 +9,10 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-beep-clock"
+path = "src/bin/check_beep_clock.rs"
+
+[[bin]]
 name = "check-stats-clock"
 path = "src/bin/check_stats_clock.rs"
 

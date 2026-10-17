@@ -1394,3 +1394,23 @@ expression with the recorded ARM values: the old expression fails, the new one
 passes; all four planner CI tests pass. Real ARM IPC rerun remains required.
 Failure evidence: [job 117468881364](https://github.com/bin9208/openpilot-rust/actions/runs/39057569274/job/117468881364),
 artifact 12110875280. No runtime threshold or output assertion was weakened.
+
+### Native beep clock checker (2026-10-18)
+
+The beep monotonic gate now uses `check-beep-clock` with 1,011 independently
+captured CPython 3.12 time conversions. Fifteen original child-result scenarios,
+seven CLI cases and three artifact-write failures preserve admission, output and
+failure ordering. Four native integration tests pass. The shared stats-clock
+integer parser is reused, and its test module was moved after production items
+to resolve the exact-head Clippy failure without changing conversion behavior.
+
+The current #296 `beep_trace` example was rebuilt. Original and native checkers
+produce byte-identical stdout and all three artifacts. After removing the
+original Python file, the actual native command again passes all 1,011 inputs
+with PATH=/nonexistent and byte-identical evidence. The parent verification also
+passed 76 tests across ten affected integration binaries and strict dev-tools
+Clippy with polygon-reference enabled; this does not clear subsequent image
+review findings or constitute device validation. CI now calls the native beep
+clock tool and includes its regression tests. Inventory: 58 replaced-local /
+3,522 pending baseline sources. Full retirement and user-owned device acceptance
+remain open.

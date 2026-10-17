@@ -1821,7 +1821,7 @@ rust/tools/check_athena_snapshot.py	76dc2576f03af9df763be75732e3c071131b5fc1	pen
 rust/tools/check_athena_supervisor.py	f6cdae783e45666cbaae8481fdace3b7c98d665e	pending	-
 rust/tools/check_athena_transfers.py	bafb902ffd5e48465a3f588295b84793c6ed5bef	pending	-
 rust/tools/check_athena_upload_edges.py	ff5ffc38e15c0aca7f13ee3a83a42015e58ab274	pending	-
-rust/tools/check_beepd_clock.py	fcb1d49ee419326b4f9ec602641e98fd410cb06b	pending	-
+rust/tools/check_beepd_clock.py	fcb1d49ee419326b4f9ec602641e98fd410cb06b	replaced-local	openpilot-dev-tools check-beep-clock
 rust/tools/check_beepd_daemon.py	414ef778895ba1d5298c6f3397316f4f31fbef15	pending	-
 rust/tools/check_beepd_integer.py	10f7f3581ee8a13740a84cfd8a5443fc1253e5c9	pending	-
 rust/tools/check_beepd_reference.py	cce9f010d8564f97490cf6840a5f13000097b63f	pending	-
