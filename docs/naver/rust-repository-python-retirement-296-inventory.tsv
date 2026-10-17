@@ -2332,7 +2332,7 @@ rust/tools/dmonitoring_daemon_reference.py	c2d0193edf1be63a00841e83c872e68c80210
 rust/tools/driving_daemon_reference.py	031ad16e17c00a33827332e880f43a4f1e868e7a	pending	-
 rust/tools/encoder_outcomes.py	abe06b9fb384b90bdd7f60f6c6a10d4ca664e743	pending	-
 rust/tools/extract_runtime_sdk.py	007cc4f723139d3a15fd986a76fb5102f3dc9131	pending	-
-rust/tools/generate_bluetooth_digits.py	68e4be829336667c54f2289843ee47e07578625b	pending	-
+rust/tools/generate_bluetooth_digits.py	68e4be829336667c54f2289843ee47e07578625b	replaced-local	openpilot-dev-tools generate-bluetooth-digits
 rust/tools/generate_camerad_ae_reference.py	4dd3918c7bae6b5b2837cb671dc4471e1cb75bb9	pending	-
 rust/tools/generate_camerad_bps_data.py	e7c3ed0cfd040c4ed339e0c68aadc3a62b8b7631	pending	-
 rust/tools/generate_camerad_camera_lifecycle_reference.py	3c852d52a5babd89d117ff7ddfaad4d8a0f50736	pending	-

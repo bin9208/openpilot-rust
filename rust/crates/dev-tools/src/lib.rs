@@ -9,6 +9,7 @@ pub mod athena_vision_build;
 pub mod beep_clock_check;
 pub mod beep_integer_check;
 pub mod beep_sleep_check;
+pub mod bluetooth_digits_generate;
 pub mod brotli_stage;
 pub mod cutin_alert_check;
 pub mod filter_reference;

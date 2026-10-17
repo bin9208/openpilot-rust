@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Seventy-four sources have locally verified replacements and migrated
-callers; two are partially replaced and3,504 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Seventy-five sources have locally verified replacements and migrated
+callers; two are partially replaced and3,503 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -1902,3 +1902,31 @@ prerequisites and does not establish a full Rust pass. Latest exact-head CI must
 complete before integration. Evidence:2026-10-18-utf7-check and independent-review.
 Inventory74 replaced-local,2 partially-replaced,3504pending; full conversion,
 source-bound packaging and user device acceptance remain open.
+
+### Native Unicode digit-table generator (2026-10-18)
+
+`generate-bluetooth-digits` replaces `generate_bluetooth_digits.py` using the
+unmodified, hash-pinned Unicode15.0.0 DerivedNumericType database, with its
+license. It computes the Digit/Decimal union and decimal ten-digit starts;
+expectations are the unchanged original's exhaustive1,114,112-codepoint output,
+not the existing runtime tables. Original stdout is byte-identical; after
+Rustfmt it also exactly reproduces the runtime Bluetooth table. The original
+generated provenance comment is intentionally retained in the output.
+
+Missing-module/CLI RED preceded implementation. Both native API and actual CLI
+tests pass, including ignored arguments and PATH=/nonexistent. Scoped strict
+Clippy passes. After removing the original script, both tests still pass and
+execve tracing shows only the Rust generator. Independent source review found
+no actionable issue. The six fast routing/policy tests pass after preserving
+all existing suite assignments and adding the generator test. The final eight
+UTF7 original-CLI boundary receipts from the preceding unit are also retained.
+
+Source/runtime policy and Bluetooth digit acceptance are unchanged. Baseline
+inventory is now75 replaced-local,2 partially-replaced,3,503pending. This is
+one developer generator, not completion of repository Python retirement.
+Evidence: local2026-10-18-bluetooth-digits/{red,green,clippy,routing-red,
+deleted-tests}.log and after-deletion.execve; UI-coordinated routing GREEN in
+2026-10-18-ui-forms/anyvalue-repair-family-ci.log. Exact preceding head5226b36d
+Fast checks39072471346 and mapped-docs39072471414 succeeded; Rust39072471343
+and Integration39072471378 remain in progress at this checkpoint. Neither
+device acceptance nor complete source-bound packaging is claimed.

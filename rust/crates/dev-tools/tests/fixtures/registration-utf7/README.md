@@ -16,6 +16,10 @@ JSON/UTF8, nonzero child exits and missing/report-directory output paths.
 Independent real CLI probes add the Python report serializer boundary:
 992 nested candidate arrays write a mismatch report;993 or more raise before
 creating it. The native test preserves the same report/no-report behavior.
+`actual-cli-provenance.json` records the independent final eight CLI probes:
+depths992/993/994/1000 with empty and scalar leaves, unchanged original source
+identity, native binary identity and report creation outcomes. These probes use
+the original CLI context, not a runpy frame with a different recursion boundary.
 Original scripts/logs remain in private scratch2026-10-18-utf7-check and
 2026-10-18-utf7-independent-review. These are host tool/decoder comparisons,
 not device, network registration or driving acceptance.

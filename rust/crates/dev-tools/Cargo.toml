@@ -9,6 +9,10 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "generate-bluetooth-digits"
+path = "src/bin/generate_bluetooth_digits.rs"
+
+[[bin]]
 name = "check-ui-plot-samples"
 path = "src/bin/check_ui_plot_samples.rs"
 

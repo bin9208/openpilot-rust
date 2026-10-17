@@ -276,6 +276,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "ratekeeper_ci",
         "cutin_alert_check",
         "cutin_alert_ci",
+        "bluetooth_digits_generate",
         "selfdrive_state_check",
         "alert_manager_check",
         "selfdrive_events_check",
