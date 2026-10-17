@@ -27,7 +27,7 @@ fn native_diagnostics_are_built_tested_and_selected_by_the_complete_ui_gate() {
         assert!(command.contains(bin));
     }
     assert!(command.contains("--features egl-reference,polygon-reference"));
-    assert!(command.contains("--features image-array-native --test ui_diagnostic_reference --test ui_diagnostic_check --locked"));
+    assert!(command.contains("--features image-array-native --test ui_diagnostic_reference --test ui_diagnostic_check --test ui_emoji_check --test ui_emoji_ci --locked"));
     let build = "rust/target/debug/build-ui-diagnostic-reference --output \"$RUNNER_TEMP/ui-diagnostic-raw\" --raylib-root \"$STARTUP_UI_RAYLIB_ROOT\"";
     assert!(command.contains(build));
     assert!(command.contains("UI_DIAGNOSTIC_RAW_HELPER=%s/ui-diagnostic-raw/ui-diagnostic-raw"));
