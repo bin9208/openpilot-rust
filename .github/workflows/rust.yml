@@ -1201,6 +1201,8 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           cargo build --manifest-path rust/Cargo.toml -p openpilot-selfdrived --bins --examples --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-selfdrived --all-targets --locked -- -D warnings
       - name: Require selfdrived and messaging seam tests
         run: |
@@ -1224,7 +1226,8 @@ jobs:
           run_reference rust/tools/check_car_specific.py --binary "$selfdrive_examples/car_specific" --binding "$SELFDRIVE_PARAMS_BINDING" --output "$selfdrive_evidence/car-specific"
           run_reference rust/tools/check_cutin_alerts.py --binary "$selfdrive_examples/cutin_alerts" --output "$selfdrive_evidence/cutin"
           run_reference rust/tools/check_selfdrived_controller.py --binary "$selfdrive_examples/controller" --binding "$SELFDRIVE_PARAMS_BINDING" --output "$selfdrive_evidence/controller"
-          run_reference rust/tools/check_selfdrived_ratekeeper.py --binary "$selfdrive_examples/ratekeeper" --output "$selfdrive_evidence/ratekeeper"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          rust/target/debug/check-ratekeeper --binary "$selfdrive_examples/ratekeeper" --output "$selfdrive_evidence/ratekeeper"
       - name: Require actual selfdrived IPC and failure lifecycle
         run: |
           python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_selfdrived_stderr.py -q

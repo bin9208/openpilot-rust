@@ -1493,3 +1493,47 @@ Clippy. The formatting correction passes a subsequent workspace fmt check.
 CI mutation tests require live integer helper build/check in order and reject
 missing, conditional, softened or old-Python routes. Final exact-head remote CI
 is still required; earlier commits' results cannot substitute for these changes.
+
+### Shared Ratekeeper native checker (2026-10-18)
+
+The fixed selfdrived timing comparator is replaced by check-ratekeeper. The
+unmodified original generated all 20,000 Ratekeeper/MovingAverage states,
+including every 100-slot history buffer. Those complete source JSON lines and
+inputs are pinned and compressed; no replacement output supplies expected values.
+Runtime realtime.py/utils.py remain required live drift guards. Only the fixed
+checker is retired; generic Python timing source remains pending.
+
+Actual original/native comparison has byte-identical input.jsonl, source.jsonl,
+native.jsonl, native.stderr, manifest.json and stdout. Repeating the native CLI
+after deletion with PATH=/nonexistent produces the same artifacts. Seven native
+checker/routing tests pass, preserving 16 failure cases, three artifact-write
+faults, six CLI cases, live-source absence and changed reintroduced-source
+rejection. Strict scoped Clippy passes after simplifying a nested CI-test guard.
+The full corpus regression takes about 111 seconds locally; its coverage must
+run in a separate required worker instead of overloading the old seven-minute
+native lane. Inventory: 63 replaced-local / 3,517 pending baseline sources.
+
+Published9d229850 passed fast PR checks and mapped docs; its UI runtime CI failed
+closed while checking a libyuv archive hash. Googlesource generates timestamped
+archives; source-identical, stable full-commit mirror packaging is under repair.
+Other ongoing CI results and user-owned device checks are not presumed passed.
+
+### Source archive reproducibility and mandatory fast-corpus split
+
+Commit31f40181 fixes the libyuv download failure without changing its source.
+The stable full-commit mirror archive contains the same 204 paths, file bytes,
+links and executable bits; its reconstructed Git tree is
+ba22b636166dc16532fcc9d5a9524117432d1782, matching both origins for
+644251f252a84bf8ce91ff0aca86a9b16b069ab8. Repeated downloads match the pinned
+archive SHA. All nine fresh archive downloads, fresh SDK build, six stager tests,
+five native codec tests, sixteen image/polygon/CI tests and strict scoped Clippy
+pass. The extraction regression requires stripping exactly the mirror root.
+
+The published9d229850 fast push worker reached its seven-minute cancellation
+boundary although the PR fast worker passed. Native routing and behavioral
+corpora now run as separate mandatory workers; all 61 existing/current native
+integration targets remain exactly once, plus library tests, Python CI tests and
+service-tools. The aggregate checks actual success from all three workers,
+rejecting missing, skipped, cancelled, timed-out or failed results. Seven-minute
+worker bounds are retained. This is CI scheduling, not removed test coverage;
+new exact-head remote success remains required.

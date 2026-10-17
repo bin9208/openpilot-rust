@@ -1,0 +1,65 @@
+[
+  {
+    "blocked": "native.jsonl",
+    "error": "IsADirectoryError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.jsonl": null,
+      "source.jsonl": {
+        "bytes": 48318224,
+        "sha256": "6d98db01b1d7ee63090a85df57768f960a5ab94a7a5c35b32732c5bf7a20e24e"
+      },
+      "input.jsonl": {
+        "bytes": 799684,
+        "sha256": "79f30017362b46a01d61a7128b438e05b11d3f0f91f5806c3a56231de5e1d6a6"
+      }
+    }
+  },
+  {
+    "blocked": "native.stderr",
+    "error": "IsADirectoryError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": null,
+      "native.jsonl": {
+        "bytes": 48318224,
+        "sha256": "6d98db01b1d7ee63090a85df57768f960a5ab94a7a5c35b32732c5bf7a20e24e"
+      },
+      "source.jsonl": {
+        "bytes": 48318224,
+        "sha256": "6d98db01b1d7ee63090a85df57768f960a5ab94a7a5c35b32732c5bf7a20e24e"
+      },
+      "input.jsonl": {
+        "bytes": 799684,
+        "sha256": "79f30017362b46a01d61a7128b438e05b11d3f0f91f5806c3a56231de5e1d6a6"
+      }
+    }
+  },
+  {
+    "blocked": "manifest.json",
+    "error": "IsADirectoryError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 17,
+        "sha256": "653fd3735f7a6f9dd7039fbf4171e0f68114f586de44816f1b47ca0eda3ed2b0"
+      },
+      "manifest.json": null,
+      "native.jsonl": {
+        "bytes": 48318224,
+        "sha256": "6d98db01b1d7ee63090a85df57768f960a5ab94a7a5c35b32732c5bf7a20e24e"
+      },
+      "source.jsonl": {
+        "bytes": 48318224,
+        "sha256": "6d98db01b1d7ee63090a85df57768f960a5ab94a7a5c35b32732c5bf7a20e24e"
+      },
+      "input.jsonl": {
+        "bytes": 799684,
+        "sha256": "79f30017362b46a01d61a7128b438e05b11d3f0f91f5806c3a56231de5e1d6a6"
+      }
+    }
+  }
+]

@@ -2067,7 +2067,7 @@ rust/tools/check_selfdrive_state.py	3f1e26aea49998ecf680968560b7e438bc629969	pen
 rust/tools/check_selfdrived_controller.py	85538ebb50e9fa744cfcc12441256d59879eba29	pending	-
 rust/tools/check_selfdrived_failures.py	c17a5bf7383f4bc7f77375299ce6d7c1f611174a	pending	-
 rust/tools/check_selfdrived_ipc.py	0f5e004287bf3f6e93dded3a05456a3e4e8d2925	pending	-
-rust/tools/check_selfdrived_ratekeeper.py	b9f213a7d19b242702105371f85a4aaeb29fc5ca	pending	-
+rust/tools/check_selfdrived_ratekeeper.py	b9f213a7d19b242702105371f85a4aaeb29fc5ca	replaced-local	openpilot-dev-tools check-ratekeeper; 20000 original timing/moving-average states with complete source/output bytes and live drift guards
 rust/tools/check_sensord.py	a9d9a2e1cba42c6472247bf634a5c14fed757af9	pending	-
 rust/tools/check_sensord_daemon.py	64be32aad57796764def4a411233056878c99f65	pending	-
 rust/tools/check_sensord_kernel.py	45a7b78f2b7f3de0bd185b6ca0822143025d36c0	pending	-

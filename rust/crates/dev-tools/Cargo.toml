@@ -9,6 +9,10 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-ratekeeper"
+path = "src/bin/check_ratekeeper.rs"
+
+[[bin]]
 name = "check-beep-sleep"
 path = "src/bin/check_beep_sleep.rs"
 

@@ -6,6 +6,7 @@ pub mod athena_vision_build;
 pub mod beep_clock_check;
 pub mod beep_integer_check;
 pub mod beep_sleep_check;
+pub mod ratekeeper_check;
 pub mod brotli_stage;
 pub mod filter_reference;
 pub mod media_validation;

@@ -95,10 +95,11 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     let script = gate["steps"][0]["run"].as_str().unwrap();
     let success = BTreeMap::from([
         ("NATIVE".into(), "success".into()),
+        ("NATIVE_CORPUS".into(), "success".into()),
         ("PYTHON_ANDROID".into(), "success".into()),
     ]);
     assert!(run_shell(script, &success).unwrap().success());
-    for name in ["NATIVE", "PYTHON_ANDROID"] {
+    for name in ["NATIVE", "NATIVE_CORPUS", "PYTHON_ANDROID"] {
         for state in [
             None,
             Some(""),
@@ -119,7 +120,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
             );
         }
     }
-    for dependency in ["native", "python-android"] {
+    for dependency in ["native", "native-corpus", "python-android"] {
         let mut missing = original.clone();
         missing["jobs"].as_object_mut().unwrap().remove(dependency);
         assert!(validate_fast_gate(&missing).is_err());
@@ -132,6 +133,9 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         let mut sequential = original.clone();
         sequential["jobs"][dependency]["needs"] = serde_json::json!(["other"]);
         assert!(validate_fast_gate(&sequential).is_err());
+        let mut unbounded = original.clone();
+        unbounded["jobs"][dependency]["timeout-minutes"] = "8".into();
+        assert!(validate_fast_gate(&unbounded).is_err());
         let mut skipped_step = original.clone();
         skipped_step["jobs"][dependency]["steps"][0]["if"] = "false".into();
         assert!(validate_fast_gate(&skipped_step).is_err());
@@ -139,7 +143,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         ignored_step["jobs"][dependency]["steps"][0]["continue-on-error"] = "true".into();
         assert!(validate_fast_gate(&ignored_step).is_err());
     }
-    for name in ["NATIVE", "PYTHON_ANDROID"] {
+    for name in ["NATIVE", "NATIVE_CORPUS", "PYTHON_ANDROID"] {
         let mut missing = original.clone();
         missing["jobs"]["fast"]["steps"][0]["env"]
             .as_object_mut()
@@ -158,6 +162,9 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     for needs in [
         serde_json::json!(["native"]),
         serde_json::json!(["python-android"]),
+        serde_json::json!(["native", "python-android"]),
+        serde_json::json!(["native-corpus", "python-android"]),
+        serde_json::json!(["native", "native-corpus"]),
         serde_json::json!([]),
     ] {
         let mut changed = original.clone();
@@ -168,5 +175,167 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         let mut changed = original.clone();
         changed["jobs"]["fast"][key] = value.into();
         assert!(validate_fast_gate(&changed).is_err());
+    }
+}
+
+#[test]
+fn native_fast_split_preserves_every_suite_and_build_check_once() {
+    let workflow =
+        parse(&fs::read_to_string(root().join(".github/workflows/fast-checks.yml")).unwrap())
+            .unwrap();
+    let expected = [
+        "ci_workflow_policy",
+        "ci_rust_isolation",
+        "ci_disk_bootstrap",
+        "ci_process_probe",
+        "panda_oracle_build",
+        "upstream_sync",
+        "native_build_closure",
+        "updated_process_check",
+        "native_logging_build",
+        "release_files",
+        "logger_identifier_check",
+        "qa_process",
+        "logging_oracle_build",
+        "path_resolve",
+        "bridge_source_build",
+        "jpeg_sanitizers_check",
+        "ci_native_staging",
+        "encoder_source_build",
+        "ui_updater_handshake",
+        "athena_vision_build",
+        "hardware_command_check",
+        "pandad_firmware_spi_build",
+        "panda_cli",
+        "msgq_sanitizers_check",
+        "control_tools_policy_check",
+        "five_cli",
+        "registration_vendor_check",
+        "ui_adapter_sanitizers",
+        "unix_argv",
+        "python_fs",
+        "unix_cli_paths",
+        "panda_raw",
+        "startup_adapter_sanitizers",
+        "python_glob",
+        "ui_fixed_corpus_check",
+        "ui_ci_runtime",
+        "ui_state_scheduler_check",
+        "ui_translation_check",
+        "ui_application_logic_check",
+        "ui_headless_check",
+        "ui_scroll_check",
+        "diagnostic_check",
+        "message_state_ci",
+        "ci_artifact_list",
+        "miri_provenance",
+        "image_array_math",
+        "ui_egl_ci",
+        "command_reference_check",
+        "params_reference_check",
+        "amplifier_policy_check",
+        "hardware_control_policy_check",
+        "amplifier_linux_check",
+        "stats_numbers_check",
+        "stats_clock_check",
+        "beep_clock_check",
+        "beep_sleep_check",
+        "beep_integer_check",
+        "beep_integer_ci",
+        "ui_polygon_ci",
+        "ratekeeper_check",
+        "ratekeeper_ci",
+    ];
+    let corpus = [
+        "amplifier_policy_check",
+        "hardware_control_policy_check",
+        "amplifier_linux_check",
+        "stats_numbers_check",
+        "stats_clock_check",
+        "beep_clock_check",
+        "beep_sleep_check",
+        "beep_integer_check",
+        "ratekeeper_check",
+    ];
+    let mut seen = BTreeMap::<String, usize>::new();
+    let mut all_commands = Vec::new();
+    for worker in ["native", "native-corpus"] {
+        let job = &workflow["jobs"][worker];
+        assert_eq!(job["runs-on"], "ubuntu-24.04");
+        for (key, value) in [
+            ("RUSTUP_TOOLCHAIN", "1.94.0"),
+            ("CARGO_BUILD_JOBS", "2"),
+            ("CARGO_INCREMENTAL", "0"),
+            ("CARGO_PROFILE_DEV_DEBUG", "0"),
+            ("CARGO_PROFILE_TEST_DEBUG", "0"),
+        ] {
+            assert_eq!(job["env"][key], value, "{worker} {key}");
+        }
+        let commands = job["steps"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|step| step["run"].as_str())
+            .flat_map(|script| {
+                script
+                    .replace("\\\n", " ")
+                    .lines()
+                    .map(|line| line.split_whitespace().collect::<Vec<_>>().join(" "))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            commands
+                .iter()
+                .filter(|line| line.starts_with(
+                    "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked"
+                ))
+                .count(),
+            1,
+            "{worker} must execute one native suite command"
+        );
+        let command = commands
+            .iter()
+            .find(|line| {
+                line.starts_with(
+                    "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked",
+                )
+            })
+            .unwrap();
+        let args = command.split_whitespace().collect::<Vec<_>>();
+        assert_eq!(args.contains(&"--lib"), worker == "native");
+        let selected = args
+            .windows(2)
+            .filter(|pair| pair[0] == "--test")
+            .map(|pair| pair[1])
+            .collect::<Vec<_>>();
+        let assigned = expected
+            .iter()
+            .copied()
+            .filter(|name| corpus.contains(name) == (worker == "native-corpus"))
+            .collect::<Vec<_>>();
+        assert_eq!(selected, assigned, "{worker} suite selection changed");
+        for suite in selected {
+            *seen.entry(suite.to_owned()).or_default() += 1;
+        }
+        assert_eq!(commands.iter().filter(|line| line.as_str() ==
+            "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"
+        ).count(), 1, "{worker} disk guard changed");
+        all_commands.extend(commands);
+    }
+    assert_eq!(seen.len(), expected.len());
+    assert!(seen.values().all(|count| *count == 1));
+    for command in [
+        "python -m unittest discover -s tools/ci/tests -v",
+        "cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked",
+    ] {
+        assert_eq!(
+            all_commands
+                .iter()
+                .filter(|line| line.as_str() == command)
+                .count(),
+            1,
+            "dropped or duplicated {command}"
+        );
     }
 }
