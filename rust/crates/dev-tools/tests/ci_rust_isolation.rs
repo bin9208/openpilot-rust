@@ -507,6 +507,7 @@ fn selfdrived_requires_source_loop_native_ipc_and_failure_checks() {
         "check_selfdrived_controller.py",
         "check_selfdrived_ipc.py",
         "check_selfdrived_failures.py",
+        "test_selfdrived_source.py",
     ] {
         let step = job["steps"]
             .as_array()
@@ -525,6 +526,29 @@ fn selfdrived_requires_source_loop_native_ipc_and_failure_checks() {
         ],
     );
     some_artifact(job);
+}
+#[test]
+fn selfdrive_params_requires_native_live_boundary_matrix_and_original_cpp_reference() {
+    let data = workflow();
+    let job = &data["jobs"]["selfdrive-runtime"];
+    let script = commands(job);
+    required(&script, &[
+        "--features selfdrive-params-native --bin check-selfdrive-params --bin build-selfdrive-params-reference --bin selfdrive-params-test-peer",
+        "--features selfdrive-params-native --lib selfdrive_params --locked",
+        "--features selfdrive-params-native --test selfdrive_params_check --locked",
+        "rust/target/debug/build-selfdrive-params-reference --output",
+        "rust/target/debug/check-selfdrive-params --native",
+        "--reference \"$RUNNER_TEMP/selfdrived-native/params-reference/selfdrive-params-reference\"",
+    ]);
+    assert!(!script.contains("check_selfdrive_params.py"));
+    mandatory(
+        job,
+        &[
+            "selfdrive-params-native",
+            "build-selfdrive-params-reference",
+            "check-selfdrive-params --native",
+        ],
+    );
 }
 #[test]
 fn navigation_requires_original_transport_auth_and_timer_evidence() {

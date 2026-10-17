@@ -22,8 +22,7 @@ from openpilot.cereal import car, log, messaging
 from openpilot.selfdrive.locationd.helpers import Pose, PoseCalibrator
 from openpilot.selfdrive.selfdrived.camera_config import get_camera_packets
 from openpilot.selfdrive.controls.lib.cutin_alert import CutinAlertCandidate, CutinAlertTracker, promoted_cutin_candidates
-from check_alert_callbacks import setup_source
-from check_selfdrive_helpers import source_check
+from selfdrived_helpers_source import setup_source, source_check
 from car_specific_oracle import load as car_source
 
 ROOT = Path(__file__).resolve().parents[2]

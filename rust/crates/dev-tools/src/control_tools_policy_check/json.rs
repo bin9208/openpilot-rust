@@ -10,7 +10,7 @@ pub(crate) fn parse_text(text: &str) -> Result<JsonValue> {
     parse(text.as_bytes())
 }
 
-pub(super) fn parse(bytes: &[u8]) -> Result<JsonValue> {
+pub(crate) fn parse(bytes: &[u8]) -> Result<JsonValue> {
     let (width, little, skip) = if bytes.starts_with(b"\xff\xfe\0\0") {
         (4, true, 4)
     } else if bytes.starts_with(b"\0\0\xfe\xff") {

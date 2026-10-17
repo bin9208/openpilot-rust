@@ -65,7 +65,11 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-71 sources are retired locally; remaining families and final delivery gates stay open.
+70 baseline sources are fully replaced locally, two fixed checker CLIs are
+partially replaced because their generic live-source helpers remain Python,
+and3,508 baseline sources remain pending. The added
+rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
+not retirement. Remaining families and final delivery gates stay open.
 
 ### Task3: native model compiler operations, then the full compiler chain
 

@@ -1704,3 +1704,75 @@ The same exact-head Rust run39066510840 exposed a selfdrived source comparator
 still importing deleted checker helpers and a planner IPC first-cycle validity
 difference (three records at the second model input on x86_64; ARM passed).
 Both remain under investigation; neither is treated as a passing required gate.
+
+### Live Params checker conversion (2026-10-18)
+
+`check-selfdrive-params` replaces the fixed Python checker using unchanged C++
+Params methods, actual filesystem state and native ZMQ sockets. Its source side
+also matches an independent47-case original Cython capture, including seven
+fatal std::stoi diagnostics and six conversion warnings. The test peer supplies
+controlled candidate failures only; it is not the production oracle. The new
+`--reference` replaces `--binding`, and reports identify the native reference
+instead of claiming a Cython invocation. Generic Params/logging sources remain
+live and pinned. The optional selfdrive-params-native feature keeps ZMQ out of
+default developer-tool builds.
+
+Nine unit tests, five integration tests (including15 original boundary outcomes),
+strict Clippy, current-source candidate differential and copied-root retirement
+proof passed. Parent repeated the actual47-case comparison after deleting
+check_selfdrive_params.py, with PATH=/nonexistent; stdout/stderr match original
+captures byte-for-byte. Timeout/error cleanup terminates owned groups and reaps
+direct children. PR_SET_DUMPABLE=0 in the QA helper prevents an external host
+crash collector while retaining all seven original SIGABRT outcomes; production
+Params is unchanged. Independent implementation review found no blocker.
+Evidence:2026-10-18-selfdrive-params/{current-source-proof.log,
+current-retired-root-proof.log,parent-retired.stdout,parent-retired.stderr},
+plus2026-10-18-batched-matmul/params-review.txt. CI now builds/tests the native
+checker/reference and retains all other source comparisons.
+
+### Planner IPC comparison pacing repair (2026-10-18)
+
+The x86_64 run39066510840 source's first model computation took13.36ms while the
+native run took3.83ms. The harness added50ms after each completed computation,
+producing approximately63ms versus54ms input periods. This crossed the unchanged
+minimum receive-frequency boundary only for the original; records3–5 differed
+in validity at the second input. Pace normal inputs from their previous send,
+and retain a complete recovery interval when computation overruns an entire
+period. Record actual send times. No publication or validity comparison is
+removed and no production cadence/validity rule changes.
+
+Two scheduling regressions first failed, then all five planner CI tests passed.
+The exact failed-run native executable/solver artifacts were replayed with the
+fixed harness against live original code: two original and two native runs each
+produced121 messages, matching all compared values/validity, both triggers and
+34 fast overlays. All three comparisons reported no differences. These are
+host checks; latest x86_64/ARM remote checks remain required. Evidence:
+2026-10-18-ci-diagnostic-routing/planner-pacing-{red,green,live}.log.
+
+### Retained SelfdriveD source-loader correction (2026-10-18)
+
+The fixed callback/helpers checker CLIs were ported, but SelfdriveD's live source
+oracle still imported their generic loader functions. Keep those exact loaders
+in selfdrived_helpers_source.py and update the caller. This is retained Python,
+not native conversion: the two baseline inventory rows are now partially-replaced.
+The added loader and its four regressions remain pending tooling work alongside
+the controller comparator. Baseline totals after Params:70 replaced-local,
+2 partially-replaced,3,508 pending. Added Python files are explicit above and
+are not hidden by the baseline count.
+
+Five original function ASTs and295 requests/9,436 controller steps match the
+pre-retirement source including messages, state and effects. Four fresh loader
+regressions pass and CI requires them with actual original bindings. A static
+audit of deleted-tool imports found no other missing imports; this does not
+prove dynamic imports are absent. Parent's final Params gate passed9 unit and
+60 integration/routing cases plus strict Clippy. The initial local rerun lacked
+the non-system Cap'n Proto include prefix; setting SELFDRIVE_PARAMS_CAPNP_PREFIX
+to the installed SDK resolved that build configuration error. CI installs the
+system headers. Evidence:2026-10-18-selfdrived-oracle-regression and
+2026-10-18-selfdrive-params/parent-final-sdk.log.
+
+Parent then built controller from the current #296 source into the isolated cache
+and ran the unchanged full controller comparator against the relocated live
+oracle. All295 requests/9,436 steps passed, retaining both original exceptions.
+Candidate SHA256:289046d73988b02d9ae61e79e8727908b00cbfd114aa8f75a64dc3592d97f5c2;
+evidence:2026-10-18-selfdrived-oracle-regression/current-controller.log.

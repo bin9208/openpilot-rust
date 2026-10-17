@@ -19,6 +19,13 @@ from plannerd_owner_source import difference
 OUTPUTS = ['longitudinalPlan', 'lateralPlan', 'driverAssistance']
 
 
+def next_model_target(nominal, previous_sent, previous_model_done):
+  target = max(nominal, previous_sent + 0.05)
+  if previous_model_done - previous_sent >= 0.05:
+    target = max(target, previous_model_done + 0.05)
+  return target
+
+
 def policy(raw):
   with log.Event.from_bytes(raw) as event:
     service = event.which()
@@ -108,11 +115,12 @@ def run(args, root, mode, epoch, prefix):
       assert not records, 'a liveTracks-only startup published without a model'
       started = time.monotonic() + 0.05
       previous_model_done = started - 0.05
+      previous_sent = previous_model_done
       for index in range(args.frames):
-        # Never catch up a delayed first solver/IPC iteration with a burst.
-        # FrequencyTracker uses actual receive time, so nominal send deadlines
-        # alone can make the unchanged original disagree with its own rerun.
-        target = max(started + index * 0.05, previous_model_done + 0.05)
+        # Pace from the previous send, so ordinary solver work does not slow
+        # the source's inputs relative to the native candidate. If processing
+        # overruns a complete period, recover without a catch-up burst.
+        target = next_model_target(started + index * 0.05, previous_sent, previous_model_done)
         time.sleep(max(0.0, target - time.monotonic()))
         packets = messages(messaging.new_message, 45 + index, 1.0 + index * 0.05)
         packets['selfdriveState'].selfdriveState.experimentalMode = 12 <= index < 16
@@ -128,6 +136,7 @@ def run(args, root, mode, epoch, prefix):
             lead.vLead = lead.vLeadK = lead.vRel = 0.1
             lead.aLead = lead.aLeadK = lead.jLead = 0.0
         before = sum(row['service'] == 'driverAssistance' for row in records)
+        sent = time.monotonic()
         for name, packet in packets.items():
           if name != 'modelV2':
             publisher.send(name, packet)
@@ -135,6 +144,7 @@ def run(args, root, mode, epoch, prefix):
         wait_for('driverAssistance', before)
         model_done = time.monotonic()
         previous_model_done = model_done
+        previous_sent = sent
         time.sleep(max(0.0, target + 0.025 - time.monotonic()))
         live = messaging.new_message('liveTracks', logMonoTime=1_000_000_000 + index * 50_000_000 + 25_000_000, valid=index != 19)
         points = live.liveTracks.init('points', 2)
@@ -148,7 +158,7 @@ def run(args, root, mode, epoch, prefix):
         else:
           time.sleep(0.005)
           drain()
-        timing.append({'index': index, 'target': target, 'model_done': model_done, 'live_done': time.monotonic()})
+        timing.append({'index': index, 'target': target, 'sent': sent, 'model_done': model_done, 'live_done': time.monotonic()})
       time.sleep(0.03)
       drain()
       child.send_signal(signal.SIGTERM)

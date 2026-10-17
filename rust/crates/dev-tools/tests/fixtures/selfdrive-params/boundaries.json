@@ -1,0 +1,300 @@
+{
+  "accepted_packets": [
+    {
+      "mode": "warning-float-surrogate",
+      "packet_hex": "1e7b226d7367223a20224661696c656420746f206361737420706172616d204e4e46464d6f64656c4e616d6520776974682076616c75653d62275c5c786666272066726f6d207479706520743d3c506172616d4b6579547970652e535452494e473a20303e222c20226c6576656c6e756d223a2033302e302c20226c6576656c223a20225741524e494e47222c20226d65746164617461223a20225c7564383030227d",
+      "record_json": "{\"msg\": \"Failed to cast param NNFFModelName with value=b'\\\\xff' from type t=<ParamKeyType.STRING: 0>\", \"levelnum\": 30.0, \"level\": \"WARNING\", \"metadata\": \"\\ud800\"}"
+    },
+    {
+      "mode": "raw-surrogate-metadata",
+      "packet_hex": "1e7b226d7367223a20224661696c656420746f206361737420706172616d204e4e46464d6f64656c4e616d6520776974682076616c75653d62275c5c786666272066726f6d207479706520743d3c506172616d4b6579547970652e535452494e473a20303e222c20226c6576656c6e756d223a2033302c20226c6576656c223a20225741524e494e47222c20226d65746164617461223a2022eda080227d",
+      "record_json": "{\"msg\": \"Failed to cast param NNFFModelName with value=b'\\\\xff' from type t=<ParamKeyType.STRING: 0>\", \"levelnum\": 30, \"level\": \"WARNING\", \"metadata\": \"\\ud800\"}"
+    },
+    {
+      "mode": "utf16-packets",
+      "packet_hex": "1efffe7b0022006d007300670022003a00200022004600610069006c0065006400200074006f0020006300610073007400200070006100720061006d0020004e004e00460046004d006f00640065006c004e0061006d006500200077006900740068002000760061006c00750065003d00620027005c005c0078006600660027002000660072006f006d0020007400790070006500200074003d003c0050006100720061006d004b006500790054007900700065002e0053005400520049004e0047003a00200030003e0022002c00200022006c006500760065006c006e0075006d0022003a002000330030002c00200022006c006500760065006c0022003a00200022005700410052004e0049004e00470022002c00200022006d00650074006100640061007400610022003a00200022006e006f0072006d0061006c0022007d00",
+      "record_json": "{\"msg\": \"Failed to cast param NNFFModelName with value=b'\\\\xff' from type t=<ParamKeyType.STRING: 0>\", \"levelnum\": 30, \"level\": \"WARNING\", \"metadata\": \"normal\"}"
+    }
+  ],
+  "checker_sha256": "0e358cfdb18e3696f506f1f00ded39268a13c3d82b2b7687c5ea9a74a8d4d774",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "peer_sha256": "20dd619e077f29affc8a2040da85e87042aade8b08bf380696af0069119986f5",
+  "capture": "Unmodified original main, real original Cython Params and actual ZMQ; controlled reply peers only mutate transport/JSON/failure boundaries. No Rust checker is invoked.",
+  "cases": [
+    {
+      "mode": "wrong-ready",
+      "success": false,
+      "stdout": "",
+      "artifacts": [
+        "native.stderr"
+      ],
+      "warnings": [],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "eof-ready",
+      "success": false,
+      "stdout": "",
+      "artifacts": [
+        "native.stderr"
+      ],
+      "warnings": [],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "bad-json",
+      "success": false,
+      "stdout": "",
+      "artifacts": [
+        "native.stderr"
+      ],
+      "warnings": [],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "wrong-value",
+      "success": false,
+      "stdout": "",
+      "artifacts": [
+        "native.stderr"
+      ],
+      "warnings": [],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "missing-levelnum",
+      "success": false,
+      "stdout": "",
+      "artifacts": [
+        "native.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "wrong-severity",
+      "success": false,
+      "stdout": "",
+      "artifacts": [
+        "native.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "wrong-level",
+      "success": false,
+      "stdout": "",
+      "artifacts": [
+        "native.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "nonzero-exit",
+      "success": false,
+      "stdout": "",
+      "artifacts": [
+        "native.stderr",
+        "source-fatal-40.stderr",
+        "source-fatal-41.stderr",
+        "source-fatal-42.stderr",
+        "source-fatal-43.stderr",
+        "source-fatal-44.stderr",
+        "source-fatal-45.stderr",
+        "source-fatal-46.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "warning-float-surrogate",
+      "success": true,
+      "stdout": "{\"passed\": true, \"cases\": 47}\n",
+      "artifacts": [
+        "native.stderr",
+        "report.json",
+        "source-fatal-40.stderr",
+        "source-fatal-41.stderr",
+        "source-fatal-42.stderr",
+        "source-fatal-43.stderr",
+        "source-fatal-44.stderr",
+        "source-fatal-45.stderr",
+        "source-fatal-46.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "raw-surrogate-metadata",
+      "success": true,
+      "stdout": "{\"passed\": true, \"cases\": 47}\n",
+      "artifacts": [
+        "native.stderr",
+        "report.json",
+        "source-fatal-40.stderr",
+        "source-fatal-41.stderr",
+        "source-fatal-42.stderr",
+        "source-fatal-43.stderr",
+        "source-fatal-44.stderr",
+        "source-fatal-45.stderr",
+        "source-fatal-46.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "utf16-packets",
+      "success": true,
+      "stdout": "{\"passed\": true, \"cases\": 47}\n",
+      "artifacts": [
+        "native.stderr",
+        "report.json",
+        "source-fatal-40.stderr",
+        "source-fatal-41.stderr",
+        "source-fatal-42.stderr",
+        "source-fatal-43.stderr",
+        "source-fatal-44.stderr",
+        "source-fatal-45.stderr",
+        "source-fatal-46.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "marker-float",
+      "success": true,
+      "stdout": "{\"passed\": true, \"cases\": 47}\n",
+      "artifacts": [
+        "native.stderr",
+        "report.json",
+        "source-fatal-40.stderr",
+        "source-fatal-41.stderr",
+        "source-fatal-42.stderr",
+        "source-fatal-43.stderr",
+        "source-fatal-44.stderr",
+        "source-fatal-45.stderr",
+        "source-fatal-46.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "marker-bool",
+      "success": true,
+      "stdout": "{\"passed\": true, \"cases\": 47}\n",
+      "artifacts": [
+        "native.stderr",
+        "report.json",
+        "source-fatal-40.stderr",
+        "source-fatal-41.stderr",
+        "source-fatal-42.stderr",
+        "source-fatal-43.stderr",
+        "source-fatal-44.stderr",
+        "source-fatal-45.stderr",
+        "source-fatal-46.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "cr-lines",
+      "success": true,
+      "stdout": "{\"passed\": true, \"cases\": 47}\n",
+      "artifacts": [
+        "native.stderr",
+        "report.json",
+        "source-fatal-40.stderr",
+        "source-fatal-41.stderr",
+        "source-fatal-42.stderr",
+        "source-fatal-43.stderr",
+        "source-fatal-44.stderr",
+        "source-fatal-45.stderr",
+        "source-fatal-46.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    },
+    {
+      "mode": "final-no-newline",
+      "success": true,
+      "stdout": "{\"passed\": true, \"cases\": 47}\n",
+      "artifacts": [
+        "native.stderr",
+        "report.json",
+        "source-fatal-40.stderr",
+        "source-fatal-41.stderr",
+        "source-fatal-42.stderr",
+        "source-fatal-43.stderr",
+        "source-fatal-44.stderr",
+        "source-fatal-45.stderr",
+        "source-fatal-46.stderr"
+      ],
+      "warnings": [
+        "Failed to cast param NNFFModelName with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param NNFFModelName with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xff' from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b\"one'\\xff\\n\" from type t=<ParamKeyType.STRING: 0>",
+        "Failed to cast param CanParserResult with value=b'\\xc0\\x80' from type t=<ParamKeyType.STRING: 0>"
+      ],
+      "temporary_remaining": []
+    }
+  ]
+}

@@ -25,6 +25,8 @@ pub mod ratekeeper_check;
 pub mod seal;
 pub mod selfdrive_events_check;
 pub mod selfdrive_helpers_check;
+#[cfg(feature = "selfdrive-params-native")]
+pub mod selfdrive_params_check;
 pub mod selfdrive_state_check;
 pub mod stats_clock_check;
 pub mod stats_numbers_check;

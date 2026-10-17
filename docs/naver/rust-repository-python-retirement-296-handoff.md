@@ -8,9 +8,16 @@
 연결을 다시 요청하거나 기기 접근을 기다리지 않는다. 검증된 변경을 커밋하고
 필수 PR/통합 검사를 거쳐 반영하며, 실기 결과는 사용자 확인 전까지 미확인이다.
 
-기존 원격 a077b0d2의 Rust CI 38777900468은 최종 success다. 로컬에는
-후속 도구 전환·최적화와 검증 중인 모델/이미지 변경이 있으므로 범위별로 나누어
-커밋한다. 인벤토리는 71 replaced-local / 3,509 pending이며 전체 전환은 미완료다.
+원격 a8189aec까지 JSON 접근 할당 최적화와 UI 진단 CI 명령 수정이 반영됐다.
+후속 fast timeout은5035bd54에서 알림 관리자 검사를 별도 필수 작업으로
+분리했다. Params 검사기는 실제 원본47사례/오류15경계와 현재 후보를 비교하고
+Python 삭제 후에도 통과했다. selfdrived 원본 비교의 끊어진 import를 복구하고
+planner 입력 주기 차이도 수정했다. 후속 정확한 커밋의 원격 검사는 필수다.
+검증 중인 배치 행렬 컴파일러와 Forms 참조/검사기는 일괄 커밋하지 않는다.
+Forms 기본18화면은 통과했지만 공용 helper의 추가 emoji 사례는 수정 중이다.
+인벤토리는70 replaced-local /2 partially-replaced /3,508 pending이다.
+두 부분 전환 항목의 공용 원본 로더는 추가 파일 selfdrived_helpers_source.py에
+남아 있으며 이동을 Rust 전환으로 세지 않는다. 전체 전환은 미완료다.
 최신 검증 결과는 evidence 및 runtime-module-audit 문서를 따른다.
 공유 primary/dev-md 캐시 대신 아래의 cargo-target-retirement-296을 사용한다.
 

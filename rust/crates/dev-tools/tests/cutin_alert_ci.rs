@@ -15,7 +15,7 @@ const REFERENCES: [&str; 9] = [
     "rust/target/debug/check-alert-manager --binary \"$selfdrive_examples/alert_manager\" --output \"$selfdrive_evidence/alert-manager\"",
     "rust/target/debug/check-selfdrive-events --binary \"$selfdrive_examples/events_trace\" --output \"$selfdrive_evidence/events\"",
     "rust/target/debug/check-alert-callbacks --binary \"$selfdrive_examples/alert_callbacks\" --output \"$selfdrive_evidence/callbacks\"",
-    "run_reference rust/tools/check_selfdrive_params.py --native \"$selfdrive_examples/alert_params\" --binding \"$SELFDRIVE_PARAMS_BINDING\" --output \"$selfdrive_evidence/params\"",
+    "rust/target/debug/check-selfdrive-params --native \"$selfdrive_examples/alert_params\" --reference \"$RUNNER_TEMP/selfdrived-native/params-reference/selfdrive-params-reference\" --output \"$selfdrive_evidence/params\"",
     "rust/target/debug/check-selfdrive-helpers --native \"$selfdrive_examples/selfdrive_helpers\" --output \"$selfdrive_evidence/helpers\"",
     "run_reference rust/tools/check_car_specific.py --binary \"$selfdrive_examples/car_specific\" --binding \"$SELFDRIVE_PARAMS_BINDING\" --output \"$selfdrive_evidence/car-specific\"",
     "run_reference rust/tools/check_selfdrived_controller.py --binary \"$selfdrive_examples/controller\" --binding \"$SELFDRIVE_PARAMS_BINDING\" --output \"$selfdrive_evidence/controller\"",
@@ -43,6 +43,7 @@ fn check(workflow: &Value) -> Result<(), String> {
             "check_selfdrive_events.py",
             "check_alert_callbacks.py",
             "check_selfdrive_helpers.py",
+            "check_selfdrive_params.py",
         ]
         .iter()
         .any(|name| script.contains(name))
@@ -82,12 +83,12 @@ fn check(workflow: &Value) -> Result<(), String> {
                         ));
                     }
                 }
-                for at in [1, 2, 3, 4, 6] {
+                for at in 1..=6 {
                     let state_index = lines
                         .iter()
                         .position(|line| *line == REFERENCES[at])
                         .unwrap();
-                    let next = if at < 4 { GUARD } else { REFERENCES[at + 1] };
+                    let next = if at < 6 { GUARD } else { REFERENCES[at + 1] };
                     if state_index < 2
                         || lines[state_index - 1] != GUARD
                         || lines[state_index - 2] != REFERENCES[at - 1]
@@ -159,7 +160,7 @@ fn missing_optional_softened_python_or_changed_source_routes_are_rejected() {
             .iter()
             .enumerate()
             .map(|(at, command)| {
-                if [1, 2, 3, 4, 6].contains(&at) {
+                if (1..=6).contains(&at) {
                     format!("{GUARD}\n{command}")
                 } else {
                     command.to_string()
@@ -171,10 +172,7 @@ fn missing_optional_softened_python_or_changed_source_routes_are_rejected() {
     );
     let good = serde_json::json!({"jobs":{"selfdrive-runtime":{"runs-on":"ubuntu-24.04","steps":[{"run":build},{"run":run}]}}});
     check(&good).unwrap();
-    for command in REFERENCES[1..=4]
-        .iter()
-        .chain(std::iter::once(&REFERENCES[6]))
-    {
+    for command in &REFERENCES[1..=6] {
         for replacement in [
             command.to_string(),
             format!("{GUARD}\n{command} || true"),

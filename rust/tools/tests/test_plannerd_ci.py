@@ -12,23 +12,29 @@ import yaml
 from check_plannerd_ci import Check, ROOT, run_checks
 
 
-def test_ipc_replay_does_not_catch_up_after_delayed_model_processing() -> None:
-  # Evaluate the actual harness scheduling expressions without importing its
-  # C++ IPC bindings. This delay is the measured ARM original-source rerun.
+def ipc_target():
+  # Execute the actual scheduling function without importing C++ IPC bindings.
   tree = ast.parse((ROOT / 'rust/tools/plannerd_ipc.py').read_text())
-  loop = next(node for node in ast.walk(tree) if isinstance(node, ast.For)
-              and isinstance(node.target, ast.Name) and node.target.id == 'index')
-  target = next(node for node in loop.body if isinstance(node, ast.Assign)
-                and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'target')
-  state = {'started': 448.531671547, 'index': 1, 'previous_model_done': 448.556855263}
-  scheduled = eval(compile(ast.Expression(target.value), '<ipc scheduling>', 'eval'), {'max': max}, state)
-  assert scheduled - state['previous_model_done'] >= 0.05 - 1e-12
-  updates = [node for node in loop.body if isinstance(node, ast.Assign)
-             and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'previous_model_done']
-  assert len(updates) == 1
-  state['model_done'] = 448.610
-  exec(compile(ast.Module(updates, type_ignores=[]), '<ipc receipt>', 'exec'), {}, state)
-  assert state['previous_model_done'] == state['model_done']
+  function = next((node for node in tree.body if isinstance(node, ast.FunctionDef)
+                   and node.name == 'next_model_target'), None)
+  assert function is not None, 'IPC replay needs send-paced scheduling'
+  namespace = {}
+  exec(compile(ast.Module([function], type_ignores=[]), '<ipc scheduling>', 'exec'), namespace)
+  return namespace['next_model_target']
+
+
+def test_ipc_replay_keeps_normal_frequency_independent_of_solver_duration() -> None:
+  target = ipc_target()
+  for work in (0.003, 0.013, 0.025, 0.049):
+    assert target(100.05, 100.0, 100.0 + work) == pytest.approx(100.05)
+
+
+def test_ipc_replay_does_not_catch_up_after_delayed_model_processing() -> None:
+  target = ipc_target()
+  # Solver work spanning a complete period still gets a full recovery interval.
+  assert target(100.05, 100.0, 100.08) == pytest.approx(100.13)
+  # Late host wakeup cannot send two model inputs at the same nominal deadline.
+  assert target(100.05, 100.04, 100.045) == pytest.approx(100.09)
 
 
 def test_failed_comparison_is_recorded_and_stops_before_the_next_check(tmp_path: Path) -> None:

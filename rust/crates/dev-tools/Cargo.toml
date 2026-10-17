@@ -9,6 +9,25 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-selfdrive-params"
+path = "src/bin/check_selfdrive_params.rs"
+required-features = ["selfdrive-params-native"]
+
+[[bin]]
+name = "build-selfdrive-params-reference"
+path = "src/bin/build_selfdrive_params_reference.rs"
+required-features = ["selfdrive-params-native"]
+
+[[test]]
+name = "selfdrive_params_check"
+required-features = ["selfdrive-params-native"]
+
+[[bin]]
+name = "selfdrive-params-test-peer"
+path = "src/bin/selfdrive_params_test_peer.rs"
+required-features = ["selfdrive-params-native"]
+
+[[bin]]
 name = "check-selfdrive-helpers"
 path = "src/bin/check_selfdrive_helpers.rs"
 
@@ -110,6 +129,7 @@ name = "list-cargo-tests"
 path = "src/bin/list_cargo_tests.rs"
 
 [features]
+selfdrive-params-native = ["dep:zmq"]
 egl-reference = ["dep:openpilot-startup-ui"]
 image-array = ["dep:png", "dep:gif", "dep:tiff", "dep:image", "dep:openpilot-jpeg"]
 image-array-native = ["image-array", "dep:openpilot-image-codecs"]
@@ -223,6 +243,7 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+zmq = { version = "=0.10.0", optional = true }
 png = { version = "=0.17.16", optional = true }
 gif = { version = "=0.14.2", default-features = false, features = ["std"], optional = true }
 tiff = { version = "=0.11.3", default-features = false, features = ["deflate", "jpeg", "lzw"], optional = true }
