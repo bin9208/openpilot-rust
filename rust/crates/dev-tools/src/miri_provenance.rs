@@ -37,11 +37,8 @@ fn lexical(path: &OsStr) -> PathBuf {
 /// unreadable files fail the whole operation without partial JSON publication.
 pub fn core_hashes(root: &OsStr) -> Result<String> {
     let root = lexical(root);
-    let mut paths = crate::python_glob::glob(
-        Path::new("."),
-        &root,
-        "lib/rustlib/*/lib/libcore-*.rlib",
-    )?;
+    let mut paths =
+        crate::python_glob::glob(Path::new("."), &root, "lib/rustlib/*/lib/libcore-*.rlib")?;
     // PosixPath ordering compares decoded path components, not raw bytes or
     // complete strings (an architecture's prefix sorts before its suffixes).
     fn key(path: &Path) -> Vec<Vec<u32>> {
