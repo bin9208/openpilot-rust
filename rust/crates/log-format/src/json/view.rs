@@ -119,15 +119,15 @@ impl JsonValue {
     }
     /// Compare string codepoints without replacement decoding.
     pub fn text_eq(&self, other: &str) -> bool {
-        match self.view() {
-            JsonView::Text(points) => points.iter().copied().eq(other.chars().map(u32::from)),
+        match &self.document.values[self.index] {
+            Value::Text(text) => text.0.iter().copied().eq(other.chars().map(u32::from)),
             _ => false,
         }
     }
     /// None means either a nonstring value or Python text containing lone surrogates.
     pub fn to_utf8(&self) -> Option<String> {
-        match self.view() {
-            JsonView::Text(points) => points.iter().copied().map(char::from_u32).collect(),
+        match &self.document.values[self.index] {
+            Value::Text(text) => text.0.iter().copied().map(char::from_u32).collect(),
             _ => None,
         }
     }

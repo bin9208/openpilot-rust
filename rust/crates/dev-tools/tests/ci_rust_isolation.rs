@@ -299,12 +299,16 @@ fn workspace_checks_run_without_waiting_for_runtime_jobs() {
             "cargo clippy --workspace",
             "cargo test --workspace",
             "cargo build --workspace --release --locked",
+            "cargo build --locked -p openpilot-log-format",
+            "rustc --edition=2021 tools/json_view_allocation_probe.rs --extern openpilot_log_format=target/debug/libopenpilot_log_format.rlib -L dependency=target/debug/deps",
+            "\"$RUNNER_TEMP/json-view-allocation\"",
             "check_usbgpu_hardware.py",
             "check_usbgpu_asm.py",
             "check_usbgpu_status.py",
         ],
     );
     assert_eq!(data["jobs"]["fast"]["name"], "rust checks");
+    mandatory(job, &["tools/json_view_allocation_probe.rs"]);
     assert_eq!(data["jobs"]["fast"]["steps"].as_array().unwrap().len(), 1);
     let script = commands(job);
     assert!(

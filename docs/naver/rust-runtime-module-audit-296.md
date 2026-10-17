@@ -589,6 +589,22 @@ remain separate gates.
   cannot be attributed to current device CPU. Preserve existing cache/marker
   behavior if optimizing the independently callable path.
 
+### JSON scalar access without composite allocation (2026-10-18)
+
+`JsonValue::text_eq` and `to_utf8` formerly called `view()` before rejecting a
+nonstring value. Arrays and objects consequently allocated child-view vectors
+and cloned document handles only to discard them. Both accessors now inspect
+the stored node directly. String codepoint comparison, strict UTF-8 conversion,
+lone-surrogate rejection and retained-child ownership remain unchanged.
+
+The standalone probe links the actual log-format library and performs12,000
+accessor calls on six pre-parsed scalar/composite values: allocation calls fell
+from4,000 (RED) to0 (GREEN). It is required after workspace tests alongside the
+existing parser allocation probe. Three log-format integration tests, strict
+all-target Clippy and45 affected CI isolation/disk tests pass. Independent review
+found no actionable issue. This demonstrates host allocation removal, not device
+CPU or driving performance. Logs:2026-10-18-ci-diagnostic-routing/json-*.
+
 ### Inherited contracts deliberately retained
 
 Original controlsd explicitly polls for 15 ms. Torqued intentionally calls its
