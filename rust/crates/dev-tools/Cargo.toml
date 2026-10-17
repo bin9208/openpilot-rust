@@ -141,7 +141,6 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
-openpilot-carrot-navi = { path = "../carrot-navi" }
 rsa = "=0.9.10"
 sha1 = "=0.10.7"
 base64 = "=0.22.1"

@@ -2739,7 +2739,6 @@ dependencies = [
  "bzip2",
  "command-fds",
  "flate2",
- "openpilot-carrot-navi",
  "openpilot-disk-space",
  "openpilot-log-format",
  "openpilot-startup-ui",

@@ -99,6 +99,41 @@ fn decoded(captured: Captured, checked: bool) -> Result<(i32, String, String)> {
     }
     Ok((captured.code, stdout, stderr))
 }
+fn integer(line: &str) -> Result<String> {
+    // Preserve carrot-navi/src/integer.rs admission without importing that
+    // daemon's BigInt/logging/cereal dependency graph. The checker only needs
+    // canonical decimal text, not arithmetic. The shared digit table is pinned
+    // to the same CPython 3.12 / Unicode 15.0 oracle.
+    let line = line.trim_matches(char::is_whitespace);
+    let (negative, body) = if let Some(body) = line.strip_prefix('-') {
+        (true, body)
+    } else {
+        (false, line.strip_prefix('+').unwrap_or(line))
+    };
+    let mut digits = String::with_capacity(body.len());
+    let mut previous_digit = false;
+    for character in body.chars() {
+        if character == '_' && previous_digit {
+            previous_digit = false;
+            continue;
+        }
+        let digit = crate::argparse_scan::decimal_value(character)
+            .ok_or("invalid stats clock integer literal")?;
+        digits.push(char::from(b'0' + digit));
+        previous_digit = true;
+    }
+    if !previous_digit || digits.len() > 4300 {
+        return Err("invalid or overlong stats clock integer literal".into());
+    }
+    let magnitude = digits.trim_start_matches('0');
+    Ok(if magnitude.is_empty() {
+        "0".into()
+    } else if negative {
+        format!("-{magnitude}")
+    } else {
+        magnitude.into()
+    })
+}
 fn integers(text: &str) -> Result<Vec<String>> {
     let mut lines = text
         .split([
@@ -108,16 +143,68 @@ fn integers(text: &str) -> Result<Vec<String>> {
     if lines.last() == Some(&"") {
         lines.pop();
     }
-    lines
-        .into_iter()
-        .map(|line| {
-            // Reuse the native Python int grammar, arbitrary precision and digit
-            // limit. Parsing as i128/u64 would reject source-admitted differences.
-            Ok(openpilot_carrot_navi::json::Value::text(line)
-                .int()?
-                .to_string())
-        })
-        .collect()
+    lines.into_iter().map(integer).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::integer;
+    #[test]
+    fn every_original_unicode_decimal_and_whitespace_admission_is_preserved() {
+        let oracle: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/stats-clock/unicode-integers.json"
+        ))
+        .unwrap();
+        let expected_digits = oracle["decimal_digits"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|digit| {
+                (
+                    digit[0].as_u64().unwrap() as u32,
+                    digit[1].as_u64().unwrap() as u8,
+                )
+            })
+            .collect::<std::collections::BTreeMap<_, _>>();
+        for point in 0..=0x10ffff {
+            if let Some(character) = char::from_u32(point) {
+                assert_eq!(
+                    crate::argparse_scan::decimal_value(character),
+                    expected_digits.get(&point).copied(),
+                    "U+{point:04X}"
+                );
+            }
+        }
+        for digit in oracle["decimal_digits"].as_array().unwrap() {
+            let ch = char::from_u32(digit[0].as_u64().unwrap() as u32).unwrap();
+            let value = digit[1].as_u64().unwrap();
+            assert_eq!(
+                integer(&format!(" +0_{ch}_0 ")).unwrap(),
+                (value * 10).to_string()
+            );
+            assert_eq!(
+                integer(&format!("-0_{ch}_0")).unwrap(),
+                if value == 0 {
+                    "0".into()
+                } else {
+                    format!("-{}", value * 10)
+                }
+            );
+        }
+        for row in oracle["whitespace"].as_array().unwrap() {
+            let ch = char::from_u32(row["point"].as_u64().unwrap() as u32).unwrap();
+            let result = integer(&format!("{ch}1{ch}"));
+            assert_eq!(
+                result.is_err(),
+                !row["error"].is_null(),
+                "U+{:04X}",
+                u32::from(ch)
+            );
+            if let Ok(value) = result {
+                assert_eq!(value, row["expected"].as_str().unwrap());
+            }
+        }
+    }
 }
 fn command(binary: &Path, input: String, monotonic: bool) -> CommandSpec {
     let mut argv = vec![binary.as_os_str().to_owned()];

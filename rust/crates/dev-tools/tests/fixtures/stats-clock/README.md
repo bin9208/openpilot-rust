@@ -37,3 +37,18 @@ Python checker produces the same bytes. The example SHA256 for this proof is
 The concise reproduction logs and `actual-proof.json` remain under the ignored
 `2026-10-18-stats-clock` scratch directory. These are host clock/tool checks,
 not device or driving acceptance.
+
+The checker now normalizes decimal strings locally, using the existing
+CPython-pinned `argparse_scan` digit table. It does not import carrot-navi,
+logmessaged or cereal merely to parse arbitrary-width integers; the default
+fast-check build therefore retains its original schema-free dependency boundary.
+`unicode-integers.json` independently enumerates all 680 Unicode 15.0 decimal
+digits and 29 whitespace classifications from CPython 3.12.15. A unit check
+compares every Unicode scalar against the captured digit set and exercises
+signed/underscored normalization and whitespace admission.
+
+After removing the daemon dependency, the refreshed gates pass five clock
+integration tests and the exhaustive Unicode unit. The rebuilt lightweight
+checker again matches the original 598-byte report and stdout against the same
+actual example, using `PATH=/nonexistent` and the real repository root after the
+original Python checker was deleted. `light-native-proof.json` records hashes.

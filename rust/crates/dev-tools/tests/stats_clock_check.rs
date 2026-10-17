@@ -283,3 +283,38 @@ fn positional_cli_uses_original_unpacking_status_without_argparse_help() {
         assert_eq!(fs::read_dir(temp.path()).unwrap().count(), 0);
     }
 }
+
+#[test]
+fn default_clock_checker_dependency_graph_requires_no_runtime_schema_toolchain() {
+    // Follow mandatory local dependencies without compiling them. Adding a
+    // helper that pulls cereal/ZMQ into the CI bootstrap must fail this check.
+    let mut pending = vec![PathBuf::from(env!("CARGO_MANIFEST_DIR"))];
+    let mut visited = std::collections::BTreeSet::new();
+    while let Some(folder) = pending.pop() {
+        let folder = folder.canonicalize().unwrap();
+        if !visited.insert(folder.clone()) {
+            continue;
+        }
+        let manifest: toml::Value =
+            toml::from_str(&fs::read_to_string(folder.join("Cargo.toml")).unwrap()).unwrap();
+        let name = manifest["package"]["name"].as_str().unwrap();
+        assert!(
+            ![
+                "openpilot-carrot-navi",
+                "openpilot-logmessaged",
+                "openpilot-cereal",
+                "openpilot-msgq"
+            ]
+            .contains(&name),
+            "default tool graph imports {name}"
+        );
+        for (_, dependency) in manifest["dependencies"].as_table().unwrap() {
+            if dependency.get("optional").and_then(toml::Value::as_bool) == Some(true) {
+                continue;
+            }
+            if let Some(path) = dependency.get("path").and_then(toml::Value::as_str) {
+                pending.push(folder.join(path));
+            }
+        }
+    }
+}
