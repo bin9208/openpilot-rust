@@ -1,0 +1,11 @@
+use openpilot_dev_tools::alert_manager_check::check;
+const PACKED: &[u8] = include_bytes!("fixtures/alert-manager/corpus.json.gz");
+const MANIFEST: &str = include_str!("fixtures/alert-manager/manifest.json");
+const FAILURES: &str = include_str!("fixtures/alert-manager/failures.json");
+const CLI: &str = include_str!("fixtures/alert-manager/cli.json");
+const BIN: &str = env!("CARGO_BIN_EXE_check-alert-manager");
+const CHECKER: &str = "rust/tools/check_alert_manager.py";
+const TIMEOUT: u64 = 60;
+const CALLBACKS: bool = false;
+const IO_FAILURES: &str = include_str!("fixtures/alert-manager/io-failures.json");
+include!("support/alert_family.rs");

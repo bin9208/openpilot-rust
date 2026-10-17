@@ -223,13 +223,14 @@ pub fn run_shell(script: &str, environment: &BTreeMap<String, String>) -> io::Re
     }))
 }
 
-/// Preserve the required fast-check status while its three mandatory workers run
+/// Preserve the required fast-check status while its four mandatory workers run
 /// independently. Execute the aggregate shell to reject accidental fail-open
 /// edits, including absent results that GitHub exposes as empty strings.
 pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
     let bindings = [
         ("NATIVE", "native"),
         ("NATIVE_CORPUS", "native-corpus"),
+        ("NATIVE_ALERTS", "native-alerts"),
         ("PYTHON_ANDROID", "python-android"),
     ];
     let jobs = workflow["jobs"].as_object().ok_or("missing fast jobs")?;
@@ -262,7 +263,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
     )?;
     require(
         strings(&gate["needs"])?
-            == expected_strings(&["native", "native-corpus", "python-android"]),
+            == expected_strings(&["native", "native-corpus", "native-alerts", "python-android"]),
         "fast aggregate dependencies changed",
     )?;
     let steps = gate["steps"]

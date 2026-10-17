@@ -1,4 +1,7 @@
 pub use openpilot_disk_space as disk_space;
+pub mod alert_callbacks_check;
+pub mod alert_family_check;
+pub mod alert_manager_check;
 pub mod amplifier_linux_check;
 pub mod amplifier_policy_check;
 pub mod argparse_scan;
@@ -20,6 +23,8 @@ pub mod publish;
 pub mod qa_process;
 pub mod ratekeeper_check;
 pub mod seal;
+pub mod selfdrive_events_check;
+pub mod selfdrive_helpers_check;
 pub mod selfdrive_state_check;
 pub mod stats_clock_check;
 pub mod stats_numbers_check;

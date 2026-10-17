@@ -1586,3 +1586,53 @@ PR and push fast gates, Integration and mapped-doc checks passed; its separate
 Rust workspace formatting failure is corrected by c2dcf2ea. Later exact-head
 checks remain required. No device is connected or requested; user owns final
 boot/recording/upload checks after source integration.
+
+### Complete alert/event/helper checker family (2026-10-18)
+
+Native check-alert-manager, check-selfdrive-events, check-alert-callbacks and
+check-selfdrive-helpers replace four fixed Python comparison commands. Independent
+unmodified CPython captures retain all 25,000 manager, 4,872 event, 15,876 callback
+and 10,241 helper cases, including exact requests, expected policy results and
+failure artifacts. Generic runtime policy/schema files remain mandatory live
+source guards; the helper also binds NumPy/pycapnp lock records. No runtime alert,
+pose validity, actuation threshold, timing or vehicle-control policy changed.
+
+All 17 checker integration tests pass. Independent review reproduced one callback
+surrogate-encoding discrepancy: original Python leaves empty differences.json;
+the initial native version left no file. The added original capture first failed
+and then passed after preserving the encoding-time truncation boundary. Helper
+lock mutation initially changed a transitive reference instead of the selected
+package record; correcting the test target makes the actual package-drift guard
+pass without changing product validation or deleting coverage.
+
+Immutable embedded alert corpora now decode/validate once per process. Live file
+hashes, retired-source reintroduction checks and the translation set still run on
+every call. All manager cases and error/output checks remain: the same local suite
+fell from 251.86 to 165.17 seconds (other local work was active, so this is not a
+controlled benchmark). Callback/event suites took 17.11/13.30 seconds; helper took
+37.52 seconds. This is developer-test cost evidence, not runtime/device CPU data.
+
+Actual current selfdrived examples build and pass both original and native checkers.
+All result artifacts and stdout/stderr are byte-identical, except callback source
+exception stacks whose ASLR addresses are normalized while retaining all exception
+classes/messages/rows. After deleting the four Python checkers, PATH=/nonexistent
+runs reproduce every native artifact and stdout/stderr byte exactly. Native manager
+comparison took 32.21s versus original7.12s locally; language replacement itself is
+not a speedup claim. Local proof: 2026-10-18-selfdrive-alert-family and
+2026-10-18-selfdrive-helpers scratch directories. Original callback surrogate and
+all failure captures are tracked with provenance.
+
+CI now requires a separate seven-minute alert corpus worker and includes every
+new integration target. The aggregate rejects missing/failed/cancelled/skipped
+workers. Runtime comparisons select the four native commands with explicit growth
+checks, preserving surrounding source comparisons. Inventory:69 replaced-local /
+3,511 pending baseline files; full repository Python removal remains incomplete.
+Final exact-source CI and user-owned normal boot/recording/upload remain separate.
+
+Final family gate additionally passes all25 disk/routing/workflow tests and strict
+scoped Clippy. The callback/helper live-drift regressions pass again with originals
+absent. All68 existing/new fast integration targets remain selected exactly once
+across the three native workers; Python/Android and service checks are retained.
+Published8881f354 fast PR/push, Integration and mapped-doc gates pass; Rust CI had
+36 successful jobs and9 outstanding at last inspection, with no reported failure.
+Those results do not substitute for this later commit's exact-source gates.

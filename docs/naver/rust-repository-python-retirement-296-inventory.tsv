@@ -1799,8 +1799,8 @@ rust/tools/check_agnos_updater_cli.py	c3342fe5c830d70744655e8ee923f2d989cd3a68	p
 rust/tools/check_agnos_updater_close.py	8bc42573d004c6be1b7f3b54e325bbc7d6fd0ed7	pending	-
 rust/tools/check_agnos_updater_ui.py	10076ee53485e59b4f43e1466be3e1f7fdfe7075	pending	-
 rust/tools/check_agnos_updater_worker.py	ca177ffdd72a470547ad50ddcfb2edc3c4110f90	pending	-
-rust/tools/check_alert_callbacks.py	526ae67a2676af83b375fa4274a0cb9df3810018	pending	-
-rust/tools/check_alert_manager.py	a91ed7fa7f4375cda69a4c907fbc20618c5b781b	pending	-
+rust/tools/check_alert_callbacks.py	526ae67a2676af83b375fa4274a0cb9df3810018	replaced-local	openpilot-dev-tools check-alert-callbacks; independent complete 15876-case original and failure corpus
+rust/tools/check_alert_manager.py	a91ed7fa7f4375cda69a4c907fbc20618c5b781b	replaced-local	openpilot-dev-tools check-alert-manager; independent complete 25000-case original and failure corpus
 rust/tools/check_amplifier.py	5974dd0bc80d28598600585a7fd6c5ca57bb8ca7	replaced-local	openpilot-dev-tools check-amplifier-policy; original 2034 fixed cases and exact artifact comparisons
 rust/tools/check_amplifier_linux.py	498383d5b21e6cef4ccca0f2b3448d335d422f6f	replaced-local	openpilot-dev-tools check-amplifier-linux
 rust/tools/check_athena_camera_lifecycle.py	7f5b1b9fd690d5b0cb5773a6930927dd29fbeccf	pending	-
@@ -2060,8 +2060,8 @@ rust/tools/check_runtime_diagnostics.py	e1b0a2f950d51b368582319c27f999cb7d3d2b35
 rust/tools/check_runtime_launcher.py	a18592a9b8a9846777e9cdfedad5b4d7f72dde15	pending	-
 rust/tools/check_runtime_log_upload.py	8a2fee473760b01021b74179e7647f21280616d3	pending	-
 rust/tools/check_sdk_receiver.py	92ed5a900919358781a92f66311a72a3fdc285ba	pending	-
-rust/tools/check_selfdrive_events.py	dc75e1bb617c20649619964bfb4c793b7c7e5e61	pending	-
-rust/tools/check_selfdrive_helpers.py	012cd1500189c8d8bbd2622cf89d8f096c75045d	pending	-
+rust/tools/check_selfdrive_events.py	dc75e1bb617c20649619964bfb4c793b7c7e5e61	replaced-local	openpilot-dev-tools check-selfdrive-events; independent complete 4872-case original and failure corpus
+rust/tools/check_selfdrive_helpers.py	012cd1500189c8d8bbd2622cf89d8f096c75045d	replaced-local	openpilot-dev-tools check-selfdrive-helpers; independent complete 10241-case original and failure corpus
 rust/tools/check_selfdrive_params.py	08743565044854e13870048bd601c37392668e26	pending	-
 rust/tools/check_selfdrive_state.py	3f1e26aea49998ecf680968560b7e438bc629969	replaced-local	openpilot-dev-tools check-selfdrive-state; independent complete 51023-case state-machine and failure corpus
 rust/tools/check_selfdrived_controller.py	85538ebb50e9fa744cfcc12441256d59879eba29	pending	-

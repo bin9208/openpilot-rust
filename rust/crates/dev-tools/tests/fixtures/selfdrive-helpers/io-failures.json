@@ -1,0 +1,90 @@
+[
+  {
+    "blocked": "native.jsonl",
+    "error": "IsADirectoryError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "source.json": {
+        "bytes": 7542133,
+        "sha256": "defbfc8d1b31e79ab53399ddffa7662b8735305ca57a2c71b690dc890e12fbd9"
+      },
+      "input.jsonl": {
+        "bytes": 5826651,
+        "sha256": "a2296f9ff86a95c09f353b373c7a62ea66eb97dbad3c1fd1b4238a23c9901bcf"
+      }
+    }
+  },
+  {
+    "blocked": "native.stderr",
+    "error": "IsADirectoryError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.jsonl": {
+        "bytes": 7562615,
+        "sha256": "1aac0723ee96ed2ccdf03ad480ac3b8a1a9c2ba8aa5aa92b77fd8780c5c370f0"
+      },
+      "source.json": {
+        "bytes": 7542133,
+        "sha256": "defbfc8d1b31e79ab53399ddffa7662b8735305ca57a2c71b690dc890e12fbd9"
+      },
+      "input.jsonl": {
+        "bytes": 5826651,
+        "sha256": "a2296f9ff86a95c09f353b373c7a62ea66eb97dbad3c1fd1b4238a23c9901bcf"
+      }
+    }
+  },
+  {
+    "blocked": "report.json",
+    "error": "IsADirectoryError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 7562615,
+        "sha256": "1aac0723ee96ed2ccdf03ad480ac3b8a1a9c2ba8aa5aa92b77fd8780c5c370f0"
+      },
+      "source.json": {
+        "bytes": 7542133,
+        "sha256": "defbfc8d1b31e79ab53399ddffa7662b8735305ca57a2c71b690dc890e12fbd9"
+      },
+      "input.jsonl": {
+        "bytes": 5826651,
+        "sha256": "a2296f9ff86a95c09f353b373c7a62ea66eb97dbad3c1fd1b4238a23c9901bcf"
+      }
+    }
+  },
+  {
+    "blocked": "printed-stdout",
+    "error": "OSError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "report.json": {
+        "bytes": 1227,
+        "sha256": "c4c42381cbc96bf6e777c72ca5c4ce3d323fb5d4fd679895a49d6b9871445ad8"
+      },
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 7562615,
+        "sha256": "1aac0723ee96ed2ccdf03ad480ac3b8a1a9c2ba8aa5aa92b77fd8780c5c370f0"
+      },
+      "source.json": {
+        "bytes": 7542133,
+        "sha256": "defbfc8d1b31e79ab53399ddffa7662b8735305ca57a2c71b690dc890e12fbd9"
+      },
+      "input.jsonl": {
+        "bytes": 5826651,
+        "sha256": "a2296f9ff86a95c09f353b373c7a62ea66eb97dbad3c1fd1b4238a23c9901bcf"
+      }
+    }
+  }
+]

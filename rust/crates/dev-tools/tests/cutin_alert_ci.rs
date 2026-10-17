@@ -3,7 +3,7 @@ use openpilot_dev_tools::ci_policy::parse;
 use serde_json::Value;
 use std::{fs, path::PathBuf, process::Command};
 
-const BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --bin check-cutin-alert --bin check-selfdrive-state --locked";
+const BUILD: &str = "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --bin check-cutin-alert --bin check-selfdrive-state --bin check-alert-manager --bin check-selfdrive-events --bin check-alert-callbacks --bin check-selfdrive-helpers --locked";
 const CHECK: &str = "rust/target/debug/check-cutin-alert --binary \"$selfdrive_examples/cutin_alerts\" --output \"$selfdrive_evidence/cutin\"";
 const GUARD: &str = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048";
 const BUILD_GUARD: &str = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024";
@@ -12,11 +12,11 @@ const EVIDENCE: &str = "selfdrive_evidence=\"$RUNNER_TEMP/selfdrived-native/refe
 const REFERENCES: [&str; 9] = [
     "run_reference rust/tools/generate_selfdrive_alerts.py --output rust/crates/selfdrived/data/alerts.json --check",
     "rust/target/debug/check-selfdrive-state --binary \"$selfdrive_examples/selfdrive_state\" --output \"$selfdrive_evidence/state\"",
-    "run_reference rust/tools/check_alert_manager.py --binary \"$selfdrive_examples/alert_manager\" --output \"$selfdrive_evidence/alert-manager\"",
-    "run_reference rust/tools/check_selfdrive_events.py --binary \"$selfdrive_examples/events_trace\" --output \"$selfdrive_evidence/events\"",
-    "run_reference rust/tools/check_alert_callbacks.py --binary \"$selfdrive_examples/alert_callbacks\" --output \"$selfdrive_evidence/callbacks\"",
+    "rust/target/debug/check-alert-manager --binary \"$selfdrive_examples/alert_manager\" --output \"$selfdrive_evidence/alert-manager\"",
+    "rust/target/debug/check-selfdrive-events --binary \"$selfdrive_examples/events_trace\" --output \"$selfdrive_evidence/events\"",
+    "rust/target/debug/check-alert-callbacks --binary \"$selfdrive_examples/alert_callbacks\" --output \"$selfdrive_evidence/callbacks\"",
     "run_reference rust/tools/check_selfdrive_params.py --native \"$selfdrive_examples/alert_params\" --binding \"$SELFDRIVE_PARAMS_BINDING\" --output \"$selfdrive_evidence/params\"",
-    "run_reference rust/tools/check_selfdrive_helpers.py --native \"$selfdrive_examples/selfdrive_helpers\" --output \"$selfdrive_evidence/helpers\"",
+    "rust/target/debug/check-selfdrive-helpers --native \"$selfdrive_examples/selfdrive_helpers\" --output \"$selfdrive_evidence/helpers\"",
     "run_reference rust/tools/check_car_specific.py --binary \"$selfdrive_examples/car_specific\" --binding \"$SELFDRIVE_PARAMS_BINDING\" --output \"$selfdrive_evidence/car-specific\"",
     "run_reference rust/tools/check_selfdrived_controller.py --binary \"$selfdrive_examples/controller\" --binding \"$SELFDRIVE_PARAMS_BINDING\" --output \"$selfdrive_evidence/controller\"",
 ];
@@ -36,8 +36,18 @@ fn check(workflow: &Value) -> Result<(), String> {
         let Some(script) = step["run"].as_str() else {
             continue;
         };
-        if script.contains("check_cutin_alerts.py") || script.contains("check_selfdrive_state.py") {
-            return Err("retired Python cut-in checker routed".into());
+        if [
+            "check_cutin_alerts.py",
+            "check_selfdrive_state.py",
+            "check_alert_manager.py",
+            "check_selfdrive_events.py",
+            "check_alert_callbacks.py",
+            "check_selfdrive_helpers.py",
+        ]
+        .iter()
+        .any(|name| script.contains(name))
+        {
+            return Err("retired Python selfdrive checker routed".into());
         }
         let lines = script.lines().map(str::trim).collect::<Vec<_>>();
         for (index, line) in lines.iter().enumerate() {
@@ -72,16 +82,19 @@ fn check(workflow: &Value) -> Result<(), String> {
                         ));
                     }
                 }
-                let state_index = lines
-                    .iter()
-                    .position(|line| *line == REFERENCES[1])
-                    .unwrap();
-                if state_index < 2
-                    || lines[state_index - 1] != GUARD
-                    || lines[state_index - 2] != REFERENCES[0]
-                    || lines.get(state_index + 1) != Some(&REFERENCES[2])
-                {
-                    return Err("native state check moved or lost growth guard".into());
+                for at in [1, 2, 3, 4, 6] {
+                    let state_index = lines
+                        .iter()
+                        .position(|line| *line == REFERENCES[at])
+                        .unwrap();
+                    let next = if at < 4 { GUARD } else { REFERENCES[at + 1] };
+                    if state_index < 2
+                        || lines[state_index - 1] != GUARD
+                        || lines[state_index - 2] != REFERENCES[at - 1]
+                        || lines.get(state_index + 1) != Some(&next)
+                    {
+                        return Err("native state/alert check moved or lost growth guard".into());
+                    }
                 }
             }
             if (*line == BUILD || *line == CHECK)
@@ -143,12 +156,40 @@ fn missing_optional_softened_python_or_changed_source_routes_are_rejected() {
     let run = format!(
         "{EXAMPLES}\n{EVIDENCE}\n{helper}\n{}\n{GUARD}\n{CHECK}\n{}",
         REFERENCES[..8]
-            .join("\n")
-            .replace(REFERENCES[1], &format!("{GUARD}\n{}", REFERENCES[1])),
+            .iter()
+            .enumerate()
+            .map(|(at, command)| {
+                if [1, 2, 3, 4, 6].contains(&at) {
+                    format!("{GUARD}\n{command}")
+                } else {
+                    command.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n"),
         REFERENCES[8]
     );
     let good = serde_json::json!({"jobs":{"selfdrive-runtime":{"runs-on":"ubuntu-24.04","steps":[{"run":build},{"run":run}]}}});
     check(&good).unwrap();
+    for command in REFERENCES[1..=4]
+        .iter()
+        .chain(std::iter::once(&REFERENCES[6]))
+    {
+        for replacement in [
+            command.to_string(),
+            format!("{GUARD}\n{command} || true"),
+            "true".into(),
+        ] {
+            let mut changed = good.clone();
+            changed["jobs"]["selfdrive-runtime"]["steps"][1]["run"] = run
+                .replace(&format!("{GUARD}\n{command}"), &replacement)
+                .into();
+            assert!(
+                check(&changed).is_err(),
+                "accepted missing guard/softened/removed {command}"
+            );
+        }
+    }
     for mutation in [
         "missing-build",
         "missing-check",

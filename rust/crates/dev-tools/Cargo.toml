@@ -9,6 +9,22 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-selfdrive-helpers"
+path = "src/bin/check_selfdrive_helpers.rs"
+
+[[bin]]
+name = "check-alert-manager"
+path = "src/bin/check_alert_manager.rs"
+
+[[bin]]
+name = "check-selfdrive-events"
+path = "src/bin/check_selfdrive_events.rs"
+
+[[bin]]
+name = "check-alert-callbacks"
+path = "src/bin/check_alert_callbacks.rs"
+
+[[bin]]
 name = "check-selfdrive-state"
 path = "src/bin/check_selfdrive_state.rs"
 
