@@ -2,7 +2,7 @@
 # requires-python = ">=3.12"
 # dependencies = ["pycapnp==2.1.0", "pyzmq==27.2.0", "numpy==2.5.3", "setproctitle==1.3.7"]
 # ///
-"""Compare full manager registration and ordered callbacks to unchanged source."""
+"""Compare manager callbacks; record the explicit all-state updater policy separately."""
 
 import argparse
 import hashlib
@@ -105,6 +105,26 @@ def main():
       else:
         assert result.returncode == 0, (name, kind, result.returncode, result.stderr.decode(errors='replace'))
         outputs[kind] = json.loads((out / 'result.json').read_text())
+    # #346 deliberately runs Updated in either ignition state. Keep the actual
+    # original outputs, and execute its offroad preference semantics as a separate,
+    # recorded expected-policy lane; every other callback still uses actual source.
+    policy_cases = [dict(case, started=False) if case.get('predicate') in
+      ('enable_updated', 'process:updated') else case for case in request.get('cases', [])]
+    expected = outputs['source']
+    if not fatal and policy_cases != request.get('cases', []):
+      policy_path = folder / 'updater-policy-request.json'
+      policy_path.write_text(json.dumps({**request, 'cases': policy_cases}, indent=2) + '\n')
+      policy_out = folder / 'source-updater-policy'
+      command = [sys.executable, 'rust/tools/manager_catalog_reference.py', str(args.binding), str(policy_path), str(policy_out)]
+      result = subprocess.run(command, env=current_env, capture_output=True, timeout=600)
+      (folder / 'source-updater-policy.stdout').write_bytes(result.stdout)
+      (folder / 'source-updater-policy.stderr').write_bytes(result.stderr)
+      invocations['source-updater-policy'] = {'argv': command, 'exit_code': result.returncode}
+      assert result.returncode == 0, result.stderr.decode(errors='replace')
+      expected = json.loads((policy_out / 'result.json').read_text())
+      for index, (original, projected) in enumerate(zip(request['cases'], policy_cases, strict=True)):
+        if original == projected:
+          assert expected['results'][index] == outputs['source']['results'][index], (name, index)
     if fatal:
       native = outputs['native']['results'][0]
       assert native['outcome'] == {'error': 'fatal_integer'}, (name, native)
@@ -112,21 +132,24 @@ def main():
       observable = 'source SIGABRT; native typed fatal_integer; identical access prefix; never false/default'
     else:
       for key in ['catalog', 'results']:
-        assert outputs['source'][key] == outputs['native'][key], (
+        assert expected[key] == outputs['native'][key], (
           name,
           key,
-          next(((i, a, b) for i, (a, b) in enumerate(zip(outputs['source'][key], outputs['native'][key], strict=False)) if a != b), None),
+          next(((i, a, b) for i, (a, b) in enumerate(zip(expected[key], outputs['native'][key], strict=False)) if a != b), None),
         )
       assert len(outputs['source']['catalog']) == 59
       assert len({item['name'] for item in outputs['source']['catalog']}) == 59
       assert 'uploader' not in {item['name'] for item in outputs['source']['catalog']}
-      observable = f"59 ordered descriptors and {len(request.get('cases', []))} callback outcomes/access traces/persisted Ublox values identical"
+      observable = f"59 ordered descriptors and {len(request.get('cases', []))} callback outcomes/access traces/persisted Ublox values checked (Updated uses explicit all-state SoftwareMenu policy; original lane retained)"
     row = {
       'scenario': name,
       'invocations': invocations,
+      'updater_policy_projection': policy_cases != request.get('cases', []),
       'observable': observable,
       'artifacts': [str(path), str(folder / 'native/result.json'), str(folder / ('source/trace-0.json' if fatal else 'source/result.json'))],
     }
+    if 'source-updater-policy' in invocations:
+      row['artifacts'] += [str(policy_path), str(policy_out / 'result.json')]
     rows.append(row)
     (folder / 'comparison.json').write_text(json.dumps(row, indent=2) + '\n')
     return outputs['native']

@@ -57,6 +57,17 @@ fn main() {
             "remote",
             "add",
             "origin",
+            "https://example.invalid/my/runtime.git",
+        ],
+    );
+    // Explicit factory reset selects the default repository; keep that fetch
+    // inside the same owned bare repository too.
+    git(
+        &root,
+        &[
+            "config",
+            "--add",
+            &format!("url.file://{}.insteadOf", remote.display()),
             "https://github.com/bin9208/openpilot-rust.git",
         ],
     );
@@ -64,8 +75,9 @@ fn main() {
         &root,
         &[
             "config",
+            "--add",
             &format!("url.file://{}.insteadOf", remote.display()),
-            "https://github.com/bin9208/openpilot-rust.git",
+            "https://example.invalid/my/runtime.git",
         ],
     );
     fs::write(root.join("source"), "user edit").unwrap();

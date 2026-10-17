@@ -71,6 +71,8 @@ class UiCheck:
 
   def execute(self, display: str) -> None:
     examples = self.binaries / 'examples'
+    self.check('update-preparation', 'check_ui_update_preparation.py',
+      ['--binary', str(examples / 'product_render'), '--output', str(self.output / 'update-preparation'), '--display', display])
     for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace'), ('qr', 'qr_trace')):
       self.check(name, f'check_ui_{name}.py', ['--binary', str(examples / binary), '--output', str(self.output / name)])
     for name in ('root', 'augmented', 'camera'):

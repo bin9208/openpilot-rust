@@ -90,9 +90,6 @@ pub fn bind(
     let Some(pid) = selected else {
         return Ok(Binding::Unavailable(Unavailable::NotRunning));
     };
-    if expected.file_name() != Some(std::ffi::OsStr::new("openpilot-updated")) {
-        return Err(Error::Contract("expected native openpilot-updated path"));
-    }
     let expected = expected.canonicalize()?;
     let pidfd = match strategy {
         Strategy::PidfdWhenAvailable => match pidfd_open(pid, PidfdFlags::empty()) {

@@ -15,7 +15,7 @@ impl Software {
             .ok_or(Error::Contract("software version"))?
             .text = description.into();
         self.item(1)?.description = String::from_utf8_lossy(&notes).into_owned().into();
-        self.item(2)?.state.visible = (!onroad).into();
+        self.item(2)?.state.visible = true.into();
         let mut state = context.params.string("UpdaterState")?;
         if state.is_empty() {
             state = "idle".into();
@@ -68,7 +68,7 @@ impl Software {
                 .params
                 .bytes("UpdaterNewReleaseNotes")?
                 .unwrap_or_default();
-            self.button(3)?.text = context.tr("INSTALL").into();
+            self.button(3)?.text = context.tr("RESTART").into();
             self.button(3)?.value = description.into();
             self.item(3)?.description = String::from_utf8_lossy(&notes).into_owned().into();
             self.button(3)?.state.enabled = true.into();

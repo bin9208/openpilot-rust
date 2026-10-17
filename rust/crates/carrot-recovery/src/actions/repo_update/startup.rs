@@ -71,16 +71,9 @@ impl Backend for Native {
     }
     fn pull(&mut self) -> Result<(String, bool), String> {
         let lock = self.lock()?;
-        native_origin(&self.config, lock).map_err(|e| e.to_string())?;
         let git = |args: &[&str]| checked_git(&self.config, args, lock).map_err(|e| e.to_string());
         if git(&["symbolic-ref", "--quiet", "--short", "HEAD"])?.is_empty() {
             return Err("Select a branch before updating.".into());
-        }
-        if !git(&["status", "--porcelain", "--untracked-files=no"])?.is_empty() {
-            return Err(
-                "Local changes found. Resolve them in the recovery terminal; no files were reset."
-                    .into(),
-            );
         }
         let before = git(&["rev-parse", "HEAD"])?;
         let repository = git_config::Repository {

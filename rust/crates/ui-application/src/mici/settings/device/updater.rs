@@ -51,9 +51,7 @@ impl Updater {
         })
     }
     pub fn offroad(&mut self) {
-        if !self.context.ui.borrow().started {
-            self.button.state.enabled = true.into();
-        }
+        self.button.state.enabled = true.into();
     }
     fn value(&mut self, value: &str) {
         self.button.value = value.into();
@@ -65,19 +63,26 @@ impl Updater {
         .into();
     }
     fn refresh(&mut self, now: f64) -> Result<(), Error> {
-        if self.context.ui.borrow().started {
-            self.button.state.enabled = false.into();
-            return Ok(());
+        let started = self.context.ui.borrow().started;
+        if self.state == State::Idle {
+            self.button.state.enabled = true.into();
         }
         let updater = self.context.params.string("UpdaterState")?;
         let failed =
             typed::integer_value(self.context.params.as_ref(), "UpdateFailedCount", false)?
                 .is_some_and(|value| value != "0" && !value.starts_with('-'));
-        if self.context.params.boolean("UpdateAvailable")? {
+        if self.context.params.boolean("UpdateAvailable")?
+            && !(started && self.context.params.boolean("UpdaterFetchAvailable")?)
+        {
             self.button.set_rotate(false, now);
             self.button.state.enabled = true.into();
-            if self.button.value != "update now" {
-                self.value("update now");
+            let value = if started {
+                "ready on restart"
+            } else {
+                "update now"
+            };
+            if self.button.value != value {
+                self.value(value);
                 self.button.icon = Some(self.icons[1]);
             }
         } else {
@@ -173,7 +178,7 @@ impl Widget for Updater {
         self.button.icon = Some(self.icons[0]);
         let action = match self.button.value.as_str() {
             "download update" => UpdaterAction::Download,
-            "update now" => UpdaterAction::Reboot,
+            "update now" if !self.context.ui.borrow().started => UpdaterAction::Reboot,
             _ => UpdaterAction::Check,
         };
         self.context.actions.push(Action::Updater(action));

@@ -38,6 +38,23 @@ impl Update {
         if !(self.policy.ready)() {
             return Ok(unchanged());
         }
+        let staging = std::env::var_os("STAGING_ROOT")
+            .or_else(|| std::env::var_os("UPDATER_STAGING_ROOT"))
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| {
+                repository
+                    .directory
+                    .parent()
+                    .unwrap_or(std::path::Path::new("/data"))
+                    .join("safe_staging")
+            });
+        if staging
+            .join("finalized/.runtime-update-ready.json")
+            .try_exists()
+            .map_err(Error::from)?
+        {
+            return Ok(unchanged());
+        }
         self.recovery
             .prepare(Arc::clone(&lock), stopped.clone())
             .await?;

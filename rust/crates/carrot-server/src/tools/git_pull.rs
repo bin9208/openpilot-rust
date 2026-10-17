@@ -6,10 +6,6 @@ use crate::{json_fields::set, Value};
 use std::sync::Arc;
 
 pub(super) async fn run(context: &Context) -> Result<Reply, Failure> {
-    let origin = context.native_origin().await?;
-    if origin.code != 0 {
-        return context.result(origin, None);
-    }
     let (prepared, target) = context.prepare_pull().await?;
     if prepared.code != 0 {
         return context.result(prepared, None);

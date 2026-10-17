@@ -65,7 +65,19 @@ impl LoopState {
                 }
             };
             let user_fetch = wake.request()? == UserRequest::Fetch;
-            if updater.params.boolean("NetworkMetered")? && !timed_out && !user_fetch {
+            if updater
+                .context
+                .paths
+                .finalized()
+                .join(".runtime-update-ready.json")
+                .try_exists()?
+                && !user_fetch
+            {
+                report::info(
+                    updater.context.logger,
+                    "preserving prepared update until an explicit download request",
+                )?;
+            } else if updater.params.boolean("NetworkMetered")? && !timed_out && !user_fetch {
                 report::info(updater.context.logger, "skipping fetch, connection metered")?;
             } else if wake.request()? == UserRequest::Check {
                 report::info(updater.context.logger, "skipping fetch, only checking")?;

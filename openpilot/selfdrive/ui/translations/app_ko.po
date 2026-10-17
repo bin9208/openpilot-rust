@@ -1536,3 +1536,12 @@ msgstr "Dashcam 모드로 재부팅 중"
 #: openpilot/selfdrive/ui/impact_dashcam.py
 msgid "openpilot disabled"
 msgstr "openpilot 사용 꺼짐"
+
+msgid "Updates take effect after restarting."
+msgstr "다음 재시작 시 업데이트가 적용됩니다."
+
+msgid "Restart to Apply"
+msgstr "재시작하여 적용"
+
+msgid "RESTART"
+msgstr "재시작"

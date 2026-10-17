@@ -37,7 +37,7 @@ pub fn activate(repository: &Path, staging: &Path) -> Result<Outcome, Error> {
     {
         return Ok(Outcome::Activated);
     }
-    // Native staging can be postponed (for example ignition is on). Never let
+    // A changed active source can postpone activation. Never let
     // the legacy two-rename path bypass its source/package transaction gate.
     if staging
         .join("finalized/.runtime-update-ready.json")

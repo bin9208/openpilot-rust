@@ -10,7 +10,6 @@ use std::{
     process::Command,
 };
 
-pub const ORIGIN: &str = "https://github.com/bin9208/openpilot-rust.git";
 const READY: &str = ".runtime-update-ready.json";
 const JOURNAL: &str = ".runtime-update-journal.json";
 const PENDING_PREFIX: &str = ".pending-update-";
@@ -47,7 +46,7 @@ pub struct StageOptions {
     source: Option<PathBuf>,
     target: String,
     staging: Option<PathBuf>,
-    params: Option<PathBuf>,
+    _params: Option<PathBuf>,
     branch: Option<String>,
     detach: bool,
     ff_only: bool,
@@ -100,7 +99,7 @@ impl StageOptions {
             source,
             target: target.ok_or_else(|| invalid("--target required"))?,
             staging,
-            params,
+            _params: params,
             branch,
             detach,
             ff_only,
@@ -142,28 +141,27 @@ fn output(command: &mut Command) -> Result<String> {
 fn git(root: &Path, args: &[&str]) -> Result<String> {
     output(git_command(root).args(args))
 }
-fn supported_origin(value: &str) -> bool {
-    matches!(
-        value.trim(),
-        ORIGIN
-            | "https://github.com/bin9208/openpilot-rust"
-            | "git@github.com:bin9208/openpilot-rust.git"
-            | "ssh://git@github.com/bin9208/openpilot-rust.git"
-    )
-}
-fn params_root(root: &Path) -> PathBuf {
-    std::env::var_os("PARAMS_ROOT").map_or_else(
-        || root.parent().unwrap_or(Path::new("/data")).join("params"),
-        PathBuf::from,
-    )
-}
-fn offroad(params: &Path) -> Result<()> {
-    if fs::read(params.join("d/IsOnroad")).ok().as_deref() != Some(b"0") {
-        return Err(invalid(
-            "native source/package updates require verified offroad state",
-        ));
+// Read user transport/tracking metadata without copying clone-specific core paths.
+fn config_values(root: &Path, pattern: &str) -> Result<Vec<(String, String)>> {
+    let output = git_command(root)
+        .args(["config", "--local", "--null", "--get-regexp", pattern])
+        .output()?;
+    if output.status.code() == Some(1) {
+        return Ok(Vec::new());
     }
-    Ok(())
+    if !output.status.success() {
+        return Err(invalid("cannot read configured update remotes"));
+    }
+    let text = String::from_utf8(output.stdout).map_err(|_| invalid("non UTF8 remote config"))?;
+    text.split('\0')
+        .filter(|entry| !entry.is_empty())
+        .map(|entry| {
+            let (key, value) = entry
+                .split_once('\n')
+                .ok_or_else(|| invalid("invalid remote config"))?;
+            Ok((key.to_owned(), value.to_owned()))
+        })
+        .collect()
 }
 fn acquire(staging: &Path) -> Result<File> {
     let lock = OpenOptions::new()
@@ -234,12 +232,8 @@ fn read_ready(root: &Path) -> Result<Ready> {
 fn verify(root: &Path, ready: &Ready) -> Result<()> {
     directory_identity(root)?;
     ready.validate()?;
-    if checkout_sha(root)? != ready.target_commit
-        || !supported_origin(&git(root, &["config", "--get", "remote.origin.url"])?)
-    {
-        return Err(invalid(
-            "staged source does not match the verified target and origin",
-        ));
+    if checkout_sha(root)? != ready.target_commit {
+        return Err(invalid("staged source does not match the verified target"));
     }
     if !fs::symlink_metadata(root.join(".git"))?.is_dir()
         || root.join(".git/objects/info/alternates").exists()
@@ -346,21 +340,11 @@ fn require_fresh_start(root: &Path) -> Result<()> {
 /// Prepare an immutable source/package pair without changing active HEAD or bins.
 pub fn prepare(options: StageOptions, download: &impl super::Download) -> Result<String> {
     let root = options.root.canonicalize()?;
-    let params = options.params.unwrap_or_else(|| params_root(&root));
-    offroad(&params)?;
-    if !supported_origin(&git(&root, &["config", "--get", "remote.origin.url"])?) {
-        return Err(invalid("origin must be bin9208/openpilot-rust"));
-    }
     let previous = checkout_sha(&root)?;
     let source = options
         .source
         .unwrap_or_else(|| root.clone())
         .canonicalize()?;
-    if !supported_origin(&git(&source, &["config", "--get", "remote.origin.url"])?) {
-        return Err(invalid(
-            "staged source origin must be bin9208/openpilot-rust",
-        ));
-    }
     let target = git(
         &source,
         &[
@@ -378,6 +362,58 @@ pub fn prepare(options: StageOptions, download: &impl super::Download) -> Result
     if options.ff_only {
         git(&root, &["merge-base", "--is-ancestor", &previous, &target])?;
     }
+    let remotes = config_values(&root, "^(remote|url)\\.")?;
+    let branch = if options.detach {
+        None
+    } else {
+        options.branch.or_else(|| {
+            git(&root, &["branch", "--show-current"])
+                .ok()
+                .map(|branch| branch.trim().to_owned())
+                .filter(|branch| !branch.is_empty())
+        })
+    };
+    let reference = options
+        .target
+        .strip_prefix("refs/remotes/")
+        .unwrap_or(&options.target);
+    let remote_target = reference.split_once('/').filter(|(remote, _)| {
+        remotes
+            .iter()
+            .any(|(key, _)| key == &format!("remote.{remote}.url"))
+    });
+    let tracking = branch.as_ref().and_then(|branch| {
+        let remote = remote_target
+            .map(|(remote, _)| remote.to_owned())
+            .or_else(|| {
+                git(
+                    &root,
+                    &["config", "--get", &format!("branch.{branch}.remote")],
+                )
+                .ok()
+                .map(|v| v.trim().to_owned())
+            })
+            .unwrap_or_else(|| "origin".into());
+        if remote != "."
+            && !remotes
+                .iter()
+                .any(|(key, _)| key == &format!("remote.{remote}.url"))
+        {
+            return None;
+        }
+        let merge = remote_target
+            .map(|(_, branch)| format!("refs/heads/{branch}"))
+            .or_else(|| {
+                git(
+                    &root,
+                    &["config", "--get", &format!("branch.{branch}.merge")],
+                )
+                .ok()
+                .map(|v| v.trim().to_owned())
+            })
+            .unwrap_or_else(|| format!("refs/heads/{branch}"));
+        Some((remote, merge))
+    });
     let staging = options
         .staging
         .or_else(|| std::env::var_os("STAGING_ROOT").map(PathBuf::from))
@@ -404,15 +440,42 @@ pub fn prepare(options: StageOptions, download: &impl super::Download) -> Result
     }
     clean_pending(&staging)?;
     let finalized = staging.join("finalized");
-    if finalized.try_exists()? {
-        let ready = read_ready(&finalized)?;
-        if ready.target_commit != target || ready.previous_commit != previous {
-            return Err(invalid(
-                "another complete native update is pending; reboot before preparing another",
-            ));
+    let previous_candidate = if finalized.try_exists()? {
+        Some(directory_identity(&finalized)?)
+    } else {
+        None
+    };
+    if let Ok(ready) = read_ready(&finalized) {
+        let actual_branch = git(&finalized, &["branch", "--show-current"])?;
+        let tracking_matches = branch.as_ref().is_none_or(|branch| {
+            let actual = git(
+                &finalized,
+                &["config", "--get", &format!("branch.{branch}.remote")],
+            )
+            .ok()
+            .map(|remote| {
+                (
+                    remote.trim().to_owned(),
+                    git(
+                        &finalized,
+                        &["config", "--get", &format!("branch.{branch}.merge")],
+                    )
+                    .unwrap_or_default()
+                    .trim()
+                    .to_owned(),
+                )
+            });
+            actual == tracking
+        });
+        if ready.target_commit == target
+            && ready.previous_commit == previous
+            && actual_branch.trim() == branch.as_deref().unwrap_or("")
+            && config_values(&finalized, "^(remote|url)\\.")? == remotes
+            && tracking_matches
+            && verify(&finalized, &ready).is_ok()
+        {
+            return Ok(target);
         }
-        verify(&finalized, &ready)?;
-        return Ok(target);
     }
     let common = PathBuf::from(
         git(
@@ -459,15 +522,20 @@ pub fn prepare(options: StageOptions, download: &impl super::Download) -> Result
     )?;
     // A local clone invents origin refs from local heads. They are not the
     // upstream branch inventory used by maintenance/UI, so replace that namespace
-    // with the source's actual fetched origin refs before selecting a branch.
+    // with the source's actual fetched remote refs before selecting a branch.
     git(&candidate, &["remote", "remove", "origin"])?;
-    git(&candidate, &["remote", "add", "origin", ORIGIN])?;
+    for (key, value) in &remotes {
+        git(&candidate, &["config", "--local", "--add", key, value])?;
+    }
+    for (key, value) in config_values(&root, "^branch\\.")? {
+        git(&candidate, &["config", "--local", "--add", &key, &value])?;
+    }
     let upstreams = git(
         &source,
         &[
             "for-each-ref",
             "--format=%(objectname)%09%(refname)%09%(symref)",
-            "refs/remotes/origin/",
+            "refs/remotes/",
         ],
     )?;
     for symbolic in [false, true] {
@@ -475,8 +543,8 @@ pub fn prepare(options: StageOptions, download: &impl super::Download) -> Result
             let fields: Vec<_> = line.split('\t').collect();
             if fields.len() != 3
                 || !identity::hex(fields[0], 40)
-                || !fields[1].starts_with("refs/remotes/origin/")
-                || (!fields[2].is_empty() && !fields[2].starts_with("refs/remotes/origin/"))
+                || !fields[1].starts_with("refs/remotes/")
+                || (!fields[2].is_empty() && !fields[2].starts_with("refs/remotes/"))
             {
                 return Err(invalid("invalid upstream branch identity"));
             }
@@ -514,57 +582,40 @@ pub fn prepare(options: StageOptions, download: &impl super::Download) -> Result
         .open(candidate.join(".git/info/exclude"))?;
     writeln!(exclude, "\n/{READY}")?;
     drop(exclude);
-    let implicit_branch = options.branch.is_none();
-    let branch = if options.detach {
-        None
-    } else {
-        options.branch.or_else(|| {
-            git(&root, &["branch", "--show-current"])
-                .ok()
-                .map(|s| s.trim().to_owned())
-                .filter(|s| !s.is_empty())
-        })
-    };
-    if let Some(branch) = branch {
-        git(&candidate, &["check-ref-format", "--branch", &branch])?;
-        git(&candidate, &["checkout", "-B", &branch, &target])?;
-        // An implicit update follows the active branch's configured origin
-        // upstream, which need not have the same name as that local branch.
-        let merge = if implicit_branch
-            && git(
-                &root,
-                &["config", "--get", &format!("branch.{branch}.remote")],
-            )
-            .is_ok_and(|remote| remote.trim() == "origin")
-        {
+    if let Some(branch) = &branch {
+        git(&candidate, &["check-ref-format", "--branch", branch])?;
+        git(&candidate, &["checkout", "-B", branch, &target])?;
+        if let Some((remote, merge)) = &tracking {
             git(
-                &root,
-                &["config", "--get", &format!("branch.{branch}.merge")],
-            )
-            .ok()
-            .map(|merge| merge.trim().to_owned())
-            .filter(|merge| merge.starts_with("refs/heads/"))
-        } else {
-            None
+                &candidate,
+                &[
+                    "config",
+                    "--replace-all",
+                    &format!("branch.{branch}.remote"),
+                    remote,
+                ],
+            )?;
+            git(
+                &candidate,
+                &[
+                    "config",
+                    "--replace-all",
+                    &format!("branch.{branch}.merge"),
+                    merge,
+                ],
+            )?;
         }
-        .unwrap_or_else(|| format!("refs/heads/{branch}"));
-        git(
-            &candidate,
-            &["config", &format!("branch.{branch}.remote"), "origin"],
-        )?;
-        git(
-            &candidate,
-            &["config", &format!("branch.{branch}.merge"), &merge],
-        )?;
     } else {
         git(&candidate, &["checkout", "--detach", &target])?;
     }
     let offline = options.offline.or_else(|| {
-        if target == previous {
-            super::repair_package(&root, &target)
-        } else {
-            None
-        }
+        super::repair_package(&finalized, &target).or_else(|| {
+            if target == previous {
+                super::repair_package(&root, &target)
+            } else {
+                None
+            }
+        })
     });
     super::run(
         &Options {
@@ -588,18 +639,39 @@ pub fn prepare(options: StageOptions, download: &impl super::Download) -> Result
         target_commit: target.clone(),
         nonce,
     };
-    publish_ready(&root, &candidate, &params, &ready)?;
-    fs::rename(&candidate, &finalized)?;
+    publish_ready(&root, &candidate, &ready)?;
+    if let Some(identity) = previous_candidate {
+        unchanged_directory(&finalized, identity)?;
+        rustix::fs::renameat_with(
+            rustix::fs::CWD,
+            &candidate,
+            rustix::fs::CWD,
+            &finalized,
+            rustix::fs::RenameFlags::EXCHANGE,
+        )
+        .map_err(std::io::Error::from)?;
+    } else {
+        rustix::fs::renameat_with(
+            rustix::fs::CWD,
+            &candidate,
+            rustix::fs::CWD,
+            &finalized,
+            rustix::fs::RenameFlags::NOREPLACE,
+        )
+        .map_err(std::io::Error::from)?;
+    }
+    sync_directory(pending.path())?;
+    sync_directory(&staging)?;
+    pending.close()?;
     sync_directory(&staging)?;
     Ok(target)
 }
 
-fn publish_ready(root: &Path, candidate: &Path, params: &Path, ready: &Ready) -> Result<()> {
+fn publish_ready(root: &Path, candidate: &Path, ready: &Ready) -> Result<()> {
     verify(candidate, ready)?;
     if checkout_sha(root)? != ready.previous_commit {
         return Err(invalid("active source changed while preparing update"));
     }
-    offroad(params)?;
     sync_tree(candidate)?;
     write_json(&candidate.join(READY), ready)?;
     File::create(candidate.join(".overlay_consistent"))?.sync_all()?;
@@ -610,11 +682,6 @@ fn publish_ready(root: &Path, candidate: &Path, params: &Path, ready: &Ready) ->
 /// native package gate and durable selection stamp before startup activation.
 pub fn adopt(options: StageOptions, download: &impl super::Download) -> Result<String> {
     let root = options.root.canonicalize()?;
-    let params = options.params.unwrap_or_else(|| params_root(&root));
-    offroad(&params)?;
-    if !supported_origin(&git(&root, &["config", "--get", "remote.origin.url"])?) {
-        return Err(invalid("origin must be bin9208/openpilot-rust"));
-    }
     let staging = options
         .staging
         .or_else(|| std::env::var_os("STAGING_ROOT").map(PathBuf::from))
@@ -680,14 +747,14 @@ pub fn adopt(options: StageOptions, download: &impl super::Download) -> Result<S
         target_commit: target.clone(),
         nonce,
     };
-    publish_ready(&root, &candidate, &params, &ready)?;
+    publish_ready(&root, &candidate, &ready)?;
     Ok(target)
 }
 
 /// Called by the native launcher before starting children, under its boot lock.
 /// Atomic exchange keeps a complete checkout at the normal startup path at every
 /// crash point. No nonatomic rename fallback is permitted on other filesystems.
-pub fn activate(root: &Path, staging: &Path, params: &Path) -> Result<bool> {
+pub fn activate(root: &Path, staging: &Path, _params: &Path) -> Result<bool> {
     if !staging.try_exists()? {
         return Ok(false);
     }
@@ -732,10 +799,6 @@ pub fn activate(root: &Path, staging: &Path, params: &Path) -> Result<bool> {
                 ));
             }
             eprintln!("native update postponed: active source changed since staging");
-            return Ok(false);
-        }
-        if offroad(params).is_err() {
-            eprintln!("native update postponed until verified offroad startup");
             return Ok(false);
         }
         if read_ready(&finalized)? != ready {

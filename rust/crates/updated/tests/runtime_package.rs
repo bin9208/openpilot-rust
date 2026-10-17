@@ -113,7 +113,20 @@ fn finalize_checkout(paths: &Paths) -> Result<(), Error> {
 }
 
 fn run_updater(paths: &Paths, initialize: bool) -> Result<(), Error> {
-    let mut commands = LocalCommands;
+    with_commands(paths, &mut LocalCommands, |updater| {
+        if initialize {
+            updater.init_overlay()
+        } else {
+            updater.finalize_update()
+        }
+    })
+}
+
+fn with_commands(
+    paths: &Paths,
+    commands: &mut dyn Commands,
+    action: impl FnOnce(&mut openpilot_updated::updater::Updater<'_>) -> Result<(), Error>,
+) -> Result<(), Error> {
     let mut logger = openpilot_logging::producer::Factory::new(format!(
         "ipc://{}",
         paths.system_root.join("logs.sock").display()
@@ -124,7 +137,7 @@ fn run_updater(paths: &Paths, initialize: bool) -> Result<(), Error> {
         openpilot_updated::Params::open(&paths.system_root)?,
         openpilot_updated::updater::Context {
             paths,
-            commands: &mut commands,
+            commands,
             hardware: &Hardware,
             agnos: &mut flash,
             clock: &openpilot_timed::clock::SystemClock,
@@ -132,11 +145,7 @@ fn run_updater(paths: &Paths, initialize: bool) -> Result<(), Error> {
             is_agnos: false,
         },
     );
-    if initialize {
-        updater.init_overlay()
-    } else {
-        updater.finalize_update()
-    }
+    action(&mut updater)
 }
 
 #[test]
@@ -193,7 +202,14 @@ fn updater_does_not_erase_pending_native_update_or_previous_generation() {
     let backup = paths.staging.join("old_openpilot.saved");
     std::fs::create_dir_all(&backup).unwrap();
     std::fs::write(backup.join("live-helper"), "preserve").unwrap();
-    assert!(run_updater(&paths, true).is_err());
+    common::set_consistent_flag(&paths, &paths.finalized(), true).unwrap();
+    let mut commands = OverlayCommands::default();
+    with_commands(&paths, &mut commands, |updater| updater.init_overlay()).unwrap();
+    assert!(commands
+        .calls
+        .iter()
+        .any(|args| args.iter().any(|arg| arg == "mount")));
+    assert!(common::get_consistent_flag(&paths.finalized()));
     assert_eq!(
         std::fs::read_to_string(paths.finalized().join(".runtime-update-ready.json")).unwrap(),
         "ready"
@@ -202,4 +218,67 @@ fn updater_does_not_erase_pending_native_update_or_previous_generation() {
         std::fs::read_to_string(backup.join("live-helper")).unwrap(),
         "preserve"
     );
+}
+
+#[derive(Default)]
+struct OverlayCommands {
+    calls: Vec<Vec<String>>,
+}
+impl Commands for OverlayCommands {
+    fn run(&mut self, argv: &[String], _: Option<&Path>) -> Result<String, Error> {
+        self.calls.push(argv.to_vec());
+        if argv.first().is_some_and(|arg| arg == "git")
+            && argv.get(1).is_some_and(|arg| arg == "fetch")
+        {
+            return Err(Error::Command {
+                command: argv.to_vec(),
+                code: 23,
+                output: "owned fetch failure".into(),
+            });
+        }
+        Ok(String::new())
+    }
+}
+
+#[test]
+fn failed_fetch_preserves_ready_update_and_its_available_status() {
+    let (_root, paths) = checkout(0);
+    std::fs::create_dir_all(&paths.base).unwrap();
+    std::fs::create_dir_all(paths.merged()).unwrap();
+    std::fs::write(
+        paths.finalized().join(".runtime-update-ready.json"),
+        "ready",
+    )
+    .unwrap();
+    common::set_consistent_flag(&paths, &paths.finalized(), true).unwrap();
+    let mut commands = OverlayCommands::default();
+    let result = with_commands(&paths, &mut commands, |updater| {
+        updater.params.put("UpdaterTargetBranch", b"dev-md")?;
+        updater.params.put_bool("UpdateAvailable", true)?;
+        updater.fetch_update()
+    });
+    assert!(matches!(result, Err(Error::Command { code: 23, .. })));
+    assert!(common::get_consistent_flag(&paths.finalized()));
+    assert_eq!(
+        std::fs::read_to_string(paths.finalized().join(".runtime-update-ready.json")).unwrap(),
+        "ready"
+    );
+    assert!(openpilot_updated::Params::open(&paths.system_root)
+        .unwrap()
+        .boolean("UpdateAvailable")
+        .unwrap());
+}
+
+#[test]
+fn interrupted_activation_still_requires_startup_recovery() {
+    let (_root, paths) = checkout(0);
+    std::fs::create_dir_all(&paths.base).unwrap();
+    std::fs::write(
+        paths.staging.join(".runtime-update-journal.json"),
+        "journal",
+    )
+    .unwrap();
+    let mut commands = OverlayCommands::default();
+    assert!(with_commands(&paths, &mut commands, |updater| updater.init_overlay()).is_err());
+    assert!(commands.calls.is_empty());
 }

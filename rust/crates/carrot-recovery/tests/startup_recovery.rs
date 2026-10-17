@@ -174,13 +174,14 @@ fn main() {
     fs::write(root.join("source"), "preserve local edit").unwrap();
     let update = Update::default();
     update.run_update(&mut backend(false), false);
-    assert_eq!(update.snapshot().status, "failed");
-    assert!(update.snapshot().detail.contains("Local changes"));
-    assert!(!trace.exists() && !reboot_trace.exists());
+    assert_eq!(update.snapshot().status, "rebooting");
+    assert!(trace.exists() && reboot_trace.exists());
     assert_eq!(
         fs::read_to_string(root.join("source")).unwrap(),
         "preserve local edit"
     );
+    fs::remove_file(&trace).unwrap();
+    fs::remove_file(&reboot_trace).unwrap();
     git(&root, &["restore", "source"]);
     let held = File::open(&lock).unwrap();
     held.lock().unwrap();

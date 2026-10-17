@@ -42,7 +42,7 @@ impl Software {
             ..Default::default()
         };
         let mut warning = ListItem::new("")?;
-        warning.title = context.text("Updates are only downloaded while the car is off.");
+        warning.title = context.text("Updates take effect after restarting.");
         scroller.add(Box::new(warning));
         let mut version = ListItem::new("")?;
         version.title = context.text("Current Version");
@@ -53,7 +53,7 @@ impl Software {
         scroller.add(Box::new(version));
         for (title, text, change) in [
             ("Download", "CHECK", Change::Download),
-            ("Install Update", "INSTALL", Change::Install),
+            ("Restart to Apply", "RESTART", Change::Install),
             ("Target Branch", "SELECT", Change::Branch),
             ("Uninstall", "UNINSTALL", Change::Uninstall),
         ] {
@@ -65,7 +65,6 @@ impl Software {
                 item.state.visible = false.into();
             }
             if matches!(change, Change::Branch) {
-                item.state.visible = (!context.params.boolean("IsTestedBranch")?).into();
                 action.value = context.params.string("UpdaterTargetBranch")?.into();
             }
             item.action = Some(Box::new(action));

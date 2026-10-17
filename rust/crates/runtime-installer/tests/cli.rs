@@ -742,12 +742,18 @@ impl Fixture {
         previous
     }
     fn stage_update(&self) -> Output {
+        self.stage_selected(&[])
+    }
+    fn stage_selected(&self, selection: &[&str]) -> Output {
+        self.stage_target(&self.sha, selection)
+    }
+    fn stage_target(&self, target: &str, selection: &[&str]) -> Output {
         Command::new(installer())
             .arg("--stage-update")
             .arg("--root")
             .arg(self.root())
             .arg("--target")
-            .arg(&self.sha)
+            .arg(target)
             .arg("--staging")
             .arg(self.dir.path().join("safe_staging"))
             .arg("--params-root")
@@ -757,6 +763,7 @@ impl Fixture {
             .arg("--descriptor")
             .arg(self.dir.path().join("descriptor.json"))
             .args(["--reserve-bytes", "0"])
+            .args(selection)
             .output()
             .unwrap()
     }
@@ -772,6 +779,99 @@ impl Fixture {
         .unwrap()
         .trim()
         .into()
+    }
+}
+
+fn update_git(root: &Path, args: &[&str]) -> String {
+    let output = Command::new("git")
+        .args([
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+        ])
+        .args(args)
+        .current_dir(root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout).unwrap().trim().into()
+}
+
+#[test]
+fn pending_update_can_be_reselected_without_changing_active_source() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    assert!(fixture.stage_update().status.success());
+    let first = fixture.sha.clone();
+    let tree = update_git(
+        &fixture.root(),
+        &["rev-parse", &format!("{first}^{{tree}}")],
+    );
+    fixture.sha = update_git(
+        &fixture.root(),
+        &["commit-tree", &tree, "-p", &first, "-m", "second target"],
+    );
+    update_git(
+        &fixture.root(),
+        &["branch", "second-candidate", &fixture.sha],
+    );
+    fixture.archive();
+    let finalized = fixture.dir.path().join("safe_staging/finalized");
+    let ready = fs::read(finalized.join(".runtime-update-ready.json")).unwrap();
+    let manifest = fs::read(finalized.join("rust/runtime-manifest.json")).unwrap();
+    let archive = fixture.dir.path().join("runtime.tar.gz");
+    let valid = fs::read(&archive).unwrap();
+    fs::write(&archive, b"broken replacement").unwrap();
+    let failed = fixture.stage_update();
+    assert!(!failed.status.success());
+    assert_eq!(
+        fs::read(finalized.join(".runtime-update-ready.json")).unwrap(),
+        ready
+    );
+    assert_eq!(
+        fs::read(finalized.join("rust/runtime-manifest.json")).unwrap(),
+        manifest
+    );
+    assert!(finalized.join(".overlay_consistent").is_file());
+    assert_eq!(update_git(&finalized, &["rev-parse", "HEAD"]), first);
+    fs::write(&archive, valid).unwrap();
+    let result = fixture.stage_update();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(fixture.head(), previous);
+    assert_eq!(update_git(&finalized, &["rev-parse", "HEAD"]), fixture.sha);
+    assert!(fixture.run(&["--check"]).status.success());
+}
+
+#[test]
+fn same_commit_reselection_honors_branch_and_detach() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    assert!(fixture.stage_update().status.success());
+    let finalized = fixture.dir.path().join("safe_staging/finalized");
+    for (args, expected) in [
+        (&["--branch", "candidate"][..], "candidate"),
+        (&["--detach"][..], ""),
+    ] {
+        let result = fixture.stage_selected(args);
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        assert_eq!(
+            update_git(&finalized, &["branch", "--show-current"]),
+            expected
+        );
+        assert_eq!(fixture.head(), previous);
     }
 }
 
@@ -830,39 +930,68 @@ fn missing_target_release_keeps_old_source_package_and_user_data() {
 }
 
 #[test]
-fn onroad_and_wrong_origin_updates_are_rejected_before_staging() {
+fn preparation_succeeds_for_onroad_or_missing_is_onroad() {
     for onroad in [true, false] {
         let mut fixture = Fixture::new();
         let previous = fixture.update_target();
+        let is_onroad = fixture.dir.path().join("params/d/IsOnroad");
         if onroad {
-            fs::write(fixture.dir.path().join("params/d/IsOnroad"), "1").unwrap();
+            fs::write(&is_onroad, "1").unwrap();
         } else {
-            assert!(Command::new("git")
-                .args([
-                    "remote",
-                    "set-url",
-                    "origin",
-                    "https://github.com/ajouatom/openpilot.git"
-                ])
-                .current_dir(fixture.root())
-                .status()
-                .unwrap()
-                .success());
+            fs::remove_file(&is_onroad).unwrap();
         }
         let result = fixture.stage_update();
-        assert!(!result.status.success());
         assert!(
-            String::from_utf8_lossy(&result.stderr).contains(if onroad {
-                "offroad"
-            } else {
-                "origin"
-            }),
+            result.status.success(),
             "{}",
             String::from_utf8_lossy(&result.stderr)
         );
         assert_eq!(fixture.head(), previous);
-        assert!(!fixture.dir.path().join("safe_staging/finalized").exists());
+        let check = fixture.run(&["--check"]);
+        assert!(
+            check.status.success(),
+            "{}",
+            String::from_utf8_lossy(&check.stderr)
+        );
+        let finalized = fixture.dir.path().join("safe_staging/finalized");
+        let ready = finalized.join(".runtime-update-ready.json");
+        assert!(ready.is_file(), "missing {}", ready.display());
+        let ready_value: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&ready).unwrap()).unwrap();
+        assert!(ready_value.is_object());
+        let overlay = finalized.join(".overlay_consistent");
+        assert!(overlay.is_file(), "missing {}", overlay.display());
     }
+}
+
+#[test]
+fn staged_source_records_configured_origin_url() {
+    let mut fixture = Fixture::new();
+    fixture.update_target();
+    let configured = "https://example.invalid/my/runtime.git";
+    assert!(Command::new("git")
+        .args(["remote", "set-url", "origin", configured])
+        .current_dir(fixture.root())
+        .status()
+        .unwrap()
+        .success());
+    let result = fixture.stage_update();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let output = Command::new("git")
+        .args(["config", "remote.origin.url"])
+        .current_dir(fixture.dir.path().join("safe_staging/finalized"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), configured);
 }
 
 #[test]
@@ -983,32 +1112,64 @@ fn same_sha_package_repair_recovers_using_the_unique_ready_marker() {
 }
 
 #[test]
-fn changed_staged_source_and_ignition_postpone_activation_without_touching_active_pair() {
-    for tampered in [false, true] {
+fn tampered_staged_source_is_rejected_without_touching_active_pair() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    let result = fixture.stage_update();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let stage = fixture.dir.path().join("safe_staging");
+    fs::write(stage.join("finalized/target-source"), "tampered source").unwrap();
+    assert!(openpilot_runtime_installer::transaction::activate(
+        &fixture.root(),
+        &stage,
+        &fixture.dir.path().join("params")
+    )
+    .is_err());
+    assert_eq!(fixture.head(), previous);
+    let check = fixture.run(&["--check"]);
+    assert!(
+        check.status.success(),
+        "{}",
+        String::from_utf8_lossy(&check.stderr)
+    );
+    assert!(stage.join("finalized/rust/bin/openpilot-launch").is_file());
+}
+
+#[test]
+fn activation_succeeds_for_onroad_or_missing_is_onroad() {
+    for onroad in [true, false] {
         let mut fixture = Fixture::new();
-        let previous = fixture.update_target();
-        assert!(fixture.stage_update().status.success());
-        let stage = fixture.dir.path().join("safe_staging");
-        if tampered {
-            fs::write(stage.join("finalized/target-source"), "tampered source").unwrap();
-            assert!(openpilot_runtime_installer::transaction::activate(
-                &fixture.root(),
-                &stage,
-                &fixture.dir.path().join("params")
-            )
-            .is_err());
+        fixture.update_target();
+        let result = fixture.stage_update();
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        let is_onroad = fixture.dir.path().join("params/d/IsOnroad");
+        if onroad {
+            fs::write(&is_onroad, "1").unwrap();
         } else {
-            fs::write(fixture.dir.path().join("params/d/IsOnroad"), "1").unwrap();
-            assert!(!openpilot_runtime_installer::transaction::activate(
-                &fixture.root(),
-                &stage,
-                &fixture.dir.path().join("params")
-            )
-            .unwrap());
+            fs::remove_file(&is_onroad).unwrap();
         }
-        assert_eq!(fixture.head(), previous);
-        assert!(fixture.run(&["--check"]).status.success());
-        assert!(stage.join("finalized/rust/bin/openpilot-launch").is_file());
+        let stage = fixture.dir.path().join("safe_staging");
+        assert!(openpilot_runtime_installer::transaction::activate(
+            &fixture.root(),
+            &stage,
+            &fixture.dir.path().join("params")
+        )
+        .unwrap());
+        assert_eq!(fixture.head(), fixture.sha);
+        let check = fixture.run(&["--check"]);
+        assert!(
+            check.status.success(),
+            "{}",
+            String::from_utf8_lossy(&check.stderr)
+        );
     }
 }
 
@@ -1500,4 +1661,90 @@ fn offline_repair_rejects_unbound_corrupt_missing_and_linked_cache() {
             );
         }
     }
+}
+
+#[test]
+fn named_remote_selection_preserves_transport_and_other_branch_upstreams() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    let root = fixture.root();
+    update_git(
+        &root,
+        &[
+            "remote",
+            "add",
+            "source",
+            "https://example.invalid/runtime.git",
+        ],
+    );
+    update_git(
+        &root,
+        &["update-ref", "refs/remotes/source/release", &fixture.sha],
+    );
+    update_git(&root, &["branch", "saved", &fixture.sha]);
+    update_git(&root, &["config", "branch.saved.remote", "source"]);
+    update_git(
+        &root,
+        &["config", "branch.saved.merge", "refs/heads/release"],
+    );
+    update_git(
+        &root,
+        &[
+            "config",
+            "url.file:///owned-mirror/.insteadOf",
+            "https://example.invalid/",
+        ],
+    );
+    let result = fixture.stage_target(
+        "refs/remotes/source/release",
+        &["--branch", "local-release"],
+    );
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let finalized = fixture.dir.path().join("safe_staging/finalized");
+    assert_eq!(fixture.head(), previous);
+    for branch in ["saved", "local-release"] {
+        assert_eq!(
+            update_git(&finalized, &["config", &format!("branch.{branch}.remote")]),
+            "source"
+        );
+        assert_eq!(
+            update_git(&finalized, &["config", &format!("branch.{branch}.merge")]),
+            "refs/heads/release"
+        );
+    }
+    assert_eq!(
+        update_git(
+            &finalized,
+            &["config", "url.file:///owned-mirror/.insteadOf"]
+        ),
+        "https://example.invalid/"
+    );
+}
+
+#[test]
+fn reselecting_the_same_commit_reuses_its_verified_package_without_network() {
+    let mut fixture = Fixture::new();
+    let previous = fixture.update_target();
+    assert!(fixture.stage_update().status.success());
+    let origin = "https://example.invalid/configured.git";
+    update_git(&fixture.root(), &["remote", "set-url", "origin", origin]);
+    let network = NoNetwork(std::cell::Cell::new(0));
+    let result = openpilot_runtime_installer::transaction::prepare(
+        cached_repair_options(&fixture, &fixture.sha),
+        &network,
+    );
+    assert!(result.is_ok(), "{result:?}");
+    assert_eq!(network.0.get(), 0);
+    assert_eq!(fixture.head(), previous);
+    assert_eq!(
+        update_git(
+            &fixture.dir.path().join("safe_staging/finalized"),
+            &["config", "remote.origin.url"]
+        ),
+        origin
+    );
 }

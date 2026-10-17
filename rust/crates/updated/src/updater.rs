@@ -101,6 +101,9 @@ impl<'a> Updater<'a> {
         if !crate::common::get_consistent_flag(&finalized) {
             return Ok(false);
         }
+        if finalized.join(".runtime-update-ready.json").try_exists()? {
+            return Ok(true);
+        }
         let base = self.context.paths.base.clone();
         let current_hash = self.get_commit_hash(&base)?;
         let target = self.target_branch()?;
@@ -188,12 +191,20 @@ impl<'a> Updater<'a> {
             "attempting git fetch inside staging overlay",
         )?;
         self.params.put("UpdaterState", b"downloading...")?;
-        crate::common::set_consistent_flag(
-            self.context.paths,
-            &self.context.paths.finalized(),
-            false,
-        )?;
-        self.params.put_bool("UpdateAvailable", false)?;
+        if !self
+            .context
+            .paths
+            .finalized()
+            .join(".runtime-update-ready.json")
+            .try_exists()?
+        {
+            crate::common::set_consistent_flag(
+                self.context.paths,
+                &self.context.paths.finalized(),
+                false,
+            )?;
+            self.params.put_bool("UpdateAvailable", false)?;
+        }
         let merged = self.context.paths.merged();
         self.setup_git_options(&merged)?;
         self.context.commands.run(

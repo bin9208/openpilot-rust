@@ -82,37 +82,7 @@ impl Context {
 }
 
 impl Context {
-    pub async fn native_origin(&self) -> Result<Completed, Failure> {
-        let origin = self
-            .git(&["config", "--get", "remote.origin.url"], 15, false)
-            .await?;
-        if origin.code != 0
-            || !matches!(
-                origin.output.trim(),
-                "https://github.com/bin9208/openpilot-rust.git"
-                    | "https://github.com/bin9208/openpilot-rust"
-                    | "git@github.com:bin9208/openpilot-rust.git"
-                    | "ssh://git@github.com/bin9208/openpilot-rust.git"
-            )
-        {
-            self.append("Native runtime origin must be bin9208/openpilot-rust\n")?;
-            return Ok(Completed {
-                code: 1,
-                output: "Native runtime origin must be bin9208/openpilot-rust".into(),
-                streams: None,
-            });
-        }
-        Ok(Completed {
-            code: 0,
-            output: String::new(),
-            streams: None,
-        })
-    }
     pub async fn native_fetch(&self) -> Result<Completed, Failure> {
-        let origin = self.native_origin().await?;
-        if origin.code != 0 {
-            return Ok(origin);
-        }
         self.git(&["fetch", "origin", "--prune"], 300, true).await
     }
     pub async fn stage_update(

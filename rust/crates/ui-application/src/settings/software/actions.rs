@@ -20,7 +20,9 @@ impl Software {
             }
             Change::Install => {
                 self.button(3)?.state.enabled = false.into();
-                context.params.put_bool("DoReboot", true)?;
+                if !context.ui.borrow().started {
+                    context.params.put_bool("DoReboot", true)?;
+                }
             }
             Change::Uninstall => {
                 let callback_context = context.clone();

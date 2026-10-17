@@ -13,20 +13,24 @@ pub(super) async fn checkout(context: &Context, body: &Value) -> Result<Reply, F
     if branch.is_empty() && name.is_empty() {
         return Ok(context.invalid("missing branch", "MISSING_BRANCH"));
     }
-    if kind == "remote" && (remote != "origin" || name.is_empty()) {
-        return Ok(context.invalid(
-            "Native runtime branches must use origin from bin9208/openpilot-rust",
-            "INVALID_NATIVE_ORIGIN",
-        ));
-    }
-    let fetched = context.native_fetch().await?;
-    if fetched.code != 0 {
-        return context.result(fetched, None);
-    }
+    let remote = if remote.is_empty() { "origin" } else { &remote };
     let selected = if name.is_empty() { branch } else { name };
-    let local = selected.strip_prefix("origin/").unwrap_or(&selected);
+    let prefix = format!("{remote}/");
+    let local = selected.strip_prefix(&prefix).unwrap_or(&selected);
     let target = if kind == "remote" || selected.starts_with("origin/") {
-        format!("origin/{local}")
+        let configured = context
+            .git(&["remote", "get-url", "--", remote], 15, false)
+            .await?;
+        if configured.code != 0 {
+            return context.result(configured, None);
+        }
+        let fetched = context
+            .git(&["fetch", "--prune", "--", remote], 300, true)
+            .await?;
+        if fetched.code != 0 {
+            return context.result(fetched, None);
+        }
+        format!("refs/remotes/{remote}/{local}")
     } else {
         let exists = context
             .git(
@@ -43,6 +47,10 @@ pub(super) async fn checkout(context: &Context, body: &Value) -> Result<Reply, F
         if exists.code == 0 {
             local.into()
         } else {
+            let fetched = context.native_fetch().await?;
+            if fetched.code != 0 {
+                return context.result(fetched, None);
+            }
             format!("origin/{local}")
         }
     };

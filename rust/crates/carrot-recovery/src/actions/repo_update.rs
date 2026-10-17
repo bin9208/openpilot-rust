@@ -209,21 +209,6 @@ fn checked_git(config: &Config, args: &[&str], lock: &File) -> Result<String, Er
     }
     Ok(output.stdout.trim().into())
 }
-fn native_origin(config: &Config, lock: &File) -> Result<(), Error> {
-    let url = checked_git(config, &["config", "--get", "remote.origin.url"], lock)?;
-    if !matches!(
-        url.as_str(),
-        NATIVE_ORIGIN
-            | "https://github.com/bin9208/openpilot-rust"
-            | "git@github.com:bin9208/openpilot-rust.git"
-            | "ssh://git@github.com/bin9208/openpilot-rust.git"
-    ) {
-        return Err(Error::Source(
-            "origin must be bin9208/openpilot-rust".into(),
-        ));
-    }
-    Ok(())
-}
 fn stage(
     config: &Config,
     target: &str,
@@ -257,7 +242,6 @@ fn stage(
     Ok(output.code)
 }
 fn pull(config: &Config, lock: &File) -> Result<i32, Error> {
-    native_origin(config, lock)?;
     let repository = git_config::Repository {
         directory: &config.repository,
         launcher: &config.launcher,
@@ -287,7 +271,6 @@ fn native_action(
             checked_git(config, &["remote", "add", "origin", NATIVE_ORIGIN], lock)?;
         }
     }
-    native_origin(config, lock)?;
     if action != "__stage-repair" {
         checked_git(config, &["fetch", "origin", "--prune"], lock)?;
     }

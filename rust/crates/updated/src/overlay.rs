@@ -33,16 +33,12 @@ impl Updater<'_> {
             .try_lock()
             .map_err(|_| Error::Contract("native source/package transaction is busy"))?;
         if paths
-            .finalized()
-            .join(".runtime-update-ready.json")
+            .staging
+            .join(".runtime-update-journal.json")
             .try_exists()?
-            || paths
-                .staging
-                .join(".runtime-update-journal.json")
-                .try_exists()?
         {
             return Err(Error::Contract(
-                "complete native update is pending; reboot before preparing another",
+                "pending activation journal requires startup recovery",
             ));
         }
         if paths.overlay_init().is_file() && common::is_mount(&merged) {
@@ -64,8 +60,14 @@ impl Updater<'_> {
             )?;
         }
         report::info(self.context.logger, "preparing new safe staging area")?;
-        self.params.put_bool("UpdateAvailable", false)?;
-        common::set_consistent_flag(&paths, &paths.finalized(), false)?;
+        let ready = paths
+            .finalized()
+            .join(".runtime-update-ready.json")
+            .try_exists()?;
+        if !ready {
+            self.params.put_bool("UpdateAvailable", false)?;
+            common::set_consistent_flag(&paths, &paths.finalized(), false)?;
+        }
         self.dismount_overlay()?;
         // Keep complete rollback checkouts, package helpers and the transaction
         // lock. Only the updater's disposable overlay directories are recreated.
@@ -75,6 +77,9 @@ impl Updater<'_> {
             &merged,
             &paths.finalized(),
         ] {
+            if directory == &paths.finalized() && ready {
+                continue;
+            }
             if directory.try_exists()? {
                 common::remove_tree(directory)?;
             }

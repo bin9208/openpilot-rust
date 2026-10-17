@@ -69,7 +69,7 @@ impl Fixture {
                 "remote",
                 "add",
                 "origin",
-                "https://github.com/bin9208/openpilot-rust.git",
+                "https://example.invalid/my/runtime.git",
             ],
         );
         git(

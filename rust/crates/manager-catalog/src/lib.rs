@@ -152,7 +152,7 @@ impl Predicate {
             Always => true,
             Onroad => started,
             Offroad => !started,
-            Updated => !started && params.get_bool("SoftwareMenu")?,
+            Updated => params.get_bool("SoftwareMenu")?,
             DriverMonitoring => started || params.get_bool("IsDriverViewEnabled")?,
             DriverMonitoringModel => {
                 (started
