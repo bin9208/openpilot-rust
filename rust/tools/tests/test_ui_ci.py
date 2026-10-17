@@ -105,7 +105,7 @@ def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path:
   ]
 
 
-@pytest.mark.parametrize('failure', [None, 'stack', 'scroller', 'egl'])
+@pytest.mark.parametrize('failure', [None, 'stack', 'scroller', 'polygon', 'diagnostics', 'egl'])
 def test_framework_native_logic_routes_preserve_order_logs_and_failure_stop(tmp_path: Path, monkeypatch, failure) -> None:
   import os
   import runpy
@@ -146,14 +146,14 @@ def test_framework_native_logic_routes_preserve_order_logs_and_failure_stop(tmp_
     scenarios = scenarios[:next(i + 1 for i, row in enumerate(scenarios) if row[0] == failure)]
   expected = []
   for name, binary, display in scenarios:
-    command = ([str(target / f'check-ui-{name}')] if name in {'widgets', 'scroll', 'navigation', 'stack', 'scroller', 'fps', 'egl'}
+    command = ([str(target / f'check-ui-{name}')] if name in {'widgets', 'scroll', 'navigation', 'stack', 'scroller', 'polygon', 'diagnostics', 'fps', 'egl'}
                else [sys.executable, str(ROOT / f'rust/tools/check_ui_{name}.py')])
     command += ['--binary', str(target / 'examples' / binary), '--output', str(output / name)]
     if display:
       command += ['--display', ':owned']
     expected.append((name, command))
   assert calls == expected
-  assert guards == ([] if failure in {'stack', 'scroller'} else [output])
+  assert guards == ([output] if failure in {None, 'egl'} else [])
   ledger = json.loads((output / 'invocations.json').read_text())
   assert ledger == [
     {'scenario': name, 'invocation': command, 'exit_code': 7 if name == failure else 0,

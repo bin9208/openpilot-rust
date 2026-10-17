@@ -1776,3 +1776,10 @@ and ran the unchanged full controller comparator against the relocated live
 oracle. All295 requests/9,436 steps passed, retaining both original exceptions.
 Candidate SHA256:289046d73988b02d9ae61e79e8727908b00cbfd114aa8f75a64dc3592d97f5c2;
 evidence:2026-10-18-selfdrived-oracle-regression/current-controller.log.
+
+Full legacy UI caller regression found two stale Python-command expectations
+for already-native polygon/diagnostics children (normal and EGL-failure cases).
+Update both expected invocations and add failure-stop cases for each child,
+retaining all order/log/exit/remaining-Python checks. Original two failures then
+all12 caller tests pass. Evidence:2026-10-18-ci-diagnostic-routing/
+ui-routing-{red,green}.log. This changes only regression expectations.
