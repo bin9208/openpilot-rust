@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import ast
 import os
 from pathlib import Path
 import subprocess
@@ -9,6 +10,25 @@ import pytest
 import yaml
 
 from check_plannerd_ci import Check, ROOT, run_checks
+
+
+def test_ipc_replay_does_not_catch_up_after_delayed_model_processing() -> None:
+  # Evaluate the actual harness scheduling expressions without importing its
+  # C++ IPC bindings. This delay is the measured ARM original-source rerun.
+  tree = ast.parse((ROOT / 'rust/tools/plannerd_ipc.py').read_text())
+  loop = next(node for node in ast.walk(tree) if isinstance(node, ast.For)
+              and isinstance(node.target, ast.Name) and node.target.id == 'index')
+  target = next(node for node in loop.body if isinstance(node, ast.Assign)
+                and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'target')
+  state = {'started': 448.531671547, 'index': 1, 'previous_model_done': 448.556855263}
+  scheduled = eval(compile(ast.Expression(target.value), '<ipc scheduling>', 'eval'), {'max': max}, state)
+  assert scheduled - state['previous_model_done'] >= 0.05 - 1e-12
+  updates = [node for node in loop.body if isinstance(node, ast.Assign)
+             and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'previous_model_done']
+  assert len(updates) == 1
+  state['model_done'] = 448.610
+  exec(compile(ast.Module(updates, type_ignores=[]), '<ipc receipt>', 'exec'), {}, state)
+  assert state['previous_model_done'] == state['model_done']
 
 
 def test_failed_comparison_is_recorded_and_stops_before_the_next_check(tmp_path: Path) -> None:

@@ -107,8 +107,12 @@ def run(args, root, mode, epoch, prefix):
       drain()
       assert not records, 'a liveTracks-only startup published without a model'
       started = time.monotonic() + 0.05
+      previous_model_done = started - 0.05
       for index in range(args.frames):
-        target = started + index * 0.05
+        # Never catch up a delayed first solver/IPC iteration with a burst.
+        # FrequencyTracker uses actual receive time, so nominal send deadlines
+        # alone can make the unchanged original disagree with its own rerun.
+        target = max(started + index * 0.05, previous_model_done + 0.05)
         time.sleep(max(0.0, target - time.monotonic()))
         packets = messages(messaging.new_message, 45 + index, 1.0 + index * 0.05)
         packets['selfdriveState'].selfdriveState.experimentalMode = 12 <= index < 16
@@ -130,6 +134,7 @@ def run(args, root, mode, epoch, prefix):
         publisher.send('modelV2', packets['modelV2'])
         wait_for('driverAssistance', before)
         model_done = time.monotonic()
+        previous_model_done = model_done
         time.sleep(max(0.0, target + 0.025 - time.monotonic()))
         live = messaging.new_message('liveTracks', logMonoTime=1_000_000_000 + index * 50_000_000 + 25_000_000, valid=index != 19)
         points = live.liveTracks.init('points', 2)

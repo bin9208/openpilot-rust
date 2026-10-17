@@ -1365,3 +1365,32 @@ five workflow, 32 Rust-isolation and 13 disk-policy integrations all pass
 Parallel fast-check gate mutations and actual shell tests reject failed,
 cancelled, skipped, empty or missing worker results. Seven-minute worker limits
 and every prior test command are preserved.
+
+### ARM planner IPC replay pacing and exact-head follow-up (2026-10-18)
+
+Head `a560c4613113754007d96d5fbb8c9b00b974eb16` passed both fast-check
+runs [39057569430](https://github.com/bin9208/openpilot-rust/actions/runs/39057569430)
+and [39057564827](https://github.com/bin9208/openpilot-rust/actions/runs/39057564827),
+Integration [39057569320](https://github.com/bin9208/openpilot-rust/actions/runs/39057569320)
+and mapped user docs. Its Rust job remains unsuccessful: workspace Clippy found
+`items_after_test_module` in the stats clock checker, and ARM planner IPC failed.
+The test module has been moved after production items; a fresh Clippy gate remains
+required for that correction.
+
+The ARM artifact identifies the mismatch between two original Python executions,
+not between original and Rust: original epoch 1 reports false for the second
+lateralPlan/driverAssistance publication, while original epoch 0 and both Rust
+epochs report true. All four runs retain 121 messages, six model triggers,
+35 liveTracks triggers and 34 fast overlays. Original epoch 1 first processing
+completed at 448.556855263 after a nominal 448.531671547 deadline; the fixed next
+448.581671547 send left only 24.816284 ms after completion. Original
+FrequencyTracker checks receive intervals, so replaying fixed deadlines can turn
+startup processing delay into an artificial burst.
+
+The IPC harness now schedules the next model batch at least 50 ms after the
+previous model completion, preserving all packets, comparisons, invalid-input
+cases and runtime validity policy. Its regression evaluates the actual scheduling
+expression with the recorded ARM values: the old expression fails, the new one
+passes; all four planner CI tests pass. Real ARM IPC rerun remains required.
+Failure evidence: [job 117468881364](https://github.com/bin9208/openpilot-rust/actions/runs/39057569274/job/117468881364),
+artifact 12110875280. No runtime threshold or output assertion was weakened.
