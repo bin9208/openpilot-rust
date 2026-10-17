@@ -623,3 +623,12 @@ required-features = ["camera-sensor-native"]
 [[test]]
 name = "camera_sensor_check"
 required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-requests"
+path = "src/bin/check_camerad_requests.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_request_check"
+required-features = ["camera-sensor-native"]

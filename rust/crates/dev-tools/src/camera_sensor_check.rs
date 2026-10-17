@@ -25,7 +25,7 @@ pub fn split_runner(input: &str) -> Result<Vec<String>> {
         })
         .collect()
 }
-fn split_runner_os(input: &std::ffi::OsStr) -> Result<Vec<OsString>> {
+pub(crate) fn split_runner_os(input: &std::ffi::OsStr) -> Result<Vec<OsString>> {
     use std::os::unix::ffi::{OsStrExt, OsStringExt};
     let mut words = vec![];
     let mut word = vec![];
@@ -501,7 +501,7 @@ fn hash(bytes: &[u8]) -> String {
 }
 // Match argparse type=Path before filesystem operations. In particular, a
 // trailing slash on a file is discarded, but parent components are retained.
-fn lexical(path: &Path) -> std::path::PathBuf {
+pub(crate) fn lexical(path: &Path) -> std::path::PathBuf {
     use std::os::unix::ffi::{OsStrExt, OsStringExt};
     let bytes = path.as_os_str().as_bytes();
     let mut output = if bytes.starts_with(b"//") && !bytes.starts_with(b"///") {

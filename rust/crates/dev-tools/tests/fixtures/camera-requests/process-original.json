@@ -1,0 +1,1282 @@
+{
+  "cases": [
+    {
+      "name": "pass",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"scenarios\": 1,\n  \"steps\": 2,\n  \"source_command\": [\n    \"$ROOT/source\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"6ef9d18af7f8d683fb08d15a379b96fca5926a3ef4c5a188c57d39781becbabe\",\n  \"native_sha256\": \"6790ed3cf24d8c7b868266cd2f7cb20f6afb62479606762ca87dd944b9ce9e53\",\n  \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"\n}\n",
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "{\"status\": \"PASS\", \"scenarios\": 1, \"steps\": 2, \"source_command\": [\"$ROOT/source\"], \"native_command\": [\"$ROOT/native\"], \"source_sha256\": \"6ef9d18af7f8d683fb08d15a379b96fca5926a3ef4c5a188c57d39781becbabe\", \"native_sha256\": \"6790ed3cf24d8c7b868266cd2f7cb20f6afb62479606762ca87dd944b9ce9e53\", \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"}\n",
+      "error": null
+    },
+    {
+      "name": "source-exit",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "RuntimeError",
+        "text": "batch 0: source=7, native=0; see $ROOT/output/batch-000"
+      }
+    },
+    {
+      "name": "native-exit",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "RuntimeError",
+        "text": "batch 0: source=0, native=7; see $ROOT/output/batch-000"
+      }
+    },
+    {
+      "name": "source-spawn",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "FileNotFoundError",
+        "text": "original injected missing child"
+      }
+    },
+    {
+      "name": "native-spawn",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "FileNotFoundError",
+        "text": "original injected missing child"
+      }
+    },
+    {
+      "name": "source-timeout",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "TimeoutExpired",
+        "text": "Command '['$ROOT/source']' timed out after 90 seconds"
+      }
+    },
+    {
+      "name": "native-timeout",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "TimeoutExpired",
+        "text": "Command '['$ROOT/native']' timed out after 90 seconds"
+      }
+    },
+    {
+      "name": "source-count",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "AssertionError",
+        "text": "batch 0: output count mismatch"
+      }
+    },
+    {
+      "name": "native-count",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "AssertionError",
+        "text": "batch 0: output count mismatch"
+      }
+    },
+    {
+      "name": "source-json",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "bad json\n{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "JSONDecodeError",
+        "text": "Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "name": "native-json",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "bad json\n{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "JSONDecodeError",
+        "text": "Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "name": "mismatch",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": false}\n{\"value\": [2, 3]}\n",
+        "failure.json": "{\n  \"batch\": 0,\n  \"index\": 1,\n  \"command\": {\n    \"op\": \"step\",\n    \"camera\": 0,\n    \"request\": 1,\n    \"frame\": 2,\n    \"timestamp\": 1000000000,\n    \"status\": 0,\n    \"first_now\": 1025000000,\n    \"later_now\": 1030000000,\n    \"failures\": 0,\n    \"stress\": 0\n  },\n  \"source\": {\n    \"value\": true\n  },\n  \"native\": {\n    \"value\": false\n  }\n}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "AssertionError",
+        "text": "lifecycle mismatch at batch 0 index 1: {'op': 'step', 'camera': 0, 'request': 1, 'frame': 2, 'timestamp': 1000000000, 'status': 0, 'first_now': 1025000000, 'later_now': 1030000000, 'failures': 0, 'stress': 0}"
+      }
+    },
+    {
+      "name": "source-signal",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "RuntimeError",
+        "text": "batch 0: source=-15, native=0; see $ROOT/output/batch-000"
+      }
+    },
+    {
+      "name": "old-failure",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"scenarios\": 1,\n  \"steps\": 2,\n  \"source_command\": [\n    \"$ROOT/source\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"6ef9d18af7f8d683fb08d15a379b96fca5926a3ef4c5a188c57d39781becbabe\",\n  \"native_sha256\": \"6790ed3cf24d8c7b868266cd2f7cb20f6afb62479606762ca87dd944b9ce9e53\",\n  \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"\n}\n",
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "failure.json": "old evidence",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "{\"status\": \"PASS\", \"scenarios\": 1, \"steps\": 2, \"source_command\": [\"$ROOT/source\"], \"native_command\": [\"$ROOT/native\"], \"source_sha256\": \"6ef9d18af7f8d683fb08d15a379b96fca5926a3ef4c5a188c57d39781becbabe\", \"native_sha256\": \"6790ed3cf24d8c7b868266cd2f7cb20f6afb62479606762ca87dd944b9ce9e53\", \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"}\n",
+      "error": null
+    },
+    {
+      "name": "bad-runner",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [],
+      "files": {
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "ValueError",
+        "text": "No closing quotation"
+      }
+    },
+    {
+      "name": "missing-source",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "FileNotFoundError",
+        "text": "[Errno 2] No such file or directory: '$ROOT/source'"
+      }
+    },
+    {
+      "name": "report-dir",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "IsADirectoryError",
+        "text": "[Errno 21] Is a directory: '$ROOT/output/report.json'"
+      }
+    },
+    {
+      "name": "failure-dir",
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 2,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            },
+            {
+              "op": "step",
+              "camera": 2,
+              "request": 3,
+              "frame": 4,
+              "timestamp": 2000000000,
+              "status": 0,
+              "first_now": 2025000000,
+              "later_now": 2030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "command": [
+            "$ROOT/source"
+          ],
+          "input": "reset 18 7 7 0 0 22500000\nstep 0 1 2 1000000000 0 1025000000 1030000000 0 0\nstep 2 3 4 2000000000 0 2025000000 2030000000 0 0\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        },
+        {
+          "command": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"reset\", \"depth\": 18, \"enabled\": 7, \"bps\": 7, \"ar\": 0, \"staggered\": 0, \"readout\": 22500000}\n{\"op\": \"step\", \"camera\": 0, \"request\": 1, \"frame\": 2, \"timestamp\": 1000000000, \"status\": 0, \"first_now\": 1025000000, \"later_now\": 1030000000, \"failures\": 0, \"stress\": 0}\n{\"op\": \"step\", \"camera\": 2, \"request\": 3, \"frame\": 4, \"timestamp\": 2000000000, \"status\": 0, \"first_now\": 2025000000, \"later_now\": 2030000000, \"failures\": 0, \"stress\": 0}\n",
+          "text": true,
+          "capture_output": true,
+          "timeout": 90
+        }
+      ],
+      "files": {
+        "batch-000.native.jsonl": "{\"value\": 1.0}\n{\"value\": false}\n{\"value\": [2, 3]}\n",
+        "batch-000.stderr.json": "{\"source\": \"source stderr\\n\", \"native\": \"native stderr\\n\"}\n",
+        "batch-000.source.jsonl": "{\"value\": 1.0}\n{\"value\": true}\n{\"value\": [2, 3]}\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 2,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 2,\n        \"request\": 3,\n        \"frame\": 4,\n        \"timestamp\": 2000000000,\n        \"status\": 0,\n        \"first_now\": 2025000000,\n        \"later_now\": 2030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      },
+      "stdout": "",
+      "error": {
+        "type": "IsADirectoryError",
+        "text": "[Errno 21] Is a directory: '$ROOT/output/failure.json'"
+      }
+    }
+  ]
+}

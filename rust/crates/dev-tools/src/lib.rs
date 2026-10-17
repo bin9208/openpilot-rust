@@ -14,6 +14,8 @@ pub mod brotli_stage;
 pub mod camera_data_generate;
 pub mod camera_lifecycle_generate;
 #[cfg(feature = "camera-sensor-native")]
+pub mod camera_request_check;
+#[cfg(feature = "camera-sensor-native")]
 pub mod camera_sensor_check;
 #[cfg(feature = "camera-sensor-native")]
 pub mod camera_sensor_generate;

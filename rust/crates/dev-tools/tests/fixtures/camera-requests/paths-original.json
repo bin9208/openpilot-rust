@@ -1,0 +1,264 @@
+{
+  "cases": [
+    {
+      "name": "relative-dot",
+      "argv": [
+        "--reference",
+        "./source",
+        "--binary",
+        "$ROOT/native",
+        "--output",
+        "$ROOT/out",
+        "--reference-runner",
+        "$ROOT/runner",
+        "--runner",
+        "$ROOT/runner"
+      ],
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 1,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "error": null,
+      "stdout": "{\"status\": \"PASS\", \"scenarios\": 1, \"steps\": 1, \"source_command\": [\"$ROOT/runner\", \"source\"], \"native_command\": [\"$ROOT/runner\", \"$ROOT/native\"], \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\", \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"scenarios\": 1,\n  \"steps\": 1,\n  \"source_command\": [\n    \"$ROOT/runner\",\n    \"source\"\n  ],\n  \"native_command\": [\n    \"$ROOT/runner\",\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\",\n  \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\",\n  \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"\n}\n",
+        "batch-000.native.jsonl": "null\nnull\n",
+        "batch-000.stderr.json": "{\"source\": \"\", \"native\": \"\"}\n",
+        "batch-000.source.jsonl": "null\nnull\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 1,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      }
+    },
+    {
+      "name": "trailing-slash",
+      "argv": [
+        "--reference",
+        "$ROOT/source/",
+        "--binary",
+        "$ROOT/native",
+        "--output",
+        "$ROOT/out",
+        "--reference-runner",
+        "$ROOT/runner",
+        "--runner",
+        "$ROOT/runner"
+      ],
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 1,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "error": null,
+      "stdout": "{\"status\": \"PASS\", \"scenarios\": 1, \"steps\": 1, \"source_command\": [\"$ROOT/runner\", \"$ROOT/source\"], \"native_command\": [\"$ROOT/runner\", \"$ROOT/native\"], \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\", \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"scenarios\": 1,\n  \"steps\": 1,\n  \"source_command\": [\n    \"$ROOT/runner\",\n    \"$ROOT/source\"\n  ],\n  \"native_command\": [\n    \"$ROOT/runner\",\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\",\n  \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\",\n  \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"\n}\n",
+        "batch-000.native.jsonl": "null\nnull\n",
+        "batch-000.stderr.json": "{\"source\": \"\", \"native\": \"\"}\n",
+        "batch-000.source.jsonl": "null\nnull\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 1,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      }
+    },
+    {
+      "name": "symlink",
+      "argv": [
+        "--reference",
+        "$ROOT/alias",
+        "--binary",
+        "$ROOT/native",
+        "--output",
+        "$ROOT/out",
+        "--reference-runner",
+        "$ROOT/runner",
+        "--runner",
+        "$ROOT/runner"
+      ],
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 1,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "error": null,
+      "stdout": "{\"status\": \"PASS\", \"scenarios\": 1, \"steps\": 1, \"source_command\": [\"$ROOT/runner\", \"$ROOT/alias\"], \"native_command\": [\"$ROOT/runner\", \"$ROOT/native\"], \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\", \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"scenarios\": 1,\n  \"steps\": 1,\n  \"source_command\": [\n    \"$ROOT/runner\",\n    \"$ROOT/alias\"\n  ],\n  \"native_command\": [\n    \"$ROOT/runner\",\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\",\n  \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\",\n  \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"\n}\n",
+        "batch-000.native.jsonl": "null\nnull\n",
+        "batch-000.stderr.json": "{\"source\": \"\", \"native\": \"\"}\n",
+        "batch-000.source.jsonl": "null\nnull\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 1,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      }
+    },
+    {
+      "name": "raw-runner",
+      "argv": [
+        "--reference",
+        "$ROOT/source",
+        "--binary",
+        "$ROOT/native",
+        "--output",
+        "$ROOT/out",
+        "--reference-runner",
+        "$ROOT/r\udcff",
+        "--runner",
+        "$ROOT/r\udcff"
+      ],
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 1,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "error": null,
+      "stdout": "{\"status\": \"PASS\", \"scenarios\": 1, \"steps\": 1, \"source_command\": [\"$ROOT/r\\udcff\", \"$ROOT/source\"], \"native_command\": [\"$ROOT/r\\udcff\", \"$ROOT/native\"], \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\", \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"scenarios\": 1,\n  \"steps\": 1,\n  \"source_command\": [\n    \"$ROOT/r\\udcff\",\n    \"$ROOT/source\"\n  ],\n  \"native_command\": [\n    \"$ROOT/r\\udcff\",\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\",\n  \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\",\n  \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"\n}\n",
+        "batch-000.native.jsonl": "null\nnull\n",
+        "batch-000.stderr.json": "{\"source\": \"\", \"native\": \"\"}\n",
+        "batch-000.source.jsonl": "null\nnull\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 1,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      }
+    },
+    {
+      "name": "raw-output",
+      "argv": [
+        "--reference",
+        "$ROOT/source",
+        "--binary",
+        "$ROOT/native",
+        "--output",
+        "$ROOT/out\udcff",
+        "--reference-runner",
+        "$ROOT/runner",
+        "--runner",
+        "$ROOT/runner"
+      ],
+      "cases": [
+        {
+          "name": "owned",
+          "commands": [
+            {
+              "op": "reset",
+              "depth": 18,
+              "enabled": 7,
+              "bps": 7,
+              "ar": 0,
+              "staggered": 0,
+              "readout": 22500000
+            },
+            {
+              "op": "step",
+              "camera": 0,
+              "request": 1,
+              "frame": 1,
+              "timestamp": 1000000000,
+              "status": 0,
+              "first_now": 1025000000,
+              "later_now": 1030000000,
+              "failures": 0,
+              "stress": 0
+            }
+          ]
+        }
+      ],
+      "error": null,
+      "stdout": "{\"status\": \"PASS\", \"scenarios\": 1, \"steps\": 1, \"source_command\": [\"$ROOT/runner\", \"$ROOT/source\"], \"native_command\": [\"$ROOT/runner\", \"$ROOT/native\"], \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\", \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"scenarios\": 1,\n  \"steps\": 1,\n  \"source_command\": [\n    \"$ROOT/runner\",\n    \"$ROOT/source\"\n  ],\n  \"native_command\": [\n    \"$ROOT/runner\",\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\",\n  \"native_sha256\": \"bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d\",\n  \"scope\": \"Original verbatim frame lifecycle methods; controlled clock, stress and fence/queue I/O boundaries; no device or ioctl ABI claim\"\n}\n",
+        "batch-000.native.jsonl": "null\nnull\n",
+        "batch-000.stderr.json": "{\"source\": \"\", \"native\": \"\"}\n",
+        "batch-000.source.jsonl": "null\nnull\n",
+        "cases.json": "[\n  {\n    \"name\": \"owned\",\n    \"commands\": [\n      {\n        \"op\": \"reset\",\n        \"depth\": 18,\n        \"enabled\": 7,\n        \"bps\": 7,\n        \"ar\": 0,\n        \"staggered\": 0,\n        \"readout\": 22500000\n      },\n      {\n        \"op\": \"step\",\n        \"camera\": 0,\n        \"request\": 1,\n        \"frame\": 1,\n        \"timestamp\": 1000000000,\n        \"status\": 0,\n        \"first_now\": 1025000000,\n        \"later_now\": 1030000000,\n        \"failures\": 0,\n        \"stress\": 0\n      }\n    ]\n  }\n]\n"
+      }
+    }
+  ]
+}

@@ -2149,3 +2149,28 @@ root. Its controlled mismatch test and strict Clippy pass; successful comparison
 create no extra image artifact. The next exact-source CI must provide the missing
 render evidence if the mismatch repeats. See #350 and local
 `2026-10-18-ui-network/{releases-green,releases-eighteen,diagnostic-unit.log}`.
+
+### Native request comparator retirement (2026-10-18)
+
+`check-camerad-requests` now owns the dynamic request test generation and comparison.
+Independent original captures cover all 512 scenarios, 43 batches and 72,493 steps,
+18 process/artifact failure cases, CLI admission, 28 recursion boundaries and raw
+Unix path behavior. Five focused tests and four generator/routing tests pass;
+strict scoped Clippy passes. Original subprocess timeout and ordered failure
+artifacts remain unchanged. Independent review found an added capture-size limit:
+a 16 MiB + 1-byte stderr probe passed Python and failed native before correction.
+Both streams now retain the original unlimited capture policy; the same actual
+probe passes both implementations and tests assert the stream limits.
+
+The original Python entry point has no importing consumers and was removed after
+CI/caller migration. The post-deletion actual CLI run with PATH=/nonexistent passes
+all 512 scenarios/72,493 steps against the current C++ source executable, and its
+report is byte-identical to the original. This is host comparison evidence, not
+camera hardware acceptance. Inventory: 93 fully replaced, three partial and 3,484
+pending. Exposure/misc, network UI and the model compiler remain separate pending
+work; no complete repository retirement or measured CPU improvement is claimed.
+
+Verified earlier commits through `4b5eef7a13d1d86c48b339138879902fd85b458f` were
+pushed to PR #343 targeting dev. New exact-source checks are tracked in
+[issue #296](https://github.com/bin9208/openpilot-rust/issues/296#issuecomment-6243349766).
+The device remains user-owned for pull/boot/recording/upload verification.
