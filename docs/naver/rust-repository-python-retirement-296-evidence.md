@@ -2174,3 +2174,24 @@ Verified earlier commits through `4b5eef7a13d1d86c48b339138879902fd85b458f` were
 pushed to PR #343 targeting dev. New exact-source checks are tracked in
 [issue #296](https://github.com/bin9208/openpilot-rust/issues/296#issuecomment-6243349766).
 The device remains user-owned for pull/boot/recording/upload verification.
+
+### Native exposure and camera utility comparators (2026-10-18)
+
+`check-camerad-exposure` and `check-camerad-misc` dynamically generate the original
+seeded inputs and compare current source/native executables. Eleven focused tests
+pass, covering every request and all 183 generated images, process/CLI failures,
+lazy per-row JSON parsing, deep comparison/serialization boundaries and raw Unix
+paths. Strict scoped Clippy passes. Initial misc process-test failure was due to
+absolute temporary paths inside the hashed payload; the corrected harness proves
+both normalized inputs and restored original-context raw hashes before comparing
+receipts. Expected hashes still come from original execution, not the replacement.
+
+Actual post-removal execution with PATH=/nonexistent passes 99 exposure scenarios,
+54,108 steps/54,207 observations and all 7,292 camera utility cases; both complete
+reports are byte-identical to the independent original reports. The CI dispatcher
+and source/binary receipts now select these native tools. All 20 dispatches and
+four retained artifact-path regressions pass. The exposure Python file retains
+only the exact unchanged `quoted` helper imported by the remaining state checker;
+its AST was checked against the original. The misc Python entry point is removed.
+Inventory is 94 replaced, four partial and 3,482 pending. Camera hardware, actual
+device boot/recording/upload and full repository conversion remain unverified.

@@ -379,7 +379,7 @@ pub fn compare(
 ) -> std::result::Result<(), CompareError> {
     compare_with_limit(source, native, path, 998)
 }
-fn compare_with_limit(
+pub(crate) fn compare_with_limit(
     source: &JsonValue,
     native: &JsonValue,
     path: &str,
@@ -525,7 +525,7 @@ pub(crate) fn lexical(path: &Path) -> std::path::PathBuf {
     }
     OsString::from_vec(output).into()
 }
-fn command(prefix: &std::ffi::OsStr, binary: &Path) -> Result<Vec<OsString>> {
+pub(crate) fn command(prefix: &std::ffi::OsStr, binary: &Path) -> Result<Vec<OsString>> {
     let mut argv = split_runner_os(prefix)?;
     argv.push(resolve_non_strict(binary)?.into_os_string());
     Ok(argv)

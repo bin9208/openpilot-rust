@@ -12,7 +12,11 @@ pub mod beep_sleep_check;
 pub mod bluetooth_digits_generate;
 pub mod brotli_stage;
 pub mod camera_data_generate;
+#[cfg(feature = "camera-sensor-native")]
+pub mod camera_exposure_check;
 pub mod camera_lifecycle_generate;
+#[cfg(feature = "camera-sensor-native")]
+pub mod camera_misc_check;
 #[cfg(feature = "camera-sensor-native")]
 pub mod camera_request_check;
 #[cfg(feature = "camera-sensor-native")]

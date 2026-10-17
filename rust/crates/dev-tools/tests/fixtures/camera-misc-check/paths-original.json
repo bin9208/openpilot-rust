@@ -1,0 +1,125 @@
+{
+  "checker_sha256": "5184ed1dd1a569834f2a1746a5a9e0d2a9de5176cc0d540860d75dac24812817",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "cases": [
+    {
+      "suffix_hex": "706c61696e",
+      "exit": 0,
+      "source_called": true,
+      "native_called": true,
+      "fixtures": 183,
+      "files": [
+        "report.json"
+      ],
+      "last_error": null,
+      "report": {
+        "status": "PASS",
+        "counts": {
+          "timing": 5007,
+          "nv12": 1644,
+          "dmi": 180,
+          "cont": 139,
+          "random": 139,
+          "luminance": 183
+        },
+        "source_command": [
+          "/tmp/tmp3px5v9wx/reference"
+        ],
+        "native_command": [
+          "/tmp/tmp3px5v9wx/native"
+        ],
+        "source_sha256": "6c90355fb42c0f4c5053b0cd48550791b1b72caf3b0dcf22163346dc38ab3470",
+        "native_sha256": "3d16bab702b9f8c9713c41984e060dc71008be0af88ad83288645ff4bd57e5ee",
+        "source_input_sha256": "d01d01b616c867db5a890c84312d2fc567b06b0341280726101594e6e915198b",
+        "native_input_sha256": "015917fc06481f82e4a5dbd2068cbe5e5e66b1f970f2d0677120b400f8edd888",
+        "limits": "synthetic host/explicit emulator only; no hardware, source C++ histogram and packing unmodified"
+      }
+    },
+    {
+      "suffix_hex": "71756f74652d22",
+      "exit": 0,
+      "source_called": true,
+      "native_called": true,
+      "fixtures": 183,
+      "files": [
+        "report.json"
+      ],
+      "last_error": null,
+      "report": {
+        "status": "PASS",
+        "counts": {
+          "timing": 5007,
+          "nv12": 1644,
+          "dmi": 180,
+          "cont": 139,
+          "random": 139,
+          "luminance": 183
+        },
+        "source_command": [
+          "/tmp/tmps31auxrp/reference"
+        ],
+        "native_command": [
+          "/tmp/tmps31auxrp/native"
+        ],
+        "source_sha256": "0ba7bc346530a1fabac0749f650f18ca9bff5338e37d48ef18c86f6fb71fe841",
+        "native_sha256": "6fd52090de0738b08b893ee4e00d9c780d3ecdf1103abfb932186923a77d28b7",
+        "source_input_sha256": "a11995c1de8785118f827524b97bdc0b52a7f091bad4f9ac7775c8a87217731b",
+        "native_input_sha256": "e543e3fe337ed83abc88dab859d1eed364be9806a6d1ea62d9f88d1827833d45",
+        "limits": "synthetic host/explicit emulator only; no hardware, source C++ histogram and packing unmodified"
+      }
+    },
+    {
+      "suffix_hex": "6261636b736c6173682d5c",
+      "exit": 0,
+      "source_called": true,
+      "native_called": true,
+      "fixtures": 183,
+      "files": [
+        "report.json"
+      ],
+      "last_error": null,
+      "report": {
+        "status": "PASS",
+        "counts": {
+          "timing": 5007,
+          "nv12": 1644,
+          "dmi": 180,
+          "cont": 139,
+          "random": 139,
+          "luminance": 183
+        },
+        "source_command": [
+          "/tmp/tmptzsyaxso/reference"
+        ],
+        "native_command": [
+          "/tmp/tmptzsyaxso/native"
+        ],
+        "source_sha256": "db94e4db2ba7cbf76a6eb7f8189d319efc462f78027f8b83e889689b6f3d162d",
+        "native_sha256": "511d2c02910c6caafbe9af68c74eab6d1d4d8bcb2d841b486326082fdadbea56",
+        "source_input_sha256": "14ae9bb8f693f349c12e1ee47ca1921e484d4a3ee9d24c7d82c3af9deb7e98bb",
+        "native_input_sha256": "b6534e1d1f6dc5922f00f533ea47d0e83b33c44440263f5a51b5809c22c65d8a",
+        "limits": "synthetic host/explicit emulator only; no hardware, source C++ histogram and packing unmodified"
+      }
+    },
+    {
+      "suffix_hex": "6c696e652d0a",
+      "exit": 1,
+      "source_called": true,
+      "native_called": true,
+      "fixtures": 183,
+      "files": [],
+      "last_error": "AssertionError",
+      "report": null
+    },
+    {
+      "suffix_hex": "7261772dff",
+      "exit": 1,
+      "source_called": true,
+      "native_called": false,
+      "fixtures": 183,
+      "files": [],
+      "last_error": "UnicodeEncodeError: 'utf-8' codec can't encode character '\\udcff' in position 4680700: surrogates not allowed",
+      "report": null
+    }
+  ]
+}
