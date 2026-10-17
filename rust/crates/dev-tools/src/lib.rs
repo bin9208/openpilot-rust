@@ -4,6 +4,8 @@ pub mod amplifier_policy_check;
 pub mod argparse_scan;
 pub mod athena_vision_build;
 pub mod beep_clock_check;
+pub mod beep_integer_check;
+pub mod beep_sleep_check;
 pub mod brotli_stage;
 pub mod filter_reference;
 pub mod media_validation;
@@ -31,9 +33,13 @@ pub mod encoder_stage;
 pub mod ffmpeg_build;
 pub mod hardware_command_check;
 pub mod hardware_control_policy_check;
+#[cfg(feature = "image-array")]
+pub mod image_array;
 pub mod image_array_math;
 pub mod qcom_compiler_stage;
 pub mod torque_stage;
+#[cfg(feature = "polygon-reference")]
+pub mod ui_polygon_check;
 
 pub mod media_stage;
 pub mod usbgpu_stage;
@@ -68,6 +74,7 @@ pub mod ui_application_logic_check;
 pub mod ui_ci_runtime;
 pub mod ui_fixed_corpus_check;
 pub mod ui_headless_check;
+pub mod ui_polygon_reference;
 pub mod ui_scroll_check;
 pub mod ui_state_scheduler_check;
 pub mod ui_translation_check;

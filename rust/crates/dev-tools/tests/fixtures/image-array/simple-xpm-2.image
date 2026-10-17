@@ -1,0 +1,7 @@
+/* XPM */
+static char *x[] = {
+"4 2 2 2",
+"aa c #ff0000",
+"bb c #00ff00",
+"aabbaabb",
+"bbaabbaa"};

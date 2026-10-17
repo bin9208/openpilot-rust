@@ -1,0 +1,410 @@
+compression-tiff-1-raw	1	16	8
+compression-tiff-1-packbits	1	16	8
+compression-tiff-1-tiff_lzw	1	16	8
+compression-tiff-1-tiff_adobe_deflate	1	16	8
+compression-tiff-1-group3	1	16	8
+compression-tiff-1-group4	1	16	8
+compression-tiff-1-tiff_ccitt	1	16	8
+compression-tiff-1-lzma	1	16	8
+compression-tiff-1-zstd	1	16	8
+compression-tiff-L-raw	L	16	8
+compression-tiff-L-packbits	L	16	8
+compression-tiff-L-tiff_lzw	L	16	8
+compression-tiff-L-tiff_adobe_deflate	L	16	8
+compression-tiff-L-tiff_jpeg	L	16	8
+compression-tiff-L-lzma	L	16	8
+compression-tiff-L-zstd	L	16	8
+compression-tiff-P-raw	P	16	8
+compression-tiff-P-packbits	P	16	8
+compression-tiff-P-tiff_lzw	P	16	8
+compression-tiff-P-tiff_adobe_deflate	P	16	8
+compression-tiff-P-lzma	P	16	8
+compression-tiff-P-zstd	P	16	8
+compression-tiff-RGB-raw	RGB	16	8
+compression-tiff-RGB-packbits	RGB	16	8
+compression-tiff-RGB-tiff_lzw	RGB	16	8
+compression-tiff-RGB-tiff_adobe_deflate	RGB	16	8
+compression-tiff-RGB-tiff_jpeg	RGB	16	8
+compression-tiff-RGB-lzma	RGB	16	8
+compression-tiff-RGB-zstd	RGB	16	8
+compression-tiff-RGBA-raw	RGBA	16	8
+compression-tiff-RGBA-packbits	RGBA	16	8
+compression-tiff-RGBA-tiff_lzw	RGBA	16	8
+compression-tiff-RGBA-tiff_adobe_deflate	RGBA	16	8
+compression-tiff-RGBA-tiff_jpeg	RGBA	16	8
+compression-tiff-RGBA-lzma	RGBA	16	8
+compression-tiff-RGBA-zstd	RGBA	16	8
+compression-tiff-CMYK-raw	CMYK	16	8
+compression-tiff-CMYK-packbits	CMYK	16	8
+compression-tiff-CMYK-tiff_lzw	CMYK	16	8
+compression-tiff-CMYK-tiff_adobe_deflate	CMYK	16	8
+compression-tiff-CMYK-tiff_jpeg	CMYK	16	8
+compression-tiff-CMYK-lzma	CMYK	16	8
+compression-tiff-CMYK-zstd	CMYK	16	8
+compression-tiff-I-16-raw	I;16	16	8
+compression-tiff-I-16-packbits	I;16	16	8
+compression-tiff-I-16-tiff_lzw	I;16	16	8
+compression-tiff-I-16-tiff_adobe_deflate	I;16	16	8
+compression-tiff-I-16-lzma	I;16	16	8
+compression-tiff-I-16-zstd	I;16	16	8
+compression-tiff-I-raw	I	16	8
+compression-tiff-I-packbits	I	16	8
+compression-tiff-I-tiff_lzw	I	16	8
+compression-tiff-I-tiff_adobe_deflate	I	16	8
+compression-tiff-I-lzma	I	16	8
+compression-tiff-I-zstd	I	16	8
+compression-tiff-F-raw	F	16	8
+compression-tiff-F-packbits	F	16	8
+compression-tiff-F-tiff_lzw	F	16	8
+compression-tiff-F-tiff_adobe_deflate	F	16	8
+compression-tiff-F-lzma	F	16	8
+compression-tiff-F-zstd	F	16	8
+compression-tiff-LAB-raw	LAB	16	8
+compression-tiff-LAB-packbits	LAB	16	8
+compression-tiff-LAB-tiff_lzw	LAB	16	8
+compression-tiff-LAB-tiff_adobe_deflate	LAB	16	8
+compression-tiff-LAB-tiff_jpeg	LAB	16	8
+compression-tiff-LAB-lzma	LAB	16	8
+compression-tiff-LAB-zstd	LAB	16	8
+compression-tiff-YCbCr-raw	error
+compression-tiff-YCbCr-packbits	RGB	16	8
+compression-tiff-YCbCr-tiff_lzw	RGB	16	8
+compression-tiff-YCbCr-tiff_adobe_deflate	RGB	16	8
+compression-tiff-YCbCr-tiff_jpeg	RGB	16	8
+compression-tiff-YCbCr-lzma	RGB	16	8
+compression-tiff-YCbCr-zstd	RGB	16	8
+edge-tiff-8-2-le	L	2	2
+edge-tiff-16-2-le	I	2	2
+edge-tiff-32-1-le	I	2	2
+edge-tiff-32-2-le	I	2	2
+edge-tiff-32-3-le	F	2	2
+edge-tiff-64-3-le	error
+edge-tiff-8-2-be	L	2	2
+edge-tiff-16-2-be	I	2	2
+edge-tiff-32-1-be	error
+edge-tiff-32-2-be	I	2	2
+edge-tiff-32-3-be	F	2	2
+edge-tiff-64-3-be	error
+tiff-openinfo-0-1	1	4	3
+tiff-openinfo-0-8	1	4	3
+tiff-openinfo-1-1	1	4	3
+tiff-openinfo-1-8	1	4	3
+tiff-openinfo-2-1	1	4	3
+tiff-openinfo-2-8	error
+tiff-openinfo-3-1	1	4	3
+tiff-openinfo-3-8	error
+tiff-openinfo-4-1	1	4	3
+tiff-openinfo-4-8	1	4	3
+tiff-openinfo-5-1	1	4	3
+tiff-openinfo-5-8	1	4	3
+tiff-openinfo-6-1	1	4	3
+tiff-openinfo-6-8	error
+tiff-openinfo-7-1	1	4	3
+tiff-openinfo-7-8	error
+tiff-openinfo-8-1	L	4	3
+tiff-openinfo-8-8	L	4	3
+tiff-openinfo-9-1	L	4	3
+tiff-openinfo-9-8	L	4	3
+tiff-openinfo-10-1	L	4	3
+tiff-openinfo-10-8	error
+tiff-openinfo-11-1	L	4	3
+tiff-openinfo-11-8	error
+tiff-openinfo-12-1	L	4	3
+tiff-openinfo-12-8	L	4	3
+tiff-openinfo-13-1	L	4	3
+tiff-openinfo-13-8	L	4	3
+tiff-openinfo-14-1	L	4	3
+tiff-openinfo-14-8	error
+tiff-openinfo-15-1	L	4	3
+tiff-openinfo-15-8	error
+tiff-openinfo-16-1	L	4	3
+tiff-openinfo-16-8	L	4	3
+tiff-openinfo-17-1	L	4	3
+tiff-openinfo-17-8	L	4	3
+tiff-openinfo-18-1	L	4	3
+tiff-openinfo-18-8	error
+tiff-openinfo-19-1	L	4	3
+tiff-openinfo-19-8	error
+tiff-openinfo-20-1	L	4	3
+tiff-openinfo-20-8	L	4	3
+tiff-openinfo-21-1	L	4	3
+tiff-openinfo-21-8	L	4	3
+tiff-openinfo-22-1	L	4	3
+tiff-openinfo-22-8	error
+tiff-openinfo-23-1	L	4	3
+tiff-openinfo-23-8	error
+tiff-openinfo-24-1	L	4	3
+tiff-openinfo-24-8	L	4	3
+tiff-openinfo-25-1	L	4	3
+tiff-openinfo-25-8	L	4	3
+tiff-openinfo-26-1	error
+tiff-openinfo-26-8	error
+tiff-openinfo-27-1	error
+tiff-openinfo-27-8	error
+tiff-openinfo-28-1	L	4	3
+tiff-openinfo-28-8	L	4	3
+tiff-openinfo-29-1	L	4	3
+tiff-openinfo-29-8	L	4	3
+tiff-openinfo-30-1	L	4	3
+tiff-openinfo-30-8	L	4	3
+tiff-openinfo-31-1	L	4	3
+tiff-openinfo-31-8	L	4	3
+tiff-openinfo-32-1	L	4	3
+tiff-openinfo-32-8	error
+tiff-openinfo-33-1	L	4	3
+tiff-openinfo-33-8	error
+tiff-openinfo-34-1	I;16	4	3
+tiff-openinfo-34-8	I;16	4	3
+tiff-openinfo-35-1	I;16	4	3
+tiff-openinfo-35-8	I;16	4	3
+tiff-openinfo-36-1	I;16	4	3
+tiff-openinfo-36-8	I;16	4	3
+tiff-openinfo-37-1	I;16B	4	3
+tiff-openinfo-37-8	I;16B	4	3
+tiff-openinfo-38-1	I;16	4	3
+tiff-openinfo-38-8	error
+tiff-openinfo-39-1	I	4	3
+tiff-openinfo-39-8	I	4	3
+tiff-openinfo-40-1	I	4	3
+tiff-openinfo-40-8	I	4	3
+tiff-openinfo-41-1	F	4	3
+tiff-openinfo-41-8	F	4	3
+tiff-openinfo-42-1	F	4	3
+tiff-openinfo-42-8	F	4	3
+tiff-openinfo-43-1	I	4	3
+tiff-openinfo-43-8	I	4	3
+tiff-openinfo-44-1	I	4	3
+tiff-openinfo-44-8	I	4	3
+tiff-openinfo-45-1	I	4	3
+tiff-openinfo-45-8	I	4	3
+tiff-openinfo-46-1	F	4	3
+tiff-openinfo-46-8	F	4	3
+tiff-openinfo-47-1	F	4	3
+tiff-openinfo-47-8	F	4	3
+tiff-openinfo-48-1	LA	4	3
+tiff-openinfo-48-8	LA	4	3
+tiff-openinfo-49-1	LA	4	3
+tiff-openinfo-49-8	LA	4	3
+tiff-openinfo-50-1	RGB	4	3
+tiff-openinfo-50-8	RGB	4	3
+tiff-openinfo-51-1	RGB	4	3
+tiff-openinfo-51-8	RGB	4	3
+tiff-openinfo-52-1	RGB	4	3
+tiff-openinfo-52-8	error
+tiff-openinfo-53-1	RGB	4	3
+tiff-openinfo-53-8	error
+tiff-openinfo-54-1	RGBA	4	3
+tiff-openinfo-54-8	RGBA	4	3
+tiff-openinfo-55-1	RGBA	4	3
+tiff-openinfo-55-8	RGBA	4	3
+tiff-openinfo-56-1	RGB	4	3
+tiff-openinfo-56-8	RGB	4	3
+tiff-openinfo-57-1	RGB	4	3
+tiff-openinfo-57-8	RGB	4	3
+tiff-openinfo-58-1	RGB	4	3
+tiff-openinfo-58-8	RGB	4	3
+tiff-openinfo-59-1	RGB	4	3
+tiff-openinfo-59-8	RGB	4	3
+tiff-openinfo-60-1	RGB	4	3
+tiff-openinfo-60-8	RGB	4	3
+tiff-openinfo-61-1	RGB	4	3
+tiff-openinfo-61-8	RGB	4	3
+tiff-openinfo-62-1	RGBA	4	3
+tiff-openinfo-62-8	RGBA	4	3
+tiff-openinfo-63-1	RGBA	4	3
+tiff-openinfo-63-8	RGBA	4	3
+tiff-openinfo-64-1	RGBA	4	3
+tiff-openinfo-64-8	RGBA	4	3
+tiff-openinfo-65-1	RGBA	4	3
+tiff-openinfo-65-8	RGBA	4	3
+tiff-openinfo-66-1	RGBA	4	3
+tiff-openinfo-66-8	RGBA	4	3
+tiff-openinfo-67-1	RGBA	4	3
+tiff-openinfo-67-8	RGBA	4	3
+tiff-openinfo-68-1	RGBA	4	3
+tiff-openinfo-68-8	RGBA	4	3
+tiff-openinfo-69-1	RGBA	4	3
+tiff-openinfo-69-8	RGBA	4	3
+tiff-openinfo-70-1	RGBA	4	3
+tiff-openinfo-70-8	RGBA	4	3
+tiff-openinfo-71-1	RGBA	4	3
+tiff-openinfo-71-8	RGBA	4	3
+tiff-openinfo-72-1	RGBA	4	3
+tiff-openinfo-72-8	RGBA	4	3
+tiff-openinfo-73-1	RGBA	4	3
+tiff-openinfo-73-8	RGBA	4	3
+tiff-openinfo-74-1	RGBA	4	3
+tiff-openinfo-74-8	RGBA	4	3
+tiff-openinfo-75-1	RGBA	4	3
+tiff-openinfo-75-8	RGBA	4	3
+tiff-openinfo-76-1	RGB	4	3
+tiff-openinfo-76-8	RGB	4	3
+tiff-openinfo-77-1	RGB	4	3
+tiff-openinfo-77-8	RGB	4	3
+tiff-openinfo-78-1	RGBA	4	3
+tiff-openinfo-78-8	RGBA	4	3
+tiff-openinfo-79-1	RGBA	4	3
+tiff-openinfo-79-8	RGBA	4	3
+tiff-openinfo-80-1	RGB	4	3
+tiff-openinfo-80-8	RGB	4	3
+tiff-openinfo-81-1	RGB	4	3
+tiff-openinfo-81-8	RGB	4	3
+tiff-openinfo-82-1	RGBA	4	3
+tiff-openinfo-82-8	RGBA	4	3
+tiff-openinfo-83-1	RGBA	4	3
+tiff-openinfo-83-8	RGBA	4	3
+tiff-openinfo-84-1	RGBA	4	3
+tiff-openinfo-84-8	RGBA	4	3
+tiff-openinfo-85-1	RGBA	4	3
+tiff-openinfo-85-8	RGBA	4	3
+tiff-openinfo-86-1	P	4	3
+tiff-openinfo-86-8	P	4	3
+tiff-openinfo-87-1	P	4	3
+tiff-openinfo-87-8	P	4	3
+tiff-openinfo-88-1	error
+tiff-openinfo-88-8	error
+tiff-openinfo-89-1	error
+tiff-openinfo-89-8	error
+tiff-openinfo-90-1	P	4	3
+tiff-openinfo-90-8	P	4	3
+tiff-openinfo-91-1	P	4	3
+tiff-openinfo-91-8	P	4	3
+tiff-openinfo-92-1	error
+tiff-openinfo-92-8	error
+tiff-openinfo-93-1	error
+tiff-openinfo-93-8	error
+tiff-openinfo-94-1	P	4	3
+tiff-openinfo-94-8	P	4	3
+tiff-openinfo-95-1	P	4	3
+tiff-openinfo-95-8	P	4	3
+tiff-openinfo-96-1	error
+tiff-openinfo-96-8	error
+tiff-openinfo-97-1	error
+tiff-openinfo-97-8	error
+tiff-openinfo-98-1	P	4	3
+tiff-openinfo-98-8	P	4	3
+tiff-openinfo-99-1	P	4	3
+tiff-openinfo-99-8	P	4	3
+tiff-openinfo-100-1	P	4	3
+tiff-openinfo-100-8	P	4	3
+tiff-openinfo-101-1	P	4	3
+tiff-openinfo-101-8	P	4	3
+tiff-openinfo-102-1	PA	4	3
+tiff-openinfo-102-8	PA	4	3
+tiff-openinfo-103-1	PA	4	3
+tiff-openinfo-103-8	PA	4	3
+tiff-openinfo-104-1	P	4	3
+tiff-openinfo-104-8	error
+tiff-openinfo-105-1	P	4	3
+tiff-openinfo-105-8	error
+tiff-openinfo-106-1	CMYK	4	3
+tiff-openinfo-106-8	CMYK	4	3
+tiff-openinfo-107-1	CMYK	4	3
+tiff-openinfo-107-8	CMYK	4	3
+tiff-openinfo-108-1	CMYK	4	3
+tiff-openinfo-108-8	CMYK	4	3
+tiff-openinfo-109-1	CMYK	4	3
+tiff-openinfo-109-8	CMYK	4	3
+tiff-openinfo-110-1	CMYK	4	3
+tiff-openinfo-110-8	CMYK	4	3
+tiff-openinfo-111-1	CMYK	4	3
+tiff-openinfo-111-8	CMYK	4	3
+tiff-openinfo-112-1	CMYK	4	3
+tiff-openinfo-112-8	CMYK	4	3
+tiff-openinfo-113-1	CMYK	4	3
+tiff-openinfo-113-8	CMYK	4	3
+tiff-openinfo-114-1	L	4	3
+tiff-openinfo-114-8	error
+tiff-openinfo-115-1	L	4	3
+tiff-openinfo-115-8	error
+tiff-openinfo-116-1	error
+tiff-openinfo-116-8	RGB	4	3
+tiff-openinfo-117-1	error
+tiff-openinfo-117-8	RGB	4	3
+tiff-openinfo-118-1	LAB	4	3
+tiff-openinfo-118-8	LAB	4	3
+tiff-openinfo-119-1	LAB	4	3
+tiff-openinfo-119-8	LAB	4	3
+tiff-orientation-L-1	L	4	3
+tiff-orientation-L-2	L	4	3
+tiff-orientation-L-3	L	4	3
+tiff-orientation-L-4	L	4	3
+tiff-orientation-L-5	L	3	4
+tiff-orientation-L-6	L	3	4
+tiff-orientation-L-7	L	3	4
+tiff-orientation-L-8	L	3	4
+tiff-orientation-RGB-1	RGB	4	3
+tiff-orientation-RGB-2	RGB	4	3
+tiff-orientation-RGB-3	RGB	4	3
+tiff-orientation-RGB-4	RGB	4	3
+tiff-orientation-RGB-5	RGB	3	4
+tiff-orientation-RGB-6	RGB	3	4
+tiff-orientation-RGB-7	RGB	3	4
+tiff-orientation-RGB-8	RGB	3	4
+tiff-orientation-RGBA-1	RGBA	4	3
+tiff-orientation-RGBA-2	RGBA	4	3
+tiff-orientation-RGBA-3	RGBA	4	3
+tiff-orientation-RGBA-4	RGBA	4	3
+tiff-orientation-RGBA-5	RGBA	3	4
+tiff-orientation-RGBA-6	RGBA	3	4
+tiff-orientation-RGBA-7	RGBA	3	4
+tiff-orientation-RGBA-8	RGBA	3	4
+tiff-orientation-P-1	P	4	3
+tiff-orientation-P-2	P	4	3
+tiff-orientation-P-3	P	4	3
+tiff-orientation-P-4	P	4	3
+tiff-orientation-P-5	P	3	4
+tiff-orientation-P-6	P	3	4
+tiff-orientation-P-7	P	3	4
+tiff-orientation-P-8	P	3	4
+tiff-orientation-I-16-1	I;16	4	3
+tiff-orientation-I-16-2	I;16	4	3
+tiff-orientation-I-16-3	I;16	4	3
+tiff-orientation-I-16-4	I;16	4	3
+tiff-orientation-I-16-5	I;16	3	4
+tiff-orientation-I-16-6	I;16	3	4
+tiff-orientation-I-16-7	I;16	3	4
+tiff-orientation-I-16-8	I;16	3	4
+tiff-orientation-F-1	F	4	3
+tiff-orientation-F-2	F	4	3
+tiff-orientation-F-3	F	4	3
+tiff-orientation-F-4	F	4	3
+tiff-orientation-F-5	F	3	4
+tiff-orientation-F-6	F	3	4
+tiff-orientation-F-7	F	3	4
+tiff-orientation-F-8	F	3	4
+tiff-tiles-False-1-1	1	18	17
+tiff-tiles-False-4-1	P	18	17
+tiff-tiles-False-8-1	L	18	17
+tiff-tiles-False-16-1	I;16	18	17
+tiff-tiles-False-8-3	RGB	18	17
+tiff-tiles-False-16-3	RGB	18	17
+tiff-tiles-False-8-4	RGBA	18	17
+tiff-tiles-True-1-1	1	18	17
+tiff-tiles-True-4-1	P	18	17
+tiff-tiles-True-8-1	L	18	17
+tiff-tiles-True-16-1	I;16B	18	17
+tiff-tiles-True-8-3	RGB	18	17
+tiff-tiles-True-16-3	RGB	18	17
+tiff-tiles-True-8-4	RGBA	18	17
+tiff-bigtiff-L	L	4	3
+tiff-bigtiff-RGB	RGB	4	3
+tiff-bigtiff-RGBA	RGBA	4	3
+tiff-bigtiff-I-16	I;16	4	3
+tiff-bigtiff-F	F	4	3
+malformed-tiff-tile-dim-overflow	error
+malformed-tiff-tile-one-huge-side	error
+malformed-tiff-strip-maxrows	L	4	3
+malformed-tiff-strip-offset-max	error
+malformed-tiff-strip-count-max	L	4	3
+malformed-tiff-image-pixel-overflow	error
+malformed-tiff-sample-count-max	error
+malformed-tiff-sample-bits-max	error
+malformed-tiff-rows-zero	error
+malformed-tiff-strip-count-zero	L	4	3
+malformed-tiff-tile-width-zero	error
+malformed-tiff-orientation-max	L	4	3
+malformed-tiff-tile-compressed-bomb	error
+malformed-tiff-ifd-max	error
+malformed-tiff-big-ifd-max	error
+malformed-tiff-entry-count-max	error

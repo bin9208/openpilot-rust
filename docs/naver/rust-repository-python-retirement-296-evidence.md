@@ -1450,3 +1450,46 @@ rank-two IMAGE matrix boundary without publishing an artifact. Batched packing,
 general normalization, other scheduling/GPU/training paths and caller migration
 still require their own original comparisons. No model Python files are removed
 by this change and this result is not a full-model parity claim.
+
+### Polygon/image and beep sleep/integer retirement (2026-10-18)
+
+Four more original Python sources are retired after production caller migration:
+check_ui_polygon.py, ui_qa/polygon_source.py, check_beepd_sleep.py and
+check_beepd_integer.py. Inventory is 62 replaced-local / 3,518 pending baseline
+sources; this is not whole-repository completion. Device boot, recording and
+upload are user-owned under the latest instruction; no reconnection is required.
+
+The independent Rust polygon scene reference preserves editable scenes and raw
+raylib behavior. The checker retains raw Pillow/NumPy mode, shape, broadcasting,
+integer conversion and threshold semantics across the captured image formats,
+including files with non-PNG contents named .png. Nine source-pinned native codec
+libraries are provisioned without Python/Meson build tools; production CI requires
+the full decoder feature, SDK tests and Ghostscript for EPS. Optional default
+workspace builds do not require that SDK.
+
+Independent review exposed and repaired TGA/CUR dispatch, EPS BoundingBox and
+rendered-mode precedence, FITS byte-card parsing, short data-record offsets and
+compressed one-axis storage behavior. All 85 independently captured regression
+cases now pass. Fixture audit verifies 971 encoded inputs, 92 checker blobs and
+443 independent native expected arrays. Current CLI after source deletion passes
+all seven production scenes, seven TGA collision scenes, 76 arbitrary original
+scenes and six boundary cases with no interpreter execve observed. None of these
+host comparisons establishes device rendering or exhaustive codec equivalence.
+
+The sleep checker matches all 27 original conversions and exact report/stdout,
+including after source deletion with PATH=/nonexistent. Five tests preserve 35
+original child-result failures, JSON depth and artifact write order, two filesystem
+faults and seven CLI captures. The integer checker now invokes a live, source-bound
+C++ Params helper instead of the Cython binding. All 278 source results match the
+independent original Cython captures exactly, including stdout/stderr and 245 real
+SIGABRT exits. The actual Rust beep candidate also passes all 278. Retired-source
+PATH=/nonexistent output and summary match the source-present run byte-for-byte.
+The explicit provenance lane changes from python to source-reference; the shared
+Cython helpers remain for their other unconverted callers.
+
+Final parent gate passes 78 tests across ten affected dev-tools binaries, five
+native-codec tests, ten JPEG checks, ten qcomgpsd tests and strict dev-tools/qcomgpsd
+Clippy. The formatting correction passes a subsequent workspace fmt check.
+CI mutation tests require live integer helper build/check in order and reject
+missing, conditional, softened or old-Python routes. Final exact-head remote CI
+is still required; earlier commits' results cannot substitute for these changes.

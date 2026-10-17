@@ -2068,9 +2068,10 @@ jobs:
       - name: Compare alert policy, Params failures and clock conversion
         run: |
           python rust/tools/check_beepd_reference.py --binary rust/target/debug/examples/beep_trace --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-reference"
-          python rust/tools/check_beepd_integer.py --binary rust/target/debug/examples/beep_trace --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-integer"
+          rust/target/debug/build-beep-integer-reference --output "$RUNNER_TEMP/telemetry-integer-reference"
+          rust/target/debug/check-beep-integer --binary rust/target/debug/examples/beep_trace --reference "$RUNNER_TEMP/telemetry-integer-reference/beep-integer-reference" --output "$RUNNER_TEMP/telemetry-runtime/beep-integer"
           rust/target/debug/check-beep-clock --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-clock"
-          python rust/tools/check_beepd_sleep.py --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-sleep"
+          rust/target/debug/check-beep-sleep --binary rust/target/debug/examples/beep_trace --output "$RUNNER_TEMP/telemetry-runtime/beep-sleep"
       - name: Compare continuous alert IPC and owned worker shutdown
         run: python rust/tools/check_beepd_daemon.py --binary rust/target/debug/openpilot-beepd --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-daemon"
       - name: Compare statistics numeric, clock and producer contracts
@@ -2569,7 +2570,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev libzmq3-dev libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth ffmpeg dbus-daemon
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang cmake make jq curl ghostscript libclang-dev capnproto libcapnp-dev libzmq3-dev libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth ffmpeg dbus-daemon
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 cffi==2.1.1 pillow==12.3.0 python-xlib==0.33 jeepney==0.9.0 comma-deps-raylib==6.0.0.1.post103 setproctitle==1.3.7 psutil==7.2.2 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2 anyio==4.12.1
       - name: Stage source-pinned native renderer
         run: |
@@ -2578,12 +2579,18 @@ jobs:
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/ui-raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-raylib/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
+      - name: Stage native image decoder SDK
+        uses: ./.github/actions/native-image-sdk
       - name: Build native UI validation checkers
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference --bin check-ui-egl --bin ui-egl-reference --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference,polygon-reference --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features egl-reference --test ui_egl_reference --test ui_egl_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features polygon-reference --test image_array --test ui_polygon_reference --test ui_polygon_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-image-codecs --features native-sdk --locked
       - name: Build native UI and connectivity with original Params oracle
         run: |
           cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked
@@ -2620,6 +2627,7 @@ jobs:
             ${{ runner.temp }}/ui-params-binding/provenance.json
             ${{ runner.temp }}/ui-raylib/SOURCE_SHA256
             ${{ runner.temp }}/ui-raylib/plugin-build.json
+            ${{ runner.temp }}/image-sdk.*/install/openpilot-image-codecs-sdk.txt
   platform-runtime:
     name: rust platform runtime
     runs-on: ubuntu-24.04

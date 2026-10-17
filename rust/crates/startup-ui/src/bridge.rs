@@ -98,6 +98,60 @@ pub mod ffi {
     }
 
     unsafe extern "C++" {
+        include!("polygon_reference.h");
+        type PolygonReferenceApi;
+        fn polygon_reference_api(library: &[u8]) -> Result<UniquePtr<PolygonReferenceApi>>;
+        fn polygon_flags(self: Pin<&mut PolygonReferenceApi>, flags: u32) -> Result<()>;
+        fn polygon_initialize(
+            self: Pin<&mut PolygonReferenceApi>,
+            width: i32,
+            height: i32,
+            title: &str,
+        ) -> Result<()>;
+        fn polygon_fps(self: Pin<&mut PolygonReferenceApi>, fps: i32) -> Result<()>;
+        fn polygon_begin(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_clear(self: Pin<&mut PolygonReferenceApi>, color: u32) -> Result<()>;
+        fn polygon_load_shader(
+            self: Pin<&mut PolygonReferenceApi>,
+            vertex: &str,
+            fragment: &str,
+        ) -> Result<()>;
+        fn polygon_location(self: Pin<&mut PolygonReferenceApi>, name: &str) -> Result<()>;
+        fn polygon_integer(
+            self: Pin<&mut PolygonReferenceApi>,
+            name: &str,
+            value: i32,
+        ) -> Result<()>;
+        fn polygon_floats(
+            self: Pin<&mut PolygonReferenceApi>,
+            name: &str,
+            values: &[f32],
+            components: u32,
+            vector: bool,
+        ) -> Result<()>;
+        fn polygon_matrix(
+            self: Pin<&mut PolygonReferenceApi>,
+            name: &str,
+            values: &[f32],
+        ) -> Result<()>;
+        fn polygon_begin_shader(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_strip(
+            self: Pin<&mut PolygonReferenceApi>,
+            points: &[f32],
+            color: u32,
+        ) -> Result<()>;
+        fn polygon_end_shader(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_flush(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_load_capture(self: Pin<&mut PolygonReferenceApi>) -> Result<u64>;
+        fn polygon_export_capture(
+            self: Pin<&mut PolygonReferenceApi>,
+            image: u64,
+            path: &[u8],
+        ) -> Result<bool>;
+        fn polygon_unload_capture(self: Pin<&mut PolygonReferenceApi>, image: u64) -> Result<()>;
+        fn polygon_end(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_unload_shader(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_close(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
         include!("egl_reference.h");
         type ReferenceApi;
         fn reference_api() -> UniquePtr<ReferenceApi>;

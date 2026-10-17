@@ -1,0 +1,24 @@
+name: Stage pinned native image decoders
+description: Build the source-verified decoder SDK without Python build tools
+runs:
+  using: composite
+  steps:
+    - name: Download verified sources and build the decoder SDK
+      shell: bash
+      run: |
+        set -euo pipefail
+        sdk_source="$GITHUB_WORKSPACE/rust/crates/image-codecs/native/sdk"
+        sdk_root=$(mktemp -d "$RUNNER_TEMP/image-sdk.XXXXXX")
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$sdk_root" --growth-mib 2048
+        mkdir "$sdk_root/archives"
+        jq -r '.sources[] | [.archive, .url, .sha256] | @tsv' "$sdk_source/sources.json" > "$sdk_root/sources.tsv"
+        while IFS=$'\t' read -r archive url digest; do
+          curl --fail --location --retry 5 --retry-all-errors --output "$sdk_root/archives/$archive" "$url"
+          printf '%s  %s\n' "$digest" "$sdk_root/archives/$archive" | sha256sum --check --strict
+        done < "$sdk_root/sources.tsv"
+        rustc +1.94.0 --edition=2021 "$sdk_source/stage.rs" -o "$sdk_root/stage-image-codecs"
+        rustc +1.94.0 --edition=2021 --test "$sdk_source/stage.rs" -o "$sdk_root/stager-tests"
+        "$sdk_root/stager-tests"
+        CHECK_DISK_SPACE_BINARY="$GITHUB_WORKSPACE/rust/tools/check-disk-space" \
+          "$sdk_root/stage-image-codecs" "$sdk_root/archives" "$sdk_root/work" "$sdk_root/install" "$sdk_source"
+        printf 'IMAGE_CODECS_SDK_ROOT=%s/install\n' "$sdk_root" >> "$GITHUB_ENV"

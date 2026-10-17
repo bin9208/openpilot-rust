@@ -13,6 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .file("native/camera.cc")
         .file("native/egl.cc")
         .file("native/egl_reference.cc")
+        .file("native/polygon_reference.cc")
         .file("native/gles.cc")
         .include("native")
         .include(raylib.join("include"))
@@ -32,6 +33,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "native/egl.h",
         "native/egl_reference.cc",
         "native/egl_reference.h",
+        "native/polygon_reference.cc",
+        "native/polygon_reference.h",
         "native/gles.cc",
         "native/gles.h",
     ] {

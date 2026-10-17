@@ -4,6 +4,26 @@ mod options;
 pub use options::{Color, ContractError, Layout, Options, Quality};
 pub type Error = cxx::Exception;
 #[cfg(feature = "native-skip-miri")]
+pub struct DecodedImage {
+    pub width: u32,
+    pub height: u32,
+    pub components: u32,
+    pub pixels: Vec<u8>,
+}
+
+/// Decode using libjpeg's integer slow DCT and fancy upsampling. Components are
+/// 1 (gray), 3 (RGB), or 4 (CMYK with Pillow's inverted rawmode convention).
+#[cfg(feature = "native-skip-miri")]
+pub fn decode(bytes: &[u8], max_pixels: u64) -> Result<DecodedImage, Error> {
+    let decoded = bridge::ffi::decode(bytes, max_pixels)?;
+    Ok(DecodedImage {
+        width: decoded.width,
+        height: decoded.height,
+        components: decoded.components,
+        pixels: decoded.pixels,
+    })
+}
+#[cfg(feature = "native-skip-miri")]
 pub fn encode(rgb: &[u8], width: u32, height: u32) -> Result<Vec<u8>, Error> {
     bridge::ffi::encode(rgb, width, height)
 }

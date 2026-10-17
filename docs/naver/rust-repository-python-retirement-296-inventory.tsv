@@ -1823,9 +1823,9 @@ rust/tools/check_athena_transfers.py	bafb902ffd5e48465a3f588295b84793c6ed5bef	pe
 rust/tools/check_athena_upload_edges.py	ff5ffc38e15c0aca7f13ee3a83a42015e58ab274	pending	-
 rust/tools/check_beepd_clock.py	fcb1d49ee419326b4f9ec602641e98fd410cb06b	replaced-local	openpilot-dev-tools check-beep-clock
 rust/tools/check_beepd_daemon.py	414ef778895ba1d5298c6f3397316f4f31fbef15	pending	-
-rust/tools/check_beepd_integer.py	10f7f3581ee8a13740a84cfd8a5443fc1253e5c9	pending	-
+rust/tools/check_beepd_integer.py	10f7f3581ee8a13740a84cfd8a5443fc1253e5c9	replaced-local	openpilot-dev-tools check-beep-integer + build-beep-integer-reference; 278 live original C++ Params comparisons and independent Cython captures
 rust/tools/check_beepd_reference.py	cce9f010d8564f97490cf6840a5f13000097b63f	pending	-
-rust/tools/check_beepd_sleep.py	7a86d35ce887a3156b0d9b713e9272d1cab56bf3	pending	-
+rust/tools/check_beepd_sleep.py	7a86d35ce887a3156b0d9b713e9272d1cab56bf3	replaced-local	openpilot-dev-tools check-beep-sleep; 27 original conversions, failure/write-order and CLI captures
 rust/tools/check_bluetooth_bluez.py	2297e17c8ae4ef900a03e1881491d7d095ca396d	pending	-
 rust/tools/check_bluetooth_bluez_invalid.py	f716b51b31a38b3d40bdaedec16ab212388f9431	pending	-
 rust/tools/check_bluetooth_bluez_policy.py	75eab59306ae9493170379e8c4a6dc0cfdd70aea	pending	-
@@ -2144,7 +2144,7 @@ rust/tools/check_ui_navigation.py	d1f15851260ed84c58d360e76b70d9df5024b099	repla
 rust/tools/check_ui_network.py	fffbc51ffe8cc096159e07c873dfaf99d3a75594	pending	-
 rust/tools/check_ui_onboarding_cards.py	91f99692279cd91099e723a26baa0e3933d3a0b9	pending	-
 rust/tools/check_ui_plot_samples.py	fd0f328e12cab3a3de3c7d6d64883b48b291dc0b	pending	-
-rust/tools/check_ui_polygon.py	9d89f845b4479a1b5ec29258f126efde0fad159b	pending	-
+rust/tools/check_ui_polygon.py	9d89f845b4479a1b5ec29258f126efde0fad159b	replaced-local	openpilot-dev-tools check-ui-polygon; original image-array modes and pinned native codecs, independent comparison corpus
 rust/tools/check_ui_product_buttons.py	c84be094f6aeaa21377fbe1ce7ff4be78ba5fc22	pending	-
 rust/tools/check_ui_product_dialogs.py	21f7ba54a1cc31fb5e14c69e5b878070ef3b4d7b	pending	-
 rust/tools/check_ui_product_runtime.py	cf1d57e75633513eaa94b236f7f3b28d8a3bacd5	pending	-
@@ -2624,7 +2624,7 @@ rust/tools/ui_network_source.py	40050895abbb4f87cc10ce6ebfaf92f9cba66333	pending
 rust/tools/ui_qa/application_source.py	54680daa0751838dc9cbafe1492a11fa933e3f0b	pending	-
 rust/tools/ui_qa/diagnostic_source.py	78f6b3a75b9087d890618da80bda755891e3138f	pending	-
 rust/tools/ui_qa/egl_source.py	aac7607d8abb62ab53a753fb048aa7d364375cff	replaced-local	openpilot-dev-tools ui-egl-reference; Rust policy with separate checked raw startup-ui ABI adapter
-rust/tools/ui_qa/polygon_source.py	a66ada40b61786fab5f88846af560ae2b6ae296d	pending	-
+rust/tools/ui_qa/polygon_source.py	a66ada40b61786fab5f88846af560ae2b6ae296d	replaced-local	openpilot-dev-tools ui-polygon-reference; independent Rust scene policy and raw raylib ABI
 rust/tools/updated_fixtures.py	62eb7688c4cfc0bb26189518072a21ad4da88d1a	pending	-
 rust/tools/updated_process_source.py	be91545fcb87da2ecf987e12dabab3fcec7889db	replaced-local	rust/crates/dev-tools/tests/fixtures/updated-process/original.json
 rust/tools/updated_source.py	7eef3b6609debc0d46074dac93df5165ad190b1d	pending	-

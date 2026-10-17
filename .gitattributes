@@ -30,3 +30,10 @@ openpilot/selfdrive/modeld/models/dmonitoring_model.onnx -filter -diff -merge -t
 
 # Original services.py script output includes a second terminal newline.
 rust/crates/dev-tools/tests/fixtures/native-build-closure/services-script.h -text whitespace=-blank-at-eof
+
+# Encoded decoder fixtures retain original bytes, including FITS/EPS padding.
+rust/crates/dev-tools/tests/fixtures/image-array/*.image -text -diff
+# Preserve verbatim upstream license bytes, including original whitespace.
+rust/crates/image-codecs/native/licenses/libtiff -text whitespace=-trailing-space
+rust/crates/image-codecs/native/licenses/openjpeg -text whitespace=-trailing-space
+rust/crates/image-codecs/native/licenses/xz -text whitespace=-blank-at-eof

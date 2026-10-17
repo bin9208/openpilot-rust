@@ -1,0 +1,500 @@
+[
+  {
+    "name": "native-avif-L-default",
+    "mode": "L",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "d103b4321618c6b29187040b1431a50421f29006d6395cfcd363aae97a5a511c",
+    "input_sha256": "c4d45917fac0133eba51e7167b6e29671de5bf5ec4f4f60006df8a30af8fb7e3",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-L-jp2",
+    "mode": "L",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "12806ca03af9bb501730b430dffa5df9c207ef889bfa52455719ec919b380853",
+    "input_sha256": "892c821b3a3766da0f6b5305498c7b82fc580b4bbbc42a8adf146ad906abb360",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-L-j2k",
+    "mode": "L",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "12806ca03af9bb501730b430dffa5df9c207ef889bfa52455719ec919b380853",
+    "input_sha256": "588218059bc04e341f0c2be0ba821af9e9c11808a26d5c941e794b8e2d617340",
+    "warnings": []
+  },
+  {
+    "name": "native-qoi-L-default",
+    "save_error": "ValueError",
+    "message": "Unsupported QOI image mode"
+  },
+  {
+    "name": "native-dib-L-default",
+    "mode": "L",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "12806ca03af9bb501730b430dffa5df9c207ef889bfa52455719ec919b380853",
+    "input_sha256": "8b92093af17dfe430ade4f2412cdbd36d9dd3c3c8ac489e2cfa6c66c9c642de0",
+    "warnings": []
+  },
+  {
+    "name": "native-xbm-L-default",
+    "save_error": "OSError",
+    "message": "cannot write mode L as XBM"
+  },
+  {
+    "name": "native-spider-L-default",
+    "mode": "F",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "12806ca03af9bb501730b430dffa5df9c207ef889bfa52455719ec919b380853",
+    "input_sha256": "88caf2f5b4fe769bcbfdbafcaa20b5fb00d834a7dca287f5a24739dfd0443f6d",
+    "warnings": []
+  },
+  {
+    "name": "native-msp-L-default",
+    "save_error": "OSError",
+    "message": "cannot write mode L as MSP"
+  },
+  {
+    "name": "native-eps-L-default",
+    "mode": "L",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "12806ca03af9bb501730b430dffa5df9c207ef889bfa52455719ec919b380853",
+    "input_sha256": "4446a832b4c0e97d57793eb045930936fd54e86ca940c2a196467e39abf56810",
+    "warnings": []
+  },
+  {
+    "name": "native-avif-LA-default",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "c1527b19505b29d572a94d09c578f010e177f233aa5a0cf90808eab7f5cb3b9c",
+    "input_sha256": "b030cc610bea0fb98434c4b719ef9a579973656ce67dab8f14f094ab195b0894",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-LA-jp2",
+    "mode": "LA",
+    "shape": [
+      16,
+      16,
+      2
+    ],
+    "values_sha256": "9c6fef469685ab0d3c8a4d22258d58b1f6a51f7184e856e44fd8bba7980c315c",
+    "input_sha256": "f7a71ad53ea6b01b9d4fe186140125f36fbae5dc3a9d72c1179ee436d7e938b2",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-LA-j2k",
+    "mode": "LA",
+    "shape": [
+      16,
+      16,
+      2
+    ],
+    "values_sha256": "9c6fef469685ab0d3c8a4d22258d58b1f6a51f7184e856e44fd8bba7980c315c",
+    "input_sha256": "afa870edd356a05447f95d3189d789e6c682e2b4ab068b5db283c2dd06093114",
+    "warnings": []
+  },
+  {
+    "name": "native-qoi-LA-default",
+    "save_error": "ValueError",
+    "message": "Unsupported QOI image mode"
+  },
+  {
+    "name": "native-dib-LA-default",
+    "save_error": "OSError",
+    "message": "cannot write mode LA as BMP"
+  },
+  {
+    "name": "native-xbm-LA-default",
+    "save_error": "OSError",
+    "message": "cannot write mode LA as XBM"
+  },
+  {
+    "name": "native-spider-LA-default",
+    "mode": "F",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "12806ca03af9bb501730b430dffa5df9c207ef889bfa52455719ec919b380853",
+    "input_sha256": "88caf2f5b4fe769bcbfdbafcaa20b5fb00d834a7dca287f5a24739dfd0443f6d",
+    "warnings": []
+  },
+  {
+    "name": "native-msp-LA-default",
+    "save_error": "OSError",
+    "message": "cannot write mode LA as MSP"
+  },
+  {
+    "name": "native-eps-LA-default",
+    "save_error": "ValueError",
+    "message": "image mode is not supported"
+  },
+  {
+    "name": "native-avif-RGB-default",
+    "mode": "RGB",
+    "shape": [
+      16,
+      16,
+      3
+    ],
+    "values_sha256": "1cbfe4e65e50c535fd455cf5635f08291f663e480c404f5ddbc9e774202cff51",
+    "input_sha256": "5078346fd289f9862e3da0a9402aaa4606c24f27a8d7b409371e82555ee65e03",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-RGB-jp2",
+    "mode": "RGB",
+    "shape": [
+      16,
+      16,
+      3
+    ],
+    "values_sha256": "513b241e8e3a39e06e521f0064529cf60e596148fe6bd60b16e01bb8905cf2b6",
+    "input_sha256": "a95d6930f6c42afd3394d2bd4e74c08ef738da4b97a997bdefa200bbaa91c94b",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-RGB-j2k",
+    "mode": "RGB",
+    "shape": [
+      16,
+      16,
+      3
+    ],
+    "values_sha256": "513b241e8e3a39e06e521f0064529cf60e596148fe6bd60b16e01bb8905cf2b6",
+    "input_sha256": "6874d75a010451ba23a93b4d9c0714d8f70e67b54bdfcfe1b73fd370fc45e68c",
+    "warnings": []
+  },
+  {
+    "name": "native-qoi-RGB-default",
+    "mode": "RGB",
+    "shape": [
+      16,
+      16,
+      3
+    ],
+    "values_sha256": "513b241e8e3a39e06e521f0064529cf60e596148fe6bd60b16e01bb8905cf2b6",
+    "input_sha256": "bc3c68c86bc732cc7deb8ac80cb8a99f9bc59dbe1c22feedcc00631081e1d949",
+    "warnings": []
+  },
+  {
+    "name": "native-dib-RGB-default",
+    "mode": "RGB",
+    "shape": [
+      16,
+      16,
+      3
+    ],
+    "values_sha256": "513b241e8e3a39e06e521f0064529cf60e596148fe6bd60b16e01bb8905cf2b6",
+    "input_sha256": "c28685cc5aeaf559c98a38e826f163d7b733b63d23b16c18da804da42c24364e",
+    "warnings": []
+  },
+  {
+    "name": "native-xbm-RGB-default",
+    "save_error": "OSError",
+    "message": "cannot write mode RGB as XBM"
+  },
+  {
+    "name": "native-spider-RGB-default",
+    "mode": "F",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "ecb0d0c2fb6f5d81ce627adc753fabbff0b0203dd43019399825231766544b60",
+    "input_sha256": "30a535ab3428b723bc8d8e7f34767baf80981be189de196b1fbf35429d4c03ce",
+    "warnings": []
+  },
+  {
+    "name": "native-msp-RGB-default",
+    "save_error": "OSError",
+    "message": "cannot write mode RGB as MSP"
+  },
+  {
+    "name": "native-eps-RGB-default",
+    "mode": "RGB",
+    "shape": [
+      16,
+      16,
+      3
+    ],
+    "values_sha256": "513b241e8e3a39e06e521f0064529cf60e596148fe6bd60b16e01bb8905cf2b6",
+    "input_sha256": "5099ad8023ea3ed2a3e25adf7ff6fa08b64b1569ce02233694330e976f65c121",
+    "warnings": []
+  },
+  {
+    "name": "native-avif-RGBA-default",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "a59b651210f7b5c3ebba2d5fa86f23e2eb35addc1c7d5fb198aae2f8e241563e",
+    "input_sha256": "0c2ab0542e29e6cbe25a2c369a0f9c6dba5cb942eed428dc49f5ab6899722a83",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-RGBA-jp2",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "382c918bf7f4c385213969b6162c0a3391c5a65a6f94c1cc3526403ba184c369",
+    "input_sha256": "f87bcf24326cb1f79c95fe29b89eba14db227a5c664b82b88945663ff6341a2f",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-RGBA-j2k",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "382c918bf7f4c385213969b6162c0a3391c5a65a6f94c1cc3526403ba184c369",
+    "input_sha256": "425c204e87b7866503950ce609958b0dca2f40fab3d4d125adf1379cd1f66287",
+    "warnings": []
+  },
+  {
+    "name": "native-qoi-RGBA-default",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "382c918bf7f4c385213969b6162c0a3391c5a65a6f94c1cc3526403ba184c369",
+    "input_sha256": "8faf3dafcb953ff950af6dbe36be26d47ae5212788e3f01e626b5e4ce5f06684",
+    "warnings": []
+  },
+  {
+    "name": "native-dib-RGBA-default",
+    "mode": "RGB",
+    "shape": [
+      16,
+      16,
+      3
+    ],
+    "values_sha256": "513b241e8e3a39e06e521f0064529cf60e596148fe6bd60b16e01bb8905cf2b6",
+    "input_sha256": "9bf1737e89cb83148b6179feee3d80f8f705fb5afcdc569188e7d246010716d0",
+    "warnings": []
+  },
+  {
+    "name": "native-xbm-RGBA-default",
+    "save_error": "OSError",
+    "message": "cannot write mode RGBA as XBM"
+  },
+  {
+    "name": "native-spider-RGBA-default",
+    "mode": "F",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "ecb0d0c2fb6f5d81ce627adc753fabbff0b0203dd43019399825231766544b60",
+    "input_sha256": "30a535ab3428b723bc8d8e7f34767baf80981be189de196b1fbf35429d4c03ce",
+    "warnings": []
+  },
+  {
+    "name": "native-msp-RGBA-default",
+    "save_error": "OSError",
+    "message": "cannot write mode RGBA as MSP"
+  },
+  {
+    "name": "native-eps-RGBA-default",
+    "save_error": "ValueError",
+    "message": "image mode is not supported"
+  },
+  {
+    "name": "native-avif-CMYK-default",
+    "mode": "RGB",
+    "shape": [
+      16,
+      16,
+      3
+    ],
+    "values_sha256": "9c2df74214a5e37cb6ed184d9b4d423d03694c01eb97d049d84f0907d9c63865",
+    "input_sha256": "b7f0464572610a6163ec499eff1cf0c7962f9bf60ea0bafdcf7a1fed12103709",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-CMYK-jp2",
+    "mode": "CMYK",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "382c918bf7f4c385213969b6162c0a3391c5a65a6f94c1cc3526403ba184c369",
+    "input_sha256": "7e57b8aff619a31bac544fd5df98cb0a9147acc07f6e419344083b7ba487047c",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-CMYK-j2k",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "382c918bf7f4c385213969b6162c0a3391c5a65a6f94c1cc3526403ba184c369",
+    "input_sha256": "425c204e87b7866503950ce609958b0dca2f40fab3d4d125adf1379cd1f66287",
+    "warnings": []
+  },
+  {
+    "name": "native-qoi-CMYK-default",
+    "save_error": "ValueError",
+    "message": "Unsupported QOI image mode"
+  },
+  {
+    "name": "native-dib-CMYK-default",
+    "save_error": "OSError",
+    "message": "cannot write mode CMYK as BMP"
+  },
+  {
+    "name": "native-xbm-CMYK-default",
+    "save_error": "OSError",
+    "message": "cannot write mode CMYK as XBM"
+  },
+  {
+    "name": "native-spider-CMYK-default",
+    "mode": "F",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "83900274c097ce65d061a281d1ceb4b5aab41815b3722d7e0ae7e991866f7cdb",
+    "input_sha256": "674140eec7d13dc175835b71626b2be11395b33d7e41a91b46ad9a606a3a7ab9",
+    "warnings": []
+  },
+  {
+    "name": "native-msp-CMYK-default",
+    "save_error": "OSError",
+    "message": "cannot write mode CMYK as MSP"
+  },
+  {
+    "name": "native-eps-CMYK-default",
+    "error": "ValueError",
+    "message": "No packer found from RGB to CMYK",
+    "warnings": []
+  },
+  {
+    "name": "native-avif-I-16-default",
+    "mode": "L",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "d103b4321618c6b29187040b1431a50421f29006d6395cfcd363aae97a5a511c",
+    "input_sha256": "c4d45917fac0133eba51e7167b6e29671de5bf5ec4f4f60006df8a30af8fb7e3",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-I-16-jp2",
+    "mode": "I;16",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "12806ca03af9bb501730b430dffa5df9c207ef889bfa52455719ec919b380853",
+    "input_sha256": "78f787d8424b95c2a818081726a8d82d8d017e636ae0e4ef7f8d5e3f912d1224",
+    "warnings": []
+  },
+  {
+    "name": "native-jpeg2000-I-16-j2k",
+    "mode": "I;16",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "12806ca03af9bb501730b430dffa5df9c207ef889bfa52455719ec919b380853",
+    "input_sha256": "33c0028e38cdc7ae2c707a4960889ea8e00bbd9daacba9e1bf795bf507453464",
+    "warnings": []
+  },
+  {
+    "name": "native-qoi-I-16-default",
+    "save_error": "ValueError",
+    "message": "Unsupported QOI image mode"
+  },
+  {
+    "name": "native-dib-I-16-default",
+    "save_error": "OSError",
+    "message": "cannot write mode I;16 as BMP"
+  },
+  {
+    "name": "native-xbm-I-16-default",
+    "save_error": "OSError",
+    "message": "cannot write mode I;16 as XBM"
+  },
+  {
+    "name": "native-spider-I-16-default",
+    "mode": "F",
+    "shape": [
+      16,
+      16
+    ],
+    "values_sha256": "12806ca03af9bb501730b430dffa5df9c207ef889bfa52455719ec919b380853",
+    "input_sha256": "88caf2f5b4fe769bcbfdbafcaa20b5fb00d834a7dca287f5a24739dfd0443f6d",
+    "warnings": []
+  },
+  {
+    "name": "native-msp-I-16-default",
+    "save_error": "OSError",
+    "message": "cannot write mode I;16 as MSP"
+  },
+  {
+    "name": "native-eps-I-16-default",
+    "save_error": "ValueError",
+    "message": "image mode is not supported"
+  },
+  {
+    "name": "stub-bufr",
+    "error": "OSError",
+    "message": "cannot find loader for this BUFR file",
+    "warnings": []
+  },
+  {
+    "name": "stub-grib",
+    "error": "UnidentifiedImageError",
+    "message": "cannot identify image file <_io.BytesIO object at 0x785731d2d260>",
+    "warnings": []
+  },
+  {
+    "name": "stub-hdf5",
+    "error": "OSError",
+    "message": "cannot find loader for this HDF5 file",
+    "warnings": []
+  },
+  {
+    "name": "stub-mpeg",
+    "error": "OSError",
+    "message": "cannot load this image",
+    "warnings": []
+  }
+]

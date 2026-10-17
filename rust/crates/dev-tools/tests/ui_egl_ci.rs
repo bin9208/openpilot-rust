@@ -18,7 +18,7 @@ fn egl_reference_is_explicitly_built_and_tested_in_the_native_ui_job() {
             matches += 1;
             let run = step["run"].as_str().unwrap();
             assert!(run.contains(
-                "--features egl-reference --bin check-ui-egl --bin ui-egl-reference --locked"
+                "--features egl-reference,polygon-reference --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --locked"
             ));
             assert!(run.contains(
                 "--features egl-reference --test ui_egl_reference --test ui_egl_check --locked"

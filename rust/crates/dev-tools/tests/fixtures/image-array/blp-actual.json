@@ -1,0 +1,158 @@
+[
+  {
+    "name": "blp-actual-BLP1-False",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "c5b56f11f775b5def5e933d6cbf2fcbfc1fbaed413f0d298c13a0ca5d5acfc6b",
+    "input_sha256": "261cfe8a2e06368591c52b4dbcdf5daddfcca05b57d7478673a170828fe3e641",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-BLP1-True",
+    "mode": "RGBA",
+    "shape": [
+      4,
+      4,
+      4
+    ],
+    "values_sha256": "fd925a06464624d1189c84da295767c5a870ffd4da024a5283116f4ec9a0ea00",
+    "input_sha256": "ec02c9970d1548ced2b43e422f9fa12af7d8a8a8105f2f5012c84c59e1e0641f",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-BLP2-False",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "c5b56f11f775b5def5e933d6cbf2fcbfc1fbaed413f0d298c13a0ca5d5acfc6b",
+    "input_sha256": "78a4444c39f673ffc6b3c2ea0000f476ecda15e4762d1522262d875014d6f212",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-BLP2-True",
+    "mode": "RGBA",
+    "shape": [
+      4,
+      4,
+      4
+    ],
+    "values_sha256": "fd925a06464624d1189c84da295767c5a870ffd4da024a5283116f4ec9a0ea00",
+    "input_sha256": "dd8d5c73307514e3095147c598c2e3f62dffed041638cc21152af09e2930da44",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-jpeg-L-0",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "5272a133505fa2c7c5ab3b28b1279c9ec49cb794c0967caf4865465585ce7940",
+    "input_sha256": "e3d624ca31a42a0f92c36f26f18f2119b39a0363fbedcda3e302ed93f5750cf9",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-jpeg-L-20",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "5272a133505fa2c7c5ab3b28b1279c9ec49cb794c0967caf4865465585ce7940",
+    "input_sha256": "355cf98d0b1e1d24a926c76ebc7de401c68109e4d2a2ed91cbe9845d57e7b30f",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-jpeg-L-172",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "5272a133505fa2c7c5ab3b28b1279c9ec49cb794c0967caf4865465585ce7940",
+    "input_sha256": "f8b24a4bd45a67eb5cac259f5a548e1efb311cd899309483f7e66287367f77c4",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-jpeg-RGB-0",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "bd5b91f7c15767022416e6585e8bab4a487f4091e8d2c0e8073d62964f48a77c",
+    "input_sha256": "adb7784e3278d72a60ce6a20d6e6a4f3ef8b9254618cee5452c1196ec717e429",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-jpeg-RGB-20",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "bd5b91f7c15767022416e6585e8bab4a487f4091e8d2c0e8073d62964f48a77c",
+    "input_sha256": "b9aee532f84e5857b4a110151910bdc70d4782bb2a73f53d2233bc1f8d9fb3e8",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-jpeg-RGB-336",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "bd5b91f7c15767022416e6585e8bab4a487f4091e8d2c0e8073d62964f48a77c",
+    "input_sha256": "5d5763c6c691c8e037b536a828abb378001066b06b41b818ea1f3dc2464dd32b",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-jpeg-CMYK-0",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "c5771139af8fd6ebba2cdae19f9fbde900637d5823e3cb843c5137c5d737bd21",
+    "input_sha256": "0d29dd12ba9c3511c587ee9a5b8ec362e5035d57ad8f8045b8a42d1e8a0949f4",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-jpeg-CMYK-20",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "c5771139af8fd6ebba2cdae19f9fbde900637d5823e3cb843c5137c5d737bd21",
+    "input_sha256": "7b6230def2eee87695015d6ab8e6c74bd4cca66a8234f8af8bbab33cd0ee78aa",
+    "warnings": []
+  },
+  {
+    "name": "blp-actual-jpeg-CMYK-219",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "c5771139af8fd6ebba2cdae19f9fbde900637d5823e3cb843c5137c5d737bd21",
+    "input_sha256": "ec7d41eb105073f1bedf7099393bd851f228839972d31f81d279d5630631771f",
+    "warnings": []
+  }
+]

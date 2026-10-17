@@ -9,6 +9,18 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-beep-sleep"
+path = "src/bin/check_beep_sleep.rs"
+
+[[bin]]
+name = "check-beep-integer"
+path = "src/bin/check_beep_integer.rs"
+
+[[bin]]
+name = "build-beep-integer-reference"
+path = "src/bin/build_beep_integer_reference.rs"
+
+[[bin]]
 name = "check-beep-clock"
 path = "src/bin/check_beep_clock.rs"
 
@@ -54,6 +66,27 @@ path = "src/bin/list_cargo_tests.rs"
 
 [features]
 egl-reference = ["dep:openpilot-startup-ui"]
+image-array = ["dep:png", "dep:gif", "dep:tiff", "dep:image", "dep:openpilot-jpeg"]
+image-array-native = ["image-array", "dep:openpilot-image-codecs"]
+polygon-reference = ["dep:openpilot-startup-ui", "image-array-native"]
+
+[[test]]
+name = "image_array"
+required-features = ["image-array"]
+
+[[bin]]
+name = "ui-polygon-reference"
+path = "src/bin/ui_polygon_reference.rs"
+required-features = ["polygon-reference"]
+
+[[bin]]
+name = "check-ui-polygon"
+path = "src/bin/check_ui_polygon.rs"
+required-features = ["polygon-reference"]
+
+[[test]]
+name = "ui_polygon_check"
+required-features = ["polygon-reference"]
 
 [[bin]]
 name = "check-ui-egl"
@@ -145,6 +178,12 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+png = { version = "=0.17.16", optional = true }
+gif = { version = "=0.14.2", default-features = false, features = ["std"], optional = true }
+tiff = { version = "=0.11.3", default-features = false, features = ["deflate", "jpeg", "lzw"], optional = true }
+image = { version = "=0.25.10", default-features = false, features = ["bmp", "dds", "tga", "jpeg", "pnm", "webp", "ico"], optional = true }
+openpilot-jpeg = { path = "../jpeg", optional = true }
+openpilot-image-codecs = { path = "../image-codecs", optional = true, features = ["native-sdk"] }
 rsa = "=0.9.10"
 sha1 = "=0.10.7"
 base64 = "=0.22.1"

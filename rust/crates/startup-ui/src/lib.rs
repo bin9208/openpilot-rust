@@ -71,3 +71,6 @@ mod renderer_polygon;
 
 #[cfg(feature = "native")]
 pub mod egl_reference_abi;
+
+#[cfg(feature = "native")]
+pub mod polygon_reference_abi;

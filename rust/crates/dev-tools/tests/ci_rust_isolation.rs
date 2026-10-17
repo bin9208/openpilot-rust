@@ -139,7 +139,7 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_ui_framework.py",
             "check_startup_ui.py",
             "check_ui_emoji.py",
-        "-p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference --bin check-ui-egl --bin ui-egl-reference --locked",
+        "-p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference,polygon-reference --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --locked",
             "rust/target/debug/check-ui-translations --binary",
             "check_wifi_policy.py",
             "check_wifi_runtime.py",

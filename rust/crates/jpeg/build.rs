@@ -53,6 +53,7 @@ fn main() {
         .compile("openpilot-jpeg-bridge");
     cc::Build::new()
         .file("native/encode.c")
+        .file("native/decode.c")
         .include(source.join("src"))
         .include(&output)
         .std("c11")
@@ -70,6 +71,8 @@ fn main() {
         "native/turbo.h",
         "native/encode.h",
         "native/encode.c",
+        "native/decode.h",
+        "native/decode.c",
         "native/vendor",
     ] {
         println!("cargo:rerun-if-changed={path}");
