@@ -723,3 +723,22 @@ fields and 12 persistence steps / 101,564 persisted fields. Independent source
 review found no actionable issue. No period, fit invocation, interpolation, lag,
 state or control policy changed; device CPU savings remain unmeasured.
 Evidence: `2026-10-18-torque-history/{red.log,green.log,baseline,native,loop}`.
+
+### Journal tag allocation ownership (2026-10-18)
+
+`parse_line` now transfers the decoded SYSLOG_IDENTIFIER byte buffer into its
+published String after the complete JSON message and integer fields have been
+processed. Previously it cloned that buffer. JSON ordering/content, absent/empty
+tags, surrogate rejection, integer conversion and fatal-error order are unchanged.
+No journal child, message validity or logging policy changes.
+
+The first global-allocator probe was rejected by this crate's inherited unsafe
+forbid and was discarded; that is not allocation evidence. The replacement safe
+ownership test observed a missing-helper RED, then confirms pointer/capacity
+identity and original text when the owned buffer moves. All seven journal package
+tests, strict all-target Clippy and daemon build pass. Independent source review
+found no actionable issue. The unchanged actual original/native IPC gate passes
+155 messages and13 recoverable errors per implementation,19 fatal-input cases
+and four child/signal lifecycle scenarios. No CPU saving or device result is claimed.
+Evidence: local `2026-10-18-journal-tag/{red-owner,green,clippy,build,reference}.log`
+and `reference/report.json`. The original comparator remains pending Python tooling.
