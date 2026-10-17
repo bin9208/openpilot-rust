@@ -1680,3 +1680,9 @@ coverage or workflow execution was removed. All48 isolation, polygon routing
 and disk-bootstrap tests pass locally after the correction. The same CI run's
 alert, corpus and Python/Android workers passed; Integration and mapped-doc
 checks also passed for e5eab025. Subsequent exact-source checks remain required.
+
+The next exact-head run39065901972 reached a second copy of that full-command
+assertion in ui_egl_ci and failed there. Both copies now include all diagnostic
+tools. All49 isolation, EGL/polygon routing and disk-bootstrap tests pass together
+on the final local commands (2026-10-18-ui-forms/parent-default.log). No workflow
+coverage was removed; exact-head CI must be rerun after this correction.
