@@ -1,6 +1,6 @@
 pub use openpilot_disk_space as disk_space;
-pub mod amplifier_policy_check;
 pub mod amplifier_linux_check;
+pub mod amplifier_policy_check;
 pub mod argparse_scan;
 pub mod athena_vision_build;
 pub mod brotli_stage;
