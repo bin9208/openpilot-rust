@@ -49,7 +49,11 @@ does not establish acceptance for a new build or another device family.
 
 The original SPI code and Rust port spin throughout the 400 µs phase gap and
 400 µs/1 ms transaction gaps. The Rust native clock now sleeps during the coarse
-part when more than 100 µs remains, retaining a 50 µs precision tail. Every exit
+part when more than 100 µs remains, retaining a 50 µs precision tail. The native
+syscall uses the original absolute CLOCK_BOOTTIME deadline minus that tail.
+Preemption before the syscall therefore cannot add a stale relative sleep.
+EINTR retries use that same target; other sleep errors return to the precision
+loop. Every exit
 rechecks CLOCK_BOOTTIME against the original start and minimum gap. Short or
 already elapsed waits add no sleep. LinuxIo and the cancellation wrapper forward
 the wait to the hardware clock. Virtual clocks retain the original advancing
@@ -58,9 +62,9 @@ clock loop, keeping the existing source transaction oracle meaningful.
 ACK polling, transfer bytes, checksums, bus/priority/file locks, retry budgets,
 500 ms recovery limit, cancellation, CAN 100 Hz cadence, affinities and realtime
 priorities remain unchanged. Sleeping can still wake late under load; the
-[Rust sleep contract](https://doc.rust-lang.org/std/thread/fn.sleep.html) explicitly
-allows scheduler delay. This is why latency and actual vehicle timing remain
-acceptance evidence, separate from a host CPU benchmark.
+[clock_nanosleep contract](https://man7.org/linux/man-pages/man2/clock_nanosleep.2.html)
+allows scheduler delay even with an absolute target. Actual vehicle timing
+therefore remains acceptance evidence, separate from a host CPU benchmark.
 
 Procfs record reads now reserve 1 KiB before `read_to_end`. Procfs does not provide
 a useful file length; starting with an empty vector caused repeated tiny reads
@@ -80,7 +84,9 @@ polling-policy change; it is not attributed wholesale to the wait loop.
 
 The SPI CPU-release regression first failed with zero sleeps. Deterministic
 tests now cover CAN/control gaps, partly elapsed waits, early and late wakeups,
-clock wraparound and short/elapsed gaps. The actual native clock also verifies
+clock wraparound and short/elapsed gaps. A separate preemption regression first
+reproduced an added relative sleep after the deadline had already elapsed; the
+absolute timer avoids it. The actual native clock also verifies
 both minimum gaps. The unchanged C++/Rust oracle passes **122 scenarios,
 204 operations and 7,387 ordered syscalls**, including bytes, retry/recovery,
 locks, logs, timings and error events. This virtual-clock comparison does not
@@ -90,12 +96,13 @@ Explicit optimized host benchmark, 2,000 waits per row with ABBA order:
 
 | Gap | Busy wait CPU % | New wait CPU % | New median elapsed | New p99 elapsed |
 | --- | ---: | ---: | ---: | ---: |
-| 400 µs | 98.7–100.0 | 1.2–2.5 | 405.1–405.2 µs | 431.6–432.7 µs |
-| 1 ms | 100.0 | 1.0–1.5 | 1,005.7–1,005.9 µs | 1,037.9–1,045.2 µs |
+| 400 µs | 98.7–100.0 | 1.2–2.5 | 405.8–406.0 µs | 427.4 µs |
+| 1 ms | 100.0 | 1.5 | 1,005.5–1,005.9 µs | 1,029.1–1,035.6 µs |
 
 These are the waiting thread's host CPU/wall ratios, not device-wide savings.
-No wait returned before its minimum. Scheduler outliers reached 575.7 µs for
-400 µs waits and 1,132.9 µs for 1 ms waits. The benchmark is intentionally ignored
+CPU time uses per-thread kernel ticks (10 ms resolution on this host).
+No wait returned before its minimum. Scheduler outliers reached 652.2 µs for
+400 µs waits and 2,022.8 µs for 1 ms waits. The benchmark is intentionally ignored
 in ordinary tests and runs explicitly with
 `cargo test -p openpilot-panda-spi-linux --release --lib turnaround_cpu_benchmark -- --ignored --nocapture --test-threads=1`.
 
@@ -108,10 +115,10 @@ reader regression is
 `cargo test -p openpilot-runtime-core --lib small_proc_records_do_not_repeat_tiny_probe_reads -- --ignored --nocapture`.
 
 Focused host tests for pandad, panda-usb, panda-spi, panda-spi-linux, runtime-core
-and proclogd pass **112 tests** with both benchmarks deliberately ignored and
+and proclogd pass **113 tests** with both benchmarks deliberately ignored and
 executed separately. Strict all-target clippy passes for those packages.
 Existing PID-reuse/FIFO race, snapshot, PSS expiry/pacing and sampler tests pass.
-Affected test binaries also build against the genuine AGNOS ARM sysroot; **52
+Affected test binaries also build against the genuine AGNOS ARM sysroot; **53
 ARM tests** pass under QEMU, including the native clock minimum gaps. The ARM
 SPI oracle passes the same **122 scenarios / 204 operations / 7,387 calls**.
 CLI suites that launch child executables run on the host; they are not included

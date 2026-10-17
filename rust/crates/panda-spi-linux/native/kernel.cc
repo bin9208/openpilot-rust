@@ -125,6 +125,13 @@ std::unique_ptr<Handle> create(const std::string &path) { return std::make_uniqu
 uint64_t now_ns() { timespec time{}; clock_gettime(CLOCK_BOOTTIME, &time); return static_cast<uint64_t>(time.tv_sec) * 1000000000ULL + time.tv_nsec; }
 void yield_now() { sched_yield(); }
 void sleep_us(uint32_t micros) { usleep(micros); }
+void sleep_until_ns(uint64_t deadline) {
+  const timespec target{static_cast<time_t>(deadline / 1000000000ULL),
+                        static_cast<long>(deadline % 1000000000ULL)};
+  // Retry the same absolute target on EINTR. Other errors fall back to Rust's
+  // clock-checked precision loop, preserving the minimum quiet interval.
+  while (clock_nanosleep(CLOCK_BOOTTIME, TIMER_ABSTIME, &target, nullptr) == EINTR) {}
+}
 Call set_scheduler(int32_t policy, int32_t priority) {
   sched_param parameter{};
   parameter.sched_priority = priority;

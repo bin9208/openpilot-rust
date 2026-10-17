@@ -38,7 +38,7 @@ pub struct BootClock;
 
 fn wait_for_turnaround(
     mut now_ns: impl FnMut() -> u64,
-    mut sleep: impl FnMut(std::time::Duration),
+    mut sleep_until: impl FnMut(u64),
     start: u64,
     duration: u64,
 ) {
@@ -47,7 +47,9 @@ fn wait_for_turnaround(
     // scheduling delay; neither an early wake nor rounding may shorten the gap.
     let remaining = duration.saturating_sub(now_ns().wrapping_sub(start));
     if remaining > 100_000 {
-        sleep(std::time::Duration::from_nanos(remaining - 50_000));
+        // An absolute deadline cannot add a stale relative delay if this thread
+        // is preempted between reading the clock and entering the sleep syscall.
+        sleep_until(start.wrapping_add(duration - 50_000));
     }
     while now_ns().wrapping_sub(start) < duration {
         std::hint::spin_loop();
@@ -59,7 +61,7 @@ impl Clock for BootClock {
         ffi::now_ns()
     }
     fn wait_until(&self, start: u64, duration: u64) {
-        wait_for_turnaround(ffi::now_ns, std::thread::sleep, start, duration);
+        wait_for_turnaround(ffi::now_ns, ffi::sleep_until_ns, start, duration);
     }
 }
 impl Kernel for NativeKernel {
@@ -154,11 +156,11 @@ mod tests {
                     now.set(value.wrapping_add(1_000));
                     value
                 },
-                |duration| {
+                |deadline| {
                     sleeps.set(sleeps.get() + 1);
                     now.set(
                         now.get()
-                            .wrapping_add(duration.as_nanos() as u64 * sleep_percent / 100),
+                            .wrapping_add(deadline.wrapping_sub(now.get()) * sleep_percent / 100),
                     );
                 },
                 start,
@@ -191,6 +193,33 @@ mod tests {
             );
             assert!(now.get() >= 1_400_000);
         }
+    }
+
+    #[test]
+    fn preemption_before_sleep_does_not_extend_an_elapsed_deadline() {
+        let now = Cell::new(1_000_000_u64);
+        let preempt = Cell::new(true);
+        wait_for_turnaround(
+            || {
+                let value = now.get();
+                now.set(
+                    value
+                        + if preempt.replace(false) {
+                            500_000
+                        } else {
+                            1_000
+                        },
+                );
+                value
+            },
+            |deadline| now.set(now.get().max(deadline)),
+            1_000_000,
+            400_000,
+        );
+        assert!(
+            now.get() <= 1_501_000,
+            "an elapsed deadline must not add another relative sleep"
+        );
     }
 
     #[test]
