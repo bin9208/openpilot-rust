@@ -35,3 +35,16 @@ The crate requires `native-sdk`; its empty default feature set neither links
 codecs nor requires `IMAGE_CODECS_SDK_ROOT`. Production polygon checking requires
 `image-array-native` so it cannot silently fall back to a reduced decoder set.
 EPS rendering separately uses the system Ghostscript executable.
+
+The libyuv archive uses the full pinned commit from the GitHub mirror because
+Googlesource's generated tarballs embed request-time file timestamps and do not
+have stable archive hashes. The mirror archive was compared against the original
+Googlesource capture: all 204 paths, file bytes, links and executable bits match.
+Reconstructing its Git tree yields `ba22b636166dc16532fcc9d5a9524117432d1782`,
+the tree reported for commit `644251f252a84bf8ce91ff0aca86a9b16b069ab8` by both
+origins. Repeated mirror downloads have the same pinned SHA256; the SDK strips
+the mirror archive's single root directory just like the other sources.
+Fresh downloads of all nine manifest URLs passed their archive pins after this
+change. A clean SDK stage, all six stager/receipt tests, five native codec tests,
+16 production image/polygon/CI tests and scoped strict Clippy passed using that
+new installation on Linux x86_64. Archive pins remain mandatory and fail closed.

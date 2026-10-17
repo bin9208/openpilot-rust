@@ -27,8 +27,10 @@
       "archive": "libyuv-644251f25.tar.gz",
       "commit": "644251f252a84bf8ce91ff0aca86a9b16b069ab8",
       "version": 1924,
-      "url": "https://chromium.googlesource.com/libyuv/libyuv/+archive/644251f25.tar.gz",
-      "sha256": "ca529dfd9afddd8735a628cb5667cc8318bedc91129bf76c66daa961e7b29ca6"
+      "url": "https://codeload.github.com/lemenkov/libyuv/tar.gz/644251f252a84bf8ce91ff0aca86a9b16b069ab8",
+      "sha256": "ccc11fbb02077b9385a37606d9edce34eb5e588b5626c894eb1e883c9c2da114",
+      "git_tree": "ba22b636166dc16532fcc9d5a9524117432d1782",
+      "upstream": "https://chromium.googlesource.com/libyuv/libyuv/+/644251f252a84bf8ce91ff0aca86a9b16b069ab8"
     },
     {
       "name": "tiff",

@@ -26,7 +26,7 @@ const SOURCES: [(&str, &str, &str); 9] = [
     ),
     (
         "libyuv-644251f25.tar.gz",
-        "ca529dfd9afddd8735a628cb5667cc8318bedc91129bf76c66daa961e7b29ca6",
+        "ccc11fbb02077b9385a37606d9edce34eb5e588b5626c894eb1e883c9c2da114",
         "libyuv-1924",
     ),
     (
@@ -67,6 +67,28 @@ fn value(command: &mut Command) -> Result<String> {
         return Err(format!("native SDK command failed: {command:?}").into());
     }
     Ok(String::from_utf8(output.stdout)?)
+}
+fn extract_source(archive: &Path, destination: &Path) -> Result<()> {
+    let list = value(Command::new("tar").arg("-tzf").arg(archive))?;
+    for entry in list.lines() {
+        let path = Path::new(entry);
+        if path.is_absolute()
+            || path
+                .components()
+                .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return Err("unsafe source archive path".into());
+        }
+    }
+    fs::create_dir(destination)?;
+    checked(
+        Command::new("tar")
+            .arg("-xzf")
+            .arg(archive)
+            .arg("-C")
+            .arg(destination)
+            .arg("--strip-components=1"),
+    )
 }
 fn new_destination(path: &Path) -> Result<PathBuf> {
     match path.symlink_metadata() {
@@ -115,16 +137,6 @@ fn stage(args: &[PathBuf]) -> Result<()> {
         if digest.split_whitespace().next() != Some(hash) {
             return Err(format!("source archive hash mismatch: {name}").into());
         }
-        let list = value(Command::new("tar").arg("-tzf").arg(&archive))?;
-        for entry in list.lines() {
-            let p = Path::new(entry);
-            if p.is_absolute()
-                || p.components()
-                    .any(|c| matches!(c, std::path::Component::ParentDir))
-            {
-                return Err("unsafe source archive path".into());
-            }
-        }
         let extract = work.join(folder);
         if extract.exists() {
             return Err(format!(
@@ -133,13 +145,7 @@ fn stage(args: &[PathBuf]) -> Result<()> {
             )
             .into());
         }
-        fs::create_dir(&extract)?;
-        let mut command = Command::new("tar");
-        command.arg("-xzf").arg(&archive).arg("-C").arg(&extract);
-        if !name.starts_with("libyuv-") {
-            command.arg("--strip-components=1");
-        }
-        checked(&mut command)?;
+        extract_source(&archive, &extract)?;
     }
     let build = work.join("build");
     let mut configure = Command::new("cmake");
@@ -276,5 +282,39 @@ mod tests {
             .to_string()
             .contains("must be distinct"));
         assert!(!args[1].exists());
+    }
+
+    #[test]
+    fn libyuv_mirror_root_is_removed_without_dropping_nested_source_files() {
+        let temp = Temporary::new();
+        let source = temp.0.join("libyuv-full-commit");
+        fs::create_dir_all(source.join("include/libyuv")).unwrap();
+        fs::write(source.join("CMakeLists.txt"), b"project(test)").unwrap();
+        fs::write(
+            source.join("include/libyuv/version.h"),
+            b"#define LIBYUV_VERSION 1924\n",
+        )
+        .unwrap();
+        let archive = temp.0.join("libyuv-644251f25.tar.gz");
+        checked(
+            Command::new("tar")
+                .arg("-czf")
+                .arg(&archive)
+                .arg("-C")
+                .arg(&temp.0)
+                .arg("libyuv-full-commit"),
+        )
+        .unwrap();
+        let destination = temp.0.join("extracted");
+        extract_source(&archive, &destination).unwrap();
+        assert_eq!(
+            fs::read(destination.join("CMakeLists.txt")).unwrap(),
+            b"project(test)"
+        );
+        assert_eq!(
+            fs::read(destination.join("include/libyuv/version.h")).unwrap(),
+            b"#define LIBYUV_VERSION 1924\n"
+        );
+        assert!(!destination.join("libyuv-full-commit").exists());
     }
 }
