@@ -2044,7 +2044,7 @@ jobs:
         run: |
           rustc --version
           cargo --version
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --bins --examples --locked
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build original telemetry message and Params bindings
@@ -2067,7 +2067,7 @@ jobs:
         run: python rust/tools/check_beepd_daemon.py --binary rust/target/debug/openpilot-beepd --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-daemon"
       - name: Compare statistics numeric, clock and producer contracts
         run: |
-          python rust/tools/check_stats_numbers.py --binary rust/target/debug/examples/stats_trace --output "$RUNNER_TEMP/telemetry-runtime/stats-numbers.json"
+          rust/target/debug/check-stats-numbers --binary rust/target/debug/examples/stats_trace --output "$RUNNER_TEMP/telemetry-runtime/stats-numbers.json"
           python rust/tools/check_stats_clock.py rust/target/debug/examples/stats_clock "$RUNNER_TEMP/telemetry-runtime/stats-clock.json"
           python rust/tools/check_stats_producer.py rust/target/debug/examples "$RUNNER_TEMP/telemetry-runtime/stats-producer"
       - name: Compare continuous statistics, real Params and collector failure paths

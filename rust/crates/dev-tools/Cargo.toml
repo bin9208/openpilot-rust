@@ -9,6 +9,10 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-stats-numbers"
+path = "src/bin/check_stats_numbers.rs"
+
+[[bin]]
 name = "check-amplifier-policy"
 path = "src/bin/check_amplifier_policy.rs"
 

@@ -15,6 +15,7 @@ pub mod params_reference_check;
 pub mod publish;
 pub mod qa_process;
 pub mod seal;
+pub mod stats_numbers_check;
 #[cfg(feature = "egl-reference")]
 pub mod ui_egl_check;
 #[cfg(feature = "egl-reference")]

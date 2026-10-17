@@ -1288,3 +1288,22 @@ Repeated after Python deletion with compiler-only PATH: all 27 PASS.
 CI now invokes check-amplifier-linux; the two Python tools are removed. Baseline
 inventory is 55 replaced-local / 3,525 pending. This remains an independent host
 I2C fixture comparison, not hardware/device acceptance or complete Python removal.
+
+### Native statsd numeric aggregation checker
+
+All 598 original fixed-seed numeric cases were independently captured against
+unchanged statsd aggregation, preserving the original Python float text, signed
+zero, nonfinite values and exact output strings. Thirteen original process-result
+scenarios retain failure/stdout/report-write ordering. Three native tests cover
+those cases, source drift/reintroduction, pathlib runner normalization and missing
+report parents. Stub RED was observed before implementation; all three tests and
+32 routing tests pass, along with strict scoped Clippy. Independent review
+regenerated every frame/expected string and all 13 error captures without finding
+an additional issue.
+
+The dedicated-cache stats_trace was rebuilt from #296. Original/native checker
+reports match byte-for-byte across all 598 cases. Repeating after Python deletion
+with PATH=/nonexistent also passes with an identical report. The telemetry job
+builds and invokes the native checker; fast checks include its regressions.
+Inventory is now 56 replaced-local / 3,524 pending. Generic statsd and other
+numeric tools remain explicitly separate; no full-project completion is claimed.

@@ -2081,7 +2081,7 @@ rust/tools/check_stats_failures.py	ce144ca88d88b034376666810d767e233554bbec	pend
 rust/tools/check_stats_flood.py	1b5ad8b2c9e66df9f6d5bfd69aedba1267cc4cd1	pending	-
 rust/tools/check_stats_interrupted.py	f0caa533e30c9ab353de7ffc1caa0353d30fe304	pending	-
 rust/tools/check_stats_log_fault.py	ff238b53e34afb709af764e44b8b301d67a753aa	pending	-
-rust/tools/check_stats_numbers.py	f7d7404586d04d2be2d8b6cb65e23d80e61b88aa	pending	-
+rust/tools/check_stats_numbers.py	f7d7404586d04d2be2d8b6cb65e23d80e61b88aa	replaced-local	openpilot-dev-tools check-stats-numbers
 rust/tools/check_stats_producer.py	5c5c285242a90bbb08e62a6359fe52f927ec6323	pending	-
 rust/tools/check_stats_runtime.py	04bdc4bfc995cf358ed9abd8205f70c0199cb4d1	pending	-
 rust/tools/check_timed_daemon.py	ef291bfa1ed16f99411fee2150e06cff548cd03c	pending	-
