@@ -1442,7 +1442,7 @@ release/release_files.py	36910293a4c6ca994307489a0eab1118523f55b7	replaced-local
 rust/tools/agnos_fixture.py	8c96c96914ae4bee39e235cb3792f50d204090c6	pending	-
 rust/tools/agnos_source.py	28b0325d926d919a5230133a9af9dd0bab7a4104	pending	-
 rust/tools/agnos_updater_source.py	407d8f03e68efbff0003a3c8712341c7a3cf3d1c	pending	-
-rust/tools/amplifier_linux_source.py	0db2b64e19b55e7fcdd75964fd2a6f86bae1957f	pending	-
+rust/tools/amplifier_linux_source.py	0db2b64e19b55e7fcdd75964fd2a6f86bae1957f	replaced-local	openpilot-dev-tools amplifier-linux-reference
 rust/tools/athena_fixture.py	90facfd2d78306efada8163c1ae758dec7e8546c	pending	-
 rust/tools/athena_reference.py	6e5cac15b7091ba54ca6d2be3d1185e3f03d3b25	pending	-
 rust/tools/athena_tracer_fixture.py	ee53717c4a669df789ab4b3a72b69a39bfd0b771	pending	-
@@ -1802,7 +1802,7 @@ rust/tools/check_agnos_updater_worker.py	ca177ffdd72a470547ad50ddcfb2edc3c4110f9
 rust/tools/check_alert_callbacks.py	526ae67a2676af83b375fa4274a0cb9df3810018	pending	-
 rust/tools/check_alert_manager.py	a91ed7fa7f4375cda69a4c907fbc20618c5b781b	pending	-
 rust/tools/check_amplifier.py	5974dd0bc80d28598600585a7fd6c5ca57bb8ca7	replaced-local	openpilot-dev-tools check-amplifier-policy; original 2034 fixed cases and exact artifact comparisons
-rust/tools/check_amplifier_linux.py	498383d5b21e6cef4ccca0f2b3448d335d422f6f	pending	-
+rust/tools/check_amplifier_linux.py	498383d5b21e6cef4ccca0f2b3448d335d422f6f	replaced-local	openpilot-dev-tools check-amplifier-linux
 rust/tools/check_athena_camera_lifecycle.py	7f5b1b9fd690d5b0cb5773a6930927dd29fbeccf	pending	-
 rust/tools/check_athena_connect.py	ba1a5edd33a809fef2cc99cc91026b019fde3ee8	pending	-
 rust/tools/check_athena_daemon.py	757fbfb05b40df9dab23a4c76c087acd53e056c6	pending	-

@@ -1,0 +1,179 @@
+[
+  {
+    "name": "lf",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\n{\"kind\": \"other\", \"index\": 1}\n",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "cr",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\r{\"kind\": \"other\", \"index\": 1}\r",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "crlf",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\r\n{\"kind\": \"other\", \"index\": 1}\r\n",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "vt",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\u000b{\"kind\": \"other\", \"index\": 1}\u000b",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "ff",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\f{\"kind\": \"other\", \"index\": 1}\f",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "fs",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\u001c{\"kind\": \"other\", \"index\": 1}\u001c",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "gs",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\u001d{\"kind\": \"other\", \"index\": 1}\u001d",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "rs",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\u001e{\"kind\": \"other\", \"index\": 1}\u001e",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "nel",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\u0085{\"kind\": \"other\", \"index\": 1}\u0085",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "line",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\u2028{\"kind\": \"other\", \"index\": 1}\u2028",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "paragraph",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\u2029{\"kind\": \"other\", \"index\": 1}\u2029",
+    "events": [
+      {
+        "kind": "other",
+        "index": 0
+      },
+      {
+        "kind": "other",
+        "index": 1
+      }
+    ],
+    "error": null
+  },
+  {
+    "name": "empty",
+    "trace": "",
+    "events": [],
+    "error": null
+  },
+  {
+    "name": "repeated-lf",
+    "trace": "{\"kind\": \"other\", \"index\": 0}\n\n{\"kind\": \"other\", \"index\": 1}\n\n",
+    "events": null,
+    "error": "JSONDecodeError"
+  }
+]

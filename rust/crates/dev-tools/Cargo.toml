@@ -17,6 +17,14 @@ name = "check-hardware-control-policy"
 path = "src/bin/check_hardware_control_policy.rs"
 
 [[bin]]
+name = "check-amplifier-linux"
+path = "src/bin/check_amplifier_linux.rs"
+
+[[bin]]
+name = "amplifier-linux-reference"
+path = "src/bin/amplifier_linux_reference.rs"
+
+[[bin]]
 name = "check-command-reference"
 path = "src/bin/check_command_reference.rs"
 

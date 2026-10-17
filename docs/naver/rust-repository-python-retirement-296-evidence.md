@@ -1266,3 +1266,25 @@ unfinished image/model compiler work. Generic source helpers remain retained.
 Native Linux-amplifier and polygon reference integration is still under review.
 Their earlier 27 fault/17 generic and 76 scene/14 path/12 warning comparisons
 are bounded evidence, not authorization to remove unrelated Python sources.
+
+### Independent Linux I2C reference and live comparison retirement
+
+The Rust source reference owns arbitrary JSON byte-read/write actions, conversion,
+forced-address order, error propagation and context-close precedence. Its small
+C child performs only Linux open/ioctl/close, using the original selected-file
+preload fixture; it does not reuse the candidate amplifier implementation.
+The original generic I2C policy and fixture remain live SHA drift dependencies.
+Both retired tool identities and the complete original27 capture are pinned.
+
+All 27 original fault scenarios, 17 generic inputs, six pre-open errors, six CLI
+cases and 13 trace separators are retained. Independent review reproduced and
+repaired empty --case selection and missing-input initial-register persistence.
+Two unit and seven integration tests plus strict scoped Clippy pass. The fresh
+live source/candidate gate passes all 27 cases with empty --case, and 483 artifacts
+match after output-root normalization; all 27 changed source invocation receipts
+separately assert the actual Rust owner environment and raw child preload.
+Repeated after Python deletion with compiler-only PATH: all 27 PASS.
+
+CI now invokes check-amplifier-linux; the two Python tools are removed. Baseline
+inventory is 55 replaced-local / 3,525 pending. This remains an independent host
+I2C fixture comparison, not hardware/device acceptance or complete Python removal.
