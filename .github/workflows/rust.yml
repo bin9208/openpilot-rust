@@ -2068,7 +2068,7 @@ jobs:
       - name: Compare statistics numeric, clock and producer contracts
         run: |
           rust/target/debug/check-stats-numbers --binary rust/target/debug/examples/stats_trace --output "$RUNNER_TEMP/telemetry-runtime/stats-numbers.json"
-          python rust/tools/check_stats_clock.py rust/target/debug/examples/stats_clock "$RUNNER_TEMP/telemetry-runtime/stats-clock.json"
+          rust/target/debug/check-stats-clock rust/target/debug/examples/stats_clock "$RUNNER_TEMP/telemetry-runtime/stats-clock.json"
           python rust/tools/check_stats_producer.py rust/target/debug/examples "$RUNNER_TEMP/telemetry-runtime/stats-producer"
       - name: Compare continuous statistics, real Params and collector failure paths
         run: |

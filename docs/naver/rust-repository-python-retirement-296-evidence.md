@@ -1307,3 +1307,31 @@ with PATH=/nonexistent also passes with an identical report. The telemetry job
 builds and invokes the native checker; fast checks include its regressions.
 Inventory is now 56 replaced-local / 3,524 pending. Generic statsd and other
 numeric tools remain explicitly separate; no full-project completion is claimed.
+
+### Native statsd clock checker
+
+The fixed CPython 3.12 oracle now runs as `check-stats-clock`: 5,048 calendar
+rounding, 5,009 monotonic bit-conversion and two rejected calendar-boundary
+inputs are independently captured with source hashes. The native checker also
+preserves 25 success/failure sequences and 38 Python integer-admission cases,
+including arbitrary integers, Unicode digits, line separators, output ordering
+and pre-existing report preservation. The stub failed its integration regression
+before implementation; four native tests, strict scoped Clippy and formatting
+pass. The existing native arbitrary integer parser is reused.
+
+A freshly rebuilt #296 stats_clock example passed both original and native
+checkers with byte-identical 598-byte reports and stdout. The parent repeated
+the native gate after deleting the Python checker, with PATH=/nonexistent in
+the actual repository; all 10,057 normal inputs and both boundaries pass and
+its report still matches. The telemetry workflow now invokes the native binary
+and fast checks include its four regressions. Inventory: 57 replaced-local /
+3,523 pending baseline sources. Full Python retirement and user-owned device
+acceptance remain open.
+
+Concurrent SDK review reproduced reuse of existing work/install directories,
+which could retain an old successful receipt after a failed attempt. The pending
+image stager now requires fresh separate destinations, checks disk space for both
+filesystems and validates library receipts. Five standalone tests pass, including
+stale directories, dangling links, overlapping paths and mutated SDK libraries.
+The new full SDK build and image-format completion are still pending; these
+uncommitted image/model changes are excluded from the clock retirement commit.

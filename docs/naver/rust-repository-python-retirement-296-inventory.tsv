@@ -2075,7 +2075,7 @@ rust/tools/check_services.py	654648d153d5818f00c6f807140a00641327ed25	pending	-
 rust/tools/check_soundd.py	1e3bb65620d9e3850d5e0929254f8de4a73be8d0	pending	-
 rust/tools/check_soundd_daemon.py	469e0a1748d7bae0138e6de4c591319380cab0c4	pending	-
 rust/tools/check_startup_ui.py	15466dc5f767059f06f1380850f666eaf6ca260e	pending	-
-rust/tools/check_stats_clock.py	d39c50ee332422bbbac65e2ed44284b8439ef20b	pending	-
+rust/tools/check_stats_clock.py	d39c50ee332422bbbac65e2ed44284b8439ef20b	replaced-local	openpilot-dev-tools check-stats-clock
 rust/tools/check_stats_daemon.py	ffcc3b899f807f3f96977ac2fa0b0fc690096d66	pending	-
 rust/tools/check_stats_failures.py	ce144ca88d88b034376666810d767e233554bbec	pending	-
 rust/tools/check_stats_flood.py	1b5ad8b2c9e66df9f6d5bfd69aedba1267cc4cd1	pending	-
