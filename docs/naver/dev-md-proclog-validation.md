@@ -1,5 +1,8 @@
 # dev-md incremental procLog PSS port — #338
 
+The subsequent bounded procfs read optimization and syscall measurements are
+tracked in [the per-core follow-up](dev-md-core-cpu-validation.md) under #348.
+
 Source target: `e8e152dbcfd9574a1791ed12026d1880e87689b3`; relevant source commit `1cd1b2c6` (Spread PSS sampling and batch shared C3/C4 drawing calls), compared with ancestor `43203371004e035bdb70a00a8dad29a4b657c6c3`. This record covers only procLog sampling/publication. No commit, push or device action.
 
 ## Contract being ported

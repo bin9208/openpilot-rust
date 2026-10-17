@@ -29,6 +29,9 @@ impl<T: Io> Io for CancellableIo<'_, T> {
     fn now_ns(&mut self) -> u64 {
         self.io.now_ns()
     }
+    fn wait_until(&mut self, start: u64, duration: u64) {
+        self.io.wait_until(start, duration);
+    }
     fn transfer(&mut self, tx: &mut [u8], rx: &mut [u8], length: usize) -> i32 {
         self.io.transfer(tx, rx, length)
     }
