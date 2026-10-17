@@ -1189,3 +1189,80 @@ independent read-only review is clear. Fast routing includes this regression.
 This is a comparison primitive only. Image decoding/modes, original pixel-warning
 thresholds and full checker/caller migration remain pending. No additional Python
 source is retired by this helper.
+
+### 2026-10-18 resumed native amplifier policy gate
+
+Work continues solely on `codex/feat-296-repository-python-retirement` from
+stable dev; the primary checkout's concurrent dev-md work is not an input.
+User reconfirmed complete tool conversion and final offroad boot/recording/upload.
+USB and ADB inventories currently expose no comma device; reconnection requested.
+
+Captured all 2,034 unchanged original amplifier cases, exact inputs/outputs and
+both source hashes independently. Native fixed-input checker validates corpus
+integrity, still-live amplifier source and the explicitly retired checker digest.
+Its 6,103 generated files (including result.json) match the original byte for
+byte using the same actual native amplifier example. Repeated after removing
+`check_amplifier.py` with PATH=/nonexistent: PASS and empty recursive diff.
+CI hardware gate now calls the native checker. The generic amplifier source and
+Linux syscall reference remain separate work, not replaced by fixed responses.
+
+Independent review caught depth-limit bypass by overwritten duplicate JSON keys,
+missing checker-source drift enforcement and argparse error exit mismatch. All
+three reproduced RED and their repair passed five focused tests. Eight original
+decoder boundary cases (depth 9994–10001) pass the unit guard. Further review found
+UTF-16 byte autodetection on already decoded text: corrected regression reproduced
+2,034 artifact directories instead of zero. Raw-NUL rejection is implemented;
+final regression/Clippy after that last repair remains pending the coordinated
+Cargo slot. A test peer's serde default float round-trip was also corrected to
+preserve original JSON decimal lexemes; original expectations did not change.
+
+Model LLVM18 materialized IMAGE boundary passed 36 exact output-byte cases and
+12 schedule captures (188.70 s). Varied-weight/extended-channel controls, provider
+20.1, complete model packing/ABI integration and the earlier C shortcut are still
+pending. This is not full-model completion. Image-array package tests now pass
+captured modes, malformed cases, thresholds and JPEG acceptance; full installed
+Pillow format admission/native codec staging remains ongoing. Neither partial
+area authorizes deleting model or image-checker Python yet.
+
+Hardware-control checker next unit captured 35 original fixed scenarios and 14
+success/failure/encoding artifact-order cases. The new stub test failed RED as
+expected; implementation and final regressions are in progress. An attempted
+actual comparison using the shared old host cache rejected `openpilot-reboot`
+versus stable source `sudo reboot`. The selected #296 source still correctly
+contains `sudo reboot`; this identifies an unrelated cached executable, not a
+#296 source regression. Rebuild both amplifier and hardware-control examples
+from this worktree into the dedicated retirement cache before final proof.
+Do not use the shared primary/dev-md target as provenance for #296 executables.
+
+Latest parent gates: 6 amplifier, 2 shared comparator, 32 CI routing and 1 hardware
+policy test passed (41 total), plus strict focused Clippy. The last text-admission
+fix is now verified. Dedicated-cache source-matched examples were rebuilt:
+amplifier SHA256 `f00cc8c881dfaa0663fc54a0c599b776f99bebd187c87622dac2a117d220ff06`,
+hardware-control `79dd686ee09caf7237f1c02885da0ce972a57e55d33dd04211f9dc269cbd1547`.
+Original/native amplifier 6,103 files and hardware-control 38 files match byte for
+byte. Both native checks pass with PATH=/nonexistent, after deleting their original
+fixed checkers; generic runtime/reference sources remain pinned and retained.
+Independent hardware review regenerated all 35 cases with zero mismatches.
+
+Retirement inventory is now 53 replaced-local / 3,527 pending baseline entries.
+Both native tools are connected to fast and hardware-runtime CI. Added later
+hardware live-source drift regression and Linux amplifier reference integration
+remain awaiting the next Cargo slot; this is local work, not new exact-SHA CI or
+completion. No device boot/recording/upload result is claimed.
+
+User update (2026-10-18): comma is unavailable; the user will git-pull and perform
+normal boot/recording/upload acceptance personally. Do not request reconnection
+or wait for device access. Continue code conversion, optimization, test gates and
+reviewed commits/integration to dev; record physical acceptance as user-owned.
+This supersedes the earlier device-reconnection request for this continuation.
+
+The final parent regression run after hardware source-drift tests passes all
+6 amplifier, 3 hardware-control and 32 CI-isolation cases (41 tests). This
+includes changed reintroduced generators, every live hardware policy dependency,
+pre-existing evidence preservation, malformed text and original failure artifact
+ordering. The two fixed policy checkers are ready to commit independently of
+unfinished image/model compiler work. Generic source helpers remain retained.
+
+Native Linux-amplifier and polygon reference integration is still under review.
+Their earlier 27 fault/17 generic and 76 scene/14 path/12 warning comparisons
+are bounded evidence, not authorization to remove unrelated Python sources.

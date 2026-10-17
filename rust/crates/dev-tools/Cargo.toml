@@ -9,6 +9,14 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-amplifier-policy"
+path = "src/bin/check_amplifier_policy.rs"
+
+[[bin]]
+name = "check-hardware-control-policy"
+path = "src/bin/check_hardware_control_policy.rs"
+
+[[bin]]
 name = "check-command-reference"
 path = "src/bin/check_command_reference.rs"
 

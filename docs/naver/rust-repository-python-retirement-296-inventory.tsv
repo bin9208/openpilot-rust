@@ -1801,7 +1801,7 @@ rust/tools/check_agnos_updater_ui.py	10076ee53485e59b4f43e1466be3e1f7fdfe7075	pe
 rust/tools/check_agnos_updater_worker.py	ca177ffdd72a470547ad50ddcfb2edc3c4110f90	pending	-
 rust/tools/check_alert_callbacks.py	526ae67a2676af83b375fa4274a0cb9df3810018	pending	-
 rust/tools/check_alert_manager.py	a91ed7fa7f4375cda69a4c907fbc20618c5b781b	pending	-
-rust/tools/check_amplifier.py	5974dd0bc80d28598600585a7fd6c5ca57bb8ca7	pending	-
+rust/tools/check_amplifier.py	5974dd0bc80d28598600585a7fd6c5ca57bb8ca7	replaced-local	openpilot-dev-tools check-amplifier-policy; original 2034 fixed cases and exact artifact comparisons
 rust/tools/check_amplifier_linux.py	498383d5b21e6cef4ccca0f2b3448d335d422f6f	pending	-
 rust/tools/check_athena_camera_lifecycle.py	7f5b1b9fd690d5b0cb5773a6930927dd29fbeccf	pending	-
 rust/tools/check_athena_connect.py	ba1a5edd33a809fef2cc99cc91026b019fde3ee8	pending	-
@@ -1937,7 +1937,7 @@ rust/tools/check_encoder_runtime.py	378310c441ab51e189b9e14f44a7953bd3cda73e	pen
 rust/tools/check_encoder_target.py	2d50047cbd3cbc9a8e632b8ebe2bb8f09a8eb2ba	pending	-
 rust/tools/check_encoder_v4l.py	3eddf8d4ebe3f414c6c1cf0712e081d9450258c4	pending	-
 rust/tools/check_feedbackd.py	6dbcef88b313b3d972116647f6b184cb741ad8ee	pending	-
-rust/tools/check_hardware_control.py	d3db234f72a367c9b692ed2fd53099a9c1d1c2c7	pending	-
+rust/tools/check_hardware_control.py	d3db234f72a367c9b692ed2fd53099a9c1d1c2c7	replaced-local	openpilot-dev-tools check-hardware-control-policy; original 35 fixed cases and exact artifact comparisons
 rust/tools/check_hardware_info.py	089f34da86d5a3f4d30bb1533967ba90a193e8c0	pending	-
 rust/tools/check_hardwared.py	bd1fdb053cb5dbcf038a7250b9752f4992d8a9dc	pending	-
 rust/tools/check_hardwared_daemon.py	bfd4b1ad7fd25469ee13a652cbcae435123d1ba7	pending	-

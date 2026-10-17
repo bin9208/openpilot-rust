@@ -2,6 +2,14 @@
 use crate::seal::Result;
 use openpilot_log_format::{JsonValue, JsonView};
 
+/// Parse already-decoded text without allowing byte-encoding autodetection.
+pub(crate) fn parse_text(text: &str) -> Result<JsonValue> {
+    if text.starts_with('\u{feff}') || text.contains('\0') {
+        return Err("unexpected BOM or raw NUL in JSON text".into());
+    }
+    parse(text.as_bytes())
+}
+
 pub(super) fn parse(bytes: &[u8]) -> Result<JsonValue> {
     let (width, little, skip) = if bytes.starts_with(b"\xff\xfe\0\0") {
         (4, true, 4)

@@ -2706,10 +2706,10 @@ jobs:
         run: |
           python rust/tools/check_hardware_info.py rust/target/debug/examples/hardware_info \
             "$RUNNER_TEMP"/hardware-params-binding/params_pyx*.so "$RUNNER_TEMP/hardware-runtime/information"
-          python rust/tools/check_amplifier.py rust/target/debug/examples/amplifier_trace "$RUNNER_TEMP/hardware-runtime/amplifier-policy"
+          rust/target/debug/check-amplifier-policy rust/target/debug/examples/amplifier_trace "$RUNNER_TEMP/hardware-runtime/amplifier-policy"
           python rust/tools/check_amplifier_linux.py rust/target/debug/examples/amplifier_linux \
             "$RUNNER_TEMP/amplifier-i2c-fixture.so" "$RUNNER_TEMP/hardware-runtime/amplifier-io"
-          python rust/tools/check_hardware_control.py rust/target/debug/examples/hardware_control_trace "$RUNNER_TEMP/hardware-runtime/control-policy"
+          rust/target/debug/check-hardware-control-policy rust/target/debug/examples/hardware_control_trace "$RUNNER_TEMP/hardware-runtime/control-policy"
           rust/target/debug/examples/hardware_control_command rust/target/debug/openpilot-process-child \
             > "$RUNNER_TEMP/hardware-runtime/command.json" 2> "$RUNNER_TEMP/hardware-runtime/command.stderr"
           rust/target/debug/check-hardware-command --evidence "$RUNNER_TEMP/hardware-runtime"

@@ -1,4 +1,5 @@
 pub use openpilot_disk_space as disk_space;
+pub mod amplifier_policy_check;
 pub mod argparse_scan;
 pub mod athena_vision_build;
 pub mod brotli_stage;
@@ -25,6 +26,7 @@ pub mod encoder_stage;
 
 pub mod ffmpeg_build;
 pub mod hardware_command_check;
+pub mod hardware_control_policy_check;
 pub mod image_array_math;
 pub mod qcom_compiler_stage;
 pub mod torque_stage;
