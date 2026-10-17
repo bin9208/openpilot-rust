@@ -68,8 +68,9 @@ pub fn run(config: &Config, stop: &AtomicBool) -> Result<(), Error> {
                 let mut source = response.body_mut().as_reader();
                 let mut size = 0;
                 let mut complete = true;
+                let mut chunk = Vec::with_capacity(8192);
                 loop {
-                    let mut chunk = Vec::with_capacity(8192);
+                    chunk.clear();
                     match source.by_ref().take(8192).read_to_end(&mut chunk) {
                         Ok(0) => break,
                         Ok(count) => {

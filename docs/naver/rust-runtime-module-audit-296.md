@@ -655,3 +655,16 @@ write failure, deep-object publication and the 61-second rotation boundary;
 shutdown, empty-record rejection and invalid CLI paths pass. The pre-existing
 explicit CPython recursion-depth difference remains recorded by the unchanged
 reference suite. Results: local `2026-10-18-logmessage-reuse/native-peers/report.json`.
+
+### qcomgpsd assistance download buffer reuse (2026-10-18)
+
+The assistance downloader now retains its 8,192-byte Vec between response chunks,
+clearing its length before each read. The prior implementation allocated/dropped a
+new Vec for each chunk. Reads, writes, response-limit enforcement, retry/stop and
+partial-file cleanup remain in the same order; no timing, URL or size policy changes.
+The package's ten tests, all-target strict Clippy and actual binary build pass.
+The unchanged original/native assistance comparison passes alternate-server,
+HTTP404, oversized and retry scenarios. An additional 89,619-byte multi-chunk
+comparison passes the same four scenarios and byte output/cleanup checks.
+Independent source review found no issue. This reduces allocations by construction;
+it is not a measured device CPU saving or device download validation.
