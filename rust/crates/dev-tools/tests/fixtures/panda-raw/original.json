@@ -1,0 +1,1584 @@
+{
+  "source_sha256": {
+    "build_pandad_protocol_source.py": "6fba1fec3bb9928e62a39a4773450a54fd1907e8678c0956a28f72382420dc46",
+    "build_pandad_usb_source.py": "6f62627ff1c315444ac8e3ce202304bec2a2396d54d7641abcc8759ef2b1bb26",
+    "build_pandad_spi_source.py": "e44324cc0611780d9cd0b8744841d81a043511fd850d66bd1cb4667b7132b480",
+    "build_pandad_peripheral_source.py": "87de3b89494c3ce79e8a272565a92b3086d1500ba56f328c34c5299bcb213a13",
+    "build_pandad_runtime_fixture.py": "a17f30cba87ba6a83508c6bc00d5c995516bc21e708efee220a7c3a436da697a"
+  },
+  "cases": [
+    {
+      "family": "protocol",
+      "mode": "protocol",
+      "sanitize": false,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f70726f746f636f6c5f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_protocol_source.cc\": \"b1409527acd09687c9fea57f01f24fb6af0daff46fe89dc065d7704ddf58c011\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged original CAN pack/unpack and SPI alert methods; fixture only replaces transport reset and logging sinks\",\n  \"sanitize\": false\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_protocol_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "protocol",
+      "sanitize": true,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff",
+        "2d2d73616e6974697a65"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f70726f746f636f6c5f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_protocol_source.cc\": \"b1409527acd09687c9fea57f01f24fb6af0daff46fe89dc065d7704ddf58c011\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged original CAN pack/unpack and SPI alert methods; fixture only replaces transport reset and logging sinks\",\n  \"sanitize\": true\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_protocol_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "safety",
+      "sanitize": false,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff",
+        "2d2d736166657479"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7361666574795f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64615f7361666574792e6363",
+          "524f4f542f6f70656e70696c6f742f636f6d6d6f6e2f706172616d732e6363",
+          "524f4f542f6f70656e70696c6f742f636f6d6d6f6e2f7574696c2e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_safety_source.cc\": \"9f99911342e1b28243a347b8d82708a48faacd2c35e1f753a36099980941d8f0\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_safety.cc\": \"f5a583f5c574c9a2bbf9e7940c6c9529a89bcd5d2f135071d3bb934827169717\",\n    \"openpilot/common/params.cc\": \"2947645ca30b57d23feeace0e88bead5709c1681dc21359fb1e5a225ca63b187\",\n    \"openpilot/common/util.cc\": \"4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a\",\n    \"openpilot/selfdrive/pandad/pandad.h\": \"b13bd975d585eb6ce29112a924fcfe554991dcf343e2fe9a2be412452ba71a47\",\n    \"openpilot/common/params.h\": \"47d08fa1987c9150e55d09a2a533a0a115851aadb34bd1a0c82325e0be8726b3\",\n    \"openpilot/common/params_keys.h\": \"b8422e8ad2cd74ec3c5750c3e919f6546519d84fabb5f6ec868b5372713b4d7f\",\n    \"openpilot/cereal/messaging/messaging.h\": \"7d007b2e4d32e102b9ab51d5a566323b51c69187eb3fde261d1002c3b6735a6b\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged PandaSafety, native Params and control command methods; fixture transport and logging sinks\",\n  \"sanitize\": false\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_safety_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda_safety.cc\",\n      \"ROOT/openpilot/common/params.cc\",\n      \"ROOT/openpilot/common/util.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "safety",
+      "sanitize": true,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff",
+        "2d2d736166657479",
+        "2d2d73616e6974697a65"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7361666574795f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64615f7361666574792e6363",
+          "524f4f542f6f70656e70696c6f742f636f6d6d6f6e2f706172616d732e6363",
+          "524f4f542f6f70656e70696c6f742f636f6d6d6f6e2f7574696c2e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_safety_source.cc\": \"9f99911342e1b28243a347b8d82708a48faacd2c35e1f753a36099980941d8f0\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_safety.cc\": \"f5a583f5c574c9a2bbf9e7940c6c9529a89bcd5d2f135071d3bb934827169717\",\n    \"openpilot/common/params.cc\": \"2947645ca30b57d23feeace0e88bead5709c1681dc21359fb1e5a225ca63b187\",\n    \"openpilot/common/util.cc\": \"4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a\",\n    \"openpilot/selfdrive/pandad/pandad.h\": \"b13bd975d585eb6ce29112a924fcfe554991dcf343e2fe9a2be412452ba71a47\",\n    \"openpilot/common/params.h\": \"47d08fa1987c9150e55d09a2a533a0a115851aadb34bd1a0c82325e0be8726b3\",\n    \"openpilot/common/params_keys.h\": \"b8422e8ad2cd74ec3c5750c3e919f6546519d84fabb5f6ec868b5372713b4d7f\",\n    \"openpilot/cereal/messaging/messaging.h\": \"7d007b2e4d32e102b9ab51d5a566323b51c69187eb3fde261d1002c3b6735a6b\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged PandaSafety, native Params and control command methods; fixture transport and logging sinks\",\n  \"sanitize\": true\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_safety_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda_safety.cc\",\n      \"ROOT/openpilot/common/params.cc\",\n      \"ROOT/openpilot/common/util.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "device",
+      "sanitize": false,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff",
+        "2d2d646576696365"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f6465766963655f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_device_source.cc\": \"dbf7b2de42a945047f3c0d8f5450f3e89e16452cb454c4b922ee81b799347468\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged Panda control/read methods and packed health structures; recorded transport\",\n  \"sanitize\": false\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_device_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "device",
+      "sanitize": true,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff",
+        "2d2d646576696365",
+        "2d2d73616e6974697a65"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f6465766963655f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_device_source.cc\": \"dbf7b2de42a945047f3c0d8f5450f3e89e16452cb454c4b922ee81b799347468\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged Panda control/read methods and packed health structures; recorded transport\",\n  \"sanitize\": true\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_device_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "state",
+      "sanitize": false,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff",
+        "2d2d7374617465"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f73746174655f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_state_source.cc\": \"c362726091bbc8944ff2b1ead02e3c2c7425e23da34867edae4c6e34ebfaa79c\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/selfdrive/pandad/pandad.cc\": \"2fdb4ede45abf81daaf369a8f2919b8d650277d06d1947eefe06f7fbb4ccbda0\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged Panda state/CAN-state fill, publication and reconnect bodies with original Panda methods; recorded I/O\",\n  \"sanitize\": false\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-Wl,--wrap=clock_gettime\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_state_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n",
+        "pandad_state_body.inc": "void fill_panda_state(cereal::PandaState::Builder &ps, cereal::PandaState::PandaType hw_type, const health_t &health) {\n  ps.setVoltage(health.voltage_pkt);\n  ps.setCurrent(health.current_pkt);\n  ps.setUptime(health.uptime_pkt);\n  ps.setSafetyTxBlocked(health.safety_tx_blocked_pkt);\n  ps.setSafetyRxInvalid(health.safety_rx_invalid_pkt);\n  ps.setIgnitionLine(health.ignition_line_pkt);\n  ps.setIgnitionCan(health.ignition_can_pkt);\n  ps.setControlsAllowed(health.controls_allowed_pkt);\n  ps.setTxBufferOverflow(health.tx_buffer_overflow_pkt);\n  ps.setRxBufferOverflow(health.rx_buffer_overflow_pkt);\n  ps.setPandaType(hw_type);\n  ps.setSafetyModel(cereal::CarParams::SafetyModel(health.safety_mode_pkt));\n  ps.setSafetyParam(health.safety_param_pkt);\n  ps.setFaultStatus(cereal::PandaState::FaultStatus(health.fault_status_pkt));\n  ps.setPowerSaveEnabled((bool)(health.power_save_enabled_pkt));\n  ps.setHeartbeatLost((bool)(health.heartbeat_lost_pkt));\n  ps.setAlternativeExperience(health.alternative_experience_pkt);\n  ps.setHarnessStatus(cereal::PandaState::HarnessStatus(health.car_harness_status_pkt));\n  ps.setInterruptLoad(health.interrupt_load_pkt);\n  ps.setFanPower(health.fan_power);\n  ps.setFanStallCount(health.fan_stall_count);\n  ps.setSafetyRxChecksInvalid((bool)(health.safety_rx_checks_invalid_pkt));\n  ps.setSpiChecksumErrorCount(health.spi_checksum_error_count_pkt);\n  ps.setSbu1Voltage(health.sbu1_voltage_mV / 1000.0f);\n  ps.setSbu2Voltage(health.sbu2_voltage_mV / 1000.0f);\n}\n\nvoid fill_panda_can_state(cereal::PandaState::PandaCanState::Builder &cs, const can_health_t &can_health) {\n  cs.setBusOff((bool)can_health.bus_off);\n  cs.setBusOffCnt(can_health.bus_off_cnt);\n  cs.setErrorWarning((bool)can_health.error_warning);\n  cs.setErrorPassive((bool)can_health.error_passive);\n  cs.setLastError(cereal::PandaState::PandaCanState::LecErrorCode(can_health.last_error));\n  cs.setLastStoredError(cereal::PandaState::PandaCanState::LecErrorCode(can_health.last_stored_error));\n  cs.setLastDataError(cereal::PandaState::PandaCanState::LecErrorCode(can_health.last_data_error));\n  cs.setLastDataStoredError(cereal::PandaState::PandaCanState::LecErrorCode(can_health.last_data_stored_error));\n  cs.setReceiveErrorCnt(can_health.receive_error_cnt);\n  cs.setTransmitErrorCnt(can_health.transmit_error_cnt);\n  cs.setTotalErrorCnt(can_health.total_error_cnt);\n  cs.setTotalTxLostCnt(can_health.total_tx_lost_cnt);\n  cs.setTotalRxLostCnt(can_health.total_rx_lost_cnt);\n  cs.setTotalTxCnt(can_health.total_tx_cnt);\n  cs.setTotalRxCnt(can_health.total_rx_cnt);\n  cs.setTotalFwdCnt(can_health.total_fwd_cnt);\n  cs.setCanSpeed(can_health.can_speed);\n  cs.setCanDataSpeed(can_health.can_data_speed);\n  cs.setCanfdEnabled(can_health.canfd_enabled);\n  cs.setBrsEnabled(can_health.brs_enabled);\n  cs.setCanfdNonIso(can_health.canfd_non_iso);\n  cs.setIrq0CallRate(can_health.irq0_call_rate);\n  cs.setIrq1CallRate(can_health.irq1_call_rate);\n  cs.setIrq2CallRate(can_health.irq2_call_rate);\n  cs.setCanCoreResetCnt(can_health.can_core_reset_cnt);\n}\n\nstd::optional<bool> send_panda_states(PubMaster *pm, const std::vector<Panda *> &pandas, bool is_onroad, bool spoofing_started) {\n  static std::unordered_map<std::string, uint16_t> spi_checksum_counts;\n  bool ignition_local = false;\n  const uint32_t pandas_cnt = pandas.size();\n\n  // build msg\n  MessageBuilder msg;\n  auto evt = msg.initEvent();\n  auto pss = evt.initPandaStates(pandas_cnt);\n\n  std::vector<health_t> panda_states;\n  panda_states.reserve(pandas_cnt);\n\n  std::vector<std::array<can_health_t, PANDA_CAN_CNT>> panda_can_states;\n  panda_can_states.reserve(pandas_cnt);\n\n  const bool red_panda_comma_three = (pandas.size() == 2) &&\n                                     (pandas[0]->hw_type == cereal::PandaState::PandaType::DOS) &&\n                                     (pandas[1]->hw_type == cereal::PandaState::PandaType::RED_PANDA);\n\n  for (size_t panda_index = 0; panda_index < pandas.size(); ++panda_index) {\n    Panda *panda = pandas[panda_index];\n    auto health_opt = panda->get_state();\n    if (!health_opt) {\n      return std::nullopt;\n    }\n\n    health_t health = *health_opt;\n\n    const std::string panda_serial = panda->hw_serial();\n    const std::string log_source = \"panda[\" + std::to_string(panda_index) + \"]\";\n    const uint16_t spi_checksum_error_count = health.spi_checksum_error_count_pkt;\n    auto [checksum_it, inserted] = spi_checksum_counts.try_emplace(panda_serial, spi_checksum_error_count);\n    if (inserted) {\n      cloudlog_e(CLOUDLOG_WARNING, log_source.c_str(), __LINE__, __func__,\n                 \"SPI checksum: serial=%s, total=%u, delta=0, baseline=1\",\n                 panda_serial.c_str(), spi_checksum_error_count);\n    } else if (checksum_it->second != spi_checksum_error_count) {\n      const bool reset = spi_checksum_error_count < checksum_it->second;\n      const uint32_t delta = reset ? spi_checksum_error_count :\n                             spi_checksum_error_count - checksum_it->second;\n      cloudlog_e(CLOUDLOG_WARNING, log_source.c_str(), __LINE__, __func__,\n                 \"SPI checksum: serial=%s, total=%u, delta=%u, baseline=0, reset=%d\",\n                 panda_serial.c_str(), spi_checksum_error_count, delta, reset);\n      checksum_it->second = spi_checksum_error_count;\n    }\n\n    std::array<can_health_t, PANDA_CAN_CNT> can_health{};\n    for (uint32_t i = 0; i < PANDA_CAN_CNT; i++) {\n      auto can_health_opt = panda->get_can_state(i);\n      if (!can_health_opt) {\n        return std::nullopt;\n      }\n      can_health[i] = *can_health_opt;\n    }\n    panda_can_states.push_back(can_health);\n\n    if (spoofing_started) {\n      health.ignition_line_pkt = 1;\n    }\n\n    // A C3's DOS can report false ignition from the harness box. The red panda\n    // is the vehicle-facing ignition source in this two-panda configuration.\n    if (red_panda_comma_three && (panda->hw_type == cereal::PandaState::PandaType::DOS)) {\n      health.ignition_line_pkt = 0;\n    }\n\n    ignition_local |= ((health.ignition_line_pkt != 0) || (health.ignition_can_pkt != 0));\n    panda_states.push_back(health);\n  }\n\n  for (uint32_t i = 0; i < pandas_cnt; i++) {\n    Panda *panda = pandas[i];\n    const health_t &health = panda_states[i];\n\n    // Make sure CAN buses are live: safety_setter_thread does not work if Panda CAN are silent and there is only one other CAN node\n    if (health.safety_mode_pkt == (uint8_t)(cereal::CarParams::SafetyModel::SILENT)) {\n      panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);\n    }\n\n    bool power_save_desired = !ignition_local;\n    if (health.power_save_enabled_pkt != power_save_desired) {\n      panda->set_power_saving(power_save_desired);\n    }\n\n    // Set safety mode to NO_OUTPUT when the car is off or we're not onroad.\n    bool should_close_relay = !ignition_local || !is_onroad;\n    if (should_close_relay && (health.safety_mode_pkt != (uint8_t)(cereal::CarParams::SafetyModel::NO_OUTPUT))) {\n      panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);\n    }\n\n    if (!panda->comms_healthy()) {\n      evt.setValid(false);\n    }\n\n    auto ps = pss[i];\n    fill_panda_state(ps, panda->hw_type, health);\n\n    auto cs = std::array{ps.initCanState0(), ps.initCanState1(), ps.initCanState2()};\n    for (uint32_t j = 0; j < PANDA_CAN_CNT; j++) {\n      fill_panda_can_state(cs[j], panda_can_states[i][j]);\n    }\n\n    // Convert faults bitset to capnp list\n    std::bitset<sizeof(health.faults_pkt) * 8> fault_bits(health.faults_pkt);\n    auto faults = ps.initFaults(fault_bits.count());\n\n    size_t j = 0;\n    for (size_t f = size_t(cereal::PandaState::FaultType::RELAY_MALFUNCTION);\n         f <= size_t(cereal::PandaState::FaultType::HEARTBEAT_LOOP_WATCHDOG); f++) {\n      if (fault_bits.test(f)) {\n        faults.set(j, cereal::PandaState::FaultType(f));\n        j++;\n      }\n    }\n  }\n\n  pm->send(\"pandaStates\", msg);\n  return ignition_local;\n}\n\nstd::optional<bool> process_panda_state(const std::vector<Panda *> &pandas, PubMaster *pm, bool engaged, bool is_onroad, bool spoofing_started) {\n  std::vector<std::string> connected_serials;\n  connected_serials.reserve(pandas.size());\n  for (Panda *panda : pandas) {\n    connected_serials.push_back(panda->hw_serial());\n  }\n\n  auto ignition_opt = send_panda_states(pm, pandas, is_onroad, spoofing_started);\n  if (!ignition_opt) {\n    LOGE(\"Failed to get ignition_opt\");\n    return std::nullopt;\n  }\n\n  // check if we should have pandad reconnect\n  if (!ignition_opt.value()) {\n    bool comms_healthy = true;\n    for (Panda *panda : pandas) {\n      comms_healthy &= panda->comms_healthy();\n    }\n\n    if (!comms_healthy) {\n      LOGE(\"Reconnecting, communication to pandas not healthy\");\n      do_exit = true;\n    } else if (!is_onroad) {\n      // A C3 red panda can enumerate after its internal DOS. Restart the\n      // wrapper so it can sort and launch the complete set.\n      for (const std::string &serial : Panda::list(true)) {\n        if (!std::count(connected_serials.begin(), connected_serials.end(), serial)) {\n          LOGW(\"Reconnecting to new panda: %s\", serial.c_str());\n          do_exit = true;\n          break;\n        }\n      }\n    }\n  }\n\n  for (Panda *panda : pandas) {\n    panda->send_heartbeat(engaged);\n  }\n\n  return ignition_opt;\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "state",
+      "sanitize": true,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff",
+        "2d2d7374617465",
+        "2d2d73616e6974697a65"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f73746174655f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_state_source.cc\": \"c362726091bbc8944ff2b1ead02e3c2c7425e23da34867edae4c6e34ebfaa79c\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/selfdrive/pandad/pandad.cc\": \"2fdb4ede45abf81daaf369a8f2919b8d650277d06d1947eefe06f7fbb4ccbda0\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged Panda state/CAN-state fill, publication and reconnect bodies with original Panda methods; recorded I/O\",\n  \"sanitize\": true\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-Wl,--wrap=clock_gettime\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_state_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n",
+        "pandad_state_body.inc": "void fill_panda_state(cereal::PandaState::Builder &ps, cereal::PandaState::PandaType hw_type, const health_t &health) {\n  ps.setVoltage(health.voltage_pkt);\n  ps.setCurrent(health.current_pkt);\n  ps.setUptime(health.uptime_pkt);\n  ps.setSafetyTxBlocked(health.safety_tx_blocked_pkt);\n  ps.setSafetyRxInvalid(health.safety_rx_invalid_pkt);\n  ps.setIgnitionLine(health.ignition_line_pkt);\n  ps.setIgnitionCan(health.ignition_can_pkt);\n  ps.setControlsAllowed(health.controls_allowed_pkt);\n  ps.setTxBufferOverflow(health.tx_buffer_overflow_pkt);\n  ps.setRxBufferOverflow(health.rx_buffer_overflow_pkt);\n  ps.setPandaType(hw_type);\n  ps.setSafetyModel(cereal::CarParams::SafetyModel(health.safety_mode_pkt));\n  ps.setSafetyParam(health.safety_param_pkt);\n  ps.setFaultStatus(cereal::PandaState::FaultStatus(health.fault_status_pkt));\n  ps.setPowerSaveEnabled((bool)(health.power_save_enabled_pkt));\n  ps.setHeartbeatLost((bool)(health.heartbeat_lost_pkt));\n  ps.setAlternativeExperience(health.alternative_experience_pkt);\n  ps.setHarnessStatus(cereal::PandaState::HarnessStatus(health.car_harness_status_pkt));\n  ps.setInterruptLoad(health.interrupt_load_pkt);\n  ps.setFanPower(health.fan_power);\n  ps.setFanStallCount(health.fan_stall_count);\n  ps.setSafetyRxChecksInvalid((bool)(health.safety_rx_checks_invalid_pkt));\n  ps.setSpiChecksumErrorCount(health.spi_checksum_error_count_pkt);\n  ps.setSbu1Voltage(health.sbu1_voltage_mV / 1000.0f);\n  ps.setSbu2Voltage(health.sbu2_voltage_mV / 1000.0f);\n}\n\nvoid fill_panda_can_state(cereal::PandaState::PandaCanState::Builder &cs, const can_health_t &can_health) {\n  cs.setBusOff((bool)can_health.bus_off);\n  cs.setBusOffCnt(can_health.bus_off_cnt);\n  cs.setErrorWarning((bool)can_health.error_warning);\n  cs.setErrorPassive((bool)can_health.error_passive);\n  cs.setLastError(cereal::PandaState::PandaCanState::LecErrorCode(can_health.last_error));\n  cs.setLastStoredError(cereal::PandaState::PandaCanState::LecErrorCode(can_health.last_stored_error));\n  cs.setLastDataError(cereal::PandaState::PandaCanState::LecErrorCode(can_health.last_data_error));\n  cs.setLastDataStoredError(cereal::PandaState::PandaCanState::LecErrorCode(can_health.last_data_stored_error));\n  cs.setReceiveErrorCnt(can_health.receive_error_cnt);\n  cs.setTransmitErrorCnt(can_health.transmit_error_cnt);\n  cs.setTotalErrorCnt(can_health.total_error_cnt);\n  cs.setTotalTxLostCnt(can_health.total_tx_lost_cnt);\n  cs.setTotalRxLostCnt(can_health.total_rx_lost_cnt);\n  cs.setTotalTxCnt(can_health.total_tx_cnt);\n  cs.setTotalRxCnt(can_health.total_rx_cnt);\n  cs.setTotalFwdCnt(can_health.total_fwd_cnt);\n  cs.setCanSpeed(can_health.can_speed);\n  cs.setCanDataSpeed(can_health.can_data_speed);\n  cs.setCanfdEnabled(can_health.canfd_enabled);\n  cs.setBrsEnabled(can_health.brs_enabled);\n  cs.setCanfdNonIso(can_health.canfd_non_iso);\n  cs.setIrq0CallRate(can_health.irq0_call_rate);\n  cs.setIrq1CallRate(can_health.irq1_call_rate);\n  cs.setIrq2CallRate(can_health.irq2_call_rate);\n  cs.setCanCoreResetCnt(can_health.can_core_reset_cnt);\n}\n\nstd::optional<bool> send_panda_states(PubMaster *pm, const std::vector<Panda *> &pandas, bool is_onroad, bool spoofing_started) {\n  static std::unordered_map<std::string, uint16_t> spi_checksum_counts;\n  bool ignition_local = false;\n  const uint32_t pandas_cnt = pandas.size();\n\n  // build msg\n  MessageBuilder msg;\n  auto evt = msg.initEvent();\n  auto pss = evt.initPandaStates(pandas_cnt);\n\n  std::vector<health_t> panda_states;\n  panda_states.reserve(pandas_cnt);\n\n  std::vector<std::array<can_health_t, PANDA_CAN_CNT>> panda_can_states;\n  panda_can_states.reserve(pandas_cnt);\n\n  const bool red_panda_comma_three = (pandas.size() == 2) &&\n                                     (pandas[0]->hw_type == cereal::PandaState::PandaType::DOS) &&\n                                     (pandas[1]->hw_type == cereal::PandaState::PandaType::RED_PANDA);\n\n  for (size_t panda_index = 0; panda_index < pandas.size(); ++panda_index) {\n    Panda *panda = pandas[panda_index];\n    auto health_opt = panda->get_state();\n    if (!health_opt) {\n      return std::nullopt;\n    }\n\n    health_t health = *health_opt;\n\n    const std::string panda_serial = panda->hw_serial();\n    const std::string log_source = \"panda[\" + std::to_string(panda_index) + \"]\";\n    const uint16_t spi_checksum_error_count = health.spi_checksum_error_count_pkt;\n    auto [checksum_it, inserted] = spi_checksum_counts.try_emplace(panda_serial, spi_checksum_error_count);\n    if (inserted) {\n      cloudlog_e(CLOUDLOG_WARNING, log_source.c_str(), __LINE__, __func__,\n                 \"SPI checksum: serial=%s, total=%u, delta=0, baseline=1\",\n                 panda_serial.c_str(), spi_checksum_error_count);\n    } else if (checksum_it->second != spi_checksum_error_count) {\n      const bool reset = spi_checksum_error_count < checksum_it->second;\n      const uint32_t delta = reset ? spi_checksum_error_count :\n                             spi_checksum_error_count - checksum_it->second;\n      cloudlog_e(CLOUDLOG_WARNING, log_source.c_str(), __LINE__, __func__,\n                 \"SPI checksum: serial=%s, total=%u, delta=%u, baseline=0, reset=%d\",\n                 panda_serial.c_str(), spi_checksum_error_count, delta, reset);\n      checksum_it->second = spi_checksum_error_count;\n    }\n\n    std::array<can_health_t, PANDA_CAN_CNT> can_health{};\n    for (uint32_t i = 0; i < PANDA_CAN_CNT; i++) {\n      auto can_health_opt = panda->get_can_state(i);\n      if (!can_health_opt) {\n        return std::nullopt;\n      }\n      can_health[i] = *can_health_opt;\n    }\n    panda_can_states.push_back(can_health);\n\n    if (spoofing_started) {\n      health.ignition_line_pkt = 1;\n    }\n\n    // A C3's DOS can report false ignition from the harness box. The red panda\n    // is the vehicle-facing ignition source in this two-panda configuration.\n    if (red_panda_comma_three && (panda->hw_type == cereal::PandaState::PandaType::DOS)) {\n      health.ignition_line_pkt = 0;\n    }\n\n    ignition_local |= ((health.ignition_line_pkt != 0) || (health.ignition_can_pkt != 0));\n    panda_states.push_back(health);\n  }\n\n  for (uint32_t i = 0; i < pandas_cnt; i++) {\n    Panda *panda = pandas[i];\n    const health_t &health = panda_states[i];\n\n    // Make sure CAN buses are live: safety_setter_thread does not work if Panda CAN are silent and there is only one other CAN node\n    if (health.safety_mode_pkt == (uint8_t)(cereal::CarParams::SafetyModel::SILENT)) {\n      panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);\n    }\n\n    bool power_save_desired = !ignition_local;\n    if (health.power_save_enabled_pkt != power_save_desired) {\n      panda->set_power_saving(power_save_desired);\n    }\n\n    // Set safety mode to NO_OUTPUT when the car is off or we're not onroad.\n    bool should_close_relay = !ignition_local || !is_onroad;\n    if (should_close_relay && (health.safety_mode_pkt != (uint8_t)(cereal::CarParams::SafetyModel::NO_OUTPUT))) {\n      panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);\n    }\n\n    if (!panda->comms_healthy()) {\n      evt.setValid(false);\n    }\n\n    auto ps = pss[i];\n    fill_panda_state(ps, panda->hw_type, health);\n\n    auto cs = std::array{ps.initCanState0(), ps.initCanState1(), ps.initCanState2()};\n    for (uint32_t j = 0; j < PANDA_CAN_CNT; j++) {\n      fill_panda_can_state(cs[j], panda_can_states[i][j]);\n    }\n\n    // Convert faults bitset to capnp list\n    std::bitset<sizeof(health.faults_pkt) * 8> fault_bits(health.faults_pkt);\n    auto faults = ps.initFaults(fault_bits.count());\n\n    size_t j = 0;\n    for (size_t f = size_t(cereal::PandaState::FaultType::RELAY_MALFUNCTION);\n         f <= size_t(cereal::PandaState::FaultType::HEARTBEAT_LOOP_WATCHDOG); f++) {\n      if (fault_bits.test(f)) {\n        faults.set(j, cereal::PandaState::FaultType(f));\n        j++;\n      }\n    }\n  }\n\n  pm->send(\"pandaStates\", msg);\n  return ignition_local;\n}\n\nstd::optional<bool> process_panda_state(const std::vector<Panda *> &pandas, PubMaster *pm, bool engaged, bool is_onroad, bool spoofing_started) {\n  std::vector<std::string> connected_serials;\n  connected_serials.reserve(pandas.size());\n  for (Panda *panda : pandas) {\n    connected_serials.push_back(panda->hw_serial());\n  }\n\n  auto ignition_opt = send_panda_states(pm, pandas, is_onroad, spoofing_started);\n  if (!ignition_opt) {\n    LOGE(\"Failed to get ignition_opt\");\n    return std::nullopt;\n  }\n\n  // check if we should have pandad reconnect\n  if (!ignition_opt.value()) {\n    bool comms_healthy = true;\n    for (Panda *panda : pandas) {\n      comms_healthy &= panda->comms_healthy();\n    }\n\n    if (!comms_healthy) {\n      LOGE(\"Reconnecting, communication to pandas not healthy\");\n      do_exit = true;\n    } else if (!is_onroad) {\n      // A C3 red panda can enumerate after its internal DOS. Restart the\n      // wrapper so it can sort and launch the complete set.\n      for (const std::string &serial : Panda::list(true)) {\n        if (!std::count(connected_serials.begin(), connected_serials.end(), serial)) {\n          LOGW(\"Reconnecting to new panda: %s\", serial.c_str());\n          do_exit = true;\n          break;\n        }\n      }\n    }\n  }\n\n  for (Panda *panda : pandas) {\n    panda->send_heartbeat(engaged);\n  }\n\n  return ignition_opt;\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "can-io",
+      "sanitize": false,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff",
+        "2d2d63616e2d696f"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f63616e5f696f5f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_can_io_source.cc\": \"b364d3aaab01c38883731259df28d653c422cf9bb253ea914fea6efcf43febaa\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged Panda bulk CAN send/receive methods, codec, health gate and reset; recorded I/O\",\n  \"sanitize\": false\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_can_io_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "can-io",
+      "sanitize": true,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff",
+        "2d2d63616e2d696f",
+        "2d2d73616e6974697a65"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f63616e5f696f5f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_can_io_source.cc\": \"b364d3aaab01c38883731259df28d653c422cf9bb253ea914fea6efcf43febaa\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged Panda bulk CAN send/receive methods, codec, health gate and reset; recorded I/O\",\n  \"sanitize\": true\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_can_io_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "protocol",
+      "sanitize": false,
+      "status": "failure-1",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ]
+      ],
+      "files": {
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 9,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": "CalledProcessError"
+    },
+    {
+      "family": "protocol",
+      "mode": "protocol",
+      "sanitize": false,
+      "status": "success",
+      "rawroot": true,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49424153452f726f6f742dff",
+          "2d49424153452f726f6f742dff2f6f70656e70696c6f74",
+          "2d49424153452f726f6f742dff2f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f70616e6461645f70726f746f636f6c5f736f757263652e6363",
+          "424153452f726f6f742dff2f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-protocol-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"rust/tools/pandad_protocol_source.cc\": \"b1409527acd09687c9fea57f01f24fb6af0daff46fe89dc065d7704ddf58c011\",\n    \"openpilot/selfdrive/pandad/panda.cc\": \"fb50fce93675ae93403b478a6bc32621af10359420281a23dc16b3e283f98089\",\n    \"openpilot/selfdrive/pandad/panda.h\": \"faebd7a679a0fc8b44ca6b42fe0c6ed9aeddb52f3d4980db5dc025e05dbdc15a\",\n    \"openpilot/selfdrive/pandad/spi_alert.h\": \"40b34417b4c6c19185f2f3f7f03a0b34e7a4127953b587358d0c841d052d5063\",\n    \"openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"panda/board/can.h\": \"ed4dbeab2ec970f158899b686f8a9cf320caf4d6816ca0dbf39aa4cb056ef88c\",\n    \"openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\",\n    \"openpilot/cereal/custom.capnp\": \"102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693\",\n    \"openpilot/cereal/deprecated.capnp\": \"65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355\",\n    \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"\n  },\n  \"scope\": \"unchanged original CAN pack/unpack and SPI alert methods; fixture only replaces transport reset and logging sinks\",\n  \"sanitize\": false\n}\n",
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IBASE/root-\\udcff\",\n      \"-IBASE/root-\\udcff/openpilot\",\n      \"-IBASE/root-\\udcff/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"BASE/root-\\udcff/rust/tools/pandad_protocol_source.cc\",\n      \"BASE/root-\\udcff/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": null
+    },
+    {
+      "family": "protocol",
+      "mode": "protocol",
+      "sanitize": false,
+      "status": "failure-2",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6361706e702d707265666978",
+        "424153452f6361706e702dff"
+      ],
+      "commands_hex": [
+        [
+          "6361706e70",
+          "636f6d70696c65",
+          "2d49424153452f6f75742dff2f736368656d61",
+          "2d2d7372632d7072656669783d424153452f6f75742dff2f736368656d61",
+          "2d6f632b2b3a424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "424153452f6f75742dff2f736368656d612f6361722e6361706e70",
+          "424153452f6f75742dff2f736368656d612f637573746f6d2e6361706e70",
+          "424153452f6f75742dff2f736368656d612f646570726563617465642e6361706e70",
+          "424153452f6f75742dff2f736368656d612f6c6f672e6361706e70"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49524f4f542f6d7367715f7265706f",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6f75742dff2f63657265616c2f67656e2f637070",
+          "2d49424153452f6361706e702dff2f696e636c756465",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f70726f746f636f6c5f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64612e6363",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6361722e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f637573746f6d2e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f646570726563617465642e6361706e702e632b2b",
+          "424153452f6f75742dff2f63657265616c2f67656e2f6370702f6c6f672e6361706e702e632b2b",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d4c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d576c2c2d72706174682c424153452f6361706e702dff2f6c69622f7838365f36342d6c696e75782d676e75",
+          "2d6c6361706e70",
+          "2d6c6b6a",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d70726f746f636f6c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "commands.json": "[\n  {\n    \"argv\": [\n      \"capnp\",\n      \"compile\",\n      \"-IBASE/out-\\udcff/schema\",\n      \"--src-prefix=BASE/out-\\udcff/schema\",\n      \"-oc++:BASE/out-\\udcff/cereal/gen/cpp\",\n      \"BASE/out-\\udcff/schema/car.capnp\",\n      \"BASE/out-\\udcff/schema/custom.capnp\",\n      \"BASE/out-\\udcff/schema/deprecated.capnp\",\n      \"BASE/out-\\udcff/schema/log.capnp\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-IROOT\",\n      \"-IROOT/openpilot\",\n      \"-IROOT/msgq_repo\",\n      \"-IBASE/out-\\udcff\",\n      \"-IBASE/out-\\udcff/cereal/gen/cpp\",\n      \"-IBASE/capnp-\\udcff/include\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"ROOT/rust/tools/pandad_protocol_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda.cc\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/car.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/custom.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/deprecated.capnp.c++\",\n      \"BASE/out-\\udcff/cereal/gen/cpp/log.capnp.c++\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-LBASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-Wl,-rpath,BASE/capnp-\\udcff/lib/x86_64-linux-gnu\",\n      \"-lcapnp\",\n      \"-lkj\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-protocol-source\"\n    ],\n    \"exit_code\": 9,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": "CalledProcessError"
+    },
+    {
+      "family": "usb",
+      "mode": null,
+      "sanitize": false,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6c69627573622d696e636c756465",
+        "424153452f7573622dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7573625f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64615f636f6d6d732e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7573622d736f75726365"
+        ],
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d736861726564",
+          "2d66504943",
+          "2d4450414e44415f5553425f4142495f4f4e4c59",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7573625f736f757263652e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f6c696270616e64615f7573625f666978747572652e736f"
+        ]
+      ],
+      "files": {
+        "command.json": "[\n  {\n    \"argv\": [\n      \"BASE/compiler-\\udcff\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-Wl,--wrap=clock_gettime\",\n      \"-IROOT/openpilot\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"-IBASE/usb-\\udcff\",\n      \"ROOT/rust/tools/pandad_usb_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda_comms.cc\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-usb-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"BASE/compiler-\\udcff\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-shared\",\n      \"-fPIC\",\n      \"-DPANDA_USB_ABI_ONLY\",\n      \"-IROOT/openpilot\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"-IBASE/usb-\\udcff\",\n      \"ROOT/rust/tools/pandad_usb_source.cc\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/libpanda_usb_fixture.so\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n",
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-usb-source\",\n  \"sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"fixture\": \"BASE/out-\\udcff/libpanda_usb_fixture.so\",\n  \"fixture_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"ROOT/rust/tools/pandad_usb_source.cc\": \"82fd145e7717484c1d4d7f585ea477aff327f00ec13a358ebc17e62896fed74b\",\n    \"ROOT/openpilot/selfdrive/pandad/panda_comms.cc\": \"acb649d58785bfa822cb413cead751cce5fd8ecb0196635e2f280e8430a38059\",\n    \"ROOT/openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"ROOT/openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"ROOT/openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"BASE/usb-\\udcff/libusb-1.0/libusb.h\": \"9d92be21e830023aeec32089f006f82207ac9b7716bf0da72917fb3bde38da4c\"\n  },\n  \"sanitize\": false,\n  \"scope\": \"unchanged C++ USB lifecycle and retry policies with scripted libusb ABI and clock; no physical USB\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "usb",
+      "mode": null,
+      "sanitize": true,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6c69627573622d696e636c756465",
+        "424153452f7573622dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff",
+        "2d2d73616e6974697a65"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7573625f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64615f636f6d6d732e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7573622d736f75726365"
+        ],
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d736861726564",
+          "2d66504943",
+          "2d4450414e44415f5553425f4142495f4f4e4c59",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7573625f736f757263652e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f6c696270616e64615f7573625f666978747572652e736f"
+        ]
+      ],
+      "files": {
+        "command.json": "[\n  {\n    \"argv\": [\n      \"BASE/compiler-\\udcff\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-Wl,--wrap=clock_gettime\",\n      \"-IROOT/openpilot\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"-IBASE/usb-\\udcff\",\n      \"ROOT/rust/tools/pandad_usb_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda_comms.cc\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-usb-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"BASE/compiler-\\udcff\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-shared\",\n      \"-fPIC\",\n      \"-DPANDA_USB_ABI_ONLY\",\n      \"-IROOT/openpilot\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"-IBASE/usb-\\udcff\",\n      \"ROOT/rust/tools/pandad_usb_source.cc\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/libpanda_usb_fixture.so\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n",
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-usb-source\",\n  \"sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"fixture\": \"BASE/out-\\udcff/libpanda_usb_fixture.so\",\n  \"fixture_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"ROOT/rust/tools/pandad_usb_source.cc\": \"82fd145e7717484c1d4d7f585ea477aff327f00ec13a358ebc17e62896fed74b\",\n    \"ROOT/openpilot/selfdrive/pandad/panda_comms.cc\": \"acb649d58785bfa822cb413cead751cce5fd8ecb0196635e2f280e8430a38059\",\n    \"ROOT/openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"ROOT/openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"ROOT/openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"BASE/usb-\\udcff/libusb-1.0/libusb.h\": \"9d92be21e830023aeec32089f006f82207ac9b7716bf0da72917fb3bde38da4c\"\n  },\n  \"sanitize\": true,\n  \"scope\": \"unchanged C++ USB lifecycle and retry policies with scripted libusb ABI and clock; no physical USB\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "usb",
+      "mode": null,
+      "sanitize": false,
+      "status": "failure-1",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6c69627573622d696e636c756465",
+        "424153452f7573622dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7573625f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64615f636f6d6d732e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7573622d736f75726365"
+        ]
+      ],
+      "files": {
+        "command.json": "[\n  {\n    \"argv\": [\n      \"BASE/compiler-\\udcff\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-Wl,--wrap=clock_gettime\",\n      \"-IROOT/openpilot\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"-IBASE/usb-\\udcff\",\n      \"ROOT/rust/tools/pandad_usb_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda_comms.cc\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-usb-source\"\n    ],\n    \"exit_code\": 9,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": "CalledProcessError"
+    },
+    {
+      "family": "usb",
+      "mode": null,
+      "sanitize": false,
+      "status": "success",
+      "rawroot": true,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6c69627573622d696e636c756465",
+        "424153452f7573622dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d49424153452f726f6f742dff2f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f70616e6461645f7573625f736f757263652e6363",
+          "424153452f726f6f742dff2f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64615f636f6d6d732e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7573622d736f75726365"
+        ],
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d736861726564",
+          "2d66504943",
+          "2d4450414e44415f5553425f4142495f4f4e4c59",
+          "2d49424153452f726f6f742dff2f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f70616e6461645f7573625f736f757263652e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f6c696270616e64615f7573625f666978747572652e736f"
+        ]
+      ],
+      "files": {
+        "command.json": "[\n  {\n    \"argv\": [\n      \"BASE/compiler-\\udcff\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-Wl,--wrap=clock_gettime\",\n      \"-IBASE/root-\\udcff/openpilot\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"-IBASE/usb-\\udcff\",\n      \"BASE/root-\\udcff/rust/tools/pandad_usb_source.cc\",\n      \"BASE/root-\\udcff/openpilot/selfdrive/pandad/panda_comms.cc\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-usb-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"BASE/compiler-\\udcff\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-shared\",\n      \"-fPIC\",\n      \"-DPANDA_USB_ABI_ONLY\",\n      \"-IBASE/root-\\udcff/openpilot\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"-IBASE/usb-\\udcff\",\n      \"BASE/root-\\udcff/rust/tools/pandad_usb_source.cc\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/libpanda_usb_fixture.so\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n",
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-usb-source\",\n  \"sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"fixture\": \"BASE/out-\\udcff/libpanda_usb_fixture.so\",\n  \"fixture_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"BASE/root-\\udcff/rust/tools/pandad_usb_source.cc\": \"82fd145e7717484c1d4d7f585ea477aff327f00ec13a358ebc17e62896fed74b\",\n    \"BASE/root-\\udcff/openpilot/selfdrive/pandad/panda_comms.cc\": \"acb649d58785bfa822cb413cead751cce5fd8ecb0196635e2f280e8430a38059\",\n    \"BASE/root-\\udcff/openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"BASE/root-\\udcff/openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"BASE/root-\\udcff/openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"BASE/usb-\\udcff/libusb-1.0/libusb.h\": \"9d92be21e830023aeec32089f006f82207ac9b7716bf0da72917fb3bde38da4c\"\n  },\n  \"sanitize\": false,\n  \"scope\": \"unchanged C++ USB lifecycle and retry policies with scripted libusb ABI and clock; no physical USB\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "usb",
+      "mode": null,
+      "sanitize": false,
+      "status": "failure-2",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6c69627573622d696e636c756465",
+        "424153452f7573622dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7573625f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f70616e64615f636f6d6d732e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7573622d736f75726365"
+        ],
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d736861726564",
+          "2d66504943",
+          "2d4450414e44415f5553425f4142495f4f4e4c59",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7573625f736f757263652e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f6c696270616e64615f7573625f666978747572652e736f"
+        ]
+      ],
+      "files": {
+        "command.json": "[\n  {\n    \"argv\": [\n      \"BASE/compiler-\\udcff\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-ffunction-sections\",\n      \"-fdata-sections\",\n      \"-Wl,--gc-sections\",\n      \"-Wl,--wrap=clock_gettime\",\n      \"-IROOT/openpilot\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"-IBASE/usb-\\udcff\",\n      \"ROOT/rust/tools/pandad_usb_source.cc\",\n      \"ROOT/openpilot/selfdrive/pandad/panda_comms.cc\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/pandad-usb-source\"\n    ],\n    \"exit_code\": 0,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  },\n  {\n    \"argv\": [\n      \"BASE/compiler-\\udcff\",\n      \"-std=c++17\",\n      \"-O1\",\n      \"-g\",\n      \"-shared\",\n      \"-fPIC\",\n      \"-DPANDA_USB_ABI_ONLY\",\n      \"-IROOT/openpilot\",\n      \"-IBASE/json11-\\udcff/include\",\n      \"-IBASE/usb-\\udcff\",\n      \"ROOT/rust/tools/pandad_usb_source.cc\",\n      \"BASE/json11-\\udcff/lib/libjson11.a\",\n      \"-pthread\",\n      \"-o\",\n      \"BASE/out-\\udcff/libpanda_usb_fixture.so\"\n    ],\n    \"exit_code\": 9,\n    \"stdout\": \"controlled stdout\\n\",\n    \"stderr\": \"controlled stderr\\n\"\n  }\n]\n"
+      },
+      "error": "CalledProcessError"
+    },
+    {
+      "family": "spi",
+      "mode": null,
+      "sanitize": false,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7370695f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f7370692e6363",
+          "524f4f542f6f70656e70696c6f742f636f6d6d6f6e2f7574696c2e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7370692d736f75726365",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d576c2c2d2d777261703d6f70656e",
+          "2d576c2c2d2d777261703d73746174",
+          "2d576c2c2d2d777261703d636c6f7365",
+          "2d576c2c2d2d777261703d666c6f636b",
+          "2d576c2c2d2d777261703d696f63746c",
+          "2d576c2c2d2d777261703d73636865645f7969656c64",
+          "2d576c2c2d2d777261703d75736c656570"
+        ]
+      ],
+      "files": {
+        "command.json": "{\n  \"argv\": [\n    \"BASE/compiler-\\udcff\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-ffunction-sections\",\n    \"-fdata-sections\",\n    \"-Wl,--gc-sections\",\n    \"-IROOT\",\n    \"-IROOT/openpilot\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"ROOT/rust/tools/pandad_spi_source.cc\",\n    \"ROOT/openpilot/selfdrive/pandad/spi.cc\",\n    \"ROOT/openpilot/common/util.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-pthread\",\n    \"-o\",\n    \"BASE/out-\\udcff/pandad-spi-source\",\n    \"-Wl,--wrap=clock_gettime\",\n    \"-Wl,--wrap=open\",\n    \"-Wl,--wrap=stat\",\n    \"-Wl,--wrap=close\",\n    \"-Wl,--wrap=flock\",\n    \"-Wl,--wrap=ioctl\",\n    \"-Wl,--wrap=sched_yield\",\n    \"-Wl,--wrap=usleep\"\n  ],\n  \"exit_code\": 0,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n",
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-spi-source\",\n  \"sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"ROOT/rust/tools/pandad_spi_source.cc\": \"d896b4b87c0ca842c64e5929dd58a8a4e2f0f5a45ab2d0c95fe639177c495ccb\",\n    \"ROOT/openpilot/selfdrive/pandad/spi.cc\": \"3f9dad5a4db7c3be55fa5ec0fae410b8f1cc46e93ab645edf606d6cab9dac72e\",\n    \"ROOT/openpilot/common/util.cc\": \"4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a\",\n    \"ROOT/openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"ROOT/openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"ROOT/openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"ROOT/openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"ROOT/panda/board/comms_definitions.h\": \"34a5fc130863b5d2da644c09c4eeb0d829a2f2b026e16318d355fd6470952d2d\"\n  },\n  \"sanitize\": false,\n  \"scope\": \"unchanged SPI and utility implementation; scripted Linux syscalls only; no hardware access\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "spi",
+      "mode": null,
+      "sanitize": true,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff",
+        "2d2d73616e6974697a65"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7370695f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f7370692e6363",
+          "524f4f542f6f70656e70696c6f742f636f6d6d6f6e2f7574696c2e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7370692d736f75726365",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d576c2c2d2d777261703d6f70656e",
+          "2d576c2c2d2d777261703d73746174",
+          "2d576c2c2d2d777261703d636c6f7365",
+          "2d576c2c2d2d777261703d666c6f636b",
+          "2d576c2c2d2d777261703d696f63746c",
+          "2d576c2c2d2d777261703d73636865645f7969656c64",
+          "2d576c2c2d2d777261703d75736c656570"
+        ]
+      ],
+      "files": {
+        "command.json": "{\n  \"argv\": [\n    \"BASE/compiler-\\udcff\",\n    \"-fsanitize=address,undefined\",\n    \"-fno-omit-frame-pointer\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-ffunction-sections\",\n    \"-fdata-sections\",\n    \"-Wl,--gc-sections\",\n    \"-IROOT\",\n    \"-IROOT/openpilot\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"ROOT/rust/tools/pandad_spi_source.cc\",\n    \"ROOT/openpilot/selfdrive/pandad/spi.cc\",\n    \"ROOT/openpilot/common/util.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-pthread\",\n    \"-o\",\n    \"BASE/out-\\udcff/pandad-spi-source\",\n    \"-Wl,--wrap=clock_gettime\",\n    \"-Wl,--wrap=open\",\n    \"-Wl,--wrap=stat\",\n    \"-Wl,--wrap=close\",\n    \"-Wl,--wrap=flock\",\n    \"-Wl,--wrap=ioctl\",\n    \"-Wl,--wrap=sched_yield\",\n    \"-Wl,--wrap=usleep\"\n  ],\n  \"exit_code\": 0,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n",
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-spi-source\",\n  \"sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"ROOT/rust/tools/pandad_spi_source.cc\": \"d896b4b87c0ca842c64e5929dd58a8a4e2f0f5a45ab2d0c95fe639177c495ccb\",\n    \"ROOT/openpilot/selfdrive/pandad/spi.cc\": \"3f9dad5a4db7c3be55fa5ec0fae410b8f1cc46e93ab645edf606d6cab9dac72e\",\n    \"ROOT/openpilot/common/util.cc\": \"4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a\",\n    \"ROOT/openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"ROOT/openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"ROOT/openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"ROOT/openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"ROOT/panda/board/comms_definitions.h\": \"34a5fc130863b5d2da644c09c4eeb0d829a2f2b026e16318d355fd6470952d2d\"\n  },\n  \"sanitize\": true,\n  \"scope\": \"unchanged SPI and utility implementation; scripted Linux syscalls only; no hardware access\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "spi",
+      "mode": null,
+      "sanitize": false,
+      "status": "failure-1",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49524f4f54",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7370695f736f757263652e6363",
+          "524f4f542f6f70656e70696c6f742f73656c6664726976652f70616e6461642f7370692e6363",
+          "524f4f542f6f70656e70696c6f742f636f6d6d6f6e2f7574696c2e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7370692d736f75726365",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d576c2c2d2d777261703d6f70656e",
+          "2d576c2c2d2d777261703d73746174",
+          "2d576c2c2d2d777261703d636c6f7365",
+          "2d576c2c2d2d777261703d666c6f636b",
+          "2d576c2c2d2d777261703d696f63746c",
+          "2d576c2c2d2d777261703d73636865645f7969656c64",
+          "2d576c2c2d2d777261703d75736c656570"
+        ]
+      ],
+      "files": {
+        "command.json": "{\n  \"argv\": [\n    \"BASE/compiler-\\udcff\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-ffunction-sections\",\n    \"-fdata-sections\",\n    \"-Wl,--gc-sections\",\n    \"-IROOT\",\n    \"-IROOT/openpilot\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"ROOT/rust/tools/pandad_spi_source.cc\",\n    \"ROOT/openpilot/selfdrive/pandad/spi.cc\",\n    \"ROOT/openpilot/common/util.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-pthread\",\n    \"-o\",\n    \"BASE/out-\\udcff/pandad-spi-source\",\n    \"-Wl,--wrap=clock_gettime\",\n    \"-Wl,--wrap=open\",\n    \"-Wl,--wrap=stat\",\n    \"-Wl,--wrap=close\",\n    \"-Wl,--wrap=flock\",\n    \"-Wl,--wrap=ioctl\",\n    \"-Wl,--wrap=sched_yield\",\n    \"-Wl,--wrap=usleep\"\n  ],\n  \"exit_code\": 9,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n"
+      },
+      "error": "CalledProcessError"
+    },
+    {
+      "family": "spi",
+      "mode": null,
+      "sanitize": false,
+      "status": "success",
+      "rawroot": true,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d6666756e6374696f6e2d73656374696f6e73",
+          "2d66646174612d73656374696f6e73",
+          "2d576c2c2d2d67632d73656374696f6e73",
+          "2d49424153452f726f6f742dff",
+          "2d49424153452f726f6f742dff2f6f70656e70696c6f74",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f70616e6461645f7370695f736f757263652e6363",
+          "424153452f726f6f742dff2f6f70656e70696c6f742f73656c6664726976652f70616e6461642f7370692e6363",
+          "424153452f726f6f742dff2f6f70656e70696c6f742f636f6d6d6f6e2f7574696c2e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7370692d736f75726365",
+          "2d576c2c2d2d777261703d636c6f636b5f67657474696d65",
+          "2d576c2c2d2d777261703d6f70656e",
+          "2d576c2c2d2d777261703d73746174",
+          "2d576c2c2d2d777261703d636c6f7365",
+          "2d576c2c2d2d777261703d666c6f636b",
+          "2d576c2c2d2d777261703d696f63746c",
+          "2d576c2c2d2d777261703d73636865645f7969656c64",
+          "2d576c2c2d2d777261703d75736c656570"
+        ]
+      ],
+      "files": {
+        "command.json": "{\n  \"argv\": [\n    \"BASE/compiler-\\udcff\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-ffunction-sections\",\n    \"-fdata-sections\",\n    \"-Wl,--gc-sections\",\n    \"-IBASE/root-\\udcff\",\n    \"-IBASE/root-\\udcff/openpilot\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"BASE/root-\\udcff/rust/tools/pandad_spi_source.cc\",\n    \"BASE/root-\\udcff/openpilot/selfdrive/pandad/spi.cc\",\n    \"BASE/root-\\udcff/openpilot/common/util.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-pthread\",\n    \"-o\",\n    \"BASE/out-\\udcff/pandad-spi-source\",\n    \"-Wl,--wrap=clock_gettime\",\n    \"-Wl,--wrap=open\",\n    \"-Wl,--wrap=stat\",\n    \"-Wl,--wrap=close\",\n    \"-Wl,--wrap=flock\",\n    \"-Wl,--wrap=ioctl\",\n    \"-Wl,--wrap=sched_yield\",\n    \"-Wl,--wrap=usleep\"\n  ],\n  \"exit_code\": 0,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n",
+        "manifest.json": "{\n  \"binary\": \"BASE/out-\\udcff/pandad-spi-source\",\n  \"sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"sources\": {\n    \"BASE/root-\\udcff/rust/tools/pandad_spi_source.cc\": \"d896b4b87c0ca842c64e5929dd58a8a4e2f0f5a45ab2d0c95fe639177c495ccb\",\n    \"BASE/root-\\udcff/openpilot/selfdrive/pandad/spi.cc\": \"3f9dad5a4db7c3be55fa5ec0fae410b8f1cc46e93ab645edf606d6cab9dac72e\",\n    \"BASE/root-\\udcff/openpilot/common/util.cc\": \"4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a\",\n    \"BASE/root-\\udcff/openpilot/selfdrive/pandad/panda_comms.h\": \"a175a00b3fb60345ddab1d81187935819999479488e07e600748453f1cfec21e\",\n    \"BASE/root-\\udcff/openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\",\n    \"BASE/root-\\udcff/openpilot/common/timing.h\": \"66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71\",\n    \"BASE/root-\\udcff/openpilot/common/swaglog.h\": \"bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b\",\n    \"BASE/root-\\udcff/panda/board/comms_definitions.h\": \"34a5fc130863b5d2da644c09c4eeb0d829a2f2b026e16318d355fd6470952d2d\"\n  },\n  \"sanitize\": false,\n  \"scope\": \"unchanged SPI and utility implementation; scripted Linux syscalls only; no hardware access\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "peripheral",
+      "mode": null,
+      "sanitize": false,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff"
+      ],
+      "commands_hex": [
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7065726970686572616c5f736f757263652e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7065726970686572616c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "pandad_peripheral_body.inc": "#define MAX_IR_PANDA_VAL 50\n#define CUTOFF_IL 400\n#define SATURATE_IL 1000\n\nvoid process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control) {\n  static Params params;\n  static SubMaster sm({\"deviceState\", \"driverCameraState\"});\n\n  static uint64_t last_driver_camera_t = 0;\n  static uint16_t prev_fan_speed = 999;\n  static int ir_pwr = 0;\n  static int prev_ir_pwr = 999;\n  static uint32_t prev_frame_id = UINT32_MAX;\n  static bool driver_view = false;\n\n  // TODO: can we merge these?\n  static FirstOrderFilter integ_lines_filter(0, 30.0, 0.05);\n  static FirstOrderFilter integ_lines_filter_driver_view(0, 5.0, 0.05);\n\n  {\n    sm.update(0);\n    if (sm.updated(\"deviceState\") && !no_fan_control) {\n      // Fan speed\n      uint16_t fan_speed = sm[\"deviceState\"].getDeviceState().getFanSpeedPercentDesired();\n      if (fan_speed != prev_fan_speed || sm.frame % 100 == 0) {\n        panda->set_fan_speed(fan_speed);\n        prev_fan_speed = fan_speed;\n      }\n    }\n\n    if (sm.updated(\"driverCameraState\")) {\n      auto event = sm[\"driverCameraState\"];\n      int cur_integ_lines = event.getDriverCameraState().getIntegLines();\n\n      // reset the filter when camerad restarts\n      if (event.getDriverCameraState().getFrameId() < prev_frame_id) {\n        integ_lines_filter.reset(0);\n        integ_lines_filter_driver_view.reset(0);\n        driver_view = params.getBool(\"IsDriverViewEnabled\");\n      }\n      prev_frame_id = event.getDriverCameraState().getFrameId();\n\n      cur_integ_lines = (driver_view ? integ_lines_filter_driver_view : integ_lines_filter).update(cur_integ_lines);\n      last_driver_camera_t = event.getLogMonoTime();\n\n      if (cur_integ_lines <= CUTOFF_IL) {\n        ir_pwr = 0;\n      } else if (cur_integ_lines > SATURATE_IL) {\n        ir_pwr = 100;\n      } else {\n        ir_pwr = 100 * (cur_integ_lines - CUTOFF_IL) / (SATURATE_IL - CUTOFF_IL);\n      }\n    }\n\n    // Disable IR on input timeout\n    if (nanos_since_boot() - last_driver_camera_t > 1e9) {\n      ir_pwr = 0;\n    }\n\n    if (ir_pwr != prev_ir_pwr || sm.frame % 100 == 0) {\n      int16_t ir_panda = util::map_val(ir_pwr, 0, 100, 0, MAX_IR_PANDA_VAL); \n      panda->set_ir_pwr(ir_panda);\n      Hardware::set_ir_power(ir_pwr); \n      prev_ir_pwr = ir_pwr;\n    }\n  }\n}\n",
+        "manifest.json": "{\n  \"scope\": \"unchanged process_peripheral_state body and original C++ FirstOrderFilter/map_val; recorded message/Params/hardware boundaries\",\n  \"binary\": \"BASE/out-\\udcff/pandad-peripheral-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"body_sha256\": \"294301aa96af44b9072240fb1685eb1db712e41945280d167d3adbe5a0292c5b\",\n  \"sanitize\": false,\n  \"sources\": {\n    \"openpilot/selfdrive/pandad/pandad.cc\": \"2fdb4ede45abf81daaf369a8f2919b8d650277d06d1947eefe06f7fbb4ccbda0\",\n    \"rust/tools/pandad_peripheral_source.cc\": \"61ad403344028035f9b0be6c3d6b9f155a1ecbfad0fb9cdc7f99b66600e45077\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\"\n  }\n}\n",
+        "build.json": "{\n  \"command\": [\n    \"clang++\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-IROOT/openpilot\",\n    \"-IBASE/out-\\udcff\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"ROOT/rust/tools/pandad_peripheral_source.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-o\",\n    \"BASE/out-\\udcff/pandad-peripheral-source\"\n  ],\n  \"exit\": 0,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "peripheral",
+      "mode": null,
+      "sanitize": true,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d73616e6974697a65"
+      ],
+      "commands_hex": [
+        [
+          "636c616e672b2b",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7065726970686572616c5f736f757263652e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7065726970686572616c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "pandad_peripheral_body.inc": "#define MAX_IR_PANDA_VAL 50\n#define CUTOFF_IL 400\n#define SATURATE_IL 1000\n\nvoid process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control) {\n  static Params params;\n  static SubMaster sm({\"deviceState\", \"driverCameraState\"});\n\n  static uint64_t last_driver_camera_t = 0;\n  static uint16_t prev_fan_speed = 999;\n  static int ir_pwr = 0;\n  static int prev_ir_pwr = 999;\n  static uint32_t prev_frame_id = UINT32_MAX;\n  static bool driver_view = false;\n\n  // TODO: can we merge these?\n  static FirstOrderFilter integ_lines_filter(0, 30.0, 0.05);\n  static FirstOrderFilter integ_lines_filter_driver_view(0, 5.0, 0.05);\n\n  {\n    sm.update(0);\n    if (sm.updated(\"deviceState\") && !no_fan_control) {\n      // Fan speed\n      uint16_t fan_speed = sm[\"deviceState\"].getDeviceState().getFanSpeedPercentDesired();\n      if (fan_speed != prev_fan_speed || sm.frame % 100 == 0) {\n        panda->set_fan_speed(fan_speed);\n        prev_fan_speed = fan_speed;\n      }\n    }\n\n    if (sm.updated(\"driverCameraState\")) {\n      auto event = sm[\"driverCameraState\"];\n      int cur_integ_lines = event.getDriverCameraState().getIntegLines();\n\n      // reset the filter when camerad restarts\n      if (event.getDriverCameraState().getFrameId() < prev_frame_id) {\n        integ_lines_filter.reset(0);\n        integ_lines_filter_driver_view.reset(0);\n        driver_view = params.getBool(\"IsDriverViewEnabled\");\n      }\n      prev_frame_id = event.getDriverCameraState().getFrameId();\n\n      cur_integ_lines = (driver_view ? integ_lines_filter_driver_view : integ_lines_filter).update(cur_integ_lines);\n      last_driver_camera_t = event.getLogMonoTime();\n\n      if (cur_integ_lines <= CUTOFF_IL) {\n        ir_pwr = 0;\n      } else if (cur_integ_lines > SATURATE_IL) {\n        ir_pwr = 100;\n      } else {\n        ir_pwr = 100 * (cur_integ_lines - CUTOFF_IL) / (SATURATE_IL - CUTOFF_IL);\n      }\n    }\n\n    // Disable IR on input timeout\n    if (nanos_since_boot() - last_driver_camera_t > 1e9) {\n      ir_pwr = 0;\n    }\n\n    if (ir_pwr != prev_ir_pwr || sm.frame % 100 == 0) {\n      int16_t ir_panda = util::map_val(ir_pwr, 0, 100, 0, MAX_IR_PANDA_VAL); \n      panda->set_ir_pwr(ir_panda);\n      Hardware::set_ir_power(ir_pwr); \n      prev_ir_pwr = ir_pwr;\n    }\n  }\n}\n",
+        "manifest.json": "{\n  \"scope\": \"unchanged process_peripheral_state body and original C++ FirstOrderFilter/map_val; recorded message/Params/hardware boundaries\",\n  \"binary\": \"BASE/out-\\udcff/pandad-peripheral-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"body_sha256\": \"294301aa96af44b9072240fb1685eb1db712e41945280d167d3adbe5a0292c5b\",\n  \"sanitize\": true,\n  \"sources\": {\n    \"openpilot/selfdrive/pandad/pandad.cc\": \"2fdb4ede45abf81daaf369a8f2919b8d650277d06d1947eefe06f7fbb4ccbda0\",\n    \"rust/tools/pandad_peripheral_source.cc\": \"61ad403344028035f9b0be6c3d6b9f155a1ecbfad0fb9cdc7f99b66600e45077\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\"\n  }\n}\n",
+        "build.json": "{\n  \"command\": [\n    \"clang++\",\n    \"-fsanitize=address,undefined\",\n    \"-fno-omit-frame-pointer\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-IROOT/openpilot\",\n    \"-IBASE/out-\\udcff\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"ROOT/rust/tools/pandad_peripheral_source.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-o\",\n    \"BASE/out-\\udcff/pandad-peripheral-source\"\n  ],\n  \"exit\": 0,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "peripheral",
+      "mode": null,
+      "sanitize": false,
+      "status": "failure-1",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff"
+      ],
+      "commands_hex": [
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d49524f4f542f6f70656e70696c6f74",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f7065726970686572616c5f736f757263652e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7065726970686572616c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "pandad_peripheral_body.inc": "#define MAX_IR_PANDA_VAL 50\n#define CUTOFF_IL 400\n#define SATURATE_IL 1000\n\nvoid process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control) {\n  static Params params;\n  static SubMaster sm({\"deviceState\", \"driverCameraState\"});\n\n  static uint64_t last_driver_camera_t = 0;\n  static uint16_t prev_fan_speed = 999;\n  static int ir_pwr = 0;\n  static int prev_ir_pwr = 999;\n  static uint32_t prev_frame_id = UINT32_MAX;\n  static bool driver_view = false;\n\n  // TODO: can we merge these?\n  static FirstOrderFilter integ_lines_filter(0, 30.0, 0.05);\n  static FirstOrderFilter integ_lines_filter_driver_view(0, 5.0, 0.05);\n\n  {\n    sm.update(0);\n    if (sm.updated(\"deviceState\") && !no_fan_control) {\n      // Fan speed\n      uint16_t fan_speed = sm[\"deviceState\"].getDeviceState().getFanSpeedPercentDesired();\n      if (fan_speed != prev_fan_speed || sm.frame % 100 == 0) {\n        panda->set_fan_speed(fan_speed);\n        prev_fan_speed = fan_speed;\n      }\n    }\n\n    if (sm.updated(\"driverCameraState\")) {\n      auto event = sm[\"driverCameraState\"];\n      int cur_integ_lines = event.getDriverCameraState().getIntegLines();\n\n      // reset the filter when camerad restarts\n      if (event.getDriverCameraState().getFrameId() < prev_frame_id) {\n        integ_lines_filter.reset(0);\n        integ_lines_filter_driver_view.reset(0);\n        driver_view = params.getBool(\"IsDriverViewEnabled\");\n      }\n      prev_frame_id = event.getDriverCameraState().getFrameId();\n\n      cur_integ_lines = (driver_view ? integ_lines_filter_driver_view : integ_lines_filter).update(cur_integ_lines);\n      last_driver_camera_t = event.getLogMonoTime();\n\n      if (cur_integ_lines <= CUTOFF_IL) {\n        ir_pwr = 0;\n      } else if (cur_integ_lines > SATURATE_IL) {\n        ir_pwr = 100;\n      } else {\n        ir_pwr = 100 * (cur_integ_lines - CUTOFF_IL) / (SATURATE_IL - CUTOFF_IL);\n      }\n    }\n\n    // Disable IR on input timeout\n    if (nanos_since_boot() - last_driver_camera_t > 1e9) {\n      ir_pwr = 0;\n    }\n\n    if (ir_pwr != prev_ir_pwr || sm.frame % 100 == 0) {\n      int16_t ir_panda = util::map_val(ir_pwr, 0, 100, 0, MAX_IR_PANDA_VAL); \n      panda->set_ir_pwr(ir_panda);\n      Hardware::set_ir_power(ir_pwr); \n      prev_ir_pwr = ir_pwr;\n    }\n  }\n}\n",
+        "build.json": "{\n  \"command\": [\n    \"clang++\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-IROOT/openpilot\",\n    \"-IBASE/out-\\udcff\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"ROOT/rust/tools/pandad_peripheral_source.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-o\",\n    \"BASE/out-\\udcff/pandad-peripheral-source\"\n  ],\n  \"exit\": 9,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n"
+      },
+      "error": "CalledProcessError"
+    },
+    {
+      "family": "peripheral",
+      "mode": null,
+      "sanitize": false,
+      "status": "success",
+      "rawroot": true,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff"
+      ],
+      "commands_hex": [
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d49424153452f726f6f742dff2f6f70656e70696c6f74",
+          "2d49424153452f6f75742dff",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f70616e6461645f7065726970686572616c5f736f757263652e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d6f",
+          "424153452f6f75742dff2f70616e6461642d7065726970686572616c2d736f75726365"
+        ]
+      ],
+      "files": {
+        "pandad_peripheral_body.inc": "#define MAX_IR_PANDA_VAL 50\n#define CUTOFF_IL 400\n#define SATURATE_IL 1000\n\nvoid process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control) {\n  static Params params;\n  static SubMaster sm({\"deviceState\", \"driverCameraState\"});\n\n  static uint64_t last_driver_camera_t = 0;\n  static uint16_t prev_fan_speed = 999;\n  static int ir_pwr = 0;\n  static int prev_ir_pwr = 999;\n  static uint32_t prev_frame_id = UINT32_MAX;\n  static bool driver_view = false;\n\n  // TODO: can we merge these?\n  static FirstOrderFilter integ_lines_filter(0, 30.0, 0.05);\n  static FirstOrderFilter integ_lines_filter_driver_view(0, 5.0, 0.05);\n\n  {\n    sm.update(0);\n    if (sm.updated(\"deviceState\") && !no_fan_control) {\n      // Fan speed\n      uint16_t fan_speed = sm[\"deviceState\"].getDeviceState().getFanSpeedPercentDesired();\n      if (fan_speed != prev_fan_speed || sm.frame % 100 == 0) {\n        panda->set_fan_speed(fan_speed);\n        prev_fan_speed = fan_speed;\n      }\n    }\n\n    if (sm.updated(\"driverCameraState\")) {\n      auto event = sm[\"driverCameraState\"];\n      int cur_integ_lines = event.getDriverCameraState().getIntegLines();\n\n      // reset the filter when camerad restarts\n      if (event.getDriverCameraState().getFrameId() < prev_frame_id) {\n        integ_lines_filter.reset(0);\n        integ_lines_filter_driver_view.reset(0);\n        driver_view = params.getBool(\"IsDriverViewEnabled\");\n      }\n      prev_frame_id = event.getDriverCameraState().getFrameId();\n\n      cur_integ_lines = (driver_view ? integ_lines_filter_driver_view : integ_lines_filter).update(cur_integ_lines);\n      last_driver_camera_t = event.getLogMonoTime();\n\n      if (cur_integ_lines <= CUTOFF_IL) {\n        ir_pwr = 0;\n      } else if (cur_integ_lines > SATURATE_IL) {\n        ir_pwr = 100;\n      } else {\n        ir_pwr = 100 * (cur_integ_lines - CUTOFF_IL) / (SATURATE_IL - CUTOFF_IL);\n      }\n    }\n\n    // Disable IR on input timeout\n    if (nanos_since_boot() - last_driver_camera_t > 1e9) {\n      ir_pwr = 0;\n    }\n\n    if (ir_pwr != prev_ir_pwr || sm.frame % 100 == 0) {\n      int16_t ir_panda = util::map_val(ir_pwr, 0, 100, 0, MAX_IR_PANDA_VAL); \n      panda->set_ir_pwr(ir_panda);\n      Hardware::set_ir_power(ir_pwr); \n      prev_ir_pwr = ir_pwr;\n    }\n  }\n}\n",
+        "manifest.json": "{\n  \"scope\": \"unchanged process_peripheral_state body and original C++ FirstOrderFilter/map_val; recorded message/Params/hardware boundaries\",\n  \"binary\": \"BASE/out-\\udcff/pandad-peripheral-source\",\n  \"binary_sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"body_sha256\": \"294301aa96af44b9072240fb1685eb1db712e41945280d167d3adbe5a0292c5b\",\n  \"sanitize\": false,\n  \"sources\": {\n    \"openpilot/selfdrive/pandad/pandad.cc\": \"2fdb4ede45abf81daaf369a8f2919b8d650277d06d1947eefe06f7fbb4ccbda0\",\n    \"rust/tools/pandad_peripheral_source.cc\": \"61ad403344028035f9b0be6c3d6b9f155a1ecbfad0fb9cdc7f99b66600e45077\",\n    \"openpilot/common/util.h\": \"49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea\"\n  }\n}\n",
+        "build.json": "{\n  \"command\": [\n    \"clang++\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-IBASE/root-\\udcff/openpilot\",\n    \"-IBASE/out-\\udcff\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"BASE/root-\\udcff/rust/tools/pandad_peripheral_source.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-o\",\n    \"BASE/out-\\udcff/pandad-peripheral-source\"\n  ],\n  \"exit\": 0,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "runtime-fixture",
+      "mode": null,
+      "sanitize": false,
+      "status": "success",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6c69627573622d696e636c756465",
+        "424153452f7573622dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d736861726564",
+          "2d66504943",
+          "2d57616c6c",
+          "2d576578747261",
+          "2d576572726f72",
+          "2d576c2c2d736f6e616d652c6c69627573622d312e302e736f2e30",
+          "2d49524f4f54",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f72756e74696d655f7573622e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f6c69627573622d312e302e736f2e30"
+        ]
+      ],
+      "files": {
+        "command.json": "{\n  \"argv\": [\n    \"BASE/compiler-\\udcff\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-shared\",\n    \"-fPIC\",\n    \"-Wall\",\n    \"-Wextra\",\n    \"-Werror\",\n    \"-Wl,-soname,libusb-1.0.so.0\",\n    \"-IROOT\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"-IBASE/usb-\\udcff\",\n    \"ROOT/rust/tools/pandad_runtime_usb.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-pthread\",\n    \"-o\",\n    \"BASE/out-\\udcff/libusb-1.0.so.0\"\n  ],\n  \"exit_code\": 0,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n",
+        "manifest.json": "{\n  \"result\": \"PASS\",\n  \"binary\": \"BASE/out-\\udcff/libusb-1.0.so.0\",\n  \"sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"source_sha256\": {\n    \"ROOT/rust/tools/pandad_runtime_usb.cc\": \"abf81fb7b6d5a1f20a6a02cf5c7da6d16364fbd13e76f4e764a47a72e6104dab\",\n    \"ROOT/panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"BASE/usb-\\udcff/libusb-1.0/libusb.h\": \"9d92be21e830023aeec32089f006f82207ac9b7716bf0da72917fb3bde38da4c\"\n  },\n  \"scope\": \"owned virtual libusb device, captured control/bulk calls, no physical USB delegation\"\n}\n"
+      },
+      "error": null
+    },
+    {
+      "family": "runtime-fixture",
+      "mode": null,
+      "sanitize": false,
+      "status": "failure-1",
+      "rawroot": false,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6c69627573622d696e636c756465",
+        "424153452f7573622dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d736861726564",
+          "2d66504943",
+          "2d57616c6c",
+          "2d576578747261",
+          "2d576572726f72",
+          "2d576c2c2d736f6e616d652c6c69627573622d312e302e736f2e30",
+          "2d49524f4f54",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "524f4f542f727573742f746f6f6c732f70616e6461645f72756e74696d655f7573622e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f6c69627573622d312e302e736f2e30"
+        ]
+      ],
+      "files": {
+        "command.json": "{\n  \"argv\": [\n    \"BASE/compiler-\\udcff\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-shared\",\n    \"-fPIC\",\n    \"-Wall\",\n    \"-Wextra\",\n    \"-Werror\",\n    \"-Wl,-soname,libusb-1.0.so.0\",\n    \"-IROOT\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"-IBASE/usb-\\udcff\",\n    \"ROOT/rust/tools/pandad_runtime_usb.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-pthread\",\n    \"-o\",\n    \"BASE/out-\\udcff/libusb-1.0.so.0\"\n  ],\n  \"exit_code\": 9,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n"
+      },
+      "error": "CalledProcessError"
+    },
+    {
+      "family": "runtime-fixture",
+      "mode": null,
+      "sanitize": false,
+      "status": "success",
+      "rawroot": true,
+      "args_hex": [
+        "2d2d6f7574707574",
+        "424153452f6f75742dff",
+        "2d2d6a736f6e31312d707265666978",
+        "424153452f6a736f6e31312dff",
+        "2d2d6c69627573622d696e636c756465",
+        "424153452f7573622dff",
+        "2d2d636f6d70696c6572",
+        "424153452f636f6d70696c65722dff"
+      ],
+      "commands_hex": [
+        [
+          "424153452f636f6d70696c65722dff",
+          "2d7374643d632b2b3137",
+          "2d4f31",
+          "2d67",
+          "2d736861726564",
+          "2d66504943",
+          "2d57616c6c",
+          "2d576578747261",
+          "2d576572726f72",
+          "2d576c2c2d736f6e616d652c6c69627573622d312e302e736f2e30",
+          "2d49424153452f726f6f742dff",
+          "2d49424153452f6a736f6e31312dff2f696e636c756465",
+          "2d49424153452f7573622dff",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f70616e6461645f72756e74696d655f7573622e6363",
+          "424153452f6a736f6e31312dff2f6c69622f6c69626a736f6e31312e61",
+          "2d70746872656164",
+          "2d6f",
+          "424153452f6f75742dff2f6c69627573622d312e302e736f2e30"
+        ]
+      ],
+      "files": {
+        "command.json": "{\n  \"argv\": [\n    \"BASE/compiler-\\udcff\",\n    \"-std=c++17\",\n    \"-O1\",\n    \"-g\",\n    \"-shared\",\n    \"-fPIC\",\n    \"-Wall\",\n    \"-Wextra\",\n    \"-Werror\",\n    \"-Wl,-soname,libusb-1.0.so.0\",\n    \"-IBASE/root-\\udcff\",\n    \"-IBASE/json11-\\udcff/include\",\n    \"-IBASE/usb-\\udcff\",\n    \"BASE/root-\\udcff/rust/tools/pandad_runtime_usb.cc\",\n    \"BASE/json11-\\udcff/lib/libjson11.a\",\n    \"-pthread\",\n    \"-o\",\n    \"BASE/out-\\udcff/libusb-1.0.so.0\"\n  ],\n  \"exit_code\": 0,\n  \"stdout\": \"controlled stdout\\n\",\n  \"stderr\": \"controlled stderr\\n\"\n}\n",
+        "manifest.json": "{\n  \"result\": \"PASS\",\n  \"binary\": \"BASE/out-\\udcff/libusb-1.0.so.0\",\n  \"sha256\": \"3c4b3cde6cc9f0651a8b2cc4d6b81a27f0f086a23d088a573ecce76a1416d9c4\",\n  \"source_sha256\": {\n    \"BASE/root-\\udcff/rust/tools/pandad_runtime_usb.cc\": \"abf81fb7b6d5a1f20a6a02cf5c7da6d16364fbd13e76f4e764a47a72e6104dab\",\n    \"BASE/root-\\udcff/panda/board/health.h\": \"4e90425915c2e6599bb5e3601f94ac08e055e2631f6afa1bb06b998207ea416c\",\n    \"BASE/usb-\\udcff/libusb-1.0/libusb.h\": \"9d92be21e830023aeec32089f006f82207ac9b7716bf0da72917fb3bde38da4c\"\n  },\n  \"scope\": \"owned virtual libusb device, captured control/bulk calls, no physical USB delegation\"\n}\n"
+      },
+      "error": null
+    }
+  ]
+}

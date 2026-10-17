@@ -1,0 +1,1360 @@
+{
+  "source_sha256": "4533611f5fdeca25d7f0bd740cf7d0e35894005eee95ccfce3ca43fd809b9d7d",
+  "cases": [
+    {
+      "case": "success",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/creation",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/transport",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/queued",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": null
+    },
+    {
+      "case": "count-three",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "RuntimeError"
+    },
+    {
+      "case": "count-five",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "RuntimeError"
+    },
+    {
+      "case": "duplicate-four",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": null
+    },
+    {
+      "case": "malformed",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "JSONDecodeError"
+    },
+    {
+      "case": "nonobject",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "AttributeError"
+    },
+    {
+      "case": "blank-line",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "JSONDecodeError"
+    },
+    {
+      "case": "false-empty",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/creation",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/transport",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/queued",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": null
+    },
+    {
+      "case": "unicode-lines",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/creation",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/transport",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/queued",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": null
+    },
+    {
+      "case": "nonstring",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            true,
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "TypeError"
+    },
+    {
+      "case": "build-failed",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "CalledProcessError"
+    },
+    {
+      "case": "build-invalid-utf8",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "UnicodeDecodeError"
+    },
+    {
+      "case": "lookup-failed",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        }
+      ],
+      "error": "CalledProcessError"
+    },
+    {
+      "case": "lookup-invalid-utf8",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        }
+      ],
+      "error": "UnicodeDecodeError"
+    },
+    {
+      "case": "lookup-whitespace",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/creation",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/transport",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/queued",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": null
+    },
+    {
+      "case": "run-second-failed",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "/controlled/creation",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "CalledProcessError"
+    },
+    {
+      "case": "run-timeout",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ],
+          "cwd": null,
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true
+        },
+        {
+          "argv": [
+            "/controlled/vision",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "timeout": 60,
+          "capture_stdout": false,
+          "text": false,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "TimeoutExpired"
+    },
+    {
+      "case": "spawn-failed",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-msgq",
+            "--test",
+            "transport",
+            "--test",
+            "vision",
+            "--test",
+            "queued",
+            "--test",
+            "creation",
+            "--no-run",
+            "--locked",
+            "--message-format=json"
+          ],
+          "cwd": "$RUST",
+          "timeout": null,
+          "capture_stdout": true,
+          "text": true,
+          "check": true,
+          "env": {
+            "CARGO_TARGET_DIR": "/controlled/target",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "old",
+            "ASAN_OPTIONS": "old",
+            "UBSAN_OPTIONS": "old",
+            "CFLAGS": "preserved",
+            "SENTINEL": "inherited"
+          }
+        }
+      ],
+      "error": "FileNotFoundError"
+    }
+  ]
+}

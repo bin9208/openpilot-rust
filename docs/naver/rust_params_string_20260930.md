@@ -52,7 +52,10 @@ CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml \
   -p openpilot-uploader --bins --locked
 CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml \
   -p openpilot-logmessaged --locked
-python rust/tools/build_params_python.py --output "$EVIDENCE/original-binding"
+CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml \
+  -p openpilot-dev-tools --bin stage-json11 --locked
+python rust/tools/build_params_python.py --output "$EVIDENCE/original-binding" \
+  --json11-stager rust/target/debug/stage-json11
 PYTHONPATH=.:rust/tools python rust/tools/check_params_string.py \
   --binding "$EVIDENCE/original-binding/params_pyx.cpython-312-x86_64-linux-gnu.so" \
   --native rust/target/debug/examples/params_string_probe --output "$EVIDENCE/differential"

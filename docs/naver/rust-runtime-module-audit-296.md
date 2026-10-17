@@ -606,3 +606,27 @@ Detailed inspected files and per-module exclusions remain in the five ignored
 `2026-10-14-module-audit-{telemetry,ui-connectivity,controls,device,support}`
 scratch notes. Neither those notes nor this consolidated scope establish
 all-module functional/numerical clearance or measured CPU benefit.
+
+### 2026-10-18 continued proc-stat allocation work
+
+`ProcessStat::parse` collected all trailing stat fields into a growable Vec for
+each process and collector identity recheck. It now reads the required first50
+fields into a stack array, preserving minimum52 total fields, all parsed indexes,
+ignored columns, extra-tail acceptance and owned comm. A standalone host probe
+compiles the production parser unchanged and counts actual allocator calls:
+1,000 records RED6,000 calls -> GREEN1,000 calls (the retained owned process name).
+The probe is a required workspace CI step; extra/truncated/Unicode-whitespace
+regressions were added. The complete runtime-core/proclogd package run passes
+35 tests, including actual Linux sampling, PID-reuse and metadata ownership.
+All-target strict Clippy passes for both packages. The final production-source
+allocation probe still reports 1,000 calls. Logs are in the local
+`2026-10-18-proc-stat-296` scratch directory. This is measured host allocation
+work, not device CPU or drive data. Physical acceptance is user-owned: the user
+confirmed no device is currently available and will test after pulling.
+
+Exact-SHA fast CI on 55464c01 found the new 64 MiB probe reservation missing
+from the disk-policy test's inventory (197 actual versus 196 expected). The
+test now classifies and asserts that reservation separately, retaining all
+179 original ordinary reservation arguments and their hash. All 13 disk guard
+tests pass after the correction. This was a CI accounting failure, not an
+allocation probe or runtime failure.

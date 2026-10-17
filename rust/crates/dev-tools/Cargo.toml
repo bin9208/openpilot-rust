@@ -5,6 +5,133 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 publish = false
+# Native tool entrypoints are registered explicitly before they enter builds.
+autobins = false
+
+[[bin]]
+name = "check-stats-numbers"
+path = "src/bin/check_stats_numbers.rs"
+
+[[bin]]
+name = "check-amplifier-policy"
+path = "src/bin/check_amplifier_policy.rs"
+
+[[bin]]
+name = "check-hardware-control-policy"
+path = "src/bin/check_hardware_control_policy.rs"
+
+[[bin]]
+name = "check-amplifier-linux"
+path = "src/bin/check_amplifier_linux.rs"
+
+[[bin]]
+name = "amplifier-linux-reference"
+path = "src/bin/amplifier_linux_reference.rs"
+
+[[bin]]
+name = "check-command-reference"
+path = "src/bin/check_command_reference.rs"
+
+[[bin]]
+name = "check-command-json-boundary"
+path = "src/bin/check_command_json_boundary.rs"
+
+[[bin]]
+name = "check-params-reference"
+path = "src/bin/check_params_reference.rs"
+
+[[bin]]
+name = "list-cargo-tests"
+path = "src/bin/list_cargo_tests.rs"
+
+[features]
+egl-reference = ["dep:openpilot-startup-ui"]
+
+[[bin]]
+name = "check-ui-egl"
+path = "src/bin/check_ui_egl.rs"
+required-features = ["egl-reference"]
+
+[[bin]]
+name = "ui-egl-reference"
+path = "src/bin/ui_egl_reference.rs"
+required-features = ["egl-reference"]
+
+[[test]]
+name = "ui_egl_reference"
+required-features = ["egl-reference"]
+
+[[test]]
+name = "ui_egl_check"
+required-features = ["egl-reference"]
+
+[[bin]]
+name = "check-ui-translations"
+path = "src/bin/check_ui_translations.rs"
+
+[[bin]]
+name = "check-ui-state"
+path = "src/bin/check_ui_state.rs"
+
+[[bin]]
+name = "check-ui-scheduler"
+path = "src/bin/check_ui_scheduler.rs"
+
+[[bin]]
+name = "check-ui-qr"
+path = "src/bin/check_ui_qr.rs"
+
+[[bin]]
+name = "check-ui-torque-geometry"
+path = "src/bin/check_ui_torque_geometry.rs"
+
+[[bin]]
+name = "check-ui-native-safety"
+path = "src/bin/check_ui_native_safety.rs"
+
+[[bin]]
+name = "check-ui-native-resources"
+path = "src/bin/check_ui_native_resources.rs"
+
+[[bin]]
+name = "check-ui-model-adapter"
+path = "src/bin/check_ui_model_adapter.rs"
+
+[[bin]]
+name = "check-ui-training-adapter"
+path = "src/bin/check_ui_training_adapter.rs"
+
+[[bin]]
+name = "check-registration-vendor"
+path = "src/bin/check_registration_vendor.rs"
+
+[[bin]]
+name = "check-control-tools-policy"
+path = "src/bin/check_control_tools_policy.rs"
+
+[[bin]]
+name = "check-msgq-sanitizers"
+path = "src/bin/check_msgq_sanitizers.rs"
+
+[[bin]]
+name = "build-encoder-source"
+path = "src/bin/build_encoder_source.rs"
+
+[[bin]]
+name = "build-athena-vision-peer"
+path = "src/bin/build_athena_vision_peer.rs"
+
+[[bin]]
+name = "build-pandad-firmware-spi-fixture"
+path = "src/bin/build_pandad_firmware_spi_fixture.rs"
+
+[[bin]]
+name = "check-ui-updater-handshake"
+path = "src/bin/check_ui_updater_handshake.rs"
+
+[[bin]]
+name = "check-hardware-command"
+path = "src/bin/check_hardware_command.rs"
 
 [lints]
 workspace = true
@@ -14,14 +141,20 @@ rsa = "=0.9.10"
 sha1 = "=0.10.7"
 base64 = "=0.22.1"
 openpilot-disk-space = { path = "../disk-space" }
+openpilot-log-format = { path = "../log-format" }
+openpilot-startup-ui = { path = "../startup-ui", optional = true, default-features = false, features = ["native"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["raw_value"] }
 sha2 = "0.10"
 tempfile = "3"
 flate2 = "1"
+bzip2 = "=0.6.1"
+command-fds = "=0.3.3"
 tar = { version = "0.4", default-features = false }
 rustix = { version = "1", features = ["fs", "process", "event"] }
 regex = "1"
+yaml-rust2 = { version = "=0.13.0", default-features = false }
+signal-hook = "0.3"
 toml = "0.8"
 xz2 = "0.1.7"
 zip = { version = "=9.0.3", default-features = false, features = ["deflate-flate2"] }
@@ -126,3 +259,119 @@ path = "src/bin/build_runtime_panda.rs"
 [[bin]]
 name = "stage-startup-ui-raylib"
 path = "src/bin/stage_startup_ui_raylib.rs"
+
+[[bin]]
+name = "build-pandad-protocol-source"
+path = "src/bin/build_pandad_protocol_source.rs"
+
+[[bin]]
+name = "build-pandad-usb-source"
+path = "src/bin/build_pandad_usb_source.rs"
+
+[[bin]]
+name = "build-pandad-spi-source"
+path = "src/bin/build_pandad_spi_source.rs"
+
+[[bin]]
+name = "build-pandad-peripheral-source"
+path = "src/bin/build_pandad_peripheral_source.rs"
+
+[[bin]]
+name = "build-pandad-runtime-fixture"
+path = "src/bin/build_pandad_runtime_fixture.rs"
+
+[[bin]]
+name = "sync-upstream"
+path = "src/bin/sync_upstream.rs"
+
+[[bin]]
+name = "stage-json11"
+path = "src/bin/stage_json11.rs"
+
+[[bin]]
+name = "generate-services-header"
+path = "src/bin/generate_services_header.rs"
+
+[[bin]]
+name = "build-pandad-runtime-source"
+path = "src/bin/build_pandad_runtime_source.rs"
+
+[[bin]]
+name = "check-updated-process"
+path = "src/bin/check_updated_process.rs"
+
+[[bin]]
+name = "updated-process-fixture"
+path = "src/bin/updated_process_fixture.rs"
+
+[[bin]]
+name = "release-files"
+path = "src/bin/release_files.rs"
+
+[[bin]]
+name = "build-native-logging-reference"
+path = "src/bin/build_native_logging_reference.rs"
+
+[[bin]]
+name = "check-logger-identifier"
+path = "src/bin/check_logger_identifier.rs"
+
+[[bin]]
+name = "build-bootlog-source"
+path = "src/bin/build_bootlog_source.rs"
+
+[[bin]]
+name = "build-loggerd-source"
+path = "src/bin/build_loggerd_source.rs"
+
+[[bin]]
+name = "check-jpeg-sanitizers"
+path = "src/bin/check_jpeg_sanitizers.rs"
+
+[[bin]]
+name = "build-bridge-source"
+path = "src/bin/build_bridge_source.rs"
+
+[[bin]]
+name = "check-ui-fps"
+path = "src/bin/check_ui_fps.rs"
+
+[[bin]]
+name = "check-ui-stack"
+path = "src/bin/check_ui_stack.rs"
+
+[[bin]]
+name = "check-ui-widgets"
+path = "src/bin/check_ui_widgets.rs"
+
+[[bin]]
+name = "check-ui-navigation"
+path = "src/bin/check_ui_navigation.rs"
+
+[[bin]]
+name = "check-runtime-diagnostics"
+path = "src/bin/check_runtime_diagnostics.rs"
+
+[[bin]]
+name = "check-model-timing"
+path = "src/bin/check_model_timing.rs"
+
+[[bin]]
+name = "check-ui-scroll"
+path = "src/bin/check_ui_scroll.rs"
+
+[[bin]]
+name = "check-ui-scroller"
+path = "src/bin/check_ui_scroller.rs"
+
+[[bin]]
+name = "check-communication-snapshot"
+path = "src/bin/check_communication_snapshot.rs"
+
+[[bin]]
+name = "check-message-state"
+path = "src/bin/check_message_state.rs"
+
+[[bin]]
+name = "hash-miri-core"
+path = "src/bin/hash_miri_core.rs"

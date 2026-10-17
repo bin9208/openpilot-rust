@@ -1,0 +1,42 @@
+[
+  {
+    "total_depth": 9994,
+    "error": null,
+    "files": 4
+  },
+  {
+    "total_depth": 9995,
+    "error": null,
+    "files": 4
+  },
+  {
+    "total_depth": 9996,
+    "error": null,
+    "files": 4
+  },
+  {
+    "total_depth": 9997,
+    "error": null,
+    "files": 4
+  },
+  {
+    "total_depth": 9998,
+    "error": "RecursionError",
+    "files": 0
+  },
+  {
+    "total_depth": 9999,
+    "error": "RecursionError",
+    "files": 0
+  },
+  {
+    "total_depth": 10000,
+    "error": "RecursionError",
+    "files": 0
+  },
+  {
+    "total_depth": 10001,
+    "error": "RecursionError",
+    "files": 0
+  }
+]

@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "source_commit": "b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a",
+  "source_sha256": {
+    "openpilot/system/updated/process.py": "c6f7e468e448686a53309fdbbce48a9111ed156ecfbd8f1e212cf4d304e9c63f",
+    "rust/tools/updated_process_source.py": "6811aa68c01daf1bc98e3415492069ba3124001627b0b11449601acce27616b0",
+    "rust/tools/check_updated_process.py": "2c85b395254579232929df4e9cebfc36521776915a43f4c55295bd5631541cf9"
+  },
+  "fixture": {
+    "schema": "updated-process-fixture-v1",
+    "source_sha256": "6b765e7c016c8e42eb6d072223bb430847ae3c06e3174a8881c3e2828222f6c6"
+  },
+  "command_schema": {
+    "fields": [
+      "launcher",
+      "argv",
+      "cwd",
+      "endpoint"
+    ],
+    "normal_modes": [
+      "merged-output",
+      "nonzero",
+      "environment"
+    ],
+    "group_mode": [
+      "group-leader",
+      "$PID_FILE",
+      "$PARENT_EXITS"
+    ],
+    "bounds_seconds": {
+      "ready": 5,
+      "interrupt": 4,
+      "worker_stop": 1
+    }
+  },
+  "normal": [
+    {
+      "name": "merged-output",
+      "argv": [
+        "$FIXTURE",
+        "merged-output"
+      ],
+      "result": {
+        "output": "one\ntwo\n",
+        "code": 0
+      },
+      "stdout": "{\"output\": \"one\\ntwo\\n\", \"code\": 0}\n",
+      "stderr": ""
+    },
+    {
+      "name": "nonzero",
+      "argv": [
+        "$FIXTURE",
+        "nonzero"
+      ],
+      "result": {
+        "output": "failure detail\n",
+        "code": 7
+      },
+      "stdout": "{\"output\": \"failure detail\\n\", \"code\": 7}\n",
+      "stderr": ""
+    },
+    {
+      "name": "environment",
+      "argv": [
+        "$FIXTURE",
+        "environment"
+      ],
+      "result": {
+        "output": "keep\n0\nfalse\nfalse\n",
+        "code": 0
+      },
+      "stdout": "{\"output\": \"keep\\n0\\nfalse\\nfalse\\n\", \"code\": 0}\n",
+      "stderr": ""
+    }
+  ],
+  "groups": [
+    {
+      "parent_exits": false,
+      "argv": [
+        "$FIXTURE",
+        "group-leader",
+        "$PID_FILE",
+        "false"
+      ],
+      "result": {
+        "interrupted": true
+      },
+      "stdout": "{\"interrupted\": true}\n",
+      "stderr": "",
+      "worker_stopped": true,
+      "exit_code": 0,
+      "elapsed": 0.004544348999843351
+    },
+    {
+      "parent_exits": true,
+      "argv": [
+        "$FIXTURE",
+        "group-leader",
+        "$PID_FILE",
+        "true"
+      ],
+      "result": {
+        "interrupted": true
+      },
+      "stdout": "{\"interrupted\": true}\n",
+      "stderr": "",
+      "worker_stopped": true,
+      "exit_code": 0,
+      "elapsed": 0.004330974999902537
+    }
+  ]
+}

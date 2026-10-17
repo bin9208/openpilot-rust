@@ -1,0 +1,32 @@
+{
+  "bootlog": {
+    "path": "rust/tools/build_bootlog_native.py",
+    "revision": "30866c90^",
+    "sha256": "e9d203a8038f7652afd855b6a7a7413466fd09f03b87b6861dc65c768ec71721",
+    "native_binary": "build-bootlog-source"
+  },
+  "loggerd": {
+    "path": "rust/tools/loggerd_native_build.py",
+    "revision": "30866c90^",
+    "sha256": "29affcfd1b24260b1909ccbd1c27276d37d99843b5ae7d21dfe27c4fc5d407f8",
+    "native_binary": "build-loggerd-source"
+  },
+  "runtime": {
+    "path": "rust/tools/build_pandad_runtime_source.py",
+    "revision": "30866c90^",
+    "sha256": "bf3c4d4c142588703b42ffe5025f02e2613a4b37dc30eb65895856fc755de03f",
+    "native_binary": "build-pandad-runtime-source"
+  },
+  "bridge": {
+    "path": "rust/tools/build_bridge_reference.py",
+    "revision": "30866c90^",
+    "sha256": "5018922e939e6a407257aae0f00a28077d3e47a2f80158e3b12abfaa5ebaa9eb",
+    "native_binary": "build-bridge-source"
+  },
+  "jpeg": {
+    "path": "rust/tools/check_jpeg_sanitizers.py",
+    "revision": "30866c90^",
+    "sha256": "ccd19b4cae11294931a8160067740bf8c13ef91fcff715a0376c3cafd07c7b66",
+    "native_binary": "check-jpeg-sanitizers"
+  }
+}

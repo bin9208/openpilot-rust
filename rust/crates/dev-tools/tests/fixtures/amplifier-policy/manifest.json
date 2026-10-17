@@ -1,0 +1,11 @@
+{
+  "cases": 2034,
+  "bytes": 30870801,
+  "sha256": "56ce60cf6246c6df45ca5ca7c7cf09ef944abd686aaa0c52482475d50bc0d215",
+  "gzip_sha256": "c230ba8007edbacbd9d69b74fab25802f28921757f3edbf770acaacd91c7b0de",
+  "sources": {
+    "rust/tools/check_amplifier.py": "9849d44da31628ade4d9121d823a9aef13b4f94cc81633643f04ecde96174a0c",
+    "openpilot/system/hardware/tici/amplifier.py": "e2767f9ecf11a03123707022c1c9911b6f0b09516ad3dcacb1e5225986596fc7"
+  },
+  "capture": "Complete original cases() and source(), Python 3.12; no native candidate used to produce expected results."
+}

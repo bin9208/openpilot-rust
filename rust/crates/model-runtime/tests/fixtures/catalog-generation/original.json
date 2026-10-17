@@ -1,0 +1,31 @@
+{
+  "original_expression": "import json, os; print(json.load(open(os.environ[\"RUNNER_TEMP\"] + \"/native-catalog/current.json\"))[\"generation\"])",
+  "expression_sha256": "c5c51b0c028a2a9221a0e339b75c73ccc91fd575c7b64578c466a8480d4b261b",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "cases": [
+    {
+      "arch": "x86_64",
+      "files": {
+        "64c8b977473f72a942f4cf16f45b0776667bf6eeee55fb109c4a7406d613a0c0/driver-1344x760/graph.json": "{\"allocations\":[{\"bytes\":2428932,\"weight_offset\":null}],\"arch\":\"x86_64\",\"backend\":\"cpu-llvm\",\"calls\":[],\"entrypoints\":[{\"end\":0,\"name\":\"prepare\",\"start\":0},{\"end\":0,\"name\":\"model\",\"start\":0}],\"inputs\":[{\"name\":\"frame\",\"view\":0}],\"kernels\":[],\"library_sha256\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"outputs\":[{\"name\":\"model\",\"view\":1}],\"version\":2,\"views\":[{\"allocation\":0,\"bytes\":2428928,\"offset\":0},{\"allocation\":0,\"bytes\":4,\"offset\":2428928}],\"weights_sha256\":\"0000000000000000000000000000000000000000000000000000000000000000\"}",
+        "64c8b977473f72a942f4cf16f45b0776667bf6eeee55fb109c4a7406d613a0c0/driver-1344x760/pipeline.json": "{\"camera\":[1344,760],\"inputs\":[{\"dtype\":\"uint8\",\"name\":\"frame\",\"shape\":[2428928]}],\"kind\":\"driver\",\"metadata\":{\"input_shapes\":{\"calib\":[1,3]},\"model_checkpoint\":\"fixture\",\"output_shapes\":{\"outputs\":[1,1]},\"output_slices\":{\"result\":[0,1]}},\"nv12\":{\"bytes\":2428928,\"stride\":1408,\"uv_height\":384,\"y_height\":768},\"outputs\":[{\"dtype\":\"float32\",\"name\":\"model\",\"shape\":[1,1]}],\"sources\":{\"model\":\"1111111111111111111111111111111111111111111111111111111111111111\"},\"version\":1}",
+        "64c8b977473f72a942f4cf16f45b0776667bf6eeee55fb109c4a7406d613a0c0/index.json": "{\"bundles\":[{\"camera\":[1344,760],\"directory\":\"driver-1344x760\",\"graph_sha256\":\"9c430315b458dee7b35c054520ab4541760f96032a98b34877ade3a9df346194\",\"kind\":\"driver\",\"pipeline_sha256\":\"be61f995d78336fe3c83b8bd802d7a272cfb37e033439cb5218c50e7594803cb\"}],\"version\":1}",
+        "current.json": "{\"generation\":\"64c8b977473f72a942f4cf16f45b0776667bf6eeee55fb109c4a7406d613a0c0\",\"version\":1}"
+      },
+      "original_stdout": "64c8b977473f72a942f4cf16f45b0776667bf6eeee55fb109c4a7406d613a0c0\n",
+      "original_stderr": "",
+      "original_exit": 0
+    },
+    {
+      "arch": "aarch64",
+      "files": {
+        "19355b3fcf9aa9cfa56cff2651eecbfe0468c5c3bf53d126aeb336562af3f2f7/driver-1344x760/graph.json": "{\"allocations\":[{\"bytes\":2428932,\"weight_offset\":null}],\"arch\":\"aarch64\",\"backend\":\"cpu-llvm\",\"calls\":[],\"entrypoints\":[{\"end\":0,\"name\":\"prepare\",\"start\":0},{\"end\":0,\"name\":\"model\",\"start\":0}],\"inputs\":[{\"name\":\"frame\",\"view\":0}],\"kernels\":[],\"library_sha256\":\"1111111111111111111111111111111111111111111111111111111111111111\",\"outputs\":[{\"name\":\"model\",\"view\":1}],\"version\":2,\"views\":[{\"allocation\":0,\"bytes\":2428928,\"offset\":0},{\"allocation\":0,\"bytes\":4,\"offset\":2428928}],\"weights_sha256\":\"0000000000000000000000000000000000000000000000000000000000000000\"}",
+        "19355b3fcf9aa9cfa56cff2651eecbfe0468c5c3bf53d126aeb336562af3f2f7/driver-1344x760/pipeline.json": "{\"camera\":[1344,760],\"inputs\":[{\"dtype\":\"uint8\",\"name\":\"frame\",\"shape\":[2428928]}],\"kind\":\"driver\",\"metadata\":{\"input_shapes\":{\"calib\":[1,3]},\"model_checkpoint\":\"fixture\",\"output_shapes\":{\"outputs\":[1,1]},\"output_slices\":{\"result\":[0,1]}},\"nv12\":{\"bytes\":2428928,\"stride\":1408,\"uv_height\":384,\"y_height\":768},\"outputs\":[{\"dtype\":\"float32\",\"name\":\"model\",\"shape\":[1,1]}],\"sources\":{\"model\":\"1111111111111111111111111111111111111111111111111111111111111111\"},\"version\":1}",
+        "19355b3fcf9aa9cfa56cff2651eecbfe0468c5c3bf53d126aeb336562af3f2f7/index.json": "{\"bundles\":[{\"camera\":[1344,760],\"directory\":\"driver-1344x760\",\"graph_sha256\":\"a9f1eca4d0d099f1e6a4acb721d08ca33c630b138887c860b7afc8b2c4a17afd\",\"kind\":\"driver\",\"pipeline_sha256\":\"be61f995d78336fe3c83b8bd802d7a272cfb37e033439cb5218c50e7594803cb\"}],\"version\":1}",
+        "current.json": "{\"generation\":\"19355b3fcf9aa9cfa56cff2651eecbfe0468c5c3bf53d126aeb336562af3f2f7\",\"version\":1}"
+      },
+      "original_stdout": "19355b3fcf9aa9cfa56cff2651eecbfe0468c5c3bf53d126aeb336562af3f2f7\n",
+      "original_stderr": "",
+      "original_exit": 0
+    }
+  ]
+}

@@ -22,8 +22,12 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let args = env::args_os().skip(1).collect::<Vec<_>>();
-    if args.len() == 2 && args[0] == "--check-catalog" {
+    if args.len() == 2 && (args[0] == "--check-catalog" || args[0] == "--catalog-generation") {
         let catalog = openpilot_model_runtime::catalog::Catalog::load(&PathBuf::from(&args[1]))?;
+        if args[0] == "--catalog-generation" {
+            println!("{}", catalog.generation());
+            return Ok(());
+        }
         let bundles: Vec<_> = catalog.bundles().iter().map(|bundle| serde_json::json!({
             "kind":format!("{:?}", bundle.descriptor.kind), "camera":bundle.descriptor.camera,
             "backend":bundle.backend, "checkpoint":bundle.descriptor.metadata.model_checkpoint,
@@ -36,7 +40,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     }
     if args.len() != 3 || args[0] != "--trusted-bundle" {
         return Err(
-            "usage: model-run --check-catalog ROOT | --trusted-bundle BUNDLE SEQUENCE.json".into(),
+            "usage: model-run --check-catalog ROOT | --catalog-generation ROOT | --trusted-bundle BUNDLE SEQUENCE.json".into(),
         );
     }
     let directory = PathBuf::from(&args[1]);

@@ -1,0 +1,106 @@
+[
+  {
+    "kind": "egl",
+    "args": [],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_ui_egl.py [-h] --binary BINARY --output OUTPUT\ncheck_ui_egl.py: error: the following arguments are required: --binary, --output\n"
+  },
+  {
+    "kind": "egl",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_egl.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "egl",
+    "args": [
+      "--help",
+      "--b"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_egl.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "egl",
+    "args": [
+      "-hhh",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_egl.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "egl",
+    "args": [
+      "--binary",
+      "-unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_ui_egl.py [-h] --binary BINARY --output OUTPUT\ncheck_ui_egl.py: error: argument --binary: expected one argument\n"
+  },
+  {
+    "kind": "egl",
+    "args": [
+      "--binary=candidate",
+      "--output"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout": "",
+    "stderr": "usage: check_ui_egl.py [-h] --binary BINARY --output OUTPUT\ncheck_ui_egl.py: error: argument --output: expected one argument\n"
+  },
+  {
+    "kind": "egl",
+    "args": [
+      "--binary",
+      "a",
+      "--binary",
+      "b",
+      "--output",
+      "x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_egl.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "egl",
+    "args": [
+      "--bin=a",
+      "--out=x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_egl.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  },
+  {
+    "kind": "egl",
+    "args": [
+      "--output",
+      "-unknown value",
+      "--binary",
+      "a",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout": "usage: check_ui_egl.py [-h] --binary BINARY --output OUTPUT\n\noptions:\n  -h, --help       show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n",
+    "stderr": ""
+  }
+]

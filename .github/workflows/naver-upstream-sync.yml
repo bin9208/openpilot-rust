@@ -13,15 +13,21 @@ jobs:
     if: github.repository == 'bin9208/openpilot'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
     steps:
       - uses: actions/checkout@v7
         with:
           lfs: false
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
+      - name: Build native synchronization command
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin sync-upstream
       - name: Fast-forward carrot-wip only
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python tools/naver_ci/sync_upstream.py
+        run: rust/target/debug/sync-upstream

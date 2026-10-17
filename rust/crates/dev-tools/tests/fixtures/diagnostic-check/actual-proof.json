@@ -1,0 +1,170 @@
+{
+  "runtime": {
+    "example_sha256": "553277f01ee3d2474e28ca6ec42a15106b9e7ea0f2a9178b09d9b5e18eff66a9",
+    "checker_sha256": "88994011a4ed39939674b7f322d38d7209b442adf507ac002a0b3da9f83aa16d",
+    "exits": [
+      0,
+      0
+    ],
+    "files": {
+      "aggregation-expected.json": {
+        "bytes": 156912,
+        "sha256": "36381b1c99d1e8382b0ee648c7079bfe26b0f5fbd71b0c084d2116ab9fcc08da"
+      },
+      "integer-and-overflow-input.jsonl": {
+        "bytes": 38618,
+        "sha256": "3cc6289e122ca1fb42ea729b4fc0cc785cf9716d85c6c86a4d12f0684680a826"
+      },
+      "report.json": {
+        "bytes": 326,
+        "sha256": "5ce95d456acc97e520c7e6e7454746a04aee10151b97cbee83ed8cb143a326b3"
+      },
+      "integer-and-overflow-expected.json": {
+        "bytes": 18511,
+        "sha256": "df929c9ae3d2763f92aa0bc54b2fed8105c63bd0bbe4e6b403f0538877c9d640"
+      },
+      "integer-and-overflow-actual.json": {
+        "bytes": 18511,
+        "sha256": "df929c9ae3d2763f92aa0bc54b2fed8105c63bd0bbe4e6b403f0538877c9d640"
+      },
+      "rounding-actual.json": {
+        "bytes": 2580107,
+        "sha256": "700402d717f05cd252cc22b2810bc6b41b8d6c134e76341e2c2238edd946b85d"
+      },
+      "aggregation-actual.json": {
+        "bytes": 156912,
+        "sha256": "36381b1c99d1e8382b0ee648c7079bfe26b0f5fbd71b0c084d2116ab9fcc08da"
+      },
+      "aggregation-input.jsonl": {
+        "bytes": 1940720,
+        "sha256": "ca3c8edf0bd244f3b828df14565e1c93b40c3cc0ed2f16f459593e5a98a63d9a"
+      },
+      "rounding-expected.json": {
+        "bytes": 2580107,
+        "sha256": "700402d717f05cd252cc22b2810bc6b41b8d6c134e76341e2c2238edd946b85d"
+      },
+      "rounding-input.jsonl": {
+        "bytes": 1538420,
+        "sha256": "5c2fede7cc4f8c987a3908d1e82eb6725019340d746d4dd73ceb20519e4ee605"
+      }
+    },
+    "files_equal": true,
+    "stdout_equal": true,
+    "stderr_equal": true
+  },
+  "timing": {
+    "example_sha256": "163ba7842a4add375cf9968959c56581aeacd393f06884dbabde925784bd0b0b",
+    "checker_sha256": "3e1e98e55fb689db83fa579ccf0fac75d512e93fc4db98491ccb92462bbd3e04",
+    "exits": [
+      0,
+      0
+    ],
+    "files": {
+      "rust.jsonl": {
+        "bytes": 1142549,
+        "sha256": "f0ba403e14088f96fb92c18c2a93899dd29b6c3804a9a9b81ec9c687eedc3884"
+      },
+      "report.json": {
+        "bytes": 336,
+        "sha256": "ea30a4a176bfdac33a897ef83fa681bb6ece6f962e3015c5a15691baaeca820d"
+      },
+      "inputs.jsonl": {
+        "bytes": 965382,
+        "sha256": "559ca944ee54d62f68a87ffa8cf45c7aa755a6c9085fcdd083b1a8580cecda6e"
+      },
+      "source.jsonl": {
+        "bytes": 1142549,
+        "sha256": "f0ba403e14088f96fb92c18c2a93899dd29b6c3804a9a9b81ec9c687eedc3884"
+      }
+    },
+    "files_equal": true,
+    "stdout_equal": true,
+    "stderr_equal": true
+  },
+  "communication": {
+    "example_sha256": "b0e7f2b002bbe7da5d37ded39c53e26bc158c5a352def7b26681affcb47ea07c",
+    "checker_sha256": "b06f7e8045bd986f6b84bf007e0cbb3afc9bdf9a2ff5f0edfe78d69bbb8ee9fc",
+    "exits": [
+      0,
+      0
+    ],
+    "files": {
+      "report.json": {
+        "bytes": 102,
+        "sha256": "6c3c0ac7b8f1fa4595021416eadb94cd9b70bd2af709e12d7022386acddb41db"
+      },
+      "actual.json": {
+        "bytes": 14956865,
+        "sha256": "ecc4ef507a926aa4003a8eff7170223f6b4dd490fe1ec0f23f6f99c091e34000"
+      },
+      "expected.json": {
+        "bytes": 14956865,
+        "sha256": "ecc4ef507a926aa4003a8eff7170223f6b4dd490fe1ec0f23f6f99c091e34000"
+      },
+      "input.jsonl": {
+        "bytes": 19749571,
+        "sha256": "6ae56fb5269df84317890f014920bcf5d543f8d8bd206d170395e95ab0290f61"
+      }
+    },
+    "files_equal": true,
+    "stdout_equal": true,
+    "stderr_equal": true
+  },
+  "raw_cli": [
+    {
+      "family": "runtime",
+      "case": "raw",
+      "equal": true,
+      "exits": [
+        0,
+        0
+      ]
+    },
+    {
+      "family": "runtime",
+      "case": "ascii-alias",
+      "equal": true,
+      "exits": [
+        0,
+        0
+      ]
+    },
+    {
+      "family": "timing",
+      "case": "raw",
+      "equal": true,
+      "exits": [
+        0,
+        0
+      ]
+    },
+    {
+      "family": "timing",
+      "case": "ascii-alias",
+      "equal": true,
+      "exits": [
+        0,
+        0
+      ]
+    },
+    {
+      "family": "communication",
+      "case": "raw",
+      "equal": true,
+      "exits": [
+        0,
+        0
+      ]
+    },
+    {
+      "family": "communication",
+      "case": "ascii-alias",
+      "equal": true,
+      "exits": [
+        0,
+        0
+      ]
+    }
+  ],
+  "raw_repository_root": "not claimed: only candidate/output paths and aliases tested; pycapnp may reject physical raw repository roots"
+}

@@ -1,0 +1,1036 @@
+[
+  {
+    "family": "encoder",
+    "case": "baseline",
+    "args": [
+      "--output",
+      "out",
+      "--native-prefix",
+      "native",
+      "--capnp-prefix",
+      "capnp",
+      "--json11-prefix",
+      "json",
+      "--zmq-include",
+      "zmq",
+      "--jpeg-build",
+      "jpeg"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out",
+      "native_prefix": "native",
+      "capnp_prefix": "capnp",
+      "json11_prefix": "json",
+      "zmq_include": "zmq",
+      "jpeg_build": "jpeg"
+    }
+  },
+  {
+    "family": "encoder",
+    "case": "help",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "shorthelp",
+    "args": [
+      "-hfoo"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "shortrepeat",
+    "args": [
+      "-hhh"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "shortcluster-equals",
+    "args": [
+      "-hfoo=bar"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "shortexplicit",
+    "args": [
+      "-h=yes"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "longexplicit",
+    "args": [
+      "--help=yes"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "unknown-help",
+    "args": [
+      "--unknown",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "missing-help",
+    "args": [
+      "--output",
+      "--help"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "unknown-value",
+    "args": [
+      "--output",
+      "out",
+      "--native-prefix",
+      "native",
+      "--capnp-prefix",
+      "capnp",
+      "--json11-prefix",
+      "json",
+      "--zmq-include",
+      "zmq",
+      "--jpeg-build",
+      "jpeg",
+      "--output",
+      "--unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "space-value",
+    "args": [
+      "--output",
+      "-unknown value"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "negativeLF",
+    "args": [
+      "--output",
+      "-1\n"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "negativeNd",
+    "args": [
+      "--output",
+      "-\u0661"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "negativeOther",
+    "args": [
+      "--output",
+      "-\u00b2"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "terminator",
+    "args": [
+      "--output",
+      "out",
+      "--native-prefix",
+      "native",
+      "--capnp-prefix",
+      "capnp",
+      "--json11-prefix",
+      "json",
+      "--zmq-include",
+      "zmq",
+      "--jpeg-build",
+      "jpeg",
+      "--"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "help-terminator",
+    "args": [
+      "--help",
+      "--"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "terminator-help",
+    "args": [
+      "--",
+      "--help"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "duplicate",
+    "args": [
+      "--output",
+      "out",
+      "--native-prefix",
+      "native",
+      "--capnp-prefix",
+      "capnp",
+      "--json11-prefix",
+      "json",
+      "--zmq-include",
+      "zmq",
+      "--jpeg-build",
+      "jpeg",
+      "--output",
+      "last"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "last",
+      "native_prefix": "native",
+      "capnp_prefix": "capnp",
+      "json11_prefix": "json",
+      "zmq_include": "zmq",
+      "jpeg_build": "jpeg"
+    }
+  },
+  {
+    "family": "encoder",
+    "case": "equals",
+    "args": [
+      "--output=out",
+      "--native-prefix=native",
+      "--capnp-prefix=capnp",
+      "--json11-prefix=json",
+      "--zmq-include=zmq",
+      "--jpeg-build=jpeg"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out",
+      "native_prefix": "native",
+      "capnp_prefix": "capnp",
+      "json11_prefix": "json",
+      "zmq_include": "zmq",
+      "jpeg_build": "jpeg"
+    }
+  },
+  {
+    "family": "encoder",
+    "case": "abbrev",
+    "args": [
+      "--o",
+      "out",
+      "--n",
+      "native",
+      "--c",
+      "capnp",
+      "--json",
+      "json",
+      "--z",
+      "zmq",
+      "--jpeg",
+      "jpeg"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out",
+      "native_prefix": "native",
+      "capnp_prefix": "capnp",
+      "json11_prefix": "json",
+      "zmq_include": "zmq",
+      "jpeg_build": "jpeg"
+    }
+  },
+  {
+    "family": "encoder",
+    "case": "help-ambiguous",
+    "args": [
+      "--help",
+      "--j"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "encoder",
+    "case": "ambiguous-help",
+    "args": [
+      "--j",
+      "--help"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "baseline",
+    "args": [
+      "out"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out"
+    }
+  },
+  {
+    "family": "athena",
+    "case": "help",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "shorthelp",
+    "args": [
+      "-hfoo"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "shortrepeat",
+    "args": [
+      "-hhh"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "shortcluster-equals",
+    "args": [
+      "-hfoo=bar"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "shortexplicit",
+    "args": [
+      "-h=yes"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "longexplicit",
+    "args": [
+      "--help=yes"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "unknown-help",
+    "args": [
+      "--unknown",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "missing-help",
+    "args": [
+      "--output",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "unknown-value",
+    "args": [
+      "out",
+      "--unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "space-value",
+    "args": [
+      "-unknown value"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "-unknown value"
+    }
+  },
+  {
+    "family": "athena",
+    "case": "negativeLF",
+    "args": [
+      "-1\n"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "-1\n"
+    }
+  },
+  {
+    "family": "athena",
+    "case": "negativeNd",
+    "args": [
+      "-\u0661"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "-\u0661"
+    }
+  },
+  {
+    "family": "athena",
+    "case": "negativeOther",
+    "args": [
+      "-\u00b2"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "terminator",
+    "args": [
+      "out",
+      "--"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out"
+    }
+  },
+  {
+    "family": "athena",
+    "case": "help-terminator",
+    "args": [
+      "--help",
+      "--"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "terminator-help",
+    "args": [
+      "--",
+      "--help"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "--help"
+    }
+  },
+  {
+    "family": "athena",
+    "case": "duplicate",
+    "args": [
+      "out",
+      "last"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "athena",
+    "case": "equals",
+    "args": [
+      "out"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out"
+    }
+  },
+  {
+    "family": "athena",
+    "case": "abbrev",
+    "args": [
+      "out"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out"
+    }
+  },
+  {
+    "family": "firmware",
+    "case": "baseline",
+    "args": [
+      "--output",
+      "out",
+      "--json11-prefix",
+      "json",
+      "--spidev-source",
+      "spidev"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out",
+      "json11_prefix": "json",
+      "spidev_source": "spidev"
+    }
+  },
+  {
+    "family": "firmware",
+    "case": "help",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "shorthelp",
+    "args": [
+      "-hfoo"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "shortrepeat",
+    "args": [
+      "-hhh"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "shortcluster-equals",
+    "args": [
+      "-hfoo=bar"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "shortexplicit",
+    "args": [
+      "-h=yes"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "longexplicit",
+    "args": [
+      "--help=yes"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "unknown-help",
+    "args": [
+      "--unknown",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "missing-help",
+    "args": [
+      "--output",
+      "--help"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "unknown-value",
+    "args": [
+      "--output",
+      "out",
+      "--json11-prefix",
+      "json",
+      "--spidev-source",
+      "spidev",
+      "--output",
+      "--unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "space-value",
+    "args": [
+      "--output",
+      "-unknown value"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "negativeLF",
+    "args": [
+      "--output",
+      "-1\n"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "negativeNd",
+    "args": [
+      "--output",
+      "-\u0661"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "negativeOther",
+    "args": [
+      "--output",
+      "-\u00b2"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "terminator",
+    "args": [
+      "--output",
+      "out",
+      "--json11-prefix",
+      "json",
+      "--spidev-source",
+      "spidev",
+      "--"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "help-terminator",
+    "args": [
+      "--help",
+      "--"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "terminator-help",
+    "args": [
+      "--",
+      "--help"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "firmware",
+    "case": "duplicate",
+    "args": [
+      "--output",
+      "out",
+      "--json11-prefix",
+      "json",
+      "--spidev-source",
+      "spidev",
+      "--output",
+      "last"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "last",
+      "json11_prefix": "json",
+      "spidev_source": "spidev"
+    }
+  },
+  {
+    "family": "firmware",
+    "case": "equals",
+    "args": [
+      "--output=out",
+      "--json11-prefix=json",
+      "--spidev-source=spidev"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out",
+      "json11_prefix": "json",
+      "spidev_source": "spidev"
+    }
+  },
+  {
+    "family": "firmware",
+    "case": "abbrev",
+    "args": [
+      "--o",
+      "out",
+      "--json",
+      "json",
+      "--s",
+      "spidev"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "output": "out",
+      "json11_prefix": "json",
+      "spidev_source": "spidev"
+    }
+  },
+  {
+    "family": "msgq",
+    "case": "baseline",
+    "args": [
+      "--target-dir",
+      "target"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "target_dir": "target"
+    }
+  },
+  {
+    "family": "msgq",
+    "case": "help",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "shorthelp",
+    "args": [
+      "-hfoo"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "shortrepeat",
+    "args": [
+      "-hhh"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "shortcluster-equals",
+    "args": [
+      "-hfoo=bar"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "shortexplicit",
+    "args": [
+      "-h=yes"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "longexplicit",
+    "args": [
+      "--help=yes"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "unknown-help",
+    "args": [
+      "--unknown",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "missing-help",
+    "args": [
+      "--target-dir",
+      "--help"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "unknown-value",
+    "args": [
+      "--target-dir",
+      "target",
+      "--target-dir",
+      "--unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "space-value",
+    "args": [
+      "--target-dir",
+      "-unknown value"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "target_dir": "-unknown value"
+    }
+  },
+  {
+    "family": "msgq",
+    "case": "negativeLF",
+    "args": [
+      "--target-dir",
+      "-1\n"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "target_dir": "-1\n"
+    }
+  },
+  {
+    "family": "msgq",
+    "case": "negativeNd",
+    "args": [
+      "--target-dir",
+      "-\u0661"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "target_dir": "-\u0661"
+    }
+  },
+  {
+    "family": "msgq",
+    "case": "negativeOther",
+    "args": [
+      "--target-dir",
+      "-\u00b2"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "terminator",
+    "args": [
+      "--target-dir",
+      "target",
+      "--"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "help-terminator",
+    "args": [
+      "--help",
+      "--"
+    ],
+    "exit": 0,
+    "help": true,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "terminator-help",
+    "args": [
+      "--",
+      "--help"
+    ],
+    "exit": 2,
+    "help": false,
+    "parsed": null
+  },
+  {
+    "family": "msgq",
+    "case": "duplicate",
+    "args": [
+      "--target-dir",
+      "target",
+      "--target-dir",
+      "last"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "target_dir": "last"
+    }
+  },
+  {
+    "family": "msgq",
+    "case": "equals",
+    "args": [
+      "--target-dir=target"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "target_dir": "target"
+    }
+  },
+  {
+    "family": "msgq",
+    "case": "abbrev",
+    "args": [
+      "--t",
+      "target"
+    ],
+    "exit": 0,
+    "help": false,
+    "parsed": {
+      "target_dir": "target"
+    }
+  }
+]

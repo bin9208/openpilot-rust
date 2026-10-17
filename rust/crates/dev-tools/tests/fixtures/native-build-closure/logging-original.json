@@ -1,0 +1,138 @@
+[
+  {
+    "architecture": "x86_64",
+    "binary": "$OUTPUT/native_logging_reference",
+    "commands": [
+      [
+        "curl",
+        "-fsSL",
+        "https://fixture.invalid/json11-fixture-py3-none-manylinux_2_28_x86_64.whl",
+        "-o",
+        "$OUTPUT/json11-fixture-py3-none-manylinux_2_28_x86_64.whl"
+      ],
+      [
+        "c++",
+        "-std=c++17",
+        "-O2",
+        "-pthread",
+        "-I$OUTPUT/overlay",
+        "-I$ROOT/openpilot",
+        "-I$OUTPUT/json11/fixture.data/purelib/json11/install/include",
+        "-I$ROOT/rust/target/debug/build/zmq-sys-fixture/out/source/include",
+        "$ROOT/rust/tools/native_logging_reference.cc",
+        "$ROOT/openpilot/common/swaglog.cc",
+        "$OUTPUT/json11/fixture.data/purelib/json11/install/lib/libjson11.a",
+        "-l:libzmq.so.5",
+        "-Wl,--wrap=zmq_send",
+        "-Wl,--wrap=zmq_setsockopt",
+        "-o",
+        "$OUTPUT/native_logging_reference"
+      ]
+    ],
+    "files": {
+      "build.log": "controlled stdout\ncontrolled stderr\n",
+      "provenance.json": {
+        "command": [
+          "c++",
+          "-std=c++17",
+          "-O2",
+          "-pthread",
+          "-I$OUTPUT/overlay",
+          "-I$ROOT/openpilot",
+          "-I$OUTPUT/json11/fixture.data/purelib/json11/install/include",
+          "-I$ROOT/rust/target/debug/build/zmq-sys-fixture/out/source/include",
+          "$ROOT/rust/tools/native_logging_reference.cc",
+          "$ROOT/openpilot/common/swaglog.cc",
+          "$OUTPUT/json11/fixture.data/purelib/json11/install/lib/libjson11.a",
+          "-l:libzmq.so.5",
+          "-Wl,--wrap=zmq_send",
+          "-Wl,--wrap=zmq_setsockopt",
+          "-o",
+          "$OUTPUT/native_logging_reference"
+        ],
+        "json11_version": "fixture",
+        "json11_sha256": "f2e576069807503069f7bb8c483634e0fd2cfc4da41cf73e7cb3e625d9295440",
+        "json11_architecture": "x86_64",
+        "sources": {
+          "openpilot/common/swaglog.cc": "b61e45b8ad799606ba2a78e0b5ee9303a665bad99a67d50f3b7134792bf7ba7c",
+          "openpilot/common/swaglog.h": "bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b",
+          "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
+          "rust/tools/native_logging_reference.cc": "f4c2f9ba56f48595865eba8efb88f7b2b49eaae60d91e79da72a8e39edced022"
+        },
+        "clock_override": "Only nanos_since_boot returns fixture_clock for exact rate-limit boundaries; realtime source unchanged.",
+        "wrappers": "zmq_send and zmq_setsockopt observe arguments/results and call actual libzmq unchanged."
+      },
+      "overlay/common/timing.h": "#pragma once\n\n#include <cstdint>\n#include <ctime>\n\n#ifdef __APPLE__\n#define CLOCK_BOOTTIME CLOCK_MONOTONIC\n#endif\n\nextern uint64_t fixture_clock;\nstatic inline uint64_t nanos_since_boot() { return fixture_clock; }\n\nstatic inline double millis_since_boot() {\n  struct timespec t;\n  clock_gettime(CLOCK_BOOTTIME, &t);\n  return t.tv_sec * 1000.0 + t.tv_nsec * 1e-6;\n}\n\nstatic inline double seconds_since_boot() {\n  struct timespec t;\n  clock_gettime(CLOCK_BOOTTIME, &t);\n  return (double)t.tv_sec + t.tv_nsec * 1e-9;\n}\n\nstatic inline uint64_t nanos_since_epoch() {\n  struct timespec t;\n  clock_gettime(CLOCK_REALTIME, &t);\n  return t.tv_sec * 1000000000ULL + t.tv_nsec;\n}\n\nstatic inline double seconds_since_epoch() {\n  struct timespec t;\n  clock_gettime(CLOCK_REALTIME, &t);\n  return (double)t.tv_sec + t.tv_nsec * 1e-9;\n}\n\n// you probably should use nanos_since_boot instead\nstatic inline uint64_t nanos_monotonic() {\n  struct timespec t;\n  clock_gettime(CLOCK_MONOTONIC, &t);\n  return t.tv_sec * 1000000000ULL + t.tv_nsec;\n}\n\nstatic inline uint64_t nanos_monotonic_raw() {\n  struct timespec t;\n  clock_gettime(CLOCK_MONOTONIC_RAW, &t);\n  return t.tv_sec * 1000000000ULL + t.tv_nsec;\n}\n",
+      "overlay/common/version.h": "#define COMMA_VERSION \"test-version\"\n",
+      "overlay/system/hardware/hw.h": "#include <cstdlib>\n#include <cstring>\n#include <string>\nstruct Hardware { static std::string get_name() { return \"pc\"; } };\nstruct Path { static std::string swaglog_ipc() { return getenv(\"NATIVE_LOG_ENDPOINT\"); } };\n"
+    }
+  },
+  {
+    "architecture": "aarch64",
+    "binary": "$OUTPUT/native_logging_reference",
+    "commands": [
+      [
+        "curl",
+        "-fsSL",
+        "https://fixture.invalid/json11-fixture-py3-none-manylinux_2_28_aarch64.whl",
+        "-o",
+        "$OUTPUT/json11-fixture-py3-none-manylinux_2_28_aarch64.whl"
+      ],
+      [
+        "c++",
+        "-std=c++17",
+        "-O2",
+        "-pthread",
+        "-I$OUTPUT/overlay",
+        "-I$ROOT/openpilot",
+        "-I$OUTPUT/json11/fixture.data/purelib/json11/install/include",
+        "-I$ROOT/rust/target/debug/build/zmq-sys-fixture/out/source/include",
+        "$ROOT/rust/tools/native_logging_reference.cc",
+        "$ROOT/openpilot/common/swaglog.cc",
+        "$OUTPUT/json11/fixture.data/purelib/json11/install/lib/libjson11.a",
+        "-l:libzmq.so.5",
+        "-Wl,--wrap=zmq_send",
+        "-Wl,--wrap=zmq_setsockopt",
+        "-o",
+        "$OUTPUT/native_logging_reference"
+      ]
+    ],
+    "files": {
+      "build.log": "controlled stdout\ncontrolled stderr\n",
+      "provenance.json": {
+        "command": [
+          "c++",
+          "-std=c++17",
+          "-O2",
+          "-pthread",
+          "-I$OUTPUT/overlay",
+          "-I$ROOT/openpilot",
+          "-I$OUTPUT/json11/fixture.data/purelib/json11/install/include",
+          "-I$ROOT/rust/target/debug/build/zmq-sys-fixture/out/source/include",
+          "$ROOT/rust/tools/native_logging_reference.cc",
+          "$ROOT/openpilot/common/swaglog.cc",
+          "$OUTPUT/json11/fixture.data/purelib/json11/install/lib/libjson11.a",
+          "-l:libzmq.so.5",
+          "-Wl,--wrap=zmq_send",
+          "-Wl,--wrap=zmq_setsockopt",
+          "-o",
+          "$OUTPUT/native_logging_reference"
+        ],
+        "json11_version": "fixture",
+        "json11_sha256": "193e7c647586d92dadbee4ced52c6075cf8f5cbf5097a06e134f8757bf80ed27",
+        "json11_architecture": "aarch64",
+        "sources": {
+          "openpilot/common/swaglog.cc": "b61e45b8ad799606ba2a78e0b5ee9303a665bad99a67d50f3b7134792bf7ba7c",
+          "openpilot/common/swaglog.h": "bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b",
+          "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
+          "rust/tools/native_logging_reference.cc": "f4c2f9ba56f48595865eba8efb88f7b2b49eaae60d91e79da72a8e39edced022"
+        },
+        "clock_override": "Only nanos_since_boot returns fixture_clock for exact rate-limit boundaries; realtime source unchanged.",
+        "wrappers": "zmq_send and zmq_setsockopt observe arguments/results and call actual libzmq unchanged."
+      },
+      "overlay/common/timing.h": "#pragma once\n\n#include <cstdint>\n#include <ctime>\n\n#ifdef __APPLE__\n#define CLOCK_BOOTTIME CLOCK_MONOTONIC\n#endif\n\nextern uint64_t fixture_clock;\nstatic inline uint64_t nanos_since_boot() { return fixture_clock; }\n\nstatic inline double millis_since_boot() {\n  struct timespec t;\n  clock_gettime(CLOCK_BOOTTIME, &t);\n  return t.tv_sec * 1000.0 + t.tv_nsec * 1e-6;\n}\n\nstatic inline double seconds_since_boot() {\n  struct timespec t;\n  clock_gettime(CLOCK_BOOTTIME, &t);\n  return (double)t.tv_sec + t.tv_nsec * 1e-9;\n}\n\nstatic inline uint64_t nanos_since_epoch() {\n  struct timespec t;\n  clock_gettime(CLOCK_REALTIME, &t);\n  return t.tv_sec * 1000000000ULL + t.tv_nsec;\n}\n\nstatic inline double seconds_since_epoch() {\n  struct timespec t;\n  clock_gettime(CLOCK_REALTIME, &t);\n  return (double)t.tv_sec + t.tv_nsec * 1e-9;\n}\n\n// you probably should use nanos_since_boot instead\nstatic inline uint64_t nanos_monotonic() {\n  struct timespec t;\n  clock_gettime(CLOCK_MONOTONIC, &t);\n  return t.tv_sec * 1000000000ULL + t.tv_nsec;\n}\n\nstatic inline uint64_t nanos_monotonic_raw() {\n  struct timespec t;\n  clock_gettime(CLOCK_MONOTONIC_RAW, &t);\n  return t.tv_sec * 1000000000ULL + t.tv_nsec;\n}\n",
+      "overlay/common/version.h": "#define COMMA_VERSION \"test-version\"\n",
+      "overlay/system/hardware/hw.h": "#include <cstdlib>\n#include <cstring>\n#include <string>\nstruct Hardware { static std::string get_name() { return \"pc\"; } };\nstruct Path { static std::string swaglog_ipc() { return getenv(\"NATIVE_LOG_ENDPOINT\"); } };\n"
+    }
+  }
+]

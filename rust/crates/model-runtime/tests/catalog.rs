@@ -97,3 +97,48 @@ fn rejects_traversal_and_tampered_generation() {
     .unwrap();
     assert!(Catalog::load(root.path()).is_err());
 }
+
+#[test]
+fn generation_cli_matches_original_metadata_read_and_revalidates_catalog() {
+    let original: Value =
+        serde_json::from_str(include_str!("fixtures/catalog-generation/original.json")).unwrap();
+    let case = original["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|case| case["arch"] == std::env::consts::ARCH)
+        .unwrap();
+    let root = tempfile::tempdir().unwrap();
+    for (name, contents) in case["files"].as_object().unwrap() {
+        let path = root.path().join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, contents.as_str().unwrap()).unwrap();
+    }
+    let invoke = |flag| {
+        std::process::Command::new(env!("CARGO_BIN_EXE_model-run"))
+            .arg(flag)
+            .arg(root.path())
+            .env("PATH", "/nonexistent")
+            .output()
+            .unwrap()
+    };
+    let checked = invoke("--check-catalog");
+    assert!(checked.status.success(), "{checked:?}");
+    let result = invoke("--catalog-generation");
+    assert!(result.status.success(), "{result:?}");
+    assert_eq!(
+        result.stdout,
+        case["original_stdout"].as_str().unwrap().as_bytes()
+    );
+    assert_eq!(
+        result.stderr,
+        case["original_stderr"].as_str().unwrap().as_bytes()
+    );
+    let generation = case["original_stdout"].as_str().unwrap().trim_end();
+    fs::write(root.path().join(generation).join("index.json"), b"{}").unwrap();
+    for flag in ["--check-catalog", "--catalog-generation"] {
+        let result = invoke(flag);
+        assert!(!result.status.success());
+        assert!(result.stdout.is_empty(), "invalid catalog printed metadata");
+    }
+}

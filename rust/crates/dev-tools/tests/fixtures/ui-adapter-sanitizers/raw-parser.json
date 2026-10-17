@@ -1,0 +1,198 @@
+[
+  {
+    "case": "raw",
+    "args_hex": [
+      "2d2d746172676574",
+      "74",
+      "2d2d7261796c6962",
+      "72",
+      "2d2d65766964656e6365",
+      "65",
+      "2d2d746172676574",
+      "7261772dff"
+    ],
+    "exit": 0,
+    "parsed": {
+      "target": "7261772dff",
+      "raylib": "72",
+      "evidence": "65"
+    },
+    "help": false
+  },
+  {
+    "case": "raw-option",
+    "args_hex": [
+      "2d2d746172676574",
+      "74",
+      "2d2d7261796c6962",
+      "72",
+      "2d2d65766964656e6365",
+      "65",
+      "2d2d746172676574",
+      "2dff"
+    ],
+    "exit": 2,
+    "parsed": null,
+    "help": false
+  },
+  {
+    "case": "space",
+    "args_hex": [
+      "2d2d746172676574",
+      "74",
+      "2d2d7261796c6962",
+      "72",
+      "2d2d65766964656e6365",
+      "65",
+      "2d2d746172676574",
+      "2d737061636520ff"
+    ],
+    "exit": 0,
+    "parsed": {
+      "target": "2d737061636520ff",
+      "raylib": "72",
+      "evidence": "65"
+    },
+    "help": false
+  },
+  {
+    "case": "recognized-space",
+    "args_hex": [
+      "2d2d746172676574",
+      "74",
+      "2d2d7261796c6962",
+      "72",
+      "2d2d65766964656e6365",
+      "65",
+      "2d2d746172676574",
+      "2d68ff207370616365"
+    ],
+    "exit": 2,
+    "parsed": null,
+    "help": false
+  },
+  {
+    "case": "unknown-space",
+    "args_hex": [
+      "2d2d746172676574",
+      "74",
+      "2d2d7261796c6962",
+      "72",
+      "2d2d65766964656e6365",
+      "65",
+      "2d2d746172676574",
+      "2d2d74ff207370616365"
+    ],
+    "exit": 0,
+    "parsed": {
+      "target": "2d2d74ff207370616365",
+      "raylib": "72",
+      "evidence": "65"
+    },
+    "help": false
+  },
+  {
+    "case": "marker",
+    "args_hex": [
+      "2d2d746172676574",
+      "74",
+      "2d2d7261796c6962",
+      "72",
+      "2d2d65766964656e6365",
+      "65",
+      "2d2d746172676574",
+      "ee808030ee80816666"
+    ],
+    "exit": 0,
+    "parsed": {
+      "target": "ee808030ee80816666",
+      "raylib": "72",
+      "evidence": "65"
+    },
+    "help": false
+  },
+  {
+    "case": "inline",
+    "args_hex": [
+      "2d2d746172676574",
+      "74",
+      "2d2d7261796c6962",
+      "72",
+      "2d2d65766964656e6365",
+      "65",
+      "2d2d7461726765743d7261772dff"
+    ],
+    "exit": 0,
+    "parsed": {
+      "target": "7261772dff",
+      "raylib": "72",
+      "evidence": "65"
+    },
+    "help": false
+  },
+  {
+    "case": "raw-key",
+    "args_hex": [
+      "2d2d746172676574",
+      "74",
+      "2d2d7261796c6962",
+      "72",
+      "2d2d65766964656e6365",
+      "65",
+      "2d2d74ff",
+      "76616c7565"
+    ],
+    "exit": 2,
+    "parsed": null,
+    "help": false
+  },
+  {
+    "case": "raw-help",
+    "args_hex": [
+      "2d68ff"
+    ],
+    "exit": 0,
+    "parsed": null,
+    "help": true
+  },
+  {
+    "case": "raw-help-explicit",
+    "args_hex": [
+      "2d683dff"
+    ],
+    "exit": 2,
+    "parsed": null,
+    "help": false
+  },
+  {
+    "case": "help-unknown",
+    "args_hex": [
+      "2d2d68656c70",
+      "2d2d74ff"
+    ],
+    "exit": 0,
+    "parsed": null,
+    "help": true
+  },
+  {
+    "case": "unknown-help",
+    "args_hex": [
+      "2d2d74ff",
+      "2d2d68656c70"
+    ],
+    "exit": 0,
+    "parsed": null,
+    "help": true
+  },
+  {
+    "case": "help-value",
+    "args_hex": [
+      "2d2d746172676574",
+      "2d68ff",
+      "2d2d68656c70"
+    ],
+    "exit": 2,
+    "parsed": null,
+    "help": false
+  }
+]

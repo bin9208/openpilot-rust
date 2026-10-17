@@ -1,0 +1,12 @@
+{
+  "original-parser": {
+    "bytes": 359570,
+    "sha256": "3b0c3a8fcfb78e33ec093bffdcd87bbc9136d3baa4651e26d0cd4fb6b088aead",
+    "gzip_sha256": "0780b92025e6b083dfd2c975aee9d9f128b2322a01c4c423d989c713037ff0ce"
+  },
+  "original-cli": {
+    "bytes": 10642071,
+    "sha256": "0f071cf00ad83063f96ca724cf99f9b15c3c5176f1664caf0212e1dbb074e075",
+    "gzip_sha256": "48fc4afd7efedb3ea3491592e3002317333480c3fc79155668d2d073dfe085ed"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "registration": {
+    "revision": "087bce74a73ea13ecb576a627cf3d28e8a7a8999",
+    "path": "rust/tools/check_registration_vendor.py",
+    "source_sha256": "23fd3e692a0de5b089f5abe0e7c7068fc31931bbe39f892ca85ab86312eddac4"
+  },
+  "control": {
+    "revision": "7668b660bc89da7cb605878d574c5d97f340bcd1",
+    "path": "rust/tools/check_control_tools_policy.py",
+    "source_sha256": "844ca869669d5cdc5869a045296505ba39bb62ff6cecb36dee9e9c9895499f3c"
+  }
+}

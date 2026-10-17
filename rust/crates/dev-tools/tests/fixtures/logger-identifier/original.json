@@ -1,0 +1,3808 @@
+{
+  "source_commit": "b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a",
+  "source_sha256": "01c1dd90f74c3b53dd31996c111683cfcb10f8d3f10d1fe955cffeb2ce97118c",
+  "binary_contents": "controlled identifier executable\n",
+  "success_stdout": "0000002a--0123456789\n",
+  "success_stderr": "controlled stderr\n",
+  "cases": [
+    {
+      "key": "RouteCount",
+      "index": 0,
+      "value_hex": "",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-0-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": ""
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": ""
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": ""
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 0,
+      "value_hex": "",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-0-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 0,
+      "value_hex": "",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-0-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": ""
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": ""
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 0,
+      "value_hex": "",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-0-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": ""
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": ""
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": ""
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 1,
+      "value_hex": "30",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-1-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "30"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "30"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "30"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 1,
+      "value_hex": "30",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-1-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 1,
+      "value_hex": "30",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-1-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "30"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "30"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 1,
+      "value_hex": "30",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-1-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "30"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "30"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "30"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 2,
+      "value_hex": "20092b34327461696c",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-2-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "20092b34327461696c"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "20092b34327461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "20092b34327461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 2,
+      "value_hex": "20092b34327461696c",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-2-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 2,
+      "value_hex": "20092b34327461696c",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-2-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "20092b34327461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "20092b34327461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 2,
+      "value_hex": "20092b34327461696c",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-2-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "20092b34327461696c"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "20092b34327461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "20092b34327461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 3,
+      "value_hex": "202d31737566666978",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-3-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "202d31737566666978"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "202d31737566666978"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "202d31737566666978"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 3,
+      "value_hex": "202d31737566666978",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-3-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 3,
+      "value_hex": "202d31737566666978",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-3-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "202d31737566666978"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "202d31737566666978"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 3,
+      "value_hex": "202d31737566666978",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-3-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "202d31737566666978"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "202d31737566666978"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "202d31737566666978"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 4,
+      "value_hex": "34323934393637323935",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-4-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "34323934393637323935"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323935"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323935"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 4,
+      "value_hex": "34323934393637323935",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-4-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 4,
+      "value_hex": "34323934393637323935",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-4-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323935"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323935"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 4,
+      "value_hex": "34323934393637323935",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-4-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "34323934393637323935"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323935"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323935"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 5,
+      "value_hex": "34323934393637323936",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-5-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "34323934393637323936"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323936"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323936"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 5,
+      "value_hex": "34323934393637323936",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-5-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 5,
+      "value_hex": "34323934393637323936",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-5-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323936"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323936"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 5,
+      "value_hex": "34323934393637323936",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-5-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "34323934393637323936"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323936"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323936"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 6,
+      "value_hex": "3138343436373434303733373039353531363135",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-6-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3138343436373434303733373039353531363135"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363135"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363135"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 6,
+      "value_hex": "3138343436373434303733373039353531363135",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-6-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 6,
+      "value_hex": "3138343436373434303733373039353531363135",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-6-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363135"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363135"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 6,
+      "value_hex": "3138343436373434303733373039353531363135",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-6-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3138343436373434303733373039353531363135"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363135"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363135"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 7,
+      "value_hex": "3138343436373434303733373039353531363136",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-7-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3138343436373434303733373039353531363136"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363136"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363136"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 7,
+      "value_hex": "3138343436373434303733373039353531363136",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-7-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 7,
+      "value_hex": "3138343436373434303733373039353531363136",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-7-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363136"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363136"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 7,
+      "value_hex": "3138343436373434303733373039353531363136",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-7-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3138343436373434303733373039353531363136"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363136"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363136"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 8,
+      "value_hex": "6a756e6b",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-8-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "6a756e6b"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "6a756e6b"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "6a756e6b"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 8,
+      "value_hex": "6a756e6b",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-8-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 8,
+      "value_hex": "6a756e6b",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-8-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "6a756e6b"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "6a756e6b"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 8,
+      "value_hex": "6a756e6b",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-8-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "6a756e6b"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "6a756e6b"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "6a756e6b"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 9,
+      "value_hex": "3233007461696c",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-9-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3233007461696c"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3233007461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3233007461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 9,
+      "value_hex": "3233007461696c",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-9-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "RouteCount",
+      "index": 9,
+      "value_hex": "3233007461696c",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-9-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3233007461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3233007461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "RouteCount",
+      "index": 9,
+      "value_hex": "3233007461696c",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "RouteCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/RouteCount-9-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3233007461696c"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3233007461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "RouteCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3233007461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 0,
+      "value_hex": "",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-0-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": ""
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": ""
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": ""
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 0,
+      "value_hex": "",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-0-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 0,
+      "value_hex": "",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-0-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": ""
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": ""
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 0,
+      "value_hex": "",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-0-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": ""
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": ""
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": ""
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 1,
+      "value_hex": "30",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-1-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "30"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "30"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "30"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 1,
+      "value_hex": "30",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-1-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 1,
+      "value_hex": "30",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-1-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "30"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "30"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 1,
+      "value_hex": "30",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-1-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "30"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "30"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "30"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 2,
+      "value_hex": "20092b34327461696c",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-2-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "20092b34327461696c"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "20092b34327461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "20092b34327461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 2,
+      "value_hex": "20092b34327461696c",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-2-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 2,
+      "value_hex": "20092b34327461696c",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-2-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "20092b34327461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "20092b34327461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 2,
+      "value_hex": "20092b34327461696c",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-2-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "20092b34327461696c"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "20092b34327461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "20092b34327461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 3,
+      "value_hex": "202d31737566666978",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-3-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "202d31737566666978"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "202d31737566666978"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "202d31737566666978"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 3,
+      "value_hex": "202d31737566666978",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-3-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 3,
+      "value_hex": "202d31737566666978",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-3-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "202d31737566666978"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "202d31737566666978"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 3,
+      "value_hex": "202d31737566666978",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-3-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "202d31737566666978"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "202d31737566666978"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "202d31737566666978"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 4,
+      "value_hex": "34323934393637323935",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-4-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "34323934393637323935"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323935"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323935"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 4,
+      "value_hex": "34323934393637323935",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-4-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 4,
+      "value_hex": "34323934393637323935",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-4-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323935"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323935"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 4,
+      "value_hex": "34323934393637323935",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-4-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "34323934393637323935"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323935"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323935"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 5,
+      "value_hex": "34323934393637323936",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-5-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "34323934393637323936"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323936"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323936"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 5,
+      "value_hex": "34323934393637323936",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-5-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 5,
+      "value_hex": "34323934393637323936",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-5-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323936"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323936"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 5,
+      "value_hex": "34323934393637323936",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-5-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "34323934393637323936"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "34323934393637323936"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "34323934393637323936"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 6,
+      "value_hex": "3138343436373434303733373039353531363135",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-6-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3138343436373434303733373039353531363135"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363135"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363135"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 6,
+      "value_hex": "3138343436373434303733373039353531363135",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-6-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 6,
+      "value_hex": "3138343436373434303733373039353531363135",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-6-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363135"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363135"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 6,
+      "value_hex": "3138343436373434303733373039353531363135",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-6-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3138343436373434303733373039353531363135"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363135"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363135"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 7,
+      "value_hex": "3138343436373434303733373039353531363136",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-7-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3138343436373434303733373039353531363136"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363136"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363136"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 7,
+      "value_hex": "3138343436373434303733373039353531363136",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-7-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 7,
+      "value_hex": "3138343436373434303733373039353531363136",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-7-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363136"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363136"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 7,
+      "value_hex": "3138343436373434303733373039353531363136",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-7-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3138343436373434303733373039353531363136"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3138343436373434303733373039353531363136"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3138343436373434303733373039353531363136"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 8,
+      "value_hex": "6a756e6b",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-8-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "6a756e6b"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "6a756e6b"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "6a756e6b"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 8,
+      "value_hex": "6a756e6b",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-8-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 8,
+      "value_hex": "6a756e6b",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-8-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "6a756e6b"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "6a756e6b"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 8,
+      "value_hex": "6a756e6b",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-8-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "6a756e6b"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "6a756e6b"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "6a756e6b"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 9,
+      "value_hex": "3233007461696c",
+      "failure": "ordinary",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-9-ordinary/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3233007461696c"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3233007461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3233007461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 9,
+      "value_hex": "3233007461696c",
+      "failure": "directory",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-9-directory/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 509,
+        "counter_kind": "directory",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "<directory>"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "<directory>"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 509
+    },
+    {
+      "key": "BootCount",
+      "index": 9,
+      "value_hex": "3233007461696c",
+      "failure": "unreadable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-9-unreadable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 509,
+        "counter_mode": 0,
+        "counter_kind": "file",
+        "input_hex": null
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3233007461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3233007461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "key": "BootCount",
+      "index": 9,
+      "value_hex": "3233007461696c",
+      "failure": "unwritable",
+      "call": {
+        "argv": [
+          "fixture-runner",
+          "runner-arg",
+          "$ROOT/binary",
+          "BootCount"
+        ],
+        "environment": {
+          "PARAMS_ROOT": "$ROOT/BootCount-9-unwritable/params",
+          "OPENPILOT_PREFIX": "d"
+        },
+        "params_mode": 320,
+        "counter_mode": 436,
+        "counter_kind": "file",
+        "input_hex": "3233007461696c"
+      },
+      "result": {
+        "prefix": "0000002a",
+        "counter": "3233007461696c"
+      },
+      "files": {
+        "invocation.json": {
+          "argv": [
+            "fixture-runner",
+            "runner-arg",
+            "$ROOT/binary",
+            "BootCount"
+          ],
+          "exit": 0,
+          "binary_sha256": "1e82c391e01bf0b9a5715ec2b430487392e4be094849e965bfa090e2b513e299"
+        },
+        "result.json": {
+          "prefix": "0000002a",
+          "counter": "3233007461696c"
+        },
+        "stdout.log": "0000002a--0123456789\n",
+        "stderr.log": "controlled stderr\n"
+      },
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    }
+  ],
+  "failures": [
+    {
+      "label": "nonzero",
+      "stdout_hex": "6661696c75726500726177",
+      "stderr_hex": "6572726f720d0a",
+      "code": 9,
+      "exception": "AssertionError",
+      "files": [
+        "invocation.json",
+        "params",
+        "stderr.log",
+        "stdout.log"
+      ],
+      "stdout_log_hex": "6661696c75726500726177",
+      "stderr_log_hex": "6572726f720d0a",
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "label": "bad-identifier",
+      "stdout_hex": "4e4f542d4944454e5449464945520a",
+      "stderr_hex": "",
+      "code": 0,
+      "exception": "AssertionError",
+      "files": [
+        "invocation.json",
+        "params",
+        "stderr.log",
+        "stdout.log"
+      ],
+      "stdout_log_hex": "4e4f542d4944454e5449464945520a",
+      "stderr_log_hex": "3c656d7074793e0a",
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    },
+    {
+      "label": "invalid-utf8",
+      "stdout_hex": "ff0a",
+      "stderr_hex": "",
+      "code": 0,
+      "exception": "UnicodeDecodeError",
+      "files": [
+        "invocation.json",
+        "params",
+        "stderr.log",
+        "stdout.log"
+      ],
+      "stdout_log_hex": "ff0a",
+      "stderr_log_hex": "3c656d7074793e0a",
+      "restored_params_mode": 448,
+      "restored_counter_mode": 384
+    }
+  ],
+  "output_resolution": {
+    "directories": [
+      "existing",
+      "actual/nested"
+    ],
+    "files": [
+      "regular"
+    ],
+    "links": {
+      "link": "actual/nested",
+      "dangling": "missing/child",
+      "loop": "loop"
+    },
+    "cases": [
+      {
+        "input": "missing/../out",
+        "resolved": "$ROOT/out"
+      },
+      {
+        "input": "missing/deep/../../out",
+        "resolved": "$ROOT/out"
+      },
+      {
+        "input": "link/../out",
+        "resolved": "$ROOT/actual/out"
+      },
+      {
+        "input": "link/missing/../out",
+        "resolved": "$ROOT/actual/nested/out"
+      },
+      {
+        "input": "dangling/../out",
+        "resolved": "$ROOT/missing/out"
+      },
+      {
+        "input": "existing/../out",
+        "resolved": "$ROOT/out"
+      },
+      {
+        "input": ".",
+        "resolved": "$ROOT"
+      },
+      {
+        "input": "regular/child",
+        "resolved": "$ROOT/regular/child"
+      },
+      {
+        "input": "loop/out",
+        "error": "RuntimeError"
+      }
+    ]
+  },
+  "comparison_failure": {
+    "calls": 2,
+    "exception": "AssertionError",
+    "stdout": "",
+    "overall_result_exists": false,
+    "source": {
+      "prefix": "0000002a",
+      "counter": ""
+    },
+    "native": {
+      "prefix": "0000002b",
+      "counter": ""
+    }
+  }
+}

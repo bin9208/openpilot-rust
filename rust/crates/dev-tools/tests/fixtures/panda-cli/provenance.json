@@ -1,0 +1,12 @@
+{
+  "source_revision": "30866c90^",
+  "source_sha256": {
+    "rust/tools/build_pandad_protocol_source.py": "6fba1fec3bb9928e62a39a4773450a54fd1907e8678c0956a28f72382420dc46",
+    "rust/tools/build_pandad_usb_source.py": "6f62627ff1c315444ac8e3ce202304bec2a2396d54d7641abcc8759ef2b1bb26",
+    "rust/tools/build_pandad_spi_source.py": "e44324cc0611780d9cd0b8744841d81a043511fd850d66bd1cb4667b7132b480",
+    "rust/tools/build_pandad_peripheral_source.py": "87de3b89494c3ce79e8a272565a92b3086d1500ba56f328c34c5299bcb213a13",
+    "rust/tools/build_pandad_runtime_fixture.py": "a17f30cba87ba6a83508c6bc00d5c995516bc21e708efee220a7c3a436da697a"
+  },
+  "capture": "Independent original argparse process followed by controlled compiler executables; all compiler peers write only owned scratch products; no physical devices or C++ execution.",
+  "cases": 123
+}

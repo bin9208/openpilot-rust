@@ -21,7 +21,7 @@ def main():
   vision = output / 'athena-vision-peer'
   cases = [
     ('startup-identity', ['check_athena_identity.py', '--output', str(output / 'startup-identity')]),
-    ('vision-build', ['build_athena_vision_peer.py', str(vision)]),
+    ('vision-build', ['build-athena-vision-peer', str(vision)]),
     ('policy', ['check_athena_policy.py', str(binary / 'examples/athena_policy'), str(output / 'policy.json')]),
     ('rpc', ['check_athena_rpc.py', str(binary / 'examples/athena_rpc'), str(output / 'rpc.json')]),
     ('ipc', ['check_athena_ipc.py', str(binary / 'examples/athena_ipc'), str(output / 'ipc.json')]),
@@ -48,7 +48,10 @@ def main():
   ]
   receipts = []
   for name, command in cases:
-    command = [sys.executable, str(ROOT / 'rust/tools' / command[0]), *command[1:]]
+    if name == 'vision-build':
+      command = [str(binary / command[0]), '--root', str(ROOT), *command[1:]]
+    else:
+      command = [sys.executable, str(ROOT / 'rust/tools' / command[0]), *command[1:]]
     if name in ['proxy', 'proxy-backpressure', 'interrupted-connect']:
       namespace = ['unshare', '--net'] if os.geteuid() == 0 else ['unshare', '--user', '--map-root-user', '--net']
       command = [*namespace, 'sh', '-c', 'ip link set lo up && exec "$@"', 'sh', *command]

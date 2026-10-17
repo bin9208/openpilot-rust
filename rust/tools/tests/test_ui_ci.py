@@ -61,3 +61,106 @@ def test_arm_ui_commands_resolve_workspace_and_python_paths() -> None:
     assert executable.is_absolute() and executable.is_file(), executable
   workspace = tomllib.loads((directory / 'Cargo.toml').read_text())
   assert 'crates/ui-application' in workspace['workspace']['members']
+
+
+def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path: Path, monkeypatch) -> None:
+  import check_ui_ci as module
+  old_calls, native_calls, ordered = [], [], []
+  binaries, output, raylib = tmp_path / 'binaries', tmp_path / 'output', tmp_path / 'raylib'
+  monkeypatch.setenv('STARTUP_UI_RAYLIB_ROOT', str(raylib))
+  monkeypatch.setenv('STARTUP_UI_RAYLIB_LIBRARY', str(raylib / 'lib/libopenpilot-raylib.so'))
+  def original_check(self, name, script, arguments):
+    old_calls.append(name)
+    ordered.append(name)
+  def native_check(command, directory, name):
+    native_calls.append((command, directory, name))
+    ordered.append(name)
+  monkeypatch.setattr(module.UiCheck, 'check', original_check)
+  monkeypatch.setattr(module, 'require_space', lambda *args: None)
+  monkeypatch.setattr(module, 'run', native_check)
+  owner = module.UiCheck(output, binaries, tmp_path / 'peer')
+  owner.execute('owned-display')
+  assert old_calls == ['root', 'augmented', 'camera', 'runtime', 'pages',
+                       'hud-eight-modes', 'hud-traffic', 'calibration']
+  assert ordered == ['state', 'scheduler', 'qr', 'root', 'augmented', 'camera', 'runtime', 'pages',
+                     'hud-eight-modes', 'hud-traffic', 'calibration', 'torque', 'native-safety',
+                     'native-model-adapter', 'native-training-adapter']
+  assert native_calls == [
+    ([str(binaries / f'check-ui-{name}'), '--binary', str(binaries / f'examples/{binary}'),
+      '--output', str(output / name)], output / 'commands', name)
+    for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace'))
+  ] + [
+    ([str(binaries / 'check-ui-qr'), '--binary', str(binaries / 'examples/qr_trace'),
+      '--output', str(output / 'qr')], output / 'commands', 'qr'),
+    ([str(binaries / 'check-ui-torque-geometry'), '--binary', str(binaries / 'examples/torque_geometry'),
+      '--output', str(output / 'torque')], output / 'commands', 'torque'),
+    ([str(binaries / 'check-ui-native-safety'), '--target', str(binaries),
+      '--output', str(output / 'native-safety'), '--display', 'owned-display',
+      '--raylib-root', str(raylib), '--raylib-library', str(raylib / 'lib/libopenpilot-raylib.so')],
+      output / 'commands', 'native-safety'),
+  ] + [
+    (['env', 'DISPLAY=owned-display', str(binaries / f'check-ui-{kind}-adapter'), '--target', str(binaries), '--raylib', str(raylib),
+      '--evidence', str(output / f'native-{kind}-adapter')], output / 'commands', f'native-{kind}-adapter')
+    for kind in ('model', 'training')
+  ]
+
+
+@pytest.mark.parametrize('failure', [None, 'stack', 'scroller', 'egl'])
+def test_framework_native_logic_routes_preserve_order_logs_and_failure_stop(tmp_path: Path, monkeypatch, failure) -> None:
+  import os
+  import runpy
+  import shutil
+  import subprocess
+  import sys
+  from types import SimpleNamespace
+  target, output = tmp_path / 'target', tmp_path / 'output'
+  monkeypatch.setattr(sys, 'argv', ['check_ui_framework.py', '--target', str(target), '--output', str(output), '--display', ':owned'])
+  guards, calls = [], []
+  def space(path):
+    guards.append(path)
+    return SimpleNamespace(free=26 * 1024**3)
+  def execute(command, cwd, env, stdout, stderr):
+    name = Path(command[command.index('--output') + 1]).name
+    stdout.flush()
+    assert Path(stdout.name).read_text() == 'Invocation: ' + json.dumps(command) + '\n'
+    assert cwd == ROOT and env is os.environ and stderr == subprocess.STDOUT
+    calls.append((name, command))
+    return SimpleNamespace(returncode=7 if name == failure else 0)
+  monkeypatch.setattr(shutil, 'disk_usage', space)
+  monkeypatch.setattr(subprocess, 'run', execute)
+  if failure:
+    with pytest.raises(SystemExit) as caught:
+      runpy.run_path(str(ROOT / 'rust/tools/check_ui_framework.py'), run_name='__main__')
+    assert caught.value.code == 7
+  else:
+    runpy.run_path(str(ROOT / 'rust/tools/check_ui_framework.py'), run_name='__main__')
+  scenarios = [
+    ('widgets', 'widget_trace', False), ('scroll', 'scroll_trace', False),
+    ('navigation', 'navigation_trace', False), ('stack', 'stack_trace', False),
+    ('scroller', 'scroller_trace', False), ('render', 'ui_render', True),
+    ('forms', 'form_render', True), ('network', 'network_render', True),
+    ('polygon', 'polygon_render', True), ('diagnostics', 'diagnostic_render', True),
+    ('application', 'application_run', True), ('fps', 'fps_trace', False), ('egl', 'egl_trace', False),
+  ]
+  if failure:
+    scenarios = scenarios[:next(i + 1 for i, row in enumerate(scenarios) if row[0] == failure)]
+  expected = []
+  for name, binary, display in scenarios:
+    command = ([str(target / f'check-ui-{name}')] if name in {'widgets', 'scroll', 'navigation', 'stack', 'scroller', 'fps', 'egl'}
+               else [sys.executable, str(ROOT / f'rust/tools/check_ui_{name}.py')])
+    command += ['--binary', str(target / 'examples' / binary), '--output', str(output / name)]
+    if display:
+      command += ['--display', ':owned']
+    expected.append((name, command))
+  assert calls == expected
+  assert guards == ([] if failure in {'stack', 'scroller'} else [output])
+  ledger = json.loads((output / 'invocations.json').read_text())
+  assert ledger == [
+    {'scenario': name, 'invocation': command, 'exit_code': 7 if name == failure else 0,
+     'artifact': str(output / f'{name}.log')}
+    for name, command in expected
+  ]
+  if failure in {None, 'egl'}:
+    assert json.loads((output / 'egl-build-disk.json').read_text()) == {
+      'available_bytes': 26 * 1024**3, 'required_bytes': 26 * 1024**3,
+    }

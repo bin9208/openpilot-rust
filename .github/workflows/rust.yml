@@ -221,6 +221,8 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy
           python -P -c 'import acados; from pathlib import Path; print("PLANNER_GENERATOR="+str(Path(acados.__file__).parent))' >> "$GITHUB_ENV"
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build pinned solvers and unchanged original bindings
         run: |
           planner_cc=gcc
@@ -228,14 +230,16 @@ jobs:
           python rust/tools/build_plannerd_acados.py --architecture "$(uname -m)" --cc "$planner_cc" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-artifact"
           python rust/tools/build_plannerd_source.py --artifact "$RUNNER_TEMP/planner-artifact" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --generator-wheel "$RUNNER_TEMP"/planner-wheel/*.whl --cc "$planner_cc" --output "$RUNNER_TEMP/planner-source"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/planner-original/params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/planner-original/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/planner-original/ipc"
           python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"planner-original/params/provenance.json"; print("PLANNER_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
           printf 'PYTHONPATH=%s/planner-original/ipc:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Compile and check the complete native planner
         run: |
-          python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_plannerd_ci.py rust/tools/tests/test_native_reference_architecture.py
+          python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_plannerd_ci.py
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --target "$NATIVE_TOOLS_HOST" --test native_build_closure
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           cargo test --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -319,21 +323,23 @@ jobs:
       - run: rustup toolchain install 1.94.0 --profile minimal
       - run: sudo apt-get update && sudo apt-get install -y g++ capnproto libcapnp-dev libzmq3-dev cmake
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 pytest==9.0.2 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 setproctitle==1.3.7 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 inputs==0.5
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build joystickd and unchanged source boundary bindings
         run: |
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-control-tools --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-control-tools -p openpilot-dev-tools --bins --examples --locked
           cargo test --manifest-path rust/Cargo.toml -p openpilot-control-tools --locked
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/joystickd/params-binding"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/joystickd/params-binding"
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/joystickd/msgq-binding"
           python -c 'from pathlib import Path; import os; print("JOYSTICKD_PARAMS_BINDING=" + str(next((Path(os.environ["RUNNER_TEMP"]) / "joystickd/params-binding").glob("params_pyx*.so"))))' >> "$GITHUB_ENV"
       - name: Compare original control states and actual IPC lifecycle
         run: |
           export PYTHONPATH="$RUNNER_TEMP/joystickd/msgq-binding:$PYTHONPATH"
           python rust/tools/joystickd_source.py --binding "$JOYSTICKD_PARAMS_BINDING" --output "$RUNNER_TEMP/joystickd/source"
-          python rust/tools/check_control_tools_policy.py --binary "$PWD/rust/target/debug/examples/joystickd_policy" --source "$RUNNER_TEMP/joystickd/source" --output "$RUNNER_TEMP/joystickd/compare"
+          rust/target/debug/check-control-tools-policy --binary "$PWD/rust/target/debug/examples/joystickd_policy" --source "$RUNNER_TEMP/joystickd/source" --output "$RUNNER_TEMP/joystickd/compare"
           python rust/tools/check_joystickd_runtime.py --binary "$PWD/rust/target/debug/openpilot-joystickd" --binding "$JOYSTICKD_PARAMS_BINDING" --source "$RUNNER_TEMP/joystickd/source" --output "$RUNNER_TEMP/joystickd/runtime"
           python rust/tools/control_tools_policy_source.py --binding "$JOYSTICKD_PARAMS_BINDING" --joystick-only --output "$RUNNER_TEMP/joystickd/input-source"
-          python rust/tools/check_control_tools_policy.py --binary "$PWD/rust/target/debug/examples/joystick_input_policy" --source "$RUNNER_TEMP/joystickd/input-source" --output "$RUNNER_TEMP/joystickd/input-compare"
+          rust/target/debug/check-control-tools-policy --binary "$PWD/rust/target/debug/examples/joystick_input_policy" --source "$RUNNER_TEMP/joystickd/input-source" --output "$RUNNER_TEMP/joystickd/input-compare"
           python rust/tools/check_joystick_input_runtime.py --binding "$JOYSTICKD_PARAMS_BINDING" --binary "$PWD/rust/target/debug/openpilot-joystick-control" --fixture "$PWD/rust/target/debug/examples/joystick_input_fixture" --output "$RUNNER_TEMP/joystickd/input-runtime"
           python rust/tools/longitudinal_maneuvers_source.py --binding "$JOYSTICKD_PARAMS_BINDING" --output "$RUNNER_TEMP/joystickd/longitudinal-source"
           python rust/tools/check_longitudinal_maneuvers.py --binding "$JOYSTICKD_PARAMS_BINDING" --trace "$PWD/rust/target/debug/examples/longitudinal_maneuvers_trace" --daemon "$PWD/rust/target/debug/openpilot-longitudinal-maneuversd" --source "$RUNNER_TEMP/joystickd/longitudinal-source" --output "$RUNNER_TEMP/joystickd/longitudinal-runtime"
@@ -393,12 +399,14 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
           python -m pip install --no-deps "$RUNNER_TEMP"/carrot-man-wheels/shapely-2.1.2-*.whl
           cat "$RUNNER_TEMP/carrot-man-geos/environment.txt" >> "$GITHUB_ENV"
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build owner and unchanged source bindings
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-man --bins --examples --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/carrot-man-params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/carrot-man-params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-man-msgq"
           python -c 'from pathlib import Path; import os; print("CARROT_PARAMS_BINDING="+str(next((Path(os.environ["RUNNER_TEMP"])/"carrot-man-params").glob("params_pyx*.so"))))' >> "$GITHUB_ENV"
@@ -467,10 +475,12 @@ jobs:
           ffmpeg -hide_banner -encoders > "$RUNNER_TEMP/webrtc/encoders.txt" 2>&1
           grep -q 'libvpx ' "$RUNNER_TEMP/webrtc/encoders.txt"
           grep -q 'libx264 ' "$RUNNER_TEMP/webrtc/encoders.txt"
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build unchanged original Params and msgq bindings
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/webrtc/params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/webrtc/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/webrtc/msgq"
           python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"webrtc/params/provenance.json"; print("WEBRTC_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
@@ -561,6 +571,10 @@ jobs:
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
           cargo run --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/torque-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-numerics"
           printf 'CONTROLS_NUMERICS=%s/torque-numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Fetch the pinned model before native compiler corpus validation
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Generate runner-local Hyundai source fixtures
         run: |
           python tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-workspace/fixtures" --dbc "$RUNNER_TEMP/card-workspace/dbc"
@@ -568,6 +582,11 @@ jobs:
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo test --workspace --locked
+      - name: Check process-stat parser allocation regression
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
+          rustc --edition=2021 tools/proc_stat_allocation_probe.rs -o "$RUNNER_TEMP/proc-stat-allocation"
+          "$RUNNER_TEMP/proc-stat-allocation"
       - name: Require complete Hyundai schemas after workspace tests
         run: |
           python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
@@ -605,8 +624,6 @@ jobs:
           if-no-files-found: warn
       - name: Compare captured graphs and original camera warps with Rust
         run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests -q
-      - name: Fetch the pinned model from this independent repository
-        run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Compare actual models and recurrent policy with Rust
         run: |
           python tools/check_model_reference.py --model ../openpilot/selfdrive/modeld/models/dmonitoring_model.onnx --output "$RUNNER_TEMP/dm-native" --binary target/debug/model-run
@@ -679,7 +696,9 @@ jobs:
       - name: Compare message state and service catalog with original source
         run: |
           python tools/check_services.py
-          python tools/check_message_state.py --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin check-message-state --locked
+          target/debug/check-message-state --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"
       - name: Stage pinned native torque numerical dependency and compare original estimator
         run: |
           cargo build -p openpilot-torqued --bins --examples --locked
@@ -694,22 +713,30 @@ jobs:
       - name: Compare model desire state and Bluetooth command consumption with original source
         run: |
           python tools/check_desire_reference.py --binary target/debug/examples/desire_probe --output "$RUNNER_TEMP/model-desire"
-          python tools/check_command_reference.py --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-commands"
-          python tools/check_command_json_boundary.py --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-command-json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin check-command-reference --bin check-command-json-boundary --locked
+          target/debug/check-command-reference --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-commands"
+          target/debug/check-command-json-boundary --binary target/debug/examples/command_probe --output "$RUNNER_TEMP/model-command-json"
       - name: Compare driver monitoring policy and complete cereal packets with original source
         run: python tools/check_monitoring_reference.py --binary target/debug/monitoring-probe --output "$RUNNER_TEMP/monitoring-policy"
       - name: Compare diagnostic log formatting and rotation with original source
         run: python tools/check_logmessaged_reference.py --binary target/debug/examples/file_probe --output "$RUNNER_TEMP/logmessaged-reference"
       - name: Compare bounded diagnostics and receiver state with original source
         run: |
-          python tools/check_runtime_diagnostics.py --binary target/debug/examples/diagnostics_trace --output "$RUNNER_TEMP/runtime-diagnostics"
-          python tools/check_communication_snapshot.py --binary target/debug/examples/communication_trace --output "$RUNNER_TEMP/communication-snapshot"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin check-runtime-diagnostics --bin check-communication-snapshot --bin check-model-timing --locked
+          target/debug/check-runtime-diagnostics --binary target/debug/examples/diagnostics_trace --output "$RUNNER_TEMP/runtime-diagnostics"
+          target/debug/check-communication-snapshot --binary target/debug/examples/communication_trace --output "$RUNNER_TEMP/communication-snapshot"
           cargo build -p openpilot-driving-modeld --example model_timing_trace --locked
-          python tools/check_model_timing.py --binary target/debug/examples/model_timing_trace --output "$RUNNER_TEMP/model-timing"
+          target/debug/check-model-timing --binary target/debug/examples/model_timing_trace --output "$RUNNER_TEMP/model-timing"
       - name: Compare driving-model input state with the original loop
         run: python tools/check_model_inputs.py --binary target/debug/examples/input_probe --output "$RUNNER_TEMP/model-inputs"
       - run: python tools/check_proclog_reference.py
-      - run: python tools/check_params_reference.py
+      - name: Compare Params storage with the original C++ implementation
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin check-params-reference --locked
+          target/debug/check-params-reference
       - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
       - name: Exercise structured log producers with original and Rust collectors
         run: |
@@ -754,7 +781,7 @@ jobs:
         run: |
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/device_probe.py \
             --binary target/debug/openpilot-proclogd --frames 3 --interval-ms 100 --report "$RUNNER_TEMP/host-probe.json"
-      - run: python tools/check_msgq_sanitizers.py --target-dir "$RUNNER_TEMP/rust-msgq-asan"
+      - run: target/debug/check-msgq-sanitizers --target-dir "$RUNNER_TEMP/rust-msgq-asan"
       - run: cargo build --workspace --release --locked
       - run: target/release/cpu-sample 1000 > cpu-sample.tsv
       - uses: actions/upload-artifact@v6
@@ -840,11 +867,13 @@ jobs:
           python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_xiaoge_ci.py
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
           git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Compile pinned OpenCV and original Python bindings
         run: |
           cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-xiaoge-opencv -- --output "$RUNNER_TEMP/xiaoge-opencv"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/xiaoge-original/params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/xiaoge-original/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/xiaoge-original/ipc"
           python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"xiaoge-original/params/provenance.json"; print("XIAOGE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
@@ -983,8 +1012,14 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           set -o pipefail
           cargo build --manifest-path rust/Cargo.toml -p openpilot-encoderd --features native --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/encoder-native/build.log" | tee "$RUNNER_TEMP/encoder-native/build.jsonl"
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
+      - name: Build the current native encoder source builder
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin build-encoder-source --locked
       - name: Require all source codec, V4L and actual encoder runtime comparisons
-        run: python rust/tools/check_encoder_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/encoder-native/build.jsonl" --output "$RUNNER_TEMP/encoder-native/oracles"
+        run: python rust/tools/check_encoder_ci.py --json11-stager "$JSON11_STAGER" --binaries rust/target/debug --build-messages "$RUNNER_TEMP/encoder-native/build.jsonl" --output "$RUNNER_TEMP/encoder-native/oracles"
       - name: Preserve encoder inputs, packets, diagnostics and executable evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -1101,7 +1136,7 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           set -o pipefail
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux -p openpilot-process-supervision -p openpilot-logmessaged -p openpilot-dev-tools --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/panda-native/native-build.log" | tee "$RUNNER_TEMP/panda-native/native-build.jsonl"
       - name: Require Panda source, transport and continuous supervisor comparisons
         run: python rust/tools/check_pandad_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/panda-native/native-build.jsonl" --output "$RUNNER_TEMP/panda-native/oracles"
       - name: Preserve Panda evidence including failed cases
@@ -1144,10 +1179,12 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build original selfdrived Params and IPC bindings
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/selfdrived-native/params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/selfdrived-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/selfdrived-native/msgq"
           python -P -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"selfdrived-native/params/provenance.json"; print("SELFDRIVE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
@@ -1229,10 +1266,12 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build unchanged source Params and msgq bindings
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/card-native/params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/card-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/card-native/msgq"
           python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"card-native/params/provenance.json"; print("CARD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
@@ -1314,10 +1353,12 @@ jobs:
           python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build unchanged source Params and msgq bindings
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/radar-native/params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/radar-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
           python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
@@ -1379,10 +1420,12 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build unchanged native ARM bindings and generate original radar assets
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/radar-native/params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/radar-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
           python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
@@ -1404,7 +1447,9 @@ jobs:
           cargo build -p openpilot-radarcan --bins --examples --release --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/radar-arm/build.log" | tee "$RUNNER_TEMP/radar-arm/build.jsonl"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo test -p openpilot-radarcan -p openpilot-can --no-run --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/radar-arm/tests-build.log" | tee "$RUNNER_TEMP/radar-arm/tests-build.jsonl"
-          python -c 'import json, sys; rows=[json.loads(line) for line in open(sys.argv[1])]; print("\n".join(row["executable"] for row in rows if row.get("reason")=="compiler-artifact" and row.get("profile",{}).get("test") and row.get("executable")))' "$RUNNER_TEMP/radar-arm/tests-build.jsonl" > "$RUNNER_TEMP/radar-arm/tests.txt"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin list-cargo-tests --locked
+          target/debug/list-cargo-tests "$RUNNER_TEMP/radar-arm/tests-build.jsonl" > "$RUNNER_TEMP/radar-arm/tests.txt"
           test -s "$RUNNER_TEMP/radar-arm/tests.txt"
           while IFS= read -r radar_test; do
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
@@ -1445,9 +1490,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
       - name: Reserve capacity for pinned interpreter dependencies
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
@@ -1466,7 +1508,9 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           cargo +nightly-2026-09-29 miri setup --print-sysroot > "$RUNNER_TEMP/radar-memory/sysroot.txt" 2> "$RUNNER_TEMP/radar-memory/setup.log"
           export MIRI_SYSROOT="$(cat "$RUNNER_TEMP/radar-memory/sysroot.txt")"
-          python -c 'import hashlib, json, os; from pathlib import Path; root=Path(os.environ["MIRI_SYSROOT"]); paths=sorted(root.glob("lib/rustlib/*/lib/libcore-*.rlib")); assert paths; print(json.dumps({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}, indent=2))' > "$RUNNER_TEMP/radar-memory/core-hashes.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --bin hash-miri-core --locked
+          "$CARGO_TARGET_DIR/debug/hash-miri-core" > "$RUNNER_TEMP/radar-memory/core-hashes.json"
           for radar_level in default strict preemption tree; do
             radar_flags='-Zmiri-no-extra-rounding-error'
             if test "$radar_level" != default; then radar_flags="$radar_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-backtrace=full"; fi
@@ -1513,10 +1557,12 @@ jobs:
           python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 urllib3==2.7.0 charset-normalizer==3.5.1 brotli==1.2.0 PyJWT==2.14.0 cryptography==50.0.1
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build original navigation Params and IPC bindings
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/navd-native/params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/navd-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/navd-native/msgq"
           python -P -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"navd-native/params/provenance.json"; print("NAVD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
@@ -1590,11 +1636,13 @@ jobs:
           python -m pip freeze > "$RUNNER_TEMP/radard-native/python-packages.txt"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build unchanged native Params and msgq bindings
         run: |
           set -euo pipefail
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python -P rust/tools/build_params_python.py --output "$RUNNER_TEMP/radard-native/params" 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/params-build.log"
+          python -P rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/radard-native/params" 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/params-build.log"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -P rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radard-native/msgq" 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/msgq-build.log"
           python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radard-native/params/provenance.json"; print("RADARD_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
@@ -1727,10 +1775,12 @@ jobs:
           python -m pip freeze > "$RUNNER_TEMP/carrot-navi/python-pins.txt"
       - name: Configure original Carrot Navi IPC imports
         run: printf 'PYTHONPATH=%s/carrot-navi/bindings/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build and identify unchanged original Params and msgq bindings
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/carrot-navi/bindings/params"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/carrot-navi/bindings/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-navi/bindings/msgq"
           python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"carrot-navi/bindings/params/provenance.json"; print("CARROT_NAVI_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
@@ -1893,10 +1943,12 @@ jobs:
         run: printf 'PYTHONPATH=%s/support-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Build support daemons and their source-comparison probes
         run: cargo build --manifest-path rust/Cargo.toml -p openpilot-uploader -p openpilot-web-upload -p openpilot-dashcam-upload -p openpilot-params-typed -p openpilot-journald -p openpilot-timed -p openpilot-logmessaged --bins --examples --locked
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build original message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/support-msgq-python"
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/support-params-binding"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/support-params-binding"
       - name: Compare uploader policy, signed local HTTP and compressed payloads with original source
         run: |
           python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/support-runtime/uploader-reference/report.json"
@@ -1992,11 +2044,13 @@ jobs:
         run: |
           rustc --version
           cargo --version
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --bins --examples --locked
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build original telemetry message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/telemetry-msgq-python"
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/telemetry-params-binding"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/telemetry-params-binding"
       - name: Compare cached Git metadata and actual collector delivery
         run: |
           VERSION_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/version-reference" python rust/tools/check_version_reference.py rust/target/debug/examples/version_trace
@@ -2013,7 +2067,7 @@ jobs:
         run: python rust/tools/check_beepd_daemon.py --binary rust/target/debug/openpilot-beepd --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-daemon"
       - name: Compare statistics numeric, clock and producer contracts
         run: |
-          python rust/tools/check_stats_numbers.py --binary rust/target/debug/examples/stats_trace --output "$RUNNER_TEMP/telemetry-runtime/stats-numbers.json"
+          rust/target/debug/check-stats-numbers --binary rust/target/debug/examples/stats_trace --output "$RUNNER_TEMP/telemetry-runtime/stats-numbers.json"
           python rust/tools/check_stats_clock.py rust/target/debug/examples/stats_clock "$RUNNER_TEMP/telemetry-runtime/stats-clock.json"
           python rust/tools/check_stats_producer.py rust/target/debug/examples "$RUNNER_TEMP/telemetry-runtime/stats-producer"
       - name: Compare continuous statistics, real Params and collector failure paths
@@ -2076,11 +2130,13 @@ jobs:
           rustc --version
           cargo --version
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged --bins --examples --locked
+          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged -p openpilot-dev-tools --bins --examples --locked
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build original startup message and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/startup-msgq-python"
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/startup-params-binding"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/startup-params-binding"
       - name: Compare process ownership, signals and persistent child lifecycle
         run: |
           python rust/tools/check_process_supervision.py --binary rust/target/debug/examples/process_trace \
@@ -2102,7 +2158,7 @@ jobs:
       - name: Verify the exact native response detector source archive
         run: |
           curl --fail --location --retry 3 https://static.crates.io/crates/charset-norm/charset-norm-3.5.1.crate --output "$RUNNER_TEMP/charset-norm-3.5.1.crate"
-          python rust/tools/check_registration_vendor.py "$RUNNER_TEMP/charset-norm-3.5.1.crate" "$RUNNER_TEMP/startup-runtime/detector-vendor.json"
+          rust/target/debug/check-registration-vendor "$RUNNER_TEMP/charset-norm-3.5.1.crate" "$RUNNER_TEMP/startup-runtime/detector-vendor.json"
       - name: Compare registration signatures, persistence and response decoding
         run: |
           python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
@@ -2168,12 +2224,14 @@ jobs:
           cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch x86_64 --output "$RUNNER_TEMP/startup-raylib-host" --shared
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\nSTARTUP_UI_RAYLIB_LIBRARY=%s/startup-raylib-host/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build native startup service boundaries
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-updated -p openpilot-startup-ui -p openpilot-process-supervision --bins --examples --locked
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-updated -p openpilot-startup-ui -p openpilot-process-supervision --bins --examples --locked
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build original IPC binding and messaging bridge
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/services-msgq-python"
-          python rust/tools/build_bridge_reference.py --output "$RUNNER_TEMP/services-bridge-source"
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/services-params-binding"
+          rust/target/debug/build-bridge-source --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/services-bridge-source"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/services-params-binding"
       - name: Compare LPA serial, TLS, profile and notification lifecycle
         run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
       - name: Compare source and native bridge packets and connection lifecycle
@@ -2184,7 +2242,7 @@ jobs:
         run: |
           PYTHONPATH="$PWD/rust/tools:$PYTHONPATH" python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_updated_comparison.py -q
           python rust/tools/check_updated.py --binary "$PWD/rust/target/debug/examples/updated_trace" --launcher "$PWD/rust/target/debug/openpilot-process-child" --binding "$RUNNER_TEMP"/services-params-binding/params_pyx*.so --output "$RUNNER_TEMP/startup-services/updated-source"
-          python rust/tools/check_updated_process.py --binary "$PWD/rust/target/debug/examples/updated_command" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/startup-services/updated-process"
+          "$PWD/rust/target/debug/check-updated-process" --binary "$PWD/rust/target/debug/examples/updated_command" --launcher "$PWD/rust/target/debug/openpilot-process-child" --fixture "$PWD/rust/target/debug/updated-process-fixture" --baseline "$PWD/rust/crates/dev-tools/tests/fixtures/updated-process/original.json" --output "$RUNNER_TEMP/startup-services/updated-process"
           python rust/tools/check_updated_daemon.py --binary "$PWD/rust/target/debug/openpilot-updated" --launcher "$PWD/rust/target/debug/openpilot-process-child" --output "$RUNNER_TEMP/startup-services/updated-daemon"
           python rust/tools/check_updated_agnos.py --target "$PWD/rust/target" --output "$RUNNER_TEMP/startup-services/updated-agnos"
       - name: Compare actual startup UI rendering, input and child lifecycle
@@ -2217,10 +2275,12 @@ jobs:
         run: printf 'PYTHONPATH=%s/sensor-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Build native sensor and audio daemons
         run: cargo build --manifest-path rust/Cargo.toml -p openpilot-sensord -p openpilot-micd -p openpilot-soundd -p openpilot-feedbackd -p openpilot-process-supervision --bins --examples --locked
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build original IPC and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/sensor-msgq-python"
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/sensor-params-binding"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/sensor-params-binding"
       - name: Compare IMU source policy, Linux ABI and continuous native IPC
         run: |
           python rust/tools/check_sensord.py --trace "$PWD/rust/target/debug/examples/sensord_trace" --evidence "$RUNNER_TEMP/sensor-audio/sensord-source"
@@ -2366,12 +2426,14 @@ jobs:
         run: |
           python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
           python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build native estimators and unchanged source oracle
         run: |
           mkdir -p "$RUNNER_TEMP/estimation/lagd"
           python rust/tools/build_locationd_oracle.py --output "$RUNNER_TEMP/locationd-oracle" --eigen-include "$LOCATIOND_EIGEN_INCLUDE"
           python rust/tools/build_paramsd_oracle.py --output "$RUNNER_TEMP/paramsd-oracle" --eigen-include "$PARAMSD_EIGEN_INCLUDE" --reuse-wrapper "$RUNNER_TEMP/locationd-oracle"/ekf_sym_pyx*.so
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/estimation-params-binding"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/estimation-params-binding"
           cargo build --manifest-path rust/Cargo.toml -p openpilot-locationd -p openpilot-lagd -p openpilot-paramsd --bins --examples --locked
       - name: Compare location model, complete source loop, timestamps and native IPC
         run: |
@@ -2455,38 +2517,10 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 5120
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision --bin openpilot-process-child --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-dev-tools --bin openpilot-process-child --bin check-ui-updater-handshake --bin check-ui-model-adapter --bin check-ui-training-adapter --bin check-ui-native-safety --bin check-ui-native-resources --bin check-ui-qr --bin check-ui-torque-geometry --bin check-ui-state --bin check-ui-scheduler --locked
           cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked --message-format=json | tee "$RUNNER_TEMP/ui-native/unit-tests.jsonl"
       - name: Require queued exec error after helper exit
-        run: |
-          python - <<'PYTHON'
-          import json, os, pathlib, re, subprocess
-          evidence = pathlib.Path(os.environ['RUNNER_TEMP']) / 'ui-native'
-          artifacts = []
-          for line in (evidence / 'unit-tests.jsonl').read_text().splitlines():
-            try:
-              row = json.loads(line)
-            except json.JSONDecodeError:
-              continue
-            if (isinstance(row, dict) and row.get('reason') == 'compiler-artifact'
-                and row.get('target', {}).get('name') == 'openpilot_ui_application'
-                and row.get('profile', {}).get('test') and row.get('executable')):
-              artifacts.append(row['executable'])
-          assert len(artifacts) == 1, artifacts
-          trace = evidence / 'updater-handshake.trace'
-          subprocess.run(['strace', '--kill-on-exit', '-f', '-qq', '-e', 'trace=accept4,waitid',
-                          '-e', 'inject=accept4:delay_exit=500ms:when=1', '-o', str(trace), artifacts[0],
-                          'agnos_updater::worker::tests::missing_executable_is_visible_start_failure',
-                          '--exact', '--nocapture'], check=True, timeout=20)
-          lines = trace.read_text().splitlines()
-          delayed = [(i, re.match(r'^(\d+)\s+accept4.*EAGAIN.*\(DELAYED\)', line)) for i, line in enumerate(lines)]
-          delayed = [(i, match.group(1)) for i, match in delayed if match]
-          assert len(delayed) == 1, 'expected one delayed EAGAIN in updater worker'
-          index, pid = delayed[0]
-          events = [line for line in lines[index + 1:] if re.match(r'^' + pid + r'\s+(accept4|waitid)\(', line)]
-          assert len(events) >= 2 and 'waitid(' in events[0] and 'CLD_EXITED' in events[0], events
-          assert 'accept4(' in events[1] and re.search(r'= [0-9]+$', events[1]), events
-          PYTHON
+        run: rust/target/debug/check-ui-updater-handshake --evidence "$RUNNER_TEMP/ui-native"
       - name: Build native UI and record current dependency outputs
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
@@ -2534,10 +2568,18 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch x86_64 --output "$RUNNER_TEMP/ui-raylib" --shared
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/ui-raylib\nSTARTUP_UI_RAYLIB_LIBRARY=%s/ui-raylib/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
+      - name: Build native UI validation checkers
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference --bin check-ui-egl --bin ui-egl-reference --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features egl-reference --test ui_egl_reference --test ui_egl_check --locked
       - name: Build native UI and connectivity with original Params oracle
         run: |
           cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/ui-params-binding"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/ui-params-binding"
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/connectivity-msgq-python"
       - name: Compare shared UI state, pixels, real input and native lifecycle
         run: |
@@ -2546,7 +2588,7 @@ jobs:
             python rust/tools/check_startup_ui.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/startup" --display "$DISPLAY" --raylib-root "$STARTUP_UI_RAYLIB_ROOT" --raylib-library "$STARTUP_UI_RAYLIB_LIBRARY"
           '
           python rust/tools/check_ui_emoji.py --binary "$PWD/rust/target/debug/examples/emoji_raster" --output "$RUNNER_TEMP/ui-connectivity/emoji"
-          python rust/tools/check_ui_translations.py --binary "$PWD/rust/target/debug/examples/translation_trace" --output "$RUNNER_TEMP/ui-connectivity/translations"
+          rust/target/debug/check-ui-translations --binary "$PWD/rust/target/debug/examples/translation_trace" --output "$RUNNER_TEMP/ui-connectivity/translations"
       - name: Compare Wi-Fi policy and original/native private NetworkManager protocol
         run: |
           python rust/tools/check_wifi_policy.py --binary "$PWD/rust/target/debug/examples/wifi_trace" --output "$RUNNER_TEMP/ui-connectivity/wifi-policy.json"
@@ -2591,10 +2633,12 @@ jobs:
         run: printf 'PYTHONPATH=%s/platform-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Build native manager and serial daemon boundaries
         run: cargo build --manifest-path rust/Cargo.toml -p openpilot-manager -p openpilot-modem -p openpilot-hardwared -p openpilot-process-supervision --bins --examples --locked
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build original platform IPC and Params bindings
         run: |
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/platform-msgq-python"
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/platform-params-binding"
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/platform-params-binding"
       - name: Compare manager initialization, transitions and lifecycle logging
         run: |
           python rust/tools/check_manager.py rust/target/debug/examples/manager_trace "$RUNNER_TEMP"/platform-params-binding/params_pyx*.so "$RUNNER_TEMP/platform-runtime/manager"
@@ -2640,19 +2684,21 @@ jobs:
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1
       - name: Build hardware libraries and boot executables
-        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-bootlog -p openpilot-hardware-info -p openpilot-hardware-control -p openpilot-amplifier -p openpilot-process-supervision --bins --examples --locked
+        run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-bootlog -p openpilot-hardware-info -p openpilot-hardware-control -p openpilot-amplifier -p openpilot-process-supervision --bins --examples --locked
+      - name: Build current native dependency stager
+        uses: ./.github/actions/native-json11
       - name: Build original Params and boot log comparisons
         run: |
-          python rust/tools/build_params_python.py --output "$RUNNER_TEMP/hardware-params-binding"
-          python rust/tools/build_bootlog_native.py "$RUNNER_TEMP/hardware-runtime/original-bootlog"
-          python rust/tools/build_bootlog_native.py "$RUNNER_TEMP/hardware-runtime/original-identifier" --identifier
+          python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/hardware-params-binding"
+          rust/target/debug/build-bootlog-source --root "$GITHUB_WORKSPACE" "$RUNNER_TEMP/hardware-runtime/original-bootlog"
+          rust/target/debug/build-bootlog-source --root "$GITHUB_WORKSPACE" "$RUNNER_TEMP/hardware-runtime/original-identifier" --identifier
           gcc -shared -fPIC -O1 -Wall -Wextra -Werror rust/tools/bootlog_output_fault.c -ldl -o "$RUNNER_TEMP/bootlog-output-fault.so"
           gcc -shared -fPIC -O1 -Wall -Wextra -Werror rust/tools/amplifier_i2c_fixture.c -ldl -o "$RUNNER_TEMP/amplifier-i2c-fixture.so"
       - name: Compare boot artifacts, upload selection and counter I/O
         run: |
           python rust/tools/check_bootlog.py rust/target/debug/openpilot-bootlog "$RUNNER_TEMP/hardware-runtime/original-bootlog/original-bootlog" \
             "$RUNNER_TEMP/hardware-runtime/bootlog" --fault-library "$RUNNER_TEMP/bootlog-output-fault.so"
-          python rust/tools/check_logger_identifier.py rust/target/debug/examples/logger_identifier \
+          rust/target/debug/check-logger-identifier rust/target/debug/examples/logger_identifier \
             "$RUNNER_TEMP/hardware-runtime/original-identifier/original-identifier" "$RUNNER_TEMP/hardware-runtime/identifiers"
           python rust/tools/check_bootlog_snapshot.py rust/target/debug/examples/bootlog_snapshot \
             "$RUNNER_TEMP"/hardware-params-binding/params_pyx*.so "$RUNNER_TEMP/hardware-runtime/snapshots" --launcher rust/target/debug/openpilot-process-child
@@ -2660,13 +2706,13 @@ jobs:
         run: |
           python rust/tools/check_hardware_info.py rust/target/debug/examples/hardware_info \
             "$RUNNER_TEMP"/hardware-params-binding/params_pyx*.so "$RUNNER_TEMP/hardware-runtime/information"
-          python rust/tools/check_amplifier.py rust/target/debug/examples/amplifier_trace "$RUNNER_TEMP/hardware-runtime/amplifier-policy"
-          python rust/tools/check_amplifier_linux.py rust/target/debug/examples/amplifier_linux \
+          rust/target/debug/check-amplifier-policy rust/target/debug/examples/amplifier_trace "$RUNNER_TEMP/hardware-runtime/amplifier-policy"
+          rust/target/debug/check-amplifier-linux rust/target/debug/examples/amplifier_linux \
             "$RUNNER_TEMP/amplifier-i2c-fixture.so" "$RUNNER_TEMP/hardware-runtime/amplifier-io"
-          python rust/tools/check_hardware_control.py rust/target/debug/examples/hardware_control_trace "$RUNNER_TEMP/hardware-runtime/control-policy"
+          rust/target/debug/check-hardware-control-policy rust/target/debug/examples/hardware_control_trace "$RUNNER_TEMP/hardware-runtime/control-policy"
           rust/target/debug/examples/hardware_control_command rust/target/debug/openpilot-process-child \
             > "$RUNNER_TEMP/hardware-runtime/command.json" 2> "$RUNNER_TEMP/hardware-runtime/command.stderr"
-          python -c 'import json,pathlib,sys; root=pathlib.Path(sys.argv[1]); assert json.loads((root/"command.json").read_text()) == {"status":7,"stdout_bytes":131072,"stdout_zero":True,"call_status":3,"shell_status":5,"missing_is_io":True}; assert (root/"command.stderr").read_text() == "inherited-stderr"' "$RUNNER_TEMP/hardware-runtime"
+          rust/target/debug/check-hardware-command --evidence "$RUNNER_TEMP/hardware-runtime"
       - name: Exercise boot file ownership and failure cleanup with AddressSanitizer
         run: |
           rustc +nightly-2026-09-29 --edition=2021 -Zsanitizer=address -g rust/tools/bootlog_raw_file_probe.rs -o "$RUNNER_TEMP/boot-file-asan"
@@ -2713,12 +2759,15 @@ jobs:
           PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python -P tools/check_runtime_log_upload.py \
             --binaries target/debug --output "$RUNNER_TEMP/runtime-log-upload"
       - run: cargo build -p openpilot-logging --example native_logging_probe --locked
+      - run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo build -p openpilot-dev-tools --bin build-native-logging-reference --bin build-loggerd-source --locked
       - name: Compare shared native logging context, transport and rate-limit boundaries
-        run: python tools/check_native_logging.py --binary target/debug/examples/native_logging_probe --output "$RUNNER_TEMP/native-logging"
+        run: python tools/check_native_logging.py --binary target/debug/examples/native_logging_probe --builder target/debug/build-native-logging-reference --output "$RUNNER_TEMP/native-logging"
       - name: Build original native logger and encoder producers
         run: |
           python tools/build_msgq_python.py --output "$RUNNER_TEMP/logger-msgq"
-          python tools/loggerd_native_build.py --output "$RUNNER_TEMP/logger-original"
+          target/debug/build-loggerd-source --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/logger-original"
       - name: Compare complete native route logs, media, fallback and signal paths
         run: |
           PYTHONPATH="$RUNNER_TEMP/logger-msgq:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/rust/tools" python tools/check_loggerd_native.py \
@@ -2831,7 +2880,7 @@ jobs:
           done
       - name: Compare model publications with the original Python implementations
         run: |
-          generation=$(python -c 'import json, os; print(json.load(open(os.environ["RUNNER_TEMP"] + "/native-catalog/current.json"))["generation"])')
+          generation=$(rust/target/debug/model-run --catalog-generation "$RUNNER_TEMP/native-catalog")
           for resolution in '1928 1208' '1344 760'; do
             set -- $resolution
             python rust/tools/check_model_outputs.py --binary rust/target/debug/examples/output_probe --output "$RUNNER_TEMP/model-outputs-$1" \
@@ -3253,12 +3302,12 @@ jobs:
         run: python rust/tools/test_athena_camera_children.py
       - name: Build native Athena and owned process child
         run: |
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-athena -p openpilot-process-supervision --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-athena -p openpilot-process-supervision --bins --examples --locked
           cargo build --manifest-path rust/Cargo.toml -p openpilot-logging --example logging_probe --locked
       - name: Compare all source RPC, upload, IPC, camera and connection scenarios
         run: sudo -E env "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_athena_runtime.py --bin-dir "$PWD/rust/target/debug" --output "$RUNNER_TEMP/athena-runtime"
       - name: Instrument complete JPEG codec and ownership boundary
-        run: python rust/tools/check_jpeg_sanitizers.py --target-dir "$RUNNER_TEMP/jpeg-sanitizer-target" --output "$RUNNER_TEMP/athena-jpeg-sanitizers"
+        run: rust/target/debug/check-jpeg-sanitizers --target-dir "$RUNNER_TEMP/jpeg-sanitizer-target" --output "$RUNNER_TEMP/athena-jpeg-sanitizers"
       - uses: actions/upload-artifact@v6
         if: always()
         with:

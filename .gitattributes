@@ -27,3 +27,6 @@ openpilot/selfdrive/carrot/web/assets/alert_police.svg filter=lfs diff=lfs merge
 
 # dmonitoring model was already shipped as a real blob (supercombo stays LFS).
 openpilot/selfdrive/modeld/models/dmonitoring_model.onnx -filter -diff -merge -text
+
+# Original services.py script output includes a second terminal newline.
+rust/crates/dev-tools/tests/fixtures/native-build-closure/services-script.h -text whitespace=-blank-at-eof

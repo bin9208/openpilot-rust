@@ -1,5 +1,7 @@
-// SAFETY: CXX owns all opaque resources; the C++ adapter checks indices, copies
-// borrowed strings/slices, never retains Rust pointers, and releases raylib objects once.
+// SAFETY: CXX owns opaque adapter/token storage. Adapters validate indices and
+// handles, never retain borrowed Rust pointers, and release raylib objects once.
+// The independent EGL reference adapter exposes only checked raw ABI calls; its
+// private close entrypoint is wrapped by a Rust API consuming descriptor ownership.
 #[cxx::bridge(namespace = "startup_ui")]
 pub mod ffi {
     extern "Rust" {
@@ -78,7 +80,52 @@ pub mod ffi {
         scale: Vector3,
         tint: u32,
     }
+    #[derive(Clone, Copy, Debug)]
+    enum ReferenceCore {
+        Current,
+        Initialize,
+        Query,
+        Proc,
+        Error,
+        Bind,
+        Active,
+    }
+    #[derive(Clone, Copy, Debug)]
+    enum ReferenceExtension {
+        Create,
+        Destroy,
+        ImageTarget,
+    }
+
     unsafe extern "C++" {
+        include!("egl_reference.h");
+        type ReferenceApi;
+        fn reference_api() -> UniquePtr<ReferenceApi>;
+        fn reference_close_owned_descriptor(fd: i32) -> i32;
+        fn load_egl(self: Pin<&mut ReferenceApi>) -> Result<()>;
+        fn load_gles(self: Pin<&mut ReferenceApi>) -> Result<()>;
+        fn resolve_core(self: Pin<&mut ReferenceApi>, symbol: ReferenceCore) -> Result<()>;
+        fn resolve_proc(self: Pin<&mut ReferenceApi>, symbol: ReferenceExtension) -> Result<bool>;
+        fn resolve_library(self: Pin<&mut ReferenceApi>, symbol: ReferenceExtension) -> Result<()>;
+        fn reference_display(self: Pin<&mut ReferenceApi>) -> Result<u64>;
+        fn reference_initialize(self: &ReferenceApi, display: u64) -> Result<bool>;
+        fn reference_extensions(self: &ReferenceApi, display: u64) -> Result<Vec<u8>>;
+        fn reference_error(self: &ReferenceApi) -> Result<i32>;
+        fn reference_create(
+            self: Pin<&mut ReferenceApi>,
+            display: u64,
+            target: u32,
+            attributes: &[i32],
+        ) -> Result<u64>;
+        fn reference_active(self: &ReferenceApi, texture: u32) -> Result<()>;
+        fn reference_bind(self: &ReferenceApi, target: u32, texture: u32) -> Result<()>;
+        fn reference_image_target(self: &ReferenceApi, target: u32, image: u64) -> Result<()>;
+        fn reference_destroy(
+            self: Pin<&mut ReferenceApi>,
+            display: u64,
+            image: u64,
+        ) -> Result<bool>;
+
         include!("bridge.h");
         include!("egl.h");
         include!("gles.h");

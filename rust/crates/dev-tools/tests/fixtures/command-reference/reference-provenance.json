@@ -1,0 +1,47 @@
+{
+  "kind": "reference",
+  "reads": 1026,
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "interpreter_sha256": "eaaa308032c4aa063df5880c4c293cd458b4629d503fbc2c03ec163d71f7f790",
+  "sources": {
+    "rust/tools/check_command_reference.py": "2ddcf46fcb444bce18f0eed239fd50b3c54d26224230a338dc931c03bb9cc48d",
+    "openpilot/selfdrive/carrot/bluetooth/model.py": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  "files": {
+    "report.json": {
+      "bytes": 140,
+      "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+    },
+    "request.jsonl": {
+      "bytes": 253492,
+      "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+    },
+    "reference.json": {
+      "bytes": 84401,
+      "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+    },
+    "actual.jsonl": {
+      "bytes": 64904,
+      "sha256": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522"
+    },
+    "original/lane.json": {
+      "bytes": 78,
+      "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+    },
+    "original/cancelled.json": {
+      "bytes": 17,
+      "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+    },
+    "original/learn.json": {
+      "bytes": 37,
+      "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+    },
+    "rust/peer-owned": {
+      "bytes": 9,
+      "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+    }
+  },
+  "stdout_sha256": "d97c990df1a39682b9a867fb1f7755e2e76e458519c923152085f63bf046ab7b"
+}

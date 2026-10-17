@@ -1,0 +1,693 @@
+{
+  "source_sha256": "ccd19b4cae11294931a8160067740bf8c13ef91fcff715a0376c3cafd07c7b66",
+  "cases": [
+    {
+      "case": "success",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ]
+        },
+        {
+          "argv": [
+            "$ROOT/ownership",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "timeout": 60
+        }
+      ],
+      "error": null,
+      "stdout": "PASS: instrumented complete libjpeg-turbo codec,C/CXX owned boundary,ASan+UBSan+leak detection,invalid dimensions and returned bytes ownership\n",
+      "artifacts": {
+        "result.json": "{\n  \"pass\": true,\n  \"binary\": \"$ROOT/ownership\",\n  \"full_codec_c_flags\": \"-fsanitize=address,undefined -fno-omit-frame-pointer\",\n  \"returncode\": 0\n}\n",
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n",
+        "build.log": "build stderr\n",
+        "run.log": "run stdout\nrun stderr\n"
+      }
+    },
+    {
+      "case": "low-disk",
+      "calls": [],
+      "error": "AssertionError",
+      "stdout": "",
+      "artifacts": {}
+    },
+    {
+      "case": "build-failed",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        }
+      ],
+      "error": "AssertionError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n",
+        "build.log": "build stderr\n"
+      }
+    },
+    {
+      "case": "malformed-json",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        }
+      ],
+      "error": "JSONDecodeError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "{bad",
+        "build.log": "build stderr\n"
+      }
+    },
+    {
+      "case": "missing-executable",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        }
+      ],
+      "error": "AssertionError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "",
+        "build.log": "build stderr\n"
+      }
+    },
+    {
+      "case": "multiple-executables",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        }
+      ],
+      "error": "AssertionError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n",
+        "build.log": "build stderr\n"
+      }
+    },
+    {
+      "case": "compiler-failed",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ]
+        }
+      ],
+      "error": "CalledProcessError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n",
+        "build.log": "build stderr\n"
+      }
+    },
+    {
+      "case": "run-failed",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ]
+        },
+        {
+          "argv": [
+            "$ROOT/ownership",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "timeout": 60
+        }
+      ],
+      "error": "AssertionError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n",
+        "build.log": "build stderr\n",
+        "run.log": "run stdout\nrun stderr\n"
+      }
+    },
+    {
+      "case": "missing-cache",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ]
+        },
+        {
+          "argv": [
+            "$ROOT/ownership",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "timeout": 60
+        }
+      ],
+      "error": "AssertionError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n",
+        "build.log": "build stderr\n",
+        "run.log": "run stdout\nrun stderr\n"
+      }
+    },
+    {
+      "case": "multiple-caches",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ]
+        },
+        {
+          "argv": [
+            "$ROOT/ownership",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "timeout": 60
+        }
+      ],
+      "error": "AssertionError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n",
+        "build.log": "build stderr\n",
+        "run.log": "run stdout\nrun stderr\n"
+      }
+    },
+    {
+      "case": "wrong-flags",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ]
+        },
+        {
+          "argv": [
+            "$ROOT/ownership",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "timeout": 60
+        }
+      ],
+      "error": "AssertionError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n",
+        "build.log": "build stderr\n",
+        "run.log": "run stdout\nrun stderr\n"
+      }
+    },
+    {
+      "case": "spawn-failed",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        }
+      ],
+      "error": "FileNotFoundError",
+      "stdout": "",
+      "artifacts": {}
+    },
+    {
+      "case": "false-executable-record",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ]
+        },
+        {
+          "argv": [
+            "$ROOT/ownership",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "timeout": 60
+        }
+      ],
+      "error": null,
+      "stdout": "PASS: instrumented complete libjpeg-turbo codec,C/CXX owned boundary,ASan+UBSan+leak detection,invalid dimensions and returned bytes ownership\n",
+      "artifacts": {
+        "result.json": "{\n  \"pass\": true,\n  \"binary\": \"$ROOT/ownership\",\n  \"full_codec_c_flags\": \"-fsanitize=address,undefined -fno-omit-frame-pointer\",\n  \"returncode\": 0\n}\n",
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\n{\"reason\": \"compiler-artifact\", \"executable\": []}\n",
+        "build.log": "build stderr\n",
+        "run.log": "run stdout\nrun stderr\n"
+      }
+    },
+    {
+      "case": "unicode-line-separator",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ]
+        },
+        {
+          "argv": [
+            "$ROOT/ownership",
+            "--nocapture"
+          ],
+          "cwd": null,
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "timeout": 60
+        }
+      ],
+      "error": null,
+      "stdout": "PASS: instrumented complete libjpeg-turbo codec,C/CXX owned boundary,ASan+UBSan+leak detection,invalid dimensions and returned bytes ownership\n",
+      "artifacts": {
+        "result.json": "{\n  \"pass\": true,\n  \"binary\": \"$ROOT/ownership\",\n  \"full_codec_c_flags\": \"-fsanitize=address,undefined -fno-omit-frame-pointer\",\n  \"returncode\": 0\n}\n",
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": \"$ROOT/ownership\"}\u2028",
+        "build.log": "build stderr\n",
+        "run.log": "run stdout\nrun stderr\n"
+      }
+    },
+    {
+      "case": "nonstring-executable",
+      "calls": [
+        {
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "openpilot-jpeg",
+            "--test",
+            "ownership",
+            "--no-run",
+            "--locked",
+            "--message-format=json",
+            "-j2"
+          ],
+          "cwd": "$RUST",
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan"
+          },
+          "timeout": null
+        },
+        {
+          "argv": [
+            "g++",
+            "-print-file-name=libasan.so"
+          ]
+        },
+        {
+          "argv": [
+            true,
+            "--nocapture"
+          ],
+          "cwd": null,
+          "env": {
+            "CARGO_TARGET_DIR": "$ROOT/target",
+            "CARGO_INCREMENTAL": "0",
+            "CFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "CXXFLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+            "RUSTFLAGS": "-C link-arg=-lasan -C link-arg=-lubsan",
+            "LD_PRELOAD": "/controlled/libasan.so",
+            "ASAN_OPTIONS": "detect_leaks=1",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "timeout": 60
+        }
+      ],
+      "error": "TypeError",
+      "stdout": "",
+      "artifacts": {
+        "build.jsonl": "{\"reason\": \"compiler-artifact\", \"executable\": true}\n",
+        "build.log": "build stderr\n"
+      }
+    }
+  ]
+}

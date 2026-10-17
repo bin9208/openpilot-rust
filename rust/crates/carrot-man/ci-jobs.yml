@@ -37,12 +37,14 @@ carrot-man-runtime:
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
         python -m pip install --no-deps "$RUNNER_TEMP"/carrot-man-wheels/shapely-2.1.2-*.whl
         cat "$RUNNER_TEMP/carrot-man-geos/environment.txt" >> "$GITHUB_ENV"
+    - name: Build current native dependency stager
+      uses: ./.github/actions/native-json11
     - name: Build owner and unchanged source bindings
       run: |
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
         cargo build --manifest-path rust/Cargo.toml -p openpilot-carrot-man --bins --examples --locked
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-        python rust/tools/build_params_python.py --output "$RUNNER_TEMP/carrot-man-params"
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/carrot-man-params"
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
         python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-man-msgq"
         python -c 'from pathlib import Path; import os; print("CARROT_PARAMS_BINDING="+str(next((Path(os.environ["RUNNER_TEMP"])/"carrot-man-params").glob("params_pyx*.so"))))' >> "$GITHUB_ENV"

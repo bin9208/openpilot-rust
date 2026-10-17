@@ -98,7 +98,7 @@ creates the namespace consumed by Rust.
 
 ```sh
 cargo build -p openpilot-params --example store --locked
-python tools/check_params_reference.py
+cargo run --locked -p openpilot-dev-tools --bin check-params-reference -- --binary "${CARGO_TARGET_DIR:-target}/debug/examples/store"
 ```
 
 For rootless Cap'n Proto installations, supply `--capnp-prefix /path/to/usr`.

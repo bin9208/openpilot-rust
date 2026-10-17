@@ -269,6 +269,12 @@ source's absent-events fallback and default no-alert-sound publication.
 
 Evidence under `.omo/evidence/ui-application-148/`:
 
+The table preserves historical invocations. Current EGL validation uses the native
+`check-ui-egl` and `ui-egl-reference` binaries, built with the `egl-reference`
+feature and the pinned raylib environment. See the
+[repository retirement evidence](rust-repository-python-retirement-296-evidence.md)
+for the independently verified replacement and remaining runtime scope.
+
 | Scenario and invocation | Binary observable | Captured artifact |
 | --- | --- | --- |
 | `check_ui_egpu.py` | 72 EN/KO cases, 2,320 exact source/native frames; effects, call counts and compile confirmation agree | `egpu-final2/results.json`, per-case frames/traces, `egpu-tests.log` |

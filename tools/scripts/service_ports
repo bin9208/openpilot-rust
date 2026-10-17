@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# Keep stdout exclusively for service rows consumed by adb_ssh.sh.
+set -euo pipefail
+if [[ -n "${OPENPILOT_SERVICE_PORTS:-}" ]]; then
+  exec "$OPENPILOT_SERVICE_PORTS" "$@"
+fi
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+cache=${OPENPILOT_SERVICE_TOOLS_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/openpilot-service-tools}
+case "$cache" in /*) ;; *) cache="$PWD/$cache" ;; esac
+case "$(uname -s):$(uname -m)" in
+  Linux:x86_64) host=x86_64-unknown-linux-gnu ;;
+  Linux:aarch64|Linux:arm64) host=aarch64-unknown-linux-gnu ;;
+  Darwin:x86_64) host=x86_64-apple-darwin ;;
+  Darwin:arm64|Darwin:aarch64) host=aarch64-apple-darwin ;;
+  *) printf 'Unsupported service-tool host\n' >&2; exit 1 ;;
+esac
+
+# Canonicalize an existing ancestor, then resolve the missing suffix without
+# creating directories. Reject an in-tree cache before touching the source tree.
+resolve_destination() {
+  local probe=$1 pending= part
+  while [[ ! -e "$probe" ]]; do
+    part=${probe##*/}
+    pending=$part${pending:+/}$pending
+    probe=${probe%/*}
+    [[ -n "$probe" ]] || probe=/
+  done
+  probe=$(cd -- "$probe" && pwd -P) || return
+  while [[ -n "$pending" ]]; do
+    case "$pending" in
+      */*) part=${pending%%/*}; pending=${pending#*/} ;;
+      *) part=$pending; pending= ;;
+    esac
+    case "$part" in
+      .|'') ;;
+      ..) probe=${probe%/*}; [[ -n "$probe" ]] || probe=/ ;;
+      *)
+        probe=${probe%/}/$part
+        if [[ -d "$probe" ]]; then
+          probe=$(cd -- "$probe" && pwd -P) || return
+        elif [[ -e "$probe" ]]; then
+          printf 'Service tool cache ancestor is not a directory\n' >&2
+          return 1
+        fi
+        ;;
+    esac
+  done
+  printf '%s\n' "$probe"
+}
+cache=$(resolve_destination "$cache")
+case "$cache/" in "$root/"*) printf 'Service tool cache must be outside the source tree\n' >&2; exit 1 ;; esac
+
+# The existing guard bootstrap needs GNU utilities. This pre-build reserve uses
+# POSIX df on both Linux and macOS, including paths with spaces in mount names.
+reserve() {
+  local probe=$1
+  case "$probe" in /*) ;; *) probe="$PWD/$probe" ;; esac
+  while [[ ! -e "$probe" ]]; do
+    probe=${probe%/*}
+    [[ -n "$probe" ]] || probe=/
+  done
+  LC_ALL=C df -Pk "$probe" | awk '
+    NR > 1 {
+      for (i = 4; i <= NF; i++) {
+        if ($i ~ /^[0-9]+%$/ && $(i-1) ~ /^[0-9]+$/ && $(i-2) ~ /^[0-9]+$/ && $(i-3) ~ /^[0-9]+$/) {
+          found = 1
+          if ($(i-1) >= (25 * 1024 * 1024 + 2048 * 1024)) exit 0
+          print "Insufficient disk: retain 25 GiB plus 2 GiB growth; recover at least 35 GiB before resuming" > "/dev/stderr"
+          exit 1
+        }
+      }
+    }
+    END { if (!found) { print "Cannot read available service-tool disk space" > "/dev/stderr"; exit 1 } }
+  '
+}
+reserve "$cache"
+mkdir -p -- "$cache"
+cache=$(cd -- "$cache" && pwd -P)
+case "$cache/" in "$root/"*) printf 'Service tool cache must be outside the source tree\n' >&2; exit 1 ;; esac
+if ! rustup run 1.94.0 rustc --version >/dev/null 2>&1; then
+  reserve "${RUSTUP_HOME:-$HOME/.rustup}"
+  rustup toolchain install 1.94.0 --profile minimal >&2
+fi
+reserve "$cache"
+env -u CARGO_BUILD_TARGET -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
+  CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 \
+  cargo +1.94.0 build --manifest-path "$root/rust/Cargo.toml" --locked \
+  -p openpilot-service-tools --bin list-service-ports --target "$host" --target-dir "$cache" >&2
+exec "$cache/$host/debug/list-service-ports" "$@"

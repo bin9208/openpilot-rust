@@ -1,0 +1,47 @@
+[
+  {
+    "case": 0,
+    "argv": [
+      "controlled-native"
+    ],
+    "input_sha256": "cdb67451b7110f2478736a116c2bb074ac29b2d7519f8065edca7e96944ca489",
+    "input_bytes": 439104,
+    "options": {
+      "text": true,
+      "capture_output": true,
+      "check": true
+    },
+    "debug_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "debug_stdout_bytes": 0
+  },
+  {
+    "case": 1,
+    "argv": [
+      "controlled-native"
+    ],
+    "input_sha256": "4d2f1b413b2c7edc5031e0c36238b21387e78181680e61adbbc9888d590d01e4",
+    "input_bytes": 441852,
+    "options": {
+      "text": true,
+      "capture_output": true,
+      "check": true
+    },
+    "debug_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "debug_stdout_bytes": 0
+  },
+  {
+    "case": 2,
+    "argv": [
+      "controlled-native"
+    ],
+    "input_sha256": "def57e7f9c2c54e78e0899b6b287ba2275abc190295b0424eea38ec0021436eb",
+    "input_bytes": 446355,
+    "options": {
+      "text": true,
+      "capture_output": true,
+      "check": true
+    },
+    "debug_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "debug_stdout_bytes": 0
+  }
+]

@@ -1,19 +1,35 @@
 pub use openpilot_disk_space as disk_space;
+pub mod amplifier_linux_check;
+pub mod amplifier_policy_check;
+pub mod argparse_scan;
+pub mod athena_vision_build;
 pub mod brotli_stage;
 pub mod filter_reference;
 pub mod media_validation;
+pub mod message_state_check;
+pub mod miri_provenance;
 pub mod opencv_build;
 pub mod opencv_stage;
 pub mod package;
+pub mod params_reference_check;
 pub mod publish;
 pub mod qa_process;
 pub mod seal;
+pub mod stats_numbers_check;
+#[cfg(feature = "egl-reference")]
+pub mod ui_egl_check;
+#[cfg(feature = "egl-reference")]
+pub mod ui_egl_reference;
 pub mod user_docs;
 
 pub mod elf_audit;
+pub mod encoder_source_build;
 pub mod encoder_stage;
 
 pub mod ffmpeg_build;
+pub mod hardware_command_check;
+pub mod hardware_control_policy_check;
+pub mod image_array_math;
 pub mod qcom_compiler_stage;
 pub mod torque_stage;
 
@@ -22,4 +38,38 @@ pub mod usbgpu_stage;
 
 pub mod panda_build;
 
+pub mod bridge_source_build;
+pub mod ci_artifact_list;
+pub mod ci_policy;
+pub mod command_reference_check;
+pub mod control_tools_policy_check;
+pub mod diagnostic_check;
+pub mod jpeg_sanitizers_check;
+pub mod json11_stage;
+pub mod logger_identifier_check;
+pub mod logging_oracle_build;
+pub mod msgq_sanitizers_check;
+pub mod native_logging_build;
+pub mod panda_oracle_build;
+pub mod panda_runtime_build;
+pub mod pandad_firmware_spi_build;
+pub mod path_resolve;
+pub mod python_fs;
+pub mod python_glob;
 pub mod raylib_stage;
+pub mod registration_vendor_check;
+pub mod release_files;
+pub mod services_header;
+pub mod startup_adapter_sanitizers;
+pub mod ui_adapter_sanitizers;
+pub mod ui_application_logic_check;
+pub mod ui_ci_runtime;
+pub mod ui_fixed_corpus_check;
+pub mod ui_headless_check;
+pub mod ui_scroll_check;
+pub mod ui_state_scheduler_check;
+pub mod ui_translation_check;
+pub mod ui_updater_handshake;
+pub mod updated_process_check;
+pub mod updated_process_fixture;
+pub mod upstream_sync;

@@ -1,0 +1,102 @@
+{
+  "context": "Unmodified original ONNX Div scalar initializer \u00b1Inf, actual source input dtype for physical mode; original offline bindings promote half inputs to f32 and cast only selected final output f32 before realization.",
+  "backend": "CPU:LLVM",
+  "flags": {
+    "IMAGE": 1,
+    "FLOAT16": 1,
+    "NOLOCALS": 1,
+    "OPENPILOT_HACKS": 1
+  },
+  "sources": {
+    "tinygrad_repo/tinygrad/nn/onnx.py": "db5d97311c3192960c9e2c501dbd546ed5b8dc4396e361e4211f7e8373556b96",
+    "tinygrad_repo/tinygrad/mixin/elementwise.py": "648b15352bbad5a62fc50b1129d23c30ec5a068aab7a4c70aff8325e87b1bcd2",
+    "tinygrad_repo/tinygrad/uop/decompositions.py": "907e0660b37758b3dea3324c99292ad73590ea09fdefd1bbd831c4e78068c7e3",
+    "rust/tools/model_export/offline_onnx.py": "04c2d78d438286af367cc162b6cdbe222f1d5f6f706036cccd14d680c2cb21ed"
+  },
+  "cases": [
+    {
+      "name": "Div-infinite-scalar-1-offlineFalse-sign1",
+      "onnx_hex": "420210143a490a130a01610a016212066f757470757422034469762a0b10014201624a040000807f5a0f0a0161120a0a08080112040a02080a62140a066f7574707574120a0a08080112040a02080a",
+      "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+      "offline_bindings": false,
+      "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "output_dtype": "dtypes.float"
+    },
+    {
+      "name": "Div-infinite-scalar-1-offlineFalse-sign-1",
+      "onnx_hex": "420210143a490a130a01610a016212066f757470757422034469762a0b10014201624a04000080ff5a0f0a0161120a0a08080112040a02080a62140a066f7574707574120a0a08080112040a02080a",
+      "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+      "offline_bindings": false,
+      "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "output_dtype": "dtypes.float"
+    },
+    {
+      "name": "Div-infinite-scalar-1-offlineTrue-sign1",
+      "onnx_hex": "420210143a490a130a01610a016212066f757470757422034469762a0b10014201624a040000807f5a0f0a0161120a0a08080112040a02080a62140a066f7574707574120a0a08080112040a02080a",
+      "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+      "offline_bindings": true,
+      "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "output_dtype": "dtypes.float"
+    },
+    {
+      "name": "Div-infinite-scalar-1-offlineTrue-sign-1",
+      "onnx_hex": "420210143a490a130a01610a016212066f757470757422034469762a0b10014201624a04000080ff5a0f0a0161120a0a08080112040a02080a62140a066f7574707574120a0a08080112040a02080a",
+      "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+      "offline_bindings": true,
+      "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "output_dtype": "dtypes.float"
+    },
+    {
+      "name": "Div-infinite-scalar-10-offlineFalse-sign1",
+      "onnx_hex": "420210143a470a130a01610a016212066f757470757422034469762a09100a4201624a02007c5a0f0a0161120a0a08080a12040a02080a62140a066f7574707574120a0a08080a12040a02080a",
+      "input_hex": "00000080003c00bc01000180007c00fc097e097c",
+      "offline_bindings": false,
+      "expected_hex": "0000000000000000000000000000000000000000",
+      "output_dtype": "dtypes.half"
+    },
+    {
+      "name": "Div-infinite-scalar-10-offlineFalse-sign-1",
+      "onnx_hex": "420210143a470a130a01610a016212066f757470757422034469762a09100a4201624a0200fc5a0f0a0161120a0a08080a12040a02080a62140a066f7574707574120a0a08080a12040a02080a",
+      "input_hex": "00000080003c00bc01000180007c00fc097e097c",
+      "offline_bindings": false,
+      "expected_hex": "0000000000000000000000000000000000000000",
+      "output_dtype": "dtypes.half"
+    },
+    {
+      "name": "Div-infinite-scalar-10-offlineTrue-sign1",
+      "onnx_hex": "420210143a470a130a01610a016212066f757470757422034469762a09100a4201624a02007c5a0f0a0161120a0a08080a12040a02080a62140a066f7574707574120a0a08080a12040a02080a",
+      "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+      "offline_bindings": true,
+      "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "output_dtype": "dtypes.float"
+    },
+    {
+      "name": "Div-infinite-scalar-10-offlineTrue-sign-1",
+      "onnx_hex": "420210143a470a130a01610a016212066f757470757422034469762a09100a4201624a0200fc5a0f0a0161120a0a08080a12040a02080a62140a066f7574707574120a0a08080a12040a02080a",
+      "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+      "offline_bindings": true,
+      "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "output_dtype": "dtypes.float"
+    }
+  ],
+  "literal_probe": {
+    "context": "CPU:LLVM unmodified original Tensor dynamic f32 input / signedInf; final output only",
+    "records": [
+      {
+        "sign": 1,
+        "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+        "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "sign": -1,
+        "input_hex": "00000000000000800000803f000080bf01000000010000800000807f000080ff4523c17f4523817f",
+        "expected_hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "migration_evidence": {
+    "red": "Same ONNX f32 scalar+Inf native output retained negativezero/NaNs; direct literal regression had7of10differentf32patterns. No tolerance or expected-output rewrite.",
+    "green": "Eight independent original ONNX captures compare every output byte in both memory modes; both direct literal captures run as compiled CPU renderer primitive tests.",
+    "remaining": "Shared/standalone infinite scalar reciprocals reject; runtime-input denominators and general FDIV remain separate."
+  }
+}

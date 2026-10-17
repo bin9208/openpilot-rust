@@ -1,0 +1,30 @@
+[
+  {
+    "kind": "qr",
+    "candidate_suffix_hex": "ff",
+    "output_suffix_hex": "fe",
+    "exit": 0,
+    "file_sha256": {
+      "result.json": "7054a9b6d6b15fea63b6fe9d39df26312735339161378dfaf954f3d3a2c94b45",
+      "native.stderr": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7",
+      "input.json": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639",
+      "source.json": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558",
+      "native.json": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+    },
+    "stdout": "PASS: 64 source/native QR segmentation, mask selection and complete module matrices\n"
+  },
+  {
+    "kind": "torque",
+    "candidate_suffix_hex": "ff",
+    "output_suffix_hex": "fe",
+    "exit": 0,
+    "file_sha256": {
+      "result.json": "c6bee0a7cbfcb4293fb6754efd3fbd97399aa78067449bacebb27c99af88e6b4",
+      "native.stderr": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7",
+      "input.json": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f",
+      "source.json": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b",
+      "native.json": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+    },
+    "stdout": "PASS 1603 original/native torque arcs, exact float32 points with quantized hits, ties and LRU eviction\n"
+  }
+]
