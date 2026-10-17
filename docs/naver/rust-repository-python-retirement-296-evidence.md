@@ -11,7 +11,7 @@ The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
 SCons entrypoints. Ninety-two sources have locally verified replacements and migrated
-callers; two are partially replaced and3,486 remain pending. `replaced-local` does not mean merged,
+callers; three are partially replaced and3,485 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -2091,3 +2091,34 @@ as successes. Separate multi-release Forms behavior is tracked in
 Local evidence:2026-10-18-ui-framework/owned-after-deletion.log and
 owned-after-deletion/invocations.json;2026-10-18-camera-data/routing-final.log.
 Device boot, route recording and upload remain user-owned and unverified here.
+
+### Dynamic native camera sensor comparison (2026-10-18)
+
+`check-camerad-sensors` replaces the sensor CLI, dynamically reading current C++
+configurations and generating seeded requests in Rust. The actual535020-case
+run with PATH=/nonexistent matched every original result and produced a
+byte-identical report, including input digest
+`067eeb0afb1d9f4654a49957d007977dfb298816a4163ee9e76f71f377faf568`.
+The current C++ source and Rust sensor example hashes are in that report.
+The post-trim run also passes. This is host sensor-policy evidence, not hardware
+camera operation or device startup.
+
+Eight native tests preserve all268 live request-batch digests, changed configs,
+CPython random-bit consumption/number formatting, structural/f32 comparison,
+raw runner bytes/path normalization, process failures and distinct JSON/parser/
+comparison/receipt depth boundaries. Another50 generator/routing/disk checks
+and scoped strict Clippy pass. The migration test first rejected the old Python
+caller; CI now runs/tests the native checker and fingerprints its binary/source.
+Four remaining Python caller tests and Ruff pass.
+
+The old sensor module still supplies unchanged `f32`/`equal` to exposure, misc
+and state comparisons; AST equality and all three imports were verified after
+removing its unused CLI/process implementation. It is therefore partially
+replaced, not deleted:92sources replaced,3partial,3485pending. Independent
+captures and8tests live in `dev-tools/tests/fixtures/camera-sensor-check` and
+`tests/camera_sensor_check.rs`; ignored live proof is in
+`2026-10-18-camera-sensor-check/{live-native,native-proof.log}`.
+
+The unchanged d2007fa1 Integration39078224403 retry completed successfully,
+including Android protocol/Java inference. The initial Maven resolution failure
+remains recorded above; no dependency or test change was needed for the retry.

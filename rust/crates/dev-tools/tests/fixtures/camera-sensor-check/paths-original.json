@@ -1,0 +1,42 @@
+{
+  "source_sha256": "401526615ca939d19cb79b384bb589887e340e9ef2b2c5241ce3f9e888426dcc",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "cases": [
+    {
+      "name": "raw-reference-runner",
+      "exit": 0,
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"counts\": {\"config\": 3}, \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\", \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\", \"seed\": 187, \"source_sha256\": \"ba4ce73f907e4392ccd61a651b79ad5c66dc8385b55e11e714ca770eed4c1e1e\", \"native_sha256\": \"fc99fc6668e88f896767465db6bd6826d6a82121925ff24958e26d512c9a420c\", \"source_command\": [\"$ROOT/runner-\\udcff\", \"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"}\n",
+      "stderr_present": false,
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"counts\": {\n    \"config\": 3\n  },\n  \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\",\n  \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\",\n  \"seed\": 187,\n  \"source_sha256\": \"ba4ce73f907e4392ccd61a651b79ad5c66dc8385b55e11e714ca770eed4c1e1e\",\n  \"native_sha256\": \"fc99fc6668e88f896767465db6bd6826d6a82121925ff24958e26d512c9a420c\",\n  \"source_command\": [\n    \"$ROOT/runner-\\udcff\",\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"\n}\n"
+      }
+    },
+    {
+      "name": "raw-native-runner",
+      "exit": 0,
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"counts\": {\"config\": 3}, \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\", \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\", \"seed\": 187, \"source_sha256\": \"450ca0af06c1a4d3cf8c1b12bfb9f441da84df92914f7c6f91d8ae74b79daf91\", \"native_sha256\": \"fc99fc6668e88f896767465db6bd6826d6a82121925ff24958e26d512c9a420c\", \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/runner-\\udcff\", \"$ROOT/native\"], \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"}\n",
+      "stderr_present": false,
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"counts\": {\n    \"config\": 3\n  },\n  \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\",\n  \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\",\n  \"seed\": 187,\n  \"source_sha256\": \"450ca0af06c1a4d3cf8c1b12bfb9f441da84df92914f7c6f91d8ae74b79daf91\",\n  \"native_sha256\": \"fc99fc6668e88f896767465db6bd6826d6a82121925ff24958e26d512c9a420c\",\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/runner-\\udcff\",\n    \"$ROOT/native\"\n  ],\n  \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"\n}\n"
+      }
+    },
+    {
+      "name": "trailing-reference-path",
+      "exit": 0,
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"counts\": {\"config\": 3}, \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\", \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\", \"seed\": 187, \"source_sha256\": \"f271e333509c537b32492602da1b651ff5d8f55233046c699ff20219a92b5405\", \"native_sha256\": \"fc99fc6668e88f896767465db6bd6826d6a82121925ff24958e26d512c9a420c\", \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"}\n",
+      "stderr_present": false,
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"counts\": {\n    \"config\": 3\n  },\n  \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\",\n  \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\",\n  \"seed\": 187,\n  \"source_sha256\": \"f271e333509c537b32492602da1b651ff5d8f55233046c699ff20219a92b5405\",\n  \"native_sha256\": \"fc99fc6668e88f896767465db6bd6826d6a82121925ff24958e26d512c9a420c\",\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"\n}\n"
+      }
+    },
+    {
+      "name": "symlink-reference",
+      "exit": 0,
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"counts\": {\"config\": 3}, \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\", \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\", \"seed\": 187, \"source_sha256\": \"1ea75b71b94b7a82cdbf2bb3fd9d453abb5e8012a15ddf14c7078a85de5cf43b\", \"native_sha256\": \"fc99fc6668e88f896767465db6bd6826d6a82121925ff24958e26d512c9a420c\", \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"}\n",
+      "stderr_present": false,
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"counts\": {\n    \"config\": 3\n  },\n  \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\",\n  \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\",\n  \"seed\": 187,\n  \"source_sha256\": \"1ea75b71b94b7a82cdbf2bb3fd9d453abb5e8012a15ddf14c7078a85de5cf43b\",\n  \"native_sha256\": \"fc99fc6668e88f896767465db6bd6826d6a82121925ff24958e26d512c9a420c\",\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"\n}\n"
+      }
+    }
+  ]
+}

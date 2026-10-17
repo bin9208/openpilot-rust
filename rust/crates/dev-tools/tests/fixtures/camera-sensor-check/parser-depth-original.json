@@ -1,0 +1,150 @@
+{
+  "source_sha256": "401526615ca939d19cb79b384bb589887e340e9ef2b2c5241ce3f9e888426dcc",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "cases": [
+    {
+      "depth": 9990,
+      "mismatch": false,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9990,
+      "mismatch": true,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9993,
+      "mismatch": false,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9993,
+      "mismatch": true,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9994,
+      "mismatch": false,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9994,
+      "mismatch": true,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9995,
+      "mismatch": false,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9995,
+      "mismatch": true,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9996,
+      "mismatch": false,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9996,
+      "mismatch": true,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9997,
+      "mismatch": false,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9997,
+      "mismatch": true,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 82, in main\n    equal(left, right, request)\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 33, in equal\n    equal(left, right, f\"{path}[{index}]\")\n  [Previous line repeated 995 more times]\nRecursionError: maximum recursion depth exceeded\n"
+    },
+    {
+      "depth": 9998,
+      "mismatch": false,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 78, in main\n    source, native = run(source_command, inputs), run(native_command, inputs)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 21, in run\n    return [json.loads(line) for line in result.stdout.splitlines()]\n            ^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 338, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 354, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ^^^^^^^^^^^^^^^^^^^^^^\nRecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string\n"
+    },
+    {
+      "depth": 9998,
+      "mismatch": true,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 78, in main\n    source, native = run(source_command, inputs), run(native_command, inputs)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 21, in run\n    return [json.loads(line) for line in result.stdout.splitlines()]\n            ^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 338, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 354, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ^^^^^^^^^^^^^^^^^^^^^^\nRecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string\n"
+    },
+    {
+      "depth": 9999,
+      "mismatch": false,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 78, in main\n    source, native = run(source_command, inputs), run(native_command, inputs)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 21, in run\n    return [json.loads(line) for line in result.stdout.splitlines()]\n            ^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 338, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 354, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ^^^^^^^^^^^^^^^^^^^^^^\nRecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string\n"
+    },
+    {
+      "depth": 9999,
+      "mismatch": true,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 78, in main\n    source, native = run(source_command, inputs), run(native_command, inputs)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 21, in run\n    return [json.loads(line) for line in result.stdout.splitlines()]\n            ^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 338, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 354, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ^^^^^^^^^^^^^^^^^^^^^^\nRecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string\n"
+    },
+    {
+      "depth": 10000,
+      "mismatch": false,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 78, in main\n    source, native = run(source_command, inputs), run(native_command, inputs)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 21, in run\n    return [json.loads(line) for line in result.stdout.splitlines()]\n            ^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 338, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 354, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ^^^^^^^^^^^^^^^^^^^^^^\nRecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string\n"
+    },
+    {
+      "depth": 10000,
+      "mismatch": true,
+      "exit": 1,
+      "last_error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+      "files": [],
+      "trace": "Traceback (most recent call last):\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 106, in <module>\n    main()\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 78, in main\n    source, native = run(source_command, inputs), run(native_command, inputs)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/check_camerad_sensors.py\", line 21, in run\n    return [json.loads(line) for line in result.stdout.splitlines()]\n            ^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 338, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/json/decoder.py\", line 354, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ^^^^^^^^^^^^^^^^^^^^^^\nRecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string\n"
+    }
+  ]
+}

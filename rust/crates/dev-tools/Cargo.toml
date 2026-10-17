@@ -614,3 +614,12 @@ required-features = ["image-array-native"]
 [[bin]]
 name = "check-registration-utf7"
 path = "src/bin/check_registration_utf7.rs"
+
+[[bin]]
+name = "check-camerad-sensors"
+path = "src/bin/check_camerad_sensors.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_sensor_check"
+required-features = ["camera-sensor-native"]
