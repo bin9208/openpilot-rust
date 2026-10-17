@@ -1,5 +1,11 @@
 # Independent Rust port repository (2026-09-29)
 
+- On 2026-10-18 the user clarified #296 delivery: the comma device is unavailable;
+  finish code conversion, optimization, tests and commit integration, and the user
+  will pull and personally verify normal boot, recording and upload. Do not block
+  code delivery on reconnecting hardware or claim those device checks were run.
+  Keep #296 on its dev-based issue branch, separate from dev-md/#338.
+
 - On 2026-10-14 the user selected Astra for the parent agent and explicitly
   required GPT-6.1 Sol for all separately launched sub-agents. Specify
   `gpt-6.1-sol` when delegating; hand off prior agents rather than silently

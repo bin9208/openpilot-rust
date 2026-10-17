@@ -2126,7 +2126,7 @@ rust/tools/check_ui_egl.py	f30fd54da47ed445cebd2c22cffffddf00496363	replaced-loc
 rust/tools/check_ui_egpu.py	c11678c29f528383ea55390c973b871ac85efa5d	pending	-
 rust/tools/check_ui_emoji.py	8f7c4da7d0b2a2696a5f9756b8c339a95a49dde1	replaced-local	Native check-ui-emoji; seven independent original rasters, 33 original process/codec cases; exact pixels and failure artifacts; generic emoji.py remains pending.
 rust/tools/check_ui_exp_button.py	69ee76edb29b58699121243ee6fa68440efcf0e1	pending	-
-rust/tools/check_ui_forms.py	d633463e35d266b612b07ee99ff18d41610bc5a5	pending	-
+rust/tools/check_ui_forms.py	d633463e35d266b612b07ee99ff18d41610bc5a5	replaced-local	openpilot-dev-tools check-ui-forms
 rust/tools/check_ui_fps.py	f0a46ef2877faf2480fe3f6bd1cd912885504c02	replaced-local	rust/crates/dev-tools/src/ui_application_logic_check.rs
 rust/tools/check_ui_framework.py	093087bcc5f2f8704b62b7f1cb696134aa3bc4c2	pending	-
 rust/tools/check_ui_home.py	be4e84cdc95e7bc2e6f636e084cbcaed5c607638	pending	-
@@ -2338,8 +2338,8 @@ rust/tools/generate_camerad_bps_data.py	e7c3ed0cfd040c4ed339e0c68aadc3a62b8b7631
 rust/tools/generate_camerad_camera_lifecycle_reference.py	3c852d52a5babd89d117ff7ddfaad4d8a0f50736	pending	-
 rust/tools/generate_camerad_isp_lifecycle_reference.py	5f46d684c24e8ab56553076db93ce59d01e626d3	pending	-
 rust/tools/generate_camerad_kernel_reference.py	9c59530c67ba8cba5d6c7f20a095726b883308c2	pending	-
-rust/tools/generate_camerad_packet_reference.py	87f7f127484abd1a5993ca90d44addc3e7bf1be5	pending	-
-rust/tools/generate_camerad_requests_reference.py	0036af9472b3954cdbebce61378fa896ee9e42a1	pending	-
+rust/tools/generate_camerad_packet_reference.py	87f7f127484abd1a5993ca90d44addc3e7bf1be5	replaced-local	openpilot-dev-tools generate-camerad-packet-reference
+rust/tools/generate_camerad_requests_reference.py	0036af9472b3954cdbebce61378fa896ee9e42a1	replaced-local	openpilot-dev-tools generate-camerad-requests-reference
 rust/tools/generate_camerad_sensor_data.py	5f90a9855439828afd52799e88965596239a5070	pending	-
 rust/tools/generate_camerad_sensor_lifecycle_reference.py	608ecf83b7969f2d4f59526e37613b2810e4a968	pending	-
 rust/tools/generate_camerad_state_reference.py	064f0f32c6968419bfccc0f795b22e93322c06d0	pending	-
@@ -2609,7 +2609,7 @@ rust/tools/ui_application_qa/ssh_server.py	33247c7d4de09af5f394a839d81530ab6a554
 rust/tools/ui_application_qa/state_source.py	ce351f76b827c8acfd29b392db7b6133c9f54106	pending	-
 rust/tools/ui_application_qa/torque_geometry_source.py	1d227fd84174a540b27ad3ffe9fe11d0cbe4bc7c	pending	-
 rust/tools/ui_application_qa/vision_source.py	4387a6f5e31387591eb9e0532b1de0f577289545	pending	-
-rust/tools/ui_forms_source.py	c92572493d5309f44e536d9e104c65d19a5876f9	pending	-
+rust/tools/ui_forms_source.py	c92572493d5309f44e536d9e104c65d19a5876f9	replaced-local	openpilot-dev-tools ui-forms-reference
 rust/tools/ui_framework_source_render.py	85f2641f102f93ce109f8afd9c0e73ed58e6723e	pending	-
 rust/tools/ui_home_qa/compact_source.py	210fe3015fbc4b2629a9c2e51008a308dadc2150	pending	-
 rust/tools/ui_home_qa/onboarding_source.py	35b1145bc30509a9bec7ea341bb3f9be19dce456	pending	-

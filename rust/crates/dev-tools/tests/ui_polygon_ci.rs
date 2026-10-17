@@ -7,6 +7,62 @@ fn root() -> PathBuf {
 }
 
 #[test]
+fn forms_native_reference_runs_real_pixels_with_owned_display_and_raw_helper() {
+    let root = root();
+    let workflow =
+        parse(&fs::read_to_string(root.join(".github/workflows/rust.yml")).unwrap()).unwrap();
+    let steps = workflow["jobs"]["ui-connectivity"]["steps"]
+        .as_array()
+        .unwrap();
+    let build = steps
+        .iter()
+        .find(|step| step["name"] == "Build native UI validation checkers")
+        .unwrap();
+    let script = build["run"].as_str().unwrap();
+    assert!(script.contains("--bin check-ui-forms --bin ui-forms-reference"));
+    let raw = steps
+        .iter()
+        .position(|step| step["name"] == "Build independent Forms drawing boundary")
+        .expect("missing Forms raw build");
+    let test = steps
+        .iter()
+        .position(|step| {
+            step["name"] == "Compare shared UI state, pixels, real input and native lifecycle"
+        })
+        .unwrap();
+    assert!(raw < test);
+    for step in [build, &steps[raw], &steps[test]] {
+        assert!(step.get("if").is_none());
+        assert!(step.get("continue-on-error").is_none());
+    }
+    let raw_script = steps[raw]["run"].as_str().unwrap();
+    for required in [
+        "--growth-mib 16",
+        "-Wall -Wextra -Werror",
+        "rust/crates/dev-tools/tests/fixtures/ui-forms/raw-raylib.cc",
+        "UI_FORMS_RAW_HELPER=",
+        "\"$GITHUB_ENV\"",
+    ] {
+        assert!(raw_script.contains(required), "missing {required}");
+    }
+    let script = steps[test]["run"].as_str().unwrap();
+    let xvfb = script.find("xvfb-run").unwrap();
+    let suite = script.find("cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features image-array-native --test ui_forms_check --test ui_forms_reference --test ui_forms_admission --test ui_forms_family_text --test ui_forms_snapshot_order --locked").expect("missing real Forms tests");
+    assert!(xvfb < suite);
+    assert!(script[xvfb..suite].contains("test -x \"$UI_FORMS_RAW_HELPER\""));
+    assert!(script[xvfb..suite].contains("test -f \"$STARTUP_UI_RAYLIB_LIBRARY\""));
+    assert!(
+        suite
+            < script
+                .find("python rust/tools/check_ui_framework.py")
+                .unwrap()
+    );
+    let caller = fs::read_to_string(root.join("rust/tools/check_ui_framework.py")).unwrap();
+    assert!(caller.contains("('forms', None, 'form_render', True)"));
+    assert!(!caller.contains("check_ui_forms.py"));
+}
+
+#[test]
 fn native_diagnostics_are_built_tested_and_selected_by_the_complete_ui_gate() {
     let root = root();
     let workflow =

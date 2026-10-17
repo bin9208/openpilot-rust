@@ -1,0 +1,844 @@
+[
+  {
+    "name": "record",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "RECORD": "1",
+      "RECORD_QUALITY": "17",
+      "RECORD_SPEED": "2",
+      "RECORD_BITRATE": "123k"
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "startup": false,
+    "render_profile": false,
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2",
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "recorder": {
+      "argv": [
+        "-v",
+        "warning",
+        "-nostats",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgba",
+        "-s",
+        "2160x1080",
+        "-r",
+        "20",
+        "-i",
+        "pipe:0",
+        "-vf",
+        "vflip,format=yuv420p",
+        "-r",
+        "40",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "17",
+        "-b:v",
+        "123k",
+        "-maxrate",
+        "123k",
+        "-bufsize",
+        "123k",
+        "-y",
+        "-f",
+        "mp4",
+        "@RECORD_OUTPUT@"
+      ],
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "record-frames",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 4,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "RECORD": "1"
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "startup": false,
+    "render_profile": false,
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2",
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "recorder": {
+      "argv": [
+        "-v",
+        "warning",
+        "-nostats",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgba",
+        "-s",
+        "2160x1080",
+        "-r",
+        "20",
+        "-i",
+        "pipe:0",
+        "-vf",
+        "vflip,format=yuv420p",
+        "-r",
+        "20",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "23",
+        "-y",
+        "-f",
+        "mp4",
+        "@RECORD_OUTPUT@"
+      ],
+      "bytes": 9331200,
+      "sha256": "70d74ae47f3b49c37908358e58b2ee244ac667878c9111e1505307f030c19082"
+    }
+  },
+  {
+    "name": "profile-after-export",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "PROFILE_RENDER": "3"
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "startup": false,
+    "render_profile": false,
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2",
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ]
+  },
+  {
+    "name": "startup",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "PROFILE_STARTUP": "0"
+    },
+    "exit": 0,
+    "png": false,
+    "state": false,
+    "startup": true,
+    "render_profile": false
+  },
+  {
+    "name": "record-startup",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "RECORD": "1",
+      "PROFILE_STARTUP": "0"
+    },
+    "exit": 0,
+    "png": false,
+    "state": false,
+    "startup": true,
+    "render_profile": false,
+    "recorder": {
+      "argv": [
+        "-v",
+        "warning",
+        "-nostats",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgba",
+        "-s",
+        "2160x1080",
+        "-r",
+        "20",
+        "-i",
+        "pipe:0",
+        "-vf",
+        "vflip,format=yuv420p",
+        "-r",
+        "20",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "23",
+        "-y",
+        "-f",
+        "mp4",
+        "@RECORD_OUTPUT@"
+      ],
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "profile-render",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "PROFILE_RENDER": "1"
+    },
+    "exit": 0,
+    "png": false,
+    "state": false,
+    "startup": false,
+    "render_profile": true
+  },
+  {
+    "name": "grid",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "GRID": "30"
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "startup": false,
+    "render_profile": false,
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2",
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ]
+  },
+  {
+    "name": "touches",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "SHOW_TOUCHES": "1"
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "startup": false,
+    "render_profile": false,
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2",
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ]
+  },
+  {
+    "name": "vsync",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "ENABLE_VSYNC": "1"
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "startup": false,
+    "render_profile": false,
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2",
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ]
+  },
+  {
+    "name": "burn-in",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "BURN_IN": "0"
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "startup": false,
+    "render_profile": false,
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2",
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ]
+  },
+  {
+    "name": "strict",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "STRICT_MODE": "1"
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "startup": false,
+    "render_profile": false,
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2",
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ]
+  },
+  {
+    "name": "invalid-grid",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "GRID": "wat"
+    },
+    "exit": 1,
+    "png": false,
+    "state": false,
+    "startup": false,
+    "render_profile": false
+  },
+  {
+    "name": "invalid-quality",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "RECORD_QUALITY": "wat"
+    },
+    "exit": 1,
+    "png": false,
+    "state": false,
+    "startup": false,
+    "render_profile": false
+  },
+  {
+    "name": "invalid-profile",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 3,
+      "props": {},
+      "actions": []
+    },
+    "environment": {
+      "PROFILE_RENDER": "wat"
+    },
+    "exit": 1,
+    "png": false,
+    "state": false,
+    "startup": false,
+    "render_profile": false
+  }
+]

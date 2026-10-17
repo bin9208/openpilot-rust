@@ -20,7 +20,7 @@
 - Count every remaining source/dependency explicitly. Native runtime success does not complete development tools, compiler functionality, Python removal or device acceptance.
 - Before builds, installs and large copies, retain 25 GiB plus estimated growth; recover at least35 GiB if below the floor. One coordinated Cargo owner, two build jobs, incremental disabled. Do not interrupt another track's build.
 - All separately launched workers use GPT-6.1 Sol. Parent owns shared Cargo manifests, workflows, deletion integration and Git publication.
-- No device action is needed for the current tool conversions. User drive observations remain separate evidence.
+- On2026-10-18 the user confirmed the device is unavailable and will personally pull and test normal boot, recording and upload. Finish code/test/commit integration without waiting for a connection; user device results remain separate evidence.
 - Preserve the five required PR checks and separate exact merged-dev PUSH checks. No completion merely from opening a PR or scheduling CI.
 
 ## Baseline and remaining scope
@@ -65,9 +65,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-75 baseline sources are fully replaced locally, two fixed checker CLIs are
+79 baseline sources are fully replaced locally, two fixed checker CLIs are
 partially replaced because their generic live-source helpers remain Python,
-and3,503 baseline sources remain pending. The added
+and3,499 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 
@@ -92,7 +92,7 @@ Files: complete tracked source/dependency inventory; per-family native replaceme
 - [ ] Convert all remaining build/generation/documentation/navigation/Jetlink/log-analysis/replay/developer commands and their tests, preserving supported interfaces.
 - [ ] Remove each replaced dependency closure only after real callers, success/error cases and native coverage pass. Preserve required licensing/source provenance as data/documentation.
 - [ ] Verify zero tracked Python/Cython/SCons/extensionless Python implementations and no hidden/downloaded Python execution in maintained build/test/runtime entrypoints; run complete native suites without a Python interpreter available.
-- [ ] Pass independent branch review, exact PR and merged-dev gates, final source-bound runtime packaging and required device validation. Report completion only when every repository-wide requirement is met; user driving acceptance remains separate.
+- [ ] Pass independent branch review, exact PR and merged-dev gates and final source-bound runtime packaging. Deliver the verified code for the user's requested pull/test; record boot/record/upload results when the user supplies them. Report repository-wide conversion complete only when every source-retirement requirement is met.
 
 Remaining large units are decomposed from inspected contracts as their prerequisite families become available. Completing Tasks1–3 alone does not complete Task4 or this project.
 

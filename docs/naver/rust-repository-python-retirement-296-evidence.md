@@ -1930,3 +1930,73 @@ deleted-tests}.log and after-deletion.execve; UI-coordinated routing GREEN in
 Fast checks39072471346 and mapped-docs39072471414 succeeded; Rust39072471343
 and Integration39072471378 remain in progress at this checkpoint. Neither
 device acceptance nor complete source-bound packaging is claimed.
+
+### Native Forms checker and reference (2026-10-18)
+
+`check-ui-forms` and `ui-forms-reference` replace both original Python tools.
+The reference implements all eight widget families behind an independent raw
+raylib drawing boundary; it does not call candidate widgets or replay stored
+rasters as implementation. The unchanged original supplied the expected pixels,
+states, drawing traces, admission failures and artifact/lifecycle boundaries.
+Current live source, font, asset and dependency pins remain enforced. Only the
+two retired helper/checker files may be absent under immutable capture hashes.
+
+The final gate passed208 family cases,65 admission cases,35 checker controls,
+nine reference tests, snapshot ordering, HTML codepoint parsing, six CI-policy
+and four routing tests, plus strict Clippy. Concrete mismatches repaired include
+lazy surrogate conversion, mutable list aliasing, constructor/setter failure
+order, deep JSON export boundaries and Slider shimmer using all cached line
+widths rather than only visible lines. Expectations and pixel tolerances were
+not relaxed. Startup profiling deliberately reports native timings in place of
+CPython cProfile tables, preserving early-exit and artifact behavior.
+
+Actual native-only execution with PATH=/nonexistent matched all18 scenes and
+388 frames exactly: zero different pixels, zero channel differences and equal
+full state. The same18/388 proof passed after removing both Python tools;
+execve contains only native checker/reference/raw drawing/candidate processes.
+Mandatory CI builds the drawing boundary with warnings as errors, checks its
+presence and runs all five Forms targets under the supplied Xvfb display before
+the full UI gate. The enclosing framework driver remains explicitly Python
+until its own conversion is validated. Independent review found no outstanding
+Forms policy blocker.
+
+Evidence:2026-10-18-ui-forms/closure-{package,parser,encoder,routing,clippy}-v1.log,
+closure-validation-v1.json, after-deletion.log and after-deletion.execve.
+The post-deletion source/dependency drift regression also passed in92.25s;
+missing live sources and altered reintroduced originals remain rejected.
+Inventory77 replaced-local,2 partially-replaced,3501pending. The user's latest
+instruction makes physical normal-boot/record/upload verification user-owned;
+this local tool validation does not establish those device results.
+
+### Native camera source generators (2026-10-18)
+
+`generate-camerad-requests-reference` and `generate-camerad-packet-reference`
+replace the two Python generators, reading current caller-supplied C++ source
+and templates. Extraction boundaries, optional packet closing semicolons,
+ordered replacement of every placeholder, universal newline decoding and
+CPython trailing whitespace semantics are preserved. No generated C++ output
+is embedded as production behavior.
+
+The unmodified originals supplied27 changed-source-tree outcomes and14 CLI
+outcomes before implementation. Missing native module/binaries produced RED;
+all native comparisons then passed. The caller routing regression reproduced
+the old Python invocation before migration. All61 focused generator/CI-policy
+tests and scoped strict Clippy pass. Independent review separately recaptured
+all41 original outcomes and found no actionable issue. Both originals were
+removed; all four generator tests still pass. PATH=/nonexistent execve contains
+only the native generator, and actual CameraCheck.generate invocations produce
+the original bytes. CI builds/tests both commands before the original camera
+comparison suite, with two explicit1024MiB growth guards.
+
+The generated original C++ was compiled and compared against current camera
+examples:512 request scenarios/72,493 steps and3,281 packet cases/5,869,496 bytes
+all passed. Local initial compilation attempts lacked generated Cap'n Proto
+include paths; GCC also rejects inherited C99 array designators. The complete
+include setup and Clang build passed without changing original source; the
+inherited11 extension warnings remain. CI already uses Clang18. These are host
+source/packet checks, not camera hardware or vehicle evidence.
+
+Evidence:2026-10-18-camera-generators/{red,first-green-routing-red,routing-disk,
+green,clippy,postdelete}.log, caller/commands, requests-check/report.json,
+packets-check/report.json and postdelete-packets.execve. Inventory79
+replaced-local,2 partially-replaced,3499pending; full conversion remains open.

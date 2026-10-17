@@ -1,0 +1,76 @@
+# Independent Forms captures
+
+The unchanged original checker has18 fixed scenes and388 input/render frames.
+`scenes.json` preserves ordered policy inputs. `original.json` records actual
+source PNG hashes, unnormalized Pillow/NumPy i64 sample hashes and full state
+history hashes. The `*-state.json` histories are synthetic. Raw PNGs, logs and
+capture scripts remain in ignored scratch.
+
+`checker-original.json` contains35 independent original executions with injected
+child images, states and process errors. Real Pillow/NumPy arithmetic and the
+original recursive state comparator remain active. Cases cover selection/order,
+partial files, process failures, invalid images/state, grayscale/16-bit arrays,
+raw Unix argv, numeric tolerance, bool/large integer/NaN/Inf behavior, Unicode
+and surrogate assertion strings, deep comparison and deep mismatched-value repr.
+`repr-nonprintable.json` is captured from CPython3.12 Unicode15 isprintable.
+
+The independent reference covers all8 widget families through an owned raw
+raylib ABI, without importing candidate UI widgets or stored rasters as policy.
+The current green image/state corpus has69 cases:18 defaults,12 InputBox,
+9 HTML,7 scale/language,2 emoji regressions,15 generic interactions and6 debug
+scenes. Input drawing traces use real original measurements to compare every
+frame and draw event. Additional coverage includes65 helper admission cases,
+23 environment/error CLI cases,14 direct emoji bitmap hashes, source/font/asset/
+dependency/namespace drift, ABI failure stopping and owned-child reaping.
+The admission suite now contains65 original cases, including cursor neighbors,
+huge integer limits, ignored surrogate/deep fields, string scales and lazy float
+touch-slot failures. Both original helper/checker files were retired after the
+native-only18-scene proof passed again with those files absent. Only those paths may
+be absent under immutable captured hashes; all runtime pins remain required,
+and modified reintroduced originals fail the guard.
+
+Startup profiling preserves success exit before widget construction, PNG and
+JSON. Native timing covers window/target/recorder/font initialization; it emits
+an explicitly native entry in place of Python cProfile tables. Render profiling
+preserves completed-frame termination before export and reports native timing.
+Recorder tests compare inherited FFmpeg argv, every-third completed bottom-up
+RGBA frame, exact pixel hash, stdin EOF and child cleanup.
+
+Emoji raster policy provenance is the source-pinned Pillow12.3.0 sdist SHA256
+3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce:
+`src/_imagingft.c`, `src/PIL/ImageDraw.py` and `src/libImaging/Paste.c`.
+Copyright and license are retained in `PILLOW_LICENSE`. The renderer uses pinned
+rustybuzz0.20.1 to read font shaping/bitmap tables, independently reproducing
+FreeType premultiplication, Pillow unpremultiplication/mask paste, positioning
+and clipping. Noto font bytes and source widget policies are manifest-pinned.
+
+The subsequent codepoint fixtures (`codepoints-original.json` and
+`codepoints-neighbors-original.json`) contain 21 additional unchanged-source
+cases. They distinguish lazy UTF-8 failures from successful zero-frame,
+truncation, deletion and masked-password paths, including raw surrogate text in
+state snapshots and high/low surrogates assembled by separate key actions. The
+new CLI regression reads these fixtures losslessly. These21cases passed with
+65admission cases,69earlier PNG/state scenes,strictClippy and the current
+18-scene native-only checker; see codepoints-package/clippy/native-only logs.
+
+The family text integration suite contains208 independent original CLI cases
+across five tests:
+
+- 69 codepoint/property/selection/NUL/Mici membership cases.
+- 47 arbitrary-value, mutable Mici list alias, character iterable and lazy Slider
+  representation-depth cases.
+- 65 Input/Keyboard lists, Confirm setter timing, outer touch slots and Slider
+  shimmer measurement cases.
+- 24 raw List visibility values (including lone surrogates), lazy float cursor
+  keys, Keyboard list-key neighbors and Options touch-slot cases.
+- 3 JSON encoder boundary cases: depth993 preserves the exact complete state
+  byte hash; depths994/995 fail after PNG export without creating state JSON.
+
+The helper ran under CPython3.12.15 before candidate integration. Property,
+selection, character, admission and tail provenance files record original
+source and fixture hashes. Expected PNG hashes, full lossless state values and
+failure artifact boundaries come from that independent source execution.
+Raw captures and scripts remain in ignored scratch. Early manual failure
+probes missing the raylib library environment were invalid and are not evidence;
+the compiled fixture gates and correctly configured native-only proofs provide
+candidate validation.

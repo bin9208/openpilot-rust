@@ -1,0 +1,497 @@
+[
+  {
+    "state": {
+      "confirmed": false,
+      "percentage": -0.0,
+      "position": 0.0,
+      "scale": 1.0,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "confirmed": false,
+      "percentage": -0.0,
+      "position": 0.0,
+      "scale": 1.0,
+      "dragging": true
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "confirmed": false,
+      "percentage": 0.0,
+      "position": 0,
+      "scale": 1.0338333333333334,
+      "dragging": true
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "confirmed": false,
+      "percentage": 0.36764705882352944,
+      "position": -125,
+      "scale": 1.059188888888889,
+      "dragging": true
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "confirmed": false,
+      "percentage": 1.0,
+      "position": -340,
+      "scale": 1.0743892592592594,
+      "dragging": true
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340,
+      "scale": 1.0809652839506176,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0816947300411526,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0793306827434843,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0762204551623231,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0741469701082154,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0727646467388103,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0718430978258735,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0712287318839158,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0708191545892771,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.070546103059518,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0703640687063456,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0702427124708973,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0701618083139315,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0701078722092876,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700719148061917,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700479432041279,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700319621360852,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700213080907237,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700142053938158,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700094702625438,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700063135083626,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.070004209005575,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700028060037168,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700018706691448,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700012471127631,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.070000831408509,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700005542723394,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700003695148932,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.070000246343262,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700001642288415,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700001094858944,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700000729905965,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700000486603978,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700000324402654,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700000216268437,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.070000014417896,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700000096119306,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.070000006407954,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700000042719693,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  },
+  {
+    "state": {
+      "confirmed": true,
+      "percentage": 1.0,
+      "position": -340.0,
+      "scale": 1.0700000028479795,
+      "dragging": false
+    },
+    "pops": 0,
+    "confirmed": 1
+  }
+]

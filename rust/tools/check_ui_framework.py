@@ -22,7 +22,7 @@ checks = [
   ('stack', None, 'stack_trace', False),
   ('scroller', None, 'scroller_trace', False),
   ('render', 'check_ui_render.py', 'ui_render', True),
-  ('forms', 'check_ui_forms.py', 'form_render', True),
+  ('forms', None, 'form_render', True),
   ('network', 'check_ui_network.py', 'network_render', True),
   ('polygon', None, 'polygon_render', True),
   ('diagnostics', None, 'diagnostic_render', True),

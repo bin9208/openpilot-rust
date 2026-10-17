@@ -35,7 +35,8 @@ class CameraCheck:
     return self.commands / f'{name}.stdout'
 
   def generate(self, name: str, script: str, arguments: tuple[str, ...] = ()) -> Path:
-    stdout = self.command(f'generate-{name}', [sys.executable, str(TOOLS / script), '--source', str(ROOT), *arguments])
+    command = [str(self.binaries / script)] if not script.endswith('.py') else [sys.executable, str(TOOLS / script)]
+    stdout = self.command(f'generate-{name}', [*command, '--source', str(ROOT), *arguments])
     target = self.output / f'{name}.cc'
     shutil.copyfile(stdout, target)
     return target
@@ -78,9 +79,9 @@ class CameraCheck:
     self.compile('exposure-source', [exposure, *sensors])
     misc = self.generate('misc', 'generate_camerad_ae_reference.py', ('--kind', 'misc'))
     self.compile('misc-source', [misc, cdm])
-    requests = self.generate('requests', 'generate_camerad_requests_reference.py')
+    requests = self.generate('requests', 'generate-camerad-requests-reference')
     self.compile('requests-source', [requests])
-    packets = self.generate('packets', 'generate_camerad_packet_reference.py')
+    packets = self.generate('packets', 'generate-camerad-packet-reference')
     self.compile('packets-source', [packets, cdm, *sensors])
     for name in LIFECYCLES:
       script = f'generate_camerad_{name}_reference.py'

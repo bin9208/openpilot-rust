@@ -9,6 +9,14 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "generate-camerad-requests-reference"
+path = "src/bin/generate_camerad_requests_reference.rs"
+
+[[bin]]
+name = "generate-camerad-packet-reference"
+path = "src/bin/generate_camerad_packet_reference.rs"
+
+[[bin]]
 name = "generate-bluetooth-digits"
 path = "src/bin/generate_bluetooth_digits.rs"
 
@@ -19,6 +27,28 @@ path = "src/bin/check_ui_plot_samples.rs"
 [[bin]]
 name = "plot-samples-reference"
 path = "src/bin/plot_samples_reference.rs"
+
+[[bin]]
+name = "check-ui-forms"
+path = "src/bin/check_ui_forms.rs"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "ui-forms-reference"
+path = "src/bin/ui_forms_reference.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_forms_check"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_forms_reference"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_forms_admission"
+required-features = ["image-array-native"]
 
 [[bin]]
 name = "check-selfdrive-params"
@@ -144,7 +174,7 @@ path = "src/bin/list_cargo_tests.rs"
 selfdrive-params-native = ["dep:zmq"]
 egl-reference = ["dep:openpilot-startup-ui"]
 image-array = ["dep:png", "dep:gif", "dep:tiff", "dep:image", "dep:openpilot-jpeg"]
-image-array-native = ["image-array", "dep:openpilot-image-codecs"]
+image-array-native = ["image-array", "dep:openpilot-image-codecs", "dep:rustybuzz"]
 polygon-reference = ["dep:openpilot-startup-ui", "image-array-native"]
 
 [[test]]
@@ -255,6 +285,7 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+rustybuzz = { version = "=0.20.1", optional = true }
 zmq = { version = "=0.10.0", optional = true }
 png = { version = "=0.17.16", optional = true }
 gif = { version = "=0.14.2", default-features = false, features = ["std"], optional = true }

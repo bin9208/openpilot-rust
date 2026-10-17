@@ -2819,6 +2819,7 @@ dependencies = [
  "regex",
  "rsa",
  "rustix",
+ "rustybuzz",
  "serde",
  "serde_json",
  "sha1",

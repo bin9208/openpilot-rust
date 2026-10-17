@@ -1,0 +1,332 @@
+[
+  {
+    "state": {
+      "text": "",
+      "layout": "uppercase",
+      "caps": false,
+      "cursor": 0,
+      "display": ""
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "",
+      "layout": "uppercase",
+      "caps": false,
+      "cursor": 0,
+      "display": ""
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "",
+      "layout": "uppercase",
+      "caps": true,
+      "cursor": 0,
+      "display": ""
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "",
+      "layout": "uppercase",
+      "caps": true,
+      "cursor": 0,
+      "display": ""
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "A",
+      "layout": "uppercase",
+      "caps": true,
+      "cursor": 1,
+      "display": "A"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "A",
+      "layout": "uppercase",
+      "caps": true,
+      "cursor": 1,
+      "display": "A"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "A",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 1,
+      "display": "A"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "A",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 1,
+      "display": "A"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 2,
+      "display": "\u2022b"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 2,
+      "display": "\u2022b"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab",
+      "layout": "numbers",
+      "caps": false,
+      "cursor": 2,
+      "display": "\u2022b"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab",
+      "layout": "numbers",
+      "caps": false,
+      "cursor": 2,
+      "display": "\u2022b"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab",
+      "layout": "specials",
+      "caps": false,
+      "cursor": 2,
+      "display": "\u2022b"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab",
+      "layout": "specials",
+      "caps": false,
+      "cursor": 2,
+      "display": "\u2022b"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20ac",
+      "layout": "specials",
+      "caps": false,
+      "cursor": 3,
+      "display": "\u2022\u2022\u20ac"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20ac",
+      "layout": "specials",
+      "caps": false,
+      "cursor": 3,
+      "display": "\u2022\u2022\u20ac"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20ac",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 3,
+      "display": "\u2022\u2022\u20ac"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20ac",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 3,
+      "display": "\u2022\u2022\u20ac"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "text": "Ab\u20acx",
+      "layout": "lowercase",
+      "caps": false,
+      "cursor": 4,
+      "display": "\u2022\u2022\u2022x"
+    },
+    "pops": 0,
+    "confirmed": 0
+  }
+]

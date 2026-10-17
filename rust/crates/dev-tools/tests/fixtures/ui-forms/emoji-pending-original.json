@@ -1,0 +1,90 @@
+[
+  {
+    "name": "emoji-confirm",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "Hello \ud83d\ude00",
+      "frames": 2,
+      "props": {},
+      "actions": []
+    },
+    "exit": 0,
+    "png_sha256": "3fabe81fdbe73caeb48c356a5a825302406e3063fc0bdbd66ef6879c3d6c76be",
+    "states": [
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      }
+    ]
+  },
+  {
+    "name": "emoji-slider",
+    "scene": {
+      "config": {
+        "big": false,
+        "large_viewport": false,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "slider",
+      "rect": {
+        "x": 0,
+        "y": 120,
+        "width": 536,
+        "height": 115
+      },
+      "text": "Hello \ud83d\ude00",
+      "frames": 2,
+      "props": {
+        "green": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png_sha256": "0fd724517a15c459797ff357876b14cb9a5bc87034fa96909e14b563fd993ae3",
+    "states": [
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ]
+  }
+]
