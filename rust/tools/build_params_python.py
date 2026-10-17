@@ -16,7 +16,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def stage_native_json11(stager: Path, output: Path) -> tuple[Path, dict]:
   result = subprocess.run([str(stager.resolve()), '--root', str(ROOT), '--output', str(output)],
-                          check=True, capture_output=True, text=True)
+                          check=False, capture_output=True, text=True)
+  if result.returncode:
+    print(result.stdout, end='')
+    print(result.stderr, end='', file=sys.stderr)
+    result.check_returncode()
   staged = json.loads(result.stdout)
   return Path(staged['prefix']), staged['dependency']
 

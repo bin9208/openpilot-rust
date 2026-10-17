@@ -20,6 +20,7 @@ mod emoji;
 #[path = "ui_forms_environment.rs"]
 mod environment;
 pub use emoji::raster as emoji_raster;
+pub(crate) use environment::Environment as ReferenceEnvironment;
 #[path = "ui_forms_html.rs"]
 mod html;
 #[path = "ui_forms_keyboard.rs"]

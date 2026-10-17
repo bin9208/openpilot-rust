@@ -18,7 +18,11 @@ Forms 참조/검사기는208 추가 사례와 원본 삭제 후18장면/388프�
 원본·의존성 변경 거부 검사까지 통과했다. 두 Python 도구는 제거했다.
 카메라 프레임·패킷 C++ 원본 생성기2개도 Rust로 전환했다. 원본 출력 바이트,
 실제 호출부,512시나리오/72,493단계 및3,281패킷 비교를 통과했다.
-인벤토리는79 replaced-local /2 partially-replaced /3,499 pending이다.
+후속 카메라 생성기10개와 UI 렌더2개도 호출부 전환 및 삭제 후 검증을 통과했다.
+센서 상대 경로 검색 차이와 Toggle 연속 release 처리 차이를 원본 사례로 수정했다.
+UI framework 오케스트레이터의 실제13단계 검사도 모두 통과했다.
+X11 실제 입력·종료, UI 녹화3프레임/로그/EGL을 포함한다. 기기 검증은 아니다.
+인벤토리는91 replaced-local /2 partially-replaced /3,487 pending이다.
 두 부분 전환 항목의 공용 원본 로더는 추가 파일 selfdrived_helpers_source.py에
 남아 있으며 이동을 Rust 전환으로 세지 않는다. 전체 전환은 미완료다.
 최신 검증 결과는 evidence 및 runtime-module-audit 문서를 따른다.

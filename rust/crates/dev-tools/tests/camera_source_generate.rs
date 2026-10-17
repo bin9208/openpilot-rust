@@ -199,6 +199,11 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
     for name in [
         "generate-camerad-requests-reference",
         "generate-camerad-packet-reference",
+        "generate-camerad-{kind}-data",
+        "generate-camerad-ae-reference",
+        "generate-camerad-state-reference",
+        "generate-camerad-stress-reference",
+        "generate-camerad-runtime-fixture",
     ] {
         assert!(source.contains(name), "camera caller omits {name}");
     }
@@ -226,8 +231,22 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
     for required in [
         "--growth-mib 1024",
         "--test camera_source_generate",
+        "--test camera_data_generate",
+        "--test camera_sensor_generate",
+        "--features camera-sensor-native",
+        "--test camera_lifecycle_generate",
         "--bin generate-camerad-requests-reference",
         "--bin generate-camerad-packet-reference",
+        "--bin generate-camerad-bps-data",
+        "--bin generate-camerad-sensor-data",
+        "--bin generate-camerad-ae-reference",
+        "--bin generate-camerad-kernel-reference",
+        "--bin generate-camerad-sensor-lifecycle-reference",
+        "--bin generate-camerad-isp-lifecycle-reference",
+        "--bin generate-camerad-camera-lifecycle-reference",
+        "--bin generate-camerad-state-reference",
+        "--bin generate-camerad-stress-reference",
+        "--bin generate-camerad-runtime-fixture",
         "--locked",
         "-D warnings",
     ] {

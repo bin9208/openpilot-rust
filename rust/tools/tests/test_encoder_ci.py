@@ -56,6 +56,17 @@ def test_params_consumes_explicit_native_stager_metadata(tmp_path: Path) -> None
   assert build_params_python.stage_native_json11(binary, tmp_path / 'dependencies') == (prefix, dependency)
 
 
+def test_params_stager_preserves_failure_diagnostic(tmp_path: Path, capsys) -> None:
+  binary = tmp_path / 'failing-stager'
+  binary.write_text('#!/bin/sh\nprintf "stager output\\n"\nprintf "reserved capacity unavailable\\n" >&2\nexit 9\n')
+  binary.chmod(0o755)
+  with pytest.raises(subprocess.CalledProcessError):
+    build_params_python.stage_native_json11(binary, tmp_path / 'dependencies')
+  captured = capsys.readouterr()
+  assert captured.out == 'stager output\n'
+  assert captured.err == 'reserved capacity unavailable\n'
+
+
 @pytest.mark.parametrize('output,status,error', [('not-json', 0, json.JSONDecodeError), ('failure', 9, subprocess.CalledProcessError)])
 def test_params_stager_failure_precedes_schema_and_cython(tmp_path: Path, output: str, status: int, error: type) -> None:
   binary = native_stager(tmp_path, output, status)

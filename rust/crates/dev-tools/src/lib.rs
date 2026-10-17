@@ -11,6 +11,10 @@ pub mod beep_integer_check;
 pub mod beep_sleep_check;
 pub mod bluetooth_digits_generate;
 pub mod brotli_stage;
+pub mod camera_data_generate;
+pub mod camera_lifecycle_generate;
+#[cfg(feature = "camera-sensor-native")]
+pub mod camera_sensor_generate;
 pub mod camera_source_generate;
 pub mod cutin_alert_check;
 pub mod filter_reference;
@@ -50,6 +54,11 @@ pub mod ui_forms_check;
 pub mod ui_forms_input;
 #[cfg(feature = "image-array-native")]
 pub mod ui_forms_reference;
+pub mod ui_framework_check;
+#[cfg(feature = "image-array-native")]
+pub mod ui_render_check;
+#[cfg(feature = "image-array-native")]
+pub mod ui_render_reference;
 pub mod user_docs;
 
 pub mod elf_audit;

@@ -132,6 +132,11 @@ fn athena_requires_complete_native_runtime_and_codec_checks() {
 }
 #[test]
 fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
+    let config = workflow();
+    let environment = &config["jobs"]["ui-connectivity"]["env"];
+    for key in ["CARGO_PROFILE_DEV_DEBUG", "CARGO_PROFILE_TEST_DEBUG"] {
+        assert_eq!(environment[key], "0", "unbounded UI debug artifacts: {key}");
+    }
     job_check(
         "ui-connectivity",
         &[
@@ -139,7 +144,7 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_ui_framework.py",
             "check_startup_ui.py",
             "rust/target/debug/check-ui-emoji --binary",
-        "-p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference,polygon-reference --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --bin check-ui-diagnostics --bin ui-diagnostic-reference --bin build-ui-diagnostic-reference --bin check-ui-emoji --bin check-ui-forms --bin ui-forms-reference --locked",
+        "-p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference,polygon-reference --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --bin check-ui-diagnostics --bin ui-diagnostic-reference --bin build-ui-diagnostic-reference --bin check-ui-emoji --bin check-ui-forms --bin ui-forms-reference --bin check-ui-render --bin ui-render-reference --bin check-ui-framework --locked",
             "rust/target/debug/check-ui-translations --binary",
             "check_wifi_policy.py",
             "check_wifi_runtime.py",

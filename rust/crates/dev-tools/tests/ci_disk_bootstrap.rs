@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 219);
+    assert_eq!(text.matches(marker).count(), 220);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -254,9 +254,17 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut selfdrive_params = vec![];
     let mut forms = vec![];
     let mut camera_generators = vec![];
+    let mut ui_connectivity_build = vec![];
     let mut registration_utf7 = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && lines[i + 1]
+                    .contains("-p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi")
+            {
+                ui_connectivity_build.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--test camera_source_generate")
                     || lines[i + 1].contains("--bin generate-camerad-requests-reference"))
@@ -341,6 +349,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         }
     }
     assert_eq!(arguments.len(), 179);
+    assert_eq!(
+        ui_connectivity_build,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 4096"]
+    );
     assert_eq!(
         camera_generators,
         vec![

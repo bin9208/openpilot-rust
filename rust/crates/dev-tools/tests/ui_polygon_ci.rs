@@ -47,7 +47,7 @@ fn forms_native_reference_runs_real_pixels_with_owned_display_and_raw_helper() {
     }
     let script = steps[test]["run"].as_str().unwrap();
     let xvfb = script.find("xvfb-run").unwrap();
-    let suite = script.find("cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features image-array-native --test ui_forms_check --test ui_forms_reference --test ui_forms_admission --test ui_forms_family_text --test ui_forms_snapshot_order --locked").expect("missing real Forms tests");
+    let suite = script.find("cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features image-array-native --test ui_forms_check --test ui_forms_reference --test ui_forms_admission --test ui_forms_family_text --test ui_forms_snapshot_order --test ui_render_check --test ui_render_reference --test ui_framework_check --locked").expect("missing real Forms tests");
     assert!(xvfb < suite);
     assert!(script[xvfb..suite].contains("test -x \"$UI_FORMS_RAW_HELPER\""));
     assert!(script[xvfb..suite].contains("test -f \"$STARTUP_UI_RAYLIB_LIBRARY\""));

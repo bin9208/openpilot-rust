@@ -9,6 +9,73 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "generate-camerad-sensor-data"
+path = "src/bin/generate_camerad_sensor_data.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_sensor_generate"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "generate-camerad-bps-data"
+path = "src/bin/generate_camerad_bps_data.rs"
+
+[[bin]]
+name = "generate-camerad-ae-reference"
+path = "src/bin/generate_camerad_ae_reference.rs"
+
+[[bin]]
+name = "generate-camerad-kernel-reference"
+path = "src/bin/generate_camerad_kernel_reference.rs"
+
+[[bin]]
+name = "generate-camerad-sensor-lifecycle-reference"
+path = "src/bin/generate_camerad_sensor_lifecycle_reference.rs"
+
+[[bin]]
+name = "generate-camerad-isp-lifecycle-reference"
+path = "src/bin/generate_camerad_isp_lifecycle_reference.rs"
+
+[[bin]]
+name = "generate-camerad-camera-lifecycle-reference"
+path = "src/bin/generate_camerad_camera_lifecycle_reference.rs"
+
+[[bin]]
+name = "generate-camerad-state-reference"
+path = "src/bin/generate_camerad_state_reference.rs"
+
+[[bin]]
+name = "generate-camerad-stress-reference"
+path = "src/bin/generate_camerad_stress_reference.rs"
+
+[[bin]]
+name = "generate-camerad-runtime-fixture"
+path = "src/bin/generate_camerad_runtime_fixture.rs"
+
+[[bin]]
+name = "check-ui-framework"
+path = "src/bin/check_ui_framework.rs"
+
+[[bin]]
+name = "check-ui-render"
+path = "src/bin/check_ui_render.rs"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "ui-render-reference"
+path = "src/bin/ui_render_reference.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_render_check"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_render_reference"
+required-features = ["image-array-native"]
+
+[[bin]]
 name = "generate-camerad-requests-reference"
 path = "src/bin/generate_camerad_requests_reference.rs"
 
@@ -171,6 +238,7 @@ name = "list-cargo-tests"
 path = "src/bin/list_cargo_tests.rs"
 
 [features]
+camera-sensor-native = ["dep:openpilot-runtime-version"]
 selfdrive-params-native = ["dep:zmq"]
 egl-reference = ["dep:openpilot-startup-ui"]
 image-array = ["dep:png", "dep:gif", "dep:tiff", "dep:image", "dep:openpilot-jpeg"]
@@ -298,6 +366,7 @@ sha1 = "=0.10.7"
 base64 = "=0.22.1"
 openpilot-disk-space = { path = "../disk-space" }
 openpilot-log-format = { path = "../log-format" }
+openpilot-runtime-version = { path = "../runtime-version", optional = true }
 openpilot-startup-ui = { path = "../startup-ui", optional = true, default-features = false, features = ["native"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
@@ -309,6 +378,7 @@ command-fds = "=0.3.3"
 tar = { version = "0.4", default-features = false }
 rustix = { version = "1", features = ["fs", "process", "event"] }
 regex = "1"
+num-bigint = "=0.4.8"
 yaml-rust2 = { version = "=0.13.0", default-features = false }
 signal-hook = "0.3"
 toml = "0.8"

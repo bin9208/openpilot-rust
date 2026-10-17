@@ -1,0 +1,1816 @@
+{
+  "source_sha256": "b47f1d18f069aa4e57952b162947e4ca03f2ceff25f1158872a21df142b83501",
+  "cases": [
+    {
+      "name": "all",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/source-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/native-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/source-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/native-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/source-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/native-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/source-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/native-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/source-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/native-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"scene\": \"wrapped\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"emoji\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"scroll\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"shimmer\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"controls\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"korean\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\nPASS: six actual-source/native shared widget scenes and state snapshots\n",
+      "files": {
+        "source-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-controls.log": "",
+        "korean.json": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"ko\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"\uae30\ubcf8 \uc778\ud130\ud398\uc774\uc2a4\\n\ub124\ud2b8\uc6cc\ud06c \uc5f0\uacb0\uc744 \ud655\uc778\ud558\uace0 \uacc4\uc18d \uc9c4\ud589\ud558\uc138\uc694.\\n\uc6d0\ubcf8 \uae00\uaf34\uacfc \uc904\ubc14\uafc8\uc744 \uc720\uc9c0\ud569\ub2c8\ub2e4.\", \"rect\": {\"x\": 60, \"y\": 50, \"width\": 2040, \"height\": 700}, \"props\": {\"size\": 90}}, {\"kind\": \"button\", \"text\": \"\uacc4\uc18d\", \"rect\": {\"x\": 1400, \"y\": 820, \"width\": 650, \"height\": 180}, \"props\": {\"style\": \"primary\"}}]}",
+        "native-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.log": "",
+        "emoji.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"label\", \"text\": \"Ready \ud83d\ude00\\nWi-Fi \ud83c\uddf0\ud83c\uddf7\", \"rect\": {\"x\": 20, \"y\": 15, \"width\": 496, \"height\": 210}, \"props\": {\"size\": 38}}]}",
+        "native-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.log": "",
+        "native-emoji.log": "",
+        "native-korean.log": "",
+        "source-emoji.log": "",
+        "controls.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"button\", \"text\": \"Continue\", \"rect\": {\"x\": 8, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"primary\"}}, {\"kind\": \"button\", \"text\": \"Delete\", \"rect\": {\"x\": 274, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"danger\"}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 200, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": false}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 370, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true, \"enabled\": false}}]}",
+        "native-wrapped.log": "",
+        "source-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-scroll.log": "",
+        "native-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "scroll.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 80, \"elements\": [{\"kind\": \"unified\", \"text\": \"Scrolling a long shared framework label through the viewport\", \"rect\": {\"x\": 30, \"y\": 60, \"width\": 460, \"height\": 80}, \"props\": {\"size\": 38, \"scroll\": true}}]}",
+        "shimmer.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 20, \"elements\": [{\"kind\": \"unified\", \"text\": \"Slide to continue\", \"rect\": {\"x\": 18, \"y\": 30, \"width\": 500, \"height\": 180}, \"props\": {\"size\": 42, \"shimmer\": true, \"horizontal\": \"right\", \"vertical\": \"middle\"}}]}",
+        "source-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-controls.log": "",
+        "render-results.json": "[\n  {\n    \"scene\": \"wrapped\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"emoji\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"scroll\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"shimmer\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"controls\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"korean\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  }\n]",
+        "source-korean.log": "",
+        "source-wrapped.log": "",
+        "source-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.log": ""
+      },
+      "images": {
+        "native-scroll.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-korean.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-shimmer.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-controls.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-korean.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-emoji.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-scroll.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-controls.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-emoji.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-shimmer.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": null,
+      "exit": 0
+    },
+    {
+      "name": "pixel",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/source-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/native-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/source-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/native-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/source-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/native-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/source-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/native-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/source-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/native-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"scene\": \"wrapped\", \"different_pixels\": 1, \"max_channel_difference\": 4, \"state_equal\": true}\n{\"scene\": \"emoji\", \"different_pixels\": 1, \"max_channel_difference\": 4, \"state_equal\": true}\n{\"scene\": \"scroll\", \"different_pixels\": 1, \"max_channel_difference\": 4, \"state_equal\": true}\n{\"scene\": \"shimmer\", \"different_pixels\": 1, \"max_channel_difference\": 4, \"state_equal\": true}\n{\"scene\": \"controls\", \"different_pixels\": 1, \"max_channel_difference\": 4, \"state_equal\": true}\n{\"scene\": \"korean\", \"different_pixels\": 1, \"max_channel_difference\": 4, \"state_equal\": true}\n",
+      "files": {
+        "source-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-controls.log": "",
+        "korean.json": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"ko\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"\uae30\ubcf8 \uc778\ud130\ud398\uc774\uc2a4\\n\ub124\ud2b8\uc6cc\ud06c \uc5f0\uacb0\uc744 \ud655\uc778\ud558\uace0 \uacc4\uc18d \uc9c4\ud589\ud558\uc138\uc694.\\n\uc6d0\ubcf8 \uae00\uaf34\uacfc \uc904\ubc14\uafc8\uc744 \uc720\uc9c0\ud569\ub2c8\ub2e4.\", \"rect\": {\"x\": 60, \"y\": 50, \"width\": 2040, \"height\": 700}, \"props\": {\"size\": 90}}, {\"kind\": \"button\", \"text\": \"\uacc4\uc18d\", \"rect\": {\"x\": 1400, \"y\": 820, \"width\": 650, \"height\": 180}, \"props\": {\"style\": \"primary\"}}]}",
+        "native-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.log": "",
+        "emoji.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"label\", \"text\": \"Ready \ud83d\ude00\\nWi-Fi \ud83c\uddf0\ud83c\uddf7\", \"rect\": {\"x\": 20, \"y\": 15, \"width\": 496, \"height\": 210}, \"props\": {\"size\": 38}}]}",
+        "native-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.log": "",
+        "native-emoji.log": "",
+        "native-korean.log": "",
+        "source-emoji.log": "",
+        "controls.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"button\", \"text\": \"Continue\", \"rect\": {\"x\": 8, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"primary\"}}, {\"kind\": \"button\", \"text\": \"Delete\", \"rect\": {\"x\": 274, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"danger\"}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 200, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": false}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 370, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true, \"enabled\": false}}]}",
+        "native-wrapped.log": "",
+        "source-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-scroll.log": "",
+        "native-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "scroll.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 80, \"elements\": [{\"kind\": \"unified\", \"text\": \"Scrolling a long shared framework label through the viewport\", \"rect\": {\"x\": 30, \"y\": 60, \"width\": 460, \"height\": 80}, \"props\": {\"size\": 38, \"scroll\": true}}]}",
+        "shimmer.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 20, \"elements\": [{\"kind\": \"unified\", \"text\": \"Slide to continue\", \"rect\": {\"x\": 18, \"y\": 30, \"width\": 500, \"height\": 180}, \"props\": {\"size\": 42, \"shimmer\": true, \"horizontal\": \"right\", \"vertical\": \"middle\"}}]}",
+        "source-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-controls.log": "",
+        "render-results.json": "[\n  {\n    \"scene\": \"wrapped\",\n    \"different_pixels\": 1,\n    \"max_channel_difference\": 4,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"emoji\",\n    \"different_pixels\": 1,\n    \"max_channel_difference\": 4,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"scroll\",\n    \"different_pixels\": 1,\n    \"max_channel_difference\": 4,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"shimmer\",\n    \"different_pixels\": 1,\n    \"max_channel_difference\": 4,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"controls\",\n    \"different_pixels\": 1,\n    \"max_channel_difference\": 4,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"korean\",\n    \"different_pixels\": 1,\n    \"max_channel_difference\": 4,\n    \"state_equal\": true\n  }\n]",
+        "source-korean.log": "",
+        "source-wrapped.log": "",
+        "source-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.log": ""
+      },
+      "images": {
+        "native-scroll.png": "ea606418ff37d17ebfdfab22b6638d90ca2f05e93b33a21792a71e713add5193",
+        "native-korean.png": "ea606418ff37d17ebfdfab22b6638d90ca2f05e93b33a21792a71e713add5193",
+        "source-shimmer.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-wrapped.png": "ea606418ff37d17ebfdfab22b6638d90ca2f05e93b33a21792a71e713add5193",
+        "native-controls.png": "ea606418ff37d17ebfdfab22b6638d90ca2f05e93b33a21792a71e713add5193",
+        "source-korean.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-emoji.png": "ea606418ff37d17ebfdfab22b6638d90ca2f05e93b33a21792a71e713add5193",
+        "source-scroll.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-controls.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-emoji.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-shimmer.png": "ea606418ff37d17ebfdfab22b6638d90ca2f05e93b33a21792a71e713add5193"
+      },
+      "error": "AssertionError",
+      "exit": 1
+    },
+    {
+      "name": "state",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/source-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/native-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/source-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/native-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/source-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/native-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/source-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/native-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/source-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/native-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"scene\": \"wrapped\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": false}\n{\"scene\": \"emoji\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": false}\n{\"scene\": \"scroll\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": false}\n{\"scene\": \"shimmer\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": false}\n{\"scene\": \"controls\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": false}\n{\"scene\": \"korean\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": false}\n",
+      "files": {
+        "source-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-controls.log": "",
+        "korean.json": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"ko\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"\uae30\ubcf8 \uc778\ud130\ud398\uc774\uc2a4\\n\ub124\ud2b8\uc6cc\ud06c \uc5f0\uacb0\uc744 \ud655\uc778\ud558\uace0 \uacc4\uc18d \uc9c4\ud589\ud558\uc138\uc694.\\n\uc6d0\ubcf8 \uae00\uaf34\uacfc \uc904\ubc14\uafc8\uc744 \uc720\uc9c0\ud569\ub2c8\ub2e4.\", \"rect\": {\"x\": 60, \"y\": 50, \"width\": 2040, \"height\": 700}, \"props\": {\"size\": 90}}, {\"kind\": \"button\", \"text\": \"\uacc4\uc18d\", \"rect\": {\"x\": 1400, \"y\": 820, \"width\": 650, \"height\": 180}, \"props\": {\"style\": \"primary\"}}]}",
+        "native-wrapped.json": "[\n  {\n    \"width\": 1.00000001,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.json": "[\n  {\n    \"width\": 1.00000001,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.log": "",
+        "emoji.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"label\", \"text\": \"Ready \ud83d\ude00\\nWi-Fi \ud83c\uddf0\ud83c\uddf7\", \"rect\": {\"x\": 20, \"y\": 15, \"width\": 496, \"height\": 210}, \"props\": {\"size\": 38}}]}",
+        "native-controls.json": "[\n  {\n    \"width\": 1.00000001,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.log": "",
+        "native-emoji.log": "",
+        "native-korean.log": "",
+        "source-emoji.log": "",
+        "controls.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"button\", \"text\": \"Continue\", \"rect\": {\"x\": 8, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"primary\"}}, {\"kind\": \"button\", \"text\": \"Delete\", \"rect\": {\"x\": 274, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"danger\"}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 200, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": false}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 370, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true, \"enabled\": false}}]}",
+        "native-wrapped.log": "",
+        "source-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-scroll.log": "",
+        "native-emoji.json": "[\n  {\n    \"width\": 1.00000001,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "scroll.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 80, \"elements\": [{\"kind\": \"unified\", \"text\": \"Scrolling a long shared framework label through the viewport\", \"rect\": {\"x\": 30, \"y\": 60, \"width\": 460, \"height\": 80}, \"props\": {\"size\": 38, \"scroll\": true}}]}",
+        "shimmer.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 20, \"elements\": [{\"kind\": \"unified\", \"text\": \"Slide to continue\", \"rect\": {\"x\": 18, \"y\": 30, \"width\": 500, \"height\": 180}, \"props\": {\"size\": 42, \"shimmer\": true, \"horizontal\": \"right\", \"vertical\": \"middle\"}}]}",
+        "source-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.json": "[\n  {\n    \"width\": 1.00000001,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-korean.json": "[\n  {\n    \"width\": 1.00000001,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-controls.log": "",
+        "render-results.json": "[\n  {\n    \"scene\": \"wrapped\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": false\n  },\n  {\n    \"scene\": \"emoji\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": false\n  },\n  {\n    \"scene\": \"scroll\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": false\n  },\n  {\n    \"scene\": \"shimmer\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": false\n  },\n  {\n    \"scene\": \"controls\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": false\n  },\n  {\n    \"scene\": \"korean\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": false\n  }\n]",
+        "source-korean.log": "",
+        "source-wrapped.log": "",
+        "source-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.log": ""
+      },
+      "images": {
+        "native-scroll.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-korean.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-shimmer.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-controls.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-korean.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-emoji.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-scroll.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-controls.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-emoji.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-shimmer.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "AssertionError",
+      "exit": 1
+    },
+    {
+      "name": "shape",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "native-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-wrapped.log": "",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "source-wrapped.log": ""
+      },
+      "images": {
+        "native-wrapped.png": "73adb6848c3d585c197d8dcb664a01526dc8fd57f424f23be7861a1bfe2fd7d3",
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "ValueError",
+      "exit": 1
+    },
+    {
+      "name": "gray",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/source-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/native-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/source-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/native-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/source-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/native-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/source-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/native-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/source-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/native-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"scene\": \"wrapped\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"emoji\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"scroll\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"shimmer\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"controls\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"korean\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\nPASS: six actual-source/native shared widget scenes and state snapshots\n",
+      "files": {
+        "source-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-controls.log": "",
+        "korean.json": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"ko\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"\uae30\ubcf8 \uc778\ud130\ud398\uc774\uc2a4\\n\ub124\ud2b8\uc6cc\ud06c \uc5f0\uacb0\uc744 \ud655\uc778\ud558\uace0 \uacc4\uc18d \uc9c4\ud589\ud558\uc138\uc694.\\n\uc6d0\ubcf8 \uae00\uaf34\uacfc \uc904\ubc14\uafc8\uc744 \uc720\uc9c0\ud569\ub2c8\ub2e4.\", \"rect\": {\"x\": 60, \"y\": 50, \"width\": 2040, \"height\": 700}, \"props\": {\"size\": 90}}, {\"kind\": \"button\", \"text\": \"\uacc4\uc18d\", \"rect\": {\"x\": 1400, \"y\": 820, \"width\": 650, \"height\": 180}, \"props\": {\"style\": \"primary\"}}]}",
+        "native-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.log": "",
+        "emoji.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"label\", \"text\": \"Ready \ud83d\ude00\\nWi-Fi \ud83c\uddf0\ud83c\uddf7\", \"rect\": {\"x\": 20, \"y\": 15, \"width\": 496, \"height\": 210}, \"props\": {\"size\": 38}}]}",
+        "native-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.log": "",
+        "native-emoji.log": "",
+        "native-korean.log": "",
+        "source-emoji.log": "",
+        "controls.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"button\", \"text\": \"Continue\", \"rect\": {\"x\": 8, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"primary\"}}, {\"kind\": \"button\", \"text\": \"Delete\", \"rect\": {\"x\": 274, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"danger\"}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 200, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": false}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 370, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true, \"enabled\": false}}]}",
+        "native-wrapped.log": "",
+        "source-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-scroll.log": "",
+        "native-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "scroll.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 80, \"elements\": [{\"kind\": \"unified\", \"text\": \"Scrolling a long shared framework label through the viewport\", \"rect\": {\"x\": 30, \"y\": 60, \"width\": 460, \"height\": 80}, \"props\": {\"size\": 38, \"scroll\": true}}]}",
+        "shimmer.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 20, \"elements\": [{\"kind\": \"unified\", \"text\": \"Slide to continue\", \"rect\": {\"x\": 18, \"y\": 30, \"width\": 500, \"height\": 180}, \"props\": {\"size\": 42, \"shimmer\": true, \"horizontal\": \"right\", \"vertical\": \"middle\"}}]}",
+        "source-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-controls.log": "",
+        "render-results.json": "[\n  {\n    \"scene\": \"wrapped\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"emoji\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"scroll\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"shimmer\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"controls\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"korean\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  }\n]",
+        "source-korean.log": "",
+        "source-wrapped.log": "",
+        "source-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.log": ""
+      },
+      "images": {
+        "native-scroll.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "native-korean.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "source-shimmer.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "native-wrapped.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "native-controls.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "source-korean.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "native-emoji.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "source-scroll.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "source-controls.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "source-wrapped.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "source-emoji.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b",
+        "native-shimmer.png": "704c213a9c24c9a4c47ab84d571022d83c988111f9d07b05bdb66103eb11f09b"
+      },
+      "error": null,
+      "exit": 0
+    },
+    {
+      "name": "int16",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/source-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/native-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/source-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/native-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/source-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/native-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/source-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/native-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/source-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/native-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"scene\": \"wrapped\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"emoji\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"scroll\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"shimmer\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"controls\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"korean\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\nPASS: six actual-source/native shared widget scenes and state snapshots\n",
+      "files": {
+        "source-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-controls.log": "",
+        "korean.json": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"ko\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"\uae30\ubcf8 \uc778\ud130\ud398\uc774\uc2a4\\n\ub124\ud2b8\uc6cc\ud06c \uc5f0\uacb0\uc744 \ud655\uc778\ud558\uace0 \uacc4\uc18d \uc9c4\ud589\ud558\uc138\uc694.\\n\uc6d0\ubcf8 \uae00\uaf34\uacfc \uc904\ubc14\uafc8\uc744 \uc720\uc9c0\ud569\ub2c8\ub2e4.\", \"rect\": {\"x\": 60, \"y\": 50, \"width\": 2040, \"height\": 700}, \"props\": {\"size\": 90}}, {\"kind\": \"button\", \"text\": \"\uacc4\uc18d\", \"rect\": {\"x\": 1400, \"y\": 820, \"width\": 650, \"height\": 180}, \"props\": {\"style\": \"primary\"}}]}",
+        "native-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.log": "",
+        "emoji.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"label\", \"text\": \"Ready \ud83d\ude00\\nWi-Fi \ud83c\uddf0\ud83c\uddf7\", \"rect\": {\"x\": 20, \"y\": 15, \"width\": 496, \"height\": 210}, \"props\": {\"size\": 38}}]}",
+        "native-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.log": "",
+        "native-emoji.log": "",
+        "native-korean.log": "",
+        "source-emoji.log": "",
+        "controls.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"button\", \"text\": \"Continue\", \"rect\": {\"x\": 8, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"primary\"}}, {\"kind\": \"button\", \"text\": \"Delete\", \"rect\": {\"x\": 274, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"danger\"}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 200, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": false}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 370, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true, \"enabled\": false}}]}",
+        "native-wrapped.log": "",
+        "source-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-scroll.log": "",
+        "native-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "scroll.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 80, \"elements\": [{\"kind\": \"unified\", \"text\": \"Scrolling a long shared framework label through the viewport\", \"rect\": {\"x\": 30, \"y\": 60, \"width\": 460, \"height\": 80}, \"props\": {\"size\": 38, \"scroll\": true}}]}",
+        "shimmer.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 20, \"elements\": [{\"kind\": \"unified\", \"text\": \"Slide to continue\", \"rect\": {\"x\": 18, \"y\": 30, \"width\": 500, \"height\": 180}, \"props\": {\"size\": 42, \"shimmer\": true, \"horizontal\": \"right\", \"vertical\": \"middle\"}}]}",
+        "source-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-controls.log": "",
+        "render-results.json": "[\n  {\n    \"scene\": \"wrapped\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"emoji\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"scroll\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"shimmer\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"controls\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"korean\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  }\n]",
+        "source-korean.log": "",
+        "source-wrapped.log": "",
+        "source-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.log": ""
+      },
+      "images": {
+        "native-scroll.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "native-korean.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "source-shimmer.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "native-wrapped.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "native-controls.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "source-korean.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "native-emoji.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "source-scroll.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "source-controls.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "source-wrapped.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "source-emoji.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf",
+        "native-shimmer.png": "f2db59e4d458ecbb83565c51ecc6f88da02f3313d78386a3d813c20b4ac15dbf"
+      },
+      "error": null,
+      "exit": 0
+    },
+    {
+      "name": "bool-int",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/source-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/emoji.json",
+            "@OUTPUT@/native-emoji.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/source-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/scroll.json",
+            "@OUTPUT@/native-scroll.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/source-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/shimmer.json",
+            "@OUTPUT@/native-shimmer.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/source-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/controls.json",
+            "@OUTPUT@/native-controls.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/source-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/korean.json",
+            "@OUTPUT@/native-korean.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "{\"scene\": \"wrapped\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"emoji\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"scroll\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"shimmer\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"controls\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\n{\"scene\": \"korean\", \"different_pixels\": 0, \"max_channel_difference\": 0, \"state_equal\": true}\nPASS: six actual-source/native shared widget scenes and state snapshots\n",
+      "files": {
+        "source-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-controls.log": "",
+        "korean.json": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"ko\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"\uae30\ubcf8 \uc778\ud130\ud398\uc774\uc2a4\\n\ub124\ud2b8\uc6cc\ud06c \uc5f0\uacb0\uc744 \ud655\uc778\ud558\uace0 \uacc4\uc18d \uc9c4\ud589\ud558\uc138\uc694.\\n\uc6d0\ubcf8 \uae00\uaf34\uacfc \uc904\ubc14\uafc8\uc744 \uc720\uc9c0\ud569\ub2c8\ub2e4.\", \"rect\": {\"x\": 60, \"y\": 50, \"width\": 2040, \"height\": 700}, \"props\": {\"size\": 90}}, {\"kind\": \"button\", \"text\": \"\uacc4\uc18d\", \"rect\": {\"x\": 1400, \"y\": 820, \"width\": 650, \"height\": 180}, \"props\": {\"style\": \"primary\"}}]}",
+        "native-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": 1,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": 1,\n    \"progress\": 1\n  }\n]",
+        "native-shimmer.log": "",
+        "emoji.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"label\", \"text\": \"Ready \ud83d\ude00\\nWi-Fi \ud83c\uddf0\ud83c\uddf7\", \"rect\": {\"x\": 20, \"y\": 15, \"width\": 496, \"height\": 210}, \"props\": {\"size\": 38}}]}",
+        "native-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": 1,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.log": "",
+        "native-emoji.log": "",
+        "native-korean.log": "",
+        "source-emoji.log": "",
+        "controls.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"button\", \"text\": \"Continue\", \"rect\": {\"x\": 8, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"primary\"}}, {\"kind\": \"button\", \"text\": \"Delete\", \"rect\": {\"x\": 274, \"y\": 8, \"width\": 250, \"height\": 90}, \"props\": {\"size\": 32, \"style\": \"danger\"}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 200, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": false}}, {\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 370, \"y\": 140, \"width\": 160, \"height\": 80}, \"props\": {\"value\": true, \"enabled\": false}}]}",
+        "native-wrapped.log": "",
+        "source-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-scroll.log": "",
+        "native-emoji.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": 1,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "scroll.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 80, \"elements\": [{\"kind\": \"unified\", \"text\": \"Scrolling a long shared framework label through the viewport\", \"rect\": {\"x\": 30, \"y\": 60, \"width\": 460, \"height\": 80}, \"props\": {\"size\": 38, \"scroll\": true}}]}",
+        "shimmer.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 20, \"elements\": [{\"kind\": \"unified\", \"text\": \"Slide to continue\", \"rect\": {\"x\": 18, \"y\": 30, \"width\": 500, \"height\": 180}, \"props\": {\"size\": 42, \"shimmer\": true, \"horizontal\": \"right\", \"vertical\": \"middle\"}}]}",
+        "source-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "native-scroll.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": 1,\n    \"progress\": 1\n  }\n]",
+        "native-korean.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": 1,\n    \"progress\": 1\n  }\n]",
+        "source-controls.log": "",
+        "render-results.json": "[\n  {\n    \"scene\": \"wrapped\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"emoji\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"scroll\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"shimmer\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"controls\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  },\n  {\n    \"scene\": \"korean\",\n    \"different_pixels\": 0,\n    \"max_channel_difference\": 0,\n    \"state_equal\": true\n  }\n]",
+        "source-korean.log": "",
+        "source-wrapped.log": "",
+        "source-controls.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "source-shimmer.log": ""
+      },
+      "images": {
+        "native-scroll.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-korean.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-shimmer.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-controls.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-korean.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-emoji.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-scroll.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-controls.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-emoji.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "native-shimmer.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": null,
+      "exit": 0
+    },
+    {
+      "name": "source-error",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "source-wrapped.log": ""
+      },
+      "images": {},
+      "error": "CalledProcessError",
+      "exit": 1
+    },
+    {
+      "name": "native-error",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "native-wrapped.log": "",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "source-wrapped.log": ""
+      },
+      "images": {
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "CalledProcessError",
+      "exit": 1
+    },
+    {
+      "name": "missing-state",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "native-wrapped.log": "",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "source-wrapped.log": ""
+      },
+      "images": {
+        "native-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "FileNotFoundError",
+      "exit": 1
+    },
+    {
+      "name": "invalid-state",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "native-wrapped.json": "{bad",
+        "native-wrapped.log": "",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "source-wrapped.log": ""
+      },
+      "images": {
+        "native-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613",
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "JSONDecodeError",
+      "exit": 1
+    },
+    {
+      "name": "missing-image",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "native-wrapped.log": "",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "source-wrapped.log": ""
+      },
+      "images": {
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "FileNotFoundError",
+      "exit": 1
+    },
+    {
+      "name": "invalid-image",
+      "calls": [
+        {
+          "argv": [
+            "@PYTHON@",
+            "@ROOT@/rust/tools/ui_framework_source_render.py",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/source-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        },
+        {
+          "argv": [
+            "native",
+            "@ROOT@",
+            "@OUTPUT@/wrapped.json",
+            "@OUTPUT@/native-wrapped.png"
+          ],
+          "env": {
+            "DISPLAY": ":owned",
+            "OFFSCREEN": "1",
+            "PYTHONPATH": "@ROOT@",
+            "PARAMS_ROOT": "@OUTPUT@/params"
+          },
+          "check": true,
+          "merged": true
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "native-wrapped.log": "",
+        "source-wrapped.json": "[\n  {\n    \"width\": 1,\n    \"scroll_offset\": 0\n  },\n  {\n    \"value\": true,\n    \"progress\": 1\n  }\n]",
+        "wrapped.json": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 3, \"elements\": [{\"kind\": \"unified\", \"text\": \"Shared native UI\\nA verylongwordwithoutspaces crosses the next line.\\n\\nTail\", \"rect\": {\"x\": 18, \"y\": 12, \"width\": 500, \"height\": 210}, \"props\": {\"size\": 28}}]}",
+        "source-wrapped.log": ""
+      },
+      "images": {
+        "native-wrapped.png": "c82c343621d28033fc04408eb1ed4f2359351a66051fa087ac311a38cea47b05",
+        "source-wrapped.png": "980055f32603462384baae4a3dbfa580f0579627bb98c190f84443a047126613"
+      },
+      "error": "UnidentifiedImageError",
+      "exit": 1
+    }
+  ]
+}

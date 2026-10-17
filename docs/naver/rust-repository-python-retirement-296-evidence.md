@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Seventy-five sources have locally verified replacements and migrated
-callers; two are partially replaced and3,503 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Ninety-one sources have locally verified replacements and migrated
+callers; two are partially replaced and3,487 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -2000,3 +2000,66 @@ Evidence:2026-10-18-camera-generators/{red,first-green-routing-red,routing-disk,
 green,clippy,postdelete}.log, caller/commands, requests-check/report.json,
 packets-check/report.json and postdelete-packets.execve. Inventory79
 replaced-local,2 partially-replaced,3499pending; full conversion remains open.
+
+### Camera generator closure and shared render reference (2026-10-18)
+
+Eight lifecycle/fixture commands plus the BPS and sensor constant generators now
+read live C++ inputs through Rust. Their ten Python originals and both shared
+render Python tools are retired after caller migration. The inventory is91
+replaced-local,2 partially-replaced,3487pending. Generic camera comparators,
+network/application reference tools and the wider compiler/tool tree remain
+explicit dependencies; this is not repository-wide completion.
+
+Camera original captures cover138 changed-source outcomes,9 extraction
+boundaries and67 CLI cases. All12 actual generated C++ modes match the original
+bytes, including after deletion with PATH=/nonexistent and native-only execve
+traces. BPS covers41 original cases and exhaustive Unicode15 word/digit/case
+mapping digests. Review caught Rust's newer Unicode tables accepting names that
+CPython3.12 rejects; the fixed tables preserve the original classes. Sensor
+constants cover70 original cases, nested JSON, numeric/surrogate output and
+failure phases. The actual three-sensor C++ reference produces45354 identical
+bytes. Review additionally reproduced relative Path normalization changing
+executable lookup;10 independent path cases retain that subprocess behavior.
+The sensor-only runtime-version dependency is optional; default dev-tools has
+no runtime-version, cereal, capnpc or messaging dependency in its Cargo tree.
+
+The generated C++ also passed the complete host camera comparisons:535020
+sensor cases,99 exposure scenarios/54108steps,512 request scenarios/72493steps,
+3281packet cases/5869496bytes,334kernel,62sensor lifecycle,30ISP,32camera
+lifecycle,8cleanup,1080state frames,54stress and8runtime termination/error/order
+scenarios. Local sanitizer/library paths initially prevented execution; the
+scratch launcher relocated only SDK paths while keeping comparator assertions
+unchanged. Those initial failures remain recorded, followed by successful runs.
+This does not establish hardware ioctl behavior, physical boot or driving.
+
+The independent render reference implements labels, unified text, buttons and
+Toggle behind an owned raw raylib drawing helper. Thirty ordinary,70raw and14
+environment captures plus13checker controls pass; source/font/dependency drift
+and owned-child cleanup are checked. Independent review reproduced six
+multiple-release Toggle mismatches; applying every release in sequence fixes
+them without changing expected pixels or state. Both originals are absent in
+the final source guard and actual six-scene/112-frame gate; all pixels and state
+match, and execve tracing with PATH=/nonexistent contains only native commands.
+
+Evidence lives in ignored2026-10-18-camera-{data,lifecycle-generators} and
+2026-10-18-ui-render directories. Retained tracked fixtures include original
+hashes, inputs and expected outputs, not generated images or private logs.
+Remote17c0a425 Fast checks, Integration and mapped-docs gates passed, while
+Rust run39075635257 has a UI/connectivity failure at native JSON11 staging.
+The wrapper hid stderr; printing it on failure is covered by a real child
+regression. The last observed27.775GiB free preceded an89second build, making
+reserve exhaustion plausible but not proven. UI debug symbols are disabled
+without changing assertions/optimization; a4096MiB prebuild capacity guard was
+added. Exact next-commit CI must confirm the repair.
+
+The registered `check-ui-framework` orchestration also passes22 original injected
+contracts,5 actual original process fixtures, source-drift rejection and strict
+Clippy. Its real13-stage invocation passed every stage: widgets, scroll,
+navigation, stack, scroller, render, Forms, network, polygon, diagnostics,
+application, FPS and EGL. The live X11 test entered`native`, closed normally,
+and transported logs; FFprobe confirmed536x240 recording with3video frames
+from9render frames. Network/application remain explicit Python children, and
+the existing Python orchestrator/tests remain until their caller-test migration.
+This host UI recording proof is not comma-device normal boot/route recording
+or network upload acceptance. Current-source evidence:
+2026-10-18-ui-framework/{second-gate,actual}.log and actual/invocations.json.

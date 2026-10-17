@@ -1081,9 +1081,9 @@ jobs:
       - name: Build and validate native camera source generators
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --test camera_source_generate --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --test camera_source_generate --test camera_data_generate --test camera_sensor_generate --test camera_lifecycle_generate --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin generate-camerad-requests-reference --bin generate-camerad-packet-reference --test camera_source_generate --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --bin generate-camerad-requests-reference --bin generate-camerad-packet-reference --bin generate-camerad-bps-data --bin generate-camerad-sensor-data --bin generate-camerad-ae-reference --bin generate-camerad-kernel-reference --bin generate-camerad-sensor-lifecycle-reference --bin generate-camerad-isp-lifecycle-reference --bin generate-camerad-camera-lifecycle-reference --bin generate-camerad-state-reference --bin generate-camerad-stress-reference --bin generate-camerad-runtime-fixture --test camera_source_generate --test camera_data_generate --test camera_sensor_generate --test camera_lifecycle_generate --locked -- -D warnings
       - name: Build and check native camera packages
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -2592,6 +2592,8 @@ jobs:
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
       CXX: clang++
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
@@ -2616,7 +2618,7 @@ jobs:
       - name: Build native UI validation checkers
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference,polygon-reference --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --bin check-ui-diagnostics --bin ui-diagnostic-reference --bin build-ui-diagnostic-reference --bin check-ui-emoji --bin check-ui-forms --bin ui-forms-reference --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference,polygon-reference --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --bin check-ui-diagnostics --bin ui-diagnostic-reference --bin build-ui-diagnostic-reference --bin check-ui-emoji --bin check-ui-forms --bin ui-forms-reference --bin check-ui-render --bin ui-render-reference --bin check-ui-framework --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features egl-reference --test ui_egl_reference --test ui_egl_check --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2634,8 +2636,11 @@ jobs:
           mkdir -p "$RUNNER_TEMP/ui-forms-raw"
           "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -O2 -I "$STARTUP_UI_RAYLIB_ROOT/include" rust/crates/dev-tools/tests/fixtures/ui-forms/raw-raylib.cc -ldl -o "$RUNNER_TEMP/ui-forms-raw/ui-forms-raw"
           printf 'UI_FORMS_RAW_HELPER=%s/ui-forms-raw/ui-forms-raw\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -O2 -I "$STARTUP_UI_RAYLIB_ROOT/include" rust/crates/dev-tools/tests/fixtures/ui-render/raw-raylib.cc -ldl -o "$RUNNER_TEMP/ui-forms-raw/ui-render-raw"
+          printf 'UI_RENDER_RAW_HELPER=%s/ui-forms-raw/ui-render-raw\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build native UI and connectivity with original Params oracle
         run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/ui-params-binding"
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/connectivity-msgq-python"
@@ -2643,9 +2648,10 @@ jobs:
         run: |
           xvfb-run -a -s '-screen 0 2160x1080x24' bash -euc '
             test -x "$UI_FORMS_RAW_HELPER"
+            test -x "$UI_RENDER_RAW_HELPER"
             test -f "$STARTUP_UI_RAYLIB_LIBRARY"
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-            cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features image-array-native --test ui_forms_check --test ui_forms_reference --test ui_forms_admission --test ui_forms_family_text --test ui_forms_snapshot_order --locked
+            cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features image-array-native --test ui_forms_check --test ui_forms_reference --test ui_forms_admission --test ui_forms_family_text --test ui_forms_snapshot_order --test ui_render_check --test ui_render_reference --test ui_framework_check --locked
             python rust/tools/check_ui_framework.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/framework" --display "$DISPLAY"
             python rust/tools/check_startup_ui.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/startup" --display "$DISPLAY" --raylib-root "$STARTUP_UI_RAYLIB_ROOT" --raylib-library "$STARTUP_UI_RAYLIB_LIBRARY"
           '

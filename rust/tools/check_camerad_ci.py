@@ -20,6 +20,9 @@ POLICIES = (
 LIFECYCLES = ('kernel', 'sensor_lifecycle', 'isp_lifecycle', 'camera_lifecycle')
 RUNTIME_CASES = ('term', 'int', 'pwr', 'disabled-road', 'missing-road', 'wait-failure', 'poll-error', 'publication-order')
 SCHEMAS = ('car', 'custom', 'deprecated', 'log')
+GENERATORS = ('requests-reference', 'packet-reference', 'bps-data', 'sensor-data', 'ae-reference', 'kernel-reference',
+              'sensor-lifecycle-reference', 'isp-lifecycle-reference', 'camera-lifecycle-reference',
+              'state-reference', 'stress-reference', 'runtime-fixture')
 
 
 class CameraCheck:
@@ -35,7 +38,7 @@ class CameraCheck:
     return self.commands / f'{name}.stdout'
 
   def generate(self, name: str, script: str, arguments: tuple[str, ...] = ()) -> Path:
-    command = [str(self.binaries / script)] if not script.endswith('.py') else [sys.executable, str(TOOLS / script)]
+    command = [str(self.binaries / script)]
     stdout = self.command(f'generate-{name}', [*command, '--source', str(ROOT), *arguments])
     target = self.output / f'{name}.cc'
     shutil.copyfile(stdout, target)
@@ -75,16 +78,16 @@ class CameraCheck:
     sensors = [ROOT / f'openpilot/system/camerad/sensors/{name}.cc' for name in ('ar0231', 'ox03c10', 'os04c10')]
     cdm = ROOT / 'openpilot/system/camerad/cameras/cdm.cc'
     self.compile('sensor-source', [TOOLS / 'camerad_sensor_source.cc', *sensors])
-    exposure = self.generate('exposure', 'generate_camerad_ae_reference.py')
+    exposure = self.generate('exposure', 'generate-camerad-ae-reference')
     self.compile('exposure-source', [exposure, *sensors])
-    misc = self.generate('misc', 'generate_camerad_ae_reference.py', ('--kind', 'misc'))
+    misc = self.generate('misc', 'generate-camerad-ae-reference', ('--kind', 'misc'))
     self.compile('misc-source', [misc, cdm])
     requests = self.generate('requests', 'generate-camerad-requests-reference')
     self.compile('requests-source', [requests])
     packets = self.generate('packets', 'generate-camerad-packet-reference')
     self.compile('packets-source', [packets, cdm, *sensors])
     for name in LIFECYCLES:
-      script = f'generate_camerad_{name}_reference.py'
+      script = 'generate-camerad-' + name.replace('_', '-') + '-reference'
       source = self.generate(name, script)
       sources = [source]
       if name != 'kernel':
@@ -98,13 +101,13 @@ class CameraCheck:
       self.compile(f'{name}-source', sources, sanitized=True)
       fixture = TOOLS / 'camerad_kernel_fixture.cc' if name == 'kernel' else self.generate(f'{name}-fixture', script, ('--fixture',))
       self.compile(f'{name}-fixture', [fixture], sanitized=True, shared=True)
-    state = self.generate('state', 'generate_camerad_state_reference.py')
+    state = self.generate('state', 'generate-camerad-state-reference')
     self.compile('state-source', [state, *sensors,
       *[self.output / f'cereal/gen/cpp/{name}.capnp.c++' for name in SCHEMAS]], sanitized=True, libraries=('-lcapnp', '-lkj'))
-    stress = self.generate('stress', 'generate_camerad_stress_reference.py')
+    stress = self.generate('stress', 'generate-camerad-stress-reference')
     self.compile('stress-source', [stress])
     self.compile('stress-fixture', [TOOLS / 'camerad_stress_fixture.cc'], shared=True, libraries=('-ldl',))
-    runtime = self.generate('runtime-fixture', 'camerad_runtime_generate.py')
+    runtime = self.generate('runtime-fixture', 'generate-camerad-runtime-fixture')
     self.compile('runtime-fixture', [runtime], sanitized=True, shared=True)
 
   def constants(self) -> None:
@@ -112,8 +115,8 @@ class CameraCheck:
       ('sensor', 'sensor/data.rs', ['--reference', str(self.output / 'sensor-source')]),
       ('bps', 'isp/bps_data.rs', []),
     ):
-      stdout = self.command(f'constants-{kind}', [sys.executable, str(TOOLS / f'generate_camerad_{kind}_data.py'),
-        '--source', str(ROOT), *arguments])
+      command = [str(self.binaries / f'generate-camerad-{kind}-data')]
+      stdout = self.command(f'constants-{kind}', [*command, '--source', str(ROOT), *arguments])
       generated = self.output / f'generated-{kind}.rs'
       shutil.copyfile(stdout, generated)
       actual = self.command(f'format-generated-{kind}', ['rustfmt', '--quiet', '--edition', '2021', '--emit', 'stdout', str(generated)])
@@ -158,12 +161,16 @@ def main() -> None:
   require_space(output, 2 * 1024**3)
   output.mkdir(parents=True)
   sources = list(TOOLS.glob('*camerad*'))
+  sources += [ROOT / 'rust/Cargo.lock', ROOT / 'rust/crates/dev-tools/Cargo.toml']
+  sources += list((ROOT / 'rust/crates/dev-tools/src').glob('camera*.rs'))
+  sources += list((ROOT / 'rust/crates/dev-tools/src/bin').glob('generate_camerad_*.rs'))
   for directory in ('rust/crates/camerad', 'rust/crates/camera-kernel', 'rust/crates/camerad-runtime', 'rust/crates/msgq',
                     'openpilot/system/camerad', 'msgq_repo/msgq'):
     sources += [path for path in (ROOT / directory).rglob('*') if path.is_file() and path.suffix in ('.rs', '.cc', '.h', '.toml')]
   binaries = arguments.binaries.resolve()
   executables = [binaries / 'openpilot-camerad'] + [binaries / 'examples' / name for name in (
     *[item[2] for item in POLICIES], 'kernel_operations', *LIFECYCLES[1:], 'frame_state', 'stress_trace', 'stress_parse_trace')]
+  executables += [binaries / ('generate-camerad-' + name) for name in GENERATORS]
   receipt = {'argv': sys.argv, 'source_sha256': hashes([path for path in sources if path.is_file()]),
     'binary_sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in executables}}
   (output / 'invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')

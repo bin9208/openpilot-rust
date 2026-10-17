@@ -146,7 +146,7 @@ def test_framework_native_logic_routes_preserve_order_logs_and_failure_stop(tmp_
     scenarios = scenarios[:next(i + 1 for i, row in enumerate(scenarios) if row[0] == failure)]
   expected = []
   for name, binary, display in scenarios:
-    native_names = {'widgets', 'scroll', 'navigation', 'stack', 'scroller', 'forms', 'polygon', 'diagnostics', 'fps', 'egl'}
+    native_names = {'widgets', 'scroll', 'navigation', 'stack', 'scroller', 'render', 'forms', 'polygon', 'diagnostics', 'fps', 'egl'}
     command = ([str(target / f'check-ui-{name}')] if name in native_names
                else [sys.executable, str(ROOT / f'rust/tools/check_ui_{name}.py')])
     command += ['--binary', str(target / 'examples' / binary), '--output', str(output / name)]

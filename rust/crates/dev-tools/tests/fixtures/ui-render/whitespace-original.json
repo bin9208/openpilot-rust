@@ -1,0 +1,34 @@
+[
+  {
+    "name": "python-space-word-28",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha\\u001cbeta gamma\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 300, \"height\": 180}, \"props\": {\"size\": 32}}]}",
+    "exit": 0,
+    "png": true,
+    "png_sha256": "d4f0c9614c0aca186ea0c37e157f6e30c70e8af4d59023a1facca35a9dce4263",
+    "state_text": "[\n  {\n    \"width\": 273.20318603515625,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "python-space-word-29",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha\\u001dbeta gamma\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 300, \"height\": 180}, \"props\": {\"size\": 32}}]}",
+    "exit": 0,
+    "png": true,
+    "png_sha256": "d4f0c9614c0aca186ea0c37e157f6e30c70e8af4d59023a1facca35a9dce4263",
+    "state_text": "[\n  {\n    \"width\": 273.20318603515625,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "python-space-word-30",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha\\u001ebeta gamma\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 300, \"height\": 180}, \"props\": {\"size\": 32}}]}",
+    "exit": 0,
+    "png": true,
+    "png_sha256": "d4f0c9614c0aca186ea0c37e157f6e30c70e8af4d59023a1facca35a9dce4263",
+    "state_text": "[\n  {\n    \"width\": 273.20318603515625,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "python-space-word-31",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha\\u001fbeta gamma\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 300, \"height\": 180}, \"props\": {\"size\": 32}}]}",
+    "exit": 0,
+    "png": true,
+    "png_sha256": "d4f0c9614c0aca186ea0c37e157f6e30c70e8af4d59023a1facca35a9dce4263",
+    "state_text": "[\n  {\n    \"width\": 273.20318603515625,\n    \"scroll_offset\": 0\n  }\n]"
+  }
+]

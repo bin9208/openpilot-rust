@@ -1484,7 +1484,7 @@ rust/tools/calibration_ipc.py	d1c267f269c37582e6bdcf5b485a15c22fadc725	pending	-
 rust/tools/calibration_reference.py	b13a779f014902b995b2f79edca34d49bf53f4b7	pending	-
 rust/tools/camerad_camera_lifecycle_cleanup.py	2ec2363f857b8284901851353ed7abf3d2c6aea6	pending	-
 rust/tools/camerad_runtime_check.py	05b2e5affbfe2b552f3c41182709600352a494fb	pending	-
-rust/tools/camerad_runtime_generate.py	ff4725202ab570d462e9f6c17b3a015cead5fe50	pending	-
+rust/tools/camerad_runtime_generate.py	ff4725202ab570d462e9f6c17b3a015cead5fe50	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
 rust/tools/camerad_runtime_stress_check.py	08952146ea8fa6f48211617d99b06fb6972b8821	pending	-
 rust/tools/can_cases.py	ca220b21822f259ff62587b8c28c3a39bc15af35	pending	-
 rust/tools/can_source.py	70cfab59b999b8d0805fd3678cd1833b00b9c7b2	pending	-
@@ -2151,7 +2151,7 @@ rust/tools/check_ui_product_runtime.py	cf1d57e75633513eaa94b236f7f3b28d8a3bacd5	
 rust/tools/check_ui_product_widgets.py	ad7615a86717401008fda3eee989e9e27ccb965d	pending	-
 rust/tools/check_ui_qr.py	48751460c8589498d3b30a438fc77213940c7a02	replaced-local	rust/crates/dev-tools/src/ui_fixed_corpus_check.rs;check-ui-qr
 rust/tools/check_ui_qr_texture.py	13166d22bc92a5a61b17a7bb6e068b6b03294295	pending	-
-rust/tools/check_ui_render.py	925c68a0e862cfdd3a1ac2d11fb48713e060aae0	pending	-
+rust/tools/check_ui_render.py	925c68a0e862cfdd3a1ac2d11fb48713e060aae0	replaced-local	rust/crates/dev-tools/src/ui_render_check.rs
 rust/tools/check_ui_root.py	30f8ff3ea5d5f7ae3b8ddbacb99691fe5ed73724	pending	-
 rust/tools/check_ui_runtime_pages.py	6cc392e1a426a1f5762f5f8a8c2a008f859621ba	pending	-
 rust/tools/check_ui_scheduler.py	0175906fc0115f2a1c5df63cf60bb18c6687e87c	replaced-local	rust/crates/dev-tools/src/ui_state_scheduler_check.rs
@@ -2333,17 +2333,17 @@ rust/tools/driving_daemon_reference.py	031ad16e17c00a33827332e880f43a4f1e868e7a	
 rust/tools/encoder_outcomes.py	abe06b9fb384b90bdd7f60f6c6a10d4ca664e743	pending	-
 rust/tools/extract_runtime_sdk.py	007cc4f723139d3a15fd986a76fb5102f3dc9131	pending	-
 rust/tools/generate_bluetooth_digits.py	68e4be829336667c54f2289843ee47e07578625b	replaced-local	openpilot-dev-tools generate-bluetooth-digits
-rust/tools/generate_camerad_ae_reference.py	4dd3918c7bae6b5b2837cb671dc4471e1cb75bb9	pending	-
-rust/tools/generate_camerad_bps_data.py	e7c3ed0cfd040c4ed339e0c68aadc3a62b8b7631	pending	-
-rust/tools/generate_camerad_camera_lifecycle_reference.py	3c852d52a5babd89d117ff7ddfaad4d8a0f50736	pending	-
-rust/tools/generate_camerad_isp_lifecycle_reference.py	5f46d684c24e8ab56553076db93ce59d01e626d3	pending	-
-rust/tools/generate_camerad_kernel_reference.py	9c59530c67ba8cba5d6c7f20a095726b883308c2	pending	-
+rust/tools/generate_camerad_ae_reference.py	4dd3918c7bae6b5b2837cb671dc4471e1cb75bb9	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
+rust/tools/generate_camerad_bps_data.py	e7c3ed0cfd040c4ed339e0c68aadc3a62b8b7631	replaced-local	rust/crates/dev-tools/src/camera_data_generate.rs
+rust/tools/generate_camerad_camera_lifecycle_reference.py	3c852d52a5babd89d117ff7ddfaad4d8a0f50736	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
+rust/tools/generate_camerad_isp_lifecycle_reference.py	5f46d684c24e8ab56553076db93ce59d01e626d3	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
+rust/tools/generate_camerad_kernel_reference.py	9c59530c67ba8cba5d6c7f20a095726b883308c2	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
 rust/tools/generate_camerad_packet_reference.py	87f7f127484abd1a5993ca90d44addc3e7bf1be5	replaced-local	openpilot-dev-tools generate-camerad-packet-reference
 rust/tools/generate_camerad_requests_reference.py	0036af9472b3954cdbebce61378fa896ee9e42a1	replaced-local	openpilot-dev-tools generate-camerad-requests-reference
-rust/tools/generate_camerad_sensor_data.py	5f90a9855439828afd52799e88965596239a5070	pending	-
-rust/tools/generate_camerad_sensor_lifecycle_reference.py	608ecf83b7969f2d4f59526e37613b2810e4a968	pending	-
-rust/tools/generate_camerad_state_reference.py	064f0f32c6968419bfccc0f795b22e93322c06d0	pending	-
-rust/tools/generate_camerad_stress_reference.py	36166e3a41c6af38cfbb6c258ed3784578288244	pending	-
+rust/tools/generate_camerad_sensor_data.py	5f90a9855439828afd52799e88965596239a5070	replaced-local	rust/crates/dev-tools/src/camera_sensor_generate.rs
+rust/tools/generate_camerad_sensor_lifecycle_reference.py	608ecf83b7969f2d4f59526e37613b2810e4a968	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
+rust/tools/generate_camerad_state_reference.py	064f0f32c6968419bfccc0f795b22e93322c06d0	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
+rust/tools/generate_camerad_stress_reference.py	36166e3a41c6af38cfbb6c258ed3784578288244	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
 rust/tools/generate_car_corpus.py	bba77b027803e0f2e035e8a9f358b487f984a5e9	pending	-
 rust/tools/generate_car_model.py	46523225170a39f78be57fb3f2eefa13930d4fb4	pending	-
 rust/tools/generate_card_catalog.py	61bd63c0f181c89c08b2f25e600444706ef1a73c	pending	-
@@ -2610,7 +2610,7 @@ rust/tools/ui_application_qa/state_source.py	ce351f76b827c8acfd29b392db7b6133c9f
 rust/tools/ui_application_qa/torque_geometry_source.py	1d227fd84174a540b27ad3ffe9fe11d0cbe4bc7c	pending	-
 rust/tools/ui_application_qa/vision_source.py	4387a6f5e31387591eb9e0532b1de0f577289545	pending	-
 rust/tools/ui_forms_source.py	c92572493d5309f44e536d9e104c65d19a5876f9	replaced-local	openpilot-dev-tools ui-forms-reference
-rust/tools/ui_framework_source_render.py	85f2641f102f93ce109f8afd9c0e73ed58e6723e	pending	-
+rust/tools/ui_framework_source_render.py	85f2641f102f93ce109f8afd9c0e73ed58e6723e	replaced-local	rust/crates/dev-tools/src/ui_render_reference.rs
 rust/tools/ui_home_qa/compact_source.py	210fe3015fbc4b2629a9c2e51008a308dadc2150	pending	-
 rust/tools/ui_home_qa/onboarding_source.py	35b1145bc30509a9bec7ea341bb3f9be19dce456	pending	-
 rust/tools/ui_model_qa/capture.py	61394b1ac9a63084eeb84d3fadb15a9e4c5440ee	pending	-
