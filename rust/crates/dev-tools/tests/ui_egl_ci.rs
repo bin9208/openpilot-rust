@@ -17,9 +17,32 @@ fn egl_reference_is_explicitly_built_and_tested_in_the_native_ui_job() {
             }
             matches += 1;
             let run = step["run"].as_str().unwrap();
-            assert!(run.contains(
-                "--features egl-reference,polygon-reference --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --bin check-ui-diagnostics --bin ui-diagnostic-reference --bin build-ui-diagnostic-reference --bin check-ui-emoji --bin check-ui-forms --bin ui-forms-reference --locked"
-            ));
+            let build = run
+                .lines()
+                .find(|line| line.contains("cargo build "))
+                .unwrap();
+            let args = build.split_whitespace().collect::<Vec<_>>();
+            assert!(args.contains(&"--locked"));
+            assert!(args
+                .windows(2)
+                .any(|pair| pair == ["--features", "egl-reference,polygon-reference"]));
+            for binary in [
+                "check-ui-egl",
+                "ui-egl-reference",
+                "check-ui-polygon",
+                "ui-polygon-reference",
+                "check-ui-diagnostics",
+                "ui-diagnostic-reference",
+                "build-ui-diagnostic-reference",
+                "check-ui-emoji",
+                "check-ui-forms",
+                "ui-forms-reference",
+            ] {
+                assert!(
+                    args.windows(2).any(|pair| pair == ["--bin", binary]),
+                    "missing {binary}"
+                );
+            }
             assert!(run.contains(
                 "--features egl-reference --test ui_egl_reference --test ui_egl_check --locked"
             ));

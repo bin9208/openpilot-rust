@@ -59,7 +59,15 @@ fn all_original_stages_calls_ledgers_logs_exit_and_failure_prefixes() {
     let corpus: Value =
         serde_json::from_str(include_str!("fixtures/ui-framework/original.json")).unwrap();
     assert_eq!(corpus["cases"].as_array().unwrap().len(), 22);
-    for captured in corpus["cases"].as_array().unwrap() {
+    let legacy: Value =
+        serde_json::from_str(include_str!("fixtures/ui-framework/legacy-original.json")).unwrap();
+    assert_eq!(legacy["cases"].as_array().unwrap().len(), 7);
+    let all_cases = corpus["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .chain(legacy["cases"].as_array().unwrap().iter());
+    for captured in all_cases {
         let temporary = tempfile::tempdir().unwrap();
         let output = temporary.path().join("output");
         if let Some(file) = match captured["name"].as_str().unwrap() {

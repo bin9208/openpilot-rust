@@ -54,11 +54,12 @@ fn forms_native_reference_runs_real_pixels_with_owned_display_and_raw_helper() {
     assert!(
         suite
             < script
-                .find("python rust/tools/check_ui_framework.py")
+                .find("rust/target/debug/check-ui-framework --python python --target")
                 .unwrap()
     );
-    let caller = fs::read_to_string(root.join("rust/tools/check_ui_framework.py")).unwrap();
-    assert!(caller.contains("('forms', None, 'form_render', True)"));
+    let caller =
+        fs::read_to_string(root.join("rust/crates/dev-tools/src/ui_framework_check.rs")).unwrap();
+    assert!(caller.contains(r#"("forms", None, "form_render", true)"#));
     assert!(!caller.contains("check_ui_forms.py"));
 }
 
@@ -88,8 +89,9 @@ fn native_diagnostics_are_built_tested_and_selected_by_the_complete_ui_gate() {
     assert!(command.contains(build));
     assert!(command.contains("UI_DIAGNOSTIC_RAW_HELPER=%s/ui-diagnostic-raw/ui-diagnostic-raw"));
     assert!(command.contains("\"$GITHUB_ENV\""));
-    let caller = fs::read_to_string(root.join("rust/tools/check_ui_framework.py")).unwrap();
-    assert!(caller.contains("('diagnostics', None, 'diagnostic_render', True)"));
+    let caller =
+        fs::read_to_string(root.join("rust/crates/dev-tools/src/ui_framework_check.rs")).unwrap();
+    assert!(caller.contains(r#"("diagnostics", None, "diagnostic_render", true)"#));
     assert!(!caller.contains("check_ui_diagnostics.py"));
     let manifest: toml::Value =
         toml::from_str(&fs::read_to_string(root.join("rust/crates/dev-tools/Cargo.toml")).unwrap())
@@ -143,8 +145,9 @@ fn production_polygon_requires_native_codecs_and_ci_runs_the_real_gate() {
     assert!(command.contains("--features egl-reference,polygon-reference"));
     assert!(command.contains("--features polygon-reference --test image_array --test ui_polygon_reference --test ui_polygon_check --locked"));
     assert!(command.contains("-p openpilot-image-codecs --features native-sdk --locked"));
-    let caller = fs::read_to_string(root.join("rust/tools/check_ui_framework.py")).unwrap();
-    assert!(caller.contains("('polygon', None, 'polygon_render', True)"));
+    let caller =
+        fs::read_to_string(root.join("rust/crates/dev-tools/src/ui_framework_check.rs")).unwrap();
+    assert!(caller.contains(r#"("polygon", None, "polygon_render", true)"#));
     assert!(!caller.contains("check_ui_polygon.py"));
 }
 

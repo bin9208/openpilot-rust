@@ -2652,7 +2652,7 @@ jobs:
             test -f "$STARTUP_UI_RAYLIB_LIBRARY"
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
             cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features image-array-native --test ui_forms_check --test ui_forms_reference --test ui_forms_admission --test ui_forms_family_text --test ui_forms_snapshot_order --test ui_render_check --test ui_render_reference --test ui_framework_check --locked
-            python rust/tools/check_ui_framework.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/framework" --display "$DISPLAY"
+            rust/target/debug/check-ui-framework --python python --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/framework" --display "$DISPLAY"
             python rust/tools/check_startup_ui.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/startup" --display "$DISPLAY" --raylib-root "$STARTUP_UI_RAYLIB_ROOT" --raylib-library "$STARTUP_UI_RAYLIB_LIBRARY"
           '
           rust/target/debug/check-ui-emoji --binary "$PWD/rust/target/debug/examples/emoji_raster" --output "$RUNNER_TEMP/ui-connectivity/emoji"

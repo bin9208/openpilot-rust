@@ -27,6 +27,12 @@ before updating its command and provenance hash in the native draft.
 The registered native command passed four tests covering the22 injected and
 five actual process contracts, and scoped strict Clippy. The actual13stage
 UI gate passed, including live X11 input/normal exit, recording with FFprobe,
-log transport, FPS and EGL. The production caller remains explicit
-Python until that integration is verified; this does not claim Python-free
-framework closure. Capture scripts and process logs remain in ignored scratch.
+log transport, FPS and EGL. This does not claim Python-free framework closure:
+the network and application subcheckers remain Python. Capture scripts and
+process logs remain in ignored scratch.
+
+The caller migration is now complete: CI selects `check-ui-framework`, and the
+Python orchestrator is removed. `legacy-original.json` retains the seven prior
+caller regressions captured before deletion. The complete13-stage native caller
+passed again after deletion on an owned Xvfb display; the two explicitly listed
+Python subcheckers are still required and are not counted as retired.

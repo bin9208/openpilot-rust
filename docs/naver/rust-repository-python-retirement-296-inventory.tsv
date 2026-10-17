@@ -2128,7 +2128,7 @@ rust/tools/check_ui_emoji.py	8f7c4da7d0b2a2696a5f9756b8c339a95a49dde1	replaced-l
 rust/tools/check_ui_exp_button.py	69ee76edb29b58699121243ee6fa68440efcf0e1	pending	-
 rust/tools/check_ui_forms.py	d633463e35d266b612b07ee99ff18d41610bc5a5	replaced-local	openpilot-dev-tools check-ui-forms
 rust/tools/check_ui_fps.py	f0a46ef2877faf2480fe3f6bd1cd912885504c02	replaced-local	rust/crates/dev-tools/src/ui_application_logic_check.rs
-rust/tools/check_ui_framework.py	093087bcc5f2f8704b62b7f1cb696134aa3bc4c2	pending	-
+rust/tools/check_ui_framework.py	093087bcc5f2f8704b62b7f1cb696134aa3bc4c2	replaced-local	rust/crates/dev-tools/src/ui_framework_check.rs
 rust/tools/check_ui_home.py	be4e84cdc95e7bc2e6f636e084cbcaed5c607638	pending	-
 rust/tools/check_ui_hud.py	04b422b39052b620e429e3d6f45410bf39209041	pending	-
 rust/tools/check_ui_hud_presentation.py	9f1354f73de91690ad37d655b1012288b68e77d0	pending	-

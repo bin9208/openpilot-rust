@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Ninety-one sources have locally verified replacements and migrated
-callers; two are partially replaced and3,487 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Ninety-two sources have locally verified replacements and migrated
+callers; two are partially replaced and3,486 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -2063,3 +2063,31 @@ the existing Python orchestrator/tests remain until their caller-test migration.
 This host UI recording proof is not comma-device normal boot/route recording
 or network upload acceptance. Current-source evidence:
 2026-10-18-ui-framework/{second-gate,actual}.log and actual/invocations.json.
+
+### Shared UI caller retirement and CI routing repair (2026-10-18)
+
+`check_ui_framework.py` is now removed and CI invokes `check-ui-framework`.
+The seven legacy caller cases are preserved as independent original captures
+alongside22 injected contracts and5 actual process cases. Network and application
+remain explicit Python children. The source removal raises the inventory to92
+replaced-local,2 partially-replaced and3486pending.
+
+The full13-stage host gate passed after deletion on its own Xvfb display,
+including real X11 input, normal application exit, recording, logs and EGL.
+An earlier shared-display run lost keyboard focus while another worker opened
+windows; isolated-display execution resolves that test interference without
+changing input assertions or product code. Native routing tests pass locally.
+The old EGL CI guard required an exact uninterrupted command string and failed
+when valid additional binaries were appended. It now requires each original
+binary argument and feature/locked flag independently; none is optional.
+
+Published d2007fa1 Fast run39078224389 failed at that stale EGL assertion.
+Integration39078224403 failed resolving Maven/Kotlin dependencies before Java
+compilation; the failed jobs were retried without dependency/version changes.
+The exact Rust run39078224320 is still pending. These failures are not recorded
+as successes. Separate multi-release Forms behavior is tracked in
+[#350](https://github.com/bin9208/openpilot-rust/issues/350).
+
+Local evidence:2026-10-18-ui-framework/owned-after-deletion.log and
+owned-after-deletion/invocations.json;2026-10-18-camera-data/routing-final.log.
+Device boot, route recording and upload remain user-owned and unverified here.
