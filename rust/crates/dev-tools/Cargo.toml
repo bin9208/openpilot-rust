@@ -9,6 +9,10 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-cutin-alert"
+path = "src/bin/check_cutin_alert.rs"
+
+[[bin]]
 name = "check-ratekeeper"
 path = "src/bin/check_ratekeeper.rs"
 

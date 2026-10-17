@@ -2,7 +2,7 @@
 use openpilot_dev_tools::ci_policy::parse;
 use serde_json::Value;
 use std::{fs, path::Path, process::Command};
-const BUILD:&str="cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --locked";
+const BUILD:&str="cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ratekeeper --bin check-cutin-alert --locked";
 const CHECK:&str="rust/target/debug/check-ratekeeper --binary \"$selfdrive_examples/ratekeeper\" --output \"$selfdrive_evidence/ratekeeper\"";
 const GUARD:&str="\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048";
 fn check(workflow: &Value) -> Result<(), String> {

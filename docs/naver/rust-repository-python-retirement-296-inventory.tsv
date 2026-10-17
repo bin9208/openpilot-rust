@@ -1914,7 +1914,7 @@ rust/tools/check_control_tools_policy.py	6f931ced55cd4dc1eb2573c3126416e85f5e253
 rust/tools/check_controlsd.py	75b142eaed2bce5d1ea908d83ea3e59ac397c03f	pending	-
 rust/tools/check_controlsd_daemon.py	b81a46e2f50e4ab3097bab1e587c6c4aa156b4bb	pending	-
 rust/tools/check_crash_sdk_transport.py	640f56cf3f0f5702737f188cdb445c61b2bbd1a4	pending	-
-rust/tools/check_cutin_alerts.py	dbcf1a6502baa66fadfef1b3a231b4391ca1fbb9	pending	-
+rust/tools/check_cutin_alerts.py	dbcf1a6502baa66fadfef1b3a231b4391ca1fbb9	replaced-local	openpilot-dev-tools check-cutin-alert; independent complete 5786-frame state and failure corpus
 rust/tools/check_cweb_address.py	301dfd4c41bafd3ac138924ed61bf03b9838b2f8	pending	-
 rust/tools/check_cweb_daemon.py	6c6645b94e1ed84f8c3670a8c819db3ad78c023e	pending	-
 rust/tools/check_cweb_http.py	81bc4dde77b07ee20f1f9caf9c37d94dd2cb3c8d	pending	-

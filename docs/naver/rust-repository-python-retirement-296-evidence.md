@@ -1537,3 +1537,27 @@ service-tools. The aggregate checks actual success from all three workers,
 rejecting missing, skipped, cancelled, timed-out or failed results. Seven-minute
 worker bounds are retained. This is CI scheduling, not removed test coverage;
 new exact-head remote success remains required.
+
+### Cut-in audio-alert validation script retirement (2026-10-18)
+
+check-cutin-alert replaces the fixed Python checker using all 5,786 independently
+captured source states and exact float-bit inputs, including its 5,000-frame
+randomized suffix. Seventeen failure/process cases, six CLI cases, artifact
+ordering, live-source drift, source absence and all original equality semantics
+remain checked. Generic runtime CutinAlertTracker/promoted-candidate source stays
+live; no detection, lead selection or NAS replay policy changed.
+
+The actual source/native binaries produce byte-identical input.jsonl, source.jsonl,
+native.jsonl, native.stderr, report.json and stdout. After checker removal,
+PATH=/nonexistent repeats the same result. Parent validation passes all 28 affected
+tests (13 disk bootstrap, six workflow policy, three checker, three routing and
+three Ratekeeper routing), scoped strict Clippy and the actual example build.
+The six cut-in tests pass again after deletion. CI now selects both native gates
+with explicit disk guards and keeps all nine surrounding source comparisons;
+all 63 native integration targets remain mandatory exactly once.
+
+Inventory: 64 replaced-local / 3,516 pending. Published3c194582 fast PR gate
+passed, but its workspace job117482992011 failed formatting at the newly added
+Ratekeeper module declaration. The declaration is now rustfmt-sorted. Current
+uncommitted model work remains separately owned and is not part of this commit.
+Full exact-head CI and the user-owned device checks are still outstanding.
