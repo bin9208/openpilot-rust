@@ -2122,3 +2122,30 @@ captures and8tests live in `dev-tools/tests/fixtures/camera-sensor-check` and
 The unchanged d2007fa1 Integration39078224403 retry completed successfully,
 including Android protocol/Java inference. The initial Maven resolution failure
 remains recorded above; no dependency or test change was needed for the retry.
+
+### Repeated UI release callbacks (#350,2026-10-18)
+
+Independent original captures exposed10 mismatches in12 reference scenes and
+five in the production Confirm dialog. Boolean click aggregation lost second/
+third keyboard/list releases; production Confirm stored only the last pending
+result. The reference now handles every successful release and production
+queues results in order, retaining deferred navigation callbacks. MultiOption
+uses the same queue boundary.
+
+All12 original/reference/current-candidate pixel/state comparisons pass after
+repair. The18-scene/388-frame Forms gate has zero differing pixels and equal
+states;55 execve entries contain native programs only. Twenty affected Forms
+checks, the production2/3-release callback-order test and strict Clippy pass.
+The original failing captures are retained as regression fixtures. This is
+synthetic host UI input evidence, not physical touchscreen/vehicle acceptance.
+
+Exact d2007fa1 Rust CI still fails the one-frame `irrelevant-input-prop` Confirm
+PNG hash (observed48ced25f..., expected35a7f1f0...), despite identical state.
+Both GCC and Clang helpers locally produce the original expected hash. Root
+cause remains open: no expected hash or image tolerance was changed. Failure-only
+retention now saves the actual PNG/state/scene, stdout/stderr, expected capture,
+GL environment and executable/library hashes under the existing CI artifact
+root. Its controlled mismatch test and strict Clippy pass; successful comparisons
+create no extra image artifact. The next exact-source CI must provide the missing
+render evidence if the mismatch repeats. See #350 and local
+`2026-10-18-ui-network/{releases-green,releases-eighteen,diagnostic-unit.log}`.

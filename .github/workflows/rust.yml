@@ -2645,6 +2645,8 @@ jobs:
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/ui-params-binding"
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/connectivity-msgq-python"
       - name: Compare shared UI state, pixels, real input and native lifecycle
+        env:
+          UI_FORMS_FAILURE_OUTPUT: ${{ runner.temp }}/ui-connectivity/forms-failures
         run: |
           xvfb-run -a -s '-screen 0 2160x1080x24' bash -euc '
             test -x "$UI_FORMS_RAW_HELPER"

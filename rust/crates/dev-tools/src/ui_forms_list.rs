@@ -176,7 +176,7 @@ impl List {
                         height: 80.0,
                     },
                 )?;
-                if self.action_touch.update(
+                for _ in self.action_touch.releases(
                     Rect {
                         x,
                         y,
@@ -281,16 +281,19 @@ impl List {
             _ => return Err("original list action missing".into()),
         }
         c::debug_rect(api, right)?;
-        if self.touch.update(self.rect, events)? && !self.description.is_empty() {
-            let click = events.iter().rev().find(|e| e["released"] == true);
-            let outside = click.is_none_or(|e| {
+        for at in self.touch.releases(self.rect, events)? {
+            if self.description.is_empty() {
+                continue;
+            }
+            let outside = {
+                let e = &events[at];
                 let x = e["pos"]["x"].as_f64().unwrap_or(0.0);
                 let y = e["pos"]["y"].as_f64().unwrap_or(0.0);
                 !(x >= right.x
                     && x <= right.x + right.width
                     && y >= right.y
                     && y <= right.y + right.height)
-            });
+            };
             if outside {
                 self.visible = openpilot_log_format::JsonValue::parse(
                     if crate::ui_forms_input::python_truth(&self.visible) {

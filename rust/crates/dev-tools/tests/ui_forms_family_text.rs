@@ -96,6 +96,14 @@ fn compare_originals(fixtures: &[&str]) {
 }
 
 #[test]
+fn actual_cli_preserves_each_repeated_release_when_available() {
+    compare_originals(&[
+        include_str!("fixtures/ui-forms/repeated-release-original.json"),
+        include_str!("fixtures/ui-forms/repeated-release-neighbors-original.json"),
+    ]);
+}
+
+#[test]
 fn actual_cli_preserves_other_families_raw_text_properties_and_selection_when_available() {
     compare_originals(&[
         include_str!("fixtures/ui-forms/family-codepoints-original.json"),

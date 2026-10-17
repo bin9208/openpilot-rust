@@ -268,7 +268,7 @@ impl Keyboard {
             },
         )?;
         let mut pops = 0;
-        if self.cancel.render(
+        let cancel_count = self.cancel.render_count(
             api,
             Rect {
                 x: rect.x + rect.width - 386.0,
@@ -279,7 +279,8 @@ impl Keyboard {
             .cast(),
             scale,
             events,
-        )? {
+        )?;
+        for _ in 0..cancel_count {
             self.clear();
             pops += 1;
         }
@@ -330,7 +331,7 @@ impl Keyboard {
                 10.0 / (eye.width.min(eye.height) / 2.0)
             ))?;
             let id = if self.password { 1 } else { 0 };
-            if self.eye.update(eye, events)? {
+            for _ in self.eye.releases(eye, events)? {
                 self.password = !self.password;
             }
             c::debug_rect(api, eye)?;
@@ -428,13 +429,17 @@ impl Keyboard {
                     ))?;
                     c::debug_rect(api, r)?;
                     c::debug_rect(api, r)?;
-                    enabled && touch.update(r, events)?
+                    if enabled {
+                        touch.releases(r, events)?.len()
+                    } else {
+                        0
+                    }
                 } else {
                     let b = self.buttons.get_mut(actual).unwrap();
                     b.enabled = enabled;
-                    b.render(api, r, scale, events)?
+                    b.render_count(api, r, scale, events)?
                 };
-                if clicked {
+                for _ in 0..clicked {
                     if key == "->" {
                         pops += 1;
                     } else {

@@ -166,8 +166,11 @@ impl Touch {
         self.pressed || (self.multi && self.slots.iter().any(|v| v.0))
     }
     pub fn update(&mut self, rect: Rect, events: &[serde_json::Value]) -> Result<bool> {
-        let mut clicked = false;
-        for e in events {
+        Ok(!self.releases(rect, events)?.is_empty())
+    }
+    pub fn releases(&mut self, rect: Rect, events: &[serde_json::Value]) -> Result<Vec<usize>> {
+        let mut clicked = Vec::new();
+        for (at, e) in events.iter().enumerate() {
             let raw = &e["slot"];
             let numeric = match raw {
                 serde_json::Value::Bool(v) => Some(f64::from(u8::from(*v))),
@@ -207,7 +210,9 @@ impl Touch {
                 pressed = true;
                 tracking = true;
             } else if e["released"] == true {
-                clicked |= pressed && inside;
+                if pressed && inside {
+                    clicked.push(at);
+                }
                 pressed = false;
                 tracking = false;
             } else if inside {
@@ -292,6 +297,26 @@ impl Button {
         events: &[serde_json::Value],
         valid: bool,
     ) -> Result<bool> {
+        Ok(self.render_clipped_count(api, rect, hit, scale, events, valid)? > 0)
+    }
+    pub fn render_count(
+        &mut self,
+        api: &mut dyn Canvas,
+        rect: Rect,
+        scale: f64,
+        events: &[serde_json::Value],
+    ) -> Result<usize> {
+        self.render_clipped_count(api, rect, rect, scale, events, true)
+    }
+    pub fn render_clipped_count(
+        &mut self,
+        api: &mut dyn Canvas,
+        rect: Rect,
+        hit: Rect,
+        scale: f64,
+        events: &[serde_json::Value],
+        valid: bool,
+    ) -> Result<usize> {
         let bg = if !self.enabled {
             color(51, 51, 51, 255)
         } else if self.touch.pressed() {
@@ -349,15 +374,15 @@ impl Button {
         debug_rect(api, rect)?;
         Ok(if self.enabled {
             if valid {
-                self.touch.update(hit, events)?
+                self.touch.releases(hit, events)?.len()
             } else {
                 let multi = self.touch.multi;
                 self.touch = Touch::default();
                 self.touch.multi = multi;
-                false
+                0
             }
         } else {
-            false
+            0
         })
     }
 }
@@ -520,49 +545,43 @@ impl Confirm {
         let y = rect.y + rect.height - 210.0;
         if python_truth(&self.cancel) {
             let w = ((rect.width - 150.0) / 2.0).floor();
-            pops += usize::from(
-                self.confirm.render(
-                    api,
-                    Rect {
-                        x: rect.x + rect.width - w - 50.0,
-                        y,
-                        width: w,
-                        height: 160.0,
-                    }
-                    .cast(),
-                    scale,
-                    events,
-                )?,
-            );
-            pops += usize::from(
-                self.cancel_button.render(
-                    api,
-                    Rect {
-                        x: rect.x + 50.0,
-                        y,
-                        width: w,
-                        height: 160.0,
-                    }
-                    .cast(),
-                    scale,
-                    events,
-                )?,
-            );
+            pops += self.confirm.render_count(
+                api,
+                Rect {
+                    x: rect.x + rect.width - w - 50.0,
+                    y,
+                    width: w,
+                    height: 160.0,
+                }
+                .cast(),
+                scale,
+                events,
+            )?;
+            pops += self.cancel_button.render_count(
+                api,
+                Rect {
+                    x: rect.x + 50.0,
+                    y,
+                    width: w,
+                    height: 160.0,
+                }
+                .cast(),
+                scale,
+                events,
+            )?;
         } else {
-            pops += usize::from(
-                self.confirm.render(
-                    api,
-                    Rect {
-                        x: rect.x + 50.0,
-                        y,
-                        width: rect.width - 100.0,
-                        height: 160.0,
-                    }
-                    .cast(),
-                    scale,
-                    events,
-                )?,
-            );
+            pops += self.confirm.render_count(
+                api,
+                Rect {
+                    x: rect.x + 50.0,
+                    y,
+                    width: rect.width - 100.0,
+                    height: 160.0,
+                }
+                .cast(),
+                scale,
+                events,
+            )?;
         }
         Ok(pops)
     }

@@ -74,3 +74,24 @@ Raw captures and scripts remain in ignored scratch. Early manual failure
 probes missing the raylib library environment were invalid and are not evidence;
 the compiled fixture gates and correctly configured native-only proofs provide
 candidate validation.
+
+Issue #350 repeated-release regressions add 12 unchanged-original cases in
+repeated-release-original.json and repeated-release-neighbors-original.json.
+They preserve every List toggle/description update, Keyboard character/Enter,
+and Confirm/Cancel pop across two/three releases and mixed buttons. The repaired
+reference and current candidate matched all twelve PNGs/states; all twenty
+affected Forms integration tests, strict Clippy, and the 18-scene/388-frame
+native-only checker passed on an owned Xvfb display.
+
+Admission PNG assertions remain byte-exact. If UI_FORMS_FAILURE_OUTPUT is set,
+a mismatch retains only that case's PNG/state, original scene/case, child logs,
+source provenance and render metadata (driver environment plus helper/library
+hashes). This supplies evidence for platform-specific failures without saving
+additional successful PNGs or changing the expected hash.
+
+Repeated-release captures (2026-10-18) preserve12 unchanged original scenes,
+including double/triple keyboard input, list toggles/descriptions and Confirm/
+cancel/mixed results. Before repair10 reference scenes and5 production Confirm
+scenes differed. All12 now match original PNGs and states; the18scene/388frame
+gate also passes. Exact source histories/hashes remain in
+`repeated-release-original.json` and `repeated-release-neighbors-original.json`.
