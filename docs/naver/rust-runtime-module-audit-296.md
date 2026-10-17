@@ -630,3 +630,28 @@ test now classifies and asserts that reservation separately, retaining all
 179 original ordinary reservation arguments and their hash. All 13 disk guard
 tests pass after the correction. This was a CI accounting failure, not an
 allocation probe or runtime failure.
+
+### Log collector and statistics directory allocation reuse (2026-10-18)
+
+The log collector now moves the first received ZMQ frame into the record buffer
+and appends subsequent frames. A normal single-frame record keeps its original
+allocation; byte order, binary/empty records, level parsing, file emission and
+message publication remain unchanged. Its pointer/capacity regression first
+failed against the former flatten/collect expression and passes after the change.
+Multipart and empty-record cases retain exact byte results.
+
+Stats storage counts directory entries with a fallible fold instead of allocating
+a Vec only to read its length. It still consumes the iterator through the first
+error, checks the file limit before empty metrics and preserves publication order.
+Full logmessaged/statsd package tests pass 27 cases, including existing storage
+failure, full-directory and record formatting/rotation tests; strict all-target
+Clippy and the actual collector build pass. Independent review found no actionable
+issue. This is host allocation evidence, not a measured device CPU reduction.
+
+The newly built collector also passes the unchanged real original/native ZMQ and
+full-cereal comparison: 24 records across retention, rollover-open failure,
+write failure, deep-object publication and the 61-second rotation boundary;
+2,500-file retention and message queue capacities match. Idle SIGINT/SIGTERM
+shutdown, empty-record rejection and invalid CLI paths pass. The pre-existing
+explicit CPython recursion-depth difference remains recorded by the unchanged
+reference suite. Results: local `2026-10-18-logmessage-reuse/native-peers/report.json`.

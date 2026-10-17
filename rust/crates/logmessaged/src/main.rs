@@ -68,7 +68,7 @@ fn run(options: Options) -> Result<(), EntryError> {
                 Err(zmq::Error::EAGAIN | zmq::Error::EINTR) => continue,
                 Err(error) => return Err(error.into()),
             };
-            let bytes: Vec<u8> = parts.into_iter().flatten().collect();
+            let bytes = openpilot_logmessaged::record_bytes::join(parts);
             let (&level, raw) = bytes
                 .split_first()
                 .ok_or(EntryError::Contract("empty log record has no level byte"))?;

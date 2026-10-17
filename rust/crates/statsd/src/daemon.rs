@@ -177,8 +177,7 @@ impl Storage {
     }
     pub fn publish(&mut self, output: &[u32]) -> Result<Publication, Error> {
         let count = fs::read_dir(&self.directory)?
-            .collect::<Result<Vec<_>, _>>()?
-            .len();
+            .try_fold(0_usize, |count, entry| entry.map(|_| count + 1))?;
         if count >= FILE_LIMIT {
             return Ok(Publication::Full);
         }
