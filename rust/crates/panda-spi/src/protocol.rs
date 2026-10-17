@@ -71,6 +71,13 @@ impl Default for BusTiming {
 /// their priority even while another operation owns that handle's buffers.
 pub trait Clock: Send + Sync {
     fn now_ns(&self) -> u64;
+    /// Keep the bus quiet through the deadline. Virtual clocks may advance on reads;
+    /// hardware clocks can release the CPU during the coarse part of the wait.
+    fn wait_until(&self, start: u64, duration: u64) {
+        while self.now_ns().wrapping_sub(start) < duration {
+            std::hint::spin_loop();
+        }
+    }
     fn now_ms(&self) -> f64 {
         let ns = self.now_ns();
         (ns / 1_000_000_000) as f64 * 1000.0 + (ns % 1_000_000_000) as f64 * 1e-6
@@ -85,6 +92,11 @@ pub trait Io {
         false
     }
     fn now_ns(&mut self) -> u64;
+    fn wait_until(&mut self, start: u64, duration: u64) {
+        while self.now_ns().wrapping_sub(start) < duration {
+            std::hint::spin_loop();
+        }
+    }
     fn transfer(&mut self, tx: &mut [u8], rx: &mut [u8], length: usize) -> i32;
     fn log(&mut self, level: u8, message: String);
     fn now_ms(&mut self) -> f64 {
@@ -134,7 +146,7 @@ fn elapsed_us(now: u64, start: u64) -> u64 {
     now.wrapping_sub(start) / 1000
 }
 fn wait(io: &mut impl Io, start: u64, duration: u64) {
-    while io.now_ns().wrapping_sub(start) < duration {}
+    io.wait_until(start, duration);
 }
 fn checksum(data: &[u8]) -> u8 {
     data.iter().fold(0xab, |sum, byte| sum ^ byte)

@@ -31,6 +31,7 @@ std::unique_ptr<Handle> create(const std::string &path);
 uint64_t now_ns();
 void yield_now();
 void sleep_us(uint32_t micros);
+void sleep_until_ns(uint64_t deadline);
 Call set_scheduler(int32_t policy, int32_t priority);
 std::unique_ptr<std::string> errno_description(int error);
 double parse_probability(const std::string &value);

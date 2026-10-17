@@ -35,9 +35,33 @@ impl NativeKernel {
     }
 }
 pub struct BootClock;
+
+fn wait_for_turnaround(
+    mut now_ns: impl FnMut() -> u64,
+    mut sleep_until: impl FnMut(u64),
+    start: u64,
+    duration: u64,
+) {
+    // Retain a short precision tail, avoiding a scheduler round trip for waits
+    // already close to their deadline. Recheck after waking, including EINTR or
+    // scheduling delay; neither an early wake nor rounding may shorten the gap.
+    let remaining = duration.saturating_sub(now_ns().wrapping_sub(start));
+    if remaining > 100_000 {
+        // An absolute deadline cannot add a stale relative delay if this thread
+        // is preempted between reading the clock and entering the sleep syscall.
+        sleep_until(start.wrapping_add(duration - 50_000));
+    }
+    while now_ns().wrapping_sub(start) < duration {
+        std::hint::spin_loop();
+    }
+}
+
 impl Clock for BootClock {
     fn now_ns(&self) -> u64 {
         ffi::now_ns()
+    }
+    fn wait_until(&self, start: u64, duration: u64) {
+        wait_for_turnaround(ffi::now_ns, ffi::sleep_until_ns, start, duration);
     }
 }
 impl Kernel for NativeKernel {
@@ -107,9 +131,153 @@ mod tests {
     use super::*;
     use openpilot_panda_spi::linux_io::LinuxIo;
     use std::{
+        cell::Cell,
         fs,
         sync::{Arc, Mutex},
     };
+
+    #[test]
+    fn turnaround_releases_cpu_without_starting_the_next_phase_early() {
+        for (start, elapsed, duration, sleep_percent) in [
+            (1_000_000_u64, 0, 400_000, 100),
+            (1_000_000, 0, 1_000_000, 100),
+            (1_000_000, 200_000, 400_000, 100),
+            (1_000_000, 0, 400_000, 50),  // interrupted sleep
+            (1_000_000, 0, 400_000, 200), // late wakeup
+            (u64::MAX - 200_000, 0, 400_000, 100),
+        ] {
+            let now = Cell::new(start.wrapping_add(elapsed));
+            let reads = Cell::new(0);
+            let sleeps = Cell::new(0);
+            wait_for_turnaround(
+                || {
+                    reads.set(reads.get() + 1);
+                    let value = now.get();
+                    now.set(value.wrapping_add(1_000));
+                    value
+                },
+                |deadline| {
+                    sleeps.set(sleeps.get() + 1);
+                    now.set(
+                        now.get()
+                            .wrapping_add(deadline.wrapping_sub(now.get()) * sleep_percent / 100),
+                    );
+                },
+                start,
+                duration,
+            );
+            assert!(now.get().wrapping_sub(start) >= duration);
+            assert_eq!(sleeps.get(), 1, "long waits must relinquish the CPU once");
+            if sleep_percent == 100 {
+                assert!(
+                    reads.get() < 100,
+                    "long waits must not poll the clock throughout"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn elapsed_and_short_turnarounds_do_not_add_a_sleep() {
+        for elapsed in [350_000, 399_000, 400_000, 500_000] {
+            let now = Cell::new(1_000_000 + elapsed);
+            wait_for_turnaround(
+                || {
+                    let value = now.get();
+                    now.set(value + 1_000);
+                    value
+                },
+                |_| panic!("short or elapsed waits must not add scheduler latency"),
+                1_000_000,
+                400_000,
+            );
+            assert!(now.get() >= 1_400_000);
+        }
+    }
+
+    #[test]
+    fn preemption_before_sleep_does_not_extend_an_elapsed_deadline() {
+        let now = Cell::new(1_000_000_u64);
+        let preempt = Cell::new(true);
+        wait_for_turnaround(
+            || {
+                let value = now.get();
+                now.set(
+                    value
+                        + if preempt.replace(false) {
+                            500_000
+                        } else {
+                            1_000
+                        },
+                );
+                value
+            },
+            |deadline| now.set(now.get().max(deadline)),
+            1_000_000,
+            400_000,
+        );
+        assert!(
+            now.get() <= 1_501_000,
+            "an elapsed deadline must not add another relative sleep"
+        );
+    }
+
+    #[test]
+    fn hardware_clock_wait_respects_both_spi_minimum_gaps() {
+        let clock = NativeKernel::system(|_, _| {}).clock();
+        for duration in [400_000, 1_000_000] {
+            let start = clock.now_ns();
+            clock.wait_until(start, duration);
+            assert!(clock.now_ns().wrapping_sub(start) >= duration);
+        }
+    }
+
+    #[test]
+    #[ignore = "host CPU/latency benchmark; run explicitly with --nocapture"]
+    fn turnaround_cpu_benchmark() {
+        let ticks_per_second = std::process::Command::new("getconf")
+            .arg("CLK_TCK")
+            .output()
+            .unwrap();
+        assert!(ticks_per_second.status.success());
+        let hz: f64 = std::str::from_utf8(&ticks_per_second.stdout)
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        let cpu_ticks = || {
+            let stat = fs::read_to_string("/proc/thread-self/stat").unwrap();
+            let fields: Vec<_> = stat[stat.rfind(')').unwrap() + 2..]
+                .split_whitespace()
+                .collect();
+            fields[11].parse::<u64>().unwrap() + fields[12].parse::<u64>().unwrap()
+        };
+        for duration in [400_000, 1_000_000] {
+            for sleeping in [false, true, true, false] {
+                let before = cpu_ticks();
+                let wall = std::time::Instant::now();
+                let mut elapsed = Vec::with_capacity(2000);
+                for _ in 0..2000 {
+                    let start = BootClock.now_ns();
+                    if sleeping {
+                        BootClock.wait_until(start, duration);
+                    } else {
+                        while BootClock.now_ns().wrapping_sub(start) < duration {}
+                    }
+                    let ns = BootClock.now_ns().wrapping_sub(start);
+                    assert!(ns >= duration, "the SPI phase must never start early");
+                    elapsed.push(ns);
+                }
+                let wall = wall.elapsed().as_secs_f64();
+                let cpu = (cpu_ticks() - before) as f64 / hz;
+                elapsed.sort_unstable();
+                println!(
+                    "duration_ns={duration} sleeping={sleeping} iterations=2000 cpu_seconds={cpu:.3} wall_seconds={wall:.6} cpu_percent={:.2} p50_ns={} p99_ns={} max_ns={}",
+                    100.0 * cpu / wall, elapsed[1000], elapsed[1980], elapsed[1999]
+                );
+            }
+        }
+    }
     #[test]
     fn owned_regular_file_rejects_spidev_options_and_releases_descriptors() {
         let path = std::env::temp_dir().join(format!("panda-spi-kernel-{}", std::process::id()));

@@ -110,6 +110,9 @@ impl<K: Kernel> Io for LinuxIo<K> {
     fn now_ns(&mut self) -> u64 {
         self.kernel.now_ns()
     }
+    fn wait_until(&mut self, start: u64, duration: u64) {
+        self.kernel.clock().wait_until(start, duration);
+    }
     fn transfer(&mut self, tx: &mut [u8], rx: &mut [u8], mut length: usize) -> i32 {
         if self.probability > 0.0 {
             if self.random_fraction() < self.probability {

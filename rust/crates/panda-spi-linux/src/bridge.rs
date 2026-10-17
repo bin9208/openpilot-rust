@@ -46,6 +46,7 @@ pub(crate) mod ffi {
         fn now_ns() -> u64;
         fn yield_now();
         fn sleep_us(micros: u32);
+        fn sleep_until_ns(deadline: u64);
         fn set_scheduler(policy: i32, priority: i32) -> Call;
         fn errno_description(error: i32) -> UniquePtr<CxxString>;
         fn parse_probability(value: &CxxString) -> Result<f64>;

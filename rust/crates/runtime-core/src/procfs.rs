@@ -248,7 +248,9 @@ fn invalid_record() -> io::Error {
 }
 
 fn read_record(path: &Path) -> io::Result<Vec<u8>> {
-    let mut bytes = Vec::new();
+    // procfs reports no useful file size. Reserve room for a normal stat record
+    // so read_to_end does not issue successive 32/64/128-byte allocation probes.
+    let mut bytes = Vec::with_capacity(1024);
     File::open(path)?
         .take(MAX_RECORD_BYTES + 1)
         .read_to_end(&mut bytes)?;
@@ -256,6 +258,41 @@ fn read_record(path: &Path) -> io::Result<Vec<u8>> {
         return Err(invalid_record());
     }
     Ok(bytes)
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod read_benchmark {
+    use super::*;
+
+    #[test]
+    #[ignore = "Linux per-thread syscall benchmark; run explicitly with --nocapture"]
+    fn small_proc_records_do_not_repeat_tiny_probe_reads() {
+        let read_calls = || {
+            fs::read_to_string("/proc/thread-self/io")
+                .unwrap()
+                .lines()
+                .find_map(|line| line.strip_prefix("syscr: "))
+                .unwrap()
+                .parse::<u64>()
+                .unwrap()
+        };
+        let before = read_calls();
+        let start = std::time::Instant::now();
+        for _ in 0..10_000 {
+            let bytes = read_record(Path::new("/proc/thread-self/stat")).unwrap();
+            assert!(ProcessStat::parse(std::str::from_utf8(&bytes).unwrap()).is_some());
+        }
+        let elapsed = start.elapsed();
+        let calls = read_calls() - before;
+        println!(
+            "records=10000 read_syscalls={calls} wall_seconds={:.6}",
+            elapsed.as_secs_f64()
+        );
+        assert!(
+            calls < 30_000,
+            "small proc records need only a data read and EOF, without repeated allocation probes"
+        );
+    }
 }
 
 fn read_metadata(dir: &Path, name: &str) -> Metadata {

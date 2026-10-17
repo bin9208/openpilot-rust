@@ -1,5 +1,8 @@
 # dev-md final-source Panda boundary port (#338)
 
+The subsequent native SPI wait optimization and its timing/CPU evidence are
+tracked in [the per-core follow-up](dev-md-core-cpu-validation.md) under #348.
+
 Source target `e8e152dbcfd9574a1791ed12026d1880e87689b3`, delta from `43203371004e035bdb70a00a8dad29a4b657c6c3`. Project-owned host orchestration remains Rust. Independent safety MCU C firmware stays an explicit native boundary; no flashing, device connection or protected-branch change is part of this port.
 
 ## Contracts being imported
