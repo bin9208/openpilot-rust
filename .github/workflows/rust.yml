@@ -582,6 +582,11 @@ jobs:
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo test --workspace --locked
+      - name: Check process-stat parser allocation regression
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
+          rustc --edition=2021 tools/proc_stat_allocation_probe.rs -o "$RUNNER_TEMP/proc-stat-allocation"
+          "$RUNNER_TEMP/proc-stat-allocation"
       - name: Require complete Hyundai schemas after workspace tests
         run: |
           python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"

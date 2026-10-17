@@ -28,9 +28,15 @@ impl ProcessStat {
             return None;
         }
         let pid = line[..open].trim().parse().ok()?;
-        let fields: Vec<&str> = line[close + 1..].split_whitespace().collect();
         // Preserve the source parser's minimum of 52 fields, including pid/comm.
-        if fields.len() < 50 || fields[0].len() != 1 {
+        // Only the first 50 are used. Avoid heap growth and scanning extra fields
+        // for every process (including the collector's identity recheck).
+        let mut words = line[close + 1..].split_whitespace();
+        let mut fields = [""; 50];
+        for field in &mut fields {
+            *field = words.next()?;
+        }
+        if fields[0].len() != 1 {
             return None;
         }
         Some(Self {
