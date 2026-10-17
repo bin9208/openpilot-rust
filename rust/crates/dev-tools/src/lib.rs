@@ -19,6 +19,8 @@ pub mod opencv_build;
 pub mod opencv_stage;
 pub mod package;
 pub mod params_reference_check;
+pub mod plot_samples_check;
+pub mod plot_samples_source;
 pub mod publish;
 pub mod qa_process;
 pub mod ratekeeper_check;

@@ -2143,7 +2143,7 @@ rust/tools/check_ui_native_safety.py	7026cc048cf5e7cc7119cd72494368aa4c5cc407	re
 rust/tools/check_ui_navigation.py	d1f15851260ed84c58d360e76b70d9df5024b099	replaced-local	rust/crates/dev-tools/src/ui_headless_check.rs
 rust/tools/check_ui_network.py	fffbc51ffe8cc096159e07c873dfaf99d3a75594	pending	-
 rust/tools/check_ui_onboarding_cards.py	91f99692279cd91099e723a26baa0e3933d3a0b9	pending	-
-rust/tools/check_ui_plot_samples.py	fd0f328e12cab3a3de3c7d6d64883b48b291dc0b	pending	-
+rust/tools/check_ui_plot_samples.py	fd0f328e12cab3a3de3c7d6d64883b48b291dc0b	replaced-local	rust/crates/dev-tools/src/plot_samples_check.rs
 rust/tools/check_ui_polygon.py	9d89f845b4479a1b5ec29258f126efde0fad159b	replaced-local	openpilot-dev-tools check-ui-polygon; original image-array modes and pinned native codecs, independent comparison corpus
 rust/tools/check_ui_product_buttons.py	c84be094f6aeaa21377fbe1ce7ff4be78ba5fc22	pending	-
 rust/tools/check_ui_product_dialogs.py	21f7ba54a1cc31fb5e14c69e5b878070ef3b4d7b	pending	-
@@ -2592,7 +2592,7 @@ rust/tools/ui_application_qa/indicator_source.py	f765b079c46b30819c4047c819f61da
 rust/tools/ui_application_qa/mici_buttons_source.py	4fe0c0db70f8d309aa37a2af8f6a8023ed2a6913	pending	-
 rust/tools/ui_application_qa/mici_offroad_alerts_source.py	a7ca16e09860f81d1ca8ca30e1a7850770cb5244	pending	-
 rust/tools/ui_application_qa/network_source.py	ff9b9b7f1215a21ac91698be7b1e4a052e2372d8	pending	-
-rust/tools/ui_application_qa/plot_samples_source.py	3fb41f65c007fbe825aeaf8c4f49fdd9375b423b	pending	-
+rust/tools/ui_application_qa/plot_samples_source.py	3fb41f65c007fbe825aeaf8c4f49fdd9375b423b	replaced-local	rust/crates/dev-tools/src/plot_samples_source.rs
 rust/tools/ui_application_qa/plot_source.py	8c513902e2ae1a50d153eb449c547dc5cacdba0c	pending	-
 rust/tools/ui_application_qa/product_effects.py	02064ec10e5d8f924a62ae9c3c2e59df80937159	pending	-
 rust/tools/ui_application_qa/product_forms_source.py	9a6794844c771f80b8b4cb3d904e685d7e21dfc6	pending	-

@@ -82,13 +82,13 @@ def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path:
   owner.execute('owned-display')
   assert old_calls == ['root', 'augmented', 'camera', 'runtime', 'pages',
                        'hud-eight-modes', 'hud-traffic', 'calibration']
-  assert ordered == ['state', 'scheduler', 'qr', 'root', 'augmented', 'camera', 'runtime', 'pages',
+  assert ordered == ['state', 'scheduler', 'plot-samples', 'qr', 'root', 'augmented', 'camera', 'runtime', 'pages',
                      'hud-eight-modes', 'hud-traffic', 'calibration', 'torque', 'native-safety',
                      'native-model-adapter', 'native-training-adapter']
   assert native_calls == [
     ([str(binaries / f'check-ui-{name}'), '--binary', str(binaries / f'examples/{binary}'),
       '--output', str(output / name)], output / 'commands', name)
-    for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace'))
+    for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace'), ('plot-samples', 'plot_samples'))
   ] + [
     ([str(binaries / 'check-ui-qr'), '--binary', str(binaries / 'examples/qr_trace'),
       '--output', str(output / 'qr')], output / 'commands', 'qr'),
@@ -164,3 +164,18 @@ def test_framework_native_logic_routes_preserve_order_logs_and_failure_stop(tmp_
     assert json.loads((output / 'egl-build-disk.json').read_text()) == {
       'available_bytes': 26 * 1024**3, 'required_bytes': 26 * 1024**3,
     }
+
+
+def test_native_plot_samples_failure_stops_remaining_ui_checks(tmp_path: Path, monkeypatch) -> None:
+  import check_ui_ci as module
+  calls = []
+  monkeypatch.setattr(module, 'require_space', lambda *args: None)
+  def execute(command, directory, name):
+    calls.append(name)
+    if name == 'plot-samples':
+      raise RuntimeError('sampling mismatch')
+  monkeypatch.setattr(module, 'run', execute)
+  monkeypatch.setattr(module.UiCheck, 'check', lambda self, name, script, arguments: calls.append(name))
+  with pytest.raises(RuntimeError, match='sampling mismatch'):
+    module.UiCheck(tmp_path / 'output', tmp_path / 'binaries', tmp_path / 'peer').execute(':owned')
+  assert calls == ['state', 'scheduler', 'plot-samples']

@@ -16,7 +16,7 @@ import sys
 from card_qa.ci import ROOT, TOOLS, hashes, require_space, run
 
 EXAMPLES = ('product_render', 'product_runtime', 'state_trace', 'scheduler_trace', 'qr_trace',
-  'calibration_geometry', 'torque_geometry')
+  'calibration_geometry', 'torque_geometry', 'plot_samples')
 
 
 def vision_peer(messages: Path) -> Path:
@@ -71,7 +71,7 @@ class UiCheck:
 
   def execute(self, display: str) -> None:
     examples = self.binaries / 'examples'
-    for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace')):
+    for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace'), ('plot-samples', 'plot_samples')):
       require_space(self.output, 3 * 1024**3)
       run([str(self.binaries / f'check-ui-{name}'), '--binary', str(examples / binary),
         '--output', str(self.output / name)], self.commands, name)

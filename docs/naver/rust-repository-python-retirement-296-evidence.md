@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Forty-six sources have locally verified replacements and migrated
-callers; 3,534 entries remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Seventy-two sources have locally verified replacements and migrated
+callers; two are partially replaced and3,506 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -1802,3 +1802,43 @@ execution still determines whether the split fits the hosted-runner bound.
 Head5fbc1193 Integration completed successfully in run39068241794 and mapped
 docs in39068241738. Rust run39068241872 remains in progress at this checkpoint.
 These results do not validate subsequent source changes or device behavior.
+
+Follow-up exact-head7515a494 Fast checks PR run39069016854 passed all six
+workers and aggregate. The split therefore preserved the full corpus within
+the hosted seven-minute bound for this run. Earlier Rust39068241872 was
+cancelled by the newer same-PR concurrency run, not completed successfully;
+latest Rust39069016848 and Integration39069016906 remain the relevant checks.
+The current device/user-owned validation decision and checkpoint are recorded
+in issue296 comment6241121938; overall conversion acceptance remains open.
+
+### Complete plot sampling helper and checker retirement (2026-10-18)
+
+Replace check_ui_plot_samples.py and ui_application_qa/plot_samples_source.py
+with an independent native sampling implementation and fixed original checker.
+The generic reference retains the20Hz gate, capped clock catch-up, one sample
+per frame, reset/ring/monotonic-queue order, NaN/signed-zero behavior, lazy
+conversion and Python Unicode numeric/error rules. It never imports the UI
+candidate's Samples implementation. The checker preserves every original5000
+step and53 full-history boundaries, candidate failure/cardinality handling and
+partial artifact order. Add it to mandatory UI application CI and preserve the
+remaining stages and their failure stopping.
+
+Missing-module RED then source/checker GREEN:108 independent generic cases,
+5000 original snapshots,13 original process/artifact cases, source/reintroduced
+helper guards and CLI/routing tests. Parent's selected63-test gate and strict
+Clippy passed. Original caller missing-stage RED then14 caller tests passed.
+The current-source UI example built successfully and passed5000/53 both before
+and after removal of the two originals. PATH=/nonexistent execve contained
+only checker and candidate; native candidate SHA256:
+6769313fa97c9b231e0fe878bf71f362f05839c80a8e9bf3a00f0c784906e1d4.
+Five actual child-failure cases preserve the original partial artifact set.
+
+Independent reviewer found no blocker and checked90 additional arbitrary
+inputs plus numeric/long error cases. Parent also compared120 randomized
+original/native timelines with resets, ring wrap, nonfinite/signed-zero inputs
+and complete histories. Evidence:2026-10-18-plot-samples/{first,final,clippy,
+current-candidate,retired-candidate,after-deletion-tests,random-generic,
+native-failure,caller-green}.log and2026-10-18-plot-independent-review/REVIEW.md.
+These are host tool-equivalence checks, not device/driving validation. Baseline
+inventory now72 replaced-local,2 partially-replaced,3,506 pending; full
+repository conversion and exact-head remote acceptance remain open.

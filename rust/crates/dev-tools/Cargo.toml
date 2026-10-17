@@ -9,6 +9,14 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-ui-plot-samples"
+path = "src/bin/check_ui_plot_samples.rs"
+
+[[bin]]
+name = "plot-samples-reference"
+path = "src/bin/plot_samples_reference.rs"
+
+[[bin]]
 name = "check-selfdrive-params"
 path = "src/bin/check_selfdrive_params.rs"
 required-features = ["selfdrive-params-native"]

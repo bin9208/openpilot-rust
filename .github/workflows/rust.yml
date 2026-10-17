@@ -2548,7 +2548,8 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 5120
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui --all-targets --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-dev-tools --bin openpilot-process-child --bin check-ui-updater-handshake --bin check-ui-model-adapter --bin check-ui-training-adapter --bin check-ui-native-safety --bin check-ui-native-resources --bin check-ui-qr --bin check-ui-torque-geometry --bin check-ui-state --bin check-ui-scheduler --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-process-supervision -p openpilot-dev-tools --bin openpilot-process-child --bin check-ui-updater-handshake --bin check-ui-model-adapter --bin check-ui-training-adapter --bin check-ui-native-safety --bin check-ui-native-resources --bin check-ui-qr --bin check-ui-torque-geometry --bin check-ui-state --bin check-ui-scheduler --bin check-ui-plot-samples --bin plot-samples-reference --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --test plot_samples_source --test plot_samples_check --locked
           cargo test --manifest-path rust/Cargo.toml -p openpilot-ui-application -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-params -p openpilot-hardware-info -p openpilot-msgq --lib --tests --locked --message-format=json | tee "$RUNNER_TEMP/ui-native/unit-tests.jsonl"
       - name: Require queued exec error after helper exit
         run: rust/target/debug/check-ui-updater-handshake --evidence "$RUNNER_TEMP/ui-native"
@@ -2556,7 +2557,7 @@ jobs:
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           set -o pipefail
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-application --bin openpilot-ui --example product_render --example product_runtime --example state_trace --example scheduler_trace --example qr_trace --example calibration_geometry --example torque_geometry --locked --message-format=json 2> "$RUNNER_TEMP/ui-native/native-build.log" | tee "$RUNNER_TEMP/ui-native/native-build.jsonl"
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-application --bin openpilot-ui --example product_render --example product_runtime --example state_trace --example scheduler_trace --example qr_trace --example calibration_geometry --example torque_geometry --example plot_samples --locked --message-format=json 2> "$RUNNER_TEMP/ui-native/native-build.log" | tee "$RUNNER_TEMP/ui-native/native-build.jsonl"
       - name: Require original pixels and native UI runtime lifecycle
         run: python rust/tools/check_ui_ci.py --binaries rust/target/debug --build-messages "$RUNNER_TEMP/ui-native/native-build.jsonl" --output "$RUNNER_TEMP/ui-native/oracles"
       - name: Preserve UI captures and runtime evidence including failures
@@ -2574,6 +2575,7 @@ jobs:
             rust/target/debug/examples/qr_trace
             rust/target/debug/examples/calibration_geometry
             rust/target/debug/examples/torque_geometry
+            rust/target/debug/examples/plot_samples
           if-no-files-found: warn
   ui-connectivity:
     name: rust UI and connectivity

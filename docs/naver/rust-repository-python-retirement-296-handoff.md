@@ -15,7 +15,7 @@ Python 삭제 후에도 통과했다. selfdrived 원본 비교의 끊어진 impo
 planner 입력 주기 차이도 수정했다. 후속 정확한 커밋의 원격 검사는 필수다.
 검증 중인 배치 행렬 컴파일러와 Forms 참조/검사기는 일괄 커밋하지 않는다.
 Forms 기본18화면은 통과했지만 공용 helper의 추가 emoji 사례는 수정 중이다.
-인벤토리는70 replaced-local /2 partially-replaced /3,508 pending이다.
+인벤토리는72 replaced-local /2 partially-replaced /3,506 pending이다.
 두 부분 전환 항목의 공용 원본 로더는 추가 파일 selfdrived_helpers_source.py에
 남아 있으며 이동을 Rust 전환으로 세지 않는다. 전체 전환은 미완료다.
 최신 검증 결과는 evidence 및 runtime-module-audit 문서를 따른다.
