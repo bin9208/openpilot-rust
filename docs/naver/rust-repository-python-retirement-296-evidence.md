@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Seventy-three sources have locally verified replacements and migrated
-callers; two are partially replaced and3,505 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. Seventy-four sources have locally verified replacements and migrated
+callers; two are partially replaced and3,504 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -1874,3 +1874,31 @@ post-deletion tests pass. Evidence:2026-10-18-emoji-check and independent review
 Prior exact-head89a6294c Fast PR39070586386, Fast push39070580714,
 Integration39070586387 and mapped-docs39070586381 passed. Rust39070586378
 continues; no device result or uncompleted Rust-job success is inferred.
+
+### Native fixed registration UTF-7 gate (2026-10-18)
+
+`check-registration-utf7` replaces the Python checker in startup CI. Preserve
+all107 actual CPython UTF-7 results and22 original checker process/JSON/artifact
+cases, including runner prefixes, Unicode splitlines, numeric equality and
+strict child-pipe decoding. Source/corpus pins prevent silent expectation drift.
+The native registration decoder is unchanged and never generates expectations.
+
+Missing-module and CI-routing REDs preceded implementation. Independent review
+reproduced a report-write boundary mismatch: at candidate nesting993 the original
+CLI raises before creating a report, while the draft created one. Regression
+RED then source-context serializer bound995 GREEN preserves992success/993failure
+and binary digest/read ordering. Four checker tests, one routing test,53 combined
+CI policy tests and strictClippy pass. The actual current registration_utf7 example
+SHA2568fb0b0f90859e74e8292cd201bccf0f5c4843837cfb2556d89940026fa61ba98
+passes all107 cases before and after original deletion. PATH=/nonexistent execve
+contains only checker/candidate. Four post-deletion tests also pass.
+
+The new native test step keeps an explicit512MiB build growth guard. Existing
+EGL/diagnostics routing assertions initially omitted the new emoji CLI flags;
+exact remote failure117510817489 and local companion failure were corrected in
+f1349040 without skipping tests. Earlier Rust39070586378 was cancelled by the
+newer commit while some jobs remained; its aggregate failure reflects cancelled
+prerequisites and does not establish a full Rust pass. Latest exact-head CI must
+complete before integration. Evidence:2026-10-18-utf7-check and independent-review.
+Inventory74 replaced-local,2 partially-replaced,3504pending; full conversion,
+source-bound packaging and user device acceptance remain open.

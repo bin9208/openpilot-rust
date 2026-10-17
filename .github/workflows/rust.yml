@@ -2192,10 +2192,12 @@ jobs:
           rust/target/debug/check-registration-vendor "$RUNNER_TEMP/charset-norm-3.5.1.crate" "$RUNNER_TEMP/startup-runtime/detector-vendor.json"
       - name: Compare registration signatures, persistence and response decoding
         run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test registration_utf7_check --test registration_utf7_ci
           python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration"
           python rust/tools/check_registration_clock.py rust/target/debug/examples/registration_clock "$RUNNER_TEMP/startup-runtime/registration-clock.json"
-          python rust/tools/check_registration_utf7.py rust/target/debug/examples/registration_utf7 "$RUNNER_TEMP/startup-runtime/registration-utf7.json"
+          rust/target/debug/check-registration-utf7 rust/target/debug/examples/registration_utf7 "$RUNNER_TEMP/startup-runtime/registration-utf7.json"
       - name: Compare actual registration socket deadlines and progressing responses
         run: |
           python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \

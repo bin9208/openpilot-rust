@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 214);
+    assert_eq!(text.matches(marker).count(), 215);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -252,8 +252,16 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut alert_family = vec![];
     let mut ui_diagnostics = vec![];
     let mut selfdrive_params = vec![];
+    let mut registration_utf7 = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && lines[i + 1]
+                    .contains("--test registration_utf7_check --test registration_utf7_ci")
+            {
+                registration_utf7.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--features selfdrive-params-native")
                     || lines[i + 1]
@@ -317,6 +325,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         }
     }
     assert_eq!(arguments.len(), 179);
+    assert_eq!(
+        registration_utf7,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"]
+    );
     assert_eq!(
         selfdrive_params,
         vec![

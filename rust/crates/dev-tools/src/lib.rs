@@ -24,6 +24,7 @@ pub mod plot_samples_source;
 pub mod publish;
 pub mod qa_process;
 pub mod ratekeeper_check;
+pub mod registration_utf7_check;
 pub mod seal;
 pub mod selfdrive_events_check;
 pub mod selfdrive_helpers_check;

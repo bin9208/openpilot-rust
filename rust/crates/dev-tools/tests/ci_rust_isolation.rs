@@ -350,7 +350,7 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
             "check_sdk_receiver.py",
             "check_registration.py",
             "check_registration_clock.py",
-            "check_registration_utf7.py",
+            "rust/target/debug/check-registration-utf7",
             "rust/target/debug/check-registration-vendor",
             "check_manager_catalog.py",
             "check_checkout_status.py",
