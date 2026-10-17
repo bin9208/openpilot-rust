@@ -668,3 +668,23 @@ HTTP404, oversized and retry scenarios. An additional 89,619-byte multi-chunk
 comparison passes the same four scenarios and byte output/cleanup checks.
 Independent source review found no issue. This reduces allocations by construction;
 it is not a measured device CPU saving or device download validation.
+
+### Uploader extended-attribute scratch buffer (2026-10-18)
+
+Each uncached file formerly allocated a fresh 65,536-byte getxattr buffer and
+returned that capacity even for a one-byte positive result (the cached clone
+was already compact). XattrCache now reuses one read buffer and returns only the
+actual value bytes. Missing attributes,
+empty/short/long values, errors and cached values remain distinct; explicit
+mark_uploaded invalidation and original stale-cache semantics are preserved.
+One 64KiB scratch allocation is retained per cache after its first read in
+exchange for removing repeated 64KiB allocation/zeroing on cache misses.
+No file selection, upload status, retry or network policy is changed.
+
+All 13 uploader package checks and strict all-target Clippy pass. The unchanged
+original/native gate passes 212 filesystem scenarios, 10,000 backoff decisions,
+32 local HTTP scenarios, RS256/ES256 signing and exact compressed payload bytes.
+The actual uploader with original msgq/full cereal passes the daemon scenarios,
+including upload requests, startup lock cleanup, logging, shutdown and startup
+failures. Source-derived storage/allocation reduction is not a device CPU claim.
+Local evidence: `2026-10-18-uploader-buffer/{gate.log,reference/report.json,daemon.log}`.

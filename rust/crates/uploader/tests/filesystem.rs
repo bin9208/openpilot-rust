@@ -153,3 +153,33 @@ fn zero_size_file_marks_without_changing_last_successful_filename() {
     assert_eq!(uploader.last_filename, Path::new("previous"));
     assert_eq!(uploader.attributes.get(&path).unwrap(), Some(b"1".to_vec()));
 }
+
+#[test]
+fn attribute_reads_keep_long_short_empty_and_missing_values_independent() {
+    let directory = tempfile::tempdir().unwrap();
+    let mut cache = XattrCache::default();
+    let cases = [
+        Some(vec![0xa5; 2048]),
+        Some(b"1".to_vec()),
+        Some(vec![]),
+        None,
+    ];
+    for (index, expected) in cases.iter().enumerate() {
+        let path = directory.path().join(index.to_string());
+        fs::write(&path, b"log").unwrap();
+        if let Some(value) = expected {
+            rustix::fs::setxattr(&path, "user.upload", value, rustix::fs::XattrFlags::empty())
+                .unwrap();
+        }
+        assert_eq!(&cache.get(&path).unwrap(), expected);
+    }
+    assert!(cache.get(&directory.path().join("absent-file")).is_err());
+    for (index, expected) in cases.iter().enumerate() {
+        assert_eq!(
+            &cache
+                .get(&directory.path().join(index.to_string()))
+                .unwrap(),
+            expected
+        );
+    }
+}

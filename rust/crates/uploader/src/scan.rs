@@ -16,18 +16,16 @@ pub trait Attributes {
 #[derive(Default)]
 pub struct XattrCache {
     values: HashMap<PathBuf, Option<Vec<u8>>>,
+    buffer: Vec<u8>,
 }
 impl Attributes for XattrCache {
     fn get(&mut self, path: &Path) -> io::Result<Option<Vec<u8>>> {
         if let Some(value) = self.values.get(path) {
             return Ok(value.clone());
         }
-        let mut buffer = vec![0; 65536];
-        let value = match rustix::fs::getxattr(path, "user.upload", &mut buffer[..]) {
-            Ok(length) => {
-                buffer.truncate(length);
-                Some(buffer)
-            }
+        self.buffer.resize(65536, 0);
+        let value = match rustix::fs::getxattr(path, "user.upload", &mut self.buffer[..]) {
+            Ok(length) => Some(self.buffer[..length].to_vec()),
             Err(rustix::io::Errno::NODATA) => None,
             Err(error) => return Err(error.into()),
         };
