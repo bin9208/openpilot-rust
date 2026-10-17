@@ -1,7 +1,7 @@
 //! Independent original Mici keyboard key identity, filters and layout policy.
 use crate::{
     seal::Result,
-    ui_forms_input::{Canvas, Rect, hex},
+    ui_forms_input::{hex, Canvas, Rect},
     ui_forms_reference::{assets, controls as c},
 };
 use serde_json::json;

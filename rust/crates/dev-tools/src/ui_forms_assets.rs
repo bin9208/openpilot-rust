@@ -1,7 +1,7 @@
 //! Original fixed-asset sizing policy; decoding/upload remains mechanical ABI.
 use crate::{
     seal::Result,
-    ui_forms_input::{Canvas, hex},
+    ui_forms_input::{hex, Canvas},
 };
 use std::{io::Read, path::Path};
 pub fn load(

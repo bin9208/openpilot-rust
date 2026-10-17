@@ -1,7 +1,7 @@
 //! Independent Forms reference for all widget families and raw drawing boundaries.
 use crate::{
     seal::Result,
-    ui_forms_input::{Canvas, Input, InputFrame, Rect, hex},
+    ui_forms_input::{hex, Canvas, Input, InputFrame, Rect},
 };
 use serde::Deserialize;
 use sha2::{Digest, Sha256};

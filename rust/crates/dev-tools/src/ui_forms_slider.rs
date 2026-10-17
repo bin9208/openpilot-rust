@@ -1,7 +1,7 @@
 //! Original larger-slider state/filter/resource and shimmer policy.
 use crate::{
     seal::Result,
-    ui_forms_input::{Canvas, Rect, hex},
+    ui_forms_input::{hex, Canvas, Rect},
     ui_forms_reference::{assets, controls as c, html::Html},
 };
 use std::path::Path;
