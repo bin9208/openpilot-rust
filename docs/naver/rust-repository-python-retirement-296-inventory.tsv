@@ -1485,7 +1485,7 @@ rust/tools/calibration_reference.py	b13a779f014902b995b2f79edca34d49bf53f4b7	pen
 rust/tools/camerad_camera_lifecycle_cleanup.py	2ec2363f857b8284901851353ed7abf3d2c6aea6	pending	-
 rust/tools/camerad_runtime_check.py	05b2e5affbfe2b552f3c41182709600352a494fb	pending	-
 rust/tools/camerad_runtime_generate.py	ff4725202ab570d462e9f6c17b3a015cead5fe50	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
-rust/tools/camerad_runtime_stress_check.py	08952146ea8fa6f48211617d99b06fb6972b8821	pending	-
+rust/tools/camerad_runtime_stress_check.py	08952146ea8fa6f48211617d99b06fb6972b8821	replaced-local	rust/crates/dev-tools/src/camera_stress_check.rs
 rust/tools/can_cases.py	ca220b21822f259ff62587b8c28c3a39bc15af35	pending	-
 rust/tools/can_source.py	70cfab59b999b8d0805fd3678cd1833b00b9c7b2	pending	-
 rust/tools/car_specific_cases.py	73ff0a5347be2e28f29f499d17e9e81f91d1397b	pending	-
@@ -1858,7 +1858,7 @@ rust/tools/check_camerad_packets.py	2af3b62a415370d5f0fc19362fdcb523b9631440	rep
 rust/tools/check_camerad_requests.py	0599be0f520278d2ef62068859fb9ea730e87322	replaced-local	rust/crates/dev-tools/src/camera_request_check.rs
 rust/tools/check_camerad_sensor_lifecycle.py	88d7a60198e0fdcb42e9493830e33ebc0d4fab27	replaced-local	rust/crates/dev-tools/src/camera_sensor_lifecycle_check.rs; original captures and live 62-case report exact
 rust/tools/check_camerad_sensors.py	8f74ef99f92a64879dffeec76225de13f2d485fa	partially-replaced	rust/crates/dev-tools/src/camera_sensor_check.rs; f32/equal retained for state
-rust/tools/check_camerad_state.py	bdf735fed1b8138a6e054f3937ea0163292d4309	pending	-
+rust/tools/check_camerad_state.py	bdf735fed1b8138a6e054f3937ea0163292d4309	replaced-local	rust/crates/dev-tools/src/camera_state_check.rs
 rust/tools/check_camerad_stress.py	b3e6d5f13f5f5e00e524726c678f6b42f1b6ed2e	pending	-
 rust/tools/check_can.py	e3e71915b387d0896da36d19ca265b196a54bd91	pending	-
 rust/tools/check_can_checksums.py	a4da90b34202a055f96793d0b978fe979c6dccc8	pending	-

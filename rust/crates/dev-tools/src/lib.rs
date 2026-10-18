@@ -34,6 +34,10 @@ pub mod camera_sensor_generate;
 #[cfg(feature = "camera-sensor-native")]
 pub mod camera_sensor_lifecycle_check;
 pub mod camera_source_generate;
+#[cfg(feature = "camera-sensor-native")]
+pub mod camera_state_check;
+#[cfg(feature = "camera-sensor-native")]
+pub mod camera_stress_check;
 pub mod cutin_alert_check;
 pub mod filter_reference;
 pub mod media_validation;

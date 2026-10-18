@@ -147,10 +147,10 @@ class CameraCheck:
       self.command(f'check-{name}', [*command, '--output', str(self.output / f'result-{name}')], 512)
       if name == 'camera_lifecycle':
         self.command('check-camera-cleanup', [*command, '--cleanup-only', '--output', str(self.output / 'result-cleanup')], 512)
-    self.command('check-state', [sys.executable, str(TOOLS / 'check_camerad_state.py'), '--source', str(self.output / 'state-source'),
+    self.command('check-state', [str(self.binaries / 'check-camerad-state'), '--source', str(self.output / 'state-source'),
       '--native', str(examples / 'frame_state'), '--schema', str(self.output / 'schema/log.capnp'),
       '--output', str(self.output / 'result-state')], 512)
-    self.command('check-stress', [sys.executable, str(TOOLS / 'camerad_runtime_stress_check.py'),
+    self.command('check-stress', [str(self.binaries / 'check-camerad-runtime-stress'),
       '--reference', str(self.output / 'stress-source'), '--native', str(examples / 'stress_trace'),
       '--parser', str(examples / 'stress_parse_trace'), '--fixture', str(self.output / 'stress-fixture.so'),
       '--output', str(self.output / 'result-stress')], 512)
@@ -178,6 +178,8 @@ def main() -> None:
   sources += [ROOT / 'rust/crates/dev-tools/src/bin/check_camerad_sensor_lifecycle.rs']
   sources += [ROOT / 'rust/crates/dev-tools/src/bin/check_camerad_isp_lifecycle.rs']
   sources += [ROOT / 'rust/crates/dev-tools/src/bin/check_camerad_camera_lifecycle.rs']
+  sources += [ROOT / 'rust/crates/dev-tools/src/bin/check_camerad_state.rs']
+  sources += [ROOT / 'rust/crates/dev-tools/src/bin/check_camerad_runtime_stress.rs']
   for directory in ('rust/crates/camerad', 'rust/crates/camera-kernel', 'rust/crates/camerad-runtime', 'rust/crates/msgq',
                     'openpilot/system/camerad', 'msgq_repo/msgq'):
     sources += [path for path in (ROOT / directory).rglob('*') if path.is_file() and path.suffix in ('.rs', '.cc', '.h', '.toml')]
@@ -190,6 +192,8 @@ def main() -> None:
   executables += [binaries / 'check-camerad-sensor-lifecycle']
   executables += [binaries / 'check-camerad-isp-lifecycle']
   executables += [binaries / 'check-camerad-camera-lifecycle']
+  executables += [binaries / 'check-camerad-state']
+  executables += [binaries / 'check-camerad-runtime-stress']
   receipt = {'argv': sys.argv, 'source_sha256': hashes([path for path in sources if path.is_file()]),
     'binary_sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in executables}}
   (output / 'invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')

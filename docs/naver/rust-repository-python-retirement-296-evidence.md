@@ -2387,3 +2387,36 @@ required; the temporary immutable-original CI diagnostic is retained until then.
 ### Additional mandatory UI test routing repair (2026-10-18)
 
 The exact `54ea739c` Fast run failed `forms_native_reference_runs_real_pixels_with_owned_display_and_raw_helper` because its complete test-command assertion still omitted the migrated `ui_network_check` and `ui_network_reference` targets. The workflow already required both. The assertion now includes them and retains all ordering, display and raw-helper checks. Fresh local tests pass: four UI routing tests and all33 CI isolation tests; `git diff --check` passes. Remote UI admission now passes the portable Confirm comparison but fails the `cursor-bool` fixed PNG comparison. This separate raster investigation remains open; no tolerance or assertion was removed.
+
+### Native camera state and runtime stress comparators (2026-10-18)
+
+`check-camerad-state` now preserves dynamic schema decoding and the original
+input/process/artifact phases. Independent captures cover eight frame-count
+boundaries,42 process cases,20 CLI cases, schema types/pointers/wire boundaries
+and four lazy Event-lookup cases. Review reproduced eager Event rejection and
+wire-membership failure ordering; regressions now retain the original phase and
+partial outputs. Native Cap'n Proto supplies the dynamic schema boundary;
+there is no fixed-schema shortcut or Python process in the replacement.
+
+`check-camerad-runtime-stress` preserves54 policy/parser cases, actual libc errno,
+preload/QEMU command construction and independently bounded BOOTTIME checks.
+Thirty original process captures plus12 admission and seven lexical-path CLI
+captures preserve successful and failed artifacts. Independent review reproduced
+relative-path/PATH selection and false-like errno fallback differences; both are
+fixed without changing original expectations.
+
+After removing both Python checkers and migrating their CI callers/fingerprints,
+all74 tests across15 camera tool targets pass. Focused strict Clippy passes.
+The actual PATH-disabled stress comparator passes54 cases/151 observations;
+431 artifacts match the original exactly after output-directory normalization.
+Its report matches except the independently checked live clock values. The
+state comparator's current C++/Rust1,080-frame proof matches all original input,
+output, decoded field and receipt artifacts with PATH disabled. An initial
+manual invocation omitted the SDK environment and failed loading libcapnp;
+sourcing the documented native SDK environment restored the original comparison.
+
+Inventory:104 replaced, four partial,3,472 pending. The older generic stress
+checker and continuous camera runtime/cleanup checker remain pending, with their
+different contracts retained. UI application lifecycle and model compiler work
+remain uncommitted and incomplete. No complete repository conversion, device
+boot/recording/upload or CPU improvement is claimed.

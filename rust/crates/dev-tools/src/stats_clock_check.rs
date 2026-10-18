@@ -99,7 +99,7 @@ fn decoded(captured: Captured, checked: bool) -> Result<(i32, String, String)> {
     }
     Ok((captured.code, stdout, stderr))
 }
-fn integer(line: &str) -> Result<String> {
+pub(crate) fn integer(line: &str) -> Result<String> {
     // Preserve carrot-navi/src/integer.rs admission without importing that
     // daemon's BigInt/logging/cereal dependency graph. The checker only needs
     // canonical decimal text, not arithmetic. The shared digit table is pinned
