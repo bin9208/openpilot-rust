@@ -4092,3 +4092,22 @@ Ubuntu6.1.1 validation tools, preserving all comparison assertions. See the
 module audit and `2026-10-19-logger-audio-391/FINAL-HANDOFF.json`.
 This does not retire the live Python logger comparison controllers or establish
 device recording acceptance.
+
+### Exact-head CI follow-up: LLVM20 required-job contract (#390)
+
+Published `74d211ba` runs [Rust port39174296648](https://github.com/bin9208/openpilot-rust/actions/runs/39174296648),
+[Integration39174296715](https://github.com/bin9208/openpilot-rust/actions/runs/39174296715)
+and [Fast39174296592](https://github.com/bin9208/openpilot-rust/actions/runs/39174296592).
+The Card/CAN job117813668223 failed its inherited exact required-job set because
+`model-llvm20` had been added to the aggregate but not that test. Its preceding
+full Hyundai checks passed1,272 CarParams scenarios,35,520 CarState/actuator ticks
+and91,316 exact CAN frames. This does not clear unrelated Card/NAS acceptance.
+
+The same required-set assertion reproduced locally. Adding the new required job
+to its expected set preserves exact equality and all fixture/full-schema checks;
+all39 inherited Card CI/admission/fence tests then pass. No workflow dependency
+was removed. The first local invocation lacked the test tools PYTHONPATH and did
+not collect; the corrected source-native setup produced the actual RED/GREEN.
+Private evidence: `2026-10-19-llvm-ci-split/card-aggregate-*` and
+`2026-10-19-publish-batch/card-failure.log`. Other jobs remain separate pending
+checks, and the published run is not an overall success.

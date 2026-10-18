@@ -65,7 +65,7 @@ def test_retained_selection_is_bounded_and_preserves_source_bus(tmp_path: Path) 
 def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -> None:
   workflow = yaml.safe_load((ROOT / '.github/workflows/rust.yml').read_text())
   jobs = workflow['jobs']
-  inherited = {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
+  inherited = {'workspace', 'model-llvm20', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
     'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
     'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
     'joystickd-runtime', 'planner-runtime', 'planner-memory', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime',
