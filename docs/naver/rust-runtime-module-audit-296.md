@@ -24,6 +24,28 @@ integration/device evidence and the remaining Python-tool inventory.
 | Sensors/model/device | camerad, camerad-runtime, camera-kernel, sensord, locationd, calibrationd, paramsd, torqued, modeld, dmonitoringd, dmonitoringmodeld, model-runtime, hardwared, hardware-control, hardware-info, panda-usb, panda-spi-linux, ublox | Internals not cleared by this audit |
 | Runtime/support/tooling | runtime-core, runtime-installer, runtime-version, process-supervision, managed-entry, manager-catalog, agnos, updated, timed, lagd, monitoring, checkout-status, params, params-typed, cereal, messaging, log-format, jpeg, opencv-runtime, pocketfft, xiaoge, dev-tools | Native docs gate is verified separately; remaining internals and developer-tool conversion remain open |
 
+### Locationd sensor admission (#373, 2026-10-19)
+
+The wire decoder previously rejected short accelerometer/gyroscope vectors
+before the original initialization, timestamp and sensor-source checks could
+ignore them. It now retains a truncated-input tag through those checks; genuinely
+admitted malformed vectors still error, and valid measurements keep their
+existing numerical path. No validity threshold or missing-axis replacement was
+introduced. [Issue #373](https://github.com/bin9208/openpilot-rust/issues/373)
+tracks this defect and the separate camera/calibration admission follow-up.
+
+Independent original captures cover 24 direct cases, 40 loop cases, six first
+initialization cases and two recovery sequences. The initial native regression
+failed two of three tests; all five sensor regression tests now pass, together
+with the complete 17-test locationd package and strict all-target Clippy. A fresh
+native daemon, private Msgq/Params namespace and unavailable executable PATH
+also passed three successive real livePose publications after malformed,
+rejected and valid input batches. The exact executable hash and source captures
+are recorded in `rust/crates/locationd/tests/data/admission-373/README.md`.
+Private logs are `2026-10-18-locationd-tools/sensor-green-final1-*` and
+`sensor-live-final1/proof.json`. These tests establish admission and continued
+host operation; full EKF numerical parity and device acceptance remain separate.
+
 No blanket module clearance, complete Python retirement, device boot acceptance,
 loaded-driving acceptance or measured CPU improvement follows from this matrix.
 

@@ -78,12 +78,17 @@ pub fn decode_event(root: event::Reader<'_>) -> Result<Event, Error> {
     })
 }
 fn sensor_input(sensor: sensor_event_data::Reader<'_>, kind: Sensor) -> Result<Input, Error> {
+    let time = sensor.get_timestamp() as f64 * 1e-9;
+    let secondary = matches!(
+        sensor.get_source(),
+        Ok(sensor_event_data::SensorSource::Bmx055)
+    );
     let values = match (kind, sensor.which()?) {
         (Sensor::Acceleration, sensor_event_data::Acceleration(vector))
         | (Sensor::Gyroscope, sensor_event_data::GyroUncalibrated(vector)) => {
             let values = vector?.get_v()?;
             if values.len() < 3 {
-                return Err(Error::Contract("sensor vector prefix"));
+                return Ok(Input::TruncatedSensor { time, secondary });
             }
             [
                 f64::from(values.get(0)),
@@ -95,11 +100,8 @@ fn sensor_input(sensor: sensor_event_data::Reader<'_>, kind: Sensor) -> Result<I
     };
     Ok(Input::Sensor {
         kind,
-        time: sensor.get_timestamp() as f64 * 1e-9,
-        secondary: matches!(
-            sensor.get_source(),
-            Ok(sensor_event_data::SensorSource::Bmx055)
-        ),
+        time,
+        secondary,
         values,
     })
 }

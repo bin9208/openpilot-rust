@@ -19,6 +19,12 @@ pub enum Input {
         secondary: bool,
         values: [f64; 3],
     },
+    // Retain missing measurements until initialization/time/source policy admits
+    // the event. This tag never supplies replacement vector components.
+    TruncatedSensor {
+        time: f64,
+        secondary: bool,
+    },
     Speed(f64),
     Calibration(Option<[f64; 3]>),
     Camera {

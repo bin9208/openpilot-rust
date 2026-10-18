@@ -71,21 +71,30 @@ impl Estimator {
     pub fn handle(&mut self, log_time: f64, input: Input) -> Result<HandleResult, Error> {
         let mut finite_check = None;
         let mut time = log_time;
+        if let Input::Sensor {
+            time: sensor_time,
+            secondary,
+            ..
+        }
+        | Input::TruncatedSensor {
+            time: sensor_time,
+            secondary,
+        } = input
+        {
+            if !self.valid_sensor_time(sensor_time, time) || !self.valid_timestamp(sensor_time)? {
+                return Ok(HandleResult::TimingInvalid);
+            }
+            if secondary {
+                return Ok(HandleResult::SensorSourceInvalid);
+            }
+        }
         match input {
             Input::Sensor {
                 kind,
                 time: sensor_time,
-                secondary,
                 values,
+                ..
             } => {
-                if !self.valid_sensor_time(sensor_time, time)
-                    || !self.valid_timestamp(sensor_time)?
-                {
-                    return Ok(HandleResult::TimingInvalid);
-                }
-                if secondary {
-                    return Ok(HandleResult::SensorSourceInvalid);
-                }
                 let measurement = [-values[2], -values[1], -values[0]];
                 let index = match kind {
                     Sensor::Acceleration => {
@@ -113,6 +122,9 @@ impl Estimator {
                     .observe(sensor_time, KINDS[index], measurement, None)?;
                 self.record(index, measurement, &result)?;
                 finite_check = Some(result);
+            }
+            Input::TruncatedSensor { .. } => {
+                return Err(Error::Contract("sensor vector prefix"));
             }
             Input::Speed(speed) => self.car_speed = speed.abs(),
             Input::Calibration(Some(calibration)) => {
