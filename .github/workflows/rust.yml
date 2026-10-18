@@ -634,8 +634,12 @@ jobs:
           name: rust-offline-qcom-compiler-provenance
           path: ${{ runner.temp }}/qcom-compiler/provenance.json
           if-no-files-found: warn
+      - name: Build original msgq binding before source oracle tests
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
       - name: Compare captured graphs and original camera warps with Rust
-        run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests -q
+        run: PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH" python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests -q
       - name: Compare actual models and recurrent policy with Rust
         run: |
           python tools/check_model_reference.py --model ../openpilot/selfdrive/modeld/models/dmonitoring_model.onnx --output "$RUNNER_TEMP/dm-native" --binary target/debug/model-run
@@ -749,7 +753,6 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build -p openpilot-dev-tools --bin check-params-reference --locked
           target/debug/check-params-reference
-      - run: python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
       - name: Exercise structured log producers with original and Rust collectors
         run: |
           cargo build -p openpilot-logging --examples --locked

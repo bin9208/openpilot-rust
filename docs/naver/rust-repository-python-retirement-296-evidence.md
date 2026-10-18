@@ -2955,3 +2955,22 @@ graphics test passes with frozen binaries and real GLFW replay in158.57seconds;
 this is a host rerun, not proof of an X11 root cause or a permanent fix. Fresh
 exact-commit CI remains required. Local probe evidence is
 `.analysis/scratch/2026-10-18-ui-display-connection/glfw-probe-summary.json`.
+
+### Original msgq binding precedes workspace source imports (#356)
+
+The same `da803825c62d2caa9eae3d8aefb6cd579dd0791e` run failed workspace
+job117604081791 because the real selfdrived source-oracle import required
+`msgq.ipc_pyx` before the workflow built it. A fresh local subprocess reproduces
+that import failure with the job's original PYTHONPATH and succeeds with the
+existing actual binding prepended. All four tests in the affected original
+source test file pass with that real binding; no fake messaging module or skip
+was introduced.
+
+The workflow now builds its existing shared binding once before the first source
+pytest step and prepends its directory for that step. Later consumers reuse the
+same output. A new ordering regression fails before the repair and passes after
+it. All 35 workflow isolation and 13 disk/bootstrap tests pass; the added 512 MiB
+reserve raises the explicit guard count from 225 to 226 while preserving all old
+guard arguments. The unchanged full source suite and downstream steps require
+fresh exact-commit CI. The shared Python binding remains a tracked #296 migration
+item; this repair does not claim its retirement.

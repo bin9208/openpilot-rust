@@ -11,6 +11,41 @@ fn read(path: &str) -> String {
 fn workflow() -> Value {
     parse(&read(".github/workflows/rust.yml")).unwrap()
 }
+#[test]
+fn workspace_source_tests_use_the_real_msgq_binding_before_importing_oracles() {
+    let config = workflow();
+    let steps = config["jobs"]["workspace"]["steps"].as_array().unwrap();
+    let builders = steps
+        .iter()
+        .enumerate()
+        .filter(|(_, step)| {
+            step["run"].as_str().unwrap_or("").contains(
+                "python tools/build_msgq_python.py --output \"$RUNNER_TEMP/rust-msgq-python\"",
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(builders.len(), 1, "build the shared original binding once");
+    let (index, step) = steps
+        .iter()
+        .enumerate()
+        .find(|(_, step)| {
+            step["run"]
+                .as_str()
+                .unwrap_or("")
+                .contains("--confcutdir=tools/tests tools/tests -q")
+        })
+        .unwrap();
+    assert!(
+        builders[0].0 < index,
+        "real msgq binding must precede source imports"
+    );
+    assert!(step["run"]
+        .as_str()
+        .unwrap()
+        .contains("PYTHONPATH=\"$RUNNER_TEMP/rust-msgq-python:$PYTHONPATH\" python -m pytest"));
+    absent(builders[0].1, &["if", "continue-on-error"]);
+    absent(step, &["if", "continue-on-error"]);
+}
 fn commands(job: &Value) -> String {
     job["steps"]
         .as_array()
