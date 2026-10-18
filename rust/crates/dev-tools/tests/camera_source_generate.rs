@@ -205,6 +205,7 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
         "generate-camerad-stress-reference",
         "generate-camerad-runtime-fixture",
         "check-camerad-{checker}",
+        "check-camerad-kernel",
     ] {
         assert!(source.contains(name), "camera caller omits {name}");
     }
@@ -243,6 +244,8 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
         "--bin check-camerad-misc",
         "--test camera_packet_check",
         "--bin check-camerad-packets",
+        "--test camera_kernel_check",
+        "--bin check-camerad-kernel",
         "--bin check-camerad-sensors",
         "--features camera-sensor-native",
         "--test camera_lifecycle_generate",

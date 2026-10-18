@@ -2217,3 +2217,29 @@ forbid policy. The new regression first failed for the absent option, then passe
 with all 25 process-runner tests: child soft/hard limits are zero, parent limits
 and later unrelated child inheritance are unchanged. Strict Clippy passes. No
 existing command opts in implicitly and no device scheduling policy changes.
+
+### Native kernel comparator and child input preservation (2026-10-18)
+
+`check-camerad-kernel` retains all 334 original scenarios, 25 baseline choices,
+ordered sanitizer/QEMU environments, normalization, failure artifacts and exact
+comparison rules. Four focused original-capture tests and four camera routing
+checks pass, as does scoped strict Clippy. Review found an inherited-stdin
+regression: an actual controlled original child read `token`, while the first
+native implementation read EOF. The assertion failed before the fix; the native
+command now inherits stdin, and the same original/native probe reads `token` in
+both implementations. Core limits remain confined to the spawned child.
+
+All 334 actual source/native kernel comparisons pass with PATH=/nonexistent and
+the complete report is byte-identical to the independently captured original.
+This host has LLVM18 in the existing local SDK rather than the original fixed
+`/usr/lib/llvm-18` path. A mount namespace exposes that SDK at the original path,
+with its own `/dev` and `/proc`; neither comparator source nor sanitizer settings
+were patched for the native proof. The initial missing-library failure remains
+recorded separately and is not counted as a comparison pass.
+
+The camera CI dispatcher now selects and hashes the native kernel command;
+all 20 dispatches and four retained artifact-path tests pass. The Python file
+retains only `digest` and `disable_core`, whose ASTs are unchanged, for the three
+remaining lifecycle callers. Inventory: 95 fully replaced, five partial and
+3,480 pending. This is host verification; the user will perform physical boot,
+recording and upload verification after code delivery.

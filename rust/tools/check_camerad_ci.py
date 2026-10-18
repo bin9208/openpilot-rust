@@ -134,7 +134,8 @@ class CameraCheck:
         '--output', str(self.output / f'result-{reference}')], 512)
     for name in LIFECYCLES:
       binary = 'kernel_operations' if name == 'kernel' else name
-      command = [sys.executable, str(TOOLS / f'check_camerad_{name}.py'), '--source', str(self.output / f'{name}-source'),
+      command = [str(self.binaries / 'check-camerad-kernel')] if name == 'kernel' else [sys.executable, str(TOOLS / f'check_camerad_{name}.py')]
+      command += ['--source', str(self.output / f'{name}-source'),
         '--native', str(examples / binary), '--fixture', str(self.output / f'{name}-fixture.so')]
       self.command(f'check-{name}', [*command, '--output', str(self.output / f'result-{name}')], 512)
       if name == 'camera_lifecycle':
@@ -166,6 +167,7 @@ def main() -> None:
   sources += list((ROOT / 'rust/crates/dev-tools/src').glob('camera*.rs'))
   sources += list((ROOT / 'rust/crates/dev-tools/src/bin').glob('generate_camerad_*.rs'))
   sources += [ROOT / f'rust/crates/dev-tools/src/bin/check_camerad_{name}.rs' for _, name, _ in POLICIES]
+  sources += [ROOT / 'rust/crates/dev-tools/src/bin/check_camerad_kernel.rs']
   for directory in ('rust/crates/camerad', 'rust/crates/camera-kernel', 'rust/crates/camerad-runtime', 'rust/crates/msgq',
                     'openpilot/system/camerad', 'msgq_repo/msgq'):
     sources += [path for path in (ROOT / directory).rglob('*') if path.is_file() and path.suffix in ('.rs', '.cc', '.h', '.toml')]
@@ -174,6 +176,7 @@ def main() -> None:
     *[item[2] for item in POLICIES], 'kernel_operations', *LIFECYCLES[1:], 'frame_state', 'stress_trace', 'stress_parse_trace')]
   executables += [binaries / ('generate-camerad-' + name) for name in GENERATORS]
   executables += [binaries / f'check-camerad-{name}' for _, name, _ in POLICIES]
+  executables += [binaries / 'check-camerad-kernel']
   receipt = {'argv': sys.argv, 'source_sha256': hashes([path for path in sources if path.is_file()]),
     'binary_sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in executables}}
   (output / 'invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')
