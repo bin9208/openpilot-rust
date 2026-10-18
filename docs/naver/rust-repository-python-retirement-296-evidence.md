@@ -2746,3 +2746,20 @@ argument for an invocation. The required count remains22, and every missing
 stager action/argument mutation remains rejected. All three routing/action
 tests pass locally. No runtime behavior, CI gate or assertion count was removed;
 fresh exact-source remote checks remain required.
+
+### Complete native UI feature guard (2026-10-18)
+
+The `75ea1957` Fast job advanced past the corrected stager scan, then exposed
+a second stale routing assertion: `ui_egl_ci` still expected exactly the two
+former EGL/polygon features. The same build now also requires the native
+application lifecycle feature introduced in `b90c650f`. Its exact feature-list
+assertion includes all three, retaining every binary, test and optional-dependency
+check. Failure: [Fast checks run39099687404](https://github.com/bin9208/openpilot-rust/actions/runs/39099687404),
+job117593220676. The focused routing test and strict Clippy pass.
+
+The complete native fast-routing Cargo command passed all57 suites:350 tests,
+zero failures and one pre-existing ignored child-process helper. An earlier run
+failed intermittently in the actual owned-display test; that separate failure
+remains under investigation, not resolved by this successful repeat. Evidence:
+`2026-10-18-encoder-target/{fast-routing-native-repeat,parent-final-clippy}.log`.
+The exact75ea integration workflow39099687447 passed; its Fast gate did not.

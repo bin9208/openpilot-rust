@@ -23,9 +23,11 @@ fn egl_reference_is_explicitly_built_and_tested_in_the_native_ui_job() {
                 .unwrap();
             let args = build.split_whitespace().collect::<Vec<_>>();
             assert!(args.contains(&"--locked"));
-            assert!(args
-                .windows(2)
-                .any(|pair| pair == ["--features", "egl-reference,polygon-reference"]));
+            assert!(args.windows(2).any(|pair| pair
+                == [
+                    "--features",
+                    "egl-reference,polygon-reference,ui-application-lifecycle-native"
+                ]));
             for binary in [
                 "check-ui-egl",
                 "ui-egl-reference",
