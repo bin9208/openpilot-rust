@@ -1,6 +1,6 @@
 //! Immutable original drawing data, replayed only as a test oracle.
 use openpilot_dev_tools::{
-    qa_process::{CommandSpec, NativeRunner, Runner},
+    qa_process::{CommandSpec, NativeRunner},
     seal::Result,
 };
 use serde_json::Value;
@@ -12,6 +12,8 @@ use std::{
     process::Command,
     time::Duration,
 };
+#[path = "ui_replay_failure.rs"]
+mod replay_failure;
 const CAPTURE: &str = include_str!("../fixtures/ui-forms/confirm-original-draw.json");
 fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
@@ -357,56 +359,174 @@ pub fn replay_trace(
             spec.env_remove.push(key.to_owned());
         }
     }
-    let result = NativeRunner.run(&spec)?;
-    if result.code != 0 {
-        return Err(format!(
-            "Confirm raw replay failed: {}",
-            String::from_utf8_lossy(&result.stderr)
-        )
-        .into());
-    }
-    let replies = std::str::from_utf8(&result.stdout)?
-        .lines()
-        .collect::<Vec<_>>();
-    if replies.len() != commands.len() + 1
-        || replies.iter().enumerate().any(|(index, reply)| {
-            if measurements.iter().any(|(at, _)| *at == index) {
-                !reply.starts_with("OK ")
-            } else {
-                *reply != "OK"
-            }
-        })
-    {
-        return Err(format!(
-            "Confirm raw replay protocol failure: {}",
-            String::from_utf8_lossy(&result.stdout)
-        )
-        .into());
-    }
-    for (index, measurement) in measurements {
-        let values = replies[index]
-            .split_whitespace()
-            .skip(1)
-            .map(str::parse::<f64>)
-            .collect::<std::result::Result<Vec<_>, _>>()?;
-        if values.len() != 2
-            || values.iter().zip(["x", "y"]).any(|(actual, key)| {
-                (*actual as f32).to_bits() != (measurement[key].as_f64().unwrap() as f32).to_bits()
-            })
-        {
+    let evidence = replay_failure::Evidence {
+        spec: &spec,
+        trace: &trace,
+        capture,
+        root,
+        directory,
+        output: std::env::var_os("UI_FORMS_FAILURE_OUTPUT").map(PathBuf::from),
+    };
+    let (result, replay_hash) = evidence.checked(&mut NativeRunner, |result| {
+        if result.code != 0 {
             return Err(format!(
-                "original Confirm font measurement changed: {measurement}, observed {}",
-                replies[index]
+                "Confirm raw replay failed: {}",
+                String::from_utf8_lossy(&result.stderr)
             )
             .into());
         }
-    }
+        let replies = std::str::from_utf8(&result.stdout)?
+            .lines()
+            .collect::<Vec<_>>();
+        if replies.len() != commands.len() + 1
+            || replies.iter().enumerate().any(|(index, reply)| {
+                if measurements.iter().any(|(at, _)| *at == index) {
+                    !reply.starts_with("OK ")
+                } else {
+                    *reply != "OK"
+                }
+            })
+        {
+            return Err(format!(
+                "Confirm raw replay protocol failure: {}",
+                String::from_utf8_lossy(&result.stdout)
+            )
+            .into());
+        }
+        for (index, measurement) in measurements {
+            let values = replies[index]
+                .split_whitespace()
+                .skip(1)
+                .map(str::parse::<f64>)
+                .collect::<std::result::Result<Vec<_>, _>>()?;
+            if values.len() != 2
+                || values.iter().zip(["x", "y"]).any(|(actual, key)| {
+                    (*actual as f32).to_bits()
+                        != (measurement[key].as_f64().unwrap() as f32).to_bits()
+                })
+            {
+                return Err(format!(
+                    "original Confirm font measurement changed: {measurement}, observed {}",
+                    replies[index]
+                )
+                .into());
+            }
+        }
+        Ok(hash(&fs::read(&path)?))
+    })?;
     Ok(Expected {
-        hash: hash(&fs::read(&path)?),
+        hash: replay_hash,
         path,
         stdout: result.stdout,
         stderr: result.stderr,
         capture,
         frames,
     })
+}
+
+#[cfg(test)]
+mod replay_failure_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn original_replay_process_failure_keeps_evidence_and_error_without_retry() {
+        if std::env::var_os("UI_REPLAY_EVIDENCE_CHILD").is_some() {
+            let work = PathBuf::from(std::env::var_os("UI_REPLAY_EVIDENCE_WORK").unwrap());
+            let output = work.join("artifacts");
+            fs::create_dir(&output).unwrap();
+            fs::write(output.join("scene.json"), b"{\"exact\":17}\n").unwrap();
+            fs::write(output.join("render.json"), b"[{\"state\":true}]\n").unwrap();
+            fs::write(output.join("render.png"), b"synthetic PNG artifact").unwrap();
+            let command = Command::new("unused-native-reference");
+            let error=replay_trace(json!({"name":"forced-original-replay-failure","scene_text":"{\"exact\":17}\n","commands":["flags 32"],"measurements":[]}),"{\"original\":\"synthetic subprocess control\"}\n",&work,Path::new("/bin/sh"),&command,&output).err().expect("original replay must fail");
+            assert_eq!(
+                error.to_string(),
+                "Confirm raw replay failed: fixture display failure\n"
+            );
+            assert_eq!(fs::read(work.join("invocations")).unwrap(), b"called\n");
+            let destinations = fs::read_dir(work.join("retained"))
+                .expect("failure evidence must survive replay Err")
+                .map(|e| e.unwrap().path())
+                .collect::<Vec<_>>();
+            assert_eq!(destinations.len(), 1);
+            let retained = &destinations[0];
+            assert_eq!(
+                fs::read(retained.join("stdout.log")).unwrap(),
+                b"partial stdout\0"
+            );
+            assert_eq!(
+                fs::read(retained.join("stderr.log")).unwrap(),
+                b"fixture display failure\n"
+            );
+            assert_eq!(
+                fs::read(retained.join("commands.txt")).unwrap(),
+                fs::read(work.join("received-commands")).unwrap()
+            );
+            assert_eq!(
+                fs::read(retained.join("artifacts/scene.json")).unwrap(),
+                b"{\"exact\":17}\n"
+            );
+            assert_eq!(
+                fs::read(retained.join("artifacts/render.json")).unwrap(),
+                b"[{\"state\":true}]\n"
+            );
+            assert_eq!(
+                fs::read(retained.join("artifacts/render.png")).unwrap(),
+                b"synthetic PNG artifact"
+            );
+            assert_eq!(
+                fs::read_to_string(retained.join("original-draw-capture.json")).unwrap(),
+                "{\"original\":\"synthetic subprocess control\"}\n"
+            );
+            let trace: Value =
+                serde_json::from_slice(&fs::read(retained.join("original-trace.json")).unwrap())
+                    .unwrap();
+            assert_eq!(trace["name"], "forced-original-replay-failure");
+            let execution: Value =
+                serde_json::from_slice(&fs::read(retained.join("execution.json")).unwrap())
+                    .unwrap();
+            assert_eq!(execution["exit"], 17);
+            assert_eq!(execution["error"], error.to_string());
+            assert_eq!(
+                execution["helper_sha256"],
+                hash(&fs::read("/bin/sh").unwrap())
+            );
+            assert_eq!(
+                execution["library_sha256"],
+                hash(&fs::read(std::env::var_os("STARTUP_UI_RAYLIB_LIBRARY").unwrap()).unwrap())
+            );
+            let environment = fs::read_to_string(retained.join("environment.json")).unwrap();
+            assert!(environment.contains(":65534"));
+            assert!(!environment.contains("DO_NOT_RETAIN_SECRET"));
+            assert!(!environment.contains("synthetic-secret-value"));
+            assert!(retained.join("before-display.json").is_file());
+            assert!(retained.join("after-display.json").is_file());
+            assert_eq!(
+                fs::read(retained.join("input-provenance.json")).unwrap(),
+                include_bytes!("../fixtures/ui-forms/input-provenance.json")
+            );
+            return;
+        }
+        let temp = tempfile::tempdir().unwrap();
+        let script = temp.path().join("library-script");
+        fs::write(&script,b"printf 'called\\n' >> \"$UI_REPLAY_EVIDENCE_WORK/invocations\"\n/bin/cat > \"$UI_REPLAY_EVIDENCE_WORK/received-commands\"\nprintf 'partial stdout\\000'\nprintf 'fixture display failure\\n' >&2\nexit 17\n").unwrap();
+        let test = std::thread::current().name().unwrap().to_owned();
+        let result = Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", &test, "--nocapture"])
+            .env("UI_REPLAY_EVIDENCE_CHILD", "1")
+            .env("UI_REPLAY_EVIDENCE_WORK", temp.path())
+            .env("UI_FORMS_FAILURE_OUTPUT", temp.path().join("retained"))
+            .env("STARTUP_UI_RAYLIB_LIBRARY", script)
+            .env("DISPLAY", ":65534")
+            .env("DO_NOT_RETAIN_SECRET", "synthetic-secret-value")
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
+    }
 }

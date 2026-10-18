@@ -2932,3 +2932,26 @@ Independent final review found no concrete blocker in the target module/CLI,
 five immutable corpora, separate-file process API, Cargo/CI routing or deletion.
 No live caller selects the deleted Python tool; source, test and workflow diff
 checks pass. This review does not clear the pending model/compiler work.
+
+### UI connectivity CI diagnostic gap (#354, investigation open)
+
+At exact commit `da803825c62d2caa9eae3d8aefb6cd579dd0791e`, Rust run
+39103294926 / UI connectivity job117604082085 failed the original raw replay for
+`input-list-negative-max`: GLFW could not open X11 display `:99`. This happened
+before pixel comparison. Existing mismatch-only artifact retention did not keep
+the failed replay's process output or server lifecycle log.
+
+A bounded independent host probe completed88 actual GLFW runs in each of the
+normal-reset and `-noreset` modes, including16 total replays of the exact failing
+case, without a connection failure. This does not identify reset as the cause or
+prove `-noreset` a fix. The diagnostic follow-up retains Xvfb stderr and original
+replay failure context without retries or relaxed assertions. Four focused
+process tests pass after reproducing the lost-evidence failure: nonzero exit,
+spawn failure, partial timeout output, and preservation of the original
+validation error when retention itself fails. They also verify no retry and
+unchanged success behavior. Strict Clippy passes across five consumers, and
+all34 workflow isolation tests pass. The entire affected list-input/setter/touch
+graphics test passes with frozen binaries and real GLFW replay in158.57seconds;
+this is a host rerun, not proof of an X11 root cause or a permanent fix. Fresh
+exact-commit CI remains required. Local probe evidence is
+`.analysis/scratch/2026-10-18-ui-display-connection/glfw-probe-summary.json`.
