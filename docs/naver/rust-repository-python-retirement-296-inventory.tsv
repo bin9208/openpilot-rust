@@ -1848,11 +1848,11 @@ rust/tools/check_calibration_daemon.py	59ff14326c59ac7fcf2e4f26a1af76456072041f	
 rust/tools/check_calibration_float.py	38e332e2cc7fb8fcca65e305afb8d6ea0b1e6779	pending	-
 rust/tools/check_calibration_loop.py	4a64bcf62f5e155b2da5be5fc4f6f62f84935906	pending	-
 rust/tools/check_calibration_reference.py	081106a094b16c35dbde0cce3769910f1b90512f	pending	-
-rust/tools/check_camerad_camera_lifecycle.py	1d1df7ff42c948731a0d5ea54be27f49a0520f06	pending	-
+rust/tools/check_camerad_camera_lifecycle.py	1d1df7ff42c948731a0d5ea54be27f49a0520f06	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_check.rs
 rust/tools/check_camerad_ci.py	fb43eceeabe3ce7cd8a4fa4c859b9f78988bcd83	pending	-
 rust/tools/check_camerad_exposure.py	2df105103bf6ad8de4d2002069ecc18d9bf13cff	partially-replaced	rust/crates/dev-tools/src/camera_exposure_check.rs; quoted retained for state
-rust/tools/check_camerad_isp_lifecycle.py	8a48e4c06473cf69747eb2f070c9db7417039430	partially-replaced	rust/crates/dev-tools/src/camera_isp_lifecycle_check.rs; normalize retained for camera lifecycle
-rust/tools/check_camerad_kernel.py	bb0f85dfc7c29a5fd89f459e44cfecd3c1a7333b	partially-replaced	rust/crates/dev-tools/src/camera_kernel_check.rs; digest/disable_core retained for lifecycle
+rust/tools/check_camerad_isp_lifecycle.py	8a48e4c06473cf69747eb2f070c9db7417039430	replaced-local	rust/crates/dev-tools/src/camera_isp_lifecycle_check.rs; normalization native
+rust/tools/check_camerad_kernel.py	bb0f85dfc7c29a5fd89f459e44cfecd3c1a7333b	replaced-local	rust/crates/dev-tools/src/camera_kernel_check.rs; lifecycle shared helpers native
 rust/tools/check_camerad_misc.py	ac15209bae87755d89eedca3f57055926ed6dc5f	replaced-local	rust/crates/dev-tools/src/camera_misc_check.rs
 rust/tools/check_camerad_packets.py	2af3b62a415370d5f0fc19362fdcb523b9631440	replaced-local	rust/crates/dev-tools/src/camera_packet_check.rs
 rust/tools/check_camerad_requests.py	0599be0f520278d2ef62068859fb9ea730e87322	replaced-local	rust/crates/dev-tools/src/camera_request_check.rs
@@ -2523,7 +2523,7 @@ rust/tools/supervision_source.py	130d5981ad8e88128ece607341b9140f2c7897f0	pendin
 rust/tools/test_athena_camera_children.py	e22e769adc8ad634e8bef3dab5db69b8460a5e32	pending	-
 rust/tools/test_carrot_man_fixture_inputs.py	f1e712f3e16d6bcb27101fe1112176114b199dda	pending	-
 rust/tools/tests/test_beep_worker_report.py	9c90fb3eb8f93f83780431c060090ac214db53a5	pending	-
-rust/tools/tests/test_camerad_artifact_paths.py	2b11265f8623445adb86b50304b98f9f573dd11e	pending	-
+rust/tools/tests/test_camerad_artifact_paths.py	2b11265f8623445adb86b50304b98f9f573dd11e	replaced-local	rust/crates/dev-tools/tests/camera_lifecycle_check.rs; three portable-path controls
 rust/tools/tests/test_card_admission.py	083047ba6082793f07152c821493e9f84993163a	pending	-
 rust/tools/tests/test_card_assets.py	ae98f2b81acbcd87b68aac1253dbb8c11ce065f1	pending	-
 rust/tools/tests/test_card_ci.py	23b74a07bf20587646331c7f4452f08b4a51fa97	pending	-

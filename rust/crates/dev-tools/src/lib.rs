@@ -18,6 +18,8 @@ pub mod camera_exposure_check;
 pub mod camera_isp_lifecycle_check;
 #[cfg(feature = "camera-sensor-native")]
 pub mod camera_kernel_check;
+#[cfg(feature = "camera-sensor-native")]
+pub mod camera_lifecycle_check;
 pub mod camera_lifecycle_generate;
 #[cfg(feature = "camera-sensor-native")]
 pub mod camera_misc_check;

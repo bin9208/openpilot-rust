@@ -2331,3 +2331,37 @@ before implementation; all 26 process tests and scoped strict Clippy pass after 
 The regression verifies overlay removal, unchanged parent state and inheritance
 by a subsequent unrelated child. This is a shared QA process capability, not a
 change to camera process settings or runtime selection.
+
+### Native complete camera lifecycle comparator (2026-10-18)
+
+`check-camerad-camera-lifecycle` preserves all 32 normal and eight cleanup
+scenarios, including expected original aborts, image descriptor normalization,
+float32 event bits, resource ownership and narrowly allowed extra cleanup.
+Seven focused tests cover 43 independent process/failure contracts, 104 helper
+cases, eight CLI cases, the three migrated portable artifact-path assertions,
+and real raw-path/stdin/environment/namespace behavior. All 24 tests across the
+camera lifecycle, kernel, sensor, ISP and source routing targets pass after
+Python deletion, along with scoped strict Clippy. The initial enum name and
+surrogate-hostile test parser errors were corrected without changing expectations.
+
+The full native comparator runs both current C++ and Rust candidates with PATH
+disabled and passes 32+8 cases. Its full reports match independent originals,
+except the separately measured free_bytes observation; the 26 GiB guard remains.
+The CI dispatcher now selects and fingerprints the native executable. The old
+lifecycle CLI, kernel digest/core helpers, ISP normalization helper and Python
+artifact-path test are removed after migrating every remaining caller. Python
+cleanup audit remains because the continuous runtime checker still imports it.
+Inventory: 102 replaced, four partial and 3,474 pending. These are host fixture
+results, not device boot/recording/upload or full repository conversion evidence.
+
+### Same-runner Confirm raster evidence (2026-10-18)
+
+The immutable original and native Forms reference both produced PNG SHA256
+`48ced25f770ec37f92456edf4ef800dc7d90f8e9127f4bb67f236366e1606df8` in
+[the b1769c0b UI job](https://github.com/bin9208/openpilot-rust/actions/runs/39082659846/job/117542952197).
+Decoded pixels and state are exactly equal (zero differing pixels). The original
+itself differs from the locally captured `35a7` fixture, establishing that the
+failed cross-environment fixed-raster assumption is not observed native drift.
+The precise renderer-environment cause and a portable exact regression remain
+under investigation. No alternate-hash allowlist or pixel tolerance was added;
+the CI failure and temporary diagnostic are still open work.

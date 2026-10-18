@@ -1,0 +1,46 @@
+{
+  "checker_sha256": "d132b2a343be1281fd8a5d80760bf8f931855fc085415466b2c122654adefed8",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "peer": "#!/bin/sh\nIFS= read -r token || token=EOF\nnamespace=false\nif test -d \"/dev/shm/msgq_$OPENPILOT_PREFIX\"; then namespace=true; fi\nprintf '{\"events\":[],\"stdin\":\"%s\",\"fake\":\"%s\",\"prob\":\"%s\",\"dt\":\"%s\",\"retained\":\"%s\",\"selector\":\"%s\",\"namespace\":%s}\\n' \"$token\" \"${CEREAL_FAKE+x}\" \"${SPECTRA_ERROR_PROB+x}\" \"${SPECTRA_ERROR_DT+x}\" \"$SPECTRA_UNUSED\" \"$CK_FAIL_OP\" \"$namespace\"\n",
+  "exit": 0,
+  "stdout": "error-1-camera:271 PASS\n{\"cases\": 1, \"failures\": 0}\n",
+  "stderr": "",
+  "source_stdout": "{\"events\":[],\"stdin\":\"token\",\"fake\":\"\",\"prob\":\"\",\"dt\":\"\",\"retained\":\"preserved\",\"selector\":\"camera:271\",\"namespace\":true}\n",
+  "report": {
+    "binaries": {
+      "source": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+      "native": "bef32d2c315a289576f2a6828d27edb16bb316a4d85c271f2d794045f3ea668d",
+      "fixture": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d"
+    },
+    "estimated_growth_bytes": 1073741824,
+    "cases": [
+      {
+        "name": "error-1-camera:271",
+        "passed": true,
+        "calls": 0,
+        "source_image_fds": {},
+        "native_image_fds": {},
+        "ownership": {
+          "native_closes_source_leaked_fds": [],
+          "native_unmaps_source_leaked_config": []
+        },
+        "native_resource_cleanup": {
+          "devices": 0,
+          "sessions": 0,
+          "started": 0,
+          "links": 0,
+          "deactivation": 0,
+          "buffers": 0,
+          "fences": 0,
+          "fds": 0,
+          "mappings": 0
+        },
+        "native_extra_cleanup": [],
+        "expected_source_abort": false
+      }
+    ],
+    "failures": []
+  },
+  "namespace_distinct": true,
+  "namespace_not_inherited": true
+}
