@@ -480,7 +480,8 @@ pub fn run(repository: &Path, options: &Options) -> Result<J> {
     let pinned = sources(repository)?;
     let cancel = Cancellation::new()?;
     let result = run_inner(repository, options, &cancel, &pinned);
-    if result.is_err() || cancel.signal().is_some() {
+    let signal = cancel.signal();
+    if result.is_err() || signal.is_some() {
         // Cancellation can arrive while the final write is blocked. Remove its
         // publication before reporting failure, including a partial failed write.
         match fs::remove_file(options.output.join("manifest.json")) {
@@ -489,7 +490,7 @@ pub fn run(repository: &Path, options: &Options) -> Result<J> {
             Err(error) => return Err(error.into()),
         }
     }
-    if let Some(signal) = cancel.signal() {
+    if let Some(signal) = signal {
         return Err(Interrupted(signal).into());
     }
     result
