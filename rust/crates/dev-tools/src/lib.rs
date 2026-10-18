@@ -95,10 +95,10 @@ pub mod user_docs;
 pub mod elf_audit;
 #[cfg(feature = "camera-sensor-native")]
 pub mod encoder_codecs_check;
-#[cfg(feature = "camera-sensor-native")]
-pub mod encoder_v4l_check;
 pub mod encoder_source_build;
 pub mod encoder_stage;
+#[cfg(feature = "camera-sensor-native")]
+pub mod encoder_v4l_check;
 
 pub mod ffmpeg_build;
 pub mod hardware_command_check;
