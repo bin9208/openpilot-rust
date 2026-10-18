@@ -1051,32 +1051,19 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - name: Configure original camera IPC imports
-        run: printf 'PYTHONPATH=%s/camera-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve capacity and install camera prerequisites
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev
-      - name: Install pinned camera oracle dependencies
+      - name: Install pinned camera Rust toolchain
         run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          python -m pip install pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
-      - name: Build original camera IPC bindings
-        run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/camera-native/python"
-          python -P -c 'import msgq.ipc_pyx, msgq.visionipc.visionipc_pyx, zmq; from openpilot.cereal import CEREAL_PATH, log; from pathlib import Path; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(msgq.visionipc.visionipc_pyx.__file__); print(Path(CEREAL_PATH)/"log.capnp"); print(zmq.__file__)' > "$RUNNER_TEMP/camera-native/python/imports.txt"
       - name: Build and validate native camera source generators
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1096,7 +1083,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo test --manifest-path rust/Cargo.toml -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --all-targets --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-msgq --features native-skip-miri --test vision --test vision_server --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-msgq --features native-skip-miri --test vision --test vision_server --test vision_native --locked
       - name: Require original camera comparisons and continuous driver fixtures
         run: rust/target/debug/check-camerad-ci --binaries rust/target/debug --output "$RUNNER_TEMP/camera-native/oracles"
       - name: Preserve camera evidence including failed cases

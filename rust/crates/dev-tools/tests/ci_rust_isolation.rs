@@ -792,10 +792,9 @@ fn camera_requires_source_driver_fixture_and_visionipc_checks() {
         "camera-runtime",
         &[
             "check-camerad-ci",
-            "build_visionipc_python.py",
             "libclang-rt-18-dev",
             "openpilot-camerad-runtime --features native-skip-miri",
-            "--test vision --test vision_server",
+            "--test vision --test vision_server --test vision_native",
         ],
         &["check-camerad-ci"],
         false,

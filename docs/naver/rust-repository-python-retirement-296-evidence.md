@@ -2518,3 +2518,25 @@ Inventory is110 replaced-local, two partial and3,468 pending baseline sources.
 Remaining comparison/build Python (including the separate VisionIPC peer builder),
 UI application lifecycle and full model compiler work remain incomplete. No whole
 repository conversion, device startup/recording/upload, or CPU savings is claimed.
+
+### Camera CI Python dependency closure (2026-10-18)
+
+Current VisionIPC tests already use unchanged original C++ peers and native Rust
+clients/servers. After continuous-controller migration, the camera job's Python
+setup, PYTHONPATH, pip packages, Cython binding builds and import probes had no
+remaining consumer. Those camera-only steps are removed; generic binding builders
+remain for their other actual workflow consumers. Existing native package/build/
+Clippy/driver comparisons remain mandatory, with vision_native interoperability
+added beside vision and vision_server.
+
+Two new policy tests first failed on the retained PYTHONPATH, then passed after
+the workflow cleanup. Their mutations reject restored Python setup/imports/packages
+and removed, skipped or soft-failing native coverage. All40 routing/isolation tests
+and strict Clippy pass. Freshly built original C++ VisionIPC and Rust peers pass all
+three actual process/FD/layout/retention/stream tests with PATH=/nonexistent and
+Python environment variables removed. A scratch shell harness initially allowed
+one test to consume the TSV loop's stdin; rerunning each executable with /dev/null
+stdin completed all three. No production transport behavior or tests were relaxed.
+Evidence:2026-10-18-vision-peer-closure, including Cargo-selected executable paths
+and SHA256 records. This closes Python usage in the camera job, not other jobs or
+repository-wide Python retirement. Exact-commit cloud results remain pending.

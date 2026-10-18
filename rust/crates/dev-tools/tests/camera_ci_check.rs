@@ -440,3 +440,157 @@ fn mandatory_camera_gate_builds_native_controller_and_orchestrator_before_live_c
     );
     assert!(!live_command.contains("python"));
 }
+
+fn camera_native_peer_policy(job: &Value) -> std::result::Result<(), String> {
+    if job.get("if").is_some() || job.get("continue-on-error").is_some() {
+        return Err("camera job must remain mandatory".into());
+    }
+    let check_environment = |environment: &Value| -> std::result::Result<(), String> {
+        if let Some(environment) = environment.as_object() {
+            for (key, value) in environment {
+                if key.to_ascii_lowercase().contains("python")
+                    || value.to_string().contains("camera-native/python")
+                {
+                    return Err(format!("camera retains Python environment: {key}"));
+                }
+            }
+        }
+        Ok(())
+    };
+    check_environment(&job["env"])?;
+    let steps = job["steps"].as_array().ok_or("camera steps missing")?;
+    let mut commands = vec![];
+    for step in steps {
+        if step["uses"]
+            .as_str()
+            .is_some_and(|value| value.starts_with("actions/setup-python@"))
+        {
+            return Err("camera retains Python setup".into());
+        }
+        check_environment(&step["env"])?;
+        if let Some(run) = step["run"].as_str() {
+            let lower = run.to_ascii_lowercase();
+            for forbidden in [
+                "python",
+                "pip ",
+                "pip3",
+                "pycapnp",
+                "pyzmq",
+                "cython",
+                "setuptools",
+                "pytest",
+                "camera-native/python",
+                "imports.txt",
+            ] {
+                if lower.contains(forbidden) {
+                    return Err(format!(
+                        "camera retains Python command/dependency: {forbidden}"
+                    ));
+                }
+            }
+            if step.get("if").is_some() || step.get("continue-on-error").is_some() {
+                return Err("camera native commands must remain unconditional".into());
+            }
+            commands.extend(run.lines().map(str::trim));
+        }
+    }
+    for required in [
+        "cargo test --manifest-path rust/Cargo.toml -p openpilot-camerad --all-targets --locked",
+        "cargo test --manifest-path rust/Cargo.toml -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --all-targets --locked",
+        "cargo test --manifest-path rust/Cargo.toml -p openpilot-msgq --features native-skip-miri --test vision --test vision_server --test vision_native --locked",
+        "cargo build --manifest-path rust/Cargo.toml -p openpilot-camerad -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --bins --examples --locked",
+        "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-camerad -p openpilot-camera-kernel -p openpilot-camerad-runtime --features native-skip-miri --all-targets --locked -- -D warnings",
+        "rust/target/debug/check-camerad-ci --binaries rust/target/debug --output \"$RUNNER_TEMP/camera-native/oracles\"",
+    ] {
+        if commands.iter().filter(|command| **command == required).count() != 1 {
+            return Err(format!("camera must run native command exactly once: {required}"));
+        }
+    }
+    if !commands.iter().any(|command| {
+        command.contains(
+            "apt-get install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev",
+        )
+    }) {
+        return Err("camera native schema/compiler/IPC prerequisites missing".into());
+    }
+    if !commands.iter().any(|command| {
+        command.contains(
+            "rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy",
+        )
+    }) {
+        return Err("camera pinned Rust toolchain missing".into());
+    }
+    Ok(())
+}
+
+fn camera_job() -> Value {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let workflow = openpilot_dev_tools::ci_policy::parse(
+        &fs::read_to_string(root.join(".github/workflows/rust.yml")).unwrap(),
+    )
+    .unwrap();
+    workflow["jobs"]["camera-runtime"].clone()
+}
+
+#[test]
+fn camera_gate_uses_native_visionipc_peers_without_python_setup_or_bindings() {
+    camera_native_peer_policy(&camera_job()).unwrap();
+}
+
+#[test]
+fn camera_native_peer_policy_rejects_python_and_lost_or_skipped_native_coverage() {
+    let baseline = camera_job();
+    camera_native_peer_policy(&baseline).unwrap();
+    for step in [
+        serde_json::json!({"uses":"actions/setup-python@v6"}),
+        serde_json::json!({"run":"python -m pip install pycapnp Cython"}),
+        serde_json::json!({"run":"python rust/tools/build_visionipc_python.py --output binding"}),
+        serde_json::json!({"run":"python -c 'import msgq.visionipc'"}),
+        serde_json::json!({"run":"pip3 install pyzmq"}),
+        serde_json::json!({"run":"true","env":{"PYTHONPATH":"binding"}}),
+    ] {
+        let mut changed = baseline.clone();
+        changed["steps"].as_array_mut().unwrap().push(step);
+        assert!(camera_native_peer_policy(&changed).is_err());
+    }
+    let mut changed = baseline.clone();
+    changed["env"]["PYTHONPATH"] = "binding".into();
+    assert!(camera_native_peer_policy(&changed).is_err());
+    for target in ["vision", "vision_server", "vision_native"] {
+        let mut changed = baseline.clone();
+        let step = changed["steps"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|step| {
+                step["run"]
+                    .as_str()
+                    .is_some_and(|run| run.contains("-p openpilot-msgq"))
+            })
+            .unwrap();
+        step["run"] = step["run"]
+            .as_str()
+            .unwrap()
+            .replace(&format!(" --test {target}"), "")
+            .into();
+        assert!(
+            camera_native_peer_policy(&changed).is_err(),
+            "missing {target}"
+        );
+    }
+    for condition in ["if", "continue-on-error"] {
+        let mut changed = baseline.clone();
+        let step = changed["steps"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|step| {
+                step["run"]
+                    .as_str()
+                    .is_some_and(|run| run.contains("-p openpilot-msgq"))
+            })
+            .unwrap();
+        step[condition] = true.into();
+        assert!(camera_native_peer_policy(&changed).is_err(), "{condition}");
+    }
+}
