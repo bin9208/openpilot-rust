@@ -398,7 +398,26 @@ name = "check-timed-shutdown"
 path = "src/bin/check_timed_shutdown.rs"
 required-features = ["timed-live-native"]
 
+[[test]]
+name = "checkout_status_check"
+required-features = ["checkout-tools-native"]
+
+[[test]]
+name = "checkout_status_reference"
+required-features = ["checkout-tools-native"]
+
+[[bin]]
+name = "check-checkout-status"
+path = "src/bin/check_checkout_status.rs"
+required-features = ["checkout-tools-native"]
+
+[[bin]]
+name = "checkout-status-reference"
+path = "src/bin/checkout_status_reference.rs"
+required-features = ["checkout-tools-native"]
+
 [features]
+checkout-tools-native = ["dep:openpilot-process-supervision", "dep:nix"]
 services-catalog-native = ["dep:capnp", "dep:openpilot-cereal"]
 timed-tools-native = ["dep:chrono", "dep:zmq"]
 timed-live-native = ["timed-tools-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
@@ -522,6 +541,8 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+openpilot-process-supervision = { path = "../process-supervision", optional = true }
+nix = { version = "=0.31.3", default-features = false, features = ["process"], optional = true }
 zstd = { version = "=0.13.3", optional = true }
 openpilot-cereal = { path = "../cereal", optional = true }
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"], optional = true }

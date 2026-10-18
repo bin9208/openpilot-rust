@@ -192,3 +192,8 @@ pub mod upstream_sync;
 
 #[cfg(feature = "image-array-native")]
 pub mod ui_application_lifecycle_check;
+
+#[cfg(feature = "checkout-tools-native")]
+pub mod checkout_status_check;
+#[cfg(feature = "checkout-tools-native")]
+pub mod checkout_status_reference;

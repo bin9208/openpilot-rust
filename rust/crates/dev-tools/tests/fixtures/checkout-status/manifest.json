@@ -1,0 +1,22 @@
+{
+  "source_sha256": {
+    "rust/tools/check_checkout_status.py": "526d22847f9c37f0813e3c179126e7388c241f9575e940864f5d3531d54bfcd1",
+    "rust/tools/checkout_git_cases.py": "fb383335e995970a63c5f7a423b5f8d9547251aad2a7f0a120f3658a4c982207",
+    "rust/tools/checkout_helper_cases.py": "0cf75347ff26576d51cd22717248d29bf229426ff372b85c1b97c9fb66045c65",
+    "rust/tools/checkout_metadata_cases.py": "e57540cd3c462cad43ee296e86a089dc975afeabc1a9a2c1d1a44e2344b3e12f",
+    "rust/tools/checkout_peer.py": "20032fe5063e4a0ac64cab67bf6fdc2e8175a4ae8cc0dc5da1964583907116fa",
+    "rust/tools/checkout_status_cases.py": "84d7d384da8ba260c78c1caa7233d7b23ec93b7e5f23bdb1018f53233680f4f7",
+    "rust/tools/checkout_source.py": "f4294ce62a8ebe5d644a0e46e7ea5ee70a848c638e45b33fefffe632a3cb6f00",
+    "openpilot/system/manager/update_status.py": "080636bf63f26bb19329c2efba8bfd2a2f0123d60186a05488ba4875a2cf3c49"
+  },
+  "captured_by_sha256": "a9b3c1e0136764f6c341ca22985ac200b40a34b95f1634a000b271fa4725499c",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "scope": "Fresh original policy/CLI and complete nine-suite original checker PASS against parent-frozen current source ELFs; no Rust checker implementation yet.",
+  "files": {
+    "metadata-policy-original.json": "9888f49cbd5a396eaa2b8779aeeceef774a05c24de6049563433cbcabaa99403",
+    "state-policy-original.json": "9c3317dc1189f3fbfe07d907e733ea8e368f6836cbb9a041fd12ba7528eaeb94",
+    "cli-original.json": "f45c82c284dc7d46251f89f8d69e30bc382f4d70bfa94651309a5c949aea6ac6",
+    "full-original.json": "58de658007c0243f9869ea1b1f8c5b0b063d4429f759fe4c1d9f5a17146fcd4c"
+  },
+  "normalization": "Only absolute repository prefix in CLI output bytes -> $ROOT; original unmodified bytes retained in ignored policy-original-raw."
+}

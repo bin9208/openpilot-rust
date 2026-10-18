@@ -2250,9 +2250,18 @@ jobs:
         run: |
           python rust/tools/check_manager_catalog.py rust/target/debug/examples/catalog_probe \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/catalog"
+      - name: Build and test native checkout status QA tools
+        run: |
+          rustup component add clippy --toolchain 1.94.0
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features checkout-tools-native --bin check-checkout-status --bin checkout-status-reference --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features checkout-tools-native --bin check-checkout-status --bin checkout-status-reference --test checkout_status_check --test checkout_status_reference --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features checkout-tools-native --bin check-checkout-status --bin checkout-status-reference --test checkout_status_check --test checkout_status_reference --locked -- -D warnings
       - name: Compare checkout metadata, real Git and child exec boundaries
         run: |
-          python rust/tools/check_checkout_status.py --binary rust/target/debug/examples/checkout_trace \
+          rust/target/debug/check-checkout-status --binary rust/target/debug/examples/checkout_trace \
             --fixture rust/target/debug/examples/git_fixture --launcher rust/target/debug/openpilot-process-child \
             --captured-binary rust/target/debug/examples/captured_trace --handshake-fixture rust/target/debug/examples/handshake_fixture \
             --output "$RUNNER_TEMP/startup-runtime/checkout-status"

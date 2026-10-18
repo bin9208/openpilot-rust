@@ -3081,3 +3081,29 @@ batched-bias275-review.md. Exact committed-SHA CI remains required.
 This bounded prefix does not complete either model compiler, node277, Python
 retirement, target execution or device acceptance. The LLVM20 CI command and
 policy test explicitly include compiler_batched_bias.
+
+### Checkout QA tools retired with raw Unix receipt parity (#296)
+
+Seven checkout Python tools are replaced by a feature-gated native checker and
+independent source reference. All nine metadata/Git/status/helper/inherited-exec
+stages remain mandatory. Independent original captures bind 43 metadata input
+byte strings, 44 state/f64/read-count rows and 12 CLI controls. Review reproduced
+and fixed a non-UTF8 filename panic and excessive inherited-environment logging:
+receipts now preserve arbitrary Unix bytes and the original environment allowlist,
+while child environments remain unchanged.
+
+Before and after deletion, full runs match all seven original policy outputs
+and input transcripts on both sides, 11 complete helper outcomes and six original
+inherited-exec outcomes. Twelve original failure phases and raw-path/environment
+controls pass. Cleanup checks cover 17 peers, 281 RPC child/descriptor checks,
+22 probes and four original strict timeouts. Both final complete exec traces
+contain 426 attempts and zero interpreters. Ten focused tests and strict Clippy
+pass after deletion; rebuilt checker/reference ELFs are identical to the repaired
+pre-deletion pair. The retained runtime update_status.py stays pinned.
+
+Evidence: `.analysis/scratch/2026-10-18-checkout-tools/postdelete-final-proofs.json`,
+`native-gate-NwarOU7j/`, `actual-native-RM7CZtht/`,
+`postdelete-failure-77nn57um/` and `postdelete-raw-vunmhtzt/`.
+Source fixture expectations remain unchanged. Inventory is 148 replaced-local,
+three partially replaced and 3,429 pending. Exact committed-SHA CI remains
+required; this does not establish complete conversion or device acceptance.

@@ -1903,7 +1903,7 @@ rust/tools/check_card_vehicle.py	72036d18e4bcba888ef3e8f6801f9fa34fccd358	pendin
 rust/tools/check_card_volkswagen.py	35f21ac55bc1b55595743f7f97b53e27e9b5b977	pending	-
 rust/tools/check_card_xiaoge.py	b2a2d48eeaac4a469b6db6477a5ab92381ac0423	pending	-
 rust/tools/check_carrot_recovery_upload.py	35e4dad182b9fdf7b380b6af0586ab2898ef924c	pending	-
-rust/tools/check_checkout_status.py	c645a4356cca8d1341822db79b4bbf45ff662d10	pending	-
+rust/tools/check_checkout_status.py	c645a4356cca8d1341822db79b4bbf45ff662d10	replaced-local	rust/crates/dev-tools/src/checkout_status_check.rs;rust/crates/dev-tools/src/checkout_status_reference.rs
 rust/tools/check_command_json_boundary.py	372d70c6b3dfd0766e49709d7ddfbdfb2b1974ce	replaced-local	openpilot-dev-tools check-command-json-boundary; independent 23-case source corpus, dynamic provenance and actual CLI parity
 rust/tools/check_command_reference.py	08cc723e29e067e0583d4f99095ce2cf9373a3c6	replaced-local	openpilot-dev-tools check-command-reference; independent 1026-read source corpus, journals and actual CLI parity
 rust/tools/check_communication_snapshot.py	8079cf67e33fc0e81a03d30eee7fef72400c2cfa	replaced-local	rust/crates/dev-tools/src/diagnostic_check.rs
@@ -2205,12 +2205,12 @@ rust/tools/check_xiaoge_opencv.py	edff3d22a3d1a6c01f92f6a06db618f97317a2fe	pendi
 rust/tools/check_xiaoge_opencv_jpeg.py	18d06144940ecc44c636c63a8b66914ff46265f1	pending	-
 rust/tools/check_xiaoge_policy.py	df4d53ea3bfa1a2e1fa197ba1ed4f1a50dee4e2c	pending	-
 rust/tools/check_xiaoge_runtime.py	40a954f5c2513767f4a4554ed848d4f497e8407d	pending	-
-rust/tools/checkout_git_cases.py	fb49bb65581097bb47e866653c16ab870394343e	pending	-
-rust/tools/checkout_helper_cases.py	863dcdd0b053b3be2b3ef6c5d6e1bc7ce85e9598	pending	-
-rust/tools/checkout_metadata_cases.py	6d05e4910d6c2a0eb6033b97189325a86e3e8c7b	pending	-
-rust/tools/checkout_peer.py	59acc27d9c2c6af98c7f62075177731ddb521f09	pending	-
-rust/tools/checkout_source.py	acab344f0ff0ae2e1c381ee2e71c8ba8d1e479b1	pending	-
-rust/tools/checkout_status_cases.py	2547310ec546b17aa6f33e837b7e54423a90c4e8	pending	-
+rust/tools/checkout_git_cases.py	fb49bb65581097bb47e866653c16ab870394343e	replaced-local	rust/crates/dev-tools/src/checkout_status_check.rs;rust/crates/dev-tools/src/checkout_status_reference.rs
+rust/tools/checkout_helper_cases.py	863dcdd0b053b3be2b3ef6c5d6e1bc7ce85e9598	replaced-local	rust/crates/dev-tools/src/checkout_status_check.rs;rust/crates/dev-tools/src/checkout_status_reference.rs
+rust/tools/checkout_metadata_cases.py	6d05e4910d6c2a0eb6033b97189325a86e3e8c7b	replaced-local	rust/crates/dev-tools/src/checkout_status_check.rs;rust/crates/dev-tools/src/checkout_status_reference.rs
+rust/tools/checkout_peer.py	59acc27d9c2c6af98c7f62075177731ddb521f09	replaced-local	rust/crates/dev-tools/src/checkout_status_check.rs;rust/crates/dev-tools/src/checkout_status_reference.rs
+rust/tools/checkout_source.py	acab344f0ff0ae2e1c381ee2e71c8ba8d1e479b1	replaced-local	rust/crates/dev-tools/src/checkout_status_check.rs;rust/crates/dev-tools/src/checkout_status_reference.rs
+rust/tools/checkout_status_cases.py	2547310ec546b17aa6f33e837b7e54423a90c4e8	replaced-local	rust/crates/dev-tools/src/checkout_status_check.rs;rust/crates/dev-tools/src/checkout_status_reference.rs
 rust/tools/cluster_alert_render_cases.py	9d6ca121a504878e35a40c8052875ef1199b6d06	pending	-
 rust/tools/cluster_args_compare.py	9251b4ab2e1926359b4d1e5e2a04832082b6a62c	pending	-
 rust/tools/cluster_camera_compare.py	03ef67c8c65a63b6776b5b758c66be9d1cda3ed9	pending	-

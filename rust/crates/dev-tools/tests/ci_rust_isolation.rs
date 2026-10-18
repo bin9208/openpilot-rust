@@ -498,15 +498,35 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
             "rust/target/debug/check-registration-utf7",
             "rust/target/debug/check-registration-vendor",
             "check_manager_catalog.py",
-            "check_checkout_status.py",
+            "rust/target/debug/check-checkout-status --binary rust/target/debug/examples/checkout_trace",
+            "--features checkout-tools-native --bin check-checkout-status --bin checkout-status-reference",
+            "--test checkout_status_check --test checkout_status_reference --locked",
+            "--captured-binary rust/target/debug/examples/captured_trace --handshake-fixture rust/target/debug/examples/handshake_fixture",
             "--timeouts",
             "--launcher rust/target/debug/openpilot-process-child",
             "--fixture rust/target/debug/examples/process_fixture",
             "build_msgq_python.py",
             "build_params_python.py",
         ],
-        &["python rust/tools/check_"],
+        &["python rust/tools/check_", "check-checkout-status", "--test checkout_status_check"],
         true,
+    );
+    let run = commands(&workflow()["jobs"]["startup-runtime"]);
+    assert!(!run.contains("python rust/tools/check_checkout_status.py"));
+    let data = workflow();
+    let checkout = data["jobs"]["startup-runtime"]["steps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| {
+            step["name"] == "Compare checkout metadata, real Git and child exec boundaries"
+        })
+        .unwrap()["run"]
+        .as_str()
+        .unwrap();
+    assert!(
+        !checkout.contains("--group"),
+        "all checkout groups remain required"
     );
 }
 #[test]

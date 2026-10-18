@@ -65,9 +65,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-141 baseline sources are fully replaced locally, three baseline sources are
+148 baseline sources are fully replaced locally, three baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,436 baseline sources remain pending. The added
+and 3,429 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 
@@ -175,3 +175,9 @@ eight native checkers matched493 original cases. The same frozen tools passed
 all493 again after deletion, with1,025 execve attempts and zero Python in each
 run. Post-deletion118tests and strict Clippy pass. Mandatory CI callers now use
 the native commands. Inventory141replaced-local/3partial/3436pending.
+
+2026-10-18: Seven checkout QA tools are native after full-nine original/process
+comparisons, twelve failure phases and arbitrary-Unix-path/environment controls.
+Ten tests, strict Clippy and all frozen runtime proofs pass after deletion;
+426 exec attempts in each final complete trace contain no interpreter.
+Inventory148replaced-local/3partial/3429pending. Exact-commit CI remains required.
