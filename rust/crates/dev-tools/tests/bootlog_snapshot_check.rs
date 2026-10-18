@@ -1,4 +1,5 @@
 //! Independent original save_bootlog captures, exercised with real files/children.
+#![cfg(target_os = "linux")]
 use openpilot_dev_tools::bootlog_snapshot_check::{run_case, sources, Options};
 use serde_json::Value;
 use sha2::{Digest, Sha256};

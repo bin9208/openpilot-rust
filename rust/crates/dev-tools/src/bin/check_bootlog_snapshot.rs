@@ -1,3 +1,4 @@
+#[cfg(target_os = "linux")]
 fn main() {
     if let Err(error) = openpilot_dev_tools::bootlog_snapshot_check::cli() {
         eprintln!("{error}");
@@ -9,4 +10,9 @@ fn main() {
             },
         );
     }
+}
+#[cfg(not(target_os = "linux"))]
+fn main() {
+    eprintln!("bootlog snapshot checks require Linux");
+    std::process::exit(1);
 }

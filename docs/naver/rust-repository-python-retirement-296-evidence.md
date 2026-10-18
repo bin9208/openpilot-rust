@@ -68,6 +68,18 @@ complete111-test/Clippy gate and frozen byte/package/caller proofs were repeated
 after that representation-only change. The prior default-bootstrap/Card-stage
 proofs remain explicitly identified by their `postdelete5` paths.
 
+The first actual macOS job at6efa00a3 passed disk reclamation and dependency
+setup, then failed to compile the Linux snapshot checker: rustix intentionally
+does not expose `mkfifoat` on Apple targets. That checker also requires Linux
+`/proc` descriptor/process inspection. Its module, child/checker entrypoints and
+integration tests are now explicitly Linux-only; other hosts get an unsupported
+platform error from those entrypoints. The independent snapshot reference remains
+portable and unchanged. Fresh Linux snapshot/launcher builds and all seven snapshot
+tests pass, including the complete filesystem/child/detached matrix. Evidence:
+`.analysis/scratch/2026-10-19-dbc-darwin/bootlog-{build,test}.log` and
+the [failed macOS job](https://github.com/bin9208/openpilot-rust/actions/runs/39148174411/job/117736576999).
+The repaired macOS job still requires exact-commit verification.
+
 ### Independent Version source foundation (2026-10-19)
 
 Commit65bdce63 ports the original Version/Git/cache/filesystem policies independently
