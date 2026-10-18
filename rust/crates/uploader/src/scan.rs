@@ -15,6 +15,7 @@ mod tests;
 pub trait Attributes {
     fn get(&mut self, path: &Path) -> io::Result<Option<Vec<u8>>>;
     fn mark_uploaded(&mut self, path: &Path) -> io::Result<()>;
+    fn mark_uploaded_source(&mut self, path: &Path, source: &fs::File) -> io::Result<()>;
     /// Drop cached paths only when a completed inventory proves them absent.
     fn retain_paths(&mut self, _present: &dyn Fn(&Path) -> bool) {}
 }
@@ -41,6 +42,15 @@ impl Attributes for XattrCache {
         self.values.remove(path);
         Ok(rustix::fs::setxattr(
             path,
+            "user.upload",
+            b"1",
+            rustix::fs::XattrFlags::empty(),
+        )?)
+    }
+    fn mark_uploaded_source(&mut self, path: &Path, source: &fs::File) -> io::Result<()> {
+        self.values.remove(path);
+        Ok(rustix::fs::fsetxattr(
+            source,
             "user.upload",
             b"1",
             rustix::fs::XattrFlags::empty(),

@@ -1364,3 +1364,67 @@ target runs through the workspace gate without an optional feature or skip.
 Evidence is in `.analysis/scratch/2026-10-18-short-red/athena-*` and
 `2026-10-18-athena-log-lifetime/original-pb89fib6/receipt.json`.
 Exact committed-SHA CI and user device acceptance remain separate gates.
+
+## Upload file consistency follow-up (#388 / #389)
+
+A bounded review inspected uploader transport/source opening, completion marking,
+folder stream completion, WebDAV consistency checks and cancellation/retry cleanup.
+It identified two inherited defects; neither is an observed route incident.
+
+Uploader marks `user.upload` by pathname after transport completes. A real-file
+control of the unchanged original method consumed inode A, renamed it, created B
+at the old path and returned a controlled success. The original marked B even
+though only A was consumed. The current Rust transport/mark boundary has the same
+missing identity binding. [#388](https://github.com/bin9208/openpilot-rust/issues/388)
+requires a native regression and completion tied to the transferred file, while
+preserving existing status and size policies. This original control uses a
+controlled transport response; it is not a full HTTP or native-daemon test.
+
+Ordinary folder upload also accepts only a matching byte count. An actual original
+Python upload to a private loopback HTTP receiver sent a 2 MiB file; after its
+first 1 MiB progress notification the entire file was rewritten at identical
+length. The receiver enforced the declared length, received an A-prefix/B-suffix,
+and the original reported success despite matching neither complete source
+version. Rust FolderUpload lacks the consistency checks already present in its
+WebDAV sibling. [#389](https://github.com/bin9208/openpilot-rust/issues/389) tracks
+a native reproduction and an explicitly stronger changed-source contract.
+Both defects are now reproduced by native integration regressions. Uploader's
+actual HTTP acknowledgement and ignored-response cases both mark the replacement
+inode incorrectly; its unchanged-file control passes. FolderUpload's private
+HTTP receiver actually publishes the mixed same-length body and accepts a source
+pathname replacement. Append and truncate controls already reject their attempts.
+These are two failing uploader tests and two failing folder tests, not merely
+source inspection. A further real-file regression reproduced a same-inode rewrite
+inside the success-log callback, after the first metadata check but before marking.
+
+Uploader now retains the actual body descriptor and its metadata through raw and
+compressed transfers, checks identity before accepting completion, and marks via
+`fsetxattr`. A final held-file check after success logging catches that callback
+boundary; a detected change restores the previous last filename, emits failure
+and leaves the marker unset. The already emitted success event cannot be
+retracted, so this late-change case has success followed by corrective failure.
+Zero/oversize and no-body responses use a nonblocking, nontruncating write-only
+descriptor; they do not acquire a new read-permission requirement. Descriptor-open
+errors use the prior marking-error policy, without claiming identical errors for
+every special-file case. Status200/201/401/403/412 policies remain intact.
+
+FolderUpload retains metadata for its actual opened file and validates the held
+descriptor, current pathname and byte count before returning terminal EOF. A
+detected changed attempt therefore does not send the final HTTP completion chunk;
+the existing retry can reopen a stable version. This is a stronger mutation
+consistency contract, not an atomic snapshot or a lock against concurrent writers.
+
+All47 affected package tests pass, including9 uploader and5 folder regressions;
+strict all-target Clippy, formatting and fresh example builds pass. The unchanged
+original comparisons pass212 filesystem scenarios,10,000 backoff decisions,
+32 uploader HTTP scenarios (RS256/ES256 and exact compressed bytes), and99 web
+upload cases. Frozen example and selected source/input hashes were rechecked.
+The new integration targets run through the existing workspace gate without
+feature flags or environment-based skips. Evidence:
+`2026-10-19-upload-ownership-audit/FINAL-HANDOFF.json`.
+
+No additional cancellation/retry-cleanup defect was established in the inspected
+paths. Exact inspected source identities, unchanged-original controls and native
+regression plans are retained privately under
+`.analysis/scratch/2026-10-19-upload-ownership-audit/`. Exact committed-SHA CI and
+user device/upload acceptance remain separate, outstanding gates.

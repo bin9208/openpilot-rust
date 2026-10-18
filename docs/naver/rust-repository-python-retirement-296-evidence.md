@@ -4010,3 +4010,28 @@ job; all62 native CI/disk/policy tests now pass, including missing-dependency an
 wrong-result negative controls. All177 inherited guard arguments remain exact;
 299 total guards cover35 jobs. Exact remote CI and timing improvement remain
 unverified until the new committed run. Evidence: `2026-10-19-llvm-ci-split/`.
+
+### Upload completion identity and changed-source fixes (#388 / #389)
+
+Actual native REDs reproduced marking an untransmitted replacement file and
+publishing a mixed same-length folder body. A further callback RED caught a
+same-inode rewrite between accepted-response logging and marking. The uploader
+now retains raw/compressed body descriptors through inode-bound `fsetxattr` and
+rechecks after logging. Folder upload rejects observed changed-source metadata
+before terminal HTTP EOF. Existing status/size policies and no-read-permission
+marking remain covered; this is not an atomic content snapshot guarantee.
+
+All47 affected package tests, strict all-target Clippy, formatting and fresh
+example builds pass. Unchanged-original comparisons also pass212 filesystem,
+10,000 backoff,32 uploader HTTP and99 folder/WebDAV cases. Exact source/frozen
+ELF seals and permission/event-ordering limits are recorded in
+`2026-10-19-upload-ownership-audit/FINAL-HANDOFF.json` and the module audit.
+This does not retire their still-live Python comparison controllers or establish
+actual NAS/device upload acceptance. Exact committed-SHA CI remains outstanding.
+
+The old `ecfb7774` workspace job finally ended cancelled at22:12:58UTC after its
+150-minute budget; LLVM20 tests were still advancing when cancelled. Later
+source/package stages were not run. The run is a failure overall, also retaining
+the earlier telemetry#382 and UI#384 failures. ARM and other completed component
+jobs passed. [Exact old run](https://github.com/bin9208/openpilot-rust/actions/runs/39159654100).
+The new LLVM20 job separation in `c7ea57e0` still requires its own remote run.

@@ -101,6 +101,9 @@ impl Attributes for FailMark {
     fn mark_uploaded(&mut self, _: &Path) -> io::Result<()> {
         Err(io::Error::from_raw_os_error(13))
     }
+    fn mark_uploaded_source(&mut self, path: &Path, _: &fs::File) -> io::Result<()> {
+        self.mark_uploaded(path)
+    }
 }
 #[test]
 fn zero_size_file_mark_failure_preserves_original_fatal_branch() {
