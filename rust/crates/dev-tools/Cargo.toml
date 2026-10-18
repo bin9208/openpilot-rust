@@ -416,7 +416,26 @@ name = "checkout-status-reference"
 path = "src/bin/checkout_status_reference.rs"
 required-features = ["checkout-tools-native"]
 
+[[test]]
+name = "manager_catalog_check"
+required-features = ["manager-catalog-tools-native"]
+
+[[test]]
+name = "manager_catalog_reference"
+required-features = ["manager-catalog-tools-native"]
+
+[[bin]]
+name = "check-manager-catalog"
+path = "src/bin/check_manager_catalog.rs"
+required-features = ["manager-catalog-tools-native"]
+
+[[bin]]
+name = "manager-catalog-reference"
+path = "src/bin/manager_catalog_reference.rs"
+required-features = ["manager-catalog-tools-native"]
+
 [features]
+manager-catalog-tools-native = []
 checkout-tools-native = ["dep:openpilot-process-supervision", "dep:nix"]
 services-catalog-native = ["dep:capnp", "dep:openpilot-cereal"]
 timed-tools-native = ["dep:chrono", "dep:zmq"]

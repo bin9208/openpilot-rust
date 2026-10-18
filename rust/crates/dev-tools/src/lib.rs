@@ -197,3 +197,8 @@ pub mod ui_application_lifecycle_check;
 pub mod checkout_status_check;
 #[cfg(feature = "checkout-tools-native")]
 pub mod checkout_status_reference;
+
+#[cfg(feature = "manager-catalog-tools-native")]
+pub mod manager_catalog_check;
+#[cfg(feature = "manager-catalog-tools-native")]
+pub mod manager_catalog_reference;

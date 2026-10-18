@@ -498,7 +498,9 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
             "check_registration_clock.py",
             "rust/target/debug/check-registration-utf7",
             "rust/target/debug/check-registration-vendor",
-            "check_manager_catalog.py",
+            "rust/target/debug/check-manager-catalog rust/target/debug/examples/catalog_probe",
+            "--features manager-catalog-tools-native --bin check-manager-catalog --bin manager-catalog-reference",
+            "--test manager_catalog_check --test manager_catalog_reference --locked",
             "rust/target/debug/check-checkout-status --binary rust/target/debug/examples/checkout_trace",
             "--features checkout-tools-native --bin check-checkout-status --bin checkout-status-reference",
             "--test checkout_status_check --test checkout_status_reference --locked",
@@ -509,11 +511,12 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
             "build_msgq_python.py",
             "build_params_python.py",
         ],
-        &["python rust/tools/check_", "check-checkout-status", "--test checkout_status_check"],
+        &["python rust/tools/check_", "check-checkout-status", "--test checkout_status_check", "check-manager-catalog", "--test manager_catalog_check"],
         true,
     );
     let run = commands(&workflow()["jobs"]["startup-runtime"]);
     assert!(!run.contains("python rust/tools/check_checkout_status.py"));
+    assert!(!run.contains("python rust/tools/check_manager_catalog.py"));
     let data = workflow();
     let checkout = data["jobs"]["startup-runtime"]["steps"]
         .as_array()

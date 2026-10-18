@@ -2249,10 +2249,18 @@ jobs:
           python -c 'from pathlib import Path; import sys; files=list(Path(sys.argv[1]).glob("clock_year_ten_thousand/*/collector-*/stderr.log")); assert len(files)==2; assert all("pausing before error publisher initialization" in path.read_text() for path in files)' "$RUNNER_TEMP/startup-runtime/registration-ready"
       - name: Compare uploader signing after shared registration key support
         run: python rust/tools/check_uploader.py --binary rust/target/debug/examples/uploader_trace --output "$RUNNER_TEMP/startup-runtime/uploader-signing.json"
+      - name: Build and test native manager catalog QA tools
+        run: |
+          rustup component add clippy --toolchain 1.94.0
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features manager-catalog-tools-native --bin check-manager-catalog --bin manager-catalog-reference --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features manager-catalog-tools-native --bin check-manager-catalog --bin manager-catalog-reference --test manager_catalog_check --test manager_catalog_reference --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features manager-catalog-tools-native --bin check-manager-catalog --bin manager-catalog-reference --test manager_catalog_check --test manager_catalog_reference --locked -- -D warnings
       - name: Compare complete manager catalog and ordered Params predicates
         run: |
-          python rust/tools/check_manager_catalog.py rust/target/debug/examples/catalog_probe \
-            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/catalog"
+          rust/target/debug/check-manager-catalog rust/target/debug/examples/catalog_probe "$RUNNER_TEMP/startup-runtime/catalog"
       - name: Build and test native checkout status QA tools
         run: |
           rustup component add clippy --toolchain 1.94.0

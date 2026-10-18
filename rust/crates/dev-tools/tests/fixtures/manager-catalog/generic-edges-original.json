@@ -1,0 +1,62 @@
+[
+  {
+    "name": "process-surrogate",
+    "request_hex": "7b226361736573223a205b7b22707265646963617465223a202270726f636573733a5c7564383030222c202273746172746564223a20747275652c20226e6f745f636172223a2066616c73657d5d7d",
+    "source": {
+      "code": 1,
+      "error": [
+        "KeyError: '\\ud800'"
+      ],
+      "output_exists": true,
+      "traces": {}
+    }
+  },
+  {
+    "name": "value-key-nul",
+    "request_hex": "7b226361736573223a205b7b22707265646963617465223a20226f6e6c795f6f6e726f6164222c202273746172746564223a20747275652c20226e6f745f636172223a2066616c73652c202276616c756573223a207b22785c753030303079223a205b34395d7d7d5d7d",
+    "source": {
+      "code": 1,
+      "error": [
+        "ValueError: embedded null byte"
+      ],
+      "output_exists": true,
+      "traces": {}
+    }
+  },
+  {
+    "name": "directory-nul",
+    "request_hex": "7b226361736573223a205b7b22707265646963617465223a20226f6e6c795f6f6e726f6164222c202273746172746564223a20747275652c20226e6f745f636172223a2066616c73652c20226469726563746f72696573223a205b22785c753030303079225d7d5d7d",
+    "source": {
+      "code": 1,
+      "error": [
+        "ValueError: unlink: embedded null character in path"
+      ],
+      "output_exists": true,
+      "traces": {}
+    }
+  },
+  {
+    "name": "bytes-large-count",
+    "request_hex": "7b226361736573223a205b7b22707265646963617465223a20226f6e6c795f6f6e726f6164222c202273746172746564223a20747275652c20226e6f745f636172223a2066616c73652c202276616c756573223a207b2278223a20313236373635303630303232383232393430313439363730333230353337367d7d5d7d",
+    "source": {
+      "code": 1,
+      "error": [
+        "OverflowError: cannot fit 'int' into an index-sized integer"
+      ],
+      "output_exists": true,
+      "traces": {}
+    }
+  },
+  {
+    "name": "directory-integer",
+    "request_hex": "7b226361736573223a205b7b22707265646963617465223a20226f6e6c795f6f6e726f6164222c202273746172746564223a20747275652c20226e6f745f636172223a2066616c73652c20226469726563746f72696573223a205b315d7d5d7d",
+    "source": {
+      "code": 1,
+      "error": [
+        "TypeError: expected bytes, int found"
+      ],
+      "output_exists": true,
+      "traces": {}
+    }
+  }
+]

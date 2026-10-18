@@ -3161,3 +3161,46 @@ new job budget and artifact bounds. This does not replace the ordering repair or
 establish full CI success. Evidence: `.analysis/scratch/2026-10-18-timed-shutdown-ci/`
 `validation.json`, `ROOT-CAUSE.md`, delayed-hash proofs and `parent-review.txt`.
 Exact committed-SHA CI and user device acceptance remain pending.
+
+### Native manager catalog QA closure (#296, 2026-10-18)
+
+Replaced `check_manager_catalog.py` and `manager_catalog_reference.py` with the
+native `check-manager-catalog BINARY OUTPUT [--runner ...]` and
+`manager-catalog-reference REQUEST OUTPUT` commands. The obsolete Cython binding
+argument is removed explicitly; original binding hashes remain capture provenance,
+not a claim that an interpreter or binding executes in the new checker. The
+independent reference derives constructors, ordered callbacks, raw Params getters
+and GPS/file effects from the original source; it imports no candidate manager
+catalog, Params implementation or captured-answer lookup.
+
+Before implementation, the unchanged original passed all 116 scenarios: 63 ordered
+process descriptors, 64 flag configurations, 25 environment snapshots, 10,573
+nonfatal callback cases and 24 actual integer SIGABRT boundaries. Immutable
+captures also cover 38 generic inputs, 20 module-global call/serialization cases,
+five surrogate/NUL/integer-overflow controls and CLI/failure behavior. Missing-API
+RED preceded implementation. Further observed REDs corrected missing-candidate
+failure ordering and four generic exception categories; fixed expected bytes were
+preserved. The native reference reports fatal_integer with the original access
+prefix; it deliberately does not claim Cython signal parity.
+
+Ten manager tests, 36 mandatory CI-policy tests and strict Clippy passed. Frozen
+native tools passed all 116 full scenarios with an empty PATH, exactly matching
+all original request bytes, independent logical results/fatal prefixes and all
+candidate result objects. The execution trace records 233 exec attempts and zero
+interpreters. Fifteen actual CLI/failure controls and five additional generic
+error controls passed. Original stdout bytes and top-level report counts remain
+preserved; native executable identities are separately sealed.
+
+After updating the startup CI caller and deleting exactly the two replaced Python
+tools, the parent reran all 46 prebuilt tests and the complete frozen 116-case
+proof with the same exact comparisons and zero interpreters. Remaining binding
+builders, original_params_binding.py and original process-policy sources remain
+required for other conversion units. This is a policy-tool retirement, not actual
+manager launch, normal device boot or repository-wide Python removal.
+
+Evidence: `.analysis/scratch/2026-10-18-manager-catalog-tools/`, notably
+`native-gate-eOgTC6ds/`, `actual-native-XuEoIUWD/`, post-deletion
+`actual-native-rpzHv4RJ/`, `post-delete-full.log`, `cli-failures-zx6fqd61/`,
+`generic-edges-native-2q3ncogm/` and `parent-review.md`. Inventory is now 150
+replaced-local, three partially replaced and 3,427 pending baseline files.
+Exact committed-SHA CI/integration and the user's device verification remain open.
