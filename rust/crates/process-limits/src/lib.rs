@@ -26,6 +26,10 @@ pub fn new_session(command: &mut Command) {
     // SAFETY: setsid is async-signal-safe. This post-fork closure only invokes
     // that syscall and converts its errno; it allocates nothing and holds no locks.
     unsafe {
-        command.pre_exec(|| rustix::process::setsid().map(|_| ()).map_err(io::Error::from));
+        command.pre_exec(|| {
+            rustix::process::setsid()
+                .map(|_| ())
+                .map_err(io::Error::from)
+        });
     }
 }

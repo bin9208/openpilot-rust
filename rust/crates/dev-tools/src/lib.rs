@@ -199,21 +199,21 @@ pub mod checkout_status_check;
 pub mod checkout_status_reference;
 
 #[cfg(feature = "lagd-tools-native")]
-pub mod lagd_reference;
+pub mod lagd_check;
 #[cfg(feature = "lagd-tools-native")]
 pub mod lagd_frames;
 #[cfg(feature = "lagd-tools-native")]
-pub mod lagd_packet_reference;
+pub mod lagd_live_check;
 #[cfg(feature = "lagd-tools-native")]
 pub mod lagd_loop_reference;
 #[cfg(feature = "lagd-tools-native")]
-pub mod lagd_random;
-#[cfg(feature = "lagd-tools-native")]
 pub mod lagd_numeric_cases;
 #[cfg(feature = "lagd-tools-native")]
-pub mod lagd_check;
+pub mod lagd_packet_reference;
 #[cfg(feature = "lagd-tools-native")]
-pub mod lagd_live_check;
+pub mod lagd_random;
+#[cfg(feature = "lagd-tools-native")]
+pub mod lagd_reference;
 
 #[cfg(feature = "manager-catalog-tools-native")]
 pub mod manager_catalog_check;
