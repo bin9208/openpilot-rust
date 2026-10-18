@@ -19,6 +19,51 @@ fn raw_bad_handshake_is_an_error_and_its_owned_child_is_reaped() {
 }
 
 #[test]
+fn failed_application_window_rejects_font_work_and_quits_cleanly_when_available() {
+    use std::{
+        io::Write,
+        process::{Command, Stdio},
+    };
+    let Some(root) = std::env::var_os("STARTUP_UI_RAYLIB_ROOT") else {
+        return;
+    };
+    let library =
+        std::env::var_os("STARTUP_UI_RAYLIB_LIBRARY").expect("actual raylib provider required");
+    assert!(!Path::new("/tmp/.X11-unix/X65534").exists());
+    let temp = tempfile::tempdir().unwrap();
+    let binary = build(temp.path(), Path::new(&root)).unwrap();
+    let mut child = Command::new(binary)
+        .arg(library)
+        .env("DISPLAY", ":65534")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"app-window 64 64 7161\napp-font 0 plain 2f6465762f6e756c6c 10 0\nquit\n")
+        .unwrap();
+    let result = child.wait_with_output().unwrap();
+    assert_eq!(
+        result.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(
+        String::from_utf8(result.stdout).unwrap(),
+        format!(
+            "OK\nERR {}\nERR {}\nOK\n",
+            openpilot_dev_tools::ui_forms_input::hex("application window initialization failed"),
+            openpilot_dev_tools::ui_forms_input::hex("forms window missing"),
+        )
+    );
+}
+
+#[test]
 fn actual_independent_raw_input_clock_frame_export_and_cleanup_when_available() {
     let Some(root) = std::env::var_os("STARTUP_UI_RAYLIB_ROOT") else {
         return;

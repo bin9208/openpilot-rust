@@ -922,3 +922,29 @@ all-target Clippy. Evidence: `.analysis/scratch/2026-10-18-athena-proxy-296/`.
 Independent source/test review found no blocker. Exact committed-SHA CI remains
 required; this is not a whole-module clearance, device result or measured
 performance improvement.
+
+### Application diagnostic window guard and exact source pins (#354)
+
+The `4ed93061` UI/connectivity job stopped before graphics comparisons because
+`build-ui-application-reference` still required the old shared Forms dispatcher
+hash after the failed-window guard landed. Its exact source pin is now updated.
+Review also found the independent `app-window` command had its own unguarded
+`InitWindow` call: an actual raylib test with an absent display reproduced signal
+termination after subsequent font work. The same readiness check now rejects
+that command before setting window ownership; font work reports the existing
+missing-window error and `quit` succeeds.
+
+The original draw corpus and source/environment/provenance captures are unchanged.
+Its mechanical boundary check requires three specifically reviewed current hashes
+(shared guard, application guard and builder pin), with the fourth X11 pin unchanged.
+It does not accept the old unguarded versions. Successful drawing still uses the
+same calls, arguments, state/error checks and exact pixel comparisons.
+
+With the real pinned raylib provider and an owned authenticated Xvfb `-noreset`
+server, all four raw-boundary and fourteen application reference tests passed.
+This includes the failed-display regression, actual XTest input, five original
+modes, twenty environment cases and independent draw replay. Strict scoped Clippy
+passed. Evidence is under `.analysis/scratch/2026-10-18-ui-application-window/`;
+independent review found no blocker. This fixes the observed build-pin failure
+and separate application diagnostic crash; the earlier intermittent display-open
+cause and user device startup remain unverified.

@@ -53,6 +53,8 @@
   done();
   if (a->window) throw std::runtime_error("duplicate application window");
   a->get<void (*)(int, int, const char *)>("InitWindow")(width, height, unhex(title).c_str());
+  if (!a->get<bool (*)()>("IsWindowReady")())
+    throw std::runtime_error("application window initialization failed");
   a->window = true;
 } else if (op == "app-font") {
   size_t id = 0;

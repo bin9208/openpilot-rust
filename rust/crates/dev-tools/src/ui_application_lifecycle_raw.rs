@@ -117,7 +117,7 @@ impl Drop for Raw {
 pub fn build(output: &Path, raylib: &Path) -> Result<PathBuf> {
     let source = include_str!("../tests/fixtures/ui-forms/raw-raylib.cc");
     if format!("{:x}", Sha256::digest(source.as_bytes()))
-        != "5a65fa3e07c61e07237427beba46d48e1576afc62acf2fde0c4557f6d35815e5"
+        != "216030c03d807c46ad51e2b843185038bd6ee1dc3dbc49f8246cb115823d97b1"
     {
         return Err(
             "shared mechanical raylib boundary changed; review application extensions".into(),
