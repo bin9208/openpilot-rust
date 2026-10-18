@@ -1454,3 +1454,52 @@ match the current #296 checkout. Evidence is
 `2026-10-19-logger-audio-391/FINAL-HANDOFF.json`. The permanent regression uses
 real host audio media; normal device recording and exact committed-SHA CI remain
 separate gates. No recording loss on the user's drive is inferred.
+
+## Stats producer/storage and procfs cache review (2026-10-19)
+
+A bounded source comparison inspected statsd's forked socket ownership,
+nonblocking pressure handling, stop boundaries and temporary-file publication,
+and proclogd's cadence, PID/start-time cache keys, post-read identity checks,
+exit eviction and smaps refresh cycle. No additional concrete defect or measured
+optimization was established. The stats logger remains alive for the daemon
+loop; the earlier short-lived context-binding defect does not apply there.
+Original procfs metadata also discards empty command-line fields.
+
+This was source inspection, not a fresh test run or blanket module clearance.
+Sustained-input flush fairness, full statistics numerical behavior, same-name
+exec metadata freshness and device performance remain unvalidated by this review.
+Exact inspected source hashes and limitations are retained in
+`2026-10-19-stats-proc-review/`.
+
+## Sound playback boundaries and diagnostic backpressure (#392/#393)
+
+The original and native playback loops both retained the first callback-local
+sample offset/repeat count while crossing a clip boundary. A finite clip with
+samples `[1,2,3,4]`, starting at frame2 with five requested samples, incorrectly
+returned `[3,4,3,4,3]`. Four native regressions failed before correction; three
+controls passed. The native loop now recalculates each contiguous span and stops
+at a finite repeat limit. Finite output becomes `[3,4,0,0,0]`; an infinite clip
+continues `[3,4,1,2,3]`. Alert selection, volume, scheduling and checked sample
+counter behavior are preserved. This intentionally fixes inherited behavior.
+
+Separately, a full diagnostic stderr pipe during a language change held the
+playback mutex and stalled the real callback thread in the controlled PortAudio
+ABI fixture. The native regression reproduced12 callbacks before/after the
+blocked interval. Dropping the playback guard before emitting the diagnostic
+keeps callbacks progressing while the same diagnostic remains blocked. The
+permanent test requires three additional callbacks and verifies the language
+message after draining the pipe; it failed before and passed after the one-line
+production change.
+
+All eight soundd tests, strict all-target Clippy, formatting and fresh daemon/
+example builds pass. Six policy scenarios cover846 steps and6,348 bit-exact
+intended samples. The unchanged original captures remain available:1,113 samples
+and27 frame-state rows intentionally differ at the corrected boundary; every
+other source state remains exact. The independent reference emits single samples
+by linear index rather than copying native spans. All seven controlled runtime
+scenarios pass, including live/bounded operation, retries and startup/stop errors.
+Selected27 source pins and frozen binaries were rechecked after the proofs.
+Evidence: `2026-10-19-soundd-392/FINAL-HANDOFF.json` and
+`2026-10-19-sound-lock/permanent-{red,green}.log`.
+No physical audio output or device benefit is established; exact-commit CI and
+the user's device acceptance remain separate.
