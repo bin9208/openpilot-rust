@@ -742,3 +742,37 @@ found no actionable issue. The unchanged actual original/native IPC gate passes
 and four child/signal lifecycle scenarios. No CPU saving or device result is claimed.
 Evidence: local `2026-10-18-journal-tag/{red-owner,green,clippy,build,reference}.log`
 and `reference/report.json`. The original comparator remains pending Python tooling.
+
+## Upload ownership and allocation follow-up (2026-10-18)
+
+Source inspection covered `uploader` file selection/xattr caching, dashcam worker
+spawn/cancel/expiry/drop, and the web upload/WebDAV streaming readers. The dashcam
+manager removes completed workers after output EOF, terminates and reaps owned
+children on teardown, and the worker arms a parent-death signal before verifying
+its parent identity. File transport reads bounded chunks; WebDAV detects an early
+EOF and keeps cancellation/progress failures as upload failures. These are source
+findings only, not fresh transport or device acceptance evidence.
+
+The uploader's path-keyed xattr cache retains entries for the process lifetime,
+matching the original implementation and its explicit cache tests. Revalidation
+or eviction would change when external xattr changes become visible; no cache
+policy was changed without that contract review. Multipart diagnostic uploads
+also materialize their body in memory. These remain optimization candidates;
+no measured CPU or memory reduction is claimed from this inspection.
+
+### Multipart duplicate allocation removed (#351)
+
+The subsequent bounded optimization appends each file directly into the retained
+request body, removing the temporary full-file Vec and copy. The complete body
+still exists before HTTP starts and remains rewindable for307/308 redirects;
+file errors still occur before a request. No streaming/timeout/retry policy changed.
+
+For a64MiB synthetic log sent to an owned loopback receiver, fresh child peak RSS
+fell from138,096KiB to76,796KiB (repeat77,268KiB). The receiver checked every payload
+byte, multipart headers/tail and Content-Length67,109,134; the payload hash and
+response matched. This is a host allocation measurement, not device CPU savings.
+All17 package tests, all-target strict Clippy and the unchanged99-case
+original/native HTTP comparator pass, including multipart escaping, missing
+settings, error status and redirects. Scope and exact-SHA CI are tracked in
+[issue351](https://github.com/bin9208/openpilot-rust/issues/351). The Python
+comparison tool remains pending under296.
