@@ -1,4 +1,7 @@
 //! Params copy and detached startup worker from manager/helpers.py::save_bootlog.
+#[cfg(test)]
+#[path = "snapshot_tests.rs"]
+mod tests;
 use openpilot_process_supervision::CapturedCommand;
 use std::{
     ffi::OsStr,
@@ -61,7 +64,13 @@ impl Snapshot {
             .file_name()
             .unwrap_or_else(|| OsStr::new(""));
         let mut failures = Vec::new();
-        copy_tree(params_directory, &path.join(name), &mut failures);
+        let mut scratch = XattrScratch::default();
+        copy_tree(
+            params_directory,
+            &path.join(name),
+            &mut failures,
+            &mut scratch,
+        );
         if !failures.is_empty() {
             return Err(Error::Copy {
                 snapshot: path,
@@ -147,7 +156,12 @@ pub fn save_bootlog_executable(
         })?)
 }
 
-fn copy_tree(source: &Path, destination: &Path, failures: &mut Vec<(PathBuf, String)>) {
+fn copy_tree(
+    source: &Path,
+    destination: &Path,
+    failures: &mut Vec<(PathBuf, String)>,
+    scratch: &mut XattrScratch,
+) {
     let mut operation = || -> io::Result<()> {
         let entries = fs::read_dir(source)?.collect::<io::Result<Vec<_>>>()?;
         fs::create_dir_all(destination)?;
@@ -162,7 +176,7 @@ fn copy_tree(source: &Path, destination: &Path, failures: &mut Vec<(PathBuf, Str
                 }
             };
             if metadata.is_dir() {
-                copy_tree(&source, &target, failures);
+                copy_tree(&source, &target, failures, scratch);
             } else {
                 let result = if metadata.file_type().is_fifo() {
                     Err(io::Error::new(
@@ -171,14 +185,14 @@ fn copy_tree(source: &Path, destination: &Path, failures: &mut Vec<(PathBuf, Str
                     ))
                 } else {
                     copy_file(&source, &target)
-                        .and_then(|_| copy_stat(&source, &target, &fs::metadata(&source)?))
+                        .and_then(|_| copy_stat(&source, &target, &fs::metadata(&source)?, scratch))
                 };
                 if let Err(error) = result {
                     failures.push((source, error.to_string()));
                 }
             }
         }
-        copy_stat(source, destination, &fs::metadata(source)?)
+        copy_stat(source, destination, &fs::metadata(source)?, scratch)
     };
     if let Err(error) = operation() {
         failures.push((source.to_owned(), error.to_string()));
@@ -197,7 +211,12 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     result
 }
 
-fn copy_stat(source: &Path, destination: &Path, metadata: &Metadata) -> io::Result<()> {
+fn copy_stat(
+    source: &Path,
+    destination: &Path,
+    metadata: &Metadata,
+    scratch: &mut XattrScratch,
+) -> io::Result<()> {
     let times = rustix::fs::Timestamps {
         last_access: rustix::fs::Timespec {
             tv_sec: metadata.atime(),
@@ -214,35 +233,45 @@ fn copy_stat(source: &Path, destination: &Path, metadata: &Metadata) -> io::Resu
         &times,
         rustix::fs::AtFlags::empty(),
     )?;
-    copy_xattrs(source, destination)?;
+    copy_xattrs(source, destination, scratch)?;
     fs::set_permissions(destination, metadata.permissions())
 }
 
-fn copy_xattrs(source: &Path, destination: &Path) -> io::Result<()> {
+#[derive(Default)]
+struct XattrScratch {
+    names: Vec<u8>,
+    value: Vec<u8>,
+}
+
+fn copy_xattrs(source: &Path, destination: &Path, scratch: &mut XattrScratch) -> io::Result<()> {
     use rustix::{
         fs::{getxattr, listxattr, setxattr, XattrFlags},
         io::Errno,
     };
-    let mut names = vec![0u8; 65536];
-    let size = match listxattr(source, names.as_mut_slice()) {
+    scratch.names.resize(65536, 0);
+    let size = match listxattr(source, scratch.names.as_mut_slice()) {
         Ok(size) => size,
         Err(Errno::NOTSUP | Errno::NODATA | Errno::INVAL) => return Ok(()),
         Err(error) => return Err(error.into()),
     };
-    for name in names[..size]
+    for name in scratch.names[..size]
         .split(|byte| *byte == 0)
         .filter(|name| !name.is_empty())
     {
-        let mut value = vec![0u8; 65536];
-        let result =
-            getxattr(source, OsStr::from_bytes(name), value.as_mut_slice()).and_then(|size| {
-                setxattr(
-                    destination,
-                    OsStr::from_bytes(name),
-                    &value[..size],
-                    XattrFlags::empty(),
-                )
-            });
+        scratch.value.resize(65536, 0);
+        let result = getxattr(
+            source,
+            OsStr::from_bytes(name),
+            scratch.value.as_mut_slice(),
+        )
+        .and_then(|size| {
+            setxattr(
+                destination,
+                OsStr::from_bytes(name),
+                &scratch.value[..size],
+                XattrFlags::empty(),
+            )
+        });
         match result {
             Ok(())
             | Err(Errno::PERM | Errno::NOTSUP | Errno::NODATA | Errno::INVAL | Errno::ACCESS) => {}
