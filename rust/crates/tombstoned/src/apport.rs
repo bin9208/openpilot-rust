@@ -3,7 +3,7 @@ use crate::Error;
 use rustix::{
     event::{poll, PollFd, PollFlags, Timespec},
     fs::{fcntl_getfl, fcntl_setfl, OFlags},
-    process::{kill_process_group, Pid, Signal},
+    process::{kill_process_group, waitid, Pid, Signal, WaitId, WaitIdOptions},
 };
 use std::{
     io::Read,
@@ -75,7 +75,7 @@ impl Retrace {
                 .ok_or(Error::Contract("timeout overflow"))?;
             let mut bytes = Vec::new();
             let mut eof = false;
-            let mut status = None;
+            let mut exited = false;
             loop {
                 if self.cancelled() {
                     return Err(Error::Cancelled);
@@ -99,13 +99,25 @@ impl Retrace {
                         Err(error) => return Err(error.into()),
                     }
                 }
-                if status.is_none() {
-                    status = child.try_wait()?;
+                if !exited {
+                    // Observe exit without releasing the leader's identity.
+                    // Decoding, cancellation and pipe polling may still fail and
+                    // require signalling its entire process group below.
+                    match waitid(
+                        WaitId::Pid(Pid::from_child(&child)),
+                        WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+                    ) {
+                        Ok(Some(_)) => exited = true,
+                        Ok(None) | Err(rustix::io::Errno::INTR) => {}
+                        Err(error) => return Err(error.into()),
+                    }
                 }
-                if let Some(status) = status.filter(|_| eof) {
+                if exited && eof {
                     let text = String::from_utf8(bytes)?
                         .replace("\r\n", "\n")
                         .replace('\r', "\n");
+                    // Nothing fallible after this reap can enter group cleanup.
+                    let status = child.wait()?;
                     return Ok(if status.success() {
                         text
                     } else {

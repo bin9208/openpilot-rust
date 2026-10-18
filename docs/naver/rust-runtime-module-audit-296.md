@@ -27,6 +27,19 @@ integration/device evidence and the remaining Python-tool inventory.
 No blanket module clearance, complete Python retirement, device boot acceptance,
 loaded-driving acceptance or measured CPU improvement follows from this matrix.
 
+2026-10-18 follow-up source review of crash-reporting and tombstoned found an
+external-command ownership gap tracked in [#363](https://github.com/bin9208/openpilot-rust/issues/363).
+The retrace loop reaps its shell with `try_wait()` before fallible output decoding;
+error cleanup can then send a process-group signal using that already-reaped
+leader's numeric ID. An exited leader with a descendant holding stdout reaches
+the same ownership boundary. Actual owned-process traces reproduced a completed
+`wait4` reap followed by `kill(-group, SIGKILL)`. The fix uses
+`waitid(EXITED|NOHANG|NOWAIT)` and retains the leader until output decoding and
+all required group cleanup are complete, then reaps exactly once. PID reuse,
+unrelated signaling and device impact have not been observed. NativeSdk send/flush and tombstone copy/remove order had no additional
+concrete finding in this bounded source review. This does not clear their
+external transport, SDK teardown or arbitrary descendant behavior.
+
 Docs-Not-Needed: internal engineering coverage record without setting changes.
 
 ## Generation ownership and native maintenance transactions (#287 / #290 / #297 / #309)
@@ -980,3 +993,44 @@ These checks establish cache entry/capacity reclamation on observed deletion,
 not measured heap bytes, CPU savings, a hard bound during indefinitely unreadable
 directories or device upload acceptance. Exact-SHA CI and user device checks remain
 separate delivery evidence.
+
+### Updater process-group ownership follow-up (#364)
+
+The related source review found `updated::process::NativeCommands::run` reaping
+its command leader with `try_wait` before a numeric process-group signal, followed
+by another unconditional signal in `GroupChild::drop`. The native updater QA
+checker's `Probe::capture`/`OwnedChild::drop` also needs this ordering corrected;
+its separately reported worker-group cleanup requires its own ownership review.
+Tracked in [#364](https://github.com/bin9208/openpilot-rust/issues/364). This is
+source evidence pending actual synthetic reproduction and repair. PID reuse,
+unrelated-process signaling and device impact have not been observed. The examined
+cluster font inventory and recovery reboot owners already retain their leader
+with `WNOWAIT`; they are not included in this finding.
+
+### Tombstone retrace ownership repair evidence (#363)
+
+Both actual regressions fail before the fix: invalid UTF8 output, and cancellation
+after an exited leader leaves a descendant holding stdout. The cancellation
+barrier waits for the owner's actual exit observation, preventing an early-stop
+false positive. After the fix, syscall traces show `WNOWAIT`, the final group
+signal, then exactly one reap; UnicodeDecodeError remains identical to the original.
+The successful path decodes and normalizes output before reaping. Filename argv,
+inherited streams, result/exit mapping and the default30-second deadline are unchanged.
+
+All ten package test entries pass (including the two owner regressions and their
+reexec dispatcher), as do all-target strict Clippy and fresh daemon/example builds.
+The newly sealed binaries pass all242 unchanged original comparisons including
+the30-second timeout, literal-filename safety and native SIGINT/SIGTERM held-command
+cleanup. The actual shutdown cases retain the crash, do not copy/upload it, leave
+no active owned descendants and exit0. The old original SIGINT control's known
+active descendant is still recorded and cleaned by the unchanged validator.
+Existing workspace CI already installs mandatory strace and runs the package;
+no test skip or tolerance was added. A separate full live-daemon/collector gate
+was not inferred from an unverified cached logmessaged binary.
+
+Evidence: `.analysis/scratch/2026-10-18-tombstone-owner-review/FINAL-EVIDENCE.md`,
+`before-after-proof.json`, `native-regression-CYhxdR49/{red,green,clippy,build}.log`
+and `affected-original/receipt.json`. Parent reviewed the exact source diff,
+real pre/post syscall traces and source-bound validation receipts. #364 updater
+ownership work is separate and remains pending. Exact committed-SHA CI and user
+device acceptance remain open.
