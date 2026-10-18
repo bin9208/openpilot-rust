@@ -138,6 +138,8 @@ class CameraCheck:
         command = [str(self.binaries / 'check-camerad-kernel')]
       elif name == 'sensor_lifecycle':
         command = [str(self.binaries / 'check-camerad-sensor-lifecycle')]
+      elif name == 'isp_lifecycle':
+        command = [str(self.binaries / 'check-camerad-isp-lifecycle')]
       else:
         command = [sys.executable, str(TOOLS / f'check_camerad_{name}.py')]
       command += ['--source', str(self.output / f'{name}-source'),
@@ -174,6 +176,7 @@ def main() -> None:
   sources += [ROOT / f'rust/crates/dev-tools/src/bin/check_camerad_{name}.rs' for _, name, _ in POLICIES]
   sources += [ROOT / 'rust/crates/dev-tools/src/bin/check_camerad_kernel.rs']
   sources += [ROOT / 'rust/crates/dev-tools/src/bin/check_camerad_sensor_lifecycle.rs']
+  sources += [ROOT / 'rust/crates/dev-tools/src/bin/check_camerad_isp_lifecycle.rs']
   for directory in ('rust/crates/camerad', 'rust/crates/camera-kernel', 'rust/crates/camerad-runtime', 'rust/crates/msgq',
                     'openpilot/system/camerad', 'msgq_repo/msgq'):
     sources += [path for path in (ROOT / directory).rglob('*') if path.is_file() and path.suffix in ('.rs', '.cc', '.h', '.toml')]
@@ -184,6 +187,7 @@ def main() -> None:
   executables += [binaries / f'check-camerad-{name}' for _, name, _ in POLICIES]
   executables += [binaries / 'check-camerad-kernel']
   executables += [binaries / 'check-camerad-sensor-lifecycle']
+  executables += [binaries / 'check-camerad-isp-lifecycle']
   receipt = {'argv': sys.argv, 'source_sha256': hashes([path for path in sources if path.is_file()]),
     'binary_sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in executables}}
   (output / 'invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')

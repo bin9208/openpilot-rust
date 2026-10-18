@@ -207,6 +207,7 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
         "check-camerad-{checker}",
         "check-camerad-kernel",
         "check-camerad-sensor-lifecycle",
+        "check-camerad-isp-lifecycle",
     ] {
         assert!(source.contains(name), "camera caller omits {name}");
     }
@@ -249,6 +250,8 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
         "--bin check-camerad-kernel",
         "--test camera_sensor_lifecycle_check",
         "--bin check-camerad-sensor-lifecycle",
+        "--test camera_isp_lifecycle_check",
+        "--bin check-camerad-isp-lifecycle",
         "--bin check-camerad-sensors",
         "--features camera-sensor-native",
         "--test camera_lifecycle_generate",

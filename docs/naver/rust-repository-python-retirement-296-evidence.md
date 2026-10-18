@@ -2279,3 +2279,20 @@ All 20 dispatcher entries remain; the three unrelated camera artifact regression
 still pass. Python digest/core helpers remain for ISP/camera lifecycle callers.
 Inventory is 96 replaced, five partial and 3,479 pending. The remaining embedded
 CI diagnostic and full model/development/test tooling are not counted as retired.
+
+### Native ISP ownership comparator (2026-10-18)
+
+`check-camerad-isp-lifecycle` preserves all 30 full/two smoke cases and the original
+resource ownership comparison: source-leaked descriptor closes, BPS configuration
+unmaps, immutable release bytes, first-failure stopping and narrow assertion
+handling. Five tests pass against 45 original process captures, 33 normalization
+cases, six CLI captures and real inherited-input execution; scoped Clippy passes.
+The initial test diagnostic required removing unsupported Debug formatting for
+JsonValue, without changing the test's expected results.
+
+The current native comparator passes all 30 actual source/native cases with PATH
+disabled and the exact full report matches the independent original. The Python
+CLI is removed while the `normalize` helper remains AST-identical for camera
+lifecycle. Its generic invalid-input and ownership behavior remains part of the
+Rust tests. Inventory: 96 replaced, six partial, 3,478 pending. These host results
+do not establish hardware operation or whole-repository conversion completion.
