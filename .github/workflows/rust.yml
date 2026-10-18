@@ -2716,7 +2716,9 @@ jobs:
   ui-connectivity:
     name: rust UI and connectivity
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    # Run 39133951820 passed the first UI suite at 34m40s, then hit 35m
+    # during lifecycle compilation before the remaining connectivity checks.
+    timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
