@@ -32,7 +32,7 @@ value = hashlib.sha256()
 for index in range(40):
   for topic in SERVICES:
     value.update(packet(topic, index).to_bytes())
-assert value.hexdigest() == '83261653c789aa715d24f56edba21e42bdc2bc252fbb1d20b5ac056833e204a9'
+assert value.hexdigest() == '9873e8c127ca345ac3f1ca27e91103eafa0a0dd6a82c003f21cfed1c2a08ea36'
 assert 'msgq' not in sys.modules and 'openpilot.cereal.messaging' not in sys.modules
 """
     environment = dict(os.environ, PYTHONPATH=os.pathsep.join(map(str, [root, root / 'opendbc_repo', root / 'rust/tools'])))
@@ -51,11 +51,13 @@ assert 'msgq' not in sys.modules and 'openpilot.cereal.messaging' not in sys.mod
         self.assertEqual(legacy.to_dict(), packet(SERVICES[offset % 4], offset // 4).to_dict(), offset)
 
   def test_all_160_measured_packets_match_current_schema_bytes(self):
+    # vehicleGps adds a CarState pointer slot. The immutable legacy fixture
+    # above still verifies every decoded field/default across this wire change.
     digest = hashlib.sha256()
     for index in range(40):
       for topic in SERVICES:
         digest.update(packet(topic, index, stamp_index=index).to_bytes())
-    self.assertEqual(digest.hexdigest(), '83261653c789aa715d24f56edba21e42bdc2bc252fbb1d20b5ac056833e204a9')
+    self.assertEqual(digest.hexdigest(), '9873e8c127ca345ac3f1ca27e91103eafa0a0dd6a82c003f21cfed1c2a08ea36')
 
   def test_preconditioning_precedes_original_scenario_time(self):
     for topic in SERVICES:
