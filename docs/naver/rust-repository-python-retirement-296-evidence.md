@@ -82,6 +82,10 @@ tests pass, including the complete filesystem/child/detached matrix. Evidence:
 the [failed macOS job](https://github.com/bin9208/openpilot-rust/actions/runs/39148174411/job/117736576999).
 All seven tests also pass after the shared-helper move (`bootlog-shared-test.log`).
 The repaired macOS job still requires exact-commit verification; tracked in #378.
+The same6efa00a3 run also found the retained Card CI test's exact aggregate list
+omitted the new mandatory `dbc-darwin` job. The list now includes that job without
+dropping any existing requirement. All39 retained Card CI/phase-fence/admission
+tests pass (`card-policy-green.log`); these Python tests remain pending retirement.
 
 ### Independent Version source foundation (2026-10-19)
 
