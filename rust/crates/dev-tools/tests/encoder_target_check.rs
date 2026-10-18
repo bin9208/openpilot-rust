@@ -747,6 +747,30 @@ fn original_raw_unix_hash_cli_finalizes_lossless_failure_receipts() {
 #[test]
 fn executing_checker_identity_changes_for_owned_mutated_binary_copy() {
     use std::{io::Write, os::unix::fs::PermissionsExt};
+    const ISOLATED: &str = "OPENPILOT_ENCODER_IDENTITY_CHILD";
+    if std::env::var_os(ISOLATED).as_deref() != Some(std::ffi::OsStr::new("1")) {
+        // A concurrent test fork can inherit a just-written executable's writer
+        // before close-on-exec runs. Keep the real copy/hash check, but create
+        // its writers in an isolated process with no unrelated test spawns.
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "executing_checker_identity_changes_for_owned_mutated_binary_copy",
+                "--test-threads=1",
+                "--nocapture",
+            ])
+            .env(ISOLATED, "1")
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success()
+                && String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"),
+            "isolated identity check failed: {}\n{}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
+        return;
+    }
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
     let mut identities = vec![];

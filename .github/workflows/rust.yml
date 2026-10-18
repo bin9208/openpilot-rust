@@ -2337,6 +2337,7 @@ jobs:
         env:
           UPDATED_OWNER_LAUNCHER: ${{ github.workspace }}/rust/target/debug/openpilot-process-child
         run: |
+          rustup component add clippy --toolchain 1.94.0
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-updated --features command-owner-tests --test command_owner --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512

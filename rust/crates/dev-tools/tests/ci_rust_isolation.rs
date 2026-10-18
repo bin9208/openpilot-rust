@@ -425,6 +425,12 @@ fn startup_services_require_source_and_live_native_protocols() {
         ownership["env"]["UPDATED_OWNER_LAUNCHER"],
         "${{ github.workspace }}/rust/target/debug/openpilot-process-child"
     );
+    let run = ownership["run"].as_str().unwrap();
+    assert!(
+        run.find("rustup component add clippy --toolchain 1.94.0")
+            .expect("minimal toolchain must install Clippy")
+            < run.find("cargo clippy").unwrap()
+    );
 }
 #[test]
 fn platform_runtime_requires_original_source_and_live_native_processes() {

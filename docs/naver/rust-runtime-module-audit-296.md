@@ -1186,3 +1186,23 @@ to the user. Evidence: `.analysis/scratch/2026-10-18-dashcam-git-capture/`, incl
 `clippy-final.log`, `ci-contracts.log` and `original-metadata-green/report.json`.
 An independent source review found no blocker; its bounded direct-child scope and
 test-only group ownership are recorded in `sol-image-review.md` there.
+
+### Encoder fixture isolation and startup CI component (#370/#371, 2026-10-18)
+
+Exact ad450fa6 Rust CI run39130502778 reproduced `ETXTBSY` in the encoder
+checker's owned executable-copy identity test. The real mutation/hash assertions
+now run in an isolated re-execution of the immutable test executable, avoiding
+unrelated parallel-test fork inheritance of an open writer. The parent requires
+both successful exit and one executed test. No codec behavior, hash comparison,
+error retry or acceptance rule changes. All eight target-checker tests and strict
+scoped Clippy pass locally.
+
+The same run's startup-services job passed its updater ownership tests but then
+failed because the minimal Rust toolchain lacked cargo-clippy. That step now
+installs the pinned1.94.0 Clippy component before invoking it; workflow regression
+coverage requires this ordering. All51 routing/disk tests pass. The existing254
+disk guards remain. The separate telemetry and startup-prerequisites jobs passed
+on ad450fa6, including the new metadata transport and checkout disk-profile checks.
+These results do not establish a successful complete run or device acceptance.
+The new committed SHA still requires cloud validation. Local logs and downloaded
+failing job logs: `.analysis/scratch/2026-10-18-ad450-ci/`.
