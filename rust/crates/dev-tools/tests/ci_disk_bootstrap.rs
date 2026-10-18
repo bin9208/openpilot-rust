@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 238);
+    assert_eq!(text.matches(marker).count(), 241);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -231,6 +231,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut arguments = vec![];
     let mut original_msgq = vec![];
     let mut services_catalog = vec![];
+    let mut manager_catalog = vec![];
     let mut raylib = vec![];
     let mut logging_builder = vec![];
     let mut native_architecture = vec![];
@@ -266,6 +267,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut journal_bootlog_checks = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len() && lines[i + 1].contains("--features manager-catalog-tools-native") {
+                manager_catalog.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len() && lines[i + 1].contains("--features checkout-tools-native") {
                 checkout_tools.push(tail.to_owned());
                 continue;
@@ -606,6 +611,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         services_catalog,
         [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 3]
+    );
+    assert_eq!(
+        manager_catalog,
+        [
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 256",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 256",
+        ]
     );
     assert_eq!(
         hash(&arguments),

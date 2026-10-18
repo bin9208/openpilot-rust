@@ -3205,6 +3205,13 @@ Evidence: `.analysis/scratch/2026-10-18-manager-catalog-tools/`, notably
 replaced-local, three partially replaced and 3,427 pending baseline files.
 Exact committed-SHA CI/integration and the user's device verification remain open.
 
+The subsequent full disk-bootstrap policy check reproduced a stale guard-count
+expectation (238 versus241) after the manager build/test/Clippy steps were added.
+Its policy now separately verifies the three new reserves (1024/256/256 MiB),
+retaining the unchanged original177 guard-argument hash and all existing family
+assertions. All13 disk-bootstrap tests pass. Evidence is retained alongside the
+manager captures as `disk-policy-red.log` and `disk-policy-green.log`.
+
 ### Native batch matrix, channel bias and final SiLU (#296, 2026-10-18)
 
 The driving-model prefix ending at node277 previously failed the native CPU IMAGE
