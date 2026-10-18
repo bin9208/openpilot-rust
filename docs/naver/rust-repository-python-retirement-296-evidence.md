@@ -2260,3 +2260,22 @@ the failing test. Locally both independent lanes match the original expected has
 and have zero differing pixels. This temporary Python diagnostic is not a native
 replacement or permanent source fallback. Remove it after the failure is repaired;
 repository-wide Python retirement remains incomplete while it exists.
+
+### Native sensor lifecycle comparator (2026-10-18)
+
+`check-camerad-sensor-lifecycle` preserves all 62 scenarios and the complete live
+source/native trace comparison. Four focused tests pass against 37 independently
+captured process/failure cases, six CLI classes and real inherited-input/raw-path
+execution. The portable-artifact assertion formerly in the Python test now checks
+every native report row and both lane receipts. Trace JSON still parses before
+run.json is written, and CLOEXEC differences remain failures rather than receiving
+the kernel checker's normalization. Scoped strict Clippy and all four camera
+routing checks pass; the routing assertion first failed before migration.
+
+The actual PATH-disabled comparator passes all 62 cases after Python removal,
+with its complete report byte-identical to the independent original. The same
+private LLVM18 SDK mount used for the kernel proof preserves sanitizer settings.
+All 20 dispatcher entries remain; the three unrelated camera artifact regressions
+still pass. Python digest/core helpers remain for ISP/camera lifecycle callers.
+Inventory is 96 replaced, five partial and 3,479 pending. The remaining embedded
+CI diagnostic and full model/development/test tooling are not counted as retired.

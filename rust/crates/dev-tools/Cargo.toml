@@ -669,3 +669,12 @@ required-features = ["camera-sensor-native"]
 [[test]]
 name = "camera_kernel_check"
 required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-sensor-lifecycle"
+path = "src/bin/check_camerad_sensor_lifecycle.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_sensor_lifecycle_check"
+required-features = ["camera-sensor-native"]

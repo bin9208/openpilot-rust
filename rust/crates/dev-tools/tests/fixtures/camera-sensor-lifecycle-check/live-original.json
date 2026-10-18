@@ -1,0 +1,387 @@
+{
+  "checker_sha256": "5dfe28ebc563bd441d06e7e4d85afb19238b339b1a27e73e2e5de21bc220af17",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "evidence": "existing original full62case current-C++/Rust proof; all three current binary hashes revalidated, not a fresh execution",
+  "report": {
+    "binaries": {
+      "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-18-camera-lifecycle-generators/full-camera-proof/sensor_lifecycle-source": "4e4b1d048a97c665e448e9135839c1a5ffda34030838857e5b46938d0d99ee82",
+      "/home/fma1/rust/cache/cargo-target-retirement-296/debug/examples/sensor_lifecycle": "a3ef1bc3f32fe6dafb56b99d027aecab846e11063bbb47f43883134fd9e1312d",
+      "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-18-camera-lifecycle-generators/full-camera-proof/sensor_lifecycle-fixture.so": "5619db982aade2c09f9add97868c8d2339a4d969f20594c19930484420129e8a"
+    },
+    "cases": [
+      {
+        "name": "port-0-enabled-False-probe-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-0-enabled-False-probe-1",
+        "passed": true,
+        "calls": 75,
+        "snapshots": 11
+      },
+      {
+        "name": "port-0-enabled-False-probe-2",
+        "passed": true,
+        "calls": 80,
+        "snapshots": 14
+      },
+      {
+        "name": "port-0-enabled-False-probe-3",
+        "passed": true,
+        "calls": 40,
+        "snapshots": 9
+      },
+      {
+        "name": "port-0-enabled-False-camera:267-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-0-enabled-False-camera:261-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-0-enabled-False-camera:261-1",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-0-enabled-False-camera:261-2",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-0-enabled-False-camera:261-3",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-0-enabled-True-probe-0",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-0-enabled-True-probe-1",
+        "passed": true,
+        "calls": 86,
+        "snapshots": 13
+      },
+      {
+        "name": "port-0-enabled-True-probe-2",
+        "passed": true,
+        "calls": 91,
+        "snapshots": 16
+      },
+      {
+        "name": "port-0-enabled-True-probe-3",
+        "passed": true,
+        "calls": 40,
+        "snapshots": 9
+      },
+      {
+        "name": "port-0-enabled-True-camera:267-0",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-0-enabled-True-camera:261-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-0-enabled-True-camera:261-1",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-0-enabled-True-camera:261-2",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-0-enabled-True-camera:261-3",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-1-enabled-False-probe-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-1-enabled-False-probe-1",
+        "passed": true,
+        "calls": 75,
+        "snapshots": 11
+      },
+      {
+        "name": "port-1-enabled-False-probe-2",
+        "passed": true,
+        "calls": 80,
+        "snapshots": 14
+      },
+      {
+        "name": "port-1-enabled-False-probe-3",
+        "passed": true,
+        "calls": 40,
+        "snapshots": 9
+      },
+      {
+        "name": "port-1-enabled-False-camera:267-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-1-enabled-False-camera:261-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-1-enabled-False-camera:261-1",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-1-enabled-False-camera:261-2",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-1-enabled-False-camera:261-3",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-1-enabled-True-probe-0",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-1-enabled-True-probe-1",
+        "passed": true,
+        "calls": 86,
+        "snapshots": 13
+      },
+      {
+        "name": "port-1-enabled-True-probe-2",
+        "passed": true,
+        "calls": 91,
+        "snapshots": 16
+      },
+      {
+        "name": "port-1-enabled-True-probe-3",
+        "passed": true,
+        "calls": 40,
+        "snapshots": 9
+      },
+      {
+        "name": "port-1-enabled-True-camera:267-0",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-1-enabled-True-camera:261-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-1-enabled-True-camera:261-1",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-1-enabled-True-camera:261-2",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-1-enabled-True-camera:261-3",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-2-enabled-False-probe-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-2-enabled-False-probe-1",
+        "passed": true,
+        "calls": 75,
+        "snapshots": 11
+      },
+      {
+        "name": "port-2-enabled-False-probe-2",
+        "passed": true,
+        "calls": 80,
+        "snapshots": 14
+      },
+      {
+        "name": "port-2-enabled-False-probe-3",
+        "passed": true,
+        "calls": 40,
+        "snapshots": 9
+      },
+      {
+        "name": "port-2-enabled-False-camera:267-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-2-enabled-False-camera:261-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-2-enabled-False-camera:261-1",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-2-enabled-False-camera:261-2",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-2-enabled-False-camera:261-3",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-2-enabled-True-probe-0",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-2-enabled-True-probe-1",
+        "passed": true,
+        "calls": 86,
+        "snapshots": 13
+      },
+      {
+        "name": "port-2-enabled-True-probe-2",
+        "passed": true,
+        "calls": 91,
+        "snapshots": 16
+      },
+      {
+        "name": "port-2-enabled-True-probe-3",
+        "passed": true,
+        "calls": 40,
+        "snapshots": 9
+      },
+      {
+        "name": "port-2-enabled-True-camera:267-0",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-2-enabled-True-camera:261-0",
+        "passed": true,
+        "calls": 70,
+        "snapshots": 8
+      },
+      {
+        "name": "port-2-enabled-True-camera:261-1",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-2-enabled-True-camera:261-2",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "port-2-enabled-True-camera:261-3",
+        "passed": true,
+        "calls": 81,
+        "snapshots": 10
+      },
+      {
+        "name": "retry-camera:266-1",
+        "passed": true,
+        "calls": 86,
+        "snapshots": 13
+      },
+      {
+        "name": "retry-camera:266-100",
+        "passed": true,
+        "calls": 581,
+        "snapshots": 310
+      },
+      {
+        "name": "retry-camera:267-1",
+        "passed": true,
+        "calls": 83,
+        "snapshots": 10
+      },
+      {
+        "name": "retry-camera:267-100",
+        "passed": true,
+        "calls": 281,
+        "snapshots": 10
+      },
+      {
+        "name": "retry-camera:258-1",
+        "passed": true,
+        "calls": 83,
+        "snapshots": 10
+      },
+      {
+        "name": "retry-camera:258-100",
+        "passed": true,
+        "calls": 281,
+        "snapshots": 10
+      },
+      {
+        "name": "retry-camera:261-1",
+        "passed": true,
+        "calls": 85,
+        "snapshots": 12
+      },
+      {
+        "name": "retry-camera:261-100",
+        "passed": true,
+        "calls": 481,
+        "snapshots": 210
+      }
+    ],
+    "failures": []
+  }
+}
