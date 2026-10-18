@@ -325,6 +325,12 @@ fn workspace_checks_run_without_waiting_for_runtime_jobs() {
             < script.find("cargo test --workspace").unwrap(),
         "native compiler tests require the actual pinned model before execution"
     );
+    let bootlog = "cargo build -p openpilot-bootlog --example bootlog_snapshot -p openpilot-process-supervision --bin openpilot-process-child --locked";
+    assert!(
+        script.find(bootlog).unwrap() < script.find("cargo test --workspace").unwrap(),
+        "snapshot checker regressions require current native candidate and launcher"
+    );
+    mandatory(job, &[bootlog]);
 }
 #[test]
 fn hardware_runtime_requires_source_and_native_boundaries() {
@@ -332,7 +338,11 @@ fn hardware_runtime_requires_source_and_native_boundaries() {
         "hardware-runtime",
         &[
             "check_bootlog.py",
-            "check_bootlog_snapshot.py",
+            "rust/target/debug/check-bootlog-snapshot rust/target/debug/examples/bootlog_snapshot",
+            "rust/target/debug/build-bootlog-snapshot-reference --output",
+            "--params-reference \"$RUNNER_TEMP/hardware-runtime/snapshot-reference/bootlog-params-path\"",
+            "--child rust/target/debug/bootlog-snapshot-child --launcher rust/target/debug/openpilot-process-child",
+            "--test bootlog_snapshot_check",
             "rust/target/debug/check-logger-identifier rust/target/debug/examples/logger_identifier",
             "check_hardware_info.py",
             "rust/target/debug/check-hardware-control-policy rust/target/debug/examples/hardware_control_trace",
@@ -341,7 +351,7 @@ fn hardware_runtime_requires_source_and_native_boundaries() {
             "rust/target/debug/check-hardware-command --evidence \"$RUNNER_TEMP/hardware-runtime\"",
             "bootlog_raw_file_probe.rs",
         ],
-        &["python rust/tools/check_", "check-hardware-command"],
+        &["python rust/tools/check_", "check-hardware-command", "check-bootlog-snapshot", "--test bootlog_snapshot_check"],
         false,
     );
 }
@@ -368,6 +378,21 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
         &["python rust/tools/check_"],
         true,
     );
+}
+#[test]
+fn journald_requires_native_ipc_and_independent_fixture_contracts() {
+    job_check(
+        "support-runtime",
+        &[
+            "--features journal-runtime-native --bin check-journald --bin journalctl-fixture",
+            "--test journald_check --test journald_fixture --test journald_runtime_check --locked",
+            "rust/target/debug/check-journald --binary rust/target/debug/journald-rs --fixture rust/target/debug/journalctl-fixture",
+        ],
+        &["check-journald", "--test journald_check"],
+        true,
+    );
+    assert!(!commands(&workflow()["jobs"]["support-runtime"])
+        .contains("python rust/tools/check_journald.py"));
 }
 #[test]
 fn interrupted_send_boundary_is_a_required_support_check() {

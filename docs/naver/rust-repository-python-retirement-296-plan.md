@@ -65,9 +65,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-119 baseline sources are fully replaced locally, three baseline sources are
+126 baseline sources are fully replaced locally, three baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and3,458 baseline sources remain pending. The added
+and 3,451 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 

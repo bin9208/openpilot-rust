@@ -9,6 +9,35 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "journalctl-fixture"
+path = "src/bin/journalctl_fixture.rs"
+
+[[bin]]
+name = "check-journald"
+path = "src/bin/check_journald.rs"
+required-features = ["journal-runtime-native"]
+
+[[test]]
+name = "journald_runtime_check"
+required-features = ["journal-runtime-native"]
+
+[[bin]]
+name = "check-bootlog-snapshot"
+path = "src/bin/check_bootlog_snapshot.rs"
+
+[[bin]]
+name = "bootlog-snapshot-child"
+path = "src/bin/bootlog_snapshot_child.rs"
+
+[[bin]]
+name = "bootlog-snapshot-reference"
+path = "src/bin/bootlog_snapshot_reference.rs"
+
+[[bin]]
+name = "build-bootlog-snapshot-reference"
+path = "src/bin/build_bootlog_snapshot_reference.rs"
+
+[[bin]]
 name = "generate-camerad-sensor-data"
 path = "src/bin/generate_camerad_sensor_data.rs"
 required-features = ["camera-sensor-native"]
@@ -238,6 +267,7 @@ name = "list-cargo-tests"
 path = "src/bin/list_cargo_tests.rs"
 
 [features]
+journal-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
 camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"]
 encoder-runtime-native = ["camera-runtime-native", "dep:openpilot-cereal"]
@@ -384,7 +414,7 @@ flate2 = "1"
 bzip2 = "=0.6.1"
 command-fds = "=0.3.3"
 tar = { version = "0.4", default-features = false }
-rustix = { version = "1", features = ["fs", "process", "event", "time", "thread"] }
+rustix = { version = "1", features = ["fs", "process", "event", "time", "thread", "stdio"] }
 regex = "1"
 num-bigint = "=0.4.8"
 yaml-rust2 = { version = "=0.13.0", default-features = false }

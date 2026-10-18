@@ -1,0 +1,172 @@
+{
+  "sources": {
+    "rust/tools/check_journald.py": "010e2c863f9d1ee69903a118eb96b07ad0c9bc286385bcde8af2c5f522ca019f",
+    "rust/tools/journald_peer.py": "ca6a07a8e559d4abc643df85e51b7849595d1747ef42cfe35bf32c8d44399104",
+    "rust/tools/journalctl_fixture.py": "d735cdb55a379e1ec175b6f515a9855c757743b41652fa93e14632de3c858768",
+    "rust/tools/journal_fixture_input.py": "bc1091d07c967c13bbf7d9cc9b8ec104ee5f09365d241ed9f38ff199929ac01e",
+    "rust/tools/logmessaged_reference.py": "ce6d6764911daaab1e9e5ce70152d9f5efc9b5ea006482064bb8192d36f735e3",
+    "rust/tools/tests/test_journal_fixture.py": "46114b442a90f5f4ac23130a935beb322218d6379974f2abfb22ebe7a492f1f6",
+    "openpilot/system/journald.py": "29ce87e32684f6ae635a24ff5877f7e8b406353cf221080eb8aa163a49f0a396",
+    "openpilot/system/logmessaged.py": "93d94801185350ef4470bd482d37ed7f6d466e9b100ad10aa16fa6e8570fb02a",
+    "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3",
+    "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616"
+  },
+  "controls": "Fresh unchanged full actual original checker. Counts/status/required child final event and survival; dynamic elapsed/pid/time omitted. Normal source checker only requires final signal15, not optional stdoutclose race.",
+  "normal": {
+    "messages": 155,
+    "errors": 13,
+    "disk_records": 13,
+    "exit": 0,
+    "child_survived": false
+  },
+  "fatal": [
+    {
+      "name": "fatal-0",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-1",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-2",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-3",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-4",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-5",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-6",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-7",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-8",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-9",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-10",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-11",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-12",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-13",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-14",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-15",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-16",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-17",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    },
+    {
+      "name": "fatal-18",
+      "exit_nonzero": true,
+      "last_event": "signal-15",
+      "child_survived": false
+    }
+  ],
+  "lifecycle": {
+    "sigint": {
+      "exit": -2,
+      "child_survived": false,
+      "events": [
+        "started",
+        "signal-15"
+      ]
+    },
+    "sigterm": {
+      "exit": -15,
+      "child_survived": true,
+      "events": [
+        "started"
+      ]
+    },
+    "child-exit": {
+      "exit": 0,
+      "child_survived": false,
+      "events": [
+        "started",
+        "exited"
+      ]
+    },
+    "empty-eof": {
+      "exit": 0,
+      "child_survived": false,
+      "events": [
+        "started",
+        "stdout-closed",
+        "signal-15"
+      ]
+    }
+  }
+}

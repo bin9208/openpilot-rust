@@ -1456,7 +1456,7 @@ rust/tools/bluetooth_engine_source.py	8b87c14f28abd35c5a2e286874aec2198186bf64	p
 rust/tools/bluetooth_gesture_cases.py	c526bf0d1d1aa7a018224509fb68443b008fd420	pending	-
 rust/tools/bluetooth_input_source.py	1922c2d0b8e1f2a4a417065f77e29641dc23f690	pending	-
 rust/tools/bluetooth_sudo_fixture.py	9002b50955f374ce1db55810a6a89390d449e494	pending	-
-rust/tools/bootlog_snapshot_source.py	071111d1b1b1b16edb03e0ad3ff5e1d397be7023	pending	-
+rust/tools/bootlog_snapshot_source.py	071111d1b1b1b16edb03e0ad3ff5e1d397be7023	replaced-local	rust/crates/dev-tools/src/bootlog_snapshot_reference.rs
 rust/tools/build_athena_vision_peer.py	c8de481bfd00a06514d261d2edc5796336cba21a	replaced-local	rust/crates/dev-tools/src/athena_vision_build.rs
 rust/tools/build_bootlog_native.py	ced69c90957ec773bbdbd153bf2ce768bd724318	replaced-local	rust/crates/dev-tools/src/logging_oracle_build.rs
 rust/tools/build_bridge_reference.py	402efde29dceac218e618441d215eaccb83ac439	replaced-local	rust/crates/dev-tools/src/bridge_source_build.rs
@@ -1842,7 +1842,7 @@ rust/tools/check_bluetooth_journal.py	28b3448b08450ea78535c7f0fa58484daa807788	p
 rust/tools/check_bluetooth_runtime.py	8e0b0823f13de931b828cd7869604b5921e40d63	pending	-
 rust/tools/check_bluetooth_shutdown.py	9e56edaab6a899753fbd535ca1b3895c92ab44e6	pending	-
 rust/tools/check_bootlog.py	821fae976671407cca3c239f0cb23b3f7ca1fa22	pending	-
-rust/tools/check_bootlog_snapshot.py	9c5e4623e898a2dfea3647027b939f1fd2732c9a	pending	-
+rust/tools/check_bootlog_snapshot.py	9c5e4623e898a2dfea3647027b939f1fd2732c9a	replaced-local	rust/crates/dev-tools/src/bootlog_snapshot_check.rs
 rust/tools/check_bridge.py	837e2ab770658577c5f564a77a563aed814ceb59	pending	-
 rust/tools/check_calibration_daemon.py	59ff14326c59ac7fcf2e4f26a1af76456072041f	pending	-
 rust/tools/check_calibration_float.py	38e332e2cc7fb8fcca65e305afb8d6ea0b1e6779	pending	-
@@ -1946,7 +1946,7 @@ rust/tools/check_interrupted_send.py	0aa7d18350c477cb8979d3c20f5797c0ba48b374	pe
 rust/tools/check_jetlink_raw.py	e6e774affc13454db56a86124cb2d97d22b1deed	pending	-
 rust/tools/check_jetlink_reference.py	43605cc580357a6da5bbc3e572819710711eaab9	pending	-
 rust/tools/check_jetlink_rpc.py	57c13bd5cfbeccd607a4f67b028d2b4005ff0d95	pending	-
-rust/tools/check_journald.py	05a6f8e1aa83116caa8404115dc0cea056e1d2fa	pending	-
+rust/tools/check_journald.py	05a6f8e1aa83116caa8404115dc0cea056e1d2fa	replaced-local	rust/crates/dev-tools/src/journald_native.rs
 rust/tools/check_joystick_input_runtime.py	a4b18ae4698e7d005e262c7de2d820922b6285dc	pending	-
 rust/tools/check_joystickd_runtime.py	fbf949431043b611eee0c928f0e1323e06f1e23c	pending	-
 rust/tools/check_jpeg_sanitizers.py	a721e65d558dc25ac80beef4a60954f38c56f809	replaced-local	rust/crates/dev-tools/src/jpeg_sanitizers_check.rs
@@ -2362,9 +2362,9 @@ rust/tools/hardware_info_reference.py	d3807f765255ad31f6f3932f81c90499e7d0556a	p
 rust/tools/hardwared_source.py	73e0da3ebf1019f5b3fbc392739302b17b95781d	pending	-
 rust/tools/import_usbgpu_hcq.py	8e5f49b13bda8be79e70e7aad826a9f455b12316	pending	-
 rust/tools/interrupted_send_reference.py	315b410aa159992f07925ca6603a46d8cd81de88	pending	-
-rust/tools/journal_fixture_input.py	2a845bca7d0db628f0d60a611796a42ca439f450	pending	-
-rust/tools/journalctl_fixture.py	20708573cf6023681e3cf011c8af1dab053172e5	pending	-
-rust/tools/journald_peer.py	b53d755586c8acc37fe684ea548359fdec02f6df	pending	-
+rust/tools/journal_fixture_input.py	2a845bca7d0db628f0d60a611796a42ca439f450	replaced-local	rust/crates/dev-tools/src/journald_fixture.rs
+rust/tools/journalctl_fixture.py	20708573cf6023681e3cf011c8af1dab053172e5	replaced-local	rust/crates/dev-tools/src/journald_fixture.rs
+rust/tools/journald_peer.py	b53d755586c8acc37fe684ea548359fdec02f6df	replaced-local	rust/crates/dev-tools/src/journald_native.rs
 rust/tools/joystick_input_runtime_source.py	b6cc1e02155497303f6c13fcb57ebf624ebc4535	pending	-
 rust/tools/joystickd_source.py	be2af2a05f168e40ec027e19cdc211a13ae5962b	pending	-
 rust/tools/lagd_frames.py	0d17e93aaf9f3ae58b445fded91d41443caa415d	pending	-
@@ -2532,7 +2532,7 @@ rust/tools/tests/test_carrot_man_fixture_ports.py	e2eade54223cbf3f458ff168355689
 rust/tools/tests/test_deleter_observer.py	1d958a94f250a933daebee37465ecc11e650a19a	pending	-
 rust/tools/tests/test_encoder_ci.py	63f69a6b1e41300c4f8e0987d79db63cf03f57db	partially-replaced	rust/crates/dev-tools/tests/encoder_ci_check.rs;remaining:rust/tools/tests/test_params_native_stager.py
 rust/tools/tests/test_encoder_outcomes.py	64b1b2300f971c4de21561d83a057ebe6f06ff13	replaced-local	rust/crates/dev-tools/tests/encoder_runtime_shutdown.rs;rust/crates/dev-tools/tests/encoder_runtime_native.rs;rust/crates/dev-tools/tests/encoder_runtime_close.rs;rust/crates/dev-tools/tests/encoder_v4l_check.rs
-rust/tools/tests/test_journal_fixture.py	c08ca67961b6aa6c5398d8f40560a04df6a49b8d	pending	-
+rust/tools/tests/test_journal_fixture.py	c08ca67961b6aa6c5398d8f40560a04df6a49b8d	replaced-local	rust/crates/dev-tools/tests/journald_fixture.rs
 rust/tools/tests/test_logger_idle_observer.py	3443aa6c558c22c97624f78c25b2c7d273c76583	pending	-
 rust/tools/tests/test_model_export.py	73f4a98b15a62cd9a41ecfa54455248a383cab36	pending	-
 rust/tools/tests/test_model_pipeline.py	7f3ab8b26c35e9e25a9eec231c63a4ae1366c6df	pending	-

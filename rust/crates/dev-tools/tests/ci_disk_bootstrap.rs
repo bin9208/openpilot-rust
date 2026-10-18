@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 223);
+    assert_eq!(text.matches(marker).count(), 225);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -212,7 +212,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         jobs.values()
             .filter(|job| scripts(job).iter().any(|s| s.contains("check-disk-space")))
             .count(),
-        26
+        28
     );
     assert_eq!(
         jobs.values()
@@ -225,7 +225,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 })
             }))
             .count(),
-        25
+        27
     );
     let lines = text.lines().collect::<Vec<_>>();
     let mut arguments = vec![];
@@ -258,8 +258,18 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut ui_connectivity_build = vec![];
     let mut registration_utf7 = vec![];
     let mut application_lifecycle = vec![];
+    let mut journal_bootlog_checks = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features journal-runtime-native --bin check-journald")
+                    || lines[i + 1].contains(
+                        "-p openpilot-dev-tools -p openpilot-bootlog -p openpilot-hardware-info",
+                    ))
+            {
+                journal_bootlog_checks.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1]
                     .contains("rust/target/debug/build-ui-application-reference --output")
@@ -366,6 +376,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     // The removed camera pip install and Cython build had 512/1024 MiB
     // guards. Native camera operations retain every required reserve.
     assert_eq!(arguments.len(), 177);
+    assert_eq!(
+        journal_bootlog_checks,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"; 2]
+    );
     assert_eq!(
         application_lifecycle,
         vec![

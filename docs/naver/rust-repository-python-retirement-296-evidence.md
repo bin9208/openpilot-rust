@@ -10,10 +10,68 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. 119 sources have locally verified replacements and migrated
-callers; three are partially replaced and3,458 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. 126 sources have locally verified replacements and migrated
+callers; three are partially replaced and 3,451 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
+
+### Native bootlog snapshot tools (2026-10-18)
+
+`check-bootlog-snapshot`, `bootlog-snapshot-reference`, and the native metadata
+child replace `check_bootlog_snapshot.py` and `bootlog_snapshot_source.py`.
+The source adapter uses unchanged C++ Params and independently implements the
+original copy/thread behavior; it never imports the candidate snapshot code.
+Seven tests preserve ten captured filesystem/process cases, six pipe/error
+boundaries, exclusive output creation, descendant cleanup, original argument
+encoding, and a real ambient-environment regression. Strict Clippy passed.
+
+Fresh baseline and inherited `BOOTLOG_SPECIAL_COPY=1` comparisons each passed
+all ten cases against the current candidate. Each trace recorded 61 exec
+attempts and zero Python/PyPy executions with an empty tool PATH. All 40
+invocations retain string argument arrays; separate receipts identify six
+executables. After deleting both Python tools, the parent independently reran
+the complete ten-case comparison successfully, again without Python execution.
+The helper's process owner now observes an exited leader without reaping it
+until descendant cleanup; UTF-8 errors and existing-output rejection retain
+the original boundary. The original Params binding remains for other tools.
+
+CI builds the current candidate and launcher before workspace regression tests,
+and the hardware job runs the new checker, tests, strict Clippy and independent
+reference builder. This is host evidence; physical boot, recording and upload
+remain user-owned. The larger repository conversion is unfinished.
+
+### Native journald validation family (2026-10-18)
+
+`check-journald` and `journalctl-fixture` replace the Python checker, peer,
+fixture input, journalctl fixture and fixture tests. Independent policy and
+source-loop implementations retain real cereal/msgq/ZMQ traffic, raw packets,
+log-site/source-commit checks, disk logs, fatal inputs, child signals and cleanup.
+They do not call the candidate journald parser or use captured output rows as
+runtime behavior. The shared logmessaged reference remains for other callers.
+
+Fresh unchanged original captures bind 155 policy outputs, 12 child protocol
+cases, nine permissive-base64 cases and the original readiness boundaries.
+The current native checker and journald daemon each passed 155 messages,
+13 recoverable errors and disk records, 19 fatal inputs and four lifecycle cases.
+All 155 message rows matched the fresh unchanged Python original exactly.
+A frozen run with only Git available in PATH recorded 147 exec attempts and
+zero Python executions; no owned processes, sockets or shared-memory namespaces
+remained. Three executable identities and current source hashes were verified.
+
+Review caught and repaired unsafe numeric-PID cleanup, missing early child-exit
+detection, invalid IPC names derived from dotted paths, existing-case overwrite,
+and malformed base64 differences. Real process regressions cover pidfd ownership,
+unowned namespace preservation, blocked-pipe termination and trace-append signals.
+The original error bounds and assertions remain intact.
+
+After deleting all seven journal/bootlog Python files, the combined 67 tests
+passed, and the parent reran complete frozen journald IPC comparison without a
+Python interpreter in PATH. Combined strict Clippy also passed. The support and
+hardware CI jobs require native builds, these tests and strict Clippy; all 177
+inherited disk-guard argument records remain unchanged, with two additional
+2 GiB reservations. Inventory is now 126 replaced-local / 3 partially-replaced /
+3,451 pending. Model compiler and repository-wide completion gates remain open;
+no device result is claimed.
 
 The first execution-edge audit scanned 12,700 tracked entries and 11,965 text
 files, recording seven symlink aliases without following them. The

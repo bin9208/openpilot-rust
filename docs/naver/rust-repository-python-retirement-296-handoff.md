@@ -32,11 +32,14 @@ CLI/공유헬퍼/이전테스트4파일을 추가 제거했다.
 연속 카메라 런타임·cleanup·CI 오케스트레이터3파일도 Rust로 전환했다.
 원본60개 검증 계약과25개 제어 흐름 사례를 보존했고, 실제58단계 호스트 검사가
 통과했다. 삭제 후49개 테스트·Clippy와 새로 빌드한 카메라의8개 실행 사례도 통과했다.
-인벤토리는119 replaced-local /3 partially-replaced /3,458 pending이다.
+인벤토리는126 replaced-local /3 partially-replaced /3,451 pending이다.
 UI 수명주기, 인코더 호스트 및 ARM 대상 검증 도구가 추가 전환되었다.
 원본·Rust ARM 비교는 AGNOS 라이브러리를 사용하는 호스트 QEMU에서
 5사례·112패킷을 통과했다. UI 테스트의 ETXTBSY 경합도 재현·수정했다.
 모델 컴파일러와 전체 전환 및 정확한 최종 커밋의 원격 검증은 아직 진행 중이다.
+부팅 로그와 journald 검증 도구 7파일도 Rust로 전환해 제거했다. 삭제 후67개
+테스트·엄격한 Clippy, 부팅 로그10사례와 journald155메시지/13오류/19치명적입력/
+4종료사례 비교가 통과했다. 실제 실행 추적에서도 Python 호출이 없었다.
 부분 전환 항목의 공용 원본 로더는 추가 파일 selfdrived_helpers_source.py에
 남아 있으며 이동을 Rust 전환으로 세지 않는다. 전체 전환은 미완료다.
 최신 검증 결과는 evidence 및 runtime-module-audit 문서를 따른다.

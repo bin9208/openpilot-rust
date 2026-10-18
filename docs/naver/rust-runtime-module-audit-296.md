@@ -776,3 +776,16 @@ original/native HTTP comparator pass, including multipart escaping, missing
 settings, error status and redirects. Scope and exact-SHA CI are tracked in
 [issue351](https://github.com/bin9208/openpilot-rust/issues/351). The Python
 comparison tool remains pending under296.
+
+## Bootlog snapshot xattr buffer reuse (#353)
+
+[The focused #353 record](rust-bootlog-xattr-reuse-353.md) covers the synchronous
+Params snapshot copier. One private lazy scratch pair now replaces repeated
+65,536-byte name/value allocations across recursive copying. Actual filesystem
+regressions retain both pointers/capacities over16files, two directories and
+66attributes while preserving copied bytes, timestamps, modes, symlink behavior
+and failed-snapshot retention. All nine package tests, strict all-target Clippy
+and ten unchanged original/native process/filesystem comparisons pass locally.
+No launcher, detached-worker, cleanup or ignored-errno policy changes. This
+proves focused storage reuse and host behavior; device performance/boot remain
+unvalidated, and the remaining bootlog internals are not cleared by this change.
