@@ -2540,3 +2540,40 @@ stdin completed all three. No production transport behavior or tests were relaxe
 Evidence:2026-10-18-vision-peer-closure, including Cargo-selected executable paths
 and SHA256 records. This closes Python usage in the camera job, not other jobs or
 repository-wide Python retirement. Exact-commit cloud results remain pending.
+
+### Native encoder codec comparator (2026-10-18)
+
+The codec checker is replaced by `check-encoder-codecs`. It extracts current C++
+FFmpeg/JPEG method bodies, compiles a live source oracle and compares all packets
+and metadata; fixtures are test evidence only. Fourteen independently captured
+original success/failure paths preserve command ordering, environment, stdout and
+complete/partial artifact bytes. The native implementation passed those cases,
+120-second child deadline/stdin contracts and scoped strict Clippy. Source/library
+SHA256 now uses a bounded64-KiB buffer rather than reading entire files at once.
+
+Fresh Cargo-selected encoder/JPEG artifacts passed all five actual codec cases,
+112 packets. The original and native checkers produced identical full receipts
+when run at the same output path. Initial distinct-path receipts differed only in
+the source executable hash: C++ assertion strings embed the source filename.
+Generated source and all codec results were already identical; no hash was dropped
+from the comparison. Same-path rerun proved the complete receipt contract.
+The native CI caller fingerprints the new binary/source and requires its tests,
+Clippy and build. Runtime/V4L Python checks remain separate pending conversions.
+
+Exact9c035f85 Fast checks exposed a stale disk-guard snapshot after camera-only
+pip/Cython steps were removed. An independent old/current guard comparison confirms
+only their512/1024-MiB guards were removed; all177 still-used baseline guards are
+unchanged. The new encoder test/Clippy each have separate2048-MiB guards. Existing
+native camera operations retain their reserves; the VisionIPC test adds coverage.
+The count/hash contract is updated to these actual operations, not relaxed.
+Local evidence: `.analysis/scratch/2026-10-18-encoder-codecs/`, including original14
+contracts, actual source/native receipts and disk-guard-delta.json. Post-removal
+and remote verification results follow; device acceptance remains user-owned.
+
+After deleting the original codec checker:48 affected native tests passed
+(13disk bootstrap,33routing/isolation,2codec tests covering14original and5CLI
+cases); scoped strict Clippy passed. All20 retained encoder caller/outcome tests
+passed. The actual five codec comparisons were rerun after deletion and passed
+112packets again. New Rust files pass the workspace's2021edition formatting.
+Inventory now records111replaced-local,2partial and3,467pending baseline sources.
+The full repository and device acceptance are not complete.

@@ -233,6 +233,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut logging_builder = vec![];
     let mut native_architecture = vec![];
     let mut encoder_builder = vec![];
+    let mut encoder_checks = vec![];
     let mut model_source = vec![];
     let mut translation_checker = vec![];
     let mut diagnostic_checkers = vec![];
@@ -258,6 +259,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut registration_utf7 = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len() && lines[i + 1].contains("--test encoder_codecs_check") {
+                encoder_checks.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && lines[i + 1]
                     .contains("-p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi")
@@ -348,7 +353,13 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
         }
     }
-    assert_eq!(arguments.len(), 179);
+    // The removed camera pip install and Cython build had 512/1024 MiB
+    // guards. Native camera operations retain every required reserve.
+    assert_eq!(arguments.len(), 177);
+    assert_eq!(
+        encoder_checks,
+        vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"; 2]
+    );
     assert_eq!(
         ui_connectivity_build,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 4096"]
@@ -466,8 +477,8 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         native_architecture,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"]
     );
-    // Retain the exact original 179 guards/hash below, plus admission for the
-    // new logging builder. A new build must not replace an inherited reserve.
+    // Retain the 177 still-used original guards/hash below, plus admission for
+    // native builds. A new build must not replace an inherited reserve.
     assert_eq!(
         logging_builder,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"]
@@ -502,7 +513,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert!(!text.contains("stage_startup_ui_raylib.py"));
     assert_eq!(
         hash(&arguments),
-        "952f3b9fc8820e701aae55f88368236acddd3da2af55465448aa00eddaf9fe55"
+        "b0f4e20cbb89c4118d25cf1b4664642cc5222969ea807616e5f386b5679e45ae"
     );
     let template = fs::read_to_string(root().join("rust/crates/carrot-man/ci-jobs.yml")).unwrap();
     assert!(!template.contains("card_ci_space.py"));

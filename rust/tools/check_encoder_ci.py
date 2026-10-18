@@ -84,12 +84,12 @@ def main() -> None:
   source_files = [ROOT / 'rust/Cargo.lock', ROOT / 'uv.lock', Path(__file__)]
   source_files += list(TOOLS.glob('*encoder*.py')) + list((TOOLS / 'encoder_oracle').glob('*'))
   source_files += [ROOT / 'rust/crates/dev-tools/src' / name for name in
-                   ('encoder_source_build.rs', 'qa_process.rs', 'services_header.rs', 'path_resolve.rs', 'bin/build_encoder_source.rs')]
+                   ('encoder_source_build.rs', 'encoder_codecs_check.rs', 'bin/check_encoder_codecs.rs', 'qa_process.rs', 'services_header.rs', 'path_resolve.rs', 'bin/build_encoder_source.rs')]
   source_files += [ROOT / 'rust/crates/messaging/src/services_generated.rs', ROOT / 'rust/crates/dev-tools/Cargo.toml']
   for name in ('encoderd', 'msgq', 'jpeg'):
     source_files += [path for path in (ROOT / 'rust/crates' / name).rglob('*') if path.is_file()]
   selected = [binaries / 'openpilot-encoderd', *(binaries / 'examples' / name for name in ('encoder_codec_trace', 'encoder_v4l_trace'))]
-  selected.append(binaries / 'build-encoder-source')
+  selected += [binaries / 'build-encoder-source', binaries / 'check-encoder-codecs']
   identity = {'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
               'sources': hashes(source_files), 'imports': imports,
               'python_packages': {name: importlib.metadata.version(name) for name in ('pycapnp', 'pyzmq')},
@@ -105,8 +105,9 @@ def main() -> None:
     run([sys.executable, str(TOOLS / script), *arguments], output / 'commands', name)
 
   build_source(binaries, output, native, args.capnp_prefix, json11, dependencies)
-  check('codecs', 'check_encoder_codecs.py', ['--rust', str(selected[1]), '--output', str(output / 'codecs'),
-    '--jpeg-build', str(dependencies['jpeg']), '--native', str(native)])
+  require_space(output, 1024**3)
+  run([str(binaries / 'check-encoder-codecs'), '--rust', str(selected[1]), '--output', str(output / 'codecs'),
+       '--jpeg-build', str(dependencies['jpeg']), '--native', str(native)], output / 'commands', 'codecs')
   check('v4l', 'check_encoder_v4l.py', ['--rust', str(selected[2]), '--output', str(output / 'v4l'), '--native', str(native)])
   check('runtime', 'check_encoder_runtime.py', ['--rust', str(selected[0]), '--source', str(output / 'source/original-encoderd'),
     '--output', str(output / 'runtime'), '--native', str(native)])

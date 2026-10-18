@@ -770,3 +770,8 @@ required-features = ["camera-runtime-native"]
 [[bin]]
 name = "check-camerad-ci"
 path = "src/bin/check_camerad_ci.rs"
+
+[[bin]]
+name = "check-encoder-codecs"
+path = "src/bin/check_encoder_codecs.rs"
+required-features = ["camera-sensor-native"]

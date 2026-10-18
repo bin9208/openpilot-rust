@@ -711,6 +711,8 @@ fn encoder_requires_source_runtime_and_pinned_arm_artifacts() {
         "encoder-runtime",
         &[
             "--bin build-encoder-source",
+            "--bin check-encoder-codecs",
+            "--test encoder_codecs_check",
             "build_visionipc_python.py",
             "check_encoder_ci.py",
             "test_encoder_outcomes.py",

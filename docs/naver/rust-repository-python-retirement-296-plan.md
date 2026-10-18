@@ -136,3 +136,8 @@ palette/16-bit broadcasting inputs. RGBA normalization or PNG-only decoding does
 not preserve those admitted cases. Independent codec arrays and comparisons must
 close proven gaps before retiring the checker. No Python wrapper or discarded
 format coverage counts as a native replacement.
+
+2026-10-18: codec comparison CLI is native;14original failure/artifact contracts,
+5actual codec cases/112packets,48post-removal tests and strictClippy passed. Original
+codec checker removed and CI caller/build/fingerprints migrated. Runtime/V4L and
+UIapplication/model compiler remain pending. Inventory111local/2partial/3467pending.

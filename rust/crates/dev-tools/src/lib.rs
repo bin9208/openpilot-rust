@@ -93,6 +93,8 @@ pub mod ui_render_reference;
 pub mod user_docs;
 
 pub mod elf_audit;
+#[cfg(feature = "camera-sensor-native")]
+pub mod encoder_codecs_check;
 pub mod encoder_source_build;
 pub mod encoder_stage;
 
