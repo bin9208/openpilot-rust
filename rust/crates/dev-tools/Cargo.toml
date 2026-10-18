@@ -775,3 +775,8 @@ path = "src/bin/check_camerad_ci.rs"
 name = "check-encoder-codecs"
 path = "src/bin/check_encoder_codecs.rs"
 required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-encoder-v4l"
+path = "src/bin/check_encoder_v4l.rs"
+required-features = ["camera-sensor-native"]

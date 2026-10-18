@@ -141,3 +141,9 @@ format coverage counts as a native replacement.
 5actual codec cases/112packets,48post-removal tests and strictClippy passed. Original
 codec checker removed and CI caller/build/fingerprints migrated. Runtime/V4L and
 UIapplication/model compiler remain pending. Inventory111local/2partial/3467pending.
+
+2026-10-18: V4L checker replaced by native check-encoder-v4l;17original main and
+19outcome captures,32actual source/Rust cases,51post-removal native tests and strict
+Clippy pass. Codec path-resolution failure phases repaired against four unchanged
+original CLI captures. Inventory112local/2partial/3466pending. Exact8752 UI pixel
+failure and full application/model/remaining tool closure remain open.

@@ -1028,11 +1028,11 @@ jobs:
       - name: Build the current native encoder source builder
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --test encoder_codecs_check --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --test encoder_codecs_check --test encoder_v4l_check --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --bin check-encoder-codecs --test encoder_codecs_check --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --bin check-encoder-codecs --bin check-encoder-v4l --test encoder_codecs_check --test encoder_v4l_check --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --bin build-encoder-source --bin check-encoder-codecs --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --bin build-encoder-source --bin check-encoder-codecs --bin check-encoder-v4l --locked
       - name: Require all source codec, V4L and actual encoder runtime comparisons
         run: python rust/tools/check_encoder_ci.py --json11-stager "$JSON11_STAGER" --binaries rust/target/debug --build-messages "$RUNNER_TEMP/encoder-native/build.jsonl" --output "$RUNNER_TEMP/encoder-native/oracles"
       - name: Preserve encoder inputs, packets, diagnostics and executable evidence

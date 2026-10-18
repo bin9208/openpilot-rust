@@ -2577,3 +2577,35 @@ passed. The actual five codec comparisons were rerun after deletion and passed
 112packets again. New Rust files pass the workspace's2021edition formatting.
 Inventory now records111replaced-local,2partial and3,467pending baseline sources.
 The full repository and device acceptance are not complete.
+
+### Encoder V4L verifier and codec path phases (2026-10-18)
+
+The V4L comparison has a native implementation that still compiles current
+source methods and the actual scripted ioctl/memory driver. Before implementation,
+17independent original main captures preserved all32success cases and failure
+artifacts across build/disk/process/trace/count/rotation/config/metadata/expected
+abort/sanitizer boundaries. Separate19original outcome cases preserve exit status,
+required diagnostic and sanitizer rejection. Native tests match full command,
+environment, stdout, cleanup and artifact bytes for all captures; Clippy passes.
+Fresh Cargo encoder_v4l_trace and current C++ pass all32actual driver cases.
+Original/native checkers run at the same output path produce byte-identical complete
+receipts, including source/driver executable hashes. This is host fixture evidence,
+not hardware/device acceptance. Python checker removal/CI migration is prepared;
+post-removal gate is next before commit. Encoder runtime/CI remain pending.
+
+Independent review of the prior codec conversion found eager path resolution
+changed failure ordering for looping--rust/native/jpeg symlinks. Four actual
+original CLI phase captures reproduce the difference; pre-fix native output
+fails them. Resolution is now at the original source-extraction, pkg-config,
+build/child and final-hash phases. Original14contracts and fournewCLIcases pass
+with strictClippy. No earlier expected result was changed.
+
+Post-removal V4L gate passed51native tests (13disk bootstrap,33routing/isolation,
+3codec and2V4L; the latter retain17main/19outcome contracts). Scoped strictClippy
+passed, and all32live source/Rust V4L cases passed again without the retired checker.
+All20retained encoder CI/outcome tests also pass. Inventory is112replaced-local,
+2partial,3,466pending baseline sources. Remaining encoder runtime/CI is still Python.
+
+Exact8752ce82 cloud Fast checks passed. Rust run39093856907 has an actual UI
+family-pixel failure; current raster-portability repairs are still being validated.
+Do not interpret other successful jobs or the local V4L gate as whole-branch success.

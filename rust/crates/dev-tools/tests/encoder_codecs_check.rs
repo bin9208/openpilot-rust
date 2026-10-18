@@ -274,3 +274,78 @@ fn native_codec_cli_requires_options_and_creates_nothing_for_parser_errors() {
         assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 0);
     }
 }
+
+#[test]
+fn original_cli_resolves_each_path_at_its_execution_phase() {
+    use std::os::unix::fs::{symlink, PermissionsExt};
+    // Independent original main capture: source SHA351f01e48543de15cfa22fa2d7eb03d3a7b9f0260fb725c50bf56da5f7bc18c4.
+    // Actual shell endpoints replace only pkg-config/compiler/codec; Python
+    // Path.resolve and all original file writes remain active in the capture.
+    for (argument, phases, expected_files) in [
+        ("output", "", vec![]),
+        ("native", "", vec!["source-oracle.cc"]),
+        ("jpeg-build", "flags\n", vec!["source-oracle.cc"]),
+        (
+            "rust",
+            "flags\nbuild\nsource\n",
+            vec![
+                "build-command.json",
+                "build.log",
+                "case-0-lossless-source.log",
+                "case-0-lossless-source/packet-00.bin",
+                "case-0-lossless-source/trace.tsv",
+                "source-oracle",
+                "source-oracle.cc",
+                "space.json",
+            ],
+        ),
+    ] {
+        let directory = tempfile::tempdir().unwrap();
+        let base = directory.path();
+        let tools = base.join("tools");
+        fs::create_dir(&tools).unwrap();
+        for (name, script) in [
+            ("pkg-config", "#!/bin/sh\necho flags >> \"$PHASE_LOG\"\n"),
+            ("g++", "#!/bin/sh\necho build >> \"$PHASE_LOG\"\nfor arg do dest=\"$arg\"; done\n/bin/cat > \"$dest\" <<'PEER'\n#!/bin/sh\necho source >> \"$PHASE_LOG\"\n/bin/mkdir \"$1\"\nprintf 'trace\\n' > \"$1/trace.tsv\"\nprintf packet > \"$1/packet-00.bin\"\nPEER\n/bin/chmod +x \"$dest\"\n"),
+        ] {
+            let path = tools.join(name);
+            fs::write(&path, script).unwrap();
+            fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let looping = base.join("loop");
+        symlink("loop", &looping).unwrap();
+        let output = base.join("out");
+        let log = base.join("phases");
+        let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_check-encoder-codecs"));
+        command.env("PATH", &tools).env("PHASE_LOG", &log);
+        command.env(
+            "OPENPILOT_RUST_ROOT",
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."),
+        );
+        for (name, path) in [
+            ("output", output.clone()),
+            ("native", base.join("native")),
+            ("jpeg-build", base.join("jpeg")),
+            ("rust", base.join("candidate")),
+        ] {
+            command
+                .arg(format!("--{name}"))
+                .arg(if name == argument { &looping } else { &path });
+        }
+        let result = command.output().unwrap();
+        assert_eq!(result.status.code(), Some(1), "{argument}");
+        assert_eq!(
+            fs::read_to_string(&log).unwrap_or_default(),
+            phases,
+            "{argument}: phases"
+        );
+        let mut actual = BTreeMap::new();
+        files(base, &output, &mut actual);
+        assert_eq!(
+            actual.keys().map(String::as_str).collect::<Vec<_>>(),
+            expected_files,
+            "{argument}: artifacts"
+        );
+        assert!(!output.join("receipt.json").exists());
+    }
+}

@@ -10,6 +10,7 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
+#[derive(Clone)]
 pub struct Options {
     pub root: PathBuf,
     pub output: PathBuf,
@@ -107,6 +108,8 @@ pub fn execute(
     free: &mut dyn FnMut(&Path) -> Result<u64>,
     stdout: &mut dyn Write,
 ) -> Result<()> {
+    let mut options = options.clone();
+    options.output = crate::path_resolve::resolve_non_strict(&options.output)?;
     if let Some(parent) = options.output.parent() {
         fs::create_dir_all(parent)?;
     }
@@ -130,8 +133,9 @@ pub fn execute(
     pieces.push(read_text(&fixture.join("main.cc"))?);
     let generated = options.output.join("source-oracle.cc");
     fs::write(&generated, pieces.join("\n"))?;
+    options.native = crate::path_resolve::resolve_non_strict(&options.native)?;
     let mut flags = spec(
-        options,
+        &options,
         [
             "pkg-config",
             "--cflags",
@@ -150,6 +154,7 @@ pub fn execute(
         return Err(format!("pkg-config exited {}", result.code).into());
     }
     let flags = crate::camera_sensor_check::split_runner(&String::from_utf8(result.stdout)?)?;
+    options.jpeg = crate::path_resolve::resolve_non_strict(&options.jpeg)?;
     let library = options.native.join("usr/lib/x86_64-linux-gnu");
     let oracle = options.output.join("source-oracle");
     let mut argv: Vec<OsString> = ["g++", "-std=c++17", "-O1", "-g0"]
@@ -192,7 +197,7 @@ pub fn execute(
                 .join(",")
         ),
     )?;
-    run(options, runner, argv, "build.log")?;
+    run(&options, runner, argv, "build.log")?;
     let mut results = vec![];
     let mut packets = 0;
     for (index, (codec, numbers)) in [
@@ -212,13 +217,18 @@ pub fn execute(
             (&oracle, &expected, "source"),
             (&options.binary, &actual, "rust"),
         ] {
+            let binary = if suffix == "rust" {
+                crate::path_resolve::resolve_non_strict(binary)?
+            } else {
+                binary.clone()
+            };
             let mut args = vec![
                 binary.as_os_str().to_owned(),
                 output.as_os_str().to_owned(),
                 codec.into(),
             ];
             args.extend(numbers.map(|v| OsString::from(v.to_string())));
-            run(options, runner, args, &format!("{name}-{suffix}.log"))?;
+            run(&options, runner, args, &format!("{name}-{suffix}.log"))?;
         }
         if read_text(&expected.join("trace.tsv"))? != read_text(&actual.join("trace.tsv"))? {
             return Err(format!("{name}: packet metadata or encode returns differ").into());
@@ -264,7 +274,7 @@ pub fn execute(
         &format!(
             "{{\"source_sha256\":{},\"rust_binary_sha256\":{},\"oracle_sha256\":{},\"generated_sha256\":{},\"native_sha256\":{},\"results\":[{}],\"status\":\"PASS\",\"scope\":\"host source-method codec bytes and metadata; publication transport and hardware are separate\"}}",
             object(sources),
-            quote(&hash(&options.binary)?)?,
+            quote(&hash(&crate::path_resolve::resolve_non_strict(&options.binary)?)?)?,
             quote(&hash(&oracle)?)?,
             quote(&hash(&generated)?)?,
             object(native),
@@ -299,14 +309,12 @@ pub fn cli() -> Result<()> {
     let root = std::env::var_os("OPENPILOT_RUST_ROOT")
         .map(PathBuf::from)
         .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.."));
-    let resolve =
-        |key: &str| crate::path_resolve::resolve_non_strict(Path::new(&parsed.values[key]));
     let options = Options {
         root: crate::path_resolve::resolve_non_strict(&root)?,
-        output: resolve("--output")?,
-        binary: resolve("--rust")?,
-        native: resolve("--native")?,
-        jpeg: resolve("--jpeg-build")?,
+        output: PathBuf::from(&parsed.values["--output"]),
+        binary: PathBuf::from(&parsed.values["--rust"]),
+        native: PathBuf::from(&parsed.values["--native"]),
+        jpeg: PathBuf::from(&parsed.values["--jpeg-build"]),
         library_path: std::env::var_os("LD_LIBRARY_PATH"),
     };
     execute(
