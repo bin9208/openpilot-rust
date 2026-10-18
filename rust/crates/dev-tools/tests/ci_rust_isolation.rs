@@ -791,13 +791,13 @@ fn camera_requires_source_driver_fixture_and_visionipc_checks() {
     job_check(
         "camera-runtime",
         &[
-            "check_camerad_ci.py",
+            "check-camerad-ci",
             "build_visionipc_python.py",
             "libclang-rt-18-dev",
             "openpilot-camerad-runtime --features native-skip-miri",
             "--test vision --test vision_server",
         ],
-        &["check_camerad_ci.py"],
+        &["check-camerad-ci"],
         false,
     );
     let data = workflow();

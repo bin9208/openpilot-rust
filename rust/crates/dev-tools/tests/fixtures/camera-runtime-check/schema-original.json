@@ -1,0 +1,25 @@
+{
+  "capture": "Exact source files unchanged from the real original eight runtime captures; external native capnp reads these copied schema fixtures.",
+  "files": {
+    "log.capnp": {
+      "source": "openpilot/cereal/log.capnp",
+      "sha256": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620"
+    },
+    "custom.capnp": {
+      "source": "openpilot/cereal/custom.capnp",
+      "sha256": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693"
+    },
+    "deprecated.capnp": {
+      "source": "openpilot/cereal/deprecated.capnp",
+      "sha256": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355"
+    },
+    "car.capnp": {
+      "source": "opendbc_repo/opendbc/car/car.capnp",
+      "sha256": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda"
+    },
+    "include/c++.capnp": {
+      "source": "openpilot/cereal/include/c++.capnp",
+      "sha256": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44"
+    }
+  }
+}

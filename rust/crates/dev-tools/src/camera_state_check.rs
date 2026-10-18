@@ -26,6 +26,18 @@ pub struct Decoded {
 pub trait SchemaDecoder {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn decode(&mut self, wire: &[u8]) -> Result<Decoded>;
+    fn decode_many(&mut self, wires: &[Vec<u8>]) -> Vec<Result<Decoded>> {
+        let mut decoded = vec![];
+        for wire in wires {
+            let result = self.decode(wire);
+            let failed = result.is_err();
+            decoded.push(result);
+            if failed {
+                break;
+            }
+        }
+        decoded
+    }
 }
 fn quoted(value: &str) -> String {
     format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))

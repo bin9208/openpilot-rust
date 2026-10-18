@@ -17,7 +17,7 @@ mod cleanup;
 #[path = "camera_lifecycle_images.rs"]
 mod image_values;
 #[path = "camera_lifecycle_values.rs"]
-mod values;
+pub(crate) mod values;
 pub use cleanup::{audit, normalize_disabled};
 pub use image_values::{images, result_value};
 use values::{error, PythonError};

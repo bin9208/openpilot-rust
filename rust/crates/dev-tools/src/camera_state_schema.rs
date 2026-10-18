@@ -57,6 +57,61 @@ impl NativeSchemaDecoder {
             types: HashMap::new(),
         }
     }
+    fn batch(&self, wires: &[Vec<u8>]) -> Result<Vec<Decoded>> {
+        if wires.is_empty() {
+            return Ok(vec![]);
+        }
+        let root = self.root.ok_or("schema has no Event type")?;
+        if !self.types.contains_key(&root) {
+            return Err("Event is not a struct".into());
+        }
+        let schema = self.schema.as_ref().ok_or("schema not loaded")?;
+        let mut input = vec![];
+        for wire in wires {
+            if !wire.len().is_multiple_of(8) {
+                return Err("input length must be a multiple of eight bytes".into());
+            }
+            let mut cursor = Cursor::new(wire);
+            capnp::serialize::read_message(&mut cursor, capnp::message::ReaderOptions::new())?;
+            input.extend_from_slice(&wire[..usize::try_from(cursor.position())?]);
+        }
+        let mut include = OsString::from("-I");
+        include.push(schema.parent().ok_or("schema has no parent")?);
+        let output = self.command(
+            vec![
+                "convert".into(),
+                include,
+                "--short".into(),
+                "binary:json".into(),
+                schema.as_os_str().to_owned(),
+                "Event".into(),
+            ],
+            Some(input),
+        )?;
+        if output.code != 0 {
+            return Err("batch decode failed".into());
+        }
+        let text = String::from_utf8(output.stdout)?;
+        let mut values = vec![];
+        for line in text.lines() {
+            let value = json::parse_text(&preserve_negative_zero(line))?;
+            let mut serialization_error = None;
+            let value = self.project(
+                &value,
+                &Type::Struct(root),
+                &mut vec![],
+                &mut serialization_error,
+            )?;
+            values.push(Decoded {
+                value,
+                serialization_error,
+            });
+        }
+        if values.len() != wires.len() {
+            return Err("batch decode count mismatch".into());
+        }
+        Ok(values)
+    }
     fn command(
         &self,
         args: Vec<OsString>,
@@ -271,6 +326,26 @@ impl SchemaDecoder for NativeSchemaDecoder {
             value,
             serialization_error,
         })
+    }
+    fn decode_many(&mut self, wires: &[Vec<u8>]) -> Vec<Result<Decoded>> {
+        // Convert a finite snapshot in one independent oracle process. Any
+        // malformed input falls back to the original per-row path, retaining
+        // its first exception and every successfully decoded preceding row.
+        match self.batch(wires) {
+            Ok(values) => values.into_iter().map(Ok).collect(),
+            Err(_) => {
+                let mut decoded = vec![];
+                for wire in wires {
+                    let result = self.decode(wire);
+                    let failed = result.is_err();
+                    decoded.push(result);
+                    if failed {
+                        break;
+                    }
+                }
+                decoded
+            }
+        }
     }
 }
 

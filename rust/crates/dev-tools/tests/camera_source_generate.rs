@@ -195,7 +195,8 @@ fn original_argparse_aliases_repeats_and_exit_classes() {
 
 #[test]
 fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
-    let source = fs::read_to_string(root().join("rust/tools/check_camerad_ci.py")).unwrap();
+    let source =
+        fs::read_to_string(root().join("rust/crates/dev-tools/src/camera_ci_check.rs")).unwrap();
     for name in [
         "generate-camerad-requests-reference",
         "generate-camerad-packet-reference",
@@ -205,10 +206,10 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
         "generate-camerad-stress-reference",
         "generate-camerad-runtime-fixture",
         "check-camerad-{checker}",
-        "check-camerad-kernel",
-        "check-camerad-sensor-lifecycle",
-        "check-camerad-isp-lifecycle",
-        "check-camerad-camera-lifecycle",
+        "check-camerad-{}",
+        "sensor_lifecycle",
+        "isp_lifecycle",
+        "camera_lifecycle",
         "check-camerad-state",
         "check-camerad-runtime-stress",
     ] {
@@ -264,7 +265,7 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
         "--bin check-camerad-stress",
         "--bin check-camerad-runtime-stress",
         "--bin check-camerad-sensors",
-        "--features camera-sensor-native",
+        "--features camera-runtime-native",
         "--test camera_lifecycle_generate",
         "--bin generate-camerad-requests-reference",
         "--bin generate-camerad-packet-reference",

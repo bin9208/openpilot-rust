@@ -2815,6 +2815,7 @@ dependencies = [
  "openpilot-image-codecs",
  "openpilot-jpeg",
  "openpilot-log-format",
+ "openpilot-msgq",
  "openpilot-process-limits",
  "openpilot-runtime-version",
  "openpilot-startup-ui",

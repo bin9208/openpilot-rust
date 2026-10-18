@@ -1,0 +1,129 @@
+{
+  "cases": [
+    {
+      "name": "help",
+      "args": [
+        "--help"
+      ],
+      "existing": false,
+      "exit": 0,
+      "stdout": true,
+      "stderr": false,
+      "output_exists": false,
+      "files": []
+    },
+    {
+      "name": "missing",
+      "args": [],
+      "existing": false,
+      "exit": 2,
+      "stdout": false,
+      "stderr": true,
+      "output_exists": false,
+      "files": []
+    },
+    {
+      "name": "unknown",
+      "args": [
+        "--unknown"
+      ],
+      "existing": false,
+      "exit": 2,
+      "stdout": false,
+      "stderr": true,
+      "output_exists": false,
+      "files": []
+    },
+    {
+      "name": "missing-output",
+      "args": [
+        "--binaries",
+        "x"
+      ],
+      "existing": false,
+      "exit": 2,
+      "stdout": false,
+      "stderr": true,
+      "output_exists": false,
+      "files": []
+    },
+    {
+      "name": "existing",
+      "args": [
+        "--binaries",
+        "x",
+        "--output",
+        "$ROOT/out"
+      ],
+      "existing": true,
+      "exit": 1,
+      "stdout": true,
+      "stderr": true,
+      "output_exists": true,
+      "files": []
+    },
+    {
+      "name": "missing-bin",
+      "args": [
+        "--binaries",
+        "$ROOT/bin",
+        "--output",
+        "$ROOT/out"
+      ],
+      "existing": false,
+      "exit": 1,
+      "stdout": true,
+      "stderr": true,
+      "output_exists": true,
+      "files": []
+    },
+    {
+      "name": "abbreviated",
+      "args": [
+        "--binar",
+        "$ROOT/bin",
+        "--out",
+        "$ROOT/out"
+      ],
+      "existing": true,
+      "exit": 1,
+      "stdout": true,
+      "stderr": true,
+      "output_exists": true,
+      "files": []
+    },
+    {
+      "name": "compiler-empty",
+      "args": [
+        "--binaries",
+        "$ROOT/bin",
+        "--output",
+        "$ROOT/out",
+        "--compiler="
+      ],
+      "existing": true,
+      "exit": 1,
+      "stdout": true,
+      "stderr": true,
+      "output_exists": true,
+      "files": []
+    },
+    {
+      "name": "duplicate-output",
+      "args": [
+        "--binaries",
+        "x",
+        "--output",
+        "$ROOT/unused",
+        "--output",
+        "$ROOT/out"
+      ],
+      "existing": true,
+      "exit": 1,
+      "stdout": true,
+      "stderr": true,
+      "output_exists": true,
+      "files": []
+    }
+  ]
+}

@@ -2471,3 +2471,50 @@ After deletion, all19 sensor/exposure/state tests pass. A fresh PATH-disabled
 output, field and receipt files match exactly. Inventory is now107 replaced,
 two partial and3,471 pending. The remaining partial entries are the alert and
 selfdrive helper loaders; the continuous camera controller is separate pending work.
+
+### Native continuous camera verification and CI orchestration (2026-10-18)
+
+Three Python files are removed after their native callers and regression coverage
+passed: camerad_runtime_check.py, camerad_camera_lifecycle_cleanup.py and
+check_camerad_ci.py. The native controller uses real Msgq, VisionIPC and ZMQ and
+projects the complete current Event schema through native Cap'n Proto. Production
+checks read current sources and run current C++/Rust binaries, not captured answers.
+
+Independent expectations preserve60 original verifier/coercion/log-type contracts,
+25 controller success/failure cases and12 actual CLI cases. Review reproduced
+reaped-PID signalling and descendants surviving explicit wait; native process-group
+termination now occurs while the leader PID remains reserved. Both regression tests
+failed before repair. Raw log equality, prefix errors, list/dictionary membership
+and short-circuit semantics have eight additional original captures and observed
+RED/GREEN evidence. No earlier expectation or runtime criterion was weakened.
+
+Per-message Cap'n Proto subprocesses reproduced a live timeout that the original
+passed in the same environment. Finite raw-message batches now use one conversion,
+with per-row fallback on malformed or partial output. An original receive-error
+capture protects the successfully decoded prefix and reproduced an initial batching
+bug before repair. All eight live cases pass without Python on PATH; original and
+native verification of the same captures produced identical report, stdout,
+cleanup and oracle artifacts. This is host fixture evidence, not device acceptance.
+
+The native CI orchestrator preserves58 ordered build, constant, policy, lifecycle,
+state, stress and continuous-runtime commands, including disk guards, source/binary
+receipts and partial artifacts. Original captures include eight child failures,
+low-disk refusal, two constant mismatches, five preflight cases, nine actual CLI
+cases and a real missing-compiler launch. Source hashing uses a bounded64-KiB buffer.
+The mandatory camera job now builds/tests and invokes the native commands.
+
+Verification: all58 actual commands returned zero, final status PASS, and all37
+preflight executable hashes were unchanged after execution. Source/routing checks
+passed42 tests. After removing the three Python files, the affected regression gate
+passed49 tests and scoped strict Clippy. The current-source camera packages were
+rebuilt, then all eight live cases passed again in43 seconds using the just-built
+C++ source fixture/oracle and PATH=/nonexistent. The final rerun was scoped to the
+changed verifier and rebuilt daemon; unchanged C++ build stages were not repeated.
+Local evidence: camera-ci-check/{live-native-v4,post-retirement-tests.log,
+post-retirement-clippy.log} and camera-runtime-check/live-post-retirement under the
+2026-10-18 scratch directories. Remote exact-commit validation remains pending.
+
+Inventory is110 replaced-local, two partial and3,468 pending baseline sources.
+Remaining comparison/build Python (including the separate VisionIPC peer builder),
+UI application lifecycle and full model compiler work remain incomplete. No whole
+repository conversion, device startup/recording/upload, or CPU savings is claimed.

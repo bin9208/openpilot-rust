@@ -239,6 +239,7 @@ path = "src/bin/list_cargo_tests.rs"
 
 [features]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
+camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"]
 selfdrive-params-native = ["dep:zmq"]
 egl-reference = ["dep:openpilot-startup-ui"]
 image-array = ["dep:png", "dep:gif", "dep:tiff", "dep:image", "dep:openpilot-jpeg"]
@@ -357,6 +358,7 @@ capnp = { version = "=0.27.2", optional = true }
 openpilot-process-limits = { path = "../process-limits" }
 rustybuzz = { version = "=0.20.1", optional = true }
 zmq = { version = "=0.10.0", optional = true }
+openpilot-msgq = { path = "../msgq", optional = true }
 png = { version = "=0.17.16", optional = true }
 gif = { version = "=0.14.2", default-features = false, features = ["std"], optional = true }
 tiff = { version = "=0.11.3", default-features = false, features = ["deflate", "jpeg", "lzw"], optional = true }
@@ -733,6 +735,14 @@ required-features = ["camera-sensor-native"]
 name = "camera_generic_stress_check"
 required-features = ["camera-sensor-native"]
 
+[[test]]
+name = "camera_runtime_check"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_runtime_controller"
+required-features = ["camera-sensor-native"]
+
 [[bin]]
 name = "check-camerad-stress"
 path = "src/bin/check_camerad_stress.rs"
@@ -742,3 +752,21 @@ required-features = ["camera-sensor-native"]
 name = "check-camerad-runtime-stress"
 path = "src/bin/check_camerad_runtime_stress.rs"
 required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_runtime_native"
+required-features = ["camera-runtime-native"]
+
+[[bin]]
+name = "camera-runtime-test-peer"
+path = "src/bin/camera_runtime_test_peer.rs"
+required-features = ["camera-runtime-native"]
+
+[[bin]]
+name = "check-camerad-runtime"
+path = "src/bin/check_camerad_runtime.rs"
+required-features = ["camera-runtime-native"]
+
+[[bin]]
+name = "check-camerad-ci"
+path = "src/bin/check_camerad_ci.rs"

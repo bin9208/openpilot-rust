@@ -37,3 +37,6 @@ rust/crates/dev-tools/tests/fixtures/image-array/*.image -text -diff
 rust/crates/image-codecs/native/licenses/libtiff -text whitespace=-trailing-space
 rust/crates/image-codecs/native/licenses/openjpeg -text whitespace=-trailing-space
 rust/crates/image-codecs/native/licenses/xz -text whitespace=-blank-at-eof
+
+# Captured schema bytes are SHA-bound to the original runtime checker inputs.
+rust/crates/dev-tools/tests/fixtures/camera-runtime-check/schema/car.capnp -text whitespace=-trailing-space

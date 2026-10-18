@@ -1482,8 +1482,8 @@ rust/tools/build_visionipc_python.py	6f0e7f57b827610e001e8360819f26227228b88e	pe
 rust/tools/calibration_cases.py	909959093c988010ec08c9c068b424b19231a705	pending	-
 rust/tools/calibration_ipc.py	d1c267f269c37582e6bdcf5b485a15c22fadc725	pending	-
 rust/tools/calibration_reference.py	b13a779f014902b995b2f79edca34d49bf53f4b7	pending	-
-rust/tools/camerad_camera_lifecycle_cleanup.py	2ec2363f857b8284901851353ed7abf3d2c6aea6	pending	-
-rust/tools/camerad_runtime_check.py	05b2e5affbfe2b552f3c41182709600352a494fb	pending	-
+rust/tools/camerad_camera_lifecycle_cleanup.py	2ec2363f857b8284901851353ed7abf3d2c6aea6	replaced-local	Native lifecycle cleanup audit used by the continuous runtime checker; original capture/artifact contracts and live host cleanup checks preserved.
+rust/tools/camerad_runtime_check.py	05b2e5affbfe2b552f3c41182709600352a494fb	replaced-local	Native check-camerad-runtime:60 original verifier contracts,25 controller cases,12 actual CLI cases, real IPC/process ownership and eight live host cases.
 rust/tools/camerad_runtime_generate.py	ff4725202ab570d462e9f6c17b3a015cead5fe50	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_generate.rs
 rust/tools/camerad_runtime_stress_check.py	08952146ea8fa6f48211617d99b06fb6972b8821	replaced-local	rust/crates/dev-tools/src/camera_stress_check.rs
 rust/tools/can_cases.py	ca220b21822f259ff62587b8c28c3a39bc15af35	pending	-
@@ -1849,7 +1849,7 @@ rust/tools/check_calibration_float.py	38e332e2cc7fb8fcca65e305afb8d6ea0b1e6779	p
 rust/tools/check_calibration_loop.py	4a64bcf62f5e155b2da5be5fc4f6f62f84935906	pending	-
 rust/tools/check_calibration_reference.py	081106a094b16c35dbde0cce3769910f1b90512f	pending	-
 rust/tools/check_camerad_camera_lifecycle.py	1d1df7ff42c948731a0d5ea54be27f49a0520f06	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_check.rs
-rust/tools/check_camerad_ci.py	fb43eceeabe3ce7cd8a4fa4c859b9f78988bcd83	pending	-
+rust/tools/check_camerad_ci.py	fb43eceeabe3ce7cd8a4fa4c859b9f78988bcd83	replaced-local	Native check-camerad-ci preserves58 live build/check commands, source/binary receipts, disk guards and original partial failure artifacts; mandatory CI caller migrated.
 rust/tools/check_camerad_exposure.py	2df105103bf6ad8de4d2002069ecc18d9bf13cff	replaced-local	rust/crates/dev-tools/src/camera_exposure_check.rs; final state quoting caller migrated and helper removed
 rust/tools/check_camerad_isp_lifecycle.py	8a48e4c06473cf69747eb2f070c9db7417039430	replaced-local	rust/crates/dev-tools/src/camera_isp_lifecycle_check.rs; normalization native
 rust/tools/check_camerad_kernel.py	bb0f85dfc7c29a5fd89f459e44cfecd3c1a7333b	replaced-local	rust/crates/dev-tools/src/camera_kernel_check.rs; lifecycle shared helpers native
