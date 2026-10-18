@@ -94,3 +94,13 @@ HD output on failure. The permanent native regression reproduced the missing
 limit before the repair (`ascii-4301`: success versus original `ValueError`).
 The narrow repair counts normalized decimal digits before removing leading
 zeroes; the combined repaired gate remains pending. No prior capture changed.
+
+`collision-orders-original.json` records unchanged original `create_all` on
+2026-10-19 with both directory creation orders on ext4 `/tmp` and tmpfs
+`/dev/shm`. The original source SHA is recorded in the fixture. Output follows
+`os.walk` enumeration: tmpfs first/second creation enumerated second/first and
+therefore produced FIRST, reproducing the native result in CI39153248437.
+The old capture's SECOND result remains immutable, but is not portable as a
+fixed expectation for every filesystem. Native tests select the independently
+captured exact bytes using the observed input directory enumeration before
+invoking the candidate; they do not accept either output indiscriminately.

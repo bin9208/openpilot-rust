@@ -126,6 +126,11 @@ fn original_directory_walk_cleanup_filters_and_collision_order() {
         for name in case["initial_directories"].as_array().unwrap() {
             fs::create_dir(output.join(name.as_str().unwrap())).unwrap();
         }
+        let expected_files = if case["name"] == "collision-enumeration" {
+            collision_expected(&source)
+        } else {
+            case["outputs"].clone()
+        };
         let expected = case["error"].clone();
         #[cfg(target_os = "macos")]
         let expected = if case["name"] == "remove-matching-directory-first" {
@@ -145,12 +150,62 @@ fn original_directory_walk_cleanup_filters_and_collision_order() {
             case["name"]
         );
         let actual = tree(&output);
-        assert_eq!(actual["files"], case["outputs"], "{}", case["name"]);
+        assert_eq!(actual["files"], expected_files, "{}", case["name"]);
         assert_eq!(
             actual["directories"], case["directories"],
             "{}",
             case["name"]
         );
+    }
+}
+
+fn collision_expected(source: &Path) -> Value {
+    // The original os.walk preserves filesystem enumeration, not creation or
+    // lexical order. Bind the independently captured output to this fixture's
+    // actual order before running the candidate, retaining exact byte equality.
+    let bytes = include_bytes!("fixtures/dbc-generator/collision-orders-original.json");
+    assert_eq!(
+        format!("{:x}", Sha256::digest(bytes)),
+        "dbfdf97699d630d6e531a9a4586ecf441d9a8719c191b23d309191de8ea6a0c9"
+    );
+    let captured: Value = serde_json::from_slice(bytes).unwrap();
+    let mut order = vec![".".to_owned()];
+    order.extend(
+        fs::read_dir(source)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().into_string().unwrap()),
+    );
+    let row = captured["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|row| row["walk_order"] == json!(order))
+        .expect("collision fixture must retain exactly its two original directories");
+    json!({"car_generated.dbc": row["output_hex"]})
+}
+
+#[test]
+fn collision_result_tracks_actual_enumeration_on_distinct_filesystems() {
+    let roots = if cfg!(target_os = "linux") {
+        vec![std::env::temp_dir(), PathBuf::from("/dev/shm")]
+    } else {
+        vec![std::env::temp_dir()]
+    };
+    for root in roots {
+        for order in [["first", "second"], ["second", "first"]] {
+            let temp = tempfile::tempdir_in(&root).unwrap();
+            let source = temp.path().join("source");
+            let output = temp.path().join("output");
+            fs::create_dir(&source).unwrap();
+            fs::create_dir(&output).unwrap();
+            for name in order {
+                fs::create_dir(source.join(name)).unwrap();
+                fs::write(source.join(name).join("car.dbc"), name.to_uppercase()).unwrap();
+            }
+            let expected = collision_expected(&source);
+            native::create_all(&output, &source, &[]).unwrap();
+            assert_eq!(tree(&output)["files"], expected);
+        }
     }
 }
 
