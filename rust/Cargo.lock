@@ -2806,6 +2806,7 @@ name = "openpilot-dev-tools"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "brotli-decompressor",
  "bzip2",
  "capnp",
  "chrono",
@@ -2842,6 +2843,7 @@ dependencies = [
  "tempfile",
  "tiff",
  "toml",
+ "unicode-general-category 0.6.0",
  "xz2",
  "yaml-rust2",
  "zip",

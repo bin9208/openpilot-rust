@@ -78,9 +78,24 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
     }
     // A channel bias participates in the same original matrix DAG. Selecting
     // the raw matrix separately would change its materialization and schedule.
-    for add in model.graph.nodes.iter().filter(|n| {
-        n.op == "Add" && n.inputs.len() == 2 && n.outputs.len() == 1 && n.attributes.is_empty()
-    }) {
+    // Discover held bias terminals before their internal packed SiLU producers.
+    // Source order puts the producer's Add first; its consumer's reduction is
+    // not held when the later channel-biased result is the requested output.
+    let mut adds = model
+        .graph
+        .nodes
+        .iter()
+        .filter(|n| {
+            n.op == "Add" && n.inputs.len() == 2 && n.outputs.len() == 1 && n.attributes.is_empty()
+        })
+        .collect::<Vec<_>>();
+    adds.sort_by_key(|add| {
+        !graph
+            .names
+            .get(&add.outputs[0])
+            .is_some_and(|linear| graph.outputs.values().any(|output| output == linear))
+    });
+    for add in adds {
         let Some(&linear) = graph.names.get(&add.outputs[0]) else {
             continue;
         };
@@ -138,9 +153,10 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
                     || !consumer.attributes.is_empty()
                     || !selected.iter().any(|c| {
                         c.input == output
-                            && c.output == graph.names[&consumer.outputs[0]]
-                            && c.output == c.reduction
-                            && c.bias.is_none()
+                            && c.reduction == graph.names[&consumer.outputs[0]]
+                            && (c.output == c.reduction || c.bias.is_some())
+                            && c.silu.is_none()
+                            && !c.packed_silu
                             && !c.residual
                     })
                     || schedule

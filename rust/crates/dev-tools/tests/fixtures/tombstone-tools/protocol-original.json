@@ -1,0 +1,89 @@
+{
+  "cases": [
+    {
+      "name": "empty-json-line",
+      "request": "",
+      "response": "{\"result\": {\"error\": \"JSONDecodeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "invalid-json",
+      "request": "{",
+      "response": "{\"result\": {\"error\": \"JSONDecodeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "missing-operation",
+      "request": "{}",
+      "response": "{\"result\": {\"error\": \"KeyError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "array-request",
+      "request": "[]",
+      "response": "{\"result\": {\"error\": \"TypeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "null-request",
+      "request": "null",
+      "response": "{\"result\": {\"error\": \"TypeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "bool-request",
+      "request": "true",
+      "response": "{\"result\": {\"error\": \"TypeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "unknown-operation",
+      "request": "{\"op\":\"unknown\"}",
+      "response": "{\"result\": {\"error\": \"AssertionError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "numeric-operation",
+      "request": "{\"op\":12}",
+      "response": "{\"result\": {\"error\": \"AssertionError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-missing-text",
+      "request": "{\"op\":\"safe\"}",
+      "response": "{\"result\": {\"error\": \"KeyError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-null-text",
+      "request": "{\"op\":\"safe\",\"text\":null}",
+      "response": "{\"result\": {\"error\": \"TypeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-numeric-text",
+      "request": "{\"op\":\"safe\",\"text\":17}",
+      "response": "{\"result\": {\"error\": \"TypeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-iterable-strings",
+      "request": "{\"op\":\"safe\",\"text\":[\"ab\",\"_\",\"-\"]}",
+      "response": "{\"result\": {\"value\": \"ab_\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-iterable-integer",
+      "request": "{\"op\":\"safe\",\"text\":[1]}",
+      "response": "{\"result\": {\"error\": \"AttributeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-missing-commit",
+      "request": "{\"op\":\"filename\",\"stamp\":\"date\",\"path\":\"a/b\"}",
+      "response": "{\"result\": {\"error\": \"KeyError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-invalid-commit-json",
+      "request": "{\"op\":\"filename\",\"stamp\":\"date\",\"path\":\"a/b\",\"commit\":\"{\"}",
+      "response": "{\"result\": {\"error\": \"JSONDecodeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-commit-not-text",
+      "request": "{\"op\":\"filename\",\"stamp\":\"date\",\"path\":\"a/b\",\"commit\":42}",
+      "response": "{\"result\": {\"error\": \"TypeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-missing-path",
+      "request": "{\"op\":\"filename\",\"stamp\":\"date\",\"commit\":\"null\"}",
+      "response": "{\"result\": {\"error\": \"KeyError\"}, \"calls\": [], \"logs\": []}"
+    }
+  ]
+}

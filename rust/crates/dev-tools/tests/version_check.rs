@@ -880,3 +880,20 @@ fn raw_runner_manifest_keeps_original_strings_in_stdout_and_saved_report() {
         .all(|value| matches!(value.view(), JsonView::Text(_))));
     assert!(matches!(argv[1].view(), JsonView::Text(points) if points.contains(&0xdcfe)));
 }
+
+#[test]
+fn invalid_source_removes_previous_success_manifest_before_preflight() {
+    let temp = tempfile::tempdir().unwrap();
+    let output = temp.path().join("output");
+    fs::create_dir(&output).unwrap();
+    fs::write(output.join("manifest.json"), "{\"result\":\"PASS\"}\n").unwrap();
+    let options = reference::Options {
+        binary: temp.path().join("missing-probe"),
+        runner: vec![],
+        output,
+        environment: environment(),
+    };
+    assert!(reference::run(temp.path(), &options).is_err());
+    assert!(!options.output.join("manifest.json").exists());
+    assert!(!options.output.join("comparisons.jsonl").exists());
+}

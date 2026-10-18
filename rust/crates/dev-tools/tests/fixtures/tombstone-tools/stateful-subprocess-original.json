@@ -1,0 +1,116 @@
+{
+  "scope": "Unchanged original242 source side only. Real FS, shell and exact original helper. All raw expected responses retained. Only private root paths are placeholders. Scanner names/order and ctime rebound to live before-call metadata; no constant epoch expected.",
+  "source_capture_receipt_sha256": "c671daefb4a829089b7685382fbd7e6aa0f911b305fc6d41ad509d445bd76d5b",
+  "source_directory_default_mode": 509,
+  "source_file_default_mode": 436,
+  "setup": [
+    {
+      "op": "write",
+      "path": "trace",
+      "hex": "6865616465720a2330203078646561642073797374656d2028703d30783129206174207379732e630a233120307862656566206d6f64656c2028613d31292061742073656c6664726976652f6d6f64656c642e63633a370a",
+      "mode": null
+    },
+    {
+      "op": "write",
+      "path": "mode",
+      "hex": "6e6f726d616c",
+      "mode": null
+    },
+    {
+      "op": "write",
+      "path": "base/build.json",
+      "hex": "7b226368616e6e656c223a20226e696768746c79222c20226f70656e70696c6f74223a207b226769745f6f726967696e223a2022676974406769746875622e636f6d3a636f6d6d6161692f6f70656e70696c6f742e676974222c20226769745f636f6d6d6974223a20226162636465666768696a6b222c202276657273696f6e223a20226d657461646174612d76657273696f6e227d7d",
+      "mode": null
+    },
+    {
+      "op": "write",
+      "path": "params/fixture/DongleId",
+      "hex": "666978747572652d646576696365",
+      "mode": null
+    },
+    {
+      "op": "write",
+      "path": "base/openpilot/common/version.h",
+      "hex": "23646566696e652056455253494f4e2022666978747572652d312e32220a",
+      "mode": null
+    }
+  ],
+  "cases": [
+    {
+      "index": 0,
+      "before": [],
+      "request": "{\"op\": \"configure\", \"base\": \"$FIXTURE/base\", \"params\": \"$FIXTURE/params\", \"pc\": false, \"device\": \"tici\"}",
+      "original_stdout": "{\"result\": {\"value\": true}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": true}, \"calls\": [], \"logs\": []}\n",
+      "source_files": null,
+      "after": []
+    },
+    {
+      "index": 1,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/subprocess.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": null
+        }
+      ],
+      "request": "{\"op\": \"retrace\", \"path\": \"$FIXTURE/apport/subprocess.crash\", \"shell\": \"$FIXTURE/missing-bash\"}",
+      "original_stdout": "{\"result\": {\"error\": \"FileNotFoundError\"}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"error\": \"FileNotFoundError\"}, \"calls\": [], \"logs\": []}\n",
+      "source_files": null,
+      "after": []
+    },
+    {
+      "index": 2,
+      "before": [
+        {
+          "op": "write",
+          "path": "mode",
+          "hex": "74696d656f7574",
+          "mode": null
+        }
+      ],
+      "request": "{\"op\": \"retrace\", \"path\": \"$FIXTURE/apport/subprocess.crash\", \"timeout_ms\": 100}",
+      "original_stdout": "{\"result\": {\"value\": \"Timeout getting stacktrace\"}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": \"Timeout getting stacktrace\"}, \"calls\": [], \"logs\": []}\n",
+      "source_files": null,
+      "after": [],
+      "minimum_elapsed_ms": 0
+    },
+    {
+      "index": 3,
+      "before": [
+        {
+          "op": "write",
+          "path": "mode",
+          "hex": "666c6f6f64",
+          "mode": null
+        }
+      ],
+      "request": "{\"op\": \"retrace\", \"path\": \"$FIXTURE/apport/subprocess.crash\", \"timeout_ms\": 100}",
+      "original_stdout": "{\"result\": {\"value\": \"Timeout getting stacktrace\"}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": \"Timeout getting stacktrace\"}, \"calls\": [], \"logs\": []}\n",
+      "source_files": null,
+      "after": [],
+      "minimum_elapsed_ms": 0
+    },
+    {
+      "index": 4,
+      "before": [
+        {
+          "op": "write",
+          "path": "mode",
+          "hex": "74696d656f7574",
+          "mode": null
+        }
+      ],
+      "request": "{\"op\": \"retrace\", \"path\": \"$FIXTURE/apport/subprocess.crash\", \"timeout_ms\": 30000}",
+      "original_stdout": "{\"result\": {\"value\": \"Timeout getting stacktrace\"}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": \"Timeout getting stacktrace\"}, \"calls\": [], \"logs\": []}\n",
+      "source_files": null,
+      "after": [],
+      "minimum_elapsed_ms": 29900
+    }
+  ]
+}

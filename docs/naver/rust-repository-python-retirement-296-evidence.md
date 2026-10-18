@@ -3537,3 +3537,184 @@ postdelete-final logs and sol-model-native-owner-review.md. Inventory now has161
 replaced-local, three partial and3,416 pending entries of3,580. This closes this
 tool family only; complete Python retirement, exact committed-SHA gates and the
 user's boot/recording/upload verification remain outstanding.
+
+## 2026-10-19 — Version/DBC CI follow-through
+
+The e4820a7f candidate completed all15 applicable macOS ARM64 DBC checks
+(job117744085617). The PR merge tree matched the candidate tree exactly. Its
+telemetry job completed27 native Version tests before failing because the minimal
+Rust installation did not include Clippy. Commit5b98bcee installs that component
+and retains the strict check. The fast disk-policy test then exposed three newly
+added guards missing from its accounting: one DBC errno regression and the Version
+test/Clippy pair. Commit6e953828 preserves the177 baseline guard arguments/hash and
+accounts for all277 guards across34jobs; all13 disk tests and39 CI isolation tests
+pass locally. The subsequent workspace formatting failure was the new two-line
+condition in that policy test;2106ad47 applies and checks rustfmt for it.
+
+The6e953828 Fast checks passed (run39152329117). Its Rust run39152329062 was not
+successful because of the formatting failure above. No previous-commit success
+substitutes for the latest exact-SHA gates. Complete CI, dev integration and the
+source-matched runtime release remain open. As requested, the user will perform
+boot, recording and upload acceptance after pulling the delivered candidate.
+
+## 2026-10-19 — native SDK receiver and independent Sentry source foundation
+
+`check-sdk-receiver` replaces `rust/tools/check_sdk_receiver.py`. The unchanged
+original first passed three actual loopback POSTs (identity/gzip/Brotli); the native
+command replays those immutable independent wire bytes, including the captured
+gzip timestamp. Both before and after Python removal, the same sealed ELF matches
+every original report field except the newly bound Host port. Empty-PATH strace
+records one execve and zero Python attempts per run. This checks real decode,
+headers, payload and response paths, not a prerecorded success report. The shared
+Python crash transport receiver still serves pending managed-entry checks and is
+explicitly retained.
+
+Independent review exposed two real native REDs: a reset peer discarded an already
+decoded event because HTTP acknowledgement preceded publication, and `--help`
+created an output artifact. The source receiver queues its event first; the Rust
+receiver now does likewise, preserving parse errors while retaining accepted events
+when acknowledgement fails. Help exits before binding or file creation. Eight
+native tests cover those cases, three codecs, invalid input and recovery, concurrent
+partial clients, close/join ownership and a continuously progressing input's total
+I/O deadline. All8 pass, as do13 disk-policy tests,39 CI policy tests and strict
+scoped Clippy. Decoder CPU time on arbitrarily large bodies is not claimed bounded
+by the socket deadline. Startup CI installs Clippy, builds the current native tool,
+requires tests/Clippy and runs the actual command. All177 baseline disk reservations
+remain; the two new512MiB reservations make279 across34jobs.
+
+Evidence: `.analysis/scratch/2026-10-19-sdk-receiver/` contains original capture,
+review-red/review-green2/review-clippy2 logs, frozen ELF/source hashes and
+`postdelete-proof.json`; the independent reset-peer capture is also a permanent
+fixture. Inventory180 replaced-local/4partial/3396pending remains incomplete.
+
+The independent `tombstone_source` Worker has separately passed39 pure/protocol/
+transport controls plus72 stateful controls (50 original Sentry gates,9 partial
+configure/Params-order cases and13 typed tag calls). It uses original Version and
+Params mechanics, never native runtime candidate answers. Full unchanged Worker
+recapture corrected a missing-constant seam in the earlier fixture: seven false
+filename AttributeErrors and one CR-only transport expectation were repaired from
+source-only evidence before equivalence was claimed. All7 foundation/stateful test
+target entries and scoped Clippy passed. Remaining file/scanner/retrace/daemon
+cases, complete242-call coverage, controllers and shared-loader retirement remain
+open. No device validation or complete Python removal follows from these gates.
+
+### Exact-head CI and directory enumeration follow-up (2026-10-19)
+
+At2106ad4791d488a6361f93b85a8b43eb3d2de1fe, telemetry job117752240551
+passed the27Version tests,171realGit comparisons, actual collector boundaries,
+and retained tombstone/runtime/SDK consumers. macOS DBC job117752240511 also
+passed. Integration39153248518, FastPR39153248526 and docs39153248571 pass.
+The Rust workflow39153248437 is not green: workspace job117752240654 exposed
+a fixed-order expectation in the collision-enumeration DBC regression.
+The tested mergeaa0f9639f882fb62de5a45160eb0d21b5c867534 has the same tree
+0416b71d5b6bd76891ca58adeb144180cb3f2c6c as this head (GitHub commit API).
+
+Unchanged original generator source independently produces FIRST on tmpfs
+when enumeration is second/first, and SECOND on ext4 when it is first/second.
+The frozen native test reproduces the same CI assertion under TMPDIR=/dev/shm
+(exit101). A test-only correction binds exact independently captured bytes to
+actual input enumeration before invoking the candidate. Both creation orders
+and Linux filesystems are covered; no sorted-order production change or
+indiscriminate acceptance of either output is introduced. Native GREEN and
+committed CI for this correction remain pending. Evidence is in
+`.analysis/scratch/2026-10-19-dbc-enumeration/`; issue#378 remains open.
+
+The DBC enumeration correction passed12native tests plus the formerly failing
+TMPDIR=/dev/shm control and strictClippy; committed locally as2bbfc130.
+The unchanged old capture remains sealed. At the same remote head, CI then
+reported a separate UI/bootstrap defect: job117752240786 completed all preceding
+UI source/native suites (including14lifecycle tests) but lacked cargo-clippy in
+its minimal1.94.0 installation. Issue#379 records the failure; UIbootstrap now
+requests Clippy and a new cross-job native contract requires installation before
+first Clippy use. That correction's native contract and committedCI are pending.
+
+The SDK receiver eight tests and existing52CI/disk assertions pass with the
+new LLVM20 target registered. Independent externalSDK field comparison now has
+three passing tests and strictClippy, preserving101digit integers, lone
+surrogates, truncation metadata, booleans and current independentGit tags.
+Original SDK event fields come exclusively from the source side of the sealed
+CI artifact12146317130; the native candidate supplies none of those expectations.
+The actual native SDK controller API remains a recorded missing-function RED;
+this is not yet retirement of `check_crash_sdk_transport.py`.
+
+The independent tombstone Worker passed all13tests spanning the full242original
+scenario roster plus foundation/configure/tag controls in30.23seconds. Real
+30second helper timeout and owned cleanup passed. Its dynamic reference
+controller has an actual missing-module RED and is being implemented; controlled
+source cancellation and supplementary Unicode-date controls remain pending.
+LLVM18 node279's complete six-test target passed, including both prefix planners,
+38generic comparisons, actual/19generic terminal boundaries and26ownership
+contexts (760.44s, no skipped/filtered tests). LLVM20/prior regressions are pending.
+
+UI/bootstrap follow-up: all40native CI-policy tests plus13disk-policy tests
+now pass with the explicit UI Clippy installation. Current native regression
+coverage retains all279guards and177baseline argument entries. CloudCI at the
+previous2106head has43successful component jobs, two diagnosed job failures
+(DBC fixture enumeration/UImissingClippy), an expected failed aggregate and ARM
+still pending. This does not establish greenCI for the new working tree.
+
+The dynamic tombstone controller now passes all242 actual source/candidate
+comparisons across seven scopes (3integration tests,40.57s), including a request
+roster comparison against independent original captures. Full independent source
+13tests, Version controller12tests and Version source12tests also pass in the
+same gate. Stale PASS receipts on failed source preflight were reproduced through
+the real Version CLI and new tombstone controller, then fixed in both entrypoints;
+issue#380 remains open pending committedCI. Six of seven ownership/wire controls
+passed, including actual cancellation of source and separate native retrace
+process groups. The remaining wire control correctly exposed strictUTF8 stdin
+handling where unchanged Python uses surrogateescape; repair/revalidation is
+pending. Scoped controller/source Clippy passes after compile/lint repairs.
+Evidence: `controller-green2-tests.log`, `controller-green3-ownership.log`, and
+`controller-green4-clippy.log` under the Version source-closure scratch directory.
+
+LLVM20 node279's same complete six-test target also passes (747.63s). Existing
+adjacent model regression targets and strictClippy remain pending. These CPU
+compiler results are not device, whole-runtime or project-wide completion.
+
+Native `check-crash-sdk-transport` now passes the full actual15-envelope run
+(14original SDK comparisons plus1native I/O exception), six field/controller/CLI
+regression tests and scoped strictClippy. The real CLI under strace performed324
+execve attempts with zeroPython attempts and emitted a PASS receipt with current
+candidate hash and10independent live source pins. Candidate hash was
+`d0ed2b0fa8844134d7ba4539edb421d0a26fb6bf49370aba26ba7a1d12739ad7`.
+Source pins are verified before starting HTTP and again before PASS. Both the
+pre-close and post-worker-join queues must be empty. CLI arity/preflight failures
+cannot publish or retain an old success manifest.
+
+Telemetry CI now builds/runs native tombstone and SDK controllers, requiring
+source/controller/field tests, cancellation/wire controls and strictClippy. Three
+new512MiB reservations bring the total to282; policy regression execution for this
+new workflow is pending. Shared original Python helpers remain available to
+unconverted safety/runtime/managed-entry callers; no premature deletion occurs.
+Inventory180replaced-local/7partial/3393pending records that distinction.
+Evidence: `.analysis/scratch/2026-10-19-sdk-receiver/sdk-runtime-first.log`,
+`sdk-runtime-clippy.log` and `native-sdk-controller/{exec.trace,result/manifest.json}`.
+
+The combined current controller gate passes83integration tests (13disk,40CI,
+8receiver,3SDK field,3SDK runtime/CLI,3tombstone controller,13source), plus8focused
+library ownership/wire/date controls and strictClippy. The stdin surrogateescape
+repair now agrees with the independently sealed original three-row transcript;
+explicit byte-request decoding remains strict. Unicode-year/date controls pass.
+The complete242comparison target ran again in40.71s and source13tests in30.23s.
+Current source files match the pre-gate source seal. All282CI disk reservations
+and177baseline entries are verified. Logs are `combined-controllers.log`,
+`combined-ownership.log`, and `combined-clippy.log` in SDK receiver scratch.
+
+A separate managed-entry false-PASS defect is reproduced from the unchanged
+original tool: unknown `--case nonexistent-control` skips all44comparisons and
+exits0 with PASS/0results, even with /bin/true as both candidate paths. Issue#381
+tracks the native admission correction and valid22scenario preservation. The
+independent44original source-side results were retrieved from exact-head CI
+artifact12146936832, with the same2106source tree as the telemetry captures.
+This is future closure evidence, not a completed managed-entry conversion.
+
+The subsequent16 source-only retrace timeout controls exposed four numeric/error-
+phase differences. The independent source port now retains NaN ValueError,
+large/infinite timeout OverflowError, integer-division overflow and actual spawn
+error precedence using the existing owned runner. All13 source tests pass again;
+9focused source/controller ownership/wire/date/numeric tests and strictClippy pass.
+The native safety checker separately passes all4tests and all4actual retraces,
+preserving three benign source-only shell markers and literal native filenames.
+Its original Python CLI remains until native CI migration and post-removal proof;
+no removal is claimed here. Evidence: `source-timeout16-first-green-all.log`,
+`safety-first-green.log`, `source-safety-owned.log`, `source-safety-clippy2.log`.

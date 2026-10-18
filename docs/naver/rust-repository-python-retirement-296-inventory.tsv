@@ -1913,7 +1913,7 @@ rust/tools/check_control_policies.py	09173dd9fb9efd8f841e088461cbad2e104cd853	pe
 rust/tools/check_control_tools_policy.py	6f931ced55cd4dc1eb2573c3126416e85f5e253b	replaced-local	rust/crates/dev-tools/src/control_tools_policy_check.rs
 rust/tools/check_controlsd.py	75b142eaed2bce5d1ea908d83ea3e59ac397c03f	pending	-
 rust/tools/check_controlsd_daemon.py	b81a46e2f50e4ab3097bab1e587c6c4aa156b4bb	pending	-
-rust/tools/check_crash_sdk_transport.py	640f56cf3f0f5702737f188cdb445c61b2bbd1a4	pending	-
+rust/tools/check_crash_sdk_transport.py	640f56cf3f0f5702737f188cdb445c61b2bbd1a4	partially-replaced	Native check-crash-sdk-transport preserves14 actual SDK events and1 native IO exception with independent source policy; shared Python Receiver remains used by runtime/managed-entry tools
 rust/tools/check_cutin_alerts.py	dbcf1a6502baa66fadfef1b3a231b4391ca1fbb9	replaced-local	openpilot-dev-tools check-cutin-alert; independent complete 5786-frame state and failure corpus
 rust/tools/check_cweb_address.py	301dfd4c41bafd3ac138924ed61bf03b9838b2f8	pending	-
 rust/tools/check_cweb_daemon.py	6c6645b94e1ed84f8c3670a8c819db3ad78c023e	pending	-
@@ -2059,7 +2059,7 @@ rust/tools/check_registration_vendor.py	dc7278a116a16e63654efbd2ee40706499d4064e
 rust/tools/check_runtime_diagnostics.py	e1b0a2f950d51b368582319c27f999cb7d3d2b35	replaced-local	rust/crates/dev-tools/src/diagnostic_check.rs
 rust/tools/check_runtime_launcher.py	a18592a9b8a9846777e9cdfedad5b4d7f72dde15	pending	-
 rust/tools/check_runtime_log_upload.py	8a2fee473760b01021b74179e7647f21280616d3	pending	-
-rust/tools/check_sdk_receiver.py	92ed5a900919358781a92f66311a72a3fdc285ba	pending	-
+rust/tools/check_sdk_receiver.py	92ed5a900919358781a92f66311a72a3fdc285ba	replaced-local	openpilot-dev-tools check-sdk-receiver; actual identity/gzip/br HTTP, accepted-event-before-ack, owned client shutdown and total I/O deadline
 rust/tools/check_selfdrive_events.py	dc75e1bb617c20649619964bfb4c793b7c7e5e61	replaced-local	openpilot-dev-tools check-selfdrive-events; independent complete 4872-case original and failure corpus
 rust/tools/check_selfdrive_helpers.py	012cd1500189c8d8bbd2622cf89d8f096c75045d	partially-replaced	fixed CLI replaced by check-selfdrive-helpers; generic live helper loader retained in rust/tools/selfdrived_helpers_source.py for controller oracle
 rust/tools/check_selfdrive_params.py	08743565044854e13870048bd601c37392668e26	replaced-local	rust/crates/dev-tools/src/selfdrive_params_check.rs
@@ -2092,7 +2092,7 @@ rust/tools/check_timed_lifecycle.py	59ab7fa70396e155faff3072ed86475e5e528c36	rep
 rust/tools/check_timed_logging.py	534cb1d18fd50ecd2357949bcd2a2aa5f6b8c83e	replaced-local	rust/crates/dev-tools/src/bin/check_timed_logging.rs
 rust/tools/check_timed_reference.py	4be124331c95f66bfb0cdc6177e0bfbf716172a5	replaced-local	rust/crates/dev-tools/src/bin/check_timed_reference.rs
 rust/tools/check_timed_shutdown.py	a9e6c5eb84de4832da8b487e699bab180f142b3d	replaced-local	rust/crates/dev-tools/src/bin/check_timed_shutdown.rs
-rust/tools/check_tombstoned_reference.py	3c0a3bf1a218fac520b68ac86e89c2079e393766	pending	-
+rust/tools/check_tombstoned_reference.py	3c0a3bf1a218fac520b68ac86e89c2079e393766	partially-replaced	Native check-tombstoned-reference preserves242 dynamic source/candidate comparisons; original Pair and constants remain imported by pending controllers
 rust/tools/check_tombstoned_runtime.py	fdc3695dc9291a01e82b470d98c9a06eef26f5b0	pending	-
 rust/tools/check_tombstoned_safety.py	4295af01282a70011d563ab0fecfb08276152691	pending	-
 rust/tools/check_tombstoned_shutdown.py	43718df5d7315f5d2b1592ef7ff5c2a904358b3b	pending	-
@@ -2567,7 +2567,7 @@ rust/tools/timed_fixtures.py	f51fbb51a62d45375938916c4d03ee42ceaee951	replaced-l
 rust/tools/timed_reference.py	37b70b4bda0d50c2691ec7e3b51c625e69e75e44	replaced-local	rust/crates/dev-tools/src/timed_reference.rs
 rust/tools/timed_shutdown_phase.py	b14b67cfd2ebc422c71851ad58d56e60ae2ac4de	replaced-local	rust/crates/dev-tools/src/timed_shutdown_phase.rs
 rust/tools/timed_source_live.py	f625b88cc01bbe30e801456b63748bb297d2657b	replaced-local	rust/crates/dev-tools/src/timed_live_source.rs; rust/crates/dev-tools/src/timed_live_process.rs; rust/crates/dev-tools/src/timed_live_proxy.rs
-rust/tools/tombstoned_reference.py	04939723f3b770a1dcc12434cb43bc8a3a95d0db	pending	-
+rust/tools/tombstoned_reference.py	04939723f3b770a1dcc12434cb43bc8a3a95d0db	partially-replaced	Independent native tombstone_source preserves full242 original scenarios; Python Worker remains imported by pending runtime/managed-entry source tools
 rust/tools/torque_capacity_child.py	55cb9168e9196e21df09a86871f9132ce32f7b1e	pending	-
 rust/tools/torque_cases.py	12fb1ef4a83ffd4b039b5037f21f3ccdd1a96ae4	pending	-
 rust/tools/torque_ipc.py	571fe0de9712f36838363977ec2c81d3bc32fec4	pending	-

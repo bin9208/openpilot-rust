@@ -70,6 +70,12 @@ pub mod publish;
 pub mod qa_process;
 pub mod ratekeeper_check;
 pub mod registration_utf7_check;
+#[cfg(feature = "sdk-receiver-native")]
+pub mod sdk_receiver;
+#[cfg(feature = "sdk-receiver-native")]
+pub mod sdk_receiver_check;
+#[cfg(feature = "sdk-transport-native")]
+pub mod sdk_transport_check;
 pub mod seal;
 pub mod selfdrive_events_check;
 pub mod selfdrive_helpers_check;
@@ -90,6 +96,12 @@ pub mod timed_live_child;
 #[cfg(feature = "timed-tools-native")]
 pub mod timed_reference;
 pub mod timed_shutdown_phase;
+#[cfg(feature = "tombstone-tools-native")]
+pub mod tombstone_reference_check;
+#[cfg(feature = "tombstone-tools-native")]
+pub mod tombstone_safety_check;
+#[cfg(feature = "tombstone-tools-native")]
+pub mod tombstone_source;
 #[cfg(feature = "image-array-native")]
 pub mod ui_application_lifecycle_loop;
 #[cfg(feature = "image-array-native")]

@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 277);
+    assert_eq!(text.matches(marker).count(), 282);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -274,8 +274,20 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut journal_bootlog_checks = vec![];
     let mut dbc_native = vec![];
     let mut version_controllers = vec![];
+    let mut sdk_receiver = vec![];
+    let mut tombstone_controllers = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && lines[i + 1].contains("--features tombstone-tools-native,sdk-transport-native")
+            {
+                tombstone_controllers.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len() && lines[i + 1].contains("--features sdk-receiver-native") {
+                sdk_receiver.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len() && lines[i + 1].contains("--features version-tools-native") {
                 version_controllers.push(tail.to_owned());
                 continue;
@@ -485,6 +497,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     // The removed camera pip install and Cython build had 512/1024 MiB
     // guards. Native camera operations retain every required reserve.
     assert_eq!(arguments.len(), 177);
+    assert_eq!(
+        tombstone_controllers,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 3]
+    );
+    assert_eq!(
+        sdk_receiver,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 2]
+    );
     assert_eq!(
         version_controllers,
         [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 2]

@@ -65,9 +65,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-179 baseline sources are fully replaced locally, four baseline sources are
+180 baseline sources are fully replaced locally, seven baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,397 baseline sources remain pending. The added
+and 3,393 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 
@@ -246,3 +246,19 @@ After collector Python removal,96tests, strictClippy and fresh original/native
 proofs pass. The shared reference loader remains partial until tombstoned and
 managed-entry consumers migrate. Inventory179local/4partial/3397pending; exact-SHA
 CI, dev integration, runtime release and user device acceptance remain separate.
+
+2026-10-19 continuation: the independently captured three-encoding SDK HTTP checker
+is now native and its standalone Python caller is removed. Inventory is180local,
+4partial and3396pending. Shared crash transport/managed-entry callers remain. The
+independent Sentry source Worker passes39 foundation plus72 stateful controls;
+full242-call source coverage and controller closure remain active work. Latest
+exact-SHA CI, dev integration, source-matched release and user-owned boot/recording/
+upload verification remain required delivery gates.
+
+2026-10-19 managed-entry continuation: all44 original source-side results from
+exact-head CI artifact12146936832 are preserved as selected field contracts
+(`tests/fixtures/managed-entry/original-fields.json`, SHA6b0ca0e35bbc9bb51b2ff78e9560aefbed5bc40e8d65a072346cad69d1251271).
+The two collector paths agree across all22scenarios. Native migration must retain
+actual context replacement/bodyIPC, both collector paths, source policy, Params
+error/SDK ordering, wire/disk identity and externally captured SDK fields; fixtures
+alone do not replace those live checks. Unknown selected case falsePASS is issue381.

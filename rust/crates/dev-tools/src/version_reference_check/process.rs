@@ -20,13 +20,13 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub(super) struct Cancellation {
+pub(crate) struct Cancellation {
     flag: Arc<AtomicBool>,
     signal: Arc<AtomicUsize>,
     registrations: Vec<signal_hook::SigId>,
 }
 impl Cancellation {
-    pub(super) fn new() -> Result<Self> {
+    pub(crate) fn new() -> Result<Self> {
         let mut value = Self {
             flag: Arc::new(AtomicBool::new(false)),
             signal: Arc::new(AtomicUsize::new(0)),
@@ -45,17 +45,17 @@ impl Cancellation {
         }
         Ok(value)
     }
-    pub(super) fn check(&self) -> Result<()> {
+    pub(crate) fn check(&self) -> Result<()> {
         if self.flag.load(Ordering::Relaxed) {
             Err("Version reference interrupted".into())
         } else {
             Ok(())
         }
     }
-    pub(super) fn flag(&self) -> Arc<AtomicBool> {
+    pub(crate) fn flag(&self) -> Arc<AtomicBool> {
         Arc::clone(&self.flag)
     }
-    pub(super) fn signal(&self) -> Option<i32> {
+    pub(crate) fn signal(&self) -> Option<i32> {
         i32::try_from(self.signal.load(Ordering::Relaxed))
             .ok()
             .filter(|v| *v != 0)
@@ -68,7 +68,7 @@ impl Drop for Cancellation {
         }
     }
 }
-pub(super) struct Probe {
+pub(crate) struct Probe {
     child: Child,
     pid: Pid,
     reaped: bool,
@@ -81,7 +81,7 @@ fn nonblocking(fd: impl AsFd) -> Result<()> {
     Ok(())
 }
 impl Probe {
-    pub(super) fn spawn(
+    pub(crate) fn spawn(
         argv: &[OsString],
         cwd: &Path,
         env: &BTreeMap<OsString, OsString>,
@@ -126,8 +126,15 @@ impl Probe {
             }
         }
     }
-    pub(super) fn write(&mut self, bytes: &[u8], cancel: &Cancellation) -> Result<()> {
-        let end = Instant::now() + Duration::from_secs(10);
+    pub(crate) fn write(&mut self, bytes: &[u8], cancel: &Cancellation) -> Result<()> {
+        self.write_until(bytes, cancel, Instant::now() + Duration::from_secs(10))
+    }
+    pub(crate) fn write_until(
+        &mut self,
+        bytes: &[u8],
+        cancel: &Cancellation,
+        end: Instant,
+    ) -> Result<()> {
         let mut at = 0;
         while at < bytes.len() {
             cancel.check()?;
@@ -159,8 +166,10 @@ impl Probe {
         }
         Ok(())
     }
-    pub(super) fn line(&mut self, cancel: &Cancellation) -> Result<Vec<u8>> {
-        let end = Instant::now() + Duration::from_secs(10);
+    pub(crate) fn line(&mut self, cancel: &Cancellation) -> Result<Vec<u8>> {
+        self.line_until(cancel, Instant::now() + Duration::from_secs(10))
+    }
+    pub(crate) fn line_until(&mut self, cancel: &Cancellation, end: Instant) -> Result<Vec<u8>> {
         loop {
             cancel.check()?;
             for (i, &b) in self.buffer.iter().enumerate() {
@@ -209,7 +218,7 @@ impl Probe {
             }
         }
     }
-    pub(super) fn finish(&mut self, cancel: &Cancellation) -> Result<()> {
+    pub(crate) fn finish(&mut self, cancel: &Cancellation) -> Result<()> {
         self.child.stdin.take();
         let end = Instant::now() + Duration::from_secs(10);
         loop {

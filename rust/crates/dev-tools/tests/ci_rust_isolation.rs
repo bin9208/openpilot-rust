@@ -12,6 +12,26 @@ fn workflow() -> Value {
     parse(&read(".github/workflows/rust.yml")).unwrap()
 }
 #[test]
+fn stable_clippy_jobs_install_component_before_first_use() {
+    let invocation = regex::Regex::new(r"\bcargo(?:\s+\+1\.94\.0)?\s+clippy\b").unwrap();
+    for (name, job) in workflow()["jobs"].as_object().unwrap() {
+        let run = commands(job);
+        let lines = run.lines().collect::<Vec<_>>();
+        let Some(first) = lines.iter().position(|line| invocation.is_match(line)) else {
+            continue;
+        };
+        assert!(
+            lines[..first].iter().any(|line| {
+                line.contains("rustup ")
+                    && line.contains("1.94.0")
+                    && line.contains("clippy")
+                    && (line.contains("--component ") || line.contains("component add "))
+            }),
+            "{name}: Clippy must be explicitly installed before its first use"
+        );
+    }
+}
+#[test]
 fn dbc_native_tools_are_built_before_every_required_consumer() {
     for (path, test) in [
         (
@@ -349,6 +369,7 @@ fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
                 "compiler_batched_bias",
                 "compiler_batched_silu",
                 "compiler_batched_silu_chain",
+                "compiler_batched_silu_chain_bias",
                 "compiler_matrix_alias",
                 "compiler_gemm_pipeline",
                 "compiler_gemm_chain",
@@ -787,7 +808,11 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
         &[
             "check_process_supervision.py",
             "check_managed_entry.py",
-            "check_sdk_receiver.py",
+            "rustup toolchain install 1.94.0 --profile minimal --component clippy",
+            "--features openpilot-dev-tools/sdk-receiver-native",
+            "--features sdk-receiver-native --test sdk_receiver --locked",
+            "--bin check-sdk-receiver --test sdk_receiver --locked -- -D warnings",
+            "rust/target/debug/check-sdk-receiver",
             "check_registration.py",
             "check_registration_clock.py",
             "rust/target/debug/check-registration-utf7",
@@ -805,12 +830,13 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
             "build_msgq_python.py",
             "build_params_python.py",
         ],
-        &["python rust/tools/check_", "check-checkout-status", "--test checkout_status_check", "check-manager-catalog", "--test manager_catalog_check"],
+        &["python rust/tools/check_", "check-checkout-status", "--test checkout_status_check", "check-manager-catalog", "--test manager_catalog_check", "--test sdk_receiver", "check-sdk-receiver"],
         true,
     );
     let run = commands(&workflow()["jobs"]["startup-runtime"]);
     assert!(!run.contains("python rust/tools/check_checkout_status.py"));
     assert!(!run.contains("python rust/tools/check_manager_catalog.py"));
+    assert!(!run.contains("check_sdk_receiver.py"));
     let data = workflow();
     for key in [
         "CARGO_INCREMENTAL",
@@ -1386,7 +1412,7 @@ fn retired_tool_checks_require_current_native_builds_and_keep_original_consumers
     required(
         &commands(startup),
         &[
-            "-p openpilot-logmessaged -p openpilot-dev-tools --bins --examples",
+            "-p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/sdk-receiver-native --bins --examples",
             "rust/target/debug/check-registration-vendor",
             "check_registration.py",
         ],
@@ -1529,18 +1555,31 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
             "--bin check-version-reference --bin check-version-collector --bin version-runtime-worker",
             "rust/target/debug/check-version-reference",
             "rust/target/debug/check-version-collector",
+            "openpilot-dev-tools/tombstone-tools-native,openpilot-dev-tools/sdk-transport-native",
+            "--test tombstone_source --test tombstone_reference_check --test sdk_transport_check --test sdk_transport_runtime --locked",
+            "--features tombstone-tools-native,sdk-transport-native --lib tombstone_ --locked",
+            "--bin check-tombstoned-reference --bin check-crash-sdk-transport",
+            "rust/target/debug/check-tombstoned-reference",
+            "rust/target/debug/check-crash-sdk-transport",
         ],
         &[
             "cargo test",
             "rust/target/debug/check-version-reference",
             "rust/target/debug/check-version-collector",
+            "rust/target/debug/check-tombstoned-reference",
+            "rust/target/debug/check-crash-sdk-transport",
         ],
         false,
     );
     let data = workflow();
     let telemetry = &data["jobs"]["telemetry-runtime"];
     let script = commands(telemetry);
-    for retired_call in ["check_version_reference.py", "check_version_collector.py"] {
+    for retired_call in [
+        "check_version_reference.py",
+        "check_version_collector.py",
+        "check_tombstoned_reference.py",
+        "check_crash_sdk_transport.py",
+    ] {
         assert!(
             !script.contains(retired_call),
             "legacy Version caller: {retired_call}"

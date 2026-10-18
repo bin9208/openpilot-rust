@@ -16,7 +16,7 @@ use std::{
 };
 mod fixtures;
 mod json;
-mod process;
+pub(crate) mod process;
 mod schedule;
 use process::{Cancellation, Probe};
 
@@ -351,6 +351,12 @@ impl<'a> Pair<'a> {
     }
 }
 pub fn run(repository: &Path, options: &Options) -> Result<J> {
+    // A failed new invocation must never leave a prior PASS receipt visible.
+    match fs::remove_file(options.output.join("manifest.json")) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
     let cancel = Cancellation::new()?;
     let result = run_inner(repository, options, &cancel);
     if let Some(signal) = cancel.signal() {
@@ -365,11 +371,6 @@ pub fn format_report(report: &J) -> Result<String> {
 fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Result<J> {
     let hashes = crate::version_source::sources(repository)?;
     fs::create_dir_all(&options.output)?;
-    match fs::remove_file(options.output.join("manifest.json")) {
-        Ok(()) => {}
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-        Err(e) => return Err(e.into()),
-    }
     let mut evidence = File::create(options.output.join("comparisons.jsonl"))?;
     let root = FixtureRoot(tempfile::Builder::new().prefix("rust-version-").tempdir()?);
     let root = root.0.path();

@@ -24,6 +24,10 @@ path = "src/bin/version_runtime_worker.rs"
 required-features = ["version-tools-native"]
 
 [[test]]
+name = "tombstone_source"
+required-features = ["tombstone-tools-native"]
+
+[[test]]
 name = "version_check"
 required-features = ["version-tools-native"]
 
@@ -534,7 +538,10 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+sdk-receiver-native = ["dep:brotli-decompressor", "rustix/net"]
+sdk-transport-native = ["sdk-receiver-native"]
 version-tools-native = ["dep:zmq", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
+tombstone-tools-native = ["version-tools-native", "dep:unicode-general-category"]
 dbc-generator-native = []
 feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 qcom-assistance-tools-native = []
@@ -664,6 +671,8 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+brotli-decompressor = { version = "=5.0.3", optional = true }
+unicode-general-category = { version = "=0.6.0", optional = true }
 openpilot-runtime-core = { path = "../runtime-core", optional = true }
 openpilot-pocketfft = { path = "../pocketfft", optional = true }
 openpilot-process-supervision = { path = "../process-supervision", optional = true }
@@ -1241,3 +1250,43 @@ required-features = ["lagd-tools-native"]
 name = "check-lagd-params-io"
 path = "src/bin/check_lagd_params_io.rs"
 required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "sdk_receiver"
+required-features = ["sdk-receiver-native"]
+
+[[bin]]
+name = "check-sdk-receiver"
+path = "src/bin/check_sdk_receiver.rs"
+required-features = ["sdk-receiver-native"]
+
+[[test]]
+name = "sdk_transport_check"
+required-features = ["sdk-transport-native"]
+
+[[test]]
+name = "tombstone_reference_check"
+required-features = ["tombstone-tools-native"]
+
+[[test]]
+name = "sdk_transport_runtime"
+required-features = ["sdk-transport-native", "tombstone-tools-native"]
+
+[[bin]]
+name = "check-tombstoned-reference"
+path = "src/bin/check_tombstoned_reference.rs"
+required-features = ["tombstone-tools-native"]
+
+[[bin]]
+name = "check-crash-sdk-transport"
+path = "src/bin/check_crash_sdk_transport.rs"
+required-features = ["sdk-transport-native", "tombstone-tools-native"]
+
+[[test]]
+name = "tombstone_safety_check"
+required-features = ["tombstone-tools-native"]
+
+[[bin]]
+name = "check-tombstoned-safety"
+path = "src/bin/check_tombstoned_safety.rs"
+required-features = ["tombstone-tools-native"]
