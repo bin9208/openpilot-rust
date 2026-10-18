@@ -3,6 +3,7 @@
 //! in version-runtime-worker. The CLI alone owns its executable-root SIGINT guard.
 use crate::{
     path_resolve::resolve_non_strict,
+    qa_endpoint::EndpointOwner,
     qa_process::{CaptureError, CommandSpec, NativeRunner},
     seal::{digest, Result},
     version_source,
@@ -13,10 +14,7 @@ use std::{
     collections::BTreeMap,
     ffi::OsString,
     fs,
-    os::unix::{
-        ffi::{OsStrExt, OsStringExt},
-        fs::{FileTypeExt, MetadataExt},
-    },
+    os::unix::ffi::{OsStrExt, OsStringExt},
     path::{Path, PathBuf},
     sync::{atomic::AtomicBool, Arc},
     time::{Duration, Instant},
@@ -72,6 +70,7 @@ struct Request {
     output: Vec<u8>,
     prefix: String,
     nonce: String,
+    endpoint_channel: Vec<u8>,
     worker_sha256: String,
     controller_sha256: String,
     sources: BTreeMap<String, String>,
@@ -112,7 +111,6 @@ struct Namespace {
     _directory: tempfile::TempDir,
     prefix: String,
     endpoint: PathBuf,
-    endpoint_identity: Option<(u64, u64)>,
 }
 impl Namespace {
     fn new() -> Result<Self> {
@@ -137,33 +135,7 @@ impl Namespace {
             _directory: directory,
             prefix,
             endpoint,
-            endpoint_identity: None,
         })
-    }
-    fn observe_endpoint(&mut self) {
-        match fs::symlink_metadata(&self.endpoint) {
-            Ok(metadata)
-                if self.endpoint_identity.is_none() && metadata.file_type().is_socket() =>
-            {
-                self.endpoint_identity = Some((metadata.dev(), metadata.ino()));
-            }
-            _ => {}
-        }
-    }
-}
-impl Drop for Namespace {
-    fn drop(&mut self) {
-        // The worker's group owner is always dropped/reaped BEFORE this guard.
-        // Do not unlink a replacement inode or an endpoint present before launch.
-        match (self.endpoint_identity, fs::symlink_metadata(&self.endpoint)) {
-            (Some(identity), Ok(metadata))
-                if metadata.file_type().is_socket()
-                    && identity == (metadata.dev(), metadata.ino()) =>
-            {
-                let _ = fs::remove_file(&self.endpoint);
-            }
-            _ => {}
-        }
     }
 }
 pub fn run(repository: &Path, options: &Options, worker: &Path) -> Result<Value> {
@@ -186,7 +158,7 @@ fn run_controlled(
     let request_directory = tempfile::Builder::new()
         .prefix("version-collector-request-")
         .tempdir()?;
-    let mut namespace = Namespace::new()?;
+    let namespace = Namespace::new()?;
     let nonce = request_directory
         .path()
         .file_name()
@@ -194,6 +166,7 @@ fn run_controlled(
         .to_str()
         .ok_or("private Version request nonce is not Unicode")?
         .to_owned();
+    let endpoint = EndpointOwner::new(&namespace.endpoint, &nonce)?;
     let request = Request {
         repository: repository.as_os_str().as_bytes().to_vec(),
         probe: options.probe.as_os_str().as_bytes().to_vec(),
@@ -201,6 +174,7 @@ fn run_controlled(
         output: options.output.as_os_str().as_bytes().to_vec(),
         prefix: namespace.prefix.clone(),
         nonce: nonce.clone(),
+        endpoint_channel: endpoint.channel().as_os_str().as_bytes().to_vec(),
         worker_sha256: worker_hash,
         controller_sha256: digest(&std::env::current_exe()?)?,
         sources: source_hashes,
@@ -228,7 +202,6 @@ fn run_controlled(
     // The runner retains its leader through group cleanup, including cancellation.
     // IPC remains owned until that cleanup has returned.
     let result = NativeRunner.run_controlled(&command, Instant::now() + command.timeout, stop);
-    namespace.observe_endpoint();
     let captured = match result {
         Ok(captured) => captured,
         Err(error) => {
@@ -251,6 +224,7 @@ fn run_controlled(
             String::from_utf8_lossy(&captured.stderr)
         ),
     )?;
+    endpoint.verify()?;
     let reply: Value = serde_json::from_slice(&captured.stdout)?;
     require(
         reply["nonce"] == nonce,

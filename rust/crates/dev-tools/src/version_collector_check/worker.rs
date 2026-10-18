@@ -217,6 +217,12 @@ pub(super) fn run(request: &Request, stop: &AtomicBool) -> Result<Value> {
     let binary = path(request.collector.clone());
     let mut collector = Collector::new(request)?;
     collector.start(&binary, stop)?;
+    crate::qa_endpoint::acknowledge(
+        &PathBuf::from(format!("/tmp/logmessage{}", request.prefix)),
+        &path(request.endpoint_channel.clone()),
+        &request.nonce,
+        stop,
+    )?;
     let no_metadata = tempfile::Builder::new()
         .prefix("version-no-metadata-")
         .tempdir()?;

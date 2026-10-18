@@ -525,3 +525,15 @@ fn final_result_write_interruption_removes_collector_success_manifest() {
         "interrupted final writer left its success manifest visible"
     );
 }
+
+#[path = "support/qa_endpoint_owner.rs"]
+mod endpoint_owner;
+#[test]
+fn foreign_endpoint_after_live_collector_ack_survives_cancellation() {
+    endpoint_owner::replacement_survives(
+        &root(),
+        Path::new(env!("CARGO_BIN_EXE_check-version-collector")),
+        &native("VERSION_COLLECTOR_BINARY"),
+        None,
+    );
+}

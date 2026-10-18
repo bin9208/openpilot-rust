@@ -57,6 +57,14 @@ pub mod dbc_generator;
 pub mod filter_reference;
 pub mod journald_check;
 pub mod journald_fixture;
+#[cfg(feature = "managed-entry-native")]
+pub mod managed_entry_check;
+#[cfg(feature = "managed-entry-native")]
+pub mod managed_entry_collector_source;
+#[cfg(feature = "managed-entry-native")]
+pub mod managed_entry_source;
+#[cfg(feature = "managed-runtime-native")]
+pub mod managed_runtime_check;
 pub mod media_validation;
 pub mod message_state_check;
 pub mod miri_provenance;
@@ -67,6 +75,12 @@ pub mod params_reference_check;
 pub mod plot_samples_check;
 pub mod plot_samples_source;
 pub mod publish;
+#[cfg(any(
+    feature = "managed-entry-native",
+    feature = "version-tools-native",
+    feature = "tombstone-live-native"
+))]
+pub(crate) mod qa_endpoint;
 pub mod qa_process;
 pub mod ratekeeper_check;
 pub mod registration_utf7_check;

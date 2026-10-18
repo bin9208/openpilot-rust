@@ -1977,9 +1977,9 @@ rust/tools/check_logmessaged_reference.py	209eeb15b3f5072f82fd617c9ec0461d50404c
 rust/tools/check_logmessaged_startup.py	114fa9d0560862495292a5d1e45dc1e979018df1	pending	-
 rust/tools/check_longitudinal_maneuvers.py	d2dffdba6b73012d0412d16b78fdb8a3dbb08513	pending	-
 rust/tools/check_lpa.py	a108f6ee3aad8a11e425c5dfd210106967adb82d	pending	-
-rust/tools/check_managed_entry.py	dd17dd395fda42caa96eafeaee28669c0b9acd49	pending	-
-rust/tools/check_managed_entry_readiness.py	bbb2fef7982eaee05b32754d2f2a41219fe97caf	pending	-
-rust/tools/check_managed_runtime.py	367ddeb9448bb1a1d8f7a4480961ecf5b10509f2	pending	-
+rust/tools/check_managed_entry.py	dd17dd395fda42caa96eafeaee28669c0b9acd49	replaced-local	rust/crates/dev-tools/src/managed_entry_check.rs; managed_entry_source.rs; full44/readiness frozen before-after no-Python proof and native callers; #296 evidence ledger
+rust/tools/check_managed_entry_readiness.py	bbb2fef7982eaee05b32754d2f2a41219fe97caf	replaced-local	rust/crates/dev-tools/src/managed_entry_check.rs; managed_entry_source.rs; full44/readiness frozen before-after no-Python proof and native callers; #296 evidence ledger
+rust/tools/check_managed_runtime.py	367ddeb9448bb1a1d8f7a4480961ecf5b10509f2	replaced-local	rust/crates/dev-tools/src/managed_runtime_check.rs; actual seven-daemon/two-context original comparison and native CI; #296 evidence ledger
 rust/tools/check_manager.py	b380fe81d306c5a7bc15a88966281717558d7417	pending	-
 rust/tools/check_manager_catalog.py	24f327c8d76b409461fd0fdfc25b4df2e4404a68	replaced-local	rust/crates/dev-tools/src/manager_catalog_check.rs
 rust/tools/check_manager_log_upload.py	99ef640d320ac7b88459b02b9bbc18d8638fa793	pending	-
@@ -2392,7 +2392,7 @@ rust/tools/logmessaged_reference.py	a7012acffcd682ce729c6ec536b665a05bbbf91a	pen
 rust/tools/longitudinal_maneuvers_source.py	504698683f36284714fc9fd4b58ad2c46300631b	pending	-
 rust/tools/lpa_fixture.py	ec9c70e25111c98e2e59c78d8671f20e0e19a467	pending	-
 rust/tools/lpa_source.py	bb395505fa4d8b44af25750b788970ef45ea49ef	pending	-
-rust/tools/managed_entry_reference.py	f756f3507eb76fa7632e31acda32c4bb5ae6c50f	pending	-
+rust/tools/managed_entry_reference.py	f756f3507eb76fa7632e31acda32c4bb5ae6c50f	replaced-local	rust/crates/dev-tools/src/managed_entry_check.rs; managed_entry_source.rs; full44/readiness frozen before-after no-Python proof and native callers; #296 evidence ledger
 rust/tools/manager_catalog_reference.py	e57e9f9073e7673d0a2d018581f070db4a8a0a87	replaced-local	rust/crates/dev-tools/src/manager_catalog_reference.rs
 rust/tools/manager_reference.py	39881b848fa211718d0356c1f60a242e489f7baf	pending	-
 rust/tools/model_export/__init__.py	8c0d2ee7c078eb7dcb15021bbed58fd53d52bb58	pending	-

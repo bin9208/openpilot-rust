@@ -3808,3 +3808,169 @@ Clippy passes in5.86s. All were rebuilt from the current source with the mandato
 real daemon/collector/Params/worker artifacts. Raw local log:
 `2026-10-19-tombstone-live/final-green.log`. Together with unchanged policy/safety
 suites from the prior gate, the live-retirement validation now covers75 tests.
+
+### Version final-write cancellation follow-up (#380)
+
+The same late-cancellation window remained in `check-version-reference` after
+its preflight invalidation repair. A new actual-CLI regression completes all171
+comparisons, blocks the final manifest open on an owned FIFO, sends pidfd SIGINT,
+and releases/drains that exact writer. The old checker returned failure but
+left the manifest visible (RED9.75s). No timing threshold or source comparator
+was changed. The repair checks cancellation before publication and invalidates
+the manifest on the final interrupted return. Private raw evidence:
+`2026-10-19-managed-entry/version-final-{red,green}.log`; GREEN is recorded only
+after inspecting the new result.
+
+The focused Version final-write regression now passes in9.88s after rebuilding
+its actual checker. It still observes the complete171-comparison PASS document
+at the controlled write boundary, a nonzero interrupted exit and no remaining
+manifest path. The full Version suite and exact-head CI remain distinct gates.
+
+### Strict UI FPS boundary and managed-entry continuation
+
+UI issue #384 is repaired locally in `8f4b556a`. The QA helper accepts an
+explicit acknowledged FPS sample for the strict branch; its default still uses
+real GetFPS, and the original target20 / critical-below10 behavior is unchanged.
+Independent unchanged original AST and full pyray executions establish 9 failure
+and10 success. All14 prior environment cases retain pixel/state/recorder checks;
+the added actual9-FPS CLI case requires exit1, no final PNG/state, and recorder
+EOF. The focused gate passes in62.80s and strict Clippy/C++ warning checks pass.
+This controlled measurement input is not evidence of host/device performance.
+The issue remains open for exact-head CI.
+
+Managed-entry remains in progress. The independent source now passes26 original
+controls, including invalid/empty/unregistered DongleId and context-acknowledgement
+SIGINT. The original wrapper's early-SIGINT `returned` report is retained as its
+observed wrapper behavior; the native example preserves its actual
+`Outcome::Interrupted`, not a request-derived fabricated outcome. The actual
+example previously remained blocked for5.01s; the corrected acknowledgement
+loop returns interruption with no body execution, passing in0.02s. This is #385's
+QA-protocol defect, not a demonstrated production driving-daemon defect.
+Source26/retirement guards and strict Clippy pass; full44 current collector
+comparisons and actual Python-helper deletion are separate pending gates.
+
+### Remaining aggregate receipt cancellation gaps (#380)
+
+Actual CLI failures reproduced three Version collector preflight paths retaining
+an older PASS: invalid source, missing adjacent worker, and an already-existing
+collector directory. The tombstone242-comparison and Version collector final
+writes also retained PASS after pidfd SIGINT at a controlled FIFO. The collector
+still delivered exactly one logMessage, one errorLogMessage and one disk record;
+the regression is receipt publication, not dropped telemetry.
+
+`4bb011cf` invalidates these results before preflight and on failed/interrupted
+publication. All4 tombstone-reference and6 collector tests pass (81.23s/3.86s),
+with strict Clippy5.47s. Final review latched the tombstone cancellation decision
+once so cleanup and the interrupted return cannot disagree across two reads;
+the same actual242-comparison final-write regression passes again in40.57s.
+Raw RED/GREEN logs are under `2026-10-19-aggregate-pass/`. The separate Version
+reference suite passes13 tests plus59 CI policy/disk tests; these are host results.
+
+### Endpoint identity review blocks the managed retirement gate (#386)
+
+An actual managed-entry cancellation test replaced the acknowledged collector's
+socket pathname before worker teardown. The outer checker first observed the
+path only after teardown, adopted the foreign inode and removed it. The existing
+unit check covered replacement after observation and missed this order. Issue386
+tracks the reproduced11.94ms cancellation and both distinct inode identities.
+No managed Python files have been deleted. The first frozen bundle is explicitly
+invalidated because a later source correction occurred after its compilation;
+no before/after proof used it. A fresh source-matched build and proof must follow
+the endpoint ownership repair. Version collector and tombstone runtime use the
+same late-observation pattern and are included in the focused audit.
+
+### Managed-runtime checker retirement and endpoint ownership (#385/#386)
+
+The seven managed daemons and collector were freshly built from current sources.
+The unchanged Python checker passed all14 daemon/context cases; the Rust checker
+matched the exact original scenario rows before and after removing
+`rust/tools/check_managed_runtime.py`. Both runs used the same nine sealed ELFs.
+The post-removal trace covered execve and execveat:44 attempts, zero Python/pypy
+executions. Ten integration tests and one socket-identity unit passed; strict
+Clippy passed. Earlier cached-daemon observations remain separately labelled.
+This is host checker evidence, not device boot/recording/upload acceptance.
+
+Issue#386 was reproduced independently in managed-entry, Version collector and
+tombstone runtime controllers: observing the endpoint only after worker teardown
+could adopt and unlink a foreign replacement. A private invocation-bound channel
+now transfers the live collector identity before candidate launch. The owner
+holds an O_PATH descriptor and removes only the matching socket identity.
+Managed ownership/readiness contracts passed23 tests; Version/tombstone helper2,
+focused2, runtime9, shutdown3, collector7 and positive collector1 passed with
+both feature combinations clean under strict Clippy. Abrupt death before the
+authenticated acknowledgement can conservatively leave an owned socket; this
+window is explicit and is not described as complete IPC cleanup.
+
+Private proof records: `2026-10-19-managed-runtime-tools/FINAL-PROOF.json`,
+`2026-10-19-managed-entry/ENDPOINT-386-FINAL-HANDOFF.json`, and
+`2026-10-19-endpoint-owner-386/FINAL-EVIDENCE.txt` under `.analysis/scratch/`.
+Exact-commit CI and the subsequent managed-entry retirement proof remain separate
+gates.
+
+### Managed-entry three-helper removal proof (2026-10-19)
+
+A fresh build froze check-managed-entry, managed_child, logmessaged and the Params
+binding before removing the three managed-entry Python tools. The dep-info input
+snapshot contains17,405 project paths (including broad logging provenance inputs,
+not17,405 compiled Rust modules). Current44 source/native comparisons and the
+original subscriber-before-publisher readiness scenario passed before deletion
+(257.65s/5.07s) and after deletion (260.93s/5.38s). Both phases traced265 matrix
+plus4 readiness execve/execveat attempts; no Python/pypy execution occurred.
+The same ELF/binding hashes and every retained snapshot input matched throughout;
+only the exact three retired paths were admitted absent. The older first freeze
+was explicitly invalidated before it ran any retirement proof and is not reused.
+
+Current private bundle: `2026-10-19-managed-entry/retirement-frozen-sdtt5wia`.
+Its before/after proof files bind snapshot SHA256
+`f6a90c0c8b976dd28f3a80495105af7771637a5f418c9451a48f9f6f42bda0ab`.
+Parent CI-policy gates60, Version13, managed collector/namespace units4 and shared
+endpoint units2 passed with strict scoped Clippy. An initial broad all-lib run
+passed96 and failed the unrelated retrace test due to a missing required probe;
+startup CI now explicitly selects the changed managed and endpoint units, while
+retaining the existing retrace gate in its proper prerequisite-bearing job.
+Fresh post-removal build/integration results and the managed-runtime#386/#387
+follow-up remain separately required.
+
+### Managed-runtime review repairs (#386/#387)
+
+The independent review reproduced filesystem inode recycling after collector
+closure and actual FIFO executable prehash hangs. The old permanent socket unit
+and both daemon/collector FIFO regressions failed before repair. Namespace now
+retains an O_PATH descriptor through cleanup; executable provenance opens
+nonblocking, checks the descriptor is a regular file, then hashes it. Special
+files still fail at the original spawn/error phase, preserving artifact behavior.
+
+The repaired checker passed12 integration tests (25.47s),2 ownership units
+(0.11s) and strict Clippy (5.98s). A fresh repaired frozen checker also passed
+all14 post-deletion cases against the unchanged original receipt and same eight
+daemon/collector ELFs:44 execve/execveat attempts, zero Python. This later proof
+binds checker SHA256
+`27efb65adc2c9793ab4f6e9a81a8ff2ee8e710c86b6feb2626ebd87b18315a2d`;
+it is distinct from the earlier same-checker before/after proof and does not
+relabel that older executable as containing these repairs. The exact-source CI
+remains pending. Details: `2026-10-19-managed-runtime-tools/REVIEW-REPAIR-FINAL-HANDOFF.json`.
+
+The post-deletion managed-entry rebuild completed successfully, rebuilding the
+logging/Params/version/crash/managed-entry/collector dependency chain. All eight
+focused integration targets passed21 tests, including the complete44-comparison
+CLI (252.91s), original readiness, source admission, ownership and SIGINT gates.
+Strict scoped Clippy, all60 CI policy/isolation/disk checks, full workspace
+rustfmt check and git diff check passed. Log:
+`2026-10-19-managed-entry/post-retirement-gate.log`. This is a fresh post-removal
+build gate in addition to, not a relabelling of, the earlier same-ELF proofs.
+
+### Version test admission repair (#382, local follow-up)
+
+A deterministic real-process regression confirmed that rejecting the second PID
+during startup admission dropped an already-armed first owner and killed its Git
+process before acknowledgement. The test now retains unarmed pidfds until both
+unique-token/live-identity checks pass, then arms both cleanup owners together.
+All14 Version tests passed under default parallelism (9.80s), with strict Clippy
+and formatting clean. The10s startup and2s cancellation limits and production
+code are unchanged. This repairs a proven harness bug; it does not establish that
+the earlier CI failure took that path. The exact committed telemetry rerun is
+still required. Evidence: `2026-10-19-version-382-review/FINAL-EVIDENCE.txt`.
+
+The captured empty process-title TSV row retains its significant trailing empty
+fields. A single-path .gitattributes whitespace exception preserves those original
+bytes; the fixture itself was not edited. Staged diff checking passes.

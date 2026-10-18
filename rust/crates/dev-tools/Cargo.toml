@@ -543,6 +543,8 @@ sdk-transport-native = ["sdk-receiver-native"]
 version-tools-native = ["dep:zmq", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
 tombstone-tools-native = ["version-tools-native", "dep:unicode-general-category"]
 tombstone-live-native = ["tombstone-tools-native", "sdk-receiver-native"]
+managed-entry-native = ["tombstone-tools-native", "sdk-receiver-native", "openpilot-process-limits/qa-process-title"]
+managed-runtime-native = []
 dbc-generator-native = []
 feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 qcom-assistance-tools-native = []
@@ -1314,3 +1316,49 @@ required-features = ["tombstone-live-native"]
 name = "tombstone-runtime-worker"
 path = "src/bin/tombstone_runtime_worker.rs"
 required-features = ["tombstone-live-native"]
+
+[[test]]
+name = "managed_entry_check"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_runtime_check"
+required-features = ["managed-runtime-native"]
+
+[[bin]]
+name = "check-managed-runtime"
+path = "src/bin/check_managed_runtime.rs"
+required-features = ["managed-runtime-native"]
+
+[[test]]
+name = "managed_entry_source"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_collector_source"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_runtime"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_ownership"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_sigint"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_readiness"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_collector_readiness"
+required-features = ["managed-entry-native"]
+
+[[bin]]
+name = "check-managed-entry"
+path = "src/bin/check_managed_entry.rs"
+required-features = ["managed-entry-native"]

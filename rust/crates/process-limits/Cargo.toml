@@ -5,6 +5,19 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 publish = false
+autobins = false
+
+[features]
+qa-process-title = []
+
+[[bin]]
+name = "qa-source-title-peer"
+path = "src/bin/source_title_peer.rs"
+required-features = ["qa-process-title"]
+
+[[test]]
+name = "source_title"
+required-features = ["qa-process-title"]
 
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"

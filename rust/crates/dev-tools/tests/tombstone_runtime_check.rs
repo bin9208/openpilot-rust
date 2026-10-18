@@ -612,3 +612,15 @@ fn sigint_at_final_provenance_write_cannot_leave_a_success_manifest() {
         fs::read_to_string(&manifest).unwrap_or_default()
     );
 }
+
+#[path = "support/qa_endpoint_owner.rs"]
+mod endpoint_owner;
+#[test]
+fn foreign_endpoint_after_live_collector_ack_survives_cancellation() {
+    endpoint_owner::replacement_survives(
+        &root(),
+        Path::new(env!("CARGO_BIN_EXE_check-tombstoned-runtime")),
+        &artifact("TOMBSTONE_COLLECTOR_BINARY"),
+        Some(&artifact("TOMBSTONE_PARAMS_BINDING")),
+    );
+}

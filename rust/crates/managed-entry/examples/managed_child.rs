@@ -12,6 +12,7 @@ use openpilot_logging::{
 use openpilot_logmessaged::JsonValue;
 use openpilot_managed_entry::{launch, EntryError, Outcome, Sigint, StepError};
 use openpilot_msgq::Publisher;
+use rustix::fs::{fcntl_getfl, fcntl_setfl, OFlags};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
@@ -159,15 +160,58 @@ fn line(value: &Value) -> io::Result<()> {
     println!("{value}");
     io::stdout().flush()
 }
-fn acknowledge() -> io::Result<()> {
-    let mut value = String::new();
-    io::stdin().lock().read_line(&mut value)?;
-    if value.trim() != "continue" {
+// QA protocol only: a pending SIGINT must be returned to the production
+// launcher's cooperative callback boundary instead of waiting for another row.
+struct StdinMode(OFlags);
+impl StdinMode {
+    fn nonblocking() -> io::Result<Self> {
+        let input = io::stdin();
+        let flags = fcntl_getfl(&input)?;
+        fcntl_setfl(&input, flags | OFlags::NONBLOCK)?;
+        Ok(Self(flags))
+    }
+}
+impl Drop for StdinMode {
+    fn drop(&mut self) {
+        let _ = fcntl_setfl(io::stdin(), self.0);
+    }
+}
+fn acknowledge(signal: Option<&Sigint>) -> io::Result<()> {
+    let mut value = Vec::new();
+    let mut input = io::stdin().lock();
+    loop {
+        if signal.is_some_and(Sigint::requested) {
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "fixture acknowledgement interrupted",
+            ));
+        }
+        match input.read_until(b'\n', &mut value) {
+            Ok(0) => break,
+            Ok(_) if value.last() == Some(&b'\n') => break,
+            Ok(_) => (),
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted
+                ) => {}
+            Err(error) => return Err(error),
+        }
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    if signal.is_some_and(Sigint::requested) {
+        return Err(io::Error::new(
+            io::ErrorKind::Interrupted,
+            "fixture acknowledgement interrupted",
+        ));
+    }
+    if std::str::from_utf8(&value).ok().map(str::trim) != Some("continue") {
         return Err(io::Error::other("missing fixture acknowledgement"));
     }
     Ok(())
 }
 fn run(request: Request) -> Result<bool, Box<dyn std::error::Error>> {
+    let _stdin_mode = StdinMode::nonblocking()?;
     let factory = Factory::new(request.endpoint.clone())?;
     let mut global: Fields = [("inherited".into(), LogValue::Text("global".into()))]
         .into_iter()
@@ -210,7 +254,7 @@ fn run(request: Request) -> Result<bool, Box<dyn std::error::Error>> {
         Record::text(Level::Debug, "managed-entry-ready".into()),
     )?;
     line(&json!({"ready":true,"reporting_enabled":enabled}))?;
-    acknowledge()?;
+    acknowledge(None)?;
     let steps = Rc::new(RefCell::new(Vec::<Value>::new()));
     let result = launch(
         &mut reporter,
@@ -227,7 +271,13 @@ fn run(request: Request) -> Result<bool, Box<dyn std::error::Error>> {
             let publisher = Publisher::for_runtime("managedEntryBody", 1024 * 1024)
                 .map_err(StepError::raised)?;
             line(&json!({"context_ready":true})).map_err(StepError::raised)?;
-            acknowledge().map_err(StepError::raised)?;
+            acknowledge(Some(&signal)).map_err(|error| {
+                if error.kind() == io::ErrorKind::Interrupted {
+                    StepError::Interrupted
+                } else {
+                    StepError::raised(error)
+                }
+            })?;
             Ok((prepared, publisher))
         },
         |(prepared, mut publisher), reporter| {
@@ -307,7 +357,7 @@ fn run(request: Request) -> Result<bool, Box<dyn std::error::Error>> {
     };
     let response = json!({"outcome":outcome,"steps":*steps.borrow(),"sdk_calls":reporter.sdk.calls,"comm":fs::read_to_string("/proc/self/comm")?.trim(),"cmdline":String::from_utf8_lossy(&fs::read("/proc/self/cmdline")?).replace('\0'," ")});
     line(&response)?;
-    acknowledge()?;
+    acknowledge(None)?;
     Ok(success)
 }
 fn main() -> ExitCode {

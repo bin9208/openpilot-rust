@@ -33,3 +33,6 @@ pub fn new_session(command: &mut Command) {
         });
     }
 }
+
+#[cfg(all(feature = "qa-process-title", target_os = "linux", target_env = "gnu"))]
+pub mod source_title;

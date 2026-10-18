@@ -1,5 +1,6 @@
 //! Shared owned worker boundaries for the two original live checker schedules.
 use crate::{
+    qa_endpoint::EndpointOwner,
     qa_process::{CaptureError, CommandSpec, NativeRunner},
     seal::{digest, Result},
     version_reference_check::process::Cancellation,
@@ -10,10 +11,7 @@ use std::{
     collections::BTreeMap,
     ffi::OsString,
     fs,
-    os::unix::{
-        ffi::{OsStrExt, OsStringExt},
-        fs::{FileTypeExt, MetadataExt},
-    },
+    os::unix::ffi::{OsStrExt, OsStringExt},
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
@@ -90,6 +88,7 @@ pub(crate) struct Request {
     pub runner: Vec<Vec<u8>>,
     pub prefix: String,
     pub nonce: String,
+    pub endpoint_channel: Option<Vec<u8>>,
     pub kind: String,
     pub enabled: bool,
     pub signal: i32,
@@ -100,7 +99,6 @@ struct Namespace {
     _directory: tempfile::TempDir,
     prefix: String,
     endpoint: PathBuf,
-    identity: Option<(u64, u64)>,
 }
 impl Namespace {
     fn new() -> Result<Self> {
@@ -123,26 +121,7 @@ impl Namespace {
             _directory: directory,
             prefix,
             endpoint,
-            identity: None,
         })
-    }
-    fn observe(&mut self) {
-        if let Ok(metadata) = fs::symlink_metadata(&self.endpoint) {
-            if metadata.file_type().is_socket() {
-                self.identity = Some((metadata.dev(), metadata.ino()));
-            }
-        }
-    }
-}
-impl Drop for Namespace {
-    fn drop(&mut self) {
-        if let (Some(identity), Ok(metadata)) =
-            (self.identity, fs::symlink_metadata(&self.endpoint))
-        {
-            if metadata.file_type().is_socket() && identity == (metadata.dev(), metadata.ino()) {
-                let _ = fs::remove_file(&self.endpoint);
-            }
-        }
     }
 }
 pub(crate) struct Work<'a> {
@@ -170,13 +149,18 @@ pub(crate) fn work(options: Work<'_>, cancel: &Cancellation) -> Result<J> {
     let request_home = tempfile::Builder::new()
         .prefix("tombstone-live-request-")
         .tempdir()?;
-    let mut namespace = Namespace::new()?;
+    let namespace = Namespace::new()?;
     let nonce = request_home
         .path()
         .file_name()
         .and_then(|v| v.to_str())
         .ok_or("invalid live nonce")?
         .to_owned();
+    // Only runtime starts a collector. Startup and shutdown never claim an
+    // endpoint or wait for a readiness message that their workers do not send.
+    let endpoint = (options.kind == "runtime")
+        .then(|| EndpointOwner::new(&namespace.endpoint, &nonce))
+        .transpose()?;
     let request = Request {
         repository: options.repository.as_os_str().as_bytes().to_vec(),
         root: fixture.path().as_os_str().as_bytes().to_vec(),
@@ -192,6 +176,9 @@ pub(crate) fn work(options: Work<'_>, cancel: &Cancellation) -> Result<J> {
             .collect(),
         prefix: namespace.prefix.clone(),
         nonce: nonce.clone(),
+        endpoint_channel: endpoint
+            .as_ref()
+            .map(|owner| owner.channel().as_os_str().as_bytes().to_vec()),
         kind: options.kind.into(),
         enabled: options.enabled,
         signal: options.signal,
@@ -226,7 +213,6 @@ pub(crate) fn work(options: Work<'_>, cancel: &Cancellation) -> Result<J> {
     // apport's deliberately separate child groups and before any IPC unlinks.
     let captured =
         NativeRunner.run_controlled(&command, Instant::now() + command.timeout, &cancel.flag());
-    namespace.observe();
     let cleanup = crate::tombstone_reference_check::cleanup_owned_helpers(fixture.path());
     let captured = match captured {
         Ok(value) => value,
@@ -252,6 +238,9 @@ pub(crate) fn work(options: Work<'_>, cancel: &Cancellation) -> Result<J> {
             String::from_utf8_lossy(&captured.stderr)
         ),
     )?;
+    if let Some(endpoint) = &endpoint {
+        endpoint.verify()?;
+    }
     let reply = J::parse(std::str::from_utf8(&captured.stdout)?)?;
     require(
         field(&reply, "nonce")?.text_eq(&nonce),

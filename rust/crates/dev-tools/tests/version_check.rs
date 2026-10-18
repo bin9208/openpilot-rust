@@ -416,6 +416,107 @@ impl SleepOwner {
     }
 }
 
+// A failed readiness attempt must only close unarmed pidfds. Arm cleanup once
+// the complete live pair is validated; retrying must never kill its first PID.
+fn admit_source_git_pair(pids: &[i32], token: &[u8]) -> Option<Vec<SleepOwner>> {
+    if pids.len() != 2 {
+        return None;
+    }
+    let mut identities = Vec::new();
+    for &pid in pids {
+        let Some(pid_identity) = Pid::from_raw(pid) else {
+            break;
+        };
+        let Ok(identity) = pidfd_open(pid_identity, PidfdFlags::empty()) else {
+            break;
+        };
+        let environment = fs::read(format!("/proc/{pid}/environ")).unwrap_or_default();
+        if !environment
+            .split(|byte| *byte == 0)
+            .any(|entry| entry == token)
+        {
+            break;
+        }
+        assert_eq!(
+            poll(
+                &mut [PollFd::new(&identity, PollFlags::IN)],
+                Some(&Timespec::default()),
+            )
+            .unwrap(),
+            0,
+            "source Git identity already exited"
+        );
+        identities.push(identity);
+    }
+    (identities.len() == 2).then(|| identities.into_iter().map(SleepOwner).collect())
+}
+
+#[test]
+fn rejected_second_git_identity_does_not_kill_first_before_acknowledgement() {
+    use std::{
+        os::unix::ffi::OsStrExt,
+        process::{Child, Command, Stdio},
+    };
+    struct Sleeper {
+        child: Child,
+        identity: SleepOwner,
+    }
+    impl Drop for Sleeper {
+        fn drop(&mut self) {
+            let _ = pidfd_send_signal(&self.identity.0, Signal::KILL);
+            let _ = self.child.wait();
+        }
+    }
+    fn sleeper(state: &Path) -> Sleeper {
+        let mut child = Command::new("/bin/sleep")
+            .arg("20")
+            .env("VERSION_SLOW_GIT_STATE", state)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let identity = match pidfd_open(Pid::from_child(&child), PidfdFlags::empty()) {
+            Ok(fd) => SleepOwner(fd),
+            Err(error) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                panic!("could not reserve owned sleeper: {error}");
+            }
+        };
+        Sleeper { child, identity }
+    }
+    let home = tempfile::tempdir().unwrap();
+    let state = home.path().join("admitted");
+    let mut token = b"VERSION_SLOW_GIT_STATE=".to_vec();
+    token.extend_from_slice(state.as_os_str().as_bytes());
+    let first = sleeper(&state);
+    // The mismatched second identity is also ours, with separate cleanup.
+    // Rejecting its token must not arm/drop a killer for the first process.
+    let second = sleeper(&home.path().join("rejected"));
+    assert!(!first.identity.exited(Duration::ZERO));
+    assert!(!second.identity.exited(Duration::ZERO));
+    let pair = admit_source_git_pair(
+        &[
+            i32::try_from(first.child.id()).unwrap(),
+            i32::try_from(second.child.id()).unwrap(),
+        ],
+        &token,
+    );
+    assert!(
+        pair.is_none(),
+        "second identity token was unexpectedly accepted"
+    );
+    assert!(
+        !first.identity.exited(Duration::from_millis(250)),
+        "failed pair admission killed first live Git identity before acknowledged SIGINT"
+    );
+    assert!(
+        !second.identity.exited(Duration::ZERO),
+        "rejected owned peer was signalled during admission"
+    );
+}
+
 #[test]
 fn exited_probe_leader_cannot_leave_its_owned_descendant_running() {
     let temp = tempfile::tempdir().unwrap();
@@ -690,33 +791,8 @@ fn actual_reference_cli_interrupts_owned_source_git_without_group_broadcast() {
                 .map(str::parse::<i32>)
                 .collect::<Result<Vec<_>, _>>()
             {
-                if pids.len() == 2 {
-                    let mut owners = Vec::new();
-                    for pid in pids {
-                        let Some(pid_identity) = Pid::from_raw(pid) else {
-                            break;
-                        };
-                        let Ok(identity) = pidfd_open(pid_identity, PidfdFlags::empty()) else {
-                            break;
-                        };
-                        let environment =
-                            fs::read(format!("/proc/{pid}/environ")).unwrap_or_default();
-                        if !environment
-                            .split(|byte| *byte == 0)
-                            .any(|entry| entry == token)
-                        {
-                            break;
-                        }
-                        let owner = SleepOwner(identity);
-                        assert!(
-                            !owner.exited(Duration::ZERO),
-                            "source Git identity already exited"
-                        );
-                        owners.push(owner);
-                    }
-                    if owners.len() == 2 {
-                        break owners;
-                    }
+                if let Some(owners) = admit_source_git_pair(&pids, &token) {
+                    break owners;
                 }
             }
         }

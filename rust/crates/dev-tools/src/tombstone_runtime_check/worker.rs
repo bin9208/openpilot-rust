@@ -406,6 +406,17 @@ fn runtime(request: &Request, cancel: &Cancellation) -> Result<J> {
         &request.prefix,
         cancel,
     )?;
+    crate::qa_endpoint::acknowledge(
+        &PathBuf::from(format!("/tmp/logmessage{}", request.prefix)),
+        &path(
+            request
+                .endpoint_channel
+                .as_deref()
+                .ok_or("runtime endpoint channel absent")?,
+        ),
+        &request.nonce,
+        &cancel.flag(),
+    )?;
     let env = environment(&root);
     let mut command = vec![
         OsString::from_vec(request.daemon.clone()),

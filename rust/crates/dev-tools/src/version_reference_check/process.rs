@@ -74,6 +74,7 @@ pub(crate) struct Probe {
     reaped: bool,
     buffer: Vec<u8>,
     eof: bool,
+    owns_group: bool,
 }
 fn nonblocking(fd: impl AsFd) -> Result<()> {
     let flags = fcntl_getfl(&fd)?;
@@ -87,23 +88,45 @@ impl Probe {
         env: &BTreeMap<OsString, OsString>,
         stderr: File,
     ) -> Result<Self> {
+        Self::spawn_owned(argv, cwd, env, stderr, true)
+    }
+    #[cfg(feature = "managed-entry-native")]
+    pub(crate) fn spawn_in_worker(
+        argv: &[OsString],
+        cwd: &Path,
+        env: &BTreeMap<OsString, OsString>,
+        stderr: File,
+    ) -> Result<Self> {
+        Self::spawn_owned(argv, cwd, env, stderr, false)
+    }
+    fn spawn_owned(
+        argv: &[OsString],
+        cwd: &Path,
+        env: &BTreeMap<OsString, OsString>,
+        stderr: File,
+        owns_group: bool,
+    ) -> Result<Self> {
         let first = argv.first().ok_or("empty Version probe command")?;
-        let child = Command::new(first)
+        let mut command = Command::new(first);
+        command
             .args(&argv[1..])
             .current_dir(cwd)
             .env_clear()
             .envs(env)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(stderr)
-            .process_group(0)
-            .spawn()?;
+            .stderr(stderr);
+        if owns_group {
+            command.process_group(0);
+        }
+        let child = command.spawn()?;
         let owner = Self {
             pid: Pid::from_child(&child),
             child,
             reaped: false,
             buffer: Vec::new(),
             eof: false,
+            owns_group,
         };
         nonblocking(owner.child.stdin.as_ref().ok_or("probe stdin absent")?)?;
         nonblocking(owner.child.stdout.as_ref().ok_or("probe stdout absent")?)?;
@@ -219,23 +242,41 @@ impl Probe {
         }
     }
     pub(crate) fn finish(&mut self, cancel: &Cancellation) -> Result<()> {
+        let status = self.finish_status(cancel, Duration::from_secs(10))?;
+        if status == 0 {
+            Ok(())
+        } else {
+            Err(format!("Version probe exited {status}").into())
+        }
+    }
+    pub(crate) fn finish_status(
+        &mut self,
+        cancel: &Cancellation,
+        timeout: Duration,
+    ) -> Result<i32> {
         self.child.stdin.take();
-        let end = Instant::now() + Duration::from_secs(10);
+        let end = Instant::now() + timeout;
         loop {
             cancel.check()?;
             if let Some(status) = self.status()? {
                 self.close()?;
-                return if status == 0 {
-                    Ok(())
-                } else {
-                    Err(format!("Version probe exited {status}").into())
-                };
+                return Ok(status);
             }
             if Instant::now() >= end {
                 return Err("Version probe EOF exit timeout".into());
             }
             std::thread::sleep(Duration::from_millis(5));
         }
+    }
+    #[cfg(feature = "managed-entry-native")]
+    pub(crate) fn signal(&self, signal: Signal) -> Result<()> {
+        if self.reaped {
+            return Err("probe child identity already released".into());
+        }
+        // WNOWAIT also detects an external reaper without releasing our PID.
+        self.status()?;
+        rustix::process::kill_process(self.pid, signal)?;
+        Ok(())
     }
     fn close(&mut self) -> Result<()> {
         if self.reaped {
@@ -254,7 +295,14 @@ impl Probe {
         }
         // WNOWAIT has not consumed the child identity. Even an exited shell's
         // descendants are signalled before the leader can be recycled.
-        match kill_process_group(self.pid, Signal::KILL) {
+        let killed = if self.owns_group {
+            kill_process_group(self.pid, Signal::KILL)
+        } else {
+            // Nested workers retain the outer owner's group, which that owner
+            // tears down before reaping its leader. Never broadcast here.
+            rustix::process::kill_process(self.pid, Signal::KILL)
+        };
+        match killed {
             Ok(()) | Err(rustix::io::Errno::SRCH) => {}
             Err(e) => return Err(e.into()),
         }

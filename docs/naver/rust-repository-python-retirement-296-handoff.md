@@ -8,22 +8,31 @@ dev-md/#338 변경은 별개다. 콤마는 현재 없고, 사용자가 git pull 
 정상부팅·녹화·업로드를 직접 확인한다. 다시 연결을 요청하지 않는다.
 
 원격 HEAD ecfb7774eea9577d4c3c396213a3ecbd0b7d73c9의 Fast checks 두 실행,
-Integration, 문서 검사는 통과했다. Rust run39159654100은 진행 중이며
-텔레메트리 Version 시작 대기 검사(#382)와 UI strict-mode 검사(#384)가 실패했다.
-전체 CI 통과나 dev 반영 완료가 아니다. Version은 로컬 12검사와 집중 재실행은
-통과했으나 원격 원인이 확정되지 않았고, 실패 시 진단을 추가했다.
+Integration, 문서 검사와 ARM 빌드는 통과했다. Rust run39159654100의 workspace
+검사는 진행 중이며 텔레메트리 Version 시작 대기(#382)와 UI strict-mode(#384)가
+실패했다. 전체 CI 통과나 dev 반영 완료가 아니다. UI는 실제9/10FPS 경계를
+유지한 로컬 수정 검증을 통과했다. Version13검사는 로컬 통과했으나 원격 원인은
+미확정이다. 별도의 부분 PID 승인 오류는 실제 실패 재현 후 수정했고,
+기존 제한을 유지한 Version14검사·Clippy가 통과했다.
 
-로컬 후속에서 tombstoned safety/runtime/shutdown Python 도구 3개를 제거했다.
-동일 실행 파일로 삭제 전후 각각 97번의 exec 시도를 추적했으며 Python 실행은
-없었다. 삭제 후 재빌드와 관련 74검사도 통과했다. 검증 중 입력 바이너리 변경을
-놓치는 문제(#383)는 실제 실패 재현 후 해시 재검증으로 수정했다. 인벤토리는
-183개 전환 완료(로컬), 7개 일부 전환, 3,390개 대기다. 완전 전환은 미완료다.
+로컬 ec8f90d9까지 tombstone live Python 도구3개 제거, UI strict-mode 검사,
+늦은 취소 후 false PASS 제거를 커밋했다. 그 뒤 관리 런타임 검사기1개와
+managed-entry 관련3개를 제거했다. managed-entry의 동일 실행 파일로 삭제 전후
+44개 대조와 readiness를 각각 통과했고, 양쪽 모두269번의 execve/execveat 시도에
+Python 실행이 없었다. 삭제 후 재빌드와21통합 검사(전체44비교 포함),
+CI 정책60검사, Clippy·전체 포맷 검사도 통과했다.
+관리 런타임 검사기는 원본/네이티브14사례 대조와10통합/1단위 검사를 통과했으나
+독립 검토에서 FIFO 사전 해시 정지(#387)와 소켓 inode 재사용(#386)을 재현했다.
+후속 수정은12통합/2소유권 단위 검사와 엄격한 Clippy를 통과했고, 새 검사기에서도
+원본과 같은14사례/44exec/0Python을 확인했다. 정확한 커밋의 CI는 별도다.
 
-모델 node279의 새 검사와 기존 영향 범위 검사는 LLVM18/20 합계 42회 통과했다.
-관리 프로세스 비교 도구는 현재 Rust 전환 중이며, 원본 동작 22사례 검증과
-실제 collector/IPC/HTTP/종료 비교를 연결하고 있다. 미완성 파일을 완료로 세거나
-빌드 산출물을 실기 검증 결과로 해석하지 않는다. 최종 정확한 SHA의 필수 CI,
-dev 통합 후 검사 및 소스가 일치하는 AGNOS 런타임 릴리스 검증은 남아 있다.
+인벤토리는187개 전환 완료(로컬),7개 일부 전환,3,386개 대기다. 이는 도구별
+전환 기록이며 저장소 전체 전환이나 최신 변경의 전체 CI 성공을 뜻하지 않는다.
+모델 node279의 새 검사와 영향 범위 검사는 LLVM18/20 합계42회 통과했다.
+Version/crash/managed-entry 수집기 소켓 소유권(#386) 수정은 실제 재현과
+회귀 검사를 통과했다. 아직 커밋되지 않은 변경과 새 등록 시간 도구의 원본 캡처는
+별도로 보존한다. 최종 정확한 SHA의 필수 CI, dev 통합 후 검사 및 소스가 일치하는
+AGNOS 런타임 릴리스 검증은 남아 있다.
 
 ## 2026-10-19 원격 검사 후속
 
@@ -436,3 +445,13 @@ cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --test image_a
 8. 저장소 전체 기능과 Python 실행 경로 제거가 끝나기 전에는 이슈를 닫거나 전체 완료라고 보고하지 않는다.
 
 이 문서는 인수인계를 위한 개발 기록이다. 사용자 설정·사용자 가이드 변경은 없다.
+
+## #296 local continuation checkpoint (2026-10-19)
+
+`4e98435a` commits the three tombstone live-tool retirements, their native CI
+callers, artifact-mutation rejection and late-cancellation receipt invalidation.
+The final affected suites pass8 runtime/3 shutdown tests with strict Clippy;
+the unchanged policy/safety gates make75 tests across that retirement family.
+It is a local commit pending publication with the subsequent managed-entry
+batch. Original ecfb7774 workspace/ARM jobs were allowed to finish rather than
+being cancelled by a premature new push.

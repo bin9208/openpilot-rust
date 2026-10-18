@@ -40,3 +40,6 @@ rust/crates/image-codecs/native/licenses/xz -text whitespace=-blank-at-eof
 
 # Captured schema bytes are SHA-bound to the original runtime checker inputs.
 rust/crates/dev-tools/tests/fixtures/camera-runtime-check/schema/car.capnp -text whitespace=-trailing-space
+
+# Empty captured process titles are real trailing TSV fields, not padding.
+rust/crates/process-limits/tests/fixtures/source-title-original.tsv -text whitespace=-blank-at-eol

@@ -807,9 +807,19 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
         "startup-runtime",
         &[
             "check_process_supervision.py",
-            "check_managed_entry.py",
+            "MANAGED_ENTRY_WORKER_BINARY=",
+            "MANAGED_CHILD_BINARY=",
+            "MANAGED_COLLECTOR_BINARY=",
+            "MANAGED_PARAMS_BINDING=",
+            "\"$MANAGED_ENTRY_WORKER_BINARY\" --readiness \"$MANAGED_CHILD_BINARY\"",
+            "\"$MANAGED_ENTRY_WORKER_BINARY\" \"$MANAGED_CHILD_BINARY\"",
+            "--features managed-entry-native --lib managed_entry_ --locked",
+            "--features managed-entry-native --lib qa_endpoint::tests --locked",
+            "--test managed_entry_check --test managed_entry_source --test managed_entry_collector_source --test managed_entry_collector_readiness --test managed_entry_readiness --test managed_entry_ownership --test managed_entry_sigint --test managed_entry_runtime --locked",
+            "--features qa-process-title --test source_title --locked",
+            "--features qa-process-title --all-targets --locked -- -D warnings",
             "rustup toolchain install 1.94.0 --profile minimal --component clippy",
-            "--features openpilot-dev-tools/sdk-receiver-native",
+            "--features openpilot-dev-tools/managed-entry-native",
             "--features sdk-receiver-native --test sdk_receiver --locked",
             "--bin check-sdk-receiver --test sdk_receiver --locked -- -D warnings",
             "rust/target/debug/check-sdk-receiver",
@@ -830,13 +840,15 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
             "build_msgq_python.py",
             "build_params_python.py",
         ],
-        &["python rust/tools/check_", "check-checkout-status", "--test checkout_status_check", "check-manager-catalog", "--test manager_catalog_check", "--test sdk_receiver", "check-sdk-receiver"],
+        &["python rust/tools/check_", "check-checkout-status", "--test checkout_status_check", "check-manager-catalog", "--test manager_catalog_check", "--test sdk_receiver", "check-sdk-receiver", "--test managed_entry_", "--test source_title", "\"$MANAGED_ENTRY_WORKER_BINARY\""],
         true,
     );
     let run = commands(&workflow()["jobs"]["startup-runtime"]);
     assert!(!run.contains("python rust/tools/check_checkout_status.py"));
     assert!(!run.contains("python rust/tools/check_manager_catalog.py"));
     assert!(!run.contains("check_sdk_receiver.py"));
+    assert!(!run.contains("check_managed_entry.py"));
+    assert!(!run.contains("check_managed_entry_readiness.py"));
     let data = workflow();
     for key in [
         "CARGO_INCREMENTAL",
@@ -1412,7 +1424,7 @@ fn retired_tool_checks_require_current_native_builds_and_keep_original_consumers
     required(
         &commands(startup),
         &[
-            "-p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/sdk-receiver-native --bins --examples",
+            "-p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-entry-native,openpilot-dev-tools/managed-runtime-native --bins --examples",
             "rust/target/debug/check-registration-vendor",
             "check_registration.py",
         ],
@@ -1422,6 +1434,34 @@ fn retired_tool_checks_require_current_native_builds_and_keep_original_consumers
     assert!(!text.contains("check_registration_vendor.py"));
     assert!(!text.contains("check_msgq_sanitizers.py"));
     assert!(!text.contains("check_control_tools_policy.py"));
+}
+
+#[test]
+fn managed_runtime_requires_all_seven_daemons_and_the_focused_startup_caller() {
+    let data = workflow();
+    let workspace = &data["jobs"]["workspace"];
+    required(
+        &commands(workspace),
+        &[
+            "cargo build --locked -p openpilot-controlsd -p openpilot-radard -p openpilot-plannerd -p openpilot-paramsd -p openpilot-proclogd -p openpilot-uploader -p openpilot-bluetooth -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-runtime-native --bins",
+            "export MANAGED_RUNTIME_BINARIES=\"$GITHUB_WORKSPACE/rust/target/debug\"",
+            "export MANAGED_RUNTIME_CHECKER=\"$MANAGED_RUNTIME_BINARIES/check-managed-runtime\"",
+            "cargo test --locked -p openpilot-dev-tools --features managed-runtime-native --test managed_runtime_check",
+            "cargo test --locked -p openpilot-dev-tools --features managed-runtime-native --lib managed_runtime_check::tests",
+            "cargo clippy --locked -p openpilot-dev-tools --features managed-runtime-native --lib --bin check-managed-runtime --test managed_runtime_check -- -D warnings",
+        ],
+    );
+    mandatory(
+        workspace,
+        &[
+            "--features openpilot-dev-tools/managed-runtime-native --bins",
+            "--test managed_runtime_check",
+        ],
+    );
+    let startup = &data["jobs"]["startup-runtime"];
+    required(&commands(startup), &["openpilot-dev-tools/managed-runtime-native --bins --examples", "rust/target/debug/check-managed-runtime --binaries rust/target/debug --daemon uploader"]);
+    mandatory(startup, &["rust/target/debug/check-managed-runtime"]);
+    assert!(!read(".github/workflows/rust.yml").contains("check_managed_runtime.py"));
 }
 
 #[test]

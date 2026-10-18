@@ -1,0 +1,72 @@
+{
+  "oracle": "unchanged SwagLogFileFormatter and AST-extracted unchanged SwaglogRotatingFileHandler; only monotonic clock injected for deterministic interval boundary; no candidate code",
+  "raw_receipt_sha256": "fc7c4e938e187df86f3639a591f84efaeb3b643354c9339ae27d2b10784e0e7d",
+  "source_sha256": {
+    "rust/tools/logmessaged_reference.py": "ce6d6764911daaab1e9e5ce70152d9f5efc9b5ea006482064bb8192d36f735e3",
+    "openpilot/system/logmessaged.py": "93d94801185350ef4470bd482d37ed7f6d466e9b100ad10aa16fa6e8570fb02a",
+    "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3",
+    "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616",
+    "rust/tools/logmessaged_native.py": "3366e64eb36b0bad9b10023c46217f61c66aae0fe823120ae23d597d2456c872"
+  },
+  "constructor_defaults": {
+    "interval": 60,
+    "max_bytes": 262144,
+    "backup_count": 2500
+  },
+  "timeline": [
+    {
+      "record": "first",
+      "monotonic": 0.0
+    },
+    {
+      "record": "before-interval",
+      "monotonic": 59.999
+    },
+    {
+      "record": "interval",
+      "monotonic": 60.0
+    },
+    {
+      "record_recipe": {
+        "msg_repeat": "x",
+        "count": 262144
+      },
+      "monotonic": 60.0
+    },
+    {
+      "record": "after-size",
+      "monotonic": 60.0
+    }
+  ],
+  "before_interval": {
+    "swaglog.0000000000": "{\"msg$s\": \"first\", \"id\": \"00000000000000000000000000000000\"}\n{\"msg$s\": \"before-interval\", \"id\": \"00000000000000000000000000000000\"}\n"
+  },
+  "after_interval": {
+    "swaglog.0000000000": "{\"msg$s\": \"first\", \"id\": \"00000000000000000000000000000000\"}\n{\"msg$s\": \"before-interval\", \"id\": \"00000000000000000000000000000000\"}\n",
+    "swaglog.0000000001": "{\"msg$s\": \"interval\", \"id\": \"00000000000000000000000000000000\"}\n"
+  },
+  "large_file_bytes_before_next_emit": {
+    "swaglog.0000000000": 132,
+    "swaglog.0000000001": 262264
+  },
+  "after_size": {
+    "swaglog.0000000000": {
+      "normalized_utf8_bytes": 132,
+      "normalized_sha256": "98a131698f6b1ebfb6b2ff9024806a0dace00835356de7747c2a3281e9c75307"
+    },
+    "swaglog.0000000001": {
+      "normalized_utf8_bytes": 262264,
+      "normalized_sha256": "21d0754b490cced2234c3d5d9faa24f945a7257aaad64e3f0590d973180a8729"
+    },
+    "swaglog.0000000002": {
+      "normalized_utf8_bytes": 66,
+      "normalized_sha256": "3f310e3e8db8867d6fe52da699014dafcf25ab558c4abaf46f785c8b62b382cd"
+    }
+  },
+  "retention": {
+    "count": 2500,
+    "first": "swaglog.0000000003",
+    "last": "swaglog.0000002502",
+    "filenames_sha256": "4d3f8e70bd4e29eec589e17b12e48f9d2c774aac14a80661421d20946a3309b2"
+  }
+}

@@ -756,6 +756,18 @@ jobs:
           cargo run --locked -p openpilot-dev-tools --bin check-filter-reference -- --binary "${CARGO_TARGET_DIR:-target}/release/examples/filter_trace"
           cargo test --locked -p openpilot-dev-tools --test filter_reference
       - run: cargo build --workspace --examples --locked
+      - name: Require all seven native managed-daemon failure boundaries
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --locked -p openpilot-controlsd -p openpilot-radard -p openpilot-plannerd -p openpilot-paramsd -p openpilot-proclogd -p openpilot-uploader -p openpilot-bluetooth -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-runtime-native --bins
+          export MANAGED_RUNTIME_BINARIES="$GITHUB_WORKSPACE/rust/target/debug"
+          export MANAGED_RUNTIME_CHECKER="$MANAGED_RUNTIME_BINARIES/check-managed-runtime"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --locked -p openpilot-dev-tools --features managed-runtime-native --test managed_runtime_check
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --locked -p openpilot-dev-tools --features managed-runtime-native --lib managed_runtime_check::tests
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --locked -p openpilot-dev-tools --features managed-runtime-native --lib --bin check-managed-runtime --test managed_runtime_check -- -D warnings
       - name: Build standalone recovery service
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2342,7 +2354,7 @@ jobs:
           rustc --version
           cargo --version
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/sdk-receiver-native --bins --examples --locked
+          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-entry-native,openpilot-dev-tools/managed-runtime-native --bins --examples --locked
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build original startup message and Params bindings
@@ -2361,11 +2373,28 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features sdk-receiver-native --lib --bin check-sdk-receiver --test sdk_receiver --locked -- -D warnings
           rust/target/debug/check-sdk-receiver "$RUNNER_TEMP/startup-runtime/sdk-receiver.json"
-          python rust/tools/check_managed_entry_readiness.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
-            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry-readiness"
-          python rust/tools/check_managed_entry.py rust/target/debug/examples/managed_child rust/target/debug/openpilot-logmessaged \
-            "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/managed-entry"
-          python rust/tools/check_managed_runtime.py --binaries rust/target/debug --daemon uploader \
+          export MANAGED_CHILD_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/managed_child"
+          export MANAGED_COLLECTOR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
+          export MANAGED_ENTRY_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-managed-entry"
+          export MANAGED_PARAMS_BINDING="$(find "$RUNNER_TEMP/startup-params-binding" -maxdepth 1 -name 'params_pyx*.so' -print -quit)"
+          test -f "$MANAGED_PARAMS_BINDING"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features managed-entry-native --lib managed_entry_ --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features managed-entry-native --lib qa_endpoint::tests --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features managed-entry-native --test managed_entry_check --test managed_entry_source --test managed_entry_collector_source --test managed_entry_collector_readiness --test managed_entry_readiness --test managed_entry_ownership --test managed_entry_sigint --test managed_entry_runtime --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features managed-entry-native --lib --bin check-managed-entry --test managed_entry_check --test managed_entry_source --test managed_entry_collector_source --test managed_entry_collector_readiness --test managed_entry_readiness --test managed_entry_ownership --test managed_entry_sigint --test managed_entry_runtime --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-process-limits --features qa-process-title --test source_title --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-process-limits --features qa-process-title --all-targets --locked -- -D warnings
+          "$MANAGED_ENTRY_WORKER_BINARY" --readiness "$MANAGED_CHILD_BINARY" "$MANAGED_COLLECTOR_BINARY" \
+            "$MANAGED_PARAMS_BINDING" "$RUNNER_TEMP/startup-runtime/managed-entry-readiness"
+          "$MANAGED_ENTRY_WORKER_BINARY" "$MANAGED_CHILD_BINARY" "$MANAGED_COLLECTOR_BINARY" \
+            "$MANAGED_PARAMS_BINDING" "$RUNNER_TEMP/startup-runtime/managed-entry"
+          rust/target/debug/check-managed-runtime --binaries rust/target/debug --daemon uploader \
             --output "$RUNNER_TEMP/startup-runtime/uploader-entry"
       - name: Exercise the native bootstrap with owned startup providers
         run: |
