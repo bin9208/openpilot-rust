@@ -173,11 +173,12 @@ int main(int argc, char **argv) {
             w, h, unhex(title).c_str());
         a->window = true;
         a->get<void (*)(int)>("SetTargetFPS")(0);
-      } else if (op == "font" || op == "font-load") {
+      } else if (op == "font" || op == "font-load" || op == "font-atlas" ||
+                 op == "font-load-plain" || op == "font-atlas-plain") {
         std::string path;
         int size = 0, count = 0;
         size_t identifier = 0;
-        if (op == "font-load")
+        if (op != "font")
           in >> identifier;
         in >> path >> size >> count;
         if (count < 0 || count > 0x110000)
@@ -189,17 +190,35 @@ int main(int argc, char **argv) {
         ready();
         if (identifier != a->fonts.size())
           throw std::runtime_error("invalid forms font identifier");
-        a->font = a->get<Font (*)(const char *, int, int *, int)>("LoadFontEx")(
-            unhex(path).c_str(), size, points.data(), count);
+        if (op == "font-atlas" || op == "font-atlas-plain")
+          a->font = a->get<Font (*)(const char *)>("LoadFont")(unhex(path).c_str());
+        else
+          a->font = a->get<Font (*)(const char *, int, int *, int)>("LoadFontEx")(
+              unhex(path).c_str(), size, points.data(), count);
         a->fonts.push_back(a->font);
         if (!a->font.texture.id)
           throw std::runtime_error("forms font load failed");
-        a->get<void (*)(Texture *)>("GenTextureMipmaps")(&a->font.texture);
-        a->get<void (*)(Texture, int)>("SetTextureFilter")(
-            a->font.texture, TEXTURE_FILTER_TRILINEAR);
+        if (op != "font-load-plain" && op != "font-atlas-plain") {
+          a->get<void (*)(Texture *)>("GenTextureMipmaps")(&a->font.texture);
+          a->get<void (*)(Texture, int)>("SetTextureFilter")(
+              a->font.texture, TEXTURE_FILTER_TRILINEAR);
+        }
       } else if (op == "font-fallback") {
         done();
         a->fallback = true;
+      } else if (op == "font-mipmaps") {
+        size_t identifier = 0;
+        in >> identifier;
+        done();
+        ready();
+        if (identifier >= a->fonts.size())
+          throw std::runtime_error("original font missing");
+        Font &font = a->fonts[identifier];
+        a->get<void (*)(Texture *)>("GenTextureMipmaps")(&font.texture);
+        a->get<void (*)(Texture, int)>("SetTextureFilter")(
+            font.texture, TEXTURE_FILTER_TRILINEAR);
+        if (a->font.texture.id == font.texture.id)
+          a->font = font;
       } else if (op == "font-select") {
         size_t identifier = 0;
         in >> identifier;
@@ -210,14 +229,17 @@ int main(int argc, char **argv) {
         if (identifier >= a->fonts.size())
           throw std::runtime_error("forms font missing");
         a->font = a->fonts[identifier];
-      } else if (op == "measure") {
+      } else if (op == "measure" || op == "measure-spaced") {
         std::string text;
         AbiFloat size = 0;
         in >> text >> size;
+        AbiFloat spacing = 0;
+        if (op == "measure-spaced")
+          in >> spacing;
         done();
         ready();
         Vector2 v = a->get<Vector2 (*)(Font, const char *, float, float)>(
-            "MeasureTextEx")(a->font, unhex(text).c_str(), size, 0);
+            "MeasureTextEx")(a->font, unhex(text).c_str(), size, spacing);
         char value[100];
         std::snprintf(value, sizeof(value), "%.9g %.9g", double(v.x),
                       double(v.y));
@@ -247,6 +269,28 @@ int main(int argc, char **argv) {
         a->textures.push_back(texture);
         filter(texture, TEXTURE_FILTER_BILINEAR);
         wrap(texture, TEXTURE_WRAP_CLAMP);
+      } else if (op == "texture-rgba") {
+        size_t id = 0;
+        std::string path;
+        in >> id >> path;
+        done();
+        ready();
+        if (id != a->textures.size())
+          throw std::runtime_error("texture RGBA id");
+        FILE *file = std::fopen(unhex(path).c_str(), "rb");
+        if (!file)
+          throw std::runtime_error("texture RGBA file");
+        std::vector<unsigned char> bytes(128 * 128 * 4);
+        bool ok = std::fread(bytes.data(), 1, bytes.size(), file) == bytes.size();
+        if (std::fgetc(file) != EOF)
+          ok = false;
+        std::fclose(file);
+        if (!ok)
+          throw std::runtime_error("texture RGBA size");
+        Image image{bytes.data(), 128, 128, 1,
+                    PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
+        a->textures.push_back(
+            a->get<Texture (*)(Image)>("LoadTextureFromImage")(image));
       } else if (op == "emoji-load") {
         size_t id = 0;
         std::string path;
@@ -302,6 +346,17 @@ int main(int argc, char **argv) {
           throw std::runtime_error("forms texture missing");
         a->get<void (*)(Texture, Vector2, float, float, Color)>(
             "DrawTextureEx")(a->textures[id], {x, y}, 0, scale, color(c));
+      } else if (op == "texture-v") {
+        size_t id = 0;
+        AbiFloat x = 0, y = 0;
+        uint32_t c = 0;
+        in >> id >> x >> y >> c;
+        done();
+        ready();
+        if (id >= a->textures.size())
+          throw std::runtime_error("forms texture missing");
+        a->get<void (*)(Texture, Vector2, Color)>("DrawTextureV")(
+            a->textures[id], {x, y}, color(c));
       } else if (op == "texture-pro") {
         size_t id = 0;
         AbiFloat x = 0, y = 0, w = 0, h = 0;
@@ -397,6 +452,21 @@ int main(int argc, char **argv) {
           throw std::runtime_error("forms target scope");
         a->get<void (*)()>("EndTextureMode")();
         a->texture_frame = false;
+      } else if (op == "matrix-push") {
+        done();
+        ready();
+        if (a->matrix)
+          throw std::runtime_error("original matrix scope");
+        a->get<void (*)()>("rlPushMatrix")();
+        a->matrix = true;
+      } else if (op == "matrix-scale-xy") {
+        AbiFloat x = 0, y = 0;
+        in >> x >> y;
+        done();
+        ready();
+        if (!a->matrix)
+          throw std::runtime_error("original matrix missing");
+        a->get<void (*)(float, float, float)>("rlScalef")(x, y, 1);
       } else if (op == "matrix-scale") {
         AbiFloat scale = 0;
         in >> scale;
@@ -409,7 +479,7 @@ int main(int argc, char **argv) {
         push();
         a->matrix = true;
         multiply(scale, scale, 1);
-      } else if (op == "matrix-end") {
+      } else if (op == "matrix-end" || op == "matrix-pop") {
         done();
         if (!a->matrix)
           throw std::runtime_error("forms matrix missing");
@@ -460,6 +530,32 @@ int main(int argc, char **argv) {
         ready();
         a->get<void (*)(Rectangle, float, int, Color)>("DrawRectangleRounded")(
             {x, y, w, h}, roundness, segments, color(c));
+      } else if (op == "rounded-outline") {
+        AbiFloat x = 0, y = 0, w = 0, h = 0, radius = 0, thickness = 0;
+        int segments = 0;
+        uint32_t c = 0;
+        in >> x >> y >> w >> h >> radius >> segments >> thickness >> c;
+        done();
+        ready();
+        a->get<void (*)(Rectangle, float, int, float, Color)>(
+            "DrawRectangleRoundedLinesEx")(
+            {x, y, w, h}, radius, segments, thickness, color(c));
+      } else if (op == "outline-ex") {
+        AbiFloat x = 0, y = 0, w = 0, h = 0, thickness = 0;
+        uint32_t c = 0;
+        in >> x >> y >> w >> h >> thickness >> c;
+        done();
+        ready();
+        a->get<void (*)(Rectangle, float, Color)>("DrawRectangleLinesEx")(
+            {x, y, w, h}, thickness, color(c));
+      } else if (op == "gradient-h") {
+        int x = 0, y = 0, w = 0, h = 0;
+        uint32_t c = 0, d = 0;
+        in >> x >> y >> w >> h >> c >> d;
+        done();
+        ready();
+        a->get<void (*)(int, int, int, int, Color, Color)>(
+            "DrawRectangleGradientH")(x, y, w, h, color(c), color(d));
       } else if (op == "outline") {
         int x = 0, y = 0, w = 0, h = 0;
         uint32_t c = 0;
@@ -493,15 +589,19 @@ int main(int argc, char **argv) {
         ready();
         a->get<void (*)(int, int, int, int, Color)>("DrawLine")(x, y, x2, y2,
                                                                 color(c));
-      } else if (op == "text") {
+      } else if (op == "text" || op == "text-spaced") {
         std::string text;
         AbiFloat x = 0, y = 0, size = 0;
         uint32_t c = 0;
-        in >> text >> x >> y >> size >> c;
+        in >> text >> x >> y >> size;
+        AbiFloat spacing = 0;
+        if (op == "text-spaced")
+          in >> spacing;
+        in >> c;
         done();
         ready();
         a->get<void (*)(Font, const char *, Vector2, float, float, Color)>(
-            "DrawTextEx")(a->font, unhex(text).c_str(), {x, y}, size, 0,
+            "DrawTextEx")(a->font, unhex(text).c_str(), {x, y}, size, spacing,
                           color(c));
       } else if (op == "clip") {
         int x = 0, y = 0, w = 0, h = 0;

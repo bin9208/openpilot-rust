@@ -24,6 +24,37 @@ fn hex(value: &OsStr) -> String {
         .map(|v| format!("{v:02x}"))
         .collect()
 }
+/// Exact, iterative fixture binding: no source comparator tolerance or recursion cap.
+#[allow(dead_code)] // Not all test-oracle consumers bind a general corpus.
+pub fn same_input(
+    a: &openpilot_log_format::JsonValue,
+    b: &openpilot_log_format::JsonValue,
+) -> bool {
+    use openpilot_log_format::JsonView;
+    let mut pending = vec![(a.clone(), b.clone())];
+    while let Some((a, b)) = pending.pop() {
+        match (a.view(), b.view()) {
+            (JsonView::Null, JsonView::Null) => {}
+            (JsonView::Bool(a), JsonView::Bool(b)) if a == b => {}
+            (JsonView::Integer(a), JsonView::Integer(b)) if a == b => {}
+            (JsonView::Float(a), JsonView::Float(b)) if a.to_bits() == b.to_bits() => {}
+            (JsonView::Text(a), JsonView::Text(b)) if a == b => {}
+            (JsonView::Array(a), JsonView::Array(b)) if a.len() == b.len() => {
+                pending.extend(a.into_iter().zip(b));
+            }
+            (JsonView::Object(a), JsonView::Object(b)) if a.len() == b.len() => {
+                for (key, value) in a {
+                    let Some((_, other)) = b.iter().find(|(other, _)| *other == key) else {
+                        return false;
+                    };
+                    pending.push((value, other.clone()));
+                }
+            }
+            _ => return false,
+        }
+    }
+    true
+}
 pub fn validate(text: &str, case: &Value) -> Result<Value> {
     if hash(text.as_bytes()) != "c6a320a0ff42599b481799f761f446766fbb054602601d5969e52f6cc1f81c5d" {
         return Err("immutable original Confirm draw capture changed".into());
@@ -92,6 +123,8 @@ pub struct Expected {
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
     pub capture: &'static str,
+    #[allow(dead_code)] // Admission captures do not record encoder frames.
+    pub frames: Vec<PathBuf>,
 }
 pub fn replay(
     case: &Value,
@@ -125,7 +158,7 @@ pub fn replay_admission(
         directory,
     )
 }
-fn replay_trace(
+pub fn replay_trace(
     trace: Value,
     capture: &'static str,
     root: &Path,
@@ -147,12 +180,17 @@ fn replay_trace(
     let mut measurements = Vec::new();
     let mut measured = false;
     let mut drawing = false;
+    let mut frames = Vec::new();
     for captured in trace["commands"]
         .as_array()
         .ok_or("Confirm commands missing")?
     {
         if let Some(item) = captured.as_str() {
-            if matches!(item, "begin" | "@EXPORT@") && !measured {
+            if matches!(
+                item,
+                "begin" | "target-begin" | "@EXPORT@" | "@EXPORT-TARGET@"
+            ) && !measured
+            {
                 measured = true;
                 for measurement in trace["measurements"]
                     .as_array()
@@ -162,28 +200,44 @@ fn replay_trace(
                     let text = measurement["text"]
                         .as_str()
                         .ok_or("Confirm measured text missing")?;
-                    if measurement
+                    let spaced = measurement
                         .get("spacing")
-                        .is_some_and(|v| v.as_f64() != Some(0.0))
-                    {
-                        return Err("original measurement uses unsupported nonzero spacing".into());
-                    }
+                        .is_some_and(|v| v.as_f64() != Some(0.0));
                     let encoded = hex(OsStr::new(text));
                     commands.push(format!(
-                        "measure {} {}",
+                        "{} {} {}{}",
+                        if spaced { "measure-spaced" } else { "measure" },
                         if encoded.is_empty() { "-" } else { &encoded },
-                        measurement["size"]
+                        measurement["size"],
+                        if spaced {
+                            format!(" {}", measurement["spacing"])
+                        } else {
+                            String::new()
+                        }
                     ));
                     measurements.push((commands.len(), measurement));
                 }
             }
             match item {
                 "flush" => {} // Export executes this same raw batch flush.
-                "@EXPORT@" => {
+                "@RECORD-FRAME@" => {
+                    let frame = directory.join(format!("original-frame-{}.rgba", frames.len()));
+                    commands.push(format!("target-rgba {}", hex(frame.as_os_str())));
+                    frames.push(frame);
+                }
+                "@EXPORT@" | "@EXPORT-TARGET@" => {
                     if !drawing {
                         commands.push("export-idle".into());
                     }
-                    commands.push(format!("export {}", hex(path.as_os_str())));
+                    commands.push(format!(
+                        "{} {}",
+                        if item == "@EXPORT-TARGET@" {
+                            "export-target"
+                        } else {
+                            "export"
+                        },
+                        hex(path.as_os_str())
+                    ));
                 }
                 _ => commands.push(item.into()),
             }
@@ -193,6 +247,30 @@ fn replay_trace(
                 _ => {}
             }
         } else {
+            if let Some(encoded) = captured.get("rgba").and_then(Value::as_str) {
+                if encoded.len() != 128 * 128 * 8
+                    || captured["width"] != 128
+                    || captured["height"] != 128
+                {
+                    return Err("original emoji RGBA shape changed".into());
+                }
+                let bytes = encoded
+                    .as_bytes()
+                    .chunks_exact(2)
+                    .map(|v| Ok(u8::from_str_radix(std::str::from_utf8(v)?, 16)?))
+                    .collect::<Result<Vec<_>>>()?;
+                if Some(hash(&bytes).as_str()) != captured["sha256"].as_str() {
+                    return Err("original emoji RGBA digest changed".into());
+                }
+                let file = directory.join(format!("original-rgba-{}.bin", captured["texture"]));
+                fs::write(&file, bytes)?;
+                commands.push(format!(
+                    "texture-rgba {} {}",
+                    captured["texture"],
+                    hex(file.as_os_str())
+                ));
+                continue;
+            }
             let name = captured["path"]
                 .as_str()
                 .ok_or("Confirm font path missing")?;
@@ -202,6 +280,27 @@ fn replay_trace(
                     .ok_or("Confirm original font digest missing")?
             {
                 return Err("Confirm original font bytes changed".into());
+            }
+            if let Some(companions) = captured.get("companions").and_then(Value::as_object) {
+                for (path, digest) in companions {
+                    if Some(hash(&fs::read(root.join(path))?).as_str()) != digest.as_str() {
+                        return Err("original font atlas companion changed".into());
+                    }
+                }
+            }
+            if captured.get("texture").is_some() {
+                commands.push(format!(
+                    "texture-load {} {} {} {}",
+                    captured["texture"],
+                    hex(root.join(name).as_os_str()),
+                    captured["width"],
+                    captured["height"]
+                ));
+                commands.push(format!(
+                    "texture-size {} {} {}",
+                    captured["texture"], captured["logical_width"], captured["logical_height"]
+                ));
+                continue;
             }
             let mut points = Vec::new();
             for range in captured["point_ranges"]
@@ -219,7 +318,13 @@ fn replay_trace(
                 return Err("Confirm font point count changed".into());
             }
             commands.push(format!(
-                "font-load {} {} {} {} {}",
+                "{} {} {} {} {} {}",
+                match (captured.get("mipmaps"), captured["atlas"] == true) {
+                    (Some(_), true) => "font-atlas-plain",
+                    (Some(_), false) => "font-load-plain",
+                    (None, true) => "font-atlas",
+                    (None, false) => "font-load",
+                },
                 captured["font"],
                 hex(root.join(name).as_os_str()),
                 captured["size"],
@@ -230,6 +335,9 @@ fn replay_trace(
                     .collect::<Vec<_>>()
                     .join(" ")
             ));
+            if captured["mipmaps"] == true {
+                commands.push(format!("font-mipmaps {}", captured["font"]));
+            }
         }
     }
     commands.push("quit".into());
@@ -299,5 +407,6 @@ fn replay_trace(
         stdout: result.stdout,
         stderr: result.stderr,
         capture,
+        frames,
     })
 }

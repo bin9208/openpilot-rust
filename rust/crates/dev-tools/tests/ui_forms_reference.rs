@@ -1,4 +1,10 @@
 //! Independently captured InputBox source state and raylib drawing calls.
+#[allow(dead_code)]
+#[path = "support/ui_forms_confirm_draw.rs"]
+mod confirm_draw;
+#[allow(dead_code)]
+#[path = "support/ui_reference_draw.rs"]
+mod reference_draw;
 use openpilot_dev_tools::{seal::Result, ui_forms_input::Canvas, ui_forms_reference::render_input};
 use serde_json::{json, Value};
 use std::{collections::BTreeMap, path::Path};
@@ -147,19 +153,21 @@ fn raw_native_input_family_against_independent_adversarial_sources_when_availabl
             let mut raw = Raw::open(Path::new(&helper), Path::new(&library)).unwrap();
             let actual = render_input(
                 &root,
-                &serde_json::to_vec(&case["scene"]).unwrap(),
+                &reference_draw::scene_bytes(capture, case).unwrap(),
                 &output,
                 &mut raw,
             )
             .unwrap();
             raw.close().unwrap();
             compare(&actual, &case["states"]);
-            use sha2::{Digest, Sha256};
-            assert_eq!(
-                format!("{:x}", Sha256::digest(std::fs::read(&output).unwrap())),
-                case["png_sha256"].as_str().unwrap(),
-                "{}",
-                case["name"]
+            reference_draw::assert_png(
+                capture,
+                &reference_draw::from_serde_case(capture, case).unwrap(),
+                &root,
+                Path::new(&helper),
+                &std::process::Command::new("unused"),
+                temp.path(),
+                &output,
             );
         }
     }
@@ -184,10 +192,13 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
             .unwrap()
             .as_array()
             .unwrap()
-            .clone()
+            .iter()
+            .cloned()
+            .map(|case| (*v, case))
+            .collect::<Vec<_>>()
     })
     .collect::<Vec<_>>();
-    for case in &captures {
+    for (fixture, case) in &captures {
         let temp = tempfile::tempdir().unwrap();
         let script = temp.path().join("ffmpeg");
         // Owned shell peer records exact argv and raw input; production does
@@ -195,7 +206,7 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
         std::fs::write(&script, "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$FORMS_FFMPEG_ARGS\"\n/bin/cat > \"$FORMS_FFMPEG_BYTES\"\n").unwrap();
         std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
         let scene = temp.path().join("scene.json");
-        std::fs::write(&scene, serde_json::to_vec(&case["scene"]).unwrap()).unwrap();
+        std::fs::write(&scene, reference_draw::scene_bytes(fixture, case).unwrap()).unwrap();
         let output = temp.path().join("output.png");
         let record = temp.path().join("record.mp4");
         let arguments = temp.path().join("args");
@@ -257,13 +268,19 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
             "{} render",
             case["name"]
         );
+        let mut expected_frames = None;
         if output.exists() {
-            use sha2::{Digest, Sha256};
-            assert_eq!(
-                format!("{:x}", Sha256::digest(std::fs::read(&output).unwrap())),
-                case["png_sha256"].as_str().unwrap(),
-                "{} PNG",
-                case["name"]
+            expected_frames = Some(
+                reference_draw::assert_png(
+                    fixture,
+                    &reference_draw::from_serde_case(fixture, case).unwrap(),
+                    &root,
+                    Path::new(&helper),
+                    &command,
+                    temp.path(),
+                    &output,
+                )
+                .frames,
             );
             let states: Value =
                 serde_json::from_slice(&std::fs::read(output.with_extension("json")).unwrap())
@@ -290,11 +307,26 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
                 "{} recorder frames",
                 case["name"]
             );
-            use sha2::{Digest, Sha256};
+            // PROFILE_STARTUP exits before entering the draw generator:
+            // its original recorder exists but receives no pixels or PNG.
+            let expected = if case["png"] == false {
+                assert_eq!(
+                    recorder["bytes"], 0,
+                    "{} recording without drawing",
+                    case["name"]
+                );
+                Vec::new()
+            } else {
+                expected_frames
+                    .as_ref()
+                    .expect("original recording draw frames")
+                    .iter()
+                    .flat_map(|path| std::fs::read(path).unwrap())
+                    .collect::<Vec<_>>()
+            };
             assert_eq!(
-                format!("{:x}", Sha256::digest(&frames)),
-                recorder["sha256"].as_str().unwrap(),
-                "{} recorded pixels",
+                frames, expected,
+                "{} exact original recorded pixels",
                 case["name"]
             );
         } else {
@@ -529,9 +561,9 @@ fn actual_cli_preserves_raw_python_codepoints_and_lazy_encoding_when_available()
         let JsonView::Array(captured) = captures.view() else {
             panic!("original codepoint fixture must list")
         };
-        cases.extend(captured);
+        cases.extend(captured.into_iter().map(|case| (fixture, case)));
     }
-    for case in cases {
+    for (fixture, case) in cases {
         let name = case.get("name").unwrap().to_utf8().unwrap();
         let temp = tempfile::tempdir().unwrap();
         let scene = temp.path().join("scene.json");
@@ -577,7 +609,6 @@ fn actual_cli_preserves_raw_python_codepoints_and_lazy_encoding_when_available()
             "{name} state artifact"
         );
         if success {
-            use sha2::{Digest, Sha256};
             let expected = case.get("states").unwrap();
             let actual =
                 JsonValue::parse(&std::fs::read_to_string(output.with_extension("json")).unwrap())
@@ -587,10 +618,14 @@ fn actual_cli_preserves_raw_python_codepoints_and_lazy_encoding_when_available()
                 None,
                 "{name} lossless state"
             );
-            assert_eq!(
-                format!("{:x}", Sha256::digest(std::fs::read(&output).unwrap())),
-                case.get("png_sha256").unwrap().to_utf8().unwrap(),
-                "{name} pixels"
+            reference_draw::assert_png(
+                fixture,
+                &case,
+                &root,
+                Path::new(&helper),
+                &command,
+                temp.path(),
+                &output,
             );
         }
     }
@@ -634,4 +669,41 @@ fn input_keeps_distinct_python_surrogates_through_edit_mask_and_snapshot() {
     assert_eq!(points, [0xd800, 0xdc00, 120]);
     input.clear();
     assert!(input.text.is_empty());
+}
+
+#[test]
+fn immutable_reference_draw_corpus_covers_every_raster_and_rejects_mutation() {
+    use openpilot_log_format::JsonValue;
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    assert_eq!(reference_draw::check_complete(&root).unwrap(), 243);
+    let fixture = include_str!("fixtures/ui-forms/reference-default-original.json");
+    let cases: Value = serde_json::from_str(fixture).unwrap();
+    let case = cases.as_array().unwrap().first().unwrap();
+    let original = reference_draw::from_serde_case(fixture, case).unwrap();
+    reference_draw::validate(fixture, &original).unwrap();
+    // The existing serde adapter rounds some Mici state decimals differently
+    // from Python's binary64 parser. Bind the unchanged lexical fixture row.
+    let mici = cases
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|v| v["name"] == "mici-active")
+        .unwrap();
+    let rounded = JsonValue::parse(&mici.to_string()).unwrap();
+    let lossless = reference_draw::from_serde_case(fixture, mici).unwrap();
+    assert!(!confirm_draw::same_input(&rounded, &lossless));
+    assert!(reference_draw::validate(fixture, &rounded).is_err());
+    reference_draw::validate(fixture, &lossless).unwrap();
+    let mut changed = mici.clone();
+    changed["scene"]["frames"] = 1.into();
+    assert!(reference_draw::from_serde_case(fixture, &changed).is_err());
+    let mut modified = case.clone();
+    modified["name"] = "uncaptured".into();
+    assert!(
+        reference_draw::validate(fixture, &JsonValue::parse(&modified.to_string()).unwrap())
+            .is_err()
+    );
+    assert!(reference_draw::validate(&(fixture.to_owned() + " "), &original).is_err());
+    let modified_capture = reference_draw::corpus().unwrap().to_owned() + " ";
+    assert!(reference_draw::verify_text(&modified_capture).is_err());
 }

@@ -1,11 +1,16 @@
 //! Real unchanged-source PNG/state fixtures, evaluated through the native ABI.
 #![cfg(feature = "image-array-native")]
+#[allow(dead_code)]
+#[path = "support/ui_forms_confirm_draw.rs"]
+mod confirm_draw;
+#[allow(dead_code)]
+#[path = "support/ui_reference_draw.rs"]
+mod reference_draw;
 use openpilot_dev_tools::{
     ui_forms_input::Canvas,
     ui_render_reference::{render, validate_source, Raw},
 };
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -28,7 +33,7 @@ fn actual_original_default_and_generic_render_contract_when_available() {
             let output = temp.path().join("render.png");
             let actual = render(
                 &root,
-                &serde_json::to_vec(&case["scene"]).unwrap(),
+                &reference_draw::scene_bytes(fixture, case).unwrap(),
                 &output,
                 Path::new(&helper),
                 Path::new(&library),
@@ -50,11 +55,14 @@ fn actual_original_default_and_generic_render_contract_when_available() {
                     "{} state",
                     case["name"]
                 );
-                assert_eq!(
-                    format!("{:x}", Sha256::digest(fs::read(&output).unwrap())),
-                    case["png_sha256"].as_str().unwrap(),
-                    "{} PNG",
-                    case["name"]
+                reference_draw::assert_png(
+                    fixture,
+                    &reference_draw::from_serde_case(fixture, case).unwrap(),
+                    &root,
+                    Path::new(&helper),
+                    &std::process::Command::new("unused"),
+                    temp.path(),
+                    &output,
                 );
             }
         }
@@ -222,8 +230,8 @@ fn original_raw_text_ignored_fields_and_toggle_state_when_available() {
         include_str!("fixtures/ui-render/multiclick-original.json"),
         include_str!("fixtures/ui-render/multiclick-values-original.json"),
     ] {
-        let fixture = JsonValue::parse(fixture).unwrap();
-        let JsonView::Array(cases) = fixture.view() else {
+        let captured = JsonValue::parse(fixture).unwrap();
+        let JsonView::Array(cases) = captured.view() else {
             panic!("original cases must array");
         };
         for case in cases {
@@ -259,10 +267,14 @@ fn original_raw_text_ignored_fields_and_toggle_state_when_available() {
                     openpilot_dev_tools::ui_render_reference::states_equal(&value, &expected),
                     "{name} raw state"
                 );
-                assert_eq!(
-                    format!("{:x}", Sha256::digest(fs::read(output).unwrap())),
-                    case.get("png_sha256").unwrap().to_utf8().unwrap(),
-                    "{name} pixels"
+                reference_draw::assert_png(
+                    fixture,
+                    &case,
+                    &root,
+                    Path::new(&helper),
+                    &std::process::Command::new("unused"),
+                    temp.path(),
+                    &output,
                 );
             }
         }
@@ -276,8 +288,8 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
         return;
     };
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let captures: Vec<Value> =
-        serde_json::from_str(include_str!("fixtures/ui-render/environment-original.json")).unwrap();
+    let fixture = include_str!("fixtures/ui-render/environment-original.json");
+    let captures: Vec<Value> = serde_json::from_str(fixture).unwrap();
     for case in &captures {
         let temp = tempfile::tempdir().unwrap();
         let script = temp.path().join("ffmpeg");
@@ -286,7 +298,7 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
         std::fs::write(&script, "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$RENDER_FFMPEG_ARGS\"\n/bin/cat > \"$RENDER_FFMPEG_BYTES\"\n").unwrap();
         std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
         let scene = temp.path().join("scene.json");
-        std::fs::write(&scene, serde_json::to_vec(&case["scene"]).unwrap()).unwrap();
+        std::fs::write(&scene, reference_draw::scene_bytes(fixture, case).unwrap()).unwrap();
         let output = temp.path().join("output.png");
         let record = temp.path().join("record.mp4");
         let arguments = temp.path().join("args");
@@ -348,13 +360,19 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
             "{} render",
             case["name"]
         );
+        let mut expected_frames = None;
         if output.exists() {
-            use sha2::{Digest, Sha256};
-            assert_eq!(
-                format!("{:x}", Sha256::digest(std::fs::read(&output).unwrap())),
-                case["png_sha256"].as_str().unwrap(),
-                "{} PNG",
-                case["name"]
+            expected_frames = Some(
+                reference_draw::assert_png(
+                    fixture,
+                    &reference_draw::from_serde_case(fixture, case).unwrap(),
+                    &root,
+                    Path::new(&helper),
+                    &command,
+                    temp.path(),
+                    &output,
+                )
+                .frames,
             );
             let states: Value =
                 serde_json::from_slice(&std::fs::read(output.with_extension("json")).unwrap())
@@ -388,11 +406,26 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
                 "{} recorder frames",
                 case["name"]
             );
-            use sha2::{Digest, Sha256};
+            // PROFILE_STARTUP exits before entering the draw generator:
+            // its original recorder exists but receives no pixels or PNG.
+            let expected = if case["png"] == false {
+                assert_eq!(
+                    recorder["bytes"], 0,
+                    "{} recording without drawing",
+                    case["name"]
+                );
+                Vec::new()
+            } else {
+                expected_frames
+                    .as_ref()
+                    .expect("original recording draw frames")
+                    .iter()
+                    .flat_map(|path| std::fs::read(path).unwrap())
+                    .collect::<Vec<_>>()
+            };
             assert_eq!(
-                format!("{:x}", Sha256::digest(&frames)),
-                recorder["sha256"].as_str().unwrap(),
-                "{} recorded pixels",
+                frames, expected,
+                "{} exact original recorded pixels",
                 case["name"]
             );
         } else {

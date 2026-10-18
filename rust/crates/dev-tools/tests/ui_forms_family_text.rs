@@ -4,6 +4,11 @@ use openpilot_dev_tools::ui_forms_check::state_difference;
 use openpilot_log_format::{JsonValue, JsonView};
 use sha2::{Digest, Sha256};
 use std::{fs, path::Path, process::Command};
+#[allow(dead_code)]
+#[path = "support/ui_forms_confirm_draw.rs"]
+mod confirm_draw;
+#[path = "support/ui_forms_family_draw.rs"]
+mod family_draw;
 
 fn compare_originals(fixtures: &[&str]) {
     let Some(helper) = std::env::var_os("UI_FORMS_RAW_HELPER") else {
@@ -85,11 +90,38 @@ fn compare_originals(fixtures: &[&str]) {
                 }
             }
             if output.exists() {
-                assert_eq!(
-                    format!("{:x}", Sha256::digest(fs::read(output).unwrap())),
-                    case.get("png_sha256").unwrap().to_utf8().unwrap(),
-                    "{name} pixels"
-                );
+                let replay = family_draw::replay(
+                    fixture,
+                    &case,
+                    &root,
+                    Path::new(&helper),
+                    &command,
+                    temp.path(),
+                )
+                .unwrap_or_else(|error| panic!("{name} original replay: {error}"));
+                let actual = format!("{:x}", Sha256::digest(fs::read(&output).unwrap()));
+                if actual != replay.hash {
+                    if let Some(directory) = std::env::var_os("UI_FORMS_FAILURE_OUTPUT") {
+                        let directory = Path::new(&directory)
+                            .join("family")
+                            .join(&format!("{:x}", Sha256::digest(fixture.as_bytes()))[..12]);
+                        family_draw::retain_failure(&directory, &name, &output, &replay).unwrap();
+                        let target = directory.join(&name);
+                        fs::copy(&scene, target.join("scene.json")).unwrap();
+                        fs::write(target.join("stdout.log"), &result.stdout).unwrap();
+                        fs::write(target.join("stderr.log"), &result.stderr).unwrap();
+                        fs::write(target.join("expected-case.json"), case.to_json().unwrap())
+                            .unwrap();
+                        if output.with_extension("json").exists() {
+                            fs::copy(
+                                output.with_extension("json"),
+                                target.join("actual-state.json"),
+                            )
+                            .unwrap();
+                        }
+                    }
+                }
+                assert_eq!(actual, replay.hash, "{name} pixels");
             }
         }
     }
@@ -154,4 +186,93 @@ fn actual_cli_preserves_json_encoder_boundary_after_exporting_png_when_available
     compare_originals(&[include_str!(
         "fixtures/ui-forms/mici-encoder-boundary-original.json"
     )]);
+}
+
+#[test]
+fn original_family_draw_corpus_is_complete_and_rejects_input_and_capture_mutation() {
+    for (left, right) in [
+        ("true", "1"),
+        ("1", "1.0"),
+        ("1.0", "1.000001"),
+        ("100000000000000000001", "100000000000000000002"),
+        (r#""\ud800""#, r#""\ud801""#),
+    ] {
+        assert!(!confirm_draw::same_input(
+            &JsonValue::parse(left).unwrap(),
+            &JsonValue::parse(right).unwrap()
+        ));
+    }
+    let deep = format!("{}0{}", "[".repeat(1001), "]".repeat(1001));
+    let deep = JsonValue::parse(&deep).unwrap();
+    assert!(confirm_draw::same_input(&deep, &deep));
+    let fixtures = [
+        include_str!("fixtures/ui-forms/repeated-release-original.json"),
+        include_str!("fixtures/ui-forms/repeated-release-neighbors-original.json"),
+        include_str!("fixtures/ui-forms/family-codepoints-original.json"),
+        include_str!("fixtures/ui-forms/family-properties-original.json"),
+        include_str!("fixtures/ui-forms/options-selection-original.json"),
+        include_str!("fixtures/ui-forms/family-nul-original.json"),
+        include_str!("fixtures/ui-forms/mici-membership-original.json"),
+        include_str!("fixtures/ui-forms/mici-values-original.json"),
+        include_str!("fixtures/ui-forms/value-titles-original.json"),
+        include_str!("fixtures/ui-forms/remaining-python-kinds-original.json"),
+        include_str!("fixtures/ui-forms/character-iterables-original.json"),
+        include_str!("fixtures/ui-forms/slider-value-depth-original.json"),
+        include_str!("fixtures/ui-forms/last-types-original.json"),
+        include_str!("fixtures/ui-forms/last-setters-original.json"),
+        include_str!("fixtures/ui-forms/last-slots-original.json"),
+        include_str!("fixtures/ui-forms/last-keyvalues-original.json"),
+        include_str!("fixtures/ui-forms/input-list-neighbors-original.json"),
+        include_str!("fixtures/ui-forms/input-list-lazy-original.json"),
+        include_str!("fixtures/ui-forms/mici-slider-slots-original.json"),
+        include_str!("fixtures/ui-forms/slider-shimmer-width-original.json"),
+        include_str!("fixtures/ui-forms/last-visible-original.json"),
+        include_str!("fixtures/ui-forms/list-visible-codepoints-original.json"),
+        include_str!("fixtures/ui-forms/keyboard-keyvalue-neighbors-original.json"),
+        include_str!("fixtures/ui-forms/options-slots-original.json"),
+        include_str!("fixtures/ui-forms/input-floatcursor-key-original.json"),
+        include_str!("fixtures/ui-forms/mici-encoder-boundary-original.json"),
+    ];
+    assert_eq!(
+        fixtures
+            .iter()
+            .map(|v| family_draw::successful_count(v).unwrap())
+            .sum::<usize>(),
+        142,
+    );
+    let text = family_draw::corpus().unwrap();
+    let capture: serde_json::Value = serde_json::from_str(text).unwrap();
+    assert_eq!(capture["captures"].as_array().unwrap().len(), 142);
+    assert_eq!(capture["fixtures"].as_object().unwrap().len(), 26);
+    for field in [
+        "captures",
+        "fixtures",
+        "original_sha256",
+        "provenance_sha256",
+    ] {
+        let mut altered = capture.clone();
+        altered[field] = serde_json::Value::Null;
+        assert!(
+            family_draw::verify_text(&altered.to_string()).is_err(),
+            "{field}"
+        );
+    }
+    for field in ["commands", "measurements", "scene_text", "state_sha256"] {
+        let mut altered = capture.clone();
+        altered["captures"][0][field] = serde_json::Value::Null;
+        assert!(
+            family_draw::verify_text(&altered.to_string()).is_err(),
+            "{field}"
+        );
+    }
+    let fixture = include_str!("fixtures/ui-forms/repeated-release-original.json");
+    assert_eq!(family_draw::successful_count(fixture).unwrap(), 7);
+    let cases = JsonValue::parse(fixture).unwrap();
+    let JsonView::Array(cases) = cases.view() else {
+        unreachable!()
+    };
+    let changed = format!("{fixture} ");
+    assert!(family_draw::validate(&changed, &cases[0]).is_err());
+    let changed = JsonValue::parse("{\"name\":\"list-toggle-two\",\"scene\":null}").unwrap();
+    assert!(family_draw::validate(fixture, &changed).is_err());
 }

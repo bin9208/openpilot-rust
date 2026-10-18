@@ -1,12 +1,17 @@
 //! Independent original-process, state and pixel contracts for network screens.
 #![cfg(feature = "image-array-native")]
+#[allow(dead_code)]
+#[path = "support/ui_forms_confirm_draw.rs"]
+mod confirm_draw;
+#[allow(dead_code)]
+#[path = "support/ui_reference_draw.rs"]
+mod reference_draw;
 use openpilot_dev_tools::{
     ui_forms_input::Canvas,
     ui_network_reference::{render, validate_source},
 };
 use openpilot_log_format::JsonValue;
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -40,11 +45,7 @@ fn actual_original_scenes_branching_and_generic_inputs() {
         for case in cases.as_array().unwrap() {
             let temp = tempfile::tempdir().unwrap();
             let output = temp.path().join("network.png");
-            let scene = case["scene_text"]
-                .as_str()
-                .map(str::as_bytes)
-                .map(Vec::from)
-                .unwrap_or_else(|| serde_json::to_vec(&case["scene"]).unwrap());
+            let scene = reference_draw::scene_bytes(fixture, case).unwrap();
             let actual = render(&root, &scene, &output, &helper, &library);
             assert_eq!(
                 actual.is_ok(),
@@ -74,11 +75,14 @@ fn actual_original_scenes_branching_and_generic_inputs() {
                 );
             }
             if output.exists() {
-                assert_eq!(
-                    format!("{:x}", Sha256::digest(fs::read(&output).unwrap())),
-                    case["png_sha256"].as_str().unwrap(),
-                    "{} PNG",
-                    case["name"]
+                let replay = reference_draw::assert_png(
+                    fixture,
+                    &reference_draw::from_serde_case(fixture, case).unwrap(),
+                    &root,
+                    Path::new(&helper),
+                    &std::process::Command::new("unused"),
+                    temp.path(),
+                    &output,
                 );
                 let image = openpilot_dev_tools::image_array::read(&output).unwrap();
                 assert_eq!(
@@ -90,19 +94,10 @@ fn actual_original_scenes_branching_and_generic_inputs() {
                         .map(|v| v.as_u64().unwrap() as usize)
                         .collect::<Vec<_>>()
                 );
+                let expected_image = openpilot_dev_tools::image_array::read(&replay.path).unwrap();
                 assert_eq!(
-                    format!(
-                        "{:x}",
-                        Sha256::digest(
-                            image
-                                .values
-                                .iter()
-                                .flat_map(|v| v.to_le_bytes())
-                                .collect::<Vec<_>>()
-                        )
-                    ),
-                    case["values_sha256"].as_str().unwrap(),
-                    "{} i64 samples",
+                    image.values, expected_image.values,
+                    "{} exact i64 samples",
                     case["name"]
                 );
             }
@@ -117,10 +112,8 @@ fn actual_original_manual_loop_environment() {
     let executable = std::env::var_os("CARGO_BIN_EXE_ui-network-reference")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_BIN_EXE_ui-network-reference")));
-    let cases: Value = serde_json::from_str(include_str!(
-        "fixtures/ui-network/environment-original.json"
-    ))
-    .unwrap();
+    let fixture = include_str!("fixtures/ui-network/environment-original.json");
+    let cases: Value = serde_json::from_str(fixture).unwrap();
     for case in cases.as_array().unwrap() {
         let temp = tempfile::tempdir().unwrap();
         let scene = temp.path().join("scene.json");
@@ -173,11 +166,14 @@ fn actual_original_manual_loop_environment() {
             case["render_profile"] == true
         );
         if output.exists() {
-            assert_eq!(
-                format!("{:x}", Sha256::digest(fs::read(output).unwrap())),
-                case["png_sha256"].as_str().unwrap(),
-                "{} PNG",
-                case["name"]
+            reference_draw::assert_png(
+                fixture,
+                &reference_draw::from_serde_case(fixture, case).unwrap(),
+                &root,
+                Path::new(&helper),
+                &command,
+                temp.path(),
+                &output,
             );
         }
     }

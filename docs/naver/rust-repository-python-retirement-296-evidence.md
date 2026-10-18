@@ -2609,3 +2609,41 @@ All20retained encoder CI/outcome tests also pass. Inventory is112replaced-local,
 Exact8752ce82 cloud Fast checks passed. Rust run39093856907 has an actual UI
 family-pixel failure; current raster-portability repairs are still being validated.
 Do not interpret other successful jobs or the local V4L gate as whole-branch success.
+
+### Encoder runtime controller closure in progress (2026-10-18)
+
+Independent original captures cover26actual full-cereal packet cases,18exercise
+schedules/failures,11orchestration outcomes and5cleanup precedence paths. Native
+controller tests and three actual owned-child shutdown cases pass; scoped strict
+Clippy passes. The initial native projection admitted unknown enum8, whereas the
+original to_dict raises Member was null.; an added unchanged-source control
+reproduced the mismatch before the native rejection was fixed. Rotation assertion
+order now follows original service order instead of sorted map order. A harness
+represented the zero-second pause as0.0 instead of original0; only that recorded
+call representation was repaired, with original captures untouched.
+
+These units do not retire the runtime checker: actual VisionIPC/Msgq peer integration,
+all10live original/Rust cases, CLI/CI migration and source deletion remain pending.
+Evidence:2026-10-18-encoder-runtime/{controller-green4,controller-clippy}.log,
+encoder_runtime_wire-red.log and source-bound corpus. The user retains device
+boot/recording/upload acceptance; no current device result is claimed.
+
+### Exact UI raster comparison across renderers (2026-10-18)
+
+The fixed host PNG digests caused real remote family failures despite unchanged
+source drawing. Test-only oracles now replay independently captured original
+raylib calls on the current renderer, requiring exact PNG bytes, decoded array
+samples and recording frames. The original fixture digests remain provenance;
+there is no pixel tolerance or accepted-hash list. Whole-fixture, lossless input,
+source, font, atlas, asset and measurement bindings reject drift. The production
+widget implementations do not read these captures. Two adapter defects (startup
+without a PNG and one-ULP serde reserialization) were reproduced and repaired
+without changing the immutable original fixtures.
+
+All385 independent original replays match their original raster evidence. The
+current family7, admission6, Forms10, Render5 and Network4 tests pass32/32 with no
+failures or ignored cases; scoped strict Clippy passes. Parent inspection checked
+the twelve changed source hashes and all five final test-log hashes/results.
+Evidence:2026-10-18-ui-network/raster-final-results.json and portability handoff.
+Fresh exact-commit cloud verification is still required; previous UI failure runs
+are not passing evidence. Python retirement count is unchanged by this repair.
