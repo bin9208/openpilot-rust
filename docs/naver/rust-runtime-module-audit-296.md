@@ -1303,3 +1303,31 @@ found no blocker in the constructors, owner boundaries or regression. Evidence:
 native-green-1.log, affected-tests.log, affected-clippy.log and source-review.md;
 original-http-ip_nnes3/receipt.json preserves the unchanged original controls.
 Exact committed-SHA cloud validation remains required; the user owns device tests.
+
+### Athena context-binding diagnostic lifetime (#368, 2026-10-18)
+
+The public Athena context-binding operation reproduced the same short-lived
+logger loss on both the main thread and a joined worker. A private malformed
+DongleId produced the expected null fallback, metadata and stderr warning, but
+the collector connecting after binding completed received no record within2s.
+Independent unchanged manage_athenad context-binding controls delivered both
+warnings with the existing global context. Those controls use real private
+Params/build metadata and an explicit PC hardware value; they do not execute the
+supervisor loop, remote network or vehicle.
+
+Factory::runtime_logger now creates the existing retained facade from the
+caller's factory, preserving already-bound context. Logger::for_runtime_retained
+delegates to it. Only Athena logging::bind changes its constructor; unverified
+worker-exception candidates remain unchanged. Ordinary factory loggers retain
+their existing ownership, and no additional sender/socket/thread is introduced.
+
+Both public-operation regressions now pass with exact warning, native callsite,
+PID, preexisting context, metadata fallback and no duplicate. All Athena/logging
+tests pass:26 ordinary assertions including the two compile-fail documentation
+tests, plus17 custom lifetime modes. The existing ignored context_child is an
+owned subprocess entrypoint explicitly executed by its two parent tests, not
+an omitted validation. Strict all-target Clippy passes. The new integration
+target runs through the workspace gate without an optional feature or skip.
+Evidence is in `.analysis/scratch/2026-10-18-short-red/athena-*` and
+`2026-10-18-athena-log-lifetime/original-pb89fib6/receipt.json`.
+Exact committed-SHA CI and user device acceptance remain separate gates.

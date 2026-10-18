@@ -107,6 +107,16 @@ impl Factory {
             retained: false,
         }
     }
+
+    /// Keep this factory's context while sending through the process-retained
+    /// runtime connection. The first successful runtime emission selects the
+    /// endpoint; retain RuntimeLogScope at the outermost process boundary.
+    /// Dropping this caller-local facade does not close queued records.
+    pub fn runtime_logger(&self) -> Logger {
+        let mut logger = self.logger();
+        logger.retained = true;
+        logger
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Delivery {
@@ -150,9 +160,7 @@ impl Logger {
     /// the shared endpoint; retain RuntimeLogScope at the process root.
     /// Explicit close closes only this facade in the current PID.
     pub fn for_runtime_retained() -> Result<Self, Error> {
-        let mut logger = Factory::for_runtime()?.logger();
-        logger.retained = true;
-        Ok(logger)
+        Ok(Factory::for_runtime()?.runtime_logger())
     }
     pub fn bind(&self, fields: Fields) {
         self.local.bind(fields)
