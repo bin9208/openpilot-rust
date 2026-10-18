@@ -150,3 +150,129 @@ fn invalid_source_removes_prior_success_before_preflight() {
         "source failure retained an old success receipt"
     );
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn final_result_write_interruption_removes_tombstone_success_manifest() {
+    use rustix::{
+        fs::{mkfifoat, open, Mode, OFlags, CWD},
+        process::{pidfd_open, pidfd_send_signal, Pid, PidfdFlags, Signal},
+    };
+    use std::{
+        io::{ErrorKind, Read},
+        os::fd::OwnedFd,
+        process::{Child, Command, Stdio},
+        thread,
+        time::{Duration, Instant},
+    };
+    struct Checker {
+        child: Child,
+        identity: OwnedFd,
+    }
+    impl Drop for Checker {
+        fn drop(&mut self) {
+            // Keep the real outer owner alive for its normal group cleanup.
+            let _ = pidfd_send_signal(&self.identity, Signal::INT);
+            let deadline = Instant::now() + Duration::from_secs(3);
+            while Instant::now() < deadline {
+                if self.child.try_wait().ok().flatten().is_some() {
+                    return;
+                }
+                thread::sleep(Duration::from_millis(5));
+            }
+            let _ = self.child.kill();
+            let _ = self.child.wait();
+        }
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let output = temp.path().join("runtime");
+    let stderr = temp.path().join("checker.stderr");
+    let child = Command::new(env!("CARGO_BIN_EXE_check-tombstoned-reference"))
+        .arg(native_path("TOMBSTONE_PROBE_BINARY"))
+        .arg(native_path("TOMBSTONE_PARAMS_BINDING"))
+        .arg(&output)
+        .env("OPENPILOT_RUST_ROOT", repository())
+        .current_dir(repository())
+        .stdin(Stdio::null())
+        .stdout(fs::File::create(temp.path().join("checker.stdout")).unwrap())
+        .stderr(fs::File::create(&stderr).unwrap())
+        .spawn()
+        .unwrap();
+    let identity = pidfd_open(Pid::from_child(&child), PidfdFlags::empty()).unwrap();
+    let mut checker = Checker { child, identity };
+    let deadline = Instant::now() + Duration::from_secs(90);
+    let ready = output.join("gates/comparisons.jsonl");
+    loop {
+        if fs::metadata(&ready).is_ok_and(|metadata| metadata.len() > 0) {
+            break;
+        }
+        assert!(
+            checker.child.try_wait().unwrap().is_none(),
+            "Tombstone checker exited before its first comparison: {}",
+            fs::read_to_string(&stderr).unwrap()
+        );
+        assert!(
+            Instant::now() < deadline,
+            "Tombstone checker did not begin actual comparisons"
+        );
+        thread::sleep(Duration::from_millis(5));
+    }
+    let fifo = output.join("manifest.json");
+    mkfifoat(CWD, &fifo, Mode::RUSR | Mode::WUSR).unwrap();
+    let wchan = format!("/proc/{}/wchan", checker.child.id());
+    // The main thread is blocked opening our FIFO after all242 real comparisons.
+    // No guessed delay or production hook chooses this final write boundary.
+    loop {
+        if fs::read_to_string(&wchan).is_ok_and(|state| state.trim() == "wait_for_partner") {
+            break;
+        }
+        assert!(
+            checker.child.try_wait().unwrap().is_none(),
+            "Tombstone checker exited before final writer boundary: {}",
+            fs::read_to_string(&stderr).unwrap()
+        );
+        assert!(
+            Instant::now() < deadline,
+            "checker never reached final manifest FIFO"
+        );
+        thread::sleep(Duration::from_millis(5));
+    }
+    pidfd_send_signal(&checker.identity, Signal::INT).unwrap();
+    // The pending signal is delivered before the blocked open returns to user
+    // code. A nonblocking reader releases it; all reads and exit waits are bounded.
+    let mut reader = fs::File::from(
+        open(
+            &fifo,
+            OFlags::RDONLY | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .unwrap(),
+    );
+    let mut document = Vec::new();
+    let finish = Instant::now() + Duration::from_secs(5);
+    let status = loop {
+        let mut bytes = [0u8; 8192];
+        match reader.read(&mut bytes) {
+            Ok(count) => document.extend_from_slice(&bytes[..count]),
+            Err(error)
+                if matches!(error.kind(), ErrorKind::WouldBlock | ErrorKind::Interrupted) => {}
+            Err(error) => panic!("manifest FIFO read failed: {error}"),
+        }
+        if let Some(status) = checker.child.try_wait().unwrap() {
+            break status;
+        }
+        assert!(
+            Instant::now() < finish,
+            "interrupted final writer did not exit"
+        );
+        thread::sleep(Duration::from_millis(5));
+    };
+    let report: Value = serde_json::from_slice(&document).unwrap();
+    assert_eq!(report["result"], "PASS");
+    assert_eq!(report["comparisons"], 242);
+    assert!(!status.success(), "interrupted checker exited successfully");
+    assert!(
+        !output.join("manifest.json").exists(),
+        "interrupted final writer left its success manifest visible"
+    );
+}

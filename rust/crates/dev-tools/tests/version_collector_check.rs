@@ -329,3 +329,199 @@ fn existing_output_file_and_stale_collector_directory_are_preserved_on_failure()
     );
     assert!(!output.join("manifest.json").exists());
 }
+
+#[test]
+fn actual_cli_preflight_failures_invalidate_prior_pass_and_preserve_unowned_artifacts() {
+    use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
+    let temp = tempfile::tempdir().unwrap();
+    // A copied real checker has no adjacent private worker. This exercises the
+    // actual CLI's executable-relative worker lookup, not a simulated run API.
+    let isolated_bin = temp.path().join("isolated-bin");
+    fs::create_dir(&isolated_bin).unwrap();
+    let isolated = isolated_bin.join("check-version-collector");
+    fs::copy(env!("CARGO_BIN_EXE_check-version-collector"), &isolated).unwrap();
+    let mut stale = Vec::new();
+    for name in ["source", "worker", "collector-reuse"] {
+        let output = temp.path().join(name);
+        fs::create_dir(&output).unwrap();
+        let manifest = output.join("manifest.json");
+        fs::write(&manifest, b"{\"result\":\"PASS\"}\n").unwrap();
+        let marker = output.join("caller-owned");
+        fs::write(&marker, b"preserve caller evidence\n").unwrap();
+        if name == "collector-reuse" {
+            fs::create_dir(output.join("collector")).unwrap();
+            fs::write(output.join("collector/marker"), b"existing peer\n").unwrap();
+        }
+        let checker = if name == "worker" {
+            isolated.clone()
+        } else {
+            PathBuf::from(env!("CARGO_BIN_EXE_check-version-collector"))
+        };
+        let mut spec = CommandSpec::new_os(
+            vec![
+                checker.into_os_string(),
+                temp.path().join("must-not-execute-probe").into_os_string(),
+                temp.path()
+                    .join("must-not-execute-collector")
+                    .into_os_string(),
+                output.clone().into_os_string(),
+            ],
+            Duration::from_secs(10),
+        );
+        spec.env.insert(
+            "OPENPILOT_RUST_ROOT".into(),
+            if name == "source" {
+                temp.path().join("absent-source")
+            } else {
+                root()
+            }
+            .to_string_lossy()
+            .into_owned(),
+        );
+        let result = NativeRunner.run(&spec).unwrap();
+        assert_ne!(result.code, 0, "{name} preflight unexpectedly succeeded");
+        assert!(!result.stderr.is_empty(), "{name} lacked failure evidence");
+        if manifest.exists() {
+            stale.push((name, String::from_utf8_lossy(&result.stderr).into_owned()));
+        }
+        assert_eq!(fs::read(marker).unwrap(), b"preserve caller evidence\n");
+        if name == "collector-reuse" {
+            assert_eq!(
+                fs::read(output.join("collector/marker")).unwrap(),
+                b"existing peer\n"
+            );
+        }
+    }
+    assert!(
+        stale.is_empty(),
+        "CLI preflight retained stale PASS: {stale:?}"
+    );
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn final_result_write_interruption_removes_collector_success_manifest() {
+    use rustix::{
+        fs::{mkfifoat, open, Mode, OFlags, CWD},
+        process::{pidfd_open, pidfd_send_signal, Pid, PidfdFlags, Signal},
+    };
+    use std::{
+        io::{ErrorKind, Read},
+        os::fd::OwnedFd,
+        process::{Child, Command, Stdio},
+        thread,
+        time::{Duration, Instant},
+    };
+    struct Checker {
+        child: Child,
+        identity: OwnedFd,
+    }
+    impl Drop for Checker {
+        fn drop(&mut self) {
+            // Keep the real outer owner alive for its normal group cleanup.
+            let _ = pidfd_send_signal(&self.identity, Signal::INT);
+            let deadline = Instant::now() + Duration::from_secs(3);
+            while Instant::now() < deadline {
+                if self.child.try_wait().ok().flatten().is_some() {
+                    return;
+                }
+                thread::sleep(Duration::from_millis(5));
+            }
+            let _ = self.child.kill();
+            let _ = self.child.wait();
+        }
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let output = temp.path().join("runtime");
+    let stderr = temp.path().join("checker.stderr");
+    let child = Command::new(env!("CARGO_BIN_EXE_check-version-collector"))
+        .arg(native("VERSION_PROBE_BINARY"))
+        .arg(native("VERSION_COLLECTOR_BINARY"))
+        .arg(&output)
+        .env("OPENPILOT_RUST_ROOT", root())
+        .current_dir(root())
+        .stdin(Stdio::null())
+        .stdout(fs::File::create(temp.path().join("checker.stdout")).unwrap())
+        .stderr(fs::File::create(&stderr).unwrap())
+        .spawn()
+        .unwrap();
+    let identity = pidfd_open(Pid::from_child(&child), PidfdFlags::empty()).unwrap();
+    let mut checker = Checker { child, identity };
+    let deadline = Instant::now() + Duration::from_secs(90);
+    let ready = output.join("collector/stdout.log");
+    loop {
+        if ready.exists() {
+            break;
+        }
+        assert!(
+            checker.child.try_wait().unwrap().is_none(),
+            "Version collector checker exited before its first comparison: {}",
+            fs::read_to_string(&stderr).unwrap()
+        );
+        assert!(
+            Instant::now() < deadline,
+            "Version collector checker did not begin actual comparisons"
+        );
+        thread::sleep(Duration::from_millis(5));
+    }
+    let fifo = output.join("manifest.json");
+    mkfifoat(CWD, &fifo, Mode::RUSR | Mode::WUSR).unwrap();
+    let wchan = format!("/proc/{}/wchan", checker.child.id());
+    // The main thread is blocked opening our FIFO after the actual collector/probe comparison.
+    // No guessed delay or production hook chooses this final write boundary.
+    loop {
+        if fs::read_to_string(&wchan).is_ok_and(|state| state.trim() == "wait_for_partner") {
+            break;
+        }
+        assert!(
+            checker.child.try_wait().unwrap().is_none(),
+            "Version collector checker exited before final writer boundary: {}",
+            fs::read_to_string(&stderr).unwrap()
+        );
+        assert!(
+            Instant::now() < deadline,
+            "collector never reached final manifest FIFO"
+        );
+        thread::sleep(Duration::from_millis(5));
+    }
+    pidfd_send_signal(&checker.identity, Signal::INT).unwrap();
+    // The pending signal is delivered before the blocked open returns to user
+    // code. A nonblocking reader releases it; all reads and exit waits are bounded.
+    let mut reader = fs::File::from(
+        open(
+            &fifo,
+            OFlags::RDONLY | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .unwrap(),
+    );
+    let mut document = Vec::new();
+    let finish = Instant::now() + Duration::from_secs(5);
+    let status = loop {
+        let mut bytes = [0u8; 8192];
+        match reader.read(&mut bytes) {
+            Ok(count) => document.extend_from_slice(&bytes[..count]),
+            Err(error)
+                if matches!(error.kind(), ErrorKind::WouldBlock | ErrorKind::Interrupted) => {}
+            Err(error) => panic!("manifest FIFO read failed: {error}"),
+        }
+        if let Some(status) = checker.child.try_wait().unwrap() {
+            break status;
+        }
+        assert!(
+            Instant::now() < finish,
+            "interrupted final writer did not exit"
+        );
+        thread::sleep(Duration::from_millis(5));
+    };
+    let report: Value = serde_json::from_slice(&document).unwrap();
+    assert_eq!(report["result"], "PASS");
+    assert_eq!(report["logMessage"], 1);
+    assert_eq!(report["errorLogMessage"], 1);
+    assert_eq!(report["disk_records"], 1);
+    assert!(!status.success(), "interrupted checker exited successfully");
+    assert!(
+        !output.join("manifest.json").exists(),
+        "interrupted final writer left its success manifest visible"
+    );
+}

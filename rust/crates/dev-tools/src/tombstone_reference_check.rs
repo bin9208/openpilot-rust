@@ -480,6 +480,15 @@ pub fn run(repository: &Path, options: &Options) -> Result<J> {
     let pinned = sources(repository)?;
     let cancel = Cancellation::new()?;
     let result = run_inner(repository, options, &cancel, &pinned);
+    if result.is_err() || cancel.signal().is_some() {
+        // Cancellation can arrive while the final write is blocked. Remove its
+        // publication before reporting failure, including a partial failed write.
+        match fs::remove_file(options.output.join("manifest.json")) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+    }
     if let Some(signal) = cancel.signal() {
         return Err(Interrupted(signal).into());
     }

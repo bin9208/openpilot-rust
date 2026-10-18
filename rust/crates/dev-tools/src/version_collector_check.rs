@@ -57,6 +57,13 @@ fn pretty(path: &Path, value: &Value) -> Result<()> {
     fs::write(path, serde_json::to_string_pretty(value)? + "\n")?;
     Ok(())
 }
+fn invalidate_success(output: &Path) -> Result<()> {
+    match fs::remove_file(output.join("manifest.json")) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.into()),
+    }
+}
 #[derive(Serialize, Deserialize)]
 struct Request {
     repository: Vec<u8>,
@@ -168,6 +175,9 @@ fn run_controlled(
     worker: &Path,
     stop: &AtomicBool,
 ) -> Result<Value> {
+    // A new attempt invalidates previous success even if source/worker admission
+    // or the exclusive collector directory check fails before worker startup.
+    invalidate_success(&options.output)?;
     let source_hashes = sources(repository)?;
     let worker_hash = digest(worker)?;
     fs::create_dir_all(&options.output)?;
@@ -255,7 +265,12 @@ fn run_controlled(
         "Version collector worker did not pass",
     )?;
     process::interrupted(stop)?;
-    pretty(&options.output.join("manifest.json"), &report)?;
+    let publication = pretty(&options.output.join("manifest.json"), &report);
+    if publication.is_err() || stop.load(std::sync::atomic::Ordering::Relaxed) {
+        invalidate_success(&options.output)?;
+    }
+    publication?;
+    process::interrupted(stop)?;
     // Keep the namespace guard live through reply validation and close it only
     // after worker pipes, collector maps and the owned group have all finished.
     Ok(report)
@@ -280,6 +295,7 @@ pub fn cli() -> Result<()> {
     let result = run_controlled(&root, &options, &worker, &stop);
     signal_hook::low_level::unregister(registration);
     if stop.load(std::sync::atomic::Ordering::Relaxed) {
+        invalidate_success(&options.output)?;
         signal_hook::low_level::emulate_default_handler(signal_hook::consts::SIGINT)?;
     }
     println!("{}", serde_json::to_string_pretty(&result?)?);
