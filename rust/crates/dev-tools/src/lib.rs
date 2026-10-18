@@ -124,6 +124,10 @@ pub mod ui_render_check;
 pub mod ui_render_reference;
 pub mod user_docs;
 #[cfg(feature = "version-tools-native")]
+pub mod version_collector_check;
+#[cfg(feature = "version-tools-native")]
+pub mod version_reference_check;
+#[cfg(feature = "version-tools-native")]
 pub mod version_source;
 
 pub mod elf_audit;

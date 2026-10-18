@@ -187,11 +187,17 @@ fn all_live_source_pins_are_required_and_changed_present_files_are_rejected() {
     assert_eq!(sources(&root).unwrap(), expected);
     let temp = tempfile::tempdir().unwrap();
     for name in expected.keys() {
+        if name == "rust/tools/check_version_collector.py" && !root.join(name).exists() {
+            continue;
+        }
         let file = temp.path().join(name);
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::copy(root.join(name), file).unwrap();
     }
     for name in expected.keys() {
+        if name == "rust/tools/check_version_collector.py" {
+            continue;
+        }
         let file = temp.path().join(name);
         let original = fs::read(&file).unwrap();
         fs::write(&file, b"changed version source\n").unwrap();
@@ -200,6 +206,40 @@ fn all_live_source_pins_are_required_and_changed_present_files_are_rejected() {
         assert!(sources(temp.path()).is_err(), "missing {name}");
         fs::write(file, original).unwrap();
     }
+    assert_eq!(sources(temp.path()).unwrap(), expected);
+}
+
+#[test]
+fn retired_collector_absence_is_explicit_and_present_or_dangling_changes_fail() {
+    let expected: BTreeMap<String, String> =
+        serde_json::from_value(manifest()["source_sha256"].clone()).unwrap();
+    let root = repository();
+    let temp = tempfile::tempdir().unwrap();
+    let retired = "rust/tools/check_version_collector.py";
+    for name in expected.keys().filter(|name| name.as_str() != retired) {
+        let file = temp.path().join(name);
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::copy(root.join(name), file).unwrap();
+    }
+    // Only the exact retired file may be absent. The historical hash/key remains
+    // fixed in native policy, while retained originals must still be read.
+    assert_eq!(sources(temp.path()).unwrap(), expected);
+    let file = temp.path().join(retired);
+    fs::write(&file, b"changed retired collector\n").unwrap();
+    assert!(sources(temp.path()).is_err());
+    fs::remove_file(&file).unwrap();
+    std::os::unix::fs::symlink("absent-collector-source", &file).unwrap();
+    assert!(
+        sources(temp.path()).is_err(),
+        "dangling is not retired absence"
+    );
+    fs::remove_file(&file).unwrap();
+    fs::create_dir(&file).unwrap();
+    assert!(
+        sources(temp.path()).is_err(),
+        "directory is not retired absence"
+    );
+    fs::remove_dir(&file).unwrap();
     assert_eq!(sources(temp.path()).unwrap(), expected);
 }
 
@@ -419,4 +459,320 @@ fn original_initial_cwd_identity_survives_directory_rename() {
         );
     }
     assert_eq!(std::env::current_dir().unwrap(), parent_cwd);
+}
+
+// These tests exercise transport control only. The first shared-deadline Git
+// invocation eventually execs real Git; no fixture supplies a policy answer.
+struct SlowGit {
+    _temporary: tempfile::TempDir,
+    repository: PathBuf,
+    state: PathBuf,
+    environment: BTreeMap<std::ffi::OsString, std::ffi::OsString>,
+}
+impl SlowGit {
+    fn new(mode: &str) -> Self {
+        let temporary = tempfile::tempdir().unwrap();
+        let repository = temporary.path().join("repository");
+        fixtures::repo(&repository, true, true);
+        let commands = temporary.path().join("commands");
+        let state = temporary.path().join("state");
+        fs::create_dir(&commands).unwrap();
+        fs::create_dir(&state).unwrap();
+        let real_git = std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
+            .map(|directory| directory.join("git"))
+            .find(|path| {
+                path.is_file() && path.metadata().unwrap().permissions().mode() & 0o111 != 0
+            })
+            .map(|path| fs::canonicalize(path).unwrap())
+            .expect("real Git is a mandatory existing Version prerequisite");
+        std::os::unix::fs::symlink(fixture().join("slow-git"), commands.join("git")).unwrap();
+        let mut environment = fixtures::environment();
+        environment.extend([
+            ("PATH".into(), commands.into_os_string()),
+            (
+                "VERSION_SLOW_GIT_STATE".into(),
+                state.as_os_str().to_owned(),
+            ),
+            ("VERSION_SLOW_GIT_MODE".into(), mode.into()),
+            ("VERSION_SLOW_GIT_REAL".into(), real_git.into_os_string()),
+        ]);
+        Self {
+            _temporary: temporary,
+            repository,
+            state,
+            environment,
+        }
+    }
+    fn start(
+        &self,
+        request: &'static [u8],
+        deadline: std::time::Instant,
+        cancelled: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    ) -> (
+        std::thread::JoinHandle<()>,
+        std::sync::mpsc::Receiver<Result<String, String>>,
+    ) {
+        self.start_with_stderr(request, deadline, cancelled, None)
+    }
+    fn start_with_stderr(
+        &self,
+        request: &'static [u8],
+        deadline: std::time::Instant,
+        cancelled: std::sync::Arc<std::sync::atomic::AtomicBool>,
+        stderr: Option<fs::File>,
+    ) -> (
+        std::thread::JoinHandle<()>,
+        std::sync::mpsc::Receiver<Result<String, String>>,
+    ) {
+        let (send, receive) = std::sync::mpsc::channel();
+        let repository = self.repository.clone();
+        let environment = self.environment.clone();
+        let worker = std::thread::spawn(move || {
+            let mut source = Session::new(&repository, &environment).unwrap();
+            if let Some(stderr) = stderr {
+                source.set_stderr(stderr);
+            }
+            // A controlled failure is an outer error, never a source JSON row.
+            let result = source
+                .request_controlled(request, deadline, cancelled)
+                .map(|value| value.to_json().unwrap())
+                .map_err(|error| error.kind().to_owned());
+            let _ = send.send(result);
+        });
+        (worker, receive)
+    }
+    fn acknowledge(&self, call: usize) {
+        fs::write(
+            self.state.join(format!("ack.{call}")),
+            b"live pidfds held\n",
+        )
+        .unwrap();
+    }
+    fn live_call(&self, call: usize, deadline: std::time::Instant) -> GitProcesses {
+        use rustix::process::{pidfd_open, Pid, PidfdFlags};
+        let marker = self.state.join(format!("call.{call}"));
+        let mut token = b"VERSION_SLOW_GIT_STATE=".to_vec();
+        token.extend_from_slice(self.state.as_os_str().as_encoded_bytes());
+        while std::time::Instant::now() < deadline {
+            if let Ok(marker) = fs::read_to_string(&marker) {
+                let pids = marker
+                    .split_whitespace()
+                    .map(str::parse::<i32>)
+                    .collect::<Result<Vec<_>, _>>();
+                if let Ok(pids) = pids {
+                    if pids.len() == 2 {
+                        let mut owned = Vec::new();
+                        for pid in pids {
+                            let Some(identity) = Pid::from_raw(pid) else {
+                                break;
+                            };
+                            let Ok(fd) = pidfd_open(identity, PidfdFlags::empty()) else {
+                                break;
+                            };
+                            // Never signal a numeric identity solely because it
+                            // appeared in a stale file: bind the live fixture token.
+                            let environment =
+                                fs::read(format!("/proc/{pid}/environ")).unwrap_or_default();
+                            if !environment
+                                .split(|byte| *byte == 0)
+                                .any(|entry| entry == token)
+                            {
+                                break;
+                            }
+                            owned.push(fd);
+                        }
+                        if owned.len() == 2 {
+                            use rustix::event::{poll, PollFd, PollFlags, Timespec};
+                            let processes = GitProcesses(owned);
+                            for fd in &processes.0 {
+                                let mut descriptors = [PollFd::new(fd, PollFlags::IN)];
+                                assert_eq!(
+                                    poll(&mut descriptors, Some(&Timespec::default())).unwrap(),
+                                    0,
+                                    "Git fixture identity exited before acknowledgement"
+                                );
+                            }
+                            return processes;
+                        }
+                    }
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        panic!("actual Git call {call} never reached acknowledged startup");
+    }
+}
+struct GitProcesses(Vec<rustix::fd::OwnedFd>);
+impl GitProcesses {
+    fn exited(&self, timeout: std::time::Duration) -> bool {
+        use rustix::event::{poll, PollFd, PollFlags, Timespec};
+        self.0.iter().all(|fd| {
+            let mut descriptors = [PollFd::new(fd, PollFlags::IN)];
+            poll(
+                &mut descriptors,
+                Some(&Timespec::try_from(timeout).unwrap()),
+            )
+            .unwrap()
+                == 1
+        })
+    }
+}
+impl Drop for GitProcesses {
+    fn drop(&mut self) {
+        for fd in &self.0 {
+            let _ = rustix::process::pidfd_send_signal(fd, rustix::process::Signal::KILL);
+        }
+    }
+}
+
+#[test]
+fn controlled_source_request_shares_deadline_across_git_calls_and_returns_outer_timeout() {
+    use std::{
+        sync::{atomic::AtomicBool, Arc},
+        time::{Duration, Instant},
+    };
+    let fixture = SlowGit::new("shared");
+    let started = Instant::now();
+    let deadline = started + Duration::from_secs(5);
+    let (worker, response) = fixture.start(
+        br#"{"op":"metadata","path":"."}"#,
+        deadline,
+        Arc::new(AtomicBool::new(false)),
+    );
+    let first = fixture.live_call(1, deadline);
+    // Deliberately consume part of ONE request's budget at an acknowledged gate.
+    // This is controlled latency, never a guessed startup/readiness sleep.
+    if let Some(remaining) =
+        (started + Duration::from_secs(3)).checked_duration_since(Instant::now())
+    {
+        std::thread::sleep(remaining);
+    }
+    fixture.acknowledge(1);
+    let second = fixture.live_call(2, deadline);
+    fixture.acknowledge(2);
+    let remaining = (deadline + Duration::from_secs(1)).saturating_duration_since(Instant::now());
+    let actual = response
+        .recv_timeout(remaining)
+        .expect("request restarted its deadline for a later Git child");
+    assert_eq!(
+        actual,
+        Err("TimeoutError".into()),
+        "timeout became caught source JSON"
+    );
+    assert!(Instant::now() < deadline + Duration::from_secs(1));
+    worker.join().unwrap();
+    assert!(
+        first.exited(Duration::from_secs(1)),
+        "first real Git did not exit"
+    );
+    assert!(
+        second.exited(Duration::from_secs(1)),
+        "timed-out Git descendant survived"
+    );
+    assert_eq!(
+        fs::read_to_string(fixture.state.join("count")).unwrap(),
+        "2\n"
+    );
+}
+
+#[test]
+fn controlled_source_request_cancels_blocked_git_and_returns_outer_interruption() {
+    use std::{
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        },
+        time::{Duration, Instant},
+    };
+    let fixture = SlowGit::new("cancel");
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let (worker, response) = fixture.start(
+        br#"{"op":"git","method":"commit"}"#,
+        Instant::now() + Duration::from_secs(15),
+        Arc::clone(&cancelled),
+    );
+    let processes = fixture.live_call(1, Instant::now() + Duration::from_secs(5));
+    fixture.acknowledge(1);
+    assert!(matches!(
+        response.try_recv(),
+        Err(std::sync::mpsc::TryRecvError::Empty)
+    ));
+    let interrupted = Instant::now();
+    cancelled.store(true, Ordering::Relaxed);
+    let actual = response
+        .recv_timeout(Duration::from_secs(2))
+        .expect("cancellation waited for the Git timeout");
+    assert_eq!(
+        actual,
+        Err("InterruptedError".into()),
+        "cancel became caught source JSON"
+    );
+    assert!(interrupted.elapsed() < Duration::from_secs(2));
+    worker.join().unwrap();
+    assert!(
+        processes.exited(Duration::from_secs(1)),
+        "cancelled Git descendant survived"
+    );
+    assert_eq!(
+        fs::read_to_string(fixture.state.join("count")).unwrap(),
+        "1\n"
+    );
+}
+
+#[test]
+fn source_git_stderr_streams_raw_bytes_before_cancel_and_survives_cleanup() {
+    use std::{
+        io::Write,
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        },
+        time::{Duration, Instant},
+    };
+    let mut fixture = SlowGit::new("cancel");
+    fixture
+        .environment
+        .insert("VERSION_SLOW_GIT_DIAGNOSTIC".into(), "1".into());
+    let path = fixture.state.join("source.stderr");
+    let mut stderr = fs::File::create(&path).unwrap();
+    stderr.write_all(b"existing scenario prefix\n").unwrap();
+    stderr.flush().unwrap();
+    let expected = b"existing scenario prefix\nraw Git diagnostic:\xff\r\n";
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let (worker, response) = fixture.start_with_stderr(
+        br#"{"op":"git","method":"commit"}"#,
+        Instant::now() + Duration::from_secs(15),
+        Arc::clone(&cancelled),
+        Some(stderr),
+    );
+    // The launcher emits stderr BEFORE this acknowledged readiness marker.
+    // Observing the file now proves streaming rather than post-exit copying.
+    let processes = fixture.live_call(1, Instant::now() + Duration::from_secs(5));
+    assert_eq!(fs::read(&path).unwrap(), expected);
+    fixture.acknowledge(1);
+    assert!(matches!(
+        response.try_recv(),
+        Err(std::sync::mpsc::TryRecvError::Empty)
+    ));
+    cancelled.store(true, Ordering::Relaxed);
+    assert_eq!(
+        response
+            .recv_timeout(Duration::from_secs(2))
+            .expect("stderr routing blocked cancellation"),
+        Err("InterruptedError".into()),
+    );
+    worker.join().unwrap();
+    assert!(
+        processes.exited(Duration::from_secs(1)),
+        "Git descendant survived stderr-path cancellation"
+    );
+    assert_eq!(
+        fs::read(&path).unwrap(),
+        expected,
+        "cleanup truncated or duplicated raw stderr"
+    );
+    assert_eq!(
+        fs::read_to_string(fixture.state.join("count")).unwrap(),
+        "1\n"
+    );
 }

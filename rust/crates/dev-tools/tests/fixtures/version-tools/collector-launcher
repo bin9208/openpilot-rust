@@ -1,0 +1,3 @@
+#!/bin/sh
+# Immutable executable; dynamically authored test text is read, never executed.
+exec /bin/sh "$VERSION_COLLECTOR_TEST_BODY" "$@"

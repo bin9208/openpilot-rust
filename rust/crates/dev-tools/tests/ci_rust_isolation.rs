@@ -1523,17 +1523,47 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
             "--test runtime_producer --locked",
             "--test retained_facade --locked",
             "--test error_log_lifetime --locked",
-            "check_version_reference.py",
-            "check_version_collector.py",
+            "--features openpilot-dev-tools/version-tools-native",
+            "--test version_source --test version_check --test version_collector_check --locked",
+            "--bin check-version-reference --bin check-version-collector --bin version-runtime-worker",
+            "rust/target/debug/check-version-reference",
+            "rust/target/debug/check-version-collector",
         ],
         &[
             "cargo test",
-            "check_version_reference.py",
-            "check_version_collector.py",
+            "rust/target/debug/check-version-reference",
+            "rust/target/debug/check-version-collector",
         ],
         false,
     );
     let data = workflow();
+    let telemetry = &data["jobs"]["telemetry-runtime"];
+    let script = commands(telemetry);
+    for retired_call in ["check_version_reference.py", "check_version_collector.py"] {
+        assert!(
+            !script.contains(retired_call),
+            "legacy Version caller: {retired_call}"
+        );
+    }
+    let steps = telemetry["steps"].as_array().unwrap();
+    let build = steps
+        .iter()
+        .position(|step| {
+            step["run"].as_str().is_some_and(|run| {
+                run.contains("--features openpilot-dev-tools/version-tools-native")
+            })
+        })
+        .unwrap();
+    let compare = steps
+        .iter()
+        .position(|step| {
+            step["name"] == "Compare cached Git metadata and actual collector delivery"
+        })
+        .unwrap();
+    assert!(
+        build < compare,
+        "Version tools must be built before tests and live comparison"
+    );
     for (job, target) in [
         ("gnss-runtime", "--test assistance_log_lifetime --locked"),
         ("platform-runtime", "--test params_log_lifetime --locked"),

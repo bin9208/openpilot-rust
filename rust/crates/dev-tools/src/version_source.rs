@@ -13,7 +13,11 @@ use std::{
         unix::ffi::OsStrExt,
     },
     path::{Path, PathBuf},
-    time::Duration,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::{Duration, Instant},
 };
 mod metadata;
 mod value;
@@ -76,12 +80,24 @@ const SOURCES: &[(&str, &str)] = &[
         "4daebbf121dceef9aec57b0ba35ac7aea2b827ec85bc2cb49760b6ce0e2f9a22",
     ),
 ];
-/// All five live inputs are mandatory. A caller-supplied manifest cannot omit a
-/// critical pin; no original retirement exception has yet been authorized here.
+/// Retained inputs are mandatory. Only the retired collector's exact path may
+/// be absent; its compiled historical identity remains in the complete roster.
 pub fn sources(root: &Path) -> Result<BTreeMap<String, String>> {
     let mut actual = BTreeMap::new();
     for &(name, expected) in SOURCES {
-        let bytes = fs::read(root.join(name)).map_err(|error| Error::io(&error))?;
+        let path = root.join(name);
+        match fs::symlink_metadata(&path) {
+            Err(error)
+                if name == "rust/tools/check_version_collector.py"
+                    && error.kind() == io::ErrorKind::NotFound =>
+            {
+                actual.insert(name.into(), expected.into());
+                continue;
+            }
+            Err(error) => return Err(Error::io(&error)),
+            Ok(_) => {}
+        }
+        let bytes = fs::read(path).map_err(|error| Error::io(&error))?;
         let hash = format!("{:x}", Sha256::digest(&bytes));
         if hash != expected {
             return Err(Error::new(
@@ -102,6 +118,8 @@ pub struct Session {
     environment: BTreeMap<OsString, OsString>,
     cache: BTreeMap<(String, String), JsonValue>,
     logs: Vec<JsonValue>,
+    control: Option<(Instant, Arc<AtomicBool>)>,
+    stderr: Option<fs::File>,
 }
 impl Session {
     pub fn new(cwd: &Path, environment: &BTreeMap<OsString, OsString>) -> Result<Self> {
@@ -124,7 +142,38 @@ impl Session {
             environment: environment.clone(),
             cache: BTreeMap::new(),
             logs: Vec::new(),
+            control: None,
+            stderr: None,
         })
+    }
+    /// Route source Git diagnostics to the scenario's owned file.
+    pub fn set_stderr(&mut self, stderr: fs::File) {
+        self.stderr = Some(stderr);
+    }
+    /// The controller's deadline covers the whole source request, including all
+    /// Git calls. Control failures escape source policy exception serialization.
+    pub fn request_controlled(
+        &mut self,
+        raw_json: &[u8],
+        deadline: Instant,
+        cancelled: Arc<AtomicBool>,
+    ) -> Result<JsonValue> {
+        self.control = Some((deadline, cancelled));
+        let result = self.check_control().and_then(|()| self.request(raw_json));
+        let control = self.check_control();
+        self.control = None;
+        control.and(result)
+    }
+    fn check_control(&self) -> Result<()> {
+        if let Some((deadline, cancelled)) = &self.control {
+            if cancelled.load(Ordering::Relaxed) {
+                return Err(Error::new("InterruptedError", "source request interrupted"));
+            }
+            if Instant::now() >= *deadline {
+                return Err(Error::new("TimeoutError", "source request timed out"));
+            }
+        }
+        Ok(())
     }
     /// Handle one source-worker JSON request. Caught exceptions are response
     /// values; unknown operations and out-of-range numeric chdir descriptors
@@ -135,6 +184,16 @@ impl Session {
             .map_err(|error| Error::new("UnicodeDecodeError", error.to_string()))
             .and_then(|source| v::parse(&source.chars().map(u32::from).collect::<Vec<_>>()))
             .and_then(|request| self.call(&request));
+        self.response(result)
+    }
+    /// Already-decoded source transport text can contain Python stdin's raw
+    /// surrogateescape codepoints. The strict UTF-8 request API stays unchanged.
+    pub(crate) fn request_codepoints(&mut self, text: &[u32]) -> Result<JsonValue> {
+        self.logs.clear();
+        let result = v::parse(text).and_then(|request| self.call(&request));
+        self.response(result)
+    }
+    fn response(&self, result: Result<JsonValue>) -> Result<JsonValue> {
         if let Err(error) = &result {
             if matches!(error.kind(), "AssertionError" | "OverflowError") {
                 return Err(Error::new(error.kind, &error.message));
@@ -270,6 +329,7 @@ impl Session {
         }
     }
     fn command(&self, args: &[OsString], cwd: &Path) -> Result<crate::qa_process::Captured> {
+        self.check_control()?;
         reject_nul(cwd.as_os_str())?;
         for argument in args {
             reject_nul(argument)?;
@@ -289,7 +349,19 @@ impl Session {
         spec.env_remove = std::env::vars_os()
             .filter_map(|(key, _)| (!self.environment.contains_key(&key)).then_some(key))
             .collect();
-        NativeRunner.run(&spec).map_err(|error| {
+        let control = self
+            .control
+            .as_ref()
+            .map(|(deadline, cancelled)| (*deadline, cancelled.as_ref()));
+        let result = if let Some(stderr) = &self.stderr {
+            NativeRunner.run_with_stderr(&spec, control, stderr)
+        } else if let Some((deadline, cancelled)) = control {
+            NativeRunner.run_controlled(&spec, deadline, cancelled)
+        } else {
+            NativeRunner.run(&spec)
+        };
+        self.check_control()?;
+        result.map_err(|error| {
             if let Some(error) = error.downcast_ref::<io::Error>() {
                 Error::io(error)
             } else {

@@ -2187,8 +2187,8 @@ rust/tools/check_usbgpu_daemon.py	0d68ce7a0c68097bd15ab0b4ce3ce51081ee2a1c	pendi
 rust/tools/check_usbgpu_hardware.py	8ef3e71973018b586bac96d8638b333991aabfc1	pending	-
 rust/tools/check_usbgpu_selection.py	f7248733af34824090dfb03987a775f9007a27a3	pending	-
 rust/tools/check_usbgpu_status.py	a6e8993d04e78e3721fee9b1a550de6e8e621abb	pending	-
-rust/tools/check_version_collector.py	d742ae95c6b09c7c681258d85590c1d6b7120a61	pending	-
-rust/tools/check_version_reference.py	f9ca5cb332fe04e160b94cbd91c3b3ff85dcbeef	pending	-
+rust/tools/check_version_collector.py	d742ae95c6b09c7c681258d85590c1d6b7120a61	replaced-local	openpilot-dev-tools check-version-collector + version-runtime-worker; independent source policy, real Msgq/Cereal and disk record, failure/cleanup boundaries
+rust/tools/check_version_reference.py	f9ca5cb332fe04e160b94cbd91c3b3ff85dcbeef	partially-replaced	Native check-version-reference and source transport; original load_source remains consumed by tombstoned and managed-entry QA
 rust/tools/check_web_upload.py	4446df4293e5be1b3438e3a979e2e6228d61ee9f	pending	-
 rust/tools/check_web_upload_timeouts.py	d76cba9114e32bfbdd0aa76a02e3897aac363609	pending	-
 rust/tools/check_webdav_runtime.py	2830cf0e913014f8e4afa4b5a2f5766bb34394c2	pending	-

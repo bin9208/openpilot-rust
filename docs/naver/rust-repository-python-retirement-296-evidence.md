@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. 178 sources have locally verified replacements and migrated
-callers; three are partially replaced and 3,399 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. 179 sources have locally verified replacements and migrated
+callers; four are partially replaced and 3,397 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -115,10 +115,49 @@ Eight tests and strict Clippy passed; the same eight tests passed in the combine
 post-deletion DBC validation. Evidence is indexed by
 `.analysis/scratch/2026-10-19-version-tools/admission-final-handoff.json`.
 
-This foundation retires no Python file. Both Version checkers and the shared
-`load_source` consumers remain pending until their native controllers, real IPC,
-cleanup and failure-artifact contracts pass. The source-side policy does not use
+That foundation alone retired no Python file. The source-side policy does not use
 candidate values or test fixtures as an expected-answer implementation.
+
+### Native Version controllers and collector retirement (2026-10-19)
+
+`check-version-reference` now constructs all17 real Git/filesystem scenarios and
+compares171 requests against independent source policy, including real ZMQ error
+logs. `check-version-collector` uses an isolated native worker for actual Msgq/Cereal
+queues, both valid error services and exactly one disk record. The shared parent
+runner retains process-group ownership through cleanup. New acknowledged tests
+verify one absolute request deadline across Git calls, cancellation of live Git
+descendants, streamed raw stderr, and SIGINT delivered only to the checker leader.
+
+Independent review reproduced three controller defects before repair: doubled
+spacing in `source.json`, strict UTF-8 decoding where original stdin uses
+surrogateescape, and raw filesystem report strings converted into objects. The
+repairs preserve original bytes, error classes and JSON string types. Both stdout
+and saved reports use the same lossless formatter. The failed captures remain in
+`collector-source-format-red.json` and `controller-final-review/`; original fixtures
+are unchanged. A separate direct raw-basename original run timed out waiting for a
+log at104 comparisons and was not used as a passing baseline or a native defect.
+
+After deletion,96 tests pass together:12 source,11 reference/controller,4 collector
+boundary,30 process-runner and39 CI-policy tests. Strict Clippy and workspace
+formatting pass. Fresh unchanged original comparisons and frozen native commands
+use the same current candidate ELFs and both pass171/reference and2services/1disk
+collector checks. `source.json` is byte-identical. Native exec traces contain611
+reference and5 collector launches, with zero Python executions; reference PATH
+contains only Git and collector PATH is unavailable. Receipts are under
+`.analysis/scratch/2026-10-19-version-tools/`: `controller-postdelete4.log`,
+`controller-clippy4.log`, `current-original-{reference,collector}4/`,
+`native-{reference,collector}-postdelete4/` and `postdelete4-receipt.json`.
+
+Only `check_version_collector.py` is removed. Its literal path alone may be absent
+from source admission; the compiled historical hash remains fixed. Mutated files,
+directories, dangling links and absent retained sources fail. The native source-pin
+absence test failed before this explicit transition and passes afterward. Mandatory
+telemetry CI builds current tools before tests/live comparisons and rejects the old
+Python command paths. `check_version_reference.py` remains byte-for-byte unchanged
+for its shared `load_source()` consumers in tombstoned and managed-entry QA; its
+inventory row is partial. Inventory179local/4partial/3397pending. Full conversion,
+exact-commit required CI, dev integration and source-matched release remain open;
+the user owns boot/recording/upload acceptance on the unavailable device.
 
 ### Native compiler node278 follow-up (2026-10-19)
 

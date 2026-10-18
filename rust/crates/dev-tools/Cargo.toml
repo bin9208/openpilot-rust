@@ -8,6 +8,29 @@ publish = false
 # Native tool entrypoints are registered explicitly before they enter builds.
 autobins = false
 
+[[bin]]
+name = "check-version-reference"
+path = "src/bin/check_version_reference.rs"
+required-features = ["version-tools-native"]
+
+[[bin]]
+name = "check-version-collector"
+path = "src/bin/check_version_collector.rs"
+required-features = ["version-tools-native"]
+
+[[bin]]
+name = "version-runtime-worker"
+path = "src/bin/version_runtime_worker.rs"
+required-features = ["version-tools-native"]
+
+[[test]]
+name = "version_check"
+required-features = ["version-tools-native"]
+
+[[test]]
+name = "version_collector_check"
+required-features = ["version-tools-native"]
+
 [[test]]
 name = "version_source"
 required-features = ["version-tools-native"]
@@ -511,7 +534,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
-version-tools-native = []
+version-tools-native = ["dep:zmq", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
 dbc-generator-native = []
 feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 qcom-assistance-tools-native = []

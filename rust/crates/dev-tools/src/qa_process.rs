@@ -22,6 +22,7 @@ use std::{
     },
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
+    sync::atomic::{AtomicBool, Ordering},
     time::{Duration, Instant},
 };
 #[derive(Clone, Debug)]
@@ -332,10 +333,29 @@ impl Runner for NativeRunner {
     }
 }
 impl NativeRunner {
+    /// Use one caller-owned deadline across several child commands. Cancellation
+    /// follows the same owned-group cleanup as capture failures and timeouts.
+    pub fn run_controlled(
+        &mut self,
+        spec: &CommandSpec,
+        deadline: Instant,
+        cancelled: &AtomicBool,
+    ) -> Result<Captured> {
+        self.capture(spec, None, true, Some((deadline, cancelled)), None)
+    }
+    #[cfg(feature = "version-tools-native")]
+    pub(crate) fn run_with_stderr(
+        &mut self,
+        spec: &CommandSpec,
+        control: Option<(Instant, &AtomicBool)>,
+        stderr: &File,
+    ) -> Result<Captured> {
+        self.capture(spec, None, true, control, Some(stderr))
+    }
     /// Capture inside an already-owned worker group. The outer runner alone
     /// owns descendants; this inner owner only kills/reaps its direct child.
     /// Never use this entrypoint outside that process-group ownership scope.
-    #[cfg(feature = "timed-live-native")]
+    #[cfg(any(feature = "timed-live-native", feature = "version-tools-native"))]
     pub(crate) fn run_in_current_group(&mut self, spec: &CommandSpec) -> Result<Captured> {
         self.run_with_file(spec, None, false)
     }
@@ -345,6 +365,29 @@ impl NativeRunner {
         log: Option<LogFiles<'_>>,
         own_group: bool,
     ) -> Result<Captured> {
+        self.capture(spec, log, own_group, None, None)
+    }
+    fn capture(
+        &mut self,
+        spec: &CommandSpec,
+        log: Option<LogFiles<'_>>,
+        own_group: bool,
+        control: Option<(Instant, &AtomicBool)>,
+        stderr_file: Option<&File>,
+    ) -> Result<Captured> {
+        if let Some((deadline, cancelled)) = control {
+            if cancelled.load(Ordering::Relaxed) {
+                return Err(io::Error::from(io::ErrorKind::Interrupted).into());
+            }
+            if Instant::now() >= deadline {
+                return Err(CaptureError::Timeout {
+                    timeout: Duration::ZERO,
+                    stdout: Vec::new(),
+                    stderr: Vec::new(),
+                }
+                .into());
+            }
+        }
         if spec.timeout.is_zero() {
             return Err("native command timeout must be positive".into());
         }
@@ -381,6 +424,9 @@ impl NativeRunner {
             command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
         } else if spec.inherit_stderr {
             command.stderr(Stdio::inherit());
+        }
+        if let Some(file) = stderr_file {
+            command.stderr(Stdio::from(file.try_clone()?));
         }
         let file_backed = log.is_some();
         let merged = if let Some(LogFiles::Merged(log, prefix)) = log {
@@ -437,29 +483,39 @@ impl NativeRunner {
                 .ok_or("missing native stdout")?
                 .into(),
         };
-        let stderr_fd =
-            if spec.merge_output || spec.inherit_output || spec.inherit_stderr || file_backed {
-                File::open("/dev/null")?.into()
-            } else {
-                owned
-                    .child
-                    .stderr
-                    .take()
-                    .ok_or("missing native stderr")?
-                    .into()
-            };
+        let stderr_fd = if spec.merge_output
+            || spec.inherit_output
+            || spec.inherit_stderr
+            || file_backed
+            || stderr_file.is_some()
+        {
+            File::open("/dev/null")?.into()
+        } else {
+            owned
+                .child
+                .stderr
+                .take()
+                .ok_or("missing native stderr")?
+                .into()
+        };
         let mut stdout = Pipe::new(stdout_fd)?;
         let mut stderr = Pipe::new(stderr_fd)?;
         let started = Instant::now();
+        let timeout = control.map_or(spec.timeout, |(deadline, _)| {
+            spec.timeout
+                .min(deadline.saturating_duration_since(started))
+        });
         let mut exited = false;
         loop {
-            let Some(remaining) = spec
-                .timeout
+            if control.is_some_and(|(_, cancelled)| cancelled.load(Ordering::Relaxed)) {
+                return Err(io::Error::from(io::ErrorKind::Interrupted).into());
+            }
+            let Some(remaining) = timeout
                 .checked_sub(started.elapsed())
                 .filter(|d| !d.is_zero())
             else {
                 return Err(CaptureError::Timeout {
-                    timeout: spec.timeout,
+                    timeout,
                     stdout: stdout.bytes,
                     stderr: stderr.bytes,
                 }
