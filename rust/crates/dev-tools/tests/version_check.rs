@@ -674,8 +674,15 @@ fn actual_reference_cli_interrupts_owned_source_git_without_group_broadcast() {
     let processes = loop {
         assert!(
             Instant::now() < startup,
-            "source Git never reached acknowledged startup; stderr={}",
-            fs::read_to_string(temp.path().join("checker.stderr")).unwrap_or_default()
+            "source Git never reached acknowledged startup; checker_status={:?}; state={:?}; marker={:?}; output={:?}; children={:?}; wchan={:?}; stderr={:?}; source_stderr={:?}",
+            checker.child.try_wait(),
+            fs::read_dir(&state).map(|entries| entries.flatten().map(|entry| entry.file_name()).collect::<Vec<_>>()),
+            fs::read_to_string(&marker),
+            fs::read_dir(&output).map(|entries| entries.flatten().map(|entry| entry.file_name()).collect::<Vec<_>>()),
+            fs::read_to_string(format!("/proc/{}/task/{}/children", checker.child.id(), checker.child.id())),
+            fs::read_to_string(format!("/proc/{}/wchan", checker.child.id())),
+            fs::read(temp.path().join("checker.stderr")),
+            fs::read(output.join("clean-source.stderr")),
         );
         if let Ok(text) = fs::read_to_string(&marker) {
             if let Ok(pids) = text

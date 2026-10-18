@@ -98,8 +98,12 @@ pub mod timed_reference;
 pub mod timed_shutdown_phase;
 #[cfg(feature = "tombstone-tools-native")]
 pub mod tombstone_reference_check;
+#[cfg(feature = "tombstone-live-native")]
+pub mod tombstone_runtime_check;
 #[cfg(feature = "tombstone-tools-native")]
 pub mod tombstone_safety_check;
+#[cfg(feature = "tombstone-live-native")]
+pub mod tombstone_shutdown_check;
 #[cfg(feature = "tombstone-tools-native")]
 pub mod tombstone_source;
 #[cfg(feature = "image-array-native")]

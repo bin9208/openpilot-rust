@@ -21,7 +21,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc},
     time::{Duration, Instant},
 };
-mod process;
+pub(crate) mod process;
 mod worker;
 
 pub struct Options {

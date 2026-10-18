@@ -2217,7 +2217,7 @@ jobs:
         run: |
           rustc --version
           cargo --version
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --features openpilot-dev-tools/version-tools-native,openpilot-dev-tools/tombstone-tools-native,openpilot-dev-tools/sdk-transport-native --bins --examples --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --features openpilot-dev-tools/version-tools-native,openpilot-dev-tools/tombstone-live-native,openpilot-dev-tools/sdk-transport-native --bins --examples --locked
       - name: Verify metadata error transport ownership across calls and threads
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -2238,9 +2238,9 @@ jobs:
           export VERSION_COLLECTOR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
           export VERSION_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/version-runtime-worker"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-tools-native,sdk-transport-native --test version_source --test version_check --test version_collector_check --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-live-native,sdk-transport-native --test version_source --test version_check --test version_collector_check --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-tools-native,sdk-transport-native --lib --bin check-version-reference --bin check-version-collector --bin version-runtime-worker --test version_source --test version_check --test version_collector_check --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features version-tools-native,tombstone-live-native,sdk-transport-native --lib --bin check-version-reference --bin check-version-collector --bin version-runtime-worker --test version_source --test version_check --test version_collector_check --locked -- -D warnings
           VERSION_EVIDENCE="$RUNNER_TEMP/telemetry-runtime/version-reference" rust/target/debug/check-version-reference "$VERSION_PROBE_BINARY"
           rust/target/debug/check-version-collector "$VERSION_PROBE_BINARY" "$VERSION_COLLECTOR_BINARY" "$RUNNER_TEMP/telemetry-runtime/version-collector"
       - name: Check source fixture worker error reporting
@@ -2284,18 +2284,28 @@ jobs:
           test "${#tombstone_bindings[@]}" -eq 1
           export TOMBSTONE_PARAMS_BINDING="${tombstone_bindings[0]}"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-tools-native,sdk-transport-native --test tombstone_source --test tombstone_reference_check --test sdk_transport_check --test sdk_transport_runtime --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native --test tombstone_source --test tombstone_reference_check --test tombstone_safety_check --test sdk_transport_check --test sdk_transport_runtime --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-tools-native,sdk-transport-native --lib tombstone_ --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native --lib tombstone_ --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-tools-native,sdk-transport-native --lib --bin check-tombstoned-reference --bin check-crash-sdk-transport --test tombstone_source --test tombstone_reference_check --test sdk_transport_check --test sdk_transport_runtime --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native --lib --bin check-tombstoned-reference --bin check-tombstoned-safety --bin check-crash-sdk-transport --test tombstone_source --test tombstone_reference_check --test tombstone_safety_check --test sdk_transport_check --test sdk_transport_runtime --locked -- -D warnings
           rust/target/debug/check-tombstoned-reference "$TOMBSTONE_PROBE_BINARY" "$TOMBSTONE_PARAMS_BINDING" "$RUNNER_TEMP/telemetry-runtime/tombstone-reference"
-          python rust/tools/check_tombstoned_safety.py rust/target/debug/examples/tombstone_trace "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/tombstone-safety"
+          rust/target/debug/check-tombstoned-safety "$TOMBSTONE_PROBE_BINARY" "$TOMBSTONE_PARAMS_BINDING" "$RUNNER_TEMP/telemetry-runtime/tombstone-safety"
           rust/target/debug/check-crash-sdk-transport "$TOMBSTONE_PROBE_BINARY" "$TOMBSTONE_PARAMS_BINDING" "$RUNNER_TEMP/telemetry-runtime/crash-sdk"
       - name: Exercise crash collection and held-command shutdown
         run: |
-          python rust/tools/check_tombstoned_runtime.py rust/target/debug/openpilot-tombstoned rust/target/debug/openpilot-logmessaged "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/tombstone-runtime"
-          python rust/tools/check_tombstoned_shutdown.py rust/target/debug/openpilot-tombstoned "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/tombstone-shutdown"
+          export TOMBSTONE_DAEMON_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-tombstoned"
+          export TOMBSTONE_COLLECTOR_BINARY="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
+          export TOMBSTONE_LIVE_WORKER="$GITHUB_WORKSPACE/rust/target/debug/tombstone-runtime-worker"
+          tombstone_bindings=("$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so)
+          test "${#tombstone_bindings[@]}" -eq 1
+          export TOMBSTONE_PARAMS_BINDING="${tombstone_bindings[0]}"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native --test tombstone_runtime_check --test tombstone_shutdown_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features tombstone-live-native,sdk-transport-native --lib --bin check-tombstoned-runtime --bin check-tombstoned-shutdown --bin tombstone-runtime-worker --test tombstone_runtime_check --test tombstone_shutdown_check --locked -- -D warnings
+          rust/target/debug/check-tombstoned-runtime "$TOMBSTONE_DAEMON_BINARY" "$TOMBSTONE_COLLECTOR_BINARY" "$TOMBSTONE_PARAMS_BINDING" "$RUNNER_TEMP/telemetry-runtime/tombstone-runtime"
+          rust/target/debug/check-tombstoned-shutdown "$TOMBSTONE_DAEMON_BINARY" "$TOMBSTONE_PARAMS_BINDING" "$RUNNER_TEMP/telemetry-runtime/tombstone-shutdown"
       - name: Retain raw telemetry runtime and Params build evidence
         if: always()
         uses: actions/upload-artifact@v6

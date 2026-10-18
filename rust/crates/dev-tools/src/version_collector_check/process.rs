@@ -8,12 +8,12 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub(super) struct Process {
+pub(crate) struct Process {
     child: Child,
     pid: Pid,
     reaped: bool,
 }
-pub(super) fn interrupted(stop: &AtomicBool) -> Result<()> {
+pub(crate) fn interrupted(stop: &AtomicBool) -> Result<()> {
     if stop.load(Ordering::Relaxed) {
         Err("Version collector interrupted".into())
     } else {
@@ -21,6 +21,14 @@ pub(super) fn interrupted(stop: &AtomicBool) -> Result<()> {
     }
 }
 impl Process {
+    #[cfg(feature = "tombstone-live-native")]
+    /// Expose only a still-reserved child identity for /proc readiness checks.
+    pub(crate) fn reserved_pid(&self) -> Result<Pid> {
+        if self.reaped {
+            return Err("child identity already reaped".into());
+        }
+        Ok(self.pid)
+    }
     pub fn spawn(command: &mut Command) -> Result<Self> {
         let child = command.spawn()?;
         let pid = Pid::from_child(&child);

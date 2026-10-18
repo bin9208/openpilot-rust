@@ -2093,9 +2093,9 @@ rust/tools/check_timed_logging.py	534cb1d18fd50ecd2357949bcd2a2aa5f6b8c83e	repla
 rust/tools/check_timed_reference.py	4be124331c95f66bfb0cdc6177e0bfbf716172a5	replaced-local	rust/crates/dev-tools/src/bin/check_timed_reference.rs
 rust/tools/check_timed_shutdown.py	a9e6c5eb84de4832da8b487e699bab180f142b3d	replaced-local	rust/crates/dev-tools/src/bin/check_timed_shutdown.rs
 rust/tools/check_tombstoned_reference.py	3c0a3bf1a218fac520b68ac86e89c2079e393766	partially-replaced	Native check-tombstoned-reference preserves242 dynamic source/candidate comparisons; original Pair and constants remain imported by pending controllers
-rust/tools/check_tombstoned_runtime.py	fdc3695dc9291a01e82b470d98c9a06eef26f5b0	pending	-
-rust/tools/check_tombstoned_safety.py	4295af01282a70011d563ab0fecfb08276152691	pending	-
-rust/tools/check_tombstoned_shutdown.py	43718df5d7315f5d2b1592ef7ff5c2a904358b3b	pending	-
+rust/tools/check_tombstoned_runtime.py	fdc3695dc9291a01e82b470d98c9a06eef26f5b0	replaced-local	rust/crates/dev-tools/src/tombstone_runtime_check.rs; native CI and same-ELF before/after Python removal proof; #296 evidence ledger
+rust/tools/check_tombstoned_safety.py	4295af01282a70011d563ab0fecfb08276152691	replaced-local	rust/crates/dev-tools/src/tombstone_safety_check.rs; native CI and same-ELF before/after Python removal proof; #296 evidence ledger
+rust/tools/check_tombstoned_shutdown.py	43718df5d7315f5d2b1592ef7ff5c2a904358b3b	replaced-local	rust/crates/dev-tools/src/tombstone_shutdown_check.rs; native CI and same-ELF before/after Python removal proof; #296 evidence ledger
 rust/tools/check_torque_daemon.py	52ddac4501ad4cc00c340ddd2b8891543f520891	pending	-
 rust/tools/check_torque_debug_capacity.py	a469fff80e6514a453f620fe3f2a7f5ec15edee2	pending	-
 rust/tools/check_torque_ipc_ordering.py	69fe75793d2d98347036256586ba13cbd9f067d1	pending	-

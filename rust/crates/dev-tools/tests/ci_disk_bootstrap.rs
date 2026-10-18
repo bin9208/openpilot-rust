@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 282);
+    assert_eq!(text.matches(marker).count(), 284);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -279,7 +279,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
             if i + 1 < lines.len()
-                && lines[i + 1].contains("--features tombstone-tools-native,sdk-transport-native")
+                && lines[i + 1].contains("--features tombstone-live-native,sdk-transport-native")
             {
                 tombstone_controllers.push(tail.to_owned());
                 continue;
@@ -499,7 +499,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(arguments.len(), 177);
     assert_eq!(
         tombstone_controllers,
-        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 3]
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 5]
     );
     assert_eq!(
         sdk_receiver,

@@ -542,6 +542,7 @@ sdk-receiver-native = ["dep:brotli-decompressor", "rustix/net"]
 sdk-transport-native = ["sdk-receiver-native"]
 version-tools-native = ["dep:zmq", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
 tombstone-tools-native = ["version-tools-native", "dep:unicode-general-category"]
+tombstone-live-native = ["tombstone-tools-native", "sdk-receiver-native"]
 dbc-generator-native = []
 feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 qcom-assistance-tools-native = []
@@ -1283,6 +1284,14 @@ path = "src/bin/check_crash_sdk_transport.rs"
 required-features = ["sdk-transport-native", "tombstone-tools-native"]
 
 [[test]]
+name = "tombstone_runtime_check"
+required-features = ["tombstone-live-native"]
+
+[[test]]
+name = "tombstone_shutdown_check"
+required-features = ["tombstone-live-native"]
+
+[[test]]
 name = "tombstone_safety_check"
 required-features = ["tombstone-tools-native"]
 
@@ -1290,3 +1299,18 @@ required-features = ["tombstone-tools-native"]
 name = "check-tombstoned-safety"
 path = "src/bin/check_tombstoned_safety.rs"
 required-features = ["tombstone-tools-native"]
+
+[[bin]]
+name = "check-tombstoned-runtime"
+path = "src/bin/check_tombstoned_runtime.rs"
+required-features = ["tombstone-live-native"]
+
+[[bin]]
+name = "check-tombstoned-shutdown"
+path = "src/bin/check_tombstoned_shutdown.rs"
+required-features = ["tombstone-live-native"]
+
+[[bin]]
+name = "tombstone-runtime-worker"
+path = "src/bin/tombstone_runtime_worker.rs"
+required-features = ["tombstone-live-native"]

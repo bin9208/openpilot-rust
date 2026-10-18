@@ -10,6 +10,9 @@ use std::{collections::BTreeMap, ffi::OsString, fs, path::Path};
 
 pub use crate::tombstone_reference_check::{Interrupted, Options};
 const BODY: &str = "ExecutablePath: /data/openpilot/selfdrive/modeld/modeld\nSignal: 11\nProcMaps:\n omitted\nProcStatus:\n kept\nCoreDump: omitted\n";
+const SAFETY_SOURCE: &str = "rust/tools/check_tombstoned_safety.py";
+const SAFETY_SOURCE_SHA256: &str =
+    "2b70f9cd79cde571fed12d5f15f06ff080786de23de54cc47dd0187d9862f0a4";
 
 pub fn parse(
     args: &[OsString],
@@ -55,15 +58,21 @@ fn array(values: &[J]) -> Result<J> {
 fn sources(repository: &Path) -> Result<BTreeMap<String, String>> {
     let mut pins = crate::tombstone_source::sources(repository)?;
     for (name, expected) in [
-        (
-            "rust/tools/check_tombstoned_safety.py",
-            "2b70f9cd79cde571fed12d5f15f06ff080786de23de54cc47dd0187d9862f0a4",
-        ),
+        (SAFETY_SOURCE, SAFETY_SOURCE_SHA256),
         (
             "openpilot/common/params_pyx.pyx",
             "a8cc5e5296dd38a012c55b0867c4563f8e320d25960260d897675dd90f0ea544",
         ),
     ] {
+        if name == SAFETY_SOURCE {
+            // Only actual absence of this standalone retired checker is allowed.
+            // A dangling symlink is still present and must fail the digest read.
+            match fs::symlink_metadata(repository.join(name)) {
+                Ok(_) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(error.into()),
+            }
+        }
         let hash = digest(&repository.join(name))?;
         if hash != expected {
             return Err(format!("changed tombstone safety source {name}").into());
@@ -183,7 +192,12 @@ fn run_inner(
         ("binary_sha256", J::text(binary_hash)),
         ("command", array(&command.iter().map(|value| crate::python_fs::json_value(value)).collect::<Vec<_>>())?),
     ])?;
-    let provenance = serde_json::json!({"source_sha256": pinned, "binary_sha256": binary_hash, "params_binding_sha256": binding_hash});
+    let historical = if pinned.contains_key(SAFETY_SOURCE) {
+        BTreeMap::new()
+    } else {
+        BTreeMap::from([(SAFETY_SOURCE, SAFETY_SOURCE_SHA256)])
+    };
+    let provenance = serde_json::json!({"source_sha256": pinned, "historical_source_sha256": historical, "binary_sha256": binary_hash, "params_binding_sha256": binding_hash});
     fs::write(
         options.output.join("source-provenance.json"),
         format!("{}\n", serde_json::to_string_pretty(&provenance)?),

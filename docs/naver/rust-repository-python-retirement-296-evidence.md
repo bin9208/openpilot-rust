@@ -3718,3 +3718,93 @@ preserving three benign source-only shell markers and literal native filenames.
 Its original Python CLI remains until native CI migration and post-removal proof;
 no removal is claimed here. Evidence: `source-timeout16-first-green-all.log`,
 `safety-first-green.log`, `source-safety-owned.log`, `source-safety-clippy2.log`.
+
+### 2026-10-19 native tombstone live/safety retirement and artifact identity
+
+The safety, runtime and shutdown checkers now have native CLI owners and mandatory
+telemetry CI commands. All three standalone Python checkers are removed after a
+frozen executable comparison before and after deletion. Shared original source
+helpers remain for consumers whose conversion is incomplete. Inventory is now
+183 replaced-local, seven partially replaced and 3,390 pending out of 3,580.
+
+The new runtime executes both reporting cases, four startup failures, real
+cereal/msgq delivery, log files and local HTTP. Shutdown checks preserve the
+original SIGINT budget, owned retrace descendants and failure cleanup. Historical
+hashes are allowed only for the three retired checker paths; changed or dangling
+copies still reject, and every remaining live policy input is required.
+
+Issue #383 was reproduced before repair: modifying the binding after the real
+daemon's readiness still produced PASS. Runtime and shutdown now freeze all
+candidate/collector/binding/worker hashes before execution and verify them again
+before success; emitted identity fields use that frozen map. The mutation test
+fails on the prior implementation and passes after repair. Existing success
+manifests are invalidated on preflight failures and cancellation.
+
+Private evidence is under `.analysis/scratch/2026-10-19-tombstone-live/`:
+`artifact-change-red.log`, `retirement-full-green3.log`, and
+`retirement-frozen-qeff2mpd/{snapshot.json,before/proof.json,after/proof.json}`.
+Each frozen phase recorded 22 runtime, 22 shutdown and 53 safety exec attempts,
+zero Python attempts, using the same seven SHA-verified ELF files and binding.
+The final after-deletion CLI durations were 19.05s, 18.20s and 1.17s respectively.
+The freeze checks 17,402 compiler-input paths, including dependency aliases.
+Only the three explicitly retired Python paths may be absent after deletion;
+this is not a claim that the frozen binaries were rebuilt from deleted inputs.
+
+A separate post-removal Cargo rebuild passes 74 affected integration tests:
+13 disk guards, 40 Rust CI isolation contracts, six workflow contracts, seven
+runtime, five safety and three shutdown tests. CI isolation first rejected the
+old feature-name assertions; they now require the new live feature, all native
+commands and tests, and prohibit all three retired Python calls. All 284 disk
+reservations and 177 inherited entries remain checked. The final test log is
+`post-removal-tests2.log`; the preceding scoped strict Clippy passed in 6.11s.
+Exact-commit remote validation is still required for this local increment.
+
+### 2026-10-19 node279 final affected compiler validation
+
+The six new biased SiLU-chain tests and 15 affected prior tests pass under each
+of independently pinned LLVM18 and LLVM20: 42 executions, zero failed/ignored/
+filtered. Strict scoped Clippy also passes. Source, helper, frozen ELF and provider
+hashes are recorded in `.analysis/scratch/2026-10-18-batched-matmul/NODE279-FINAL-PROOF.json`.
+Observed source HEAD is ecfb7774eea9577d4c3c396213a3ecbd0b7d73c9; older frozen
+binaries retain their original build-time metadata. These results establish the
+changed compiler admission and prior affected behavior, not complete model
+compiler retirement, device operation or measured performance gains.
+
+### 2026-10-19 exact-head remote validation remains open
+
+Rust run39159654100 tests ecfb7774. At the latest observed snapshot, 41 component
+jobs passed, four remained active and telemetry failed. The failing Version
+startup cancellation test did not observe its child-start marker within 10s.
+Issue #382 records this failure. Two focused reruns and all 12 local Version
+tests pass, which does not establish the remote cause or repair. Added diagnostic
+output retains child stderr and process state on this failure without increasing
+the deadline or weakening cancellation assertions. A new exact-head CI run must
+pass before integration. Device boot, recording and upload acceptance remains
+user-owned under the latest instruction; no device result is claimed here.
+
+Later in the same run, UI/connectivity job117770159756 failed the `strict`
+environment case in `ui_render_reference`: expected exit0, actual exit1 and
+`Render FPS dropped critically`; eight other tests in that target passed.
+Issue #384 tracks diagnosis separately from the previous job-budget issue #377.
+The actual FPS admission remains mandatory; no threshold change or blanket retry
+is a repair. Fast checks39159649278/39159654112, Integration39159654103 and user
+ docs39159654074 pass for ecfb7774. The Rust gate is not successful.
+
+### Final provenance interruption regression (#380, 2026-10-19)
+
+The actual native runtime checker was stopped at its final provenance write with
+an owned FIFO, after all scenario and artifact checks. A pidfd-targeted SIGINT
+was delivered before the FIFO reader released that write. The checker exited
+unsuccessfully but still left a `result: PASS` manifest: the focused regression
+failed in18.68s. Private receipt: `2026-10-19-tombstone-live/final-cancel-red.json`.
+The repair checks cancellation immediately before the aggregate write and removes
+that aggregate on the final interrupted return in both runtime and shutdown
+controllers. Verification of this repair is recorded separately below; this
+reproduction is not a device result.
+
+The repaired actual runtime suite passes8/8 in18.79s, including the same final
+FIFO/SIGINT regression; the shutdown suite passes3/3 in17.51s. Scoped strict
+Clippy passes in5.86s. All were rebuilt from the current source with the mandatory
+real daemon/collector/Params/worker artifacts. Raw local log:
+`2026-10-19-tombstone-live/final-green.log`. Together with unchanged policy/safety
+suites from the prior gate, the live-retirement validation now covers75 tests.

@@ -144,3 +144,61 @@ fn actual_cli_rejects_missing_arguments_and_source_mode_without_success_output()
         assert!(!result.stderr.is_empty());
     }
 }
+
+#[test]
+fn only_retired_safety_checker_may_be_absent_changed_and_dangling_files_still_reject() {
+    use std::os::unix::fs::symlink;
+    let original = repository();
+    let copied = tempfile::tempdir().unwrap();
+    for name in [
+        "openpilot/system/tombstoned.py",
+        "openpilot/system/sentry.py",
+        "openpilot/system/athena/registration.py",
+        "openpilot/system/version.py",
+        "openpilot/common/git.py",
+        "openpilot/common/utils.py",
+        "openpilot/common/params_pyx.pyx",
+        "rust/tools/check_version_reference.py",
+        "rust/tools/tombstoned_reference.py",
+        "rust/tools/check_tombstoned_reference.py",
+        "rust/crates/dev-tools/src/tombstone_reference_check/apport-retrace",
+    ] {
+        let target = copied.path().join(name);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        symlink(original.join(name), target).unwrap();
+    }
+    let options = Options {
+        binary: artifact("TOMBSTONE_PROBE_BINARY"),
+        params_binding: artifact("TOMBSTONE_PARAMS_BINDING"),
+        runner: vec![],
+        output: copied.path().join("proof"),
+        environment: environment(),
+    };
+    let retired = copied.path().join("rust/tools/check_tombstoned_safety.py");
+    assert!(!retired.try_exists().unwrap());
+    let report = safety::run(copied.path(), &options).unwrap();
+    assert!(report.get("result").unwrap().text_eq("PASS"));
+    let provenance: Value =
+        serde_json::from_slice(&fs::read(options.output.join("source-provenance.json")).unwrap())
+            .unwrap();
+    assert!(provenance["source_sha256"]
+        .get("rust/tools/check_tombstoned_safety.py")
+        .is_none());
+    assert_eq!(
+        provenance["historical_source_sha256"]["rust/tools/check_tombstoned_safety.py"],
+        "2b70f9cd79cde571fed12d5f15f06ff080786de23de54cc47dd0187d9862f0a4"
+    );
+    fs::write(&retired, b"changed reintroduced checker\n").unwrap();
+    assert!(safety::run(copied.path(), &options).is_err());
+    assert!(!options.output.join("safety.json").exists());
+    fs::remove_file(&retired).unwrap();
+    symlink(copied.path().join("missing-original"), &retired).unwrap();
+    assert!(safety::run(copied.path(), &options).is_err());
+    assert!(!options.output.join("safety.json").exists());
+    fs::remove_file(&retired).unwrap();
+    fs::remove_file(copied.path().join("openpilot/system/tombstoned.py")).unwrap();
+    assert!(
+        safety::run(copied.path(), &options).is_err(),
+        "shared live Worker source was silently retired with standalone safety checker"
+    );
+}

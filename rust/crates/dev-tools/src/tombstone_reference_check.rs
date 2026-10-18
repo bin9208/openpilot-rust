@@ -582,3 +582,10 @@ fn run_inner(
     )?;
     Ok(report)
 }
+
+/// Cleanup only descendants carrying this invocation's private owner tag, after
+/// the caller's direct worker/group owner has terminated and reaped its leader.
+#[cfg(feature = "tombstone-live-native")]
+pub(crate) fn cleanup_owned_helpers(token: &Path) -> Result<()> {
+    files::cleanup_tagged(token)
+}
