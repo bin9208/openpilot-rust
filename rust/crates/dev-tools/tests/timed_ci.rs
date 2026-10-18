@@ -76,10 +76,19 @@ fn validate(workflow: &Value) -> Result<(), String> {
     let job = &workflow["jobs"]["support-runtime"];
     mandatory(job)?;
     let baseline = original();
+    // Native journal/timed builds and their full regressions exceed the old
+    // job-wide budget. Per-case deadlines and every original command stay fixed.
     require(
-        job["timeout-minutes"] == baseline["timeout_minutes"],
-        "support timeout changed",
+        baseline["timeout_minutes"] == "30" && job["timeout-minutes"] == "45",
+        "support full-regression job budget changed",
     )?;
+    for key in [
+        "CARGO_INCREMENTAL",
+        "CARGO_PROFILE_DEV_DEBUG",
+        "CARGO_PROFILE_TEST_DEBUG",
+    ] {
+        require(job["env"][key] == "0", "unbounded support build artifacts")?;
+    }
     for (key, value) in baseline["environment"]
         .as_object()
         .ok_or("missing captured environment")?
@@ -289,6 +298,28 @@ fn missing_softened_or_reordered_timed_routes_and_regressions_cannot_pass() {
         let mut mutation = baseline.clone();
         mutation["jobs"]["support-runtime"][job_key] = Value::String("false".into());
         assert!(validate(&mutation).is_err());
+    }
+    for minutes in ["0", "30", "46"] {
+        let mut mutation = baseline.clone();
+        mutation["jobs"]["support-runtime"]["timeout-minutes"] = minutes.into();
+        assert!(
+            validate(&mutation).is_err(),
+            "wrong full-suite budget admitted"
+        );
+    }
+    for key in [
+        "CARGO_INCREMENTAL",
+        "CARGO_PROFILE_DEV_DEBUG",
+        "CARGO_PROFILE_TEST_DEBUG",
+    ] {
+        let mut mutation = baseline.clone();
+        mutation["jobs"]["support-runtime"]["env"]
+            .as_object_mut()
+            .unwrap()
+            .remove(key);
+        assert!(validate(&mutation).is_err(), "missing build bound {key}");
+        mutation["jobs"]["support-runtime"]["env"][key] = "1".into();
+        assert!(validate(&mutation).is_err(), "unbounded build {key}");
     }
     for index in 0..baseline["jobs"]["support-runtime"]["steps"]
         .as_array()

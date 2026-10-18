@@ -16,7 +16,11 @@ pub(super) struct Process {
     status: Option<i32>,
 }
 impl Process {
-    pub fn spawn(spec: &CommandSpec, path: &Path) -> Result<Self> {
+    pub fn spawn<T>(
+        spec: &CommandSpec,
+        path: &Path,
+        prepare_metadata: impl FnOnce() -> Result<T>,
+    ) -> Result<(Self, T)> {
         let argv = spec.effective_argv();
         let program = argv.first().ok_or("empty live timed command")?;
         let file = File::create(path)?;
@@ -37,6 +41,9 @@ impl Process {
         if let Some(cwd) = &spec.cwd {
             command.current_dir(cwd);
         }
+        // Open the original log first, but finish potentially slow provenance
+        // reads before the child can publish clocks or start an HTTP request.
+        let metadata = prepare_metadata()?;
         let child = command.spawn()?;
         let pid = Pid::from_child(&child);
         let mut owner = Self {
@@ -54,7 +61,7 @@ impl Process {
         } else {
             owner.child.stdin.take();
         }
-        Ok(owner)
+        Ok((owner, metadata))
     }
     pub fn id(&self) -> u32 {
         self.pid.as_raw_nonzero().get() as u32

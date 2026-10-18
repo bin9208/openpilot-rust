@@ -352,7 +352,18 @@ impl Session {
             spec.input =
                 Some(format!("{}\n", serde_json::to_string(&self.fixture.config)?).into_bytes());
         }
-        self.child = Some(process::Process::spawn(&spec, &self.output.join(log))?);
+        let (child, executed_sha256) =
+            process::Process::spawn(&spec, &self.output.join(log), || {
+                Ok(format!(
+                    "{:x}",
+                    Sha256::digest(fs::read(if implementation == "rust" {
+                        &options.binary
+                    } else {
+                        &options.reference
+                    })?)
+                ))
+            })?;
+        self.child = Some(child);
         let pid = self.child()?.id();
         self.receipt["child_pid"] = json!(pid);
         self.receipt["child_implementation"] = json!(if implementation == "rust" {
@@ -360,14 +371,7 @@ impl Session {
         } else {
             "native source reference"
         });
-        self.receipt["executed_sha256"] = json!(format!(
-            "{:x}",
-            Sha256::digest(fs::read(if implementation == "rust" {
-                &options.binary
-            } else {
-                &options.reference
-            })?)
-        ));
+        self.receipt["executed_sha256"] = json!(executed_sha256);
         self.receipt["child_group"] = json!(rustix::process::getpgid(Some(
             rustix::process::Pid::from_raw(pid.try_into()?).ok_or("invalid child PID")?
         ))?

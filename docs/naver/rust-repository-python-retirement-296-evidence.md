@@ -3133,3 +3133,31 @@ regression, strict Clippy, independent review and success-render-mPVmEiUm) and
 `.analysis/scratch/2026-10-18-ui-display-connection/lifecycle-control-190718/`.
 The 49 workflow/disk-policy tests and scoped Clippy also pass. Exact committed-SHA
 CI remains required; no device result is claimed.
+
+### Timed QA executable provenance precedes child launch (#359)
+
+The live checker used to launch its child before hashing that executable for the
+ownership receipt. Injecting 17 seconds at that post-launch read reproduces the
+failed CI shape: all 151 response chunks arrive before shutdown, peer_closed is
+false, and SIGINT still exits promptly. The exact CI hash duration is unmeasured;
+the controlled reproducer establishes the ordering defect independently.
+
+The same executable digest is now computed after opening/configuring the process
+log and before starting the child. Receipt fields, child ownership, six-second
+pre-signal wait, progress requirement and two-second shutdown/peer bounds remain
+unchanged. Actual source and runtime controls with 17-second hash delays now pass.
+A permanent real-process latency regression verifies read-before-exec ordering;
+error controls preserve log-open precedence and missing-executable empty logs.
+Twelve affected tests, two mandatory CI-policy tests and strict Clippy pass.
+The fresh frozen eight checkers again pass all 493 original cases, 27 cleanup
+receipts and 1,025 exec attempts with zero Python. Parent review finds no blocker.
+
+The support CI job previously reached the timed tests only near its 30-minute
+job deadline, before its remaining full CLI comparisons. Its complete regression
+budget is now 45 minutes; debug/incremental artifacts are disabled, as in other
+large native QA jobs. All original commands and per-case deadlines remain fixed.
+The original CI fixture is unchanged; policy mutation tests enforce the explicit
+new job budget and artifact bounds. This does not replace the ordering repair or
+establish full CI success. Evidence: `.analysis/scratch/2026-10-18-timed-shutdown-ci/`
+`validation.json`, `ROOT-CAUSE.md`, delayed-hash proofs and `parent-review.txt`.
+Exact committed-SHA CI and user device acceptance remain pending.

@@ -261,3 +261,117 @@ fn original_worker_integer_admission_and_post_clock_schema_failure_order() {
         }
     }
 }
+
+#[test]
+fn executable_hash_latency_precedes_child_and_preserves_http_shutdown_window() {
+    use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
+    use std::time::Duration;
+    let directory = tempfile::tempdir().unwrap();
+    let output = directory.path().join("output");
+    let trace = directory.path().join("hash-order.strace");
+    let reference = Path::new(env!("CARGO_BIN_EXE_timed-source-reference"));
+    // Delay only reads of this executable, never the child/proxy's socket IO.
+    // The pre-launch reference pin is harmless. A second read after launch
+    // consumed the finite HTTP body's lifetime and reproduced CI's 151 chunks
+    // with peer_closed=false. Keep the original signal/body/deadline checks.
+    let mut spec = CommandSpec::new_os(
+        vec![
+            "/usr/bin/strace".into(),
+            "-f".into(),
+            "-qq".into(),
+            "-s".into(),
+            "4096".into(),
+            "-e".into(),
+            "trace=openat,execve".into(),
+            "-P".into(),
+            reference.as_os_str().to_owned(),
+            "-e".into(),
+            "inject=openat:delay_exit=11s".into(),
+            "-o".into(),
+            trace.as_os_str().to_owned(),
+            env!("CARGO_BIN_EXE_check-timed-shutdown").into(),
+            "--binary".into(),
+            "/unused-native-candidate".into(),
+            "--output".into(),
+            output.as_os_str().to_owned(),
+            "--worker".into(),
+            "http".into(),
+            "python".into(),
+            "SIGINT".into(),
+        ],
+        Duration::from_secs(60),
+    );
+    spec.env.insert(
+        "OPENPILOT_RUST_ROOT".into(),
+        root().to_string_lossy().into_owned(),
+    );
+    let captured = NativeRunner.run(&spec).unwrap();
+    assert_eq!(
+        captured.code,
+        0,
+        "{}",
+        String::from_utf8_lossy(&captured.stderr)
+    );
+    let value: Value =
+        serde_json::from_slice(&fs::read(output.join("result.json")).unwrap()).unwrap();
+    assert_eq!(value["passed"], true, "{value}");
+    assert_eq!(value["exit_code"], -2, "{value}");
+    assert_eq!(value["peer_closed"], true, "{value}");
+    assert!(value["elapsed"].as_f64().unwrap() < 2., "{value}");
+    assert!(
+        value["requests"][0]["chunks"].as_u64().unwrap() > 40,
+        "{value}"
+    );
+    let receipt: Value =
+        serde_json::from_slice(&fs::read(output.join("ownership.json")).unwrap()).unwrap();
+    assert_eq!(
+        receipt["executed_sha256"],
+        format!("{:x}", Sha256::digest(fs::read(reference).unwrap()))
+    );
+    let trace = fs::read_to_string(trace).unwrap();
+    let lines = trace.lines().collect::<Vec<_>>();
+    let exec = lines
+        .iter()
+        .position(|line| line.contains("execve("))
+        .expect("missing source exec trace");
+    assert!(
+        lines[..exec].iter().any(|line| line.contains("openat(")),
+        "{trace}"
+    );
+    assert!(
+        !lines[exec..].iter().any(|line| line.contains("openat(")),
+        "executable hashing after launch:\n{trace}"
+    );
+}
+
+#[test]
+fn process_log_open_failure_precedes_missing_executable_and_missing_exec_leaves_log() {
+    use std::process::Command;
+    for log_is_directory in [false, true] {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("output");
+        fs::create_dir(&output).unwrap();
+        if log_is_directory {
+            fs::create_dir(output.join("process.log")).unwrap();
+        }
+        let missing = directory.path().join("missing-executable");
+        let actual = Command::new(env!("CARGO_BIN_EXE_check-timed-shutdown"))
+            .arg("--binary")
+            .arg(&missing)
+            .arg("--output")
+            .arg(&output)
+            .args(["--worker", "http", "rust", "SIGINT"])
+            .env("OPENPILOT_RUST_ROOT", root())
+            .output()
+            .unwrap();
+        assert_eq!(actual.status.code(), Some(1));
+        let stderr = String::from_utf8_lossy(&actual.stderr);
+        if log_is_directory {
+            assert!(stderr.contains("Is a directory"), "{stderr}");
+            assert!(output.join("process.log").is_dir());
+        } else {
+            assert!(stderr.contains("No such file or directory"), "{stderr}");
+            assert_eq!(fs::read(output.join("process.log")).unwrap(), b"");
+        }
+    }
+}
