@@ -8,6 +8,10 @@ publish = false
 # Native tool entrypoints are registered explicitly before they enter builds.
 autobins = false
 
+[[test]]
+name = "version_source"
+required-features = ["version-tools-native"]
+
 [[bin]]
 name = "check-services"
 path = "src/bin/check_services.rs"
@@ -467,6 +471,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+version-tools-native = []
 feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 qcom-assistance-tools-native = []
 manager-catalog-tools-native = []

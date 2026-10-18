@@ -1,0 +1,54 @@
+{
+  "scope": "Original source expectations ONLY. Runtime/native values in old evidence are not used as expected policies. Full source schedule has171cases; existing referenced download was partial104rows/no manifest.",
+  "source_schedule_receipt_sha256": "b5e42100fe6e9cc753313b5ea73af69d996d37bc3f0a3904a988bafdbfd240a0",
+  "source_sha256": {
+    "rust/tools/check_version_reference.py": "d0ad5fbec23e1ba4a2507ae6dbc68856141d03eda07dadebab3280d5731525d5",
+    "openpilot/system/version.py": "69b91ce6fc8fe3b164c4f6c23e9514c89a4b6759043cfb607b733c7e006144d7",
+    "openpilot/common/git.py": "68a68daab8137ba307753b6f1dbc18a4a8c736ed118383800ad6bfd8690140d9",
+    "openpilot/common/utils.py": "b1cc68b63cff1386ba397c0cc527dbb38fb50b154043ffcb066ed7acce65ec83",
+    "rust/tools/check_version_collector.py": "4daebbf121dceef9aec57b0ba35ac7aea2b827ec85bc2cb49760b6ce0e2f9a22"
+  },
+  "protocol_source_sha256": {
+    "rust/tools/check_version_reference.py": "d0ad5fbec23e1ba4a2507ae6dbc68856141d03eda07dadebab3280d5731525d5"
+  },
+  "collector_existing_evidence": {
+    "path": ".analysis/scratch/2026-10-18-version-log-ci/collector-green",
+    "manifest_sha256": "e76d93e8d4ef812c7c54d532c22acf328d2414794f68d34a28e9c3b6b6d84125",
+    "source_sha256": "dacaf44f6989aba118df5410acf4b493c8864ff43e348a0c42e819098817e42b",
+    "probe_sha256": "6cc6ec0d7619e4d0067edcd62551a6480e789ae8309f440daba121680219d2f9",
+    "collector_sha256": "40da24683e8e43c46733460f57ec639035df5d1d1be5d78154c01fb208e3d3f6",
+    "caveat": "Existing host success evidence; ELF source/build receipt must be freshly rebound before retirement. Native packets/records not expected-value oracle."
+  },
+  "artifacts": {
+    "collector-source-original.json": "dacaf44f6989aba118df5410acf4b493c8864ff43e348a0c42e819098817e42b",
+    "protocol-original.json": "c5af1ff8fc731d7849b00f404cb0d75115c37eb41a47565df79c85d769bbd96c",
+    "reference-original.json": "f46bfbd6986fd13257e73c77ff71ebf1e1d6e4c31bfc32d66107ce8496e7d291"
+  },
+  "source_schedule_counts": {
+    "clean": 9,
+    "dirty": 9,
+    "staged": 9,
+    "untracked": 9,
+    "prebuilt": 9,
+    "nontracking": 9,
+    "missingorigin": 9,
+    "detached": 9,
+    "trackingremote": 9,
+    "dirty-process-cwd": 3,
+    "dirty-cwd-missing-origin": 1,
+    "cache-and-cwd": 14,
+    "empty-default-cache": 3,
+    "dirty-exception-cache": 2,
+    "boundaries": 17,
+    "build-json": 48,
+    "missing-executable": 2
+  },
+  "transformations": [
+    "Only original generated temporary-root prefix in request strings replaced with @FIXTURE_ROOT@. Responses copied as original raw JSON strings; no response/numeric/error/log normalization.",
+    "Raw private process/Git captures remain ignored scratch; tracked data is controlled test fixture expectation."
+  ],
+  "tombstoned_loader_caller_sha256": {
+    "rust/tools/tombstoned_reference.py": "7b647dba322d93e5d2bd9c5692356b10d3f85f2a2e0f9da8b982e05206c8e781",
+    "rust/tools/managed_entry_reference.py": "3f502d9c478e5f801f84b52ab5b613cb55f5d161b68434568e3942a72ac642d8"
+  }
+}

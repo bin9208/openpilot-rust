@@ -1,0 +1,857 @@
+[
+  {
+    "scenario": "clean",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/clean\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "clean",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/clean\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "clean",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/clean\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "clean",
+    "request": "{\"op\": \"git\", \"method\": \"short_branch\", \"cwd\": \"@FIXTURE_ROOT@/clean\"}",
+    "response": "{\"value\": \"main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "clean",
+    "request": "{\"op\": \"git\", \"method\": \"branch\", \"cwd\": \"@FIXTURE_ROOT@/clean\"}",
+    "response": "{\"value\": \"origin/main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "clean",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/clean\"}",
+    "response": "{\"value\": \"git@github.com:commaai/openpilot.git\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "clean",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\", \"cwd\": \"@FIXTURE_ROOT@/clean\"}",
+    "response": "{\"value\": \"github.com/commaai/openpilot\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "clean",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/clean\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "clean",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/clean\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/dirty\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": true}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/dirty\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/dirty\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty",
+    "request": "{\"op\": \"git\", \"method\": \"short_branch\", \"cwd\": \"@FIXTURE_ROOT@/dirty\"}",
+    "response": "{\"value\": \"main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty",
+    "request": "{\"op\": \"git\", \"method\": \"branch\", \"cwd\": \"@FIXTURE_ROOT@/dirty\"}",
+    "response": "{\"value\": \"origin/main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/dirty\"}",
+    "response": "{\"value\": \"git@github.com:commaai/openpilot.git\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\", \"cwd\": \"@FIXTURE_ROOT@/dirty\"}",
+    "response": "{\"value\": \"github.com/commaai/openpilot\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/dirty\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/dirty\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "staged",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/staged\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": true}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "staged",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/staged\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "staged",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/staged\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "staged",
+    "request": "{\"op\": \"git\", \"method\": \"short_branch\", \"cwd\": \"@FIXTURE_ROOT@/staged\"}",
+    "response": "{\"value\": \"main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "staged",
+    "request": "{\"op\": \"git\", \"method\": \"branch\", \"cwd\": \"@FIXTURE_ROOT@/staged\"}",
+    "response": "{\"value\": \"origin/main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "staged",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/staged\"}",
+    "response": "{\"value\": \"git@github.com:commaai/openpilot.git\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "staged",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\", \"cwd\": \"@FIXTURE_ROOT@/staged\"}",
+    "response": "{\"value\": \"github.com/commaai/openpilot\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "staged",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/staged\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "staged",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/staged\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "untracked",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/untracked\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "untracked",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/untracked\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "untracked",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/untracked\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "untracked",
+    "request": "{\"op\": \"git\", \"method\": \"short_branch\", \"cwd\": \"@FIXTURE_ROOT@/untracked\"}",
+    "response": "{\"value\": \"main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "untracked",
+    "request": "{\"op\": \"git\", \"method\": \"branch\", \"cwd\": \"@FIXTURE_ROOT@/untracked\"}",
+    "response": "{\"value\": \"origin/main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "untracked",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/untracked\"}",
+    "response": "{\"value\": \"git@github.com:commaai/openpilot.git\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "untracked",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\", \"cwd\": \"@FIXTURE_ROOT@/untracked\"}",
+    "response": "{\"value\": \"github.com/commaai/openpilot\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "untracked",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/untracked\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "untracked",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/untracked\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "prebuilt",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/prebuilt\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "prebuilt",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/prebuilt\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "prebuilt",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/prebuilt\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "prebuilt",
+    "request": "{\"op\": \"git\", \"method\": \"short_branch\", \"cwd\": \"@FIXTURE_ROOT@/prebuilt\"}",
+    "response": "{\"value\": \"main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "prebuilt",
+    "request": "{\"op\": \"git\", \"method\": \"branch\", \"cwd\": \"@FIXTURE_ROOT@/prebuilt\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "prebuilt",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/prebuilt\"}",
+    "response": "{\"value\": \"git@github.com:commaai/openpilot.git\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "prebuilt",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\", \"cwd\": \"@FIXTURE_ROOT@/prebuilt\"}",
+    "response": "{\"value\": \"github.com/commaai/openpilot\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "prebuilt",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/prebuilt\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "prebuilt",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/prebuilt\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "nontracking",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/nontracking\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": true}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "nontracking",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/nontracking\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "nontracking",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/nontracking\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "nontracking",
+    "request": "{\"op\": \"git\", \"method\": \"short_branch\", \"cwd\": \"@FIXTURE_ROOT@/nontracking\"}",
+    "response": "{\"value\": \"main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "nontracking",
+    "request": "{\"op\": \"git\", \"method\": \"branch\", \"cwd\": \"@FIXTURE_ROOT@/nontracking\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "nontracking",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/nontracking\"}",
+    "response": "{\"value\": \"git@github.com:commaai/openpilot.git\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "nontracking",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\", \"cwd\": \"@FIXTURE_ROOT@/nontracking\"}",
+    "response": "{\"value\": \"github.com/commaai/openpilot\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "nontracking",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/nontracking\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "nontracking",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/nontracking\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "missingorigin",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/missingorigin\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": true}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "missingorigin",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/missingorigin\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "missingorigin",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/missingorigin\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "missingorigin",
+    "request": "{\"op\": \"git\", \"method\": \"short_branch\", \"cwd\": \"@FIXTURE_ROOT@/missingorigin\"}",
+    "response": "{\"value\": \"main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "missingorigin",
+    "request": "{\"op\": \"git\", \"method\": \"branch\", \"cwd\": \"@FIXTURE_ROOT@/missingorigin\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "missingorigin",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/missingorigin\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "missingorigin",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\", \"cwd\": \"@FIXTURE_ROOT@/missingorigin\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "missingorigin",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/missingorigin\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "missingorigin",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/missingorigin\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "detached",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/detached\"}",
+    "response": "{\"value\": {\"channel\": \"HEAD\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": true}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / HEAD\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "detached",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/detached\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "detached",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/detached\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "detached",
+    "request": "{\"op\": \"git\", \"method\": \"short_branch\", \"cwd\": \"@FIXTURE_ROOT@/detached\"}",
+    "response": "{\"value\": \"HEAD\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "detached",
+    "request": "{\"op\": \"git\", \"method\": \"branch\", \"cwd\": \"@FIXTURE_ROOT@/detached\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "detached",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/detached\"}",
+    "response": "{\"value\": \"git@github.com:commaai/openpilot.git\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "detached",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\", \"cwd\": \"@FIXTURE_ROOT@/detached\"}",
+    "response": "{\"value\": \"github.com/commaai/openpilot\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "detached",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/detached\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "detached",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/detached\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "trackingremote",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/trackingremote\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"https://example.invalid/fork.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"example.invalid/fork\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "trackingremote",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/trackingremote\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "trackingremote",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/trackingremote\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "trackingremote",
+    "request": "{\"op\": \"git\", \"method\": \"short_branch\", \"cwd\": \"@FIXTURE_ROOT@/trackingremote\"}",
+    "response": "{\"value\": \"main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "trackingremote",
+    "request": "{\"op\": \"git\", \"method\": \"branch\", \"cwd\": \"@FIXTURE_ROOT@/trackingremote\"}",
+    "response": "{\"value\": \"upstream/main\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "trackingremote",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/trackingremote\"}",
+    "response": "{\"value\": \"https://example.invalid/fork.git\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "trackingremote",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\", \"cwd\": \"@FIXTURE_ROOT@/trackingremote\"}",
+    "response": "{\"value\": \"example.invalid/fork\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "trackingremote",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/trackingremote\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "trackingremote",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/trackingremote\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty-process-cwd",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/prebuilt-without-git\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty-process-cwd",
+    "request": "{\"op\": \"chdir\", \"path\": \"@FIXTURE_ROOT@/prebuilt-without-git\"}",
+    "response": "{\"value\": null, \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty-process-cwd",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/cwd-oddity\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty-cwd-missing-origin",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/cwd-oddity\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/cache\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/cache\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/cache\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/cache\", \"revision\": \"missing\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/cache\"}",
+    "response": "{\"value\": {\"channel\": \"main\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / main\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/cache\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"prebuilt\", \"path\": \"@FIXTURE_ROOT@/cache\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/cache\", \"revision\": \"missing\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/cache\"}",
+    "response": "{\"value\": \"3d36727076954ac565522f14afbc17199622edb8\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"git\", \"method\": \"commit_date\", \"cwd\": \"@FIXTURE_ROOT@/cache\"}",
+    "response": "{\"value\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"chdir\", \"path\": \"@FIXTURE_ROOT@/elsewhere\"}",
+    "response": "{\"value\": null, \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/elsewhere\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"git\", \"method\": \"origin\"}",
+    "response": "{\"value\": \"git@github.com:commaai/openpilot.git\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "cache-and-cwd",
+    "request": "{\"op\": \"git\", \"method\": \"normalized_origin\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "empty-default-cache",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/empty-cache\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "empty-default-cache",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/empty-cache\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "empty-default-cache",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/empty-cache/.\"}",
+    "response": "{\"value\": \"https://added.invalid/repo\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty-exception-cache",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/dirty-exception\"}",
+    "response": "{\"error\": \"UnicodeDecodeError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "dirty-exception-cache",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/dirty-exception\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/empty\"}",
+    "response": "{\"error\": \"Exception\", \"logs\": [{\"msg\": \"unable to get build metadata\", \"levelnum\": 40, \"exc_info\": \"NoneType: None\\n\"}]}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/empty\"}",
+    "response": "{\"value\": true, \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/empty\"}",
+    "response": "{\"value\": \"\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/not-yet-present\"}",
+    "response": "{\"error\": \"FileNotFoundError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"git\", \"method\": \"commit\", \"cwd\": \"@FIXTURE_ROOT@/not-yet-present\"}",
+    "response": "{\"value\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/boundaries\"}",
+    "response": "{\"error\": \"UnicodeDecodeError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/boundaries\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/boundaries\"}",
+    "response": "{\"value\": \"https://recovered.invalid/repo\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"dirty\", \"path\": \"@FIXTURE_ROOT@/boundaries\"}",
+    "response": "{\"value\": false, \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"release_notes\", \"path\": \"@FIXTURE_ROOT@/boundaries\"}",
+    "response": "{\"value\": \"one\\ntwo\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"version\", \"path\": \"@FIXTURE_ROOT@/boundaries\"}",
+    "response": "{\"error\": \"UnicodeDecodeError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"version\", \"path\": \"@FIXTURE_ROOT@/boundaries\"}",
+    "response": "{\"error\": \"IndexError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"version\", \"path\": \"@FIXTURE_ROOT@/boundaries\"}",
+    "response": "{\"value\": \"a\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/gitfile\"}",
+    "response": "{\"value\": {\"channel\": \"HEAD\", \"openpilot\": {\"version\": \"1.2.3-test\", \"release_notes\": \"First line\\nsecond line\", \"git_commit\": \"042fa511e6a9b4e1de3f6a349067faf3d12bb8bf\", \"git_origin\": \"https://recovered.invalid/repo\", \"git_commit_date\": \"'1577934245 2020-01-02 03:04:05 +0000'\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"1.2.3\"}, \"git_normalized_origin\": {\"value\": \"recovered.invalid/repo\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.2.3-test-042fa511e6a9b4e1de3f6a349067faf3d12bb8bf-unknown\"}, \"ui_description\": {\"value\": \"1.2.3-test / 042fa5 / HEAD\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/unreadable\"}",
+    "response": "{\"error\": \"PermissionError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/empty\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "boundaries",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/empty\"}",
+    "response": "{\"error\": \"Exception\", \"logs\": [{\"msg\": \"unable to get build metadata\", \"levelnum\": 40, \"exc_info\": \"NoneType: None\\n\"}]}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/json\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/json\"}",
+    "response": "{\"value\": {\"channel\": \"nightly\", \"openpilot\": {\"version\": \"fresh\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"fresh\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": true}, \"release_channel\": {\"value\": true}, \"canonical\": {\"value\": \"fresh-unknown-unknown\"}, \"ui_description\": {\"value\": \"fresh / unknow / nightly\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/json\"}",
+    "response": "{\"error\": \"JSONDecodeError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/json\"}",
+    "response": "{\"error\": \"UnicodeDecodeError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"metadata\", \"path\": \"@FIXTURE_ROOT@/json\"}",
+    "response": "{\"error\": \"IsADirectoryError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"[]\"}",
+    "response": "{\"error\": \"AttributeError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"null\"}",
+    "response": "{\"error\": \"AttributeError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\":null}\"}",
+    "response": "{\"error\": \"AttributeError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\":null}\"}",
+    "response": "{\"value\": {\"channel\": null, \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / None\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\":42}\"}",
+    "response": "{\"value\": {\"channel\": 42, \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / 42\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\":[\\\"nightly\\\"]}\"}",
+    "response": "{\"value\": {\"channel\": [\"nightly\"], \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / ['nightly']\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\":{\\\"is_dirty\\\":true}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"release-tizi-staging\\\"}\"}",
+    "response": "{\"value\": {\"channel\": \"release-tizi-staging\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": true}, \"release_channel\": {\"value\": true}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / release-tizi-staging\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"release-mici-staging\\\"}\"}",
+    "response": "{\"value\": {\"channel\": \"release-mici-staging\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": true}, \"release_channel\": {\"value\": true}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / release-mici-staging\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"release-tizi\\\"}\"}",
+    "response": "{\"value\": {\"channel\": \"release-tizi\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": true}, \"release_channel\": {\"value\": true}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / release-tizi\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"release-mici\\\"}\"}",
+    "response": "{\"value\": {\"channel\": \"release-mici\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": true}, \"release_channel\": {\"value\": true}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / release-mici\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"nightly\\\"}\"}",
+    "response": "{\"value\": {\"channel\": \"nightly\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": true}, \"release_channel\": {\"value\": true}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / nightly\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"devel-staging\\\"}\"}",
+    "response": "{\"value\": {\"channel\": \"devel-staging\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": true}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / devel-staging\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"nightly-dev\\\"}\"}",
+    "response": "{\"value\": {\"channel\": \"nightly-dev\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": true}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / nightly-dev\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"nightly-dev-x\\\"}\"}",
+    "response": "{\"value\": {\"channel\": \"nightly-dev-x\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / nightly-dev-x\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"unknown\\\"}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\": {\\\"git_origin\\\": \\\"git@github.com:commaai/openpilot.git\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"git@github.com:commaai/openpilot.git\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\": {\\\"git_origin\\\": \\\"https://github.com/commaai/openpilot.git\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"https://github.com/commaai/openpilot.git\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": true}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\": {\\\"git_origin\\\": \\\"git@github.com:fork/openpilot.git\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"git@github.com:fork/openpilot.git\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"github.com/fork/openpilot\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\": {\\\"git_origin\\\": \\\"xgit@git@host.git.githttps://https://:tail\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"xgit@git@host.git.githttps://https://:tail\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"xgit@host.githttps///:tail\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\": {\\\"git_origin\\\": \\\"http://github.com/commaai/openpilot\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"http://github.com/commaai/openpilot\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"http///github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\": {\\\"git_origin\\\": \\\"ssh://git@github.com/commaai/openpilot.git\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"ssh://git@github.com/commaai/openpilot.git\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"ssh///github.com/commaai/openpilot\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\": {\\\"git_origin\\\": \\\"github.com/commaai/openpilot/\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"github.com/commaai/openpilot/\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"github.com/commaai/openpilot/\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\": {\\\"git_origin\\\": \\\"\\\\ud800:abc.git\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"unknown\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"\\ud800:abc.git\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"unknown\"}, \"git_normalized_origin\": {\"value\": \"\\ud800/abc\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"unknown-unknown-unknown\"}, \"ui_description\": {\"value\": \"unknown / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": null, \\\"openpilot\\\": {\\\"version\\\": null, \\\"git_commit\\\": null, \\\"git_origin\\\": null, \\\"release_notes\\\": null, \\\"git_commit_date\\\": null, \\\"build_style\\\": null}}\"}",
+    "response": "{\"value\": {\"channel\": null, \"openpilot\": {\"version\": null, \"release_notes\": null, \"git_commit\": null, \"git_origin\": null, \"git_commit_date\": null, \"build_style\": null, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"None-None-None\"}, \"ui_description\": {\"error\": \"TypeError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": true, \\\"openpilot\\\": {\\\"version\\\": true, \\\"git_commit\\\": true, \\\"git_origin\\\": true, \\\"release_notes\\\": true, \\\"git_commit_date\\\": true, \\\"build_style\\\": true}}\"}",
+    "response": "{\"value\": {\"channel\": true, \"openpilot\": {\"version\": true, \"release_notes\": true, \"git_commit\": true, \"git_origin\": true, \"git_commit_date\": true, \"build_style\": true, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"True-True-True\"}, \"ui_description\": {\"error\": \"TypeError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": false, \\\"openpilot\\\": {\\\"version\\\": false, \\\"git_commit\\\": false, \\\"git_origin\\\": false, \\\"release_notes\\\": false, \\\"git_commit_date\\\": false, \\\"build_style\\\": false}}\"}",
+    "response": "{\"value\": {\"channel\": false, \"openpilot\": {\"version\": false, \"release_notes\": false, \"git_commit\": false, \"git_origin\": false, \"git_commit_date\": false, \"build_style\": false, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"False-False-False\"}, \"ui_description\": {\"error\": \"TypeError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": 42, \\\"openpilot\\\": {\\\"version\\\": 42, \\\"git_commit\\\": 42, \\\"git_origin\\\": 42, \\\"release_notes\\\": 42, \\\"git_commit_date\\\": 42, \\\"build_style\\\": 42}}\"}",
+    "response": "{\"value\": {\"channel\": 42, \"openpilot\": {\"version\": 42, \"release_notes\": 42, \"git_commit\": 42, \"git_origin\": 42, \"git_commit_date\": 42, \"build_style\": 42, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"42-42-42\"}, \"ui_description\": {\"error\": \"TypeError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \\\"openpilot\\\": {\\\"version\\\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \\\"git_commit\\\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \\\"git_origin\\\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \\\"release_notes\\\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \\\"git_commit_date\\\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \\\"build_style\\\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}}\"}",
+    "response": "{\"value\": {\"channel\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"openpilot\": {\"version\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"release_notes\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"git_commit\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"git_origin\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"git_commit_date\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"build_style\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"-10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000--10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000--10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\"}, \"ui_description\": {\"error\": \"TypeError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": 1.234, \\\"openpilot\\\": {\\\"version\\\": 1.234, \\\"git_commit\\\": 1.234, \\\"git_origin\\\": 1.234, \\\"release_notes\\\": 1.234, \\\"git_commit_date\\\": 1.234, \\\"build_style\\\": 1.234}}\"}",
+    "response": "{\"value\": {\"channel\": 1.234, \"openpilot\": {\"version\": 1.234, \"release_notes\": 1.234, \"git_commit\": 1.234, \"git_origin\": 1.234, \"git_commit_date\": 1.234, \"build_style\": 1.234, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"1.234-1.234-1.234\"}, \"ui_description\": {\"error\": \"TypeError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": -0.0, \\\"openpilot\\\": {\\\"version\\\": -0.0, \\\"git_commit\\\": -0.0, \\\"git_origin\\\": -0.0, \\\"release_notes\\\": -0.0, \\\"git_commit_date\\\": -0.0, \\\"build_style\\\": -0.0}}\"}",
+    "response": "{\"value\": {\"channel\": -0.0, \"openpilot\": {\"version\": -0.0, \"release_notes\": -0.0, \"git_commit\": -0.0, \"git_origin\": -0.0, \"git_commit_date\": -0.0, \"build_style\": -0.0, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"-0.0--0.0--0.0\"}, \"ui_description\": {\"error\": \"TypeError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": NaN, \\\"openpilot\\\": {\\\"version\\\": NaN, \\\"git_commit\\\": NaN, \\\"git_origin\\\": NaN, \\\"release_notes\\\": NaN, \\\"git_commit_date\\\": NaN, \\\"build_style\\\": NaN}}\"}",
+    "response": "{\"value\": {\"channel\": NaN, \"openpilot\": {\"version\": NaN, \"release_notes\": NaN, \"git_commit\": NaN, \"git_origin\": NaN, \"git_commit_date\": NaN, \"build_style\": NaN, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"nan-nan-nan\"}, \"ui_description\": {\"error\": \"TypeError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": Infinity, \\\"openpilot\\\": {\\\"version\\\": Infinity, \\\"git_commit\\\": Infinity, \\\"git_origin\\\": Infinity, \\\"release_notes\\\": Infinity, \\\"git_commit_date\\\": Infinity, \\\"build_style\\\": Infinity}}\"}",
+    "response": "{\"value\": {\"channel\": Infinity, \"openpilot\": {\"version\": Infinity, \"release_notes\": Infinity, \"git_commit\": Infinity, \"git_origin\": Infinity, \"git_commit_date\": Infinity, \"build_style\": Infinity, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"inf-inf-inf\"}, \"ui_description\": {\"error\": \"TypeError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"a-b-c\\\", \\\"openpilot\\\": {\\\"version\\\": \\\"a-b-c\\\", \\\"git_commit\\\": \\\"a-b-c\\\", \\\"git_origin\\\": \\\"a-b-c\\\", \\\"release_notes\\\": \\\"a-b-c\\\", \\\"git_commit_date\\\": \\\"a-b-c\\\", \\\"build_style\\\": \\\"a-b-c\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"a-b-c\", \"openpilot\": {\"version\": \"a-b-c\", \"release_notes\": \"a-b-c\", \"git_commit\": \"a-b-c\", \"git_origin\": \"a-b-c\", \"git_commit_date\": \"a-b-c\", \"build_style\": \"a-b-c\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"a\"}, \"git_normalized_origin\": {\"value\": \"a-b-c\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"a-b-c-a-b-c-a-b-c\"}, \"ui_description\": {\"value\": \"a-b-c / a-b-c / a-b-c\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"\\\\ud55c\\\\uae00\\\\ud83d\\\\ude00abcd\\\", \\\"openpilot\\\": {\\\"version\\\": \\\"\\\\ud55c\\\\uae00\\\\ud83d\\\\ude00abcd\\\", \\\"git_commit\\\": \\\"\\\\ud55c\\\\uae00\\\\ud83d\\\\ude00abcd\\\", \\\"git_origin\\\": \\\"\\\\ud55c\\\\uae00\\\\ud83d\\\\ude00abcd\\\", \\\"release_notes\\\": \\\"\\\\ud55c\\\\uae00\\\\ud83d\\\\ude00abcd\\\", \\\"git_commit_date\\\": \\\"\\\\ud55c\\\\uae00\\\\ud83d\\\\ude00abcd\\\", \\\"build_style\\\": \\\"\\\\ud55c\\\\uae00\\\\ud83d\\\\ude00abcd\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"\\ud55c\\uae00\\ud83d\\ude00abcd\", \"openpilot\": {\"version\": \"\\ud55c\\uae00\\ud83d\\ude00abcd\", \"release_notes\": \"\\ud55c\\uae00\\ud83d\\ude00abcd\", \"git_commit\": \"\\ud55c\\uae00\\ud83d\\ude00abcd\", \"git_origin\": \"\\ud55c\\uae00\\ud83d\\ude00abcd\", \"git_commit_date\": \"\\ud55c\\uae00\\ud83d\\ude00abcd\", \"build_style\": \"\\ud55c\\uae00\\ud83d\\ude00abcd\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"\\ud55c\\uae00\\ud83d\\ude00abcd\"}, \"git_normalized_origin\": {\"value\": \"\\ud55c\\uae00\\ud83d\\ude00abcd\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"\\ud55c\\uae00\\ud83d\\ude00abcd-\\ud55c\\uae00\\ud83d\\ude00abcd-\\ud55c\\uae00\\ud83d\\ude00abcd\"}, \"ui_description\": {\"value\": \"\\ud55c\\uae00\\ud83d\\ude00abcd / \\ud55c\\uae00\\ud83d\\ude00abc / \\ud55c\\uae00\\ud83d\\ude00abcd\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": \\\"\\\\ud800abc\\\", \\\"openpilot\\\": {\\\"version\\\": \\\"\\\\ud800abc\\\", \\\"git_commit\\\": \\\"\\\\ud800abc\\\", \\\"git_origin\\\": \\\"\\\\ud800abc\\\", \\\"release_notes\\\": \\\"\\\\ud800abc\\\", \\\"git_commit_date\\\": \\\"\\\\ud800abc\\\", \\\"build_style\\\": \\\"\\\\ud800abc\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"\\ud800abc\", \"openpilot\": {\"version\": \"\\ud800abc\", \"release_notes\": \"\\ud800abc\", \"git_commit\": \"\\ud800abc\", \"git_origin\": \"\\ud800abc\", \"git_commit_date\": \"\\ud800abc\", \"build_style\": \"\\ud800abc\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"\\ud800abc\"}, \"git_normalized_origin\": {\"value\": \"\\ud800abc\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"\\ud800abc-\\ud800abc-\\ud800abc\"}, \"ui_description\": {\"value\": \"\\ud800abc / \\ud800abc / \\ud800abc\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": [], \\\"openpilot\\\": {\\\"version\\\": [], \\\"git_commit\\\": [], \\\"git_origin\\\": [], \\\"release_notes\\\": [], \\\"git_commit_date\\\": [], \\\"build_style\\\": []}}\"}",
+    "response": "{\"value\": {\"channel\": [], \"openpilot\": {\"version\": [], \"release_notes\": [], \"git_commit\": [], \"git_origin\": [], \"git_commit_date\": [], \"build_style\": [], \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"[]-[]-[]\"}, \"ui_description\": {\"value\": \"[] / [] / []\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": [\\\"a\\\", \\\"\\\\ud800\\\", \\\"\\\\u001c\\\", \\\"\\\\u200b\\\", \\\"\\\\ue000\\\", \\\"\\\\u0378\\\", \\\"'\\\\\\\"\\\"], \\\"openpilot\\\": {\\\"version\\\": [\\\"a\\\", \\\"\\\\ud800\\\", \\\"\\\\u001c\\\", \\\"\\\\u200b\\\", \\\"\\\\ue000\\\", \\\"\\\\u0378\\\", \\\"'\\\\\\\"\\\"], \\\"git_commit\\\": [\\\"a\\\", \\\"\\\\ud800\\\", \\\"\\\\u001c\\\", \\\"\\\\u200b\\\", \\\"\\\\ue000\\\", \\\"\\\\u0378\\\", \\\"'\\\\\\\"\\\"], \\\"git_origin\\\": [\\\"a\\\", \\\"\\\\ud800\\\", \\\"\\\\u001c\\\", \\\"\\\\u200b\\\", \\\"\\\\ue000\\\", \\\"\\\\u0378\\\", \\\"'\\\\\\\"\\\"], \\\"release_notes\\\": [\\\"a\\\", \\\"\\\\ud800\\\", \\\"\\\\u001c\\\", \\\"\\\\u200b\\\", \\\"\\\\ue000\\\", \\\"\\\\u0378\\\", \\\"'\\\\\\\"\\\"], \\\"git_commit_date\\\": [\\\"a\\\", \\\"\\\\ud800\\\", \\\"\\\\u001c\\\", \\\"\\\\u200b\\\", \\\"\\\\ue000\\\", \\\"\\\\u0378\\\", \\\"'\\\\\\\"\\\"], \\\"build_style\\\": [\\\"a\\\", \\\"\\\\ud800\\\", \\\"\\\\u001c\\\", \\\"\\\\u200b\\\", \\\"\\\\ue000\\\", \\\"\\\\u0378\\\", \\\"'\\\\\\\"\\\"]}}\"}",
+    "response": "{\"value\": {\"channel\": [\"a\", \"\\ud800\", \"\\u001c\", \"\\u200b\", \"\\ue000\", \"\\u0378\", \"'\\\"\"], \"openpilot\": {\"version\": [\"a\", \"\\ud800\", \"\\u001c\", \"\\u200b\", \"\\ue000\", \"\\u0378\", \"'\\\"\"], \"release_notes\": [\"a\", \"\\ud800\", \"\\u001c\", \"\\u200b\", \"\\ue000\", \"\\u0378\", \"'\\\"\"], \"git_commit\": [\"a\", \"\\ud800\", \"\\u001c\", \"\\u200b\", \"\\ue000\", \"\\u0378\", \"'\\\"\"], \"git_origin\": [\"a\", \"\\ud800\", \"\\u001c\", \"\\u200b\", \"\\ue000\", \"\\u0378\", \"'\\\"\"], \"git_commit_date\": [\"a\", \"\\ud800\", \"\\u001c\", \"\\u200b\", \"\\ue000\", \"\\u0378\", \"'\\\"\"], \"build_style\": [\"a\", \"\\ud800\", \"\\u001c\", \"\\u200b\", \"\\ue000\", \"\\u0378\", \"'\\\"\"], \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"['a', '\\\\ud800', '\\\\x1c', '\\\\u200b', '\\\\ue000', '\\\\u0378', '\\\\'\\\"']-['a', '\\\\ud800', '\\\\x1c', '\\\\u200b', '\\\\ue000', '\\\\u0378', '\\\\'\\\"']-['a', '\\\\ud800', '\\\\x1c', '\\\\u200b', '\\\\ue000', '\\\\u0378', '\\\\'\\\"']\"}, \"ui_description\": {\"value\": \"['a', '\\\\ud800', '\\\\x1c', '\\\\u200b', '\\\\ue000', '\\\\u0378', '\\\\'\\\"'] / ['a', '\\\\ud800', '\\\\x1c', '\\\\u200b', '\\\\ue000', '\\\\u0378'] / ['a', '\\\\ud800', '\\\\x1c', '\\\\u200b', '\\\\ue000', '\\\\u0378', '\\\\'\\\"']\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"channel\\\": {\\\"z\\\": 1, \\\"a\\\": \\\"value\\\"}, \\\"openpilot\\\": {\\\"version\\\": {\\\"z\\\": 1, \\\"a\\\": \\\"value\\\"}, \\\"git_commit\\\": {\\\"z\\\": 1, \\\"a\\\": \\\"value\\\"}, \\\"git_origin\\\": {\\\"z\\\": 1, \\\"a\\\": \\\"value\\\"}, \\\"release_notes\\\": {\\\"z\\\": 1, \\\"a\\\": \\\"value\\\"}, \\\"git_commit_date\\\": {\\\"z\\\": 1, \\\"a\\\": \\\"value\\\"}, \\\"build_style\\\": {\\\"z\\\": 1, \\\"a\\\": \\\"value\\\"}}}\"}",
+    "response": "{\"value\": {\"channel\": {\"z\": 1, \"a\": \"value\"}, \"openpilot\": {\"version\": {\"z\": 1, \"a\": \"value\"}, \"release_notes\": {\"z\": 1, \"a\": \"value\"}, \"git_commit\": {\"z\": 1, \"a\": \"value\"}, \"git_origin\": {\"z\": 1, \"a\": \"value\"}, \"git_commit_date\": {\"z\": 1, \"a\": \"value\"}, \"build_style\": {\"z\": 1, \"a\": \"value\"}, \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"error\": \"AttributeError\"}, \"comma_remote\": {\"error\": \"AttributeError\"}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"{'z': 1, 'a': 'value'}-{'z': 1, 'a': 'value'}-{'z': 1, 'a': 'value'}\"}, \"ui_description\": {\"error\": \"KeyError\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\":{\\\"version\\\":\\\"old\\\",\\\"version\\\":\\\"new\\\"}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": \"new\", \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"value\": \"new\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"new-unknown-unknown\"}, \"ui_description\": {\"value\": \"new / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\":{\\\"version\\\":1e999}}\"}",
+    "response": "{\"value\": {\"channel\": \"unknown\", \"openpilot\": {\"version\": Infinity, \"release_notes\": \"unknown\", \"git_commit\": \"unknown\", \"git_origin\": \"unknown\", \"git_commit_date\": \"unknown\", \"build_style\": \"unknown\", \"is_dirty\": false}, \"properties\": {\"short_version\": {\"error\": \"AttributeError\"}, \"git_normalized_origin\": {\"value\": \"unknown\"}, \"comma_remote\": {\"value\": false}, \"tested_channel\": {\"value\": false}, \"release_channel\": {\"value\": false}, \"canonical\": {\"value\": \"inf-unknown-unknown\"}, \"ui_description\": {\"value\": \"inf / unknow / unknown\"}}}, \"logs\": []}\n"
+  },
+  {
+    "scenario": "build-json",
+    "request": "{\"op\": \"from_json\", \"source\": \"{\\\"openpilot\\\":{\\\"version\\\":11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111}}\"}",
+    "response": "{\"error\": \"ValueError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "missing-executable",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/missing-executable\"}",
+    "response": "{\"error\": \"FileNotFoundError\", \"logs\": []}\n"
+  },
+  {
+    "scenario": "missing-executable",
+    "request": "{\"op\": \"git\", \"method\": \"origin\", \"cwd\": \"@FIXTURE_ROOT@/missing-executable\"}",
+    "response": "{\"value\": \"git@github.com:commaai/openpilot.git\", \"logs\": []}\n"
+  }
+]

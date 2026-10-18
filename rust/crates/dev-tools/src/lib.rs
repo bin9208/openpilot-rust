@@ -117,6 +117,8 @@ pub mod ui_render_check;
 #[cfg(feature = "image-array-native")]
 pub mod ui_render_reference;
 pub mod user_docs;
+#[cfg(feature = "version-tools-native")]
+pub mod version_source;
 
 pub mod elf_audit;
 #[cfg(feature = "encoder-runtime-native")]
