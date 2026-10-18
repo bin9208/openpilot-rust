@@ -1,0 +1,38 @@
+[
+  {
+    "name": "missing-child",
+    "returncode": 1,
+    "stdout": "",
+    "last_error": "FileNotFoundError: [Errno 2] No such file or directory: PosixPath('$ROOT/missing-child')",
+    "worker_log": true,
+    "result": false,
+    "next_scenario": false
+  },
+  {
+    "name": "false-child",
+    "returncode": 1,
+    "stdout": "",
+    "last_error": "AssertionError",
+    "worker_log": true,
+    "result": false,
+    "next_scenario": false
+  },
+  {
+    "name": "early-zero-child",
+    "returncode": 1,
+    "stdout": "",
+    "last_error": "AssertionError",
+    "worker_log": true,
+    "result": false,
+    "next_scenario": false
+  },
+  {
+    "name": "output-file",
+    "returncode": 1,
+    "stdout": "",
+    "last_error": "NotADirectoryError: [Errno 20] Not a directory: '$ROOT/failure-output-file/alternate'",
+    "worker_log": false,
+    "result": false,
+    "next_scenario": false
+  }
+]

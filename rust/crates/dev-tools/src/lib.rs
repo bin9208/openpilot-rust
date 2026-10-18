@@ -202,3 +202,9 @@ pub mod checkout_status_reference;
 pub mod manager_catalog_check;
 #[cfg(feature = "manager-catalog-tools-native")]
 pub mod manager_catalog_reference;
+
+#[cfg(feature = "qcom-assistance-tools-native")]
+pub mod qcom_assistance_check;
+
+#[cfg(feature = "feedback-runtime-native")]
+pub mod feedbackd_check;

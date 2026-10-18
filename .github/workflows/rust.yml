@@ -2387,8 +2387,17 @@ jobs:
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
         run: cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-portaudio --no-default-features --lib --locked
-      - name: Compare actual source and native bookmark IPC
-        run: python rust/tools/check_feedbackd.py --binary "$PWD/rust/target/debug/openpilot-feedbackd" --binding "$RUNNER_TEMP"/sensor-params-binding/params_pyx*.so --output "$RUNNER_TEMP/sensor-audio/feedbackd"
+      - name: Build and validate native feedback checker
+        run: |
+          rustup component add clippy --toolchain 1.94.0
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features feedback-runtime-native --bin check-feedbackd --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          FEEDBACKD_NATIVE_BINARY="$PWD/rust/target/debug/openpilot-feedbackd" cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features feedback-runtime-native --bin check-feedbackd --test feedbackd_check --test feedbackd_runtime_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features feedback-runtime-native --bin check-feedbackd --test feedbackd_check --test feedbackd_runtime_check --locked -- -D warnings
+      - name: Compare original policy and native bookmark IPC
+        run: rust/target/debug/check-feedbackd --binary "$PWD/rust/target/debug/openpilot-feedbackd" --output "$RUNNER_TEMP/sensor-audio/feedbackd"
       - name: Retain sensor and audio comparison evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -2421,6 +2430,15 @@ jobs:
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/gnss-msgq-python"
       - name: Validate narrow u-blox framing correction controls
         run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_ublox_framing_delta.py -q
+      - name: Build and validate native assistance checker
+        run: |
+          rustup component add clippy --toolchain 1.94.0
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features qcom-assistance-tools-native --bin check-qcomgps-assistance --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          QCOMGPSD_BINARY="$PWD/rust/target/debug/openpilot-qcomgpsd" cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features qcom-assistance-tools-native --bin check-qcomgps-assistance --test qcom_assistance_check --lib --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features qcom-assistance-tools-native --bin check-qcomgps-assistance --test qcom_assistance_check --lib --locked -- -D warnings
       - name: Compare u-blox source framing, receiver policy, serial ABI and daemon IPC
         run: |
           python rust/tools/check_ublox.py --trace "$PWD/rust/target/debug/examples/ublox_trace" --evidence "$RUNNER_TEMP/gnss/ublox"
@@ -2432,7 +2450,7 @@ jobs:
           python rust/tools/check_qcomgps_reference.py "$PWD/rust/target/debug/examples/qcom_trace" "$RUNNER_TEMP/gnss/qcom/publications.json"
           python rust/tools/check_qcomgps_daemon.py "$PWD/rust/target/debug/openpilot-qcomgpsd" "$PWD/rust/target/debug/examples/qcom_subscribe" "$RUNNER_TEMP/gnss/qcom/daemon"
           python rust/tools/check_qcomgps_nmea.py "$PWD/rust/target/debug/examples/nmea_trace" "$PWD/rust/target/debug/nmeaport" "$RUNNER_TEMP/gnss/qcom/nmea"
-          python rust/tools/check_qcomgps_assistance.py "$PWD/rust/target/debug/openpilot-qcomgpsd" "$RUNNER_TEMP/gnss/qcom/assistance"
+          rust/target/debug/check-qcomgps-assistance "$PWD/rust/target/debug/openpilot-qcomgpsd" "$RUNNER_TEMP/gnss/qcom/assistance"
       - name: Retain GNSS source and native evidence
         if: always()
         uses: actions/upload-artifact@v6

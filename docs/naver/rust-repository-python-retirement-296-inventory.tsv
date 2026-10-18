@@ -1936,7 +1936,7 @@ rust/tools/check_encoder_codecs.py	b5c58edf121dacabb6cb6bfaeee867cdfdfa74e2	repl
 rust/tools/check_encoder_runtime.py	378310c441ab51e189b9e14f44a7953bd3cda73e	replaced-local	rust/crates/dev-tools/src/encoder_runtime_native.rs
 rust/tools/check_encoder_target.py	2d50047cbd3cbc9a8e632b8ebe2bb8f09a8eb2ba	replaced-local	rust/crates/dev-tools/src/encoder_target_check.rs
 rust/tools/check_encoder_v4l.py	3eddf8d4ebe3f414c6c1cf0712e081d9450258c4	replaced-local	rust/crates/dev-tools/src/encoder_v4l_check.rs
-rust/tools/check_feedbackd.py	6dbcef88b313b3d972116647f6b184cb741ad8ee	pending	-
+rust/tools/check_feedbackd.py	6dbcef88b313b3d972116647f6b184cb741ad8ee	replaced-local	rust/crates/dev-tools/src/feedbackd_check.rs; rust/crates/dev-tools/src/feedbackd_native.rs
 rust/tools/check_hardware_control.py	d3db234f72a367c9b692ed2fd53099a9c1d1c2c7	replaced-local	openpilot-dev-tools check-hardware-control-policy; original 35 fixed cases and exact artifact comparisons
 rust/tools/check_hardware_info.py	089f34da86d5a3f4d30bb1533967ba90a193e8c0	pending	-
 rust/tools/check_hardwared.py	bd1fdb053cb5dbcf038a7250b9752f4992d8a9dc	pending	-
@@ -2044,7 +2044,7 @@ rust/tools/check_policy_reference.py	9590b9d553c064623ffd6a8a728ef118b8a6483e	pe
 rust/tools/check_process_supervision.py	1b623e48e6d583b3df4a1d3421d0947c4a42b948	pending	-
 rust/tools/check_proclog_daemon.py	4aacc37155b94d99e4caae8f5328b9589e0fc90e	pending	-
 rust/tools/check_proclog_reference.py	f35233594595cd53f8031798d3b8b1297199668c	pending	-
-rust/tools/check_qcomgps_assistance.py	4a74b5f1e9a23229dd6c9aab7a2e807def382d8b	pending	-
+rust/tools/check_qcomgps_assistance.py	4a74b5f1e9a23229dd6c9aab7a2e807def382d8b	replaced-local	rust/crates/dev-tools/src/qcom_assistance_check.rs
 rust/tools/check_qcomgps_daemon.py	5fdaff0a9fc4c594bfb6b2e0853d42c100cb2b51	pending	-
 rust/tools/check_qcomgps_nmea.py	9491a654835b2d7eed031f6d249b5f7c89867587	pending	-
 rust/tools/check_qcomgps_reference.py	c8d9538848be64b1668d864b74e5ae31acf6d587	pending	-

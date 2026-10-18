@@ -1,0 +1,58 @@
+[
+  {
+    "name": "help",
+    "code": 0,
+    "stdout_hex": "75736167653a20636865636b5f666565646261636b642e7079205b2d685d205b2d2d62696e6172792042494e4152595d202d2d62696e64696e672042494e44494e47202d2d6f75747075740a20202020202020202020202020202020202020202020202020204f5554505554205b2d2d736f757263655d0a0a6f7074696f6e733a0a20202d682c202d2d68656c7020202020202020202073686f7720746869732068656c70206d65737361676520616e6420657869740a20202d2d62696e6172792042494e4152590a20202d2d62696e64696e672042494e44494e470a20202d2d6f7574707574204f55545055540a20202d2d736f757263650a",
+    "error_kind": null,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "missing",
+    "code": 2,
+    "stdout_hex": "",
+    "error_kind": "check_feedbackd.py",
+    "stderr_sha256": "9ae67c3cad0cb227c592084fead997b47620016e07df0eadd3837679f6697311"
+  },
+  {
+    "name": "binding-only",
+    "code": 2,
+    "stdout_hex": "",
+    "error_kind": "check_feedbackd.py",
+    "stderr_sha256": "435e6f306c7f5dd01a9a2a72067d0246cd56a5d6a85e37f7819a28cb186a422d"
+  },
+  {
+    "name": "output-only",
+    "code": 2,
+    "stdout_hex": "",
+    "error_kind": "check_feedbackd.py",
+    "stderr_sha256": "67488750c1f875046b3974a032fea95d6af9009cc2f7b555f27a6ecca3131936"
+  },
+  {
+    "name": "unknown",
+    "code": 2,
+    "stdout_hex": "",
+    "error_kind": "check_feedbackd.py",
+    "stderr_sha256": "9ae67c3cad0cb227c592084fead997b47620016e07df0eadd3837679f6697311"
+  },
+  {
+    "name": "missing-binary",
+    "code": 1,
+    "stdout_hex": "",
+    "error_kind": "AssertionError",
+    "stderr_sha256": "723944d75e1993949531d1e068c0a6238a3b5049bca568d3fda314a17d5a63d0"
+  },
+  {
+    "name": "absent-binary",
+    "code": 1,
+    "stdout_hex": "",
+    "error_kind": "AssertionError",
+    "stderr_sha256": "723944d75e1993949531d1e068c0a6238a3b5049bca568d3fda314a17d5a63d0"
+  },
+  {
+    "name": "source-bad-binding",
+    "code": 1,
+    "stdout_hex": "",
+    "error_kind": "ImportError",
+    "stderr_sha256": "d6a731d385355d0855955680679f08b714b6e4e2780bb6f3caf35f74656ab276"
+  }
+]

@@ -435,6 +435,8 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
+qcom-assistance-tools-native = []
 manager-catalog-tools-native = []
 checkout-tools-native = ["dep:openpilot-process-supervision", "dep:nix"]
 services-catalog-native = ["dep:capnp", "dep:openpilot-cereal"]
@@ -1055,3 +1057,25 @@ path = "src/bin/check_encoder_target.rs"
 
 [[test]]
 name = "encoder_target_check"
+
+[[test]]
+name = "qcom_assistance_check"
+required-features = ["qcom-assistance-tools-native"]
+
+[[bin]]
+name = "check-qcomgps-assistance"
+path = "src/bin/check_qcomgps_assistance.rs"
+required-features = ["qcom-assistance-tools-native"]
+
+[[test]]
+name = "feedbackd_check"
+required-features = ["feedback-runtime-native"]
+
+[[test]]
+name = "feedbackd_runtime_check"
+required-features = ["feedback-runtime-native"]
+
+[[bin]]
+name = "check-feedbackd"
+path = "src/bin/check_feedbackd.rs"
+required-features = ["feedback-runtime-native"]

@@ -3244,3 +3244,74 @@ Only the README was reconciled after the frozen graph gates. Exact committed-SHA
 CI remains required. Later graph prefixes, full CPU/GPU export, repository-wide
 Python retirement and user device verification remain open; no CPU saving is
 claimed from these correctness checks.
+
+### Native feedback checker and cleanup closure (#296 / #362, 2026-10-18)
+
+Replaced and deleted only `rust/tools/check_feedbackd.py` with native
+`check-feedbackd --binary BINARY --output OUTPUT`. Its CLI-private Rust source
+reference uses full Cereal/msgq IPC with independent bookmark policy. The source's
+literal-false audio gate, invalid-bookmark handling, logging and 8,000/200/3,000 ms
+readiness/subscriber/shutdown limits remain intact. The 35 retained original
+source pins remain mandatory; only the actually absent retired checker is allowed.
+Changed present copies and dangling symlinks are rejected.
+
+The unchanged original checker passed against fresh daemon SHA256
+43bb4229f836b75a3648c5ea0a863947645b10c4283459de812c710036f39226.
+Five policy/provenance and three actual IPC/owner tests, strict Clippy and the
+frozen native build passed. The complete eight-iteration native report equals
+the original report: four bookmarks, no audio and four log messages. Empty-PATH
+tracing records three ELF executions and no Python. Eight CLI controls and three
+real child failure paths preserve raw failure evidence while reaping owned
+children and removing only their IPC namespaces; an unrelated namespace sentinel
+survives. This fixes the original checker's spawn-failure namespace leak (#362),
+not a demonstrated feedback runtime fault. A genuine dangling-symlink guard RED
+preceded the minimal actual-absence fix.
+
+After deleting the Python checker, the same sealed native proof passes unchanged
+(`actual-native-z0llkzl9`). Sensor/audio CI now builds and tests the native checker,
+requires its actual freshly built daemon and runs strict Clippy before executing
+it. A missing-native-caller CI RED preceded this wiring; all 36 workflow-policy
+and 13 disk-bootstrap tests pass. Existing 177 guard argument hashes are preserved;
+the new native builds/checks add explicit disk reserve guards.
+
+Evidence is indexed in `.analysis/scratch/2026-10-18-feedbackd-tools/`, including
+`FINAL-EVIDENCE.md`, `native-gate-Cl5efKcP`, both actual-native receipts, `ci-red.log`
+and the post-deletion test log. Inventory:151 replaced-local,3 partial,3426 pending.
+Audio recording, complete Python retirement and device startup/recording/upload
+acceptance are not established by this host checker. The user will perform the
+final device verification after pulling the completed candidate.
+
+### Native GNSS assistance checker closure (#296, 2026-10-18)
+
+Deleted only `rust/tools/check_qcomgps_assistance.py` after replacing its positional
+CLI and all four real loopback/file scenarios with `check-qcomgps-assistance`.
+The unchanged original checker was rerun against fresh daemon SHA256
+6d3aaac652c0ae3feaed88cd222ce3c48227199c3ed700b03d14ceb731a24c9e;
+all four result objects are identical to the independent original fixture.
+The native checker retains alternate-file replacement, accepted404 body,
+oversize temporary-file handling and exactly one retry, with exact file contents,
+15-second observation and3-second shutdown. The runtime daemon is unchanged.
+
+Actual missing-API RED preceded implementation. Independent review added seven
+private HTTP-server regressions: GET-only dispatch, original request/header limits,
+owned cancellation during slow headers, and the original-valid1.5-second header
+pause. The last case failed under a newly introduced1-second socket limit; removing
+that limit restores original acceptance while exact-owned socket shutdown still
+bounds finish/Drop. No candidate policy or fixture output drives the live checker.
+All80 library tests and7 actual integration tests, strict Clippy and build passed.
+
+Frozen checker SHA25648d8d042304e0f666035c6b98b7bee19416fc1840aeba9502d2e9217c9a4d8c4
+passes the full runtime proof both before and after deletion: four original-exact
+objects, five CLI, four actual failure and five provenance controls. Empty-PATH
+tracing has five execs using only two owned ELF paths and no interpreter. The
+proof verifies unchanged checker/source seals and245 files in the daemon's path
+dependency closure; it does not claim a complete runtime bundle. All seven actual
+integration tests also pass after deletion. GNSS CI now builds/tests/lints the
+native command with mandatory current-source QCOMGPSD_BINARY; workflow/disk49 pass.
+
+Evidence: `.analysis/scratch/2026-10-18-qcom-assistance-tools/`, particularly
+`header-pause-red.log`, `final-tests.log`, `final-clippy.log`,
+`final-frozen-yxjmwvAU`, `actual-native-1uyubxym`, `actual-native-4gemcmt4`,
+`post-delete-tests.log` and `parent-review.md`. Counts:152 replaced-local,
+3 partially replaced,3425 pending of3580 baseline entries. Complete Python removal,
+exact committed-SHA CI and user device verification remain open.
