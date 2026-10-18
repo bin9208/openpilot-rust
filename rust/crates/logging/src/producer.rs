@@ -104,6 +104,7 @@ impl Factory {
             factory: self.clone(),
             local: self.global.local(),
             state: Connection::Disconnected,
+            retained: false,
         }
     }
 }
@@ -138,8 +139,21 @@ pub struct Logger {
     factory: Factory,
     local: LocalContext,
     state: Connection,
+    retained: bool,
 }
 impl Logger {
+    /// Create a caller-local context/formatter facade over the process-retained
+    /// runtime connection. Dropping this facade never closes queued records.
+    ///
+    /// Factory initialization errors and local binding precedence match an
+    /// ordinary runtime Logger. The first successful runtime emission selects
+    /// the shared endpoint; retain RuntimeLogScope at the process root.
+    /// Explicit close closes only this facade in the current PID.
+    pub fn for_runtime_retained() -> Result<Self, Error> {
+        let mut logger = Factory::for_runtime()?.logger();
+        logger.retained = true;
+        Ok(logger)
+    }
     pub fn bind(&self, fields: Fields) {
         self.local.bind(fields)
     }
@@ -153,7 +167,19 @@ impl Logger {
         let Some(packet) = self.prepare(site, record)? else {
             return Ok(Delivery::Filtered);
         };
-        self.state.send(&self.factory.endpoint, &packet)
+        if self.retained {
+            if let Connection::Closed(owner) = &self.state {
+                if *owner == std::process::id() {
+                    return Err(zmq::Error::ENOTSOCK.into());
+                }
+                // Like an ordinary Logger, a facade closed in its parent PID
+                // can reconnect in the controlled fork child.
+                self.state = Connection::Disconnected;
+            }
+            runtime::send_prepared(&self.factory, &packet)
+        } else {
+            self.state.send(&self.factory.endpoint, &packet)
+        }
     }
     /// Format on the calling thread, before transport. Runtime emission uses a
     /// temporary logger only for its empty local/inherited global context; the
@@ -177,7 +203,13 @@ impl Logger {
         Ok(Some(packet))
     }
     pub fn close(&mut self) {
-        self.state.close();
+        if self.retained {
+            // No shared socket lives in the facade. Closing an unused or
+            // inherited facade still closes this facade in the calling PID.
+            self.state = Connection::Closed(std::process::id());
+        } else {
+            self.state.close();
+        }
     }
 }
 impl Drop for Logger {

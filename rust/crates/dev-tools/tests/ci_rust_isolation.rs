@@ -1250,6 +1250,7 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
         "telemetry-runtime",
         &[
             "--test runtime_producer --locked",
+            "--test retained_facade --locked",
             "--test error_log_lifetime --locked",
             "check_version_reference.py",
             "check_version_collector.py",
@@ -1262,7 +1263,18 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
         false,
     );
     let data = workflow();
-    for job in ["telemetry-runtime", "startup-services"] {
+    for (job, target) in [
+        ("gnss-runtime", "--test assistance_log_lifetime --locked"),
+        ("platform-runtime", "--test params_log_lifetime --locked"),
+    ] {
+        job_check(job, &[target], &[target], false);
+    }
+    for job in [
+        "telemetry-runtime",
+        "startup-services",
+        "gnss-runtime",
+        "platform-runtime",
+    ] {
         for key in [
             "CARGO_INCREMENTAL",
             "CARGO_PROFILE_DEV_DEBUG",

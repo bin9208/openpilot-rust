@@ -3593,8 +3593,10 @@ dependencies = [
  "serde_json",
  "serialport",
  "signal-hook",
+ "tempfile",
  "thiserror 2.0.21",
  "ureq",
+ "zmq",
 ]
 
 [[package]]

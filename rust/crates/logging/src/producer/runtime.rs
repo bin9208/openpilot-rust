@@ -45,18 +45,34 @@ pub fn emit_runtime(site: Site, record: Record) -> Result<Delivery, Error> {
     if record.level < Level::Debug {
         return Ok(Delivery::Filtered);
     }
+    with_runtime(Factory::for_runtime, |producer| producer.emit(site, record))
+}
+
+// Facades have already formatted their own local/global context and caller
+// metadata. Only mechanical transport is shared with emit_runtime; never retain
+// the Rc-backed Logger or merge one facade's local bindings into another.
+pub(super) fn send_prepared(factory: &Factory, packet: &[u8]) -> Result<Delivery, Error> {
+    with_runtime(
+        || Ok(factory.clone()),
+        |producer| producer.connection.send(&producer.factory.endpoint, packet),
+    )
+}
+fn with_runtime(
+    factory: impl FnOnce() -> Result<Factory, Error>,
+    emit: impl FnOnce(&mut RuntimeProducer) -> Result<Delivery, Error>,
+) -> Result<Delivery, Error> {
     let mut state = RUNTIME
         .get_or_init(|| Mutex::new(None))
         .lock()
         .map_err(|_| Error::Contract("runtime logger lock poisoned"))?;
     if let Some(producer) = &mut *state {
-        return producer.emit(site, record);
+        return emit(producer);
     }
     let mut producer = RuntimeProducer {
-        factory: Factory::for_runtime()?,
+        factory: factory()?,
         connection: Connection::Disconnected,
     };
-    let delivery = producer.emit(site, record)?;
+    let delivery = emit(&mut producer)?;
     *state = Some(producer);
     Ok(delivery)
 }

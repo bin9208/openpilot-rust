@@ -2126,6 +2126,8 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-logging --test runtime_producer --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-logging --test retained_facade --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-runtime-version --test error_log_lifetime --locked
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
@@ -2443,6 +2445,8 @@ jobs:
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2462,6 +2466,10 @@ jobs:
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/gnss-msgq-python"
       - name: Validate narrow u-blox framing correction controls
         run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_ublox_framing_delta.py -q
+      - name: Preserve assistance diagnostics after helper and thread return
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-qcomgpsd --test assistance_log_lifetime --locked
       - name: Build and validate native assistance checker
         run: |
           rustup component add clippy --toolchain 1.94.0
@@ -2862,6 +2870,9 @@ jobs:
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2877,6 +2888,10 @@ jobs:
         run: printf 'PYTHONPATH=%s/platform-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Build native manager and serial daemon boundaries
         run: cargo build --manifest-path rust/Cargo.toml -p openpilot-manager -p openpilot-modem -p openpilot-hardwared -p openpilot-process-supervision --bins --examples --locked
+      - name: Preserve default parameter diagnostics after helper and thread return
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-manager --test params_log_lifetime --locked
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build original platform IPC and Params bindings

@@ -132,7 +132,7 @@ pub fn inject(config: &Config, stop: &AtomicBool) -> Result<(), Error> {
             ))
             .output();
         if result.is_ok_and(|output| output.status.success()) {
-            Factory::for_runtime()?.logger().emit(
+            openpilot_logging::producer::Logger::for_runtime_retained()?.emit(
                 openpilot_logging::log_site!(),
                 Record::text(Level::Info, "successfully loaded assistance data".into()),
             )?;

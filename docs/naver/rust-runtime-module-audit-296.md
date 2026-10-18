@@ -1206,3 +1206,58 @@ on ad450fa6, including the new metadata transport and checkout disk-profile chec
 These results do not establish a successful complete run or device acceptance.
 The new committed SHA still requires cloud validation. Local logs and downloaded
 failing job logs: `.analysis/scratch/2026-10-18-ad450-ci/`.
+
+### Upload and bookmark owner follow-up (source inspection, 2026-10-18)
+
+Inspected uploader runtime/HTTP/scanner, web-upload folder and WebDAV transfer/
+stream/transport, and feedbackd's main loop. Uploader's logger is retained by its
+runtime owner across scan/upload iterations; its public CLI rejects zero cycle
+counts. Feedbackd likewise retains its logger and publisher across the bookmark
+loop. These sites differ from the reproduced short-lived helper loss in #368;
+no new lifetime defect was established in this inspection.
+
+WebDAV streams bounded64KiB reads, checks cancellation between reads/operations,
+verifies sent length and unchanged file metadata before MOVE, and tracks temporary
+upload cleanup with a local owner. Folder uploads keep their separate original
+chunk/retry/remote-size policy. Uploader compressed bodies still allocate the full
+compressed file, matching its current implementation; streaming that path would
+require preserving Content-Length, seek/replay and redirect behavior. No speculative
+change was made. This source review does not validate remote-service behavior,
+all HTTP edge cases, physical upload acceptance or measured memory/CPU savings.
+
+### Retained helper Logger facade (#368, 2026-10-18)
+
+Real manager default-parameter repair and QCOM assistance injection each lost
+their warning/success record after the helper or short-lived emitting thread
+returned, before a delayed collector connected. All four cases reproduced loss
+with the unchanged2s receive deadline. Independently executed original manager
+all-key default-setting loop and original QCOM injection (including its real retry
+decorator and an owned successful mmcli fixture) delivered the records in both
+modes. Manager still repaired the invalid INT to3 and emitted no duplicate on
+its second pass. These are private host operations, not modem/device tests.
+
+An opt-in `Logger::for_runtime_retained` keeps the existing concrete caller-local
+Logger/context API while sending its already formatted packets through the same
+process-retained Connection as `emit_runtime`. No new sender thread/socket/global
+is introduced. Closing or dropping a facade cannot close another facade's
+transport; only the process-root RuntimeLogScope/close_runtime closes the shared
+connection. Ordinary Logger ownership and nonblocking/error/fork policies remain.
+Only the two reproduced production helper constructors changed.
+
+Nine real ZMQ facade modes,17 existing integration tests, six existing runtime
+producer modes and two compile-fail documentation tests pass. Both metadata modes
+and all four actual helper modes pass; strict all-target Clippy for logging,
+runtime-version, manager and qcomgpsd passes. A fixture's initially16-character
+thread name exceeded Linux comm's15-byte limit; the same shorter operation-log
+name was independently recaptured in both originals and native tests. Production
+metadata and assertion deadlines were not changed to hide this fixture error.
+Mandatory telemetry/platform/GNSS CI now runs these tests;51 routing/disk tests
+pass with257 guards across32 jobs and unchanged original guard arguments.
+Exact committed-SHA cloud checks remain required. Evidence and source hashes:
+`.analysis/scratch/2026-10-18-ephemeral-runtime-logs/facade-green-JhCubJnh/`;
+original controls in sibling `original-manager-qcr9pgwn` and
+`original-qcom-al1tpngb`. Two Carrot Server helper candidates remain unverified
+and unchanged pending actual operation reproduction.
+Independent source review found no blocker in facade ownership, the two actual
+callers, regression cleanup or required CI registration; review source pins are
+in `sol-model-facade-review.md` beside that evidence.
