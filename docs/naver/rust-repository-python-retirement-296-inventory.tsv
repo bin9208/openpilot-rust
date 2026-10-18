@@ -2082,7 +2082,7 @@ rust/tools/check_stats_flood.py	1b5ad8b2c9e66df9f6d5bfd69aedba1267cc4cd1	pending
 rust/tools/check_stats_interrupted.py	f0caa533e30c9ab353de7ffc1caa0353d30fe304	pending	-
 rust/tools/check_stats_log_fault.py	ff238b53e34afb709af764e44b8b301d67a753aa	pending	-
 rust/tools/check_stats_numbers.py	f7d7404586d04d2be2d8b6cb65e23d80e61b88aa	replaced-local	openpilot-dev-tools check-stats-numbers
-rust/tools/check_stats_producer.py	5c5c285242a90bbb08e62a6359fe52f927ec6323	pending	-
+rust/tools/check_stats_producer.py	5c5c285242a90bbb08e62a6359fe52f927ec6323	replaced-local	openpilot-dev-tools check-stats-producer; independent original wire capture and actual fork/drop/pressure/typed checks
 rust/tools/check_stats_runtime.py	04bdc4bfc995cf358ed9abd8205f70c0199cb4d1	pending	-
 rust/tools/check_timed_daemon.py	ef291bfa1ed16f99411fee2150e06cff548cd03c	replaced-local	rust/crates/dev-tools/src/bin/check_timed_daemon.rs
 rust/tools/check_timed_date_daemon.py	dc0caebdfd36d39c5fe7d59fca69f23465844bc5	replaced-local	rust/crates/dev-tools/src/bin/check_timed_date_daemon.rs
@@ -2514,7 +2514,7 @@ rust/tools/stage_control_dbcs.py	c8588f8138720b20e7467fb8eccd0ab05e73b9b3	replac
 rust/tools/stage_radarcan_runtime.py	484462bbf342b4a4d8802ad9131c76efa198a3df	pending	-
 rust/tools/startup_ui_source_render.py	7533acbe9527f4f545cc8d12419f2e6c4ca9371f	pending	-
 rust/tools/stats_source.py	b1664a979ed824cabd5f2a87f5ddfed2bc017864	pending	-
-rust/tools/stats_source_producer.py	9e359b1feccfae56b7812ec51768fd9e7f02162c	pending	-
+rust/tools/stats_source_producer.py	9e359b1feccfae56b7812ec51768fd9e7f02162c	replaced-local	openpilot-dev-tools check-stats-producer; independent original wire capture and actual fork/drop/pressure/typed checks
 rust/tools/supervision_cases.py	e03a7016b78c8021b6a347e49dd63d9391c0096e	pending	-
 rust/tools/supervision_ensure_cases.py	4a706d5fa5ac322780d2206ba77bab976e135849	pending	-
 rust/tools/supervision_peer.py	9d992ebe19145c673b58668a9c2181345c39e2ef	pending	-

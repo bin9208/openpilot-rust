@@ -1654,6 +1654,12 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
             "--test runtime_producer --locked",
             "--test retained_facade --locked",
             "--test error_log_lifetime --locked",
+            "--features stats-producer-native --bin check-stats-producer --locked",
+            "--features stats-producer-native --test stats_producer_check --locked",
+            "--features stats-producer-native --lib --test stats_producer_check --bin check-stats-producer --locked -- -D warnings",
+            "STATS_PRODUCER_CHECKER=\"$PWD/rust/target/debug/check-stats-producer\"",
+            "STATS_PRODUCER_EXAMPLES=\"$PWD/rust/target/debug/examples\"",
+            "rust/target/debug/check-stats-producer rust/target/debug/examples",
             "--features openpilot-dev-tools/version-tools-native",
             "--test version_source --test version_check --test version_collector_check --locked",
             "--bin check-version-reference --bin check-version-collector --bin version-runtime-worker",
@@ -1674,6 +1680,7 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
         &[
             "cargo test",
             "rust/target/debug/check-version-reference",
+            "rust/target/debug/check-stats-producer",
             "rust/target/debug/check-version-collector",
             "rust/target/debug/check-tombstoned-reference",
             "rust/target/debug/check-crash-sdk-transport",
@@ -1687,6 +1694,8 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
     let telemetry = &data["jobs"]["telemetry-runtime"];
     let script = commands(telemetry);
     for retired_call in [
+        "check_stats_producer.py",
+        "stats_source_producer.py",
         "check_version_reference.py",
         "check_version_collector.py",
         "check_tombstoned_reference.py",

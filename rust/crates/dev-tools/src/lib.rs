@@ -104,6 +104,8 @@ pub mod selfdrive_state_check;
 pub mod services_catalog_check;
 pub mod stats_clock_check;
 pub mod stats_numbers_check;
+#[cfg(feature = "stats-producer-native")]
+pub mod stats_producer_check;
 #[cfg(feature = "timed-tools-native")]
 pub mod timed_check;
 pub mod timed_fixtures;

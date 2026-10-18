@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+stats-producer-native = ["dep:zmq"]
 bluetooth-input-native = []
 sdk-receiver-native = ["dep:brotli-decompressor", "rustix/net"]
 sdk-transport-native = ["sdk-receiver-native"]
@@ -1382,3 +1383,12 @@ required-features = ["bluetooth-input-native"]
 [[test]]
 name = "bluetooth_input_check"
 required-features = ["bluetooth-input-native"]
+
+[[test]]
+name = "stats_producer_check"
+required-features = ["stats-producer-native"]
+
+[[bin]]
+name = "check-stats-producer"
+path = "src/bin/check_stats_producer.rs"
+required-features = ["stats-producer-native"]

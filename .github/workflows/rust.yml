@@ -2252,9 +2252,15 @@ jobs:
         run: python rust/tools/check_beepd_daemon.py --binary rust/target/debug/openpilot-beepd --binding "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so --output "$RUNNER_TEMP/telemetry-runtime/beep-daemon"
       - name: Compare statistics numeric, clock and producer contracts
         run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --bin check-stats-producer --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          STATS_PRODUCER_CHECKER="$PWD/rust/target/debug/check-stats-producer" STATS_PRODUCER_EXAMPLES="$PWD/rust/target/debug/examples" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --test stats_producer_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-producer-native --lib --test stats_producer_check --bin check-stats-producer --locked -- -D warnings
           rust/target/debug/check-stats-numbers --binary rust/target/debug/examples/stats_trace --output "$RUNNER_TEMP/telemetry-runtime/stats-numbers.json"
           rust/target/debug/check-stats-clock rust/target/debug/examples/stats_clock "$RUNNER_TEMP/telemetry-runtime/stats-clock.json"
-          python rust/tools/check_stats_producer.py rust/target/debug/examples "$RUNNER_TEMP/telemetry-runtime/stats-producer"
+          rust/target/debug/check-stats-producer rust/target/debug/examples "$RUNNER_TEMP/telemetry-runtime/stats-producer"
       - name: Compare continuous statistics, real Params and collector failure paths
         run: |
           python rust/tools/check_stats_daemon.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-daemon"

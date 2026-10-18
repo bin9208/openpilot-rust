@@ -4155,3 +4155,46 @@ Private evidence: `2026-10-19-bluetooth-decode-tools/` source captures,
 `postdelete-actual-proof.json`. Inventory recount:193 replaced-local,3 partial,
 3,384 pending out of3,580. This is one local tool retirement; exact committed-head
 CI, full repository conversion and user-owned device validation remain open.
+
+### Native statistics producer controller and source helper (2026-10-19)
+
+Retired `check_stats_producer.py` and `stats_source_producer.py`. The unchanged
+original first passed all eight original/native scenarios over real ZMQ. The
+sealed original-only fixture SHA256 is
+`9984d69f1112d59cbcecd5af38aeb9c4e95a19ca602f0f88a546e750adfa654e`.
+The independent Rust checker preserves fork reconnect/drop ordering, all1,000
+pressure messages after20,000 sends and absence of extra messages, and ten
+Cereal-typed values with exact floating-point wire spelling. Its result clearly
+labels the captured original reference; it does not pretend to rerun Python.
+
+An actual missing-API RED was followed by a real cancellation failure: killing
+the worker left its temporary IPC directory behind. Parent ownership of that
+directory fixes cleanup without changing transport assertions. Six permanent
+checks now cover real transport, independent expected values, existing-output
+ownership, missing executable rejection, acknowledged-child cancellation and
+source mutation rejection before any worker. Held nonblocking regular-file
+handles verify source/executable identities before and after execution. Only
+the exact two retired helper paths may be absent from the eight original pins.
+
+Frozen bundle `frozen-e00U4H` passed before and after deletion using the same
+four ELFs. All nine artifacts are byte-identical; each phase traces nine execs
+and zero Python execution with an empty PATH. Checker SHA256 is
+`b8901bf409ff59d37cf637f10b7c2756540b04575ed61d08dba33d41efe53c52`.
+The fixture and production source seals stayed unchanged during those proofs.
+A sixth source-mutation test and final documentation were added afterwards;
+those additions are covered by the fresh post-deletion gate rather than claimed
+to be in the historical source seal.
+
+Fresh post-deletion example/checker builds pass six regression tests,43 CI
+policy tests,13 disk-policy tests, strict Clippy and scoped formatting. A fresh
+actual four-scenario run again passes with nine execs and zero Python; all four
+ELF hashes match the frozen bundle. Mandatory telemetry CI now builds/tests this
+feature, runs strict Clippy and calls the native command. Three new growth
+guards bring the workflow count to305, preserving the inherited177 guards.
+Independent source review found no remaining blocker in this bounded closure.
+
+Evidence: `2026-10-19-stats-producer-tools/{api-red.log,native-first.log,`
+`native-green.log,frozen-e00U4H/,postdelete/}`. Inventory recount:195 replaced-local,
+3 partial and3,382 pending out of3,580. Other statistics Python consumers and the
+original statsd source remain explicitly pending; exact committed-head CI and
+user-owned device startup/recording/upload verification are separate gates.
