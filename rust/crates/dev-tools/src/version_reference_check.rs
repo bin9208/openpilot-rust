@@ -360,6 +360,11 @@ pub fn run(repository: &Path, options: &Options) -> Result<J> {
     let cancel = Cancellation::new()?;
     let result = run_inner(repository, options, &cancel);
     if let Some(signal) = cancel.signal() {
+        match fs::remove_file(options.output.join("manifest.json")) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
         return Err(Interrupted(signal).into());
     }
     result
@@ -459,6 +464,7 @@ fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Res
     ])?;
     // Detect source drift during a run, not merely at admission.
     crate::version_source::sources(repository)?;
+    cancel.check()?;
     fs::write(
         options.output.join("manifest.json"),
         format!("{}\n", format_report(&report)?),
