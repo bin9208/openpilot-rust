@@ -1428,3 +1428,29 @@ paths. Exact inspected source identities, unchanged-original controls and native
 regression plans are retained privately under
 `.analysis/scratch/2026-10-19-upload-ownership-audit/`. Exact committed-SHA CI and
 user device/upload acceptance remain separate, outstanding gates.
+
+## Logger shutdown with queued audio (#391)
+
+A real AAC encoder, Matroska muxer and decoder reproduced loss of all buffered
+samples when audio arrived before the video header and shutdown followed without
+another audio call.1023 samples passed;1024,1025 and3585 samples produced no
+decodable audio. The original C++ finish path contains the same missing drain,
+so this intentionally fixes inherited behavior rather than asserting unchanged
+parity for the defective boundary.
+
+`Audio::finish` now drains complete frames before its existing partial-frame
+padding and encoder EOF sequence. Header admission, timestamps, trailer and
+incomplete-recording lock policies are unchanged. The four native regressions
+now pass, checking decoded sample count after excluding AAC priming and requiring
+nonzero signal. All16 loggerd package tests, strict all-target Clippy, formatting
+and a fresh daemon build pass. A fresh unchanged C++ source build also passes
+ordinary audio, queued-audio and flush comparisons with the candidate, including
+media packet/decoded content and raw output/finalization checks.
+
+The first ordinary comparison stopped because the local wheel's FFmpeg lacks
+`framemd5`. It passed with isolated Ubuntu6.1.1 tools and their dependencies;
+comparison assertions were not modified. All16 recorded original source hashes
+match the current #296 checkout. Evidence is
+`2026-10-19-logger-audio-391/FINAL-HANDOFF.json`. The permanent regression uses
+real host audio media; normal device recording and exact committed-SHA CI remain
+separate gates. No recording loss on the user's drive is inferred.

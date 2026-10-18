@@ -4080,3 +4080,15 @@ its copied fixture no longer created the retired helper directory; creating that
 directory fixed the setup without changing assertions. All11 production source
 hashes still match the frozen before/after proof. Exact committed-head CI remains
 pending. Receipt: `2026-10-19-partial-helper-closure/postdelete-final-proof.json`.
+
+### Logger queued-audio shutdown (#391)
+
+A one-line complete-frame drain before existing tail padding/EOF repairs the
+native reproduced1024/1025/3585-sample loss;1023 remains a passing control.
+All16 loggerd package tests, strict Clippy and a fresh daemon build pass.
+Fresh unchanged C++ originals match ordinary audio, queued-audio and flush
+scenarios. The local FFmpeg capability failure was resolved with isolated
+Ubuntu6.1.1 validation tools, preserving all comparison assertions. See the
+module audit and `2026-10-19-logger-audio-391/FINAL-HANDOFF.json`.
+This does not retire the live Python logger comparison controllers or establish
+device recording acceptance.
