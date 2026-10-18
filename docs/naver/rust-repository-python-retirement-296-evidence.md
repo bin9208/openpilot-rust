@@ -2648,6 +2648,25 @@ Evidence:2026-10-18-ui-network/raster-final-results.json and portability handoff
 Fresh exact-commit cloud verification is still required; previous UI failure runs
 are not passing evidence. Python retirement count is unchanged by this repair.
 
+### Encoder live-oracle JPEG ABI and input fidelity (2026-10-18, #352)
+
+The first native runtime comparison rejected the source process after its first
+thumbnail: the linked Cargo JPEG archive uses ABI62 but SDK headers selected ABI80.
+Actual g++ preprocessing confirmed SDK jpeglib.h and multiarch jconfig.h selection.
+The source builder now places the pinned JPEG source/configured headers before
+all dependency include paths. A dedicated ordering regression failed before the
+fix; all7source-builder tests pass afterward. Immutable original captures remain
+unchanged, with only the intended two-header ordering migration in test adapters.
+Full corrected-source live comparisons and strict Clippy remain pending.
+
+Independent review also found the new comparator sent VisionIPC valid=true while
+the unchanged Python wrapper sets false. An actual native receiver test reproduced
+the difference; it now verifies false, frame ID, timestamps, buffer index and all
+pixels. Native missing-binary and actual spawned-/bin/false tests verify namespace
+cleanup and reaping. These are checker fixes, not changes to driving validity.
+UI6mode host proof passed before caller retirement; post-removal verification is
+still in progress. Issue352 and issue296 retain the pending acceptance boundaries.
+
 ### Native application lifecycle tools retired (2026-10-18)
 
 `check_ui_application.py` and `ui_qa/application_source.py` are removed after
@@ -2678,3 +2697,40 @@ passed with zero failures/ignored cases, including all6reference tests together,
 workflow policy and fast routing. Independent staged-source review found no
 encoder dependency in this UI commit; staged Rust formatting and diff checks pass.
 Evidence:2026-10-18-ui-application-lifecycle/parent-final-tests.log.
+
+### Native encoder host CI and runtime tools retired (2026-10-18)
+
+The native runtime peer reproduces all ten current C++/Rust daemon comparisons,
+including multi-stream, rotation, activation, listener restart and lag overwrite.
+The complete native orchestrator built the current source and passed all5codec,
+32V4L and10runtime cases using a PATH containing only the required native tools.
+The source, eight executables, complete cereal/IPC identity, current Cargo build
+outputs and native codec versions are recorded; no Python interpreter is selected.
+
+The original CI/runtime/outcomes tools and two encoder test files are removed.
+The mixed CI test file's four Params contracts remain unchanged in
+`test_params_native_stager.py` and are required by the existing Xiaoge source job.
+They passed4/4 against this worktree. That inventory row remains partially replaced.
+The encoder job removes Python setup/packages/bindings; native process, wire,
+schedule, shutdown, receipt/failure and source tests now replace those checks.
+All223existing disk reserves and all33Rust job isolation contracts pass.
+Fast checks require the new native encoder routing test.
+
+Independent review identified an unconditional retired-source read in the wire
+corpus test; deletion reproduced the failure. Only the retired source's absence
+is now allowed, while any changed reintroduction and current schema drift fail.
+An immutable SHA binds the entire26case corpus. Parent post-deletion gate passed
+86unique native tests with zero failures/ignored cases and strictClippy, including
+actual wire validity/pixel reception and real failed/timeout child cleanup.
+Earlier native CI tests caught a trailing separator from joining an empty suffix;
+the implementation now preserves Python Path spelling without changing captures.
+
+Evidence:2026-10-18-encoder-ci/{full-native,combined-tests.log,
+combined-clippy.log,post-delete-wire-red.log,params-remnant-test-green.log}.
+Post-deletion full47case repeat also passed with no interpreter on PATH; receipt:
+2026-10-18-encoder-ci/post-retirement-native/receipt.json. Independent final
+source review confirmed all five deletions, retained Params AST equality, full
+native CI routing and source/corpus guards; no blocker remained.
+Baseline inventory:118replaced-local,3partially-replaced,3,459pending. The ARM
+artifact checker, model compiler and all remaining source families are pending;
+these host gates do not establish physical boot/recording/upload or CPU savings.

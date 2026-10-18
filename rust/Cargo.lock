@@ -2812,6 +2812,7 @@ dependencies = [
  "gif",
  "image",
  "num-bigint",
+ "openpilot-cereal",
  "openpilot-disk-space",
  "openpilot-image-codecs",
  "openpilot-jpeg",

@@ -278,6 +278,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "cutin_alert_check",
         "cutin_alert_ci",
         "bluetooth_digits_generate",
+        "encoder_runtime_ci",
         "selfdrive_state_check",
         "alert_manager_check",
         "selfdrive_events_check",

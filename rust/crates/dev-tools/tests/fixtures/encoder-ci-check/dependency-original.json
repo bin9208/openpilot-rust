@@ -1,0 +1,179 @@
+{
+  "source_sha256": {
+    "rust/tools/check_encoder_ci.py": "fff55a186729a6b535b20ab8a8bc627a31e5ef58bb6245be920195cf65020c42",
+    "rust/tools/tests/test_encoder_ci.py": "869790b6ca91964abd81728eb0c4a9649cddd7c2682638ca3ce9c2a38de58e01",
+    "rust/tools/card_qa/ci.py": "5ddbdbdb9fdd321329565aa2cb6495a22dd18eca2875a815b4ab7039458fc6dd"
+  },
+  "cases": [
+    {
+      "name": "current",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": null,
+      "result": {
+        "jpeg": "$ROOT/jpeg-current/jpeg",
+        "zmq": "$ROOT/zmq-current"
+      },
+      "error": null
+    },
+    {
+      "name": "duplicate-identical",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": null,
+      "result": {
+        "jpeg": "$ROOT/jpeg-current/jpeg",
+        "zmq": "$ROOT/zmq-current"
+      },
+      "error": null
+    },
+    {
+      "name": "failed",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": false}\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "ValueError",
+        "message": "expected one successful completed Cargo build"
+      }
+    },
+    {
+      "name": "finish-missing",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "ValueError",
+        "message": "expected one successful completed Cargo build"
+      }
+    },
+    {
+      "name": "finish-two",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "ValueError",
+        "message": "expected one successful completed Cargo build"
+      }
+    },
+    {
+      "name": "success-int",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": 1}\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "ValueError",
+        "message": "expected one successful completed Cargo build"
+      }
+    },
+    {
+      "name": "jpeg-missing",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "ValueError",
+        "message": "expected one executed openpilot-jpeg build output, got set()"
+      }
+    },
+    {
+      "name": "zmq-missing",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "ValueError",
+        "message": "expected one executed zmq-sys build output, got set()"
+      }
+    },
+    {
+      "name": "jpeg-ambiguous",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/stale\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "ValueError",
+        "message": "expected one executed openpilot-jpeg build output, got {PosixPath('$ROOT/stale'), PosixPath('$ROOT/jpeg-current')}"
+      }
+    },
+    {
+      "name": "ignore-compiler",
+      "messages": "{\"reason\": \"compiler-artifact\", \"package_id\": \"path+x#openpilot-jpeg@0.1\", \"out_dir\": \"$ROOT/stale\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": null,
+      "result": {
+        "jpeg": "$ROOT/jpeg-current/jpeg",
+        "zmq": "$ROOT/zmq-current"
+      },
+      "error": null
+    },
+    {
+      "name": "jpeg-archive-absent",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": "$ROOT/jpeg-current/jpeg/libjpeg.a",
+      "result": null,
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "$ROOT/jpeg-current/jpeg/libjpeg.a"
+      }
+    },
+    {
+      "name": "jpeg-header-absent",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": "$ROOT/jpeg-current/jpeg/jconfig.h",
+      "result": null,
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "$ROOT/jpeg-current/jpeg/jconfig.h"
+      }
+    },
+    {
+      "name": "zmq-header-absent",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": "$ROOT/zmq-current/source/include/zmq.h",
+      "result": null,
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "$ROOT/zmq-current/source/include/zmq.h"
+      }
+    },
+    {
+      "name": "zmq-archive-absent",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#zmq-sys@0.1.0\", \"out_dir\": \"$ROOT/zmq-current\"}\n{\"reason\": \"build-finished\", \"success\": true}\n",
+      "missing": "$ROOT/zmq-current/lib/libzmq.a",
+      "result": null,
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "$ROOT/zmq-current/lib/libzmq.a"
+      }
+    },
+    {
+      "name": "malformed",
+      "messages": "not-json\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "name": "blank",
+      "messages": "{\"reason\": \"build-script-executed\", \"package_id\": \"path+fixture#openpilot-jpeg@0.1.0\", \"out_dir\": \"$ROOT/jpeg-current\"}\n\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      }
+    },
+    {
+      "name": "wrong-root",
+      "messages": "[]\n",
+      "missing": null,
+      "result": null,
+      "error": {
+        "type": "AttributeError",
+        "message": "'list' object has no attribute 'get'"
+      }
+    }
+  ]
+}

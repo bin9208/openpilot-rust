@@ -240,6 +240,7 @@ path = "src/bin/list_cargo_tests.rs"
 [features]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
 camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"]
+encoder-runtime-native = ["camera-runtime-native", "dep:openpilot-cereal"]
 selfdrive-params-native = ["dep:zmq"]
 egl-reference = ["dep:openpilot-startup-ui"]
 image-array = ["dep:png", "dep:gif", "dep:tiff", "dep:image", "dep:openpilot-jpeg"]
@@ -355,6 +356,7 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+openpilot-cereal = { path = "../cereal", optional = true }
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"], optional = true }
 capnp = { version = "=0.27.2", optional = true }
 openpilot-process-limits = { path = "../process-limits" }
@@ -382,7 +384,7 @@ flate2 = "1"
 bzip2 = "=0.6.1"
 command-fds = "=0.3.3"
 tar = { version = "0.4", default-features = false }
-rustix = { version = "1", features = ["fs", "process", "event", "time"] }
+rustix = { version = "1", features = ["fs", "process", "event", "time", "thread"] }
 regex = "1"
 num-bigint = "=0.4.8"
 yaml-rust2 = { version = "=0.13.0", default-features = false }
@@ -821,3 +823,21 @@ required-features = ["ui-application-lifecycle-native"]
 name = "check-ui-application"
 path = "src/bin/check_ui_application.rs"
 required-features = ["ui-application-lifecycle-native"]
+
+[[test]]
+name = "encoder_runtime_native"
+required-features = ["encoder-runtime-native"]
+
+[[bin]]
+name = "check-encoder-runtime"
+path = "src/bin/check_encoder_runtime.rs"
+required-features = ["encoder-runtime-native"]
+
+[[test]]
+name = "encoder_ci_check"
+required-features = ["encoder-runtime-native"]
+
+[[bin]]
+name = "check-encoder-ci"
+path = "src/bin/check_encoder_ci.rs"
+required-features = ["encoder-runtime-native"]

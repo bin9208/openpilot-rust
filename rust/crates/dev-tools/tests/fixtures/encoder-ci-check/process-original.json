@@ -1,0 +1,183 @@
+{
+  "source_sha256": "fff55a186729a6b535b20ab8a8bc627a31e5ef58bb6245be920195cf65020c42",
+  "cases": [
+    {
+      "name": "stage-success",
+      "result": "$ROOT/native-prefix",
+      "error": null,
+      "calls": [
+        [
+          "space",
+          "$ROOT/owned output",
+          268435456
+        ]
+      ],
+      "stdout": "PASS stage-json11\n",
+      "stderr": "",
+      "artifacts": {
+        "json11.json": "{\"json11_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}\n",
+        "commands/stage-json11.exit.json": "{\"returncode\": 0}\n",
+        "commands/stage-json11.stderr": "diagnostic",
+        "commands/stage-json11.command.json": "{\n  \"argv\": [\n    \"$ROOT/native-stager\",\n    \"--root\",\n    \"$REPO\",\n    \"--output\",\n    \"$ROOT/owned output/json11-dependency\"\n  ],\n  \"cwd\": \"$REPO\"\n}\n",
+        "commands/stage-json11.stdout": "{\"prefix\": \"$ROOT/native-prefix\", \"dependency\": {\"json11_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}}"
+      }
+    },
+    {
+      "name": "stage-exit9",
+      "result": null,
+      "error": {
+        "type": "CalledProcessError",
+        "message": "Command '['$ROOT/native-stager', '--root', '$REPO', '--output', '$ROOT/owned output/json11-dependency']' returned non-zero exit status 9."
+      },
+      "calls": [
+        [
+          "space",
+          "$ROOT/owned output",
+          268435456
+        ]
+      ],
+      "stdout": "",
+      "stderr": "{\"prefix\": \"$ROOT/native-prefix\", \"dependency\": {\"json11_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}}diagnostic\n",
+      "artifacts": {
+        "commands/stage-json11.exit.json": "{\"returncode\": 9}\n",
+        "commands/stage-json11.stderr": "diagnostic",
+        "commands/stage-json11.command.json": "{\n  \"argv\": [\n    \"$ROOT/native-stager\",\n    \"--root\",\n    \"$REPO\",\n    \"--output\",\n    \"$ROOT/owned output/json11-dependency\"\n  ],\n  \"cwd\": \"$REPO\"\n}\n",
+        "commands/stage-json11.stdout": "{\"prefix\": \"$ROOT/native-prefix\", \"dependency\": {\"json11_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}}"
+      }
+    },
+    {
+      "name": "stage-invalid",
+      "result": null,
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      },
+      "calls": [
+        [
+          "space",
+          "$ROOT/owned output",
+          268435456
+        ]
+      ],
+      "stdout": "PASS stage-json11\n",
+      "stderr": "",
+      "artifacts": {
+        "commands/stage-json11.exit.json": "{\"returncode\": 0}\n",
+        "commands/stage-json11.stderr": "diagnostic",
+        "commands/stage-json11.command.json": "{\n  \"argv\": [\n    \"$ROOT/native-stager\",\n    \"--root\",\n    \"$REPO\",\n    \"--output\",\n    \"$ROOT/owned output/json11-dependency\"\n  ],\n  \"cwd\": \"$REPO\"\n}\n",
+        "commands/stage-json11.stdout": "not-json"
+      }
+    },
+    {
+      "name": "stage-no-prefix",
+      "result": null,
+      "error": {
+        "type": "KeyError",
+        "message": "'prefix'"
+      },
+      "calls": [
+        [
+          "space",
+          "$ROOT/owned output",
+          268435456
+        ]
+      ],
+      "stdout": "PASS stage-json11\n",
+      "stderr": "",
+      "artifacts": {
+        "json11.json": "{\"json11_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}\n",
+        "commands/stage-json11.exit.json": "{\"returncode\": 0}\n",
+        "commands/stage-json11.stderr": "diagnostic",
+        "commands/stage-json11.command.json": "{\n  \"argv\": [\n    \"$ROOT/native-stager\",\n    \"--root\",\n    \"$REPO\",\n    \"--output\",\n    \"$ROOT/owned output/json11-dependency\"\n  ],\n  \"cwd\": \"$REPO\"\n}\n",
+        "commands/stage-json11.stdout": "{\"dependency\": {\"json11_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}}"
+      }
+    },
+    {
+      "name": "stage-no-dependency",
+      "result": null,
+      "error": {
+        "type": "KeyError",
+        "message": "'dependency'"
+      },
+      "calls": [
+        [
+          "space",
+          "$ROOT/owned output",
+          268435456
+        ]
+      ],
+      "stdout": "PASS stage-json11\n",
+      "stderr": "",
+      "artifacts": {
+        "commands/stage-json11.exit.json": "{\"returncode\": 0}\n",
+        "commands/stage-json11.stderr": "diagnostic",
+        "commands/stage-json11.command.json": "{\n  \"argv\": [\n    \"$ROOT/native-stager\",\n    \"--root\",\n    \"$REPO\",\n    \"--output\",\n    \"$ROOT/owned output/json11-dependency\"\n  ],\n  \"cwd\": \"$REPO\"\n}\n",
+        "commands/stage-json11.stdout": "{\"prefix\": \"$ROOT/native-prefix\"}"
+      }
+    },
+    {
+      "name": "prestaged",
+      "result": "$ROOT/native-prefix",
+      "error": null,
+      "calls": [],
+      "stdout": "",
+      "stderr": "",
+      "artifacts": {}
+    },
+    {
+      "name": "no-stager",
+      "result": null,
+      "error": {
+        "type": "ValueError",
+        "message": "--json11-stager is required unless --json11-prefix is supplied"
+      },
+      "calls": [],
+      "stdout": "",
+      "stderr": "",
+      "artifacts": {}
+    },
+    {
+      "name": "builder-success",
+      "result": null,
+      "error": null,
+      "calls": [
+        [
+          "space",
+          "$ROOT/owned output",
+          1073741824
+        ]
+      ],
+      "stdout": "PASS source-build\n",
+      "stderr": "",
+      "artifacts": {
+        "commands/source-build.command.json": "{\n  \"argv\": [\n    \"$ROOT/bin/build-encoder-source\",\n    \"--root\",\n    \"$REPO\",\n    \"--output\",\n    \"$ROOT/owned output/source\",\n    \"--native-prefix\",\n    \"$ROOT/native/usr\",\n    \"--capnp-prefix\",\n    \"$ROOT/capnp\",\n    \"--json11-prefix\",\n    \"$ROOT/json11\",\n    \"--zmq-include\",\n    \"$ROOT/current-zmq/source/include\",\n    \"--jpeg-build\",\n    \"$ROOT/current-jpeg\"\n  ],\n  \"cwd\": \"$REPO\"\n}\n",
+        "commands/source-build.stdout": "--root\n$REPO\n--output\n$ROOT/owned output/source\n--native-prefix\n$ROOT/native/usr\n--capnp-prefix\n$ROOT/capnp\n--json11-prefix\n$ROOT/json11\n--zmq-include\n$ROOT/current-zmq/source/include\n--jpeg-build\n$ROOT/current-jpeg\n",
+        "commands/source-build.exit.json": "{\"returncode\": 0}\n",
+        "commands/source-build.stderr": "diagnostic"
+      }
+    },
+    {
+      "name": "builder-exit9",
+      "result": null,
+      "error": {
+        "type": "CalledProcessError",
+        "message": "Command '['$ROOT/bin/build-encoder-source', '--root', '$REPO', '--output', '$ROOT/owned output/source', '--native-prefix', '$ROOT/native/usr', '--capnp-prefix', '$ROOT/capnp', '--json11-prefix', '$ROOT/json11', '--zmq-include', '$ROOT/current-zmq/source/include', '--jpeg-build', '$ROOT/current-jpeg']' returned non-zero exit status 9."
+      },
+      "calls": [
+        [
+          "space",
+          "$ROOT/owned output",
+          1073741824
+        ]
+      ],
+      "stdout": "",
+      "stderr": "--root\n$REPO\n--output\n$ROOT/owned output/source\n--native-prefix\n$ROOT/native/usr\n--capnp-prefix\n$ROOT/capnp\n--json11-prefix\n$ROOT/json11\n--zmq-include\n$ROOT/current-zmq/source/include\n--jpeg-build\n$ROOT/current-jpeg\ndiagnostic\n",
+      "artifacts": {
+        "commands/source-build.command.json": "{\n  \"argv\": [\n    \"$ROOT/bin/build-encoder-source\",\n    \"--root\",\n    \"$REPO\",\n    \"--output\",\n    \"$ROOT/owned output/source\",\n    \"--native-prefix\",\n    \"$ROOT/native/usr\",\n    \"--capnp-prefix\",\n    \"$ROOT/capnp\",\n    \"--json11-prefix\",\n    \"$ROOT/json11\",\n    \"--zmq-include\",\n    \"$ROOT/current-zmq/source/include\",\n    \"--jpeg-build\",\n    \"$ROOT/current-jpeg\"\n  ],\n  \"cwd\": \"$REPO\"\n}\n",
+        "commands/source-build.stdout": "--root\n$REPO\n--output\n$ROOT/owned output/source\n--native-prefix\n$ROOT/native/usr\n--capnp-prefix\n$ROOT/capnp\n--json11-prefix\n$ROOT/json11\n--zmq-include\n$ROOT/current-zmq/source/include\n--jpeg-build\n$ROOT/current-jpeg\n",
+        "commands/source-build.exit.json": "{\"returncode\": 9}\n",
+        "commands/source-build.stderr": "diagnostic"
+      }
+    }
+  ]
+}

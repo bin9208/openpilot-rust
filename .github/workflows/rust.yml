@@ -876,6 +876,7 @@ jobs:
       - name: Retrieve the unchanged original Xiaoge models
         run: |
           python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_xiaoge_ci.py
+          python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_params_native_stager.py
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
           git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
       - name: Build current native dependency stager
@@ -983,35 +984,29 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       ENCODER_LIBYUV_LIB: /usr/lib/x86_64-linux-gnu
-      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - name: Configure original encoder IPC imports
-        run: printf 'PYTHONPATH=%s/encoder-native/python:%s\nENCODER_MSGQ_PYTHON=%s/encoder-native/python\n' "$RUNNER_TEMP" "$PYTHONPATH" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Reserve capacity and install native codec prerequisites
         run: |
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg
-      - name: Install pinned encoder oracle dependencies
+      - name: Install pinned native toolchain
         run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python -m pip install pycapnp==2.1.0 pyzmq==27.2.0 Cython==3.2.4 setuptools==82.0.1 pytest==9.0.2 zstandard==0.25.0
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy
-      - name: Build original encoder IPC bindings and check fixture failure detection
+      - name: Require native staging and fixture failure detection
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test encoder_stage
-          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=rust/tools/tests rust/tools/tests/test_encoder_ci.py rust/tools/tests/test_encoder_outcomes.py -q
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test encoder_stage --test encoder_runtime_ci
+      - name: Require actual native IPC frame and owned process boundaries
+        run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/encoder-native/python"
-          python -P -c 'import msgq.ipc_pyx, msgq.visionipc.visionipc_pyx, zstandard; from openpilot.cereal import log, messaging; log.Event.new_message(); print(msgq.ipc_pyx.__file__); print(msgq.visionipc.visionipc_pyx.__file__); print(zstandard.__version__)' > "$RUNNER_TEMP/encoder-native/python/imports.txt"
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features encoder-runtime-native --bin check-encoder-runtime --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features encoder-runtime-native --test encoder_runtime_native --test encoder_ci_check --locked
       - name: Require encoder policy and shared VisionIPC ownership checks
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -1020,6 +1015,7 @@ jobs:
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-encoderd --features native --all-targets --locked -- -D warnings
       - name: Build native encoder and record current JPEG and messaging outputs
         run: |
+          mkdir -p "$RUNNER_TEMP/encoder-native"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           set -o pipefail
           cargo build --manifest-path rust/Cargo.toml -p openpilot-encoderd --features native --bins --examples --locked --message-format=json 2> "$RUNNER_TEMP/encoder-native/build.log" | tee "$RUNNER_TEMP/encoder-native/build.jsonl"
@@ -1028,13 +1024,13 @@ jobs:
       - name: Build the current native encoder source builder
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --test encoder_codecs_check --test encoder_v4l_check --locked
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features encoder-runtime-native --test encoder_codecs_check --test encoder_v4l_check --test encoder_source_build --test encoder_runtime_wire --test encoder_runtime_exercise --test encoder_runtime_check --test encoder_runtime_close --test encoder_runtime_shutdown --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --bin check-encoder-codecs --bin check-encoder-v4l --test encoder_codecs_check --test encoder_v4l_check --locked -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features encoder-runtime-native --bin check-encoder-codecs --bin check-encoder-v4l --bin check-encoder-runtime --bin check-encoder-ci --bin build-encoder-source --test encoder_codecs_check --test encoder_v4l_check --test encoder_source_build --test encoder_runtime_wire --test encoder_runtime_exercise --test encoder_runtime_check --test encoder_runtime_close --test encoder_runtime_shutdown --test encoder_runtime_native --test encoder_ci_check --test encoder_runtime_ci --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features camera-sensor-native --bin build-encoder-source --bin check-encoder-codecs --bin check-encoder-v4l --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features encoder-runtime-native --bin build-encoder-source --bin check-encoder-codecs --bin check-encoder-v4l --bin check-encoder-runtime --bin check-encoder-ci --locked
       - name: Require all source codec, V4L and actual encoder runtime comparisons
-        run: python rust/tools/check_encoder_ci.py --json11-stager "$JSON11_STAGER" --binaries rust/target/debug --build-messages "$RUNNER_TEMP/encoder-native/build.jsonl" --output "$RUNNER_TEMP/encoder-native/oracles"
+        run: rust/target/debug/check-encoder-ci --json11-stager "$JSON11_STAGER" --binaries rust/target/debug --build-messages "$RUNNER_TEMP/encoder-native/build.jsonl" --output "$RUNNER_TEMP/encoder-native/oracles"
       - name: Preserve encoder inputs, packets, diagnostics and executable evidence
         if: always()
         uses: actions/upload-artifact@v6

@@ -101,8 +101,18 @@ pub mod ui_render_reference;
 pub mod user_docs;
 
 pub mod elf_audit;
+#[cfg(feature = "encoder-runtime-native")]
+pub mod encoder_ci_check;
 #[cfg(feature = "camera-sensor-native")]
 pub mod encoder_codecs_check;
+#[cfg(feature = "encoder-runtime-native")]
+pub mod encoder_runtime_check;
+#[cfg(feature = "encoder-runtime-native")]
+pub mod encoder_runtime_exercise;
+#[cfg(feature = "encoder-runtime-native")]
+pub mod encoder_runtime_process;
+#[cfg(feature = "encoder-runtime-native")]
+pub mod encoder_runtime_wire;
 pub mod encoder_source_build;
 pub mod encoder_stage;
 #[cfg(feature = "camera-sensor-native")]

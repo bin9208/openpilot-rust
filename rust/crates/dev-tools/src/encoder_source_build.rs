@@ -163,6 +163,10 @@ pub fn run(
         .collect();
     command.extend(
         [
+            // Match the linked Cargo libjpeg archive before any dependency's
+            // incidental jpeglib.h/jconfig.h (SDKs may expose another JPEG ABI).
+            root.join("rust/crates/jpeg/native/vendor/src"),
+            jpeg.clone(),
             root.to_path_buf(),
             root.join("openpilot"),
             root.join("msgq_repo"),
@@ -173,8 +177,6 @@ pub fn run(
             capnp.join("include"),
             native.join("include"),
             native.join("include/x86_64-linux-gnu"),
-            root.join("rust/crates/jpeg/native/vendor/src"),
-            jpeg.clone(),
         ]
         .iter()
         .map(|p| format!("-I{}", p.display())),

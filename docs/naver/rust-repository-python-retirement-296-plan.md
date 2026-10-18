@@ -153,3 +153,12 @@ two original tools removed after actual six-mode proof, repeated after deletion.
 Native frame/recording/input/resource policy and failure guards remain mandatory.
 Inventory114local/2partial/3464pending. Runtime encoder/CI/model closure continues;
 no repository-wide completion or device acceptance is implied.
+
+2026-10-18: native encoder host CI/runtime/outcomes closure passed actual5codec,
+32V4L,10runtime comparisons without a Python executable on PATH. Five Python
+files removed; four unrelated Params tests retained unchanged with a required CI
+caller, so their baseline row remains partial. Post-deletion86native tests and
+strictClippy pass; post-deletion47case host proof also passes. Remote exact-SHA
+gates remain pending.
+Inventory118replaced-local/3partial/3459pending. Target-artifact validator and
+model compiler remain active next units, separate from physical user acceptance.

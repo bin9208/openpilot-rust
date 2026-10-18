@@ -715,25 +715,24 @@ fn encoder_requires_source_runtime_and_pinned_arm_artifacts() {
             "--test encoder_codecs_check",
             "--bin check-encoder-v4l",
             "--test encoder_v4l_check",
-            "build_visionipc_python.py",
-            "check_encoder_ci.py",
-            "test_encoder_outcomes.py",
+            "--bin check-encoder-runtime",
+            "--bin check-encoder-ci",
+            "--test encoder_runtime_shutdown",
+            "--test encoder_runtime_native",
+            "--test encoder_ci_check",
             "-p openpilot-dev-tools --locked --test encoder_stage",
             "--features native --bins --examples",
             "--features openpilot-encoderd/native",
             "--message-format=json",
-            "zstandard==0.25.0",
+            "--features encoder-runtime-native",
         ],
-        &["check_encoder_ci.py"],
+        &["rust/target/debug/check-encoder-ci"],
         true,
     );
     let data = workflow();
-    setup_environment(
-        &data["jobs"]["encoder-runtime"],
-        "Configure original encoder IPC imports",
-        |t| {
-            format!("PYTHONPATH={t}/encoder-native/python:/fixture/repository:/fixture/tools\nENCODER_MSGQ_PYTHON={t}/encoder-native/python\n")
-        },
+    absent(
+        &data["jobs"]["encoder-runtime"]["env"],
+        &["PYTHONPATH", "ENCODER_MSGQ_PYTHON"],
     );
     let arm = data["jobs"]["arm64"]["steps"]
         .as_array()

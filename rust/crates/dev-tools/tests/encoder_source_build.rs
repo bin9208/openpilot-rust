@@ -171,6 +171,30 @@ fn canonical_globs(value: &Value) -> Value {
     }
     Value::Array(args)
 }
+// #352 intentionally repairs the captured builder's incompatible JPEG header
+// precedence. Preserve captures and all other command slots without normalization.
+fn migrated_jpeg_headers(value: &Value) -> Value {
+    let mut args = value.as_array().unwrap().clone();
+    if args.first().and_then(Value::as_str) != Some("g++") {
+        return value.clone();
+    }
+    let vendor = args
+        .iter()
+        .position(|v| v.as_str() == Some("-I$ROOT/rust/crates/jpeg/native/vendor/src"))
+        .unwrap();
+    assert!(args[vendor + 1].as_str().unwrap().starts_with("-I"));
+    assert!(args[vendor - 1]
+        .as_str()
+        .unwrap()
+        .ends_with("/include/x86_64-linux-gnu"));
+    let headers: Vec<_> = args.drain(vendor..vendor + 2).collect();
+    let first_include = args
+        .iter()
+        .position(|v| v.as_str().is_some_and(|s| s.starts_with("-I")))
+        .unwrap();
+    args.splice(first_include..first_include, headers);
+    Value::Array(args)
+}
 fn assert_live_glob(call: &CommandSpec, output: &Path) {
     let (directory, suffix, extension) = if call.argv[0] == "capnp" {
         (output.join("schema"), ".capnp", "capnp")
@@ -254,7 +278,7 @@ fn original_success_prefix_resolution_and_failure_artifact_contracts() {
         for (call, expected) in peer.calls.iter().zip(expected) {
             assert_eq!(
                 canonical_globs(&replace(&json!(call.argv), &normalize)),
-                canonical_globs(&expected["argv"]),
+                canonical_globs(&migrated_jpeg_headers(&expected["argv"])),
                 "{}",
                 case["case"]
             );
@@ -275,7 +299,7 @@ fn original_success_prefix_resolution_and_failure_artifact_contracts() {
             *command = canonical_globs(command);
         }
         if let Some(command) = expected_files.get_mut("build-command.json") {
-            *command = canonical_globs(command);
+            *command = canonical_globs(&migrated_jpeg_headers(command));
         }
         assert_eq!(Value::Object(actual), expected_files, "{}", case["case"]);
     }
@@ -488,4 +512,34 @@ fn original_unicode_option_values_and_terminator_exact_exit_codes() {
         );
         assert_eq!(output.exists(), expected == 0, "{}", case["case"]);
     }
+}
+
+#[test]
+fn jpeg_headers_precede_sdk_headers_for_the_linked_archive() {
+    let temp = tempfile::tempdir().unwrap();
+    let source = temp.path().join("source");
+    setup(&source);
+    let output = temp.path().join("output");
+    let mut peer = Peer {
+        case: "success".into(),
+        calls: vec![],
+    };
+    encoder_source_build::run(&source, &args(&output, temp.path()), &mut peer, u64::MAX).unwrap();
+    let compile = peer.calls.iter().find(|s| s.argv[0] == "g++").unwrap();
+    let position = |p: PathBuf| {
+        compile
+            .argv
+            .iter()
+            .position(|s| s == &format!("-I{}", p.display()))
+            .unwrap()
+    };
+    let vendor = position(source.join("rust/crates/jpeg/native/vendor/src"));
+    let configured = position(temp.path().join("jpeg-build"));
+    let sdk = position(temp.path().join("native-prefix/include"));
+    let sdk_multiarch = position(temp.path().join("native-prefix/include/x86_64-linux-gnu"));
+    assert!(
+        vendor < sdk && configured < sdk && configured < sdk_multiarch,
+        "JPEG source and generated jconfig must precede SDK headers: {:?}",
+        compile.argv
+    );
 }
