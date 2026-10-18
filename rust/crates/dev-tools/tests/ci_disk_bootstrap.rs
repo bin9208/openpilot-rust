@@ -273,11 +273,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 feedback.push(tail.to_owned());
                 continue;
             }
-            if i + 1 < lines.len() && lines[i + 1].contains("--features qcom-assistance-tools-native") {
+            if i + 1 < lines.len()
+                && lines[i + 1].contains("--features qcom-assistance-tools-native")
+            {
                 qcom_assistance.push(tail.to_owned());
                 continue;
             }
-            if i + 1 < lines.len() && lines[i + 1].contains("--features manager-catalog-tools-native") {
+            if i + 1 < lines.len()
+                && lines[i + 1].contains("--features manager-catalog-tools-native")
+            {
                 manager_catalog.push(tail.to_owned());
                 continue;
             }
