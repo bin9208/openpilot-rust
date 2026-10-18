@@ -2763,3 +2763,26 @@ failed intermittently in the actual owned-display test; that separate failure
 remains under investigation, not resolved by this successful repeat. Evidence:
 `2026-10-18-encoder-target/{fast-routing-native-repeat,parent-final-clippy}.log`.
 The exact75ea integration workflow39099687447 passed; its Fast gate did not.
+
+### Owned-display test executable race (2026-10-18)
+
+Added diagnostics reproduced the intermittent display failure before child startup:
+`execve` returned `ETXTBSY` (26), with an empty Xvfb log. Concurrent test forks can
+inherit another thread's open script writer until exec; closing the writer in its
+own thread does not close that inherited descriptor. A deterministic isolated
+fork reproduced the same error after the parent closed its writer, then executed
+successfully after the retaining child exited.
+
+The test fixtures now execute an immutable Bash launcher and read each unchanged
+per-test script body as data. A regression deliberately retains a body writer,
+asserts that direct execution fails with26, and requires the launcher to preserve
+the display report and child cleanup. The launcher is executable0755 and selects
+its body only from its own private symlink directory; no environment override is
+introduced. Production spawning, display parsing, all deadlines, receipt and
+stream assertions remain unchanged; no retry masks original spawn failures.
+The combined gate passed all13active UI tests (one existing private-display test
+remains explicitly ignored), and strict Clippy included this target. Ten complete
+executable repeats in two parallel workers also passed:130active test executions,
+zero failures. Evidence:
+`2026-10-18-ui-display-review/{diag-3-13.log,inherited-writer-proof.json,fixed-*.log}`
+and `2026-10-18-encoder-target/final-findings-{tests,clippy}.log`.

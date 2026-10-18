@@ -128,16 +128,51 @@ fn actual_collector_preserves_original_stream_decoding_and_failure_artifacts() {
         }
     }
 }
-fn display_program(root: &Path, mode: &str) -> std::path::PathBuf {
+fn display_script(root: &Path, body: &str) -> std::path::PathBuf {
+    // Concurrent test spawns can briefly inherit another thread's open script
+    // writer across fork. Exec then returns ETXTBSY despite fs::write closing
+    // its own descriptor. Execute an immutable launcher and only read the body.
+    fs::write(root.join("Xvfb.body"), body).unwrap();
     let script = root.join("Xvfb");
+    symlink(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/ui-ci-runtime/Xvfb"),
+        &script,
+    )
+    .unwrap();
+    script
+}
+fn display_program(root: &Path, mode: &str) -> std::path::PathBuf {
     let body = format!(
         "#!/bin/bash\nprintf '%s' $$ > '{}'/pid\nfd=$2\ncase '{}' in\nexit) exit 3;;\ninvalid) eval \"printf 'bad\\\\n' >&$fd\";;\nunicode) eval \"printf '١٢\\\\n' >&$fd\";;\npartial) eval \"printf '4' >&$fd\";;\ntimeout) :;;\nignore-term) trap '' TERM; eval \"printf '43\\\\n' >&$fd\";;\n*) eval \"printf '43\\\\n' >&$fd\";;\nesac\nwhile :;do sleep .05;done\n",
         root.display(),
         mode
     );
-    fs::write(&script, body).unwrap();
-    fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
-    script
+    display_script(root, &body)
+}
+#[test]
+fn display_peer_exec_does_not_depend_on_mutable_script_write_descriptors() {
+    let t = tempfile::tempdir().unwrap();
+    let script = display_program(t.path(), "success");
+    let body = t.path().join("Xvfb.body");
+    fs::set_permissions(&body, fs::Permissions::from_mode(0o755)).unwrap();
+    // Model a writer inherited by an unrelated concurrent fork. Linux refuses
+    // direct execution until every such descriptor is closed.
+    let writer = fs::OpenOptions::new().append(true).open(&body).unwrap();
+    let error = std::process::Command::new(&body).spawn().unwrap_err();
+    assert_eq!(error.raw_os_error(), Some(26));
+    let mut display = OwnedDisplay::start(
+        script.as_os_str(),
+        t.path(),
+        DisplayPolicy {
+            startup: Duration::from_secs(1),
+            terminate: Duration::from_millis(100),
+            line_limit: 65536,
+        },
+    )
+    .unwrap();
+    assert_eq!(display.display(), ":43");
+    display.finish().unwrap();
+    drop(writer);
 }
 #[test]
 fn original_owned_display_contracts_and_explicit_partialline_guard() {
@@ -159,7 +194,14 @@ fn original_owned_display_contracts_and_explicit_partialline_guard() {
                 line_limit: 65536,
             },
         );
-        assert_eq!(result.is_ok(), !row["yielded"].is_null(), "{mode}");
+        assert_eq!(
+            result.is_ok(),
+            !row["yielded"].is_null(),
+            "{mode}: error={:?}; xvfb.log={:?}; pid={:?}",
+            result.as_ref().err().map(ToString::to_string),
+            fs::read(t.path().join("output/xvfb.log")).ok(),
+            fs::read_to_string(t.path().join("pid")).ok()
+        );
         if let Ok(mut display) = result {
             assert_eq!(display.display(), row["yielded"].as_str().unwrap());
             assert!(display.pid() > 0);
@@ -244,7 +286,6 @@ fn independently_captured_display_unicode_whitespace_and_malformed_bytes() {
         serde_json::from_str(include_str!("fixtures/ui-ci-runtime/display-text.json")).unwrap();
     for row in fixture["cases"].as_array().unwrap() {
         let t = tempfile::tempdir().unwrap();
-        let script = t.path().join("Xvfb");
         let payload = row["payload_hex"]
             .as_str()
             .unwrap()
@@ -252,14 +293,12 @@ fn independently_captured_display_unicode_whitespace_and_malformed_bytes() {
             .chunks_exact(2)
             .map(|v| format!("\\x{}", std::str::from_utf8(v).unwrap()))
             .collect::<String>();
-        fs::write(
-            &script,
-            format!(
+        let script = display_script(
+            t.path(),
+            &format!(
                 "#!/bin/bash\nfd=$2\neval \"printf '{payload}' >&$fd\"\nwhile :;do sleep .05;done\n"
             ),
-        )
-        .unwrap();
-        fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+        );
         let result = OwnedDisplay::start(
             script.as_os_str(),
             t.path(),
@@ -269,7 +308,15 @@ fn independently_captured_display_unicode_whitespace_and_malformed_bytes() {
                 line_limit: 65536,
             },
         );
-        assert_eq!(result.is_ok(), row["error"].is_null(), "{}", row["case"]);
+        assert_eq!(
+            result.is_ok(),
+            row["error"].is_null(),
+            "{}: error={:?}; xvfb.log={:?}; pid={:?}",
+            row["case"],
+            result.as_ref().err().map(ToString::to_string),
+            fs::read(t.path().join("xvfb.log")).ok(),
+            fs::read_to_string(t.path().join("pid")).ok()
+        );
         if let Ok(mut display) = result {
             assert_eq!(display.display(), row["yielded"].as_str().unwrap());
             display.finish().unwrap();
@@ -423,9 +470,7 @@ fn displayfd_does_not_repurpose_stdin_or_either_log_stream() {
         process::{Command, Stdio},
     };
     let t = tempfile::tempdir().unwrap();
-    let script = t.path().join("Xvfb");
-    fs::write(&script,format!("#!/bin/bash\nfd=$2\n[ \"$fd\" -gt 2 ] || exit 5\nIFS= read -r input\nprintf '%s' \"$input\" > '{}/input'\nprintf 'out\\377'\nprintf 'err\\376' >&2\neval \"printf '43\\\\n' >&$fd\"\nwhile :;do sleep .05;done\n",t.path().display())).unwrap();
-    fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+    display_script(t.path(), &format!("#!/bin/bash\nfd=$2\n[ \"$fd\" -gt 2 ] || exit 5\nIFS= read -r input\nprintf '%s' \"$input\" > '{}/input'\nprintf 'out\\377'\nprintf 'err\\376' >&2\neval \"printf '43\\\\n' >&$fd\"\nwhile :;do sleep .05;done\n",t.path().display()));
     let mut child = Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
