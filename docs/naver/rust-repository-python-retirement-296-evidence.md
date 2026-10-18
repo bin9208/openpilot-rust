@@ -3315,3 +3315,47 @@ Evidence: `.analysis/scratch/2026-10-18-qcom-assistance-tools/`, particularly
 `post-delete-tests.log` and `parent-review.md`. Counts:152 replaced-local,
 3 partially replaced,3425 pending of3580 baseline entries. Complete Python removal,
 exact committed-SHA CI and user device verification remain open.
+
+### Native lagd checker and reference family (#296, 2026-10-18)
+
+Replaced and deleted the six check_lagd numeric/loop/cache/packet/daemon/Params
+commands and their lagd_reference, lagd_loop_reference and lagd_frames helpers.
+Native references generate and evaluate the original numerical/loop inputs;
+production checks do not return precomputed candidate answers. NumPy-derived
+PCG64/Ziggurat generation preserves its independent38,912-output/state proof and
+licenses. The16 remaining live runtime/schema/kernel inputs remain hash-pinned;
+only the nine exact retired paths may be absent. Modified present originals,
+dangling links and missing retained inputs fail the source-admission tests.
+
+All six unchanged original commands passed against the same twelve freshly built,
+sealed native tool/candidate executables before deletion. Native runs match all
+3,831 cases:95 numeric,3,703 complete-loop frames,14 cache,13 packet, four actual
+daemon scenarios and two Params scenarios. Forty-five output artifacts compare:
+31 are byte-exact; the remainder preserve the original1e-12 pose budget and
+explicit source-clock fields. The121 pose differences have maximum1.33e-15;
+all other inputs, fields, ordering and failure decisions retain their exact
+contracts. Learning has1,201 frames/241 publications; corrupt and cadence cases
+retain6/2 and11/3. No runtime validity limit or cadence was loosened.
+
+Actual RED exposed native SIGINT exit1 and raw Params CRLF/bare-CR translation.
+Cleanup now completes under retained child/session ownership before default
+SIGINT termination; raw Params text stays raw while peer text keeps the original
+universal-newline behavior. The setsid pre-exec helper uses only the safe syscall
+boundary, and group cleanup retains the unreaped leader identity. Independent
+source review found no ownership, caller, source-absence or CI blocker.
+
+The same sealed twelve executables pass all six proofs after deletion, with34
+execve attempts and zero Python attempts per proof. Post-deletion34 family tests
+and53 CI tests pass, as does strict Clippy for the library, six binaries and all
+18 test targets. Estimation CI builds the six native commands and mandates all15
+family targets plus the CI contract before real candidate comparisons. Existing
+locationd/paramsd/oracle/sanitizer commands are preserved;267 disk guards across33
+jobs retain all177 original guard arguments. Only the fixture README changed
+after the frozen comparisons, with old/new hashes recorded.
+
+Evidence: `.analysis/scratch/2026-10-18-lagd-tools/final-postdelete-evidence.json`,
+`six-final-1/{original-receipt.json,native-before/proof.json,native-after/proof.json}`,
+postdelete-final logs and sol-model-native-owner-review.md. Inventory now has161
+replaced-local, three partial and3,416 pending entries of3,580. This closes this
+tool family only; complete Python retirement, exact committed-SHA gates and the
+user's boot/recording/upload verification remain outstanding.

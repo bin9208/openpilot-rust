@@ -19,3 +19,13 @@ pub fn disable_core_dump(command: &mut Command) {
         });
     }
 }
+
+/// Start the child in a fresh session and process group before exec.
+/// The parent's session and all arguments/environment remain unchanged.
+pub fn new_session(command: &mut Command) {
+    // SAFETY: setsid is async-signal-safe. This post-fork closure only invokes
+    // that syscall and converts its errno; it allocates nothing and holds no locks.
+    unsafe {
+        command.pre_exec(|| rustix::process::setsid().map(|_| ()).map_err(io::Error::from));
+    }
+}

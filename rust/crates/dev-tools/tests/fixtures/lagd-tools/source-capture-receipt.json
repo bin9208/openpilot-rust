@@ -1,0 +1,71 @@
+{
+  "python": "3.12.15",
+  "implementation": "CPython",
+  "numpy": "2.5.3",
+  "numpy_commit": "dd88c0c19b54ad9ed3533224221285bf0873249a",
+  "pycapnp": "2.1.0",
+  "source_pins_sha256": "b8205f241d7147eeee534f4903ebbc39fefe5521d75ba0ccf8e5725275570fe1",
+  "numeric": {
+    "cases": 95,
+    "sha256": "b6c67cd28093e82ec7badb29d54b9dba385b60fa028d9ffc82da3cfe5573dce4",
+    "gzip_sha256": "cc6e82bacc005e3bcffe74fb1335864c8845410bd61b945c8f54ca3b31de09d7"
+  },
+  "loops": [
+    {
+      "mode": "normal",
+      "frames": 1201,
+      "publications": 241
+    },
+    {
+      "mode": "recovery",
+      "frames": 1301,
+      "publications": 261
+    },
+    {
+      "mode": "ordering",
+      "frames": 1201,
+      "publications": 241
+    }
+  ],
+  "cache_cases": 14,
+  "packet_cases": 13,
+  "artifacts": [
+    {
+      "path": "numeric-original.json.gz",
+      "bytes": 381420,
+      "sha256": "2a144fc69fad54add3b21ee9ab10a4b78a7046c80a61b62a4bda29eb0c88f248",
+      "decoded_sha256": "c5129f4e44a0e706d05be3572b0e11ca53649e26a56e79479367cc6fc2420616"
+    },
+    {
+      "path": "loop-normal-original.json.gz",
+      "bytes": 198301,
+      "sha256": "9eb93fe7e4435aa6dadb326e994d2c349d27949aa3cdebea2b28f436a47202be",
+      "decoded_sha256": "021747e907ea48c52364f16225fd352566d1577c8a0bd87d3aee5635b4f0ee29"
+    },
+    {
+      "path": "loop-recovery-original.json.gz",
+      "bytes": 214500,
+      "sha256": "9167dcf228008e6f166ae5114b751c50cb6a108fbb5ae78bbf3db469dc66cea9",
+      "decoded_sha256": "50afeb2f6403333471ab56e44ef5d066f3269db09c581d6de5f7001758ef0e23"
+    },
+    {
+      "path": "loop-ordering-original.json.gz",
+      "bytes": 210602,
+      "sha256": "109a1e60fb59e8df8c47d564bb802ba1d8cb983030c890d40a37bea8c842dcbf",
+      "decoded_sha256": "4225dc1920bd26c3ac4943e1bfdaaca00a9eff471c9910025131e499aca50e89"
+    },
+    {
+      "path": "cache-original.json.gz",
+      "bytes": 947,
+      "sha256": "3463fba013b8355163979a9e1b9277fd2f8d769570fe1dc338f3dfff33133d3d",
+      "decoded_sha256": "00b6bc88c583b872f735913456d7461c51d0f1baa2b338e423a6f061a6a6d21f"
+    },
+    {
+      "path": "packet-original.json.gz",
+      "bytes": 1051,
+      "sha256": "9f21e8af2b5647471c7fd218484c4e0ca7b6201b916a322992848d71660c2d83",
+      "decoded_sha256": "fadb2d2b83f5ecdd34b1c57ea06844c316335e980d2c774a19558cbe5b32dd13"
+    }
+  ],
+  "scope": "Independent unchanged original source/QA functions, complete numeric inputs, complete 3703 loop frames and source snapshots, no native candidate executed. Actual six checker/process baseline is separate."
+}

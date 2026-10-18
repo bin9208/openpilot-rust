@@ -1,0 +1,16 @@
+{
+  "source_pins_sha256": "b8205f241d7147eeee534f4903ebbc39fefe5521d75ba0ccf8e5725275570fe1",
+  "counts": {
+    "wire": 61,
+    "loop": 16
+  },
+  "files": {
+    "wire-neighbors-original.json.gz": {
+      "sha256": "0eb6cfc4b3dbcba3f7b439331b98e91babcb2465a8ee07c4063db3cfad4258d6"
+    },
+    "loop-neighbors-original.json.gz": {
+      "sha256": "04ef3d1171974a43d45ed9c1e53d8f4c0af3d9f5e70f15a1a808c5e8bb0c86c7"
+    }
+  },
+  "scope": "Additional unchanged-original captures before native frame/packet/loop implementation; core and numeric/generic manifests untouched."
+}

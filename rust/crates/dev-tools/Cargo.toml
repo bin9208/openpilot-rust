@@ -417,6 +417,38 @@ path = "src/bin/checkout_status_reference.rs"
 required-features = ["checkout-tools-native"]
 
 [[test]]
+name = "lagd_reference"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_reference_generic"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_random"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_numeric_cases"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_check"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_frames"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_packet_reference"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_loop_reference"
+required-features = ["lagd-tools-native"]
+
+[[test]]
 name = "manager_catalog_check"
 required-features = ["manager-catalog-tools-native"]
 
@@ -438,6 +470,7 @@ required-features = ["manager-catalog-tools-native"]
 feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 qcom-assistance-tools-native = []
 manager-catalog-tools-native = []
+lagd-tools-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-pocketfft", "dep:openpilot-runtime-core"]
 checkout-tools-native = ["dep:openpilot-process-supervision", "dep:nix"]
 services-catalog-native = ["dep:capnp", "dep:openpilot-cereal"]
 timed-tools-native = ["dep:chrono", "dep:zmq"]
@@ -562,6 +595,8 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+openpilot-runtime-core = { path = "../runtime-core", optional = true }
+openpilot-pocketfft = { path = "../pocketfft", optional = true }
 openpilot-process-supervision = { path = "../process-supervision", optional = true }
 nix = { version = "=0.31.3", default-features = false, features = ["process"], optional = true }
 zstd = { version = "=0.13.3", optional = true }
@@ -1079,3 +1114,61 @@ required-features = ["feedback-runtime-native"]
 name = "check-feedbackd"
 path = "src/bin/check_feedbackd.rs"
 required-features = ["feedback-runtime-native"]
+
+[[test]]
+name = "lagd_cli"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_live_check"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_live_contracts"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_live_native"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_session"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_retirement"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_live_cli"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-numeric"
+path = "src/bin/check_lagd_numeric.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-loop"
+path = "src/bin/check_lagd_loop.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-cache"
+path = "src/bin/check_lagd_cache.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-packet"
+path = "src/bin/check_lagd_packet.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-daemon"
+path = "src/bin/check_lagd_daemon.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-params-io"
+path = "src/bin/check_lagd_params_io.rs"
+required-features = ["lagd-tools-native"]

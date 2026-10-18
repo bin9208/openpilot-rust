@@ -2595,14 +2595,34 @@ jobs:
           python rust/tools/check_paramsd_loop.py --oracle "$RUNNER_TEMP/paramsd-oracle" --trace "$PWD/rust/target/debug/examples/paramsd_loop" --evidence "$RUNNER_TEMP/estimation/paramsd/loop"
           python rust/tools/check_paramsd_daemon.py --oracle "$RUNNER_TEMP/paramsd-oracle" --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/estimation/paramsd/daemon"
           python rust/tools/check_paramsd_startup.py --binary "$PWD/rust/target/debug/openpilot-paramsd" --evidence "$RUNNER_TEMP/estimation/paramsd/startup"
+      - name: Build and test native lagd QA tools
+        env:
+          CARGO_INCREMENTAL: '0'
+          CARGO_PROFILE_DEV_DEBUG: '0'
+          CARGO_PROFILE_TEST_DEBUG: '0'
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+          rustup component add clippy --toolchain 1.94.0
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features lagd-tools-native --bin check-lagd-numeric --bin check-lagd-loop --bin check-lagd-cache --bin check-lagd-packet --bin check-lagd-daemon --bin check-lagd-params-io --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features lagd-tools-native --test lagd_reference --test lagd_reference_generic --test lagd_frames --test lagd_packet_reference --test lagd_loop_reference --test lagd_random --test lagd_numeric_cases --test lagd_check --test lagd_cli --test lagd_live_check --test lagd_live_contracts --test lagd_live_native --test lagd_session --test lagd_live_cli --test lagd_retirement --test lagd_ci --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features lagd-tools-native --lib --bin check-lagd-numeric --bin check-lagd-loop --bin check-lagd-cache --bin check-lagd-packet --bin check-lagd-daemon --bin check-lagd-params-io --test lagd_reference --test lagd_reference_generic --test lagd_frames --test lagd_packet_reference --test lagd_loop_reference --test lagd_random --test lagd_numeric_cases --test lagd_check --test lagd_cli --test lagd_live_check --test lagd_live_contracts --test lagd_live_native --test lagd_session --test lagd_live_cli --test lagd_retirement --test lagd_ci --locked -- -D warnings
       - name: Compare delay numerical policy, full source loop, cache and native IPC
         run: |
-          python rust/tools/check_lagd_numeric.py "$PWD/rust/target/debug/examples/lag_numeric" "$RUNNER_TEMP/estimation/lagd/numeric.json"
-          python rust/tools/check_lagd_loop.py "$PWD/rust/target/debug/examples/lag_loop" "$RUNNER_TEMP/estimation/lagd/loop"
-          python rust/tools/check_lagd_cache.py "$PWD/rust/target/debug/examples/lag_cache" "$RUNNER_TEMP/estimation/lagd/cache.json"
-          python rust/tools/check_lagd_packet.py "$PWD/rust/target/debug/examples/lag_packet" "$RUNNER_TEMP/estimation/lagd/packet.json"
-          python rust/tools/check_lagd_daemon.py "$PWD/rust/target/debug/openpilot-lagd" "$PWD/rust/target/debug/examples/lag_ipc_peer" "$RUNNER_TEMP/estimation/lagd/daemon"
-          python rust/tools/check_lagd_params_io.py "$PWD/rust/target/debug/openpilot-lagd" "$RUNNER_TEMP/estimation/lagd/params-io.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-lagd-numeric "$PWD/rust/target/debug/examples/lag_numeric" "$RUNNER_TEMP/estimation/lagd/numeric.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-lagd-loop "$PWD/rust/target/debug/examples/lag_loop" "$RUNNER_TEMP/estimation/lagd/loop"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-lagd-cache "$PWD/rust/target/debug/examples/lag_cache" "$RUNNER_TEMP/estimation/lagd/cache.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-lagd-packet "$PWD/rust/target/debug/examples/lag_packet" "$RUNNER_TEMP/estimation/lagd/packet.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-lagd-daemon "$PWD/rust/target/debug/openpilot-lagd" "$PWD/rust/target/debug/examples/lag_ipc_peer" "$RUNNER_TEMP/estimation/lagd/daemon"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-lagd-params-io "$PWD/rust/target/debug/openpilot-lagd" "$RUNNER_TEMP/estimation/lagd/params-io.json"
       - name: Check production numerical ownership and native memory boundaries
         run: |
           cargo test --manifest-path rust/Cargo.toml -p openpilot-locationd -p openpilot-lagd -p openpilot-paramsd -p openpilot-pocketfft --locked
