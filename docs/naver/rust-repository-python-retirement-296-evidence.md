@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. 179 sources have locally verified replacements and migrated
-callers; four are partially replaced and 3,397 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. 188 sources have locally verified replacements and migrated
+callers; seven are partially replaced and 3,385 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -3974,3 +3974,39 @@ still required. Evidence: `2026-10-19-version-382-review/FINAL-EVIDENCE.txt`.
 The captured empty process-title TSV row retains its significant trailing empty
 fields. A single-path .gitattributes whitespace exception preserves those original
 bytes; the fixture itself was not edited. Staged diff checking passes.
+
+### Registration clock checker retirement and independent LLVM20 CI (#390)
+
+`check-registration-clock` replaces the original standard-library Python
+controller. Its independent Gregorian policy preserves all13 SystemTime cases
+and72 additional original calendar controls. Actual CLI, runner, raw-path and
+failure captures preserve report bytes and failure phases. Review reproduced
+executable/source rebinding and stale-success receipts before the repair; the
+native controller now rejects observed input drift, removes only stale successful
+reports and preserves original mismatch/failure artifacts. Owned cancellation
+and a60s child bound are explicit additions to the originally unbounded child.
+
+The repaired checker SHA256
+`f655d2b6b9bea2719ce7ec8e2d48dc55eede3cf17459e2518e7e94265a862f95`
+and probe `77ab0e6745cb64af10d56ff09f3a9a530fe766b7888a41fa8d7fea67af093728`
+passed the same full original13-case report, CLI/failure/raw-path controls and
+binding negatives before and after deleting `check_registration_clock.py`.
+Each full execve/execveat trace has two native execution attempts and no Python.
+The historical source text is nonexecutable source-guard fixture data, never an
+execution fallback. These are bounded identity checks, not an atomic snapshot.
+Fresh post-deletion16 tests, strict Clippy and a rebuilt CLI also pass.
+Evidence: `2026-10-19-registration-clock-tools/FINAL-PROOF.json` and
+`post-delete-fresh-{tests,build}.log`.
+
+Old run39159654100 spent85m02s in workspace tests and then over40 minutes in
+serial LLVM20 replay, leaving later mandatory source/package checks waiting.
+The unchanged LLVM20 provider staging and all19 graph plus10 primitive targets
+now run in a separate90-minute required job. The moved three-step YAML is
+byte-identical (SHA256 `c93a605554df4cab215c2897a0b884559bafea9abec7478025873215fa2fc0e7`).
+LLVM18 workspace tests, original comparisons and release builds remain intact.
+The new job has its own guarded toolchain/model preparation and must succeed
+for `rust checks` to pass. A regression first failed on the missing independent
+job; all62 native CI/disk/policy tests now pass, including missing-dependency and
+wrong-result negative controls. All177 inherited guard arguments remain exact;
+299 total guards cover35 jobs. Exact remote CI and timing improvement remain
+unverified until the new committed run. Evidence: `2026-10-19-llvm-ci-split/`.

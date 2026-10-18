@@ -83,6 +83,8 @@ pub mod publish;
 pub(crate) mod qa_endpoint;
 pub mod qa_process;
 pub mod ratekeeper_check;
+#[cfg(feature = "registration-clock-native")]
+pub mod registration_clock_check;
 pub mod registration_utf7_check;
 #[cfg(feature = "sdk-receiver-native")]
 pub mod sdk_receiver;

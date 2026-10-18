@@ -332,7 +332,7 @@ fn workspace_source_tests_use_the_real_msgq_binding_before_importing_oracles() {
 #[test]
 fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
     let data = workflow();
-    let job = &data["jobs"]["workspace"];
+    let job = &data["jobs"]["model-llvm20"];
     let steps = job["steps"].as_array().unwrap();
     let find = |name: &str| {
         steps
@@ -420,10 +420,60 @@ fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
             );
         }
     }
-    required(&commands(job), &[
+    required(&commands(&data["jobs"]["workspace"]), &[
         "cargo test --workspace --locked --config profile.test.package.sha2.opt-level=3",
         "cargo clippy --workspace --all-targets --locked --config profile.test.package.sha2.opt-level=3",
     ]);
+}
+#[test]
+fn llvm20_has_an_independent_mandatory_budget_without_removing_workspace_checks() {
+    let data = workflow();
+    let job = &data["jobs"]["model-llvm20"];
+    assert!(
+        job.is_object(),
+        "LLVM20 must not consume the workspace job's remaining budget"
+    );
+    absent(job, &["needs", "if", "continue-on-error"]);
+    assert_eq!(job["runs-on"], "ubuntu-24.04");
+    assert_eq!(job["timeout-minutes"], "90");
+    assert_eq!(job["env"]["CARGO_BUILD_JOBS"], "2");
+    assert_eq!(job["env"]["CARGO_INCREMENTAL"], "0");
+    let run = commands(job);
+    required(
+        &run,
+        &[
+            "rustup toolchain install 1.94.0 --profile minimal",
+            "git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx",
+            "--test compiler_batched_silu_chain_bias",
+            "--test compiler_gemm_terminal",
+            "--test-threads=2",
+        ],
+    );
+    assert!(data["jobs"]["fast"]["needs"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|v| v == "model-llvm20"));
+    assert_eq!(
+        data["jobs"]["fast"]["steps"][0]["env"]["LLVM20"],
+        "${{ needs.model-llvm20.result }}"
+    );
+    required(
+        &commands(&data["jobs"]["fast"]),
+        &["test \"$LLVM20\" = success"],
+    );
+    let workspace = commands(&data["jobs"]["workspace"]);
+    required(
+        &workspace,
+        &[
+            "cargo test --workspace --locked",
+            "cargo build --workspace --release --locked",
+        ],
+    );
+    assert!(
+        !workspace.contains("llvm20-captured"),
+        "LLVM20 must run exactly once in its own required job"
+    );
 }
 fn commands(job: &Value) -> String {
     job["steps"]
@@ -824,7 +874,7 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
             "--bin check-sdk-receiver --test sdk_receiver --locked -- -D warnings",
             "rust/target/debug/check-sdk-receiver",
             "check_registration.py",
-            "check_registration_clock.py",
+            "check-registration-clock",
             "rust/target/debug/check-registration-utf7",
             "rust/target/debug/check-registration-vendor",
             "rust/target/debug/check-manager-catalog rust/target/debug/examples/catalog_probe",
@@ -1424,7 +1474,7 @@ fn retired_tool_checks_require_current_native_builds_and_keep_original_consumers
     required(
         &commands(startup),
         &[
-            "-p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-entry-native,openpilot-dev-tools/managed-runtime-native --bins --examples",
+            "-p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-entry-native,openpilot-dev-tools/managed-runtime-native,openpilot-dev-tools/registration-clock-native --bins --examples",
             "rust/target/debug/check-registration-vendor",
             "check_registration.py",
         ],
@@ -1459,7 +1509,7 @@ fn managed_runtime_requires_all_seven_daemons_and_the_focused_startup_caller() {
         ],
     );
     let startup = &data["jobs"]["startup-runtime"];
-    required(&commands(startup), &["openpilot-dev-tools/managed-runtime-native --bins --examples", "rust/target/debug/check-managed-runtime --binaries rust/target/debug --daemon uploader"]);
+    required(&commands(startup), &["openpilot-dev-tools/managed-runtime-native,openpilot-dev-tools/registration-clock-native --bins --examples", "rust/target/debug/check-managed-runtime --binaries rust/target/debug --daemon uploader"]);
     mandatory(startup, &["rust/target/debug/check-managed-runtime"]);
     assert!(!read(".github/workflows/rust.yml").contains("check_managed_runtime.py"));
 }
@@ -1688,4 +1738,25 @@ fn support_metadata_capture_preserves_total_deadline_and_drains_both_pipes() {
         &["--test git_capture", "check_dashcam_metadata.py"],
         false,
     );
+}
+
+#[test]
+fn registration_clock_requires_actual_probe_and_all_native_failure_controls() {
+    let data = workflow();
+    let startup = &data["jobs"]["startup-runtime"];
+    required(&commands(startup), &[
+        "openpilot-dev-tools/registration-clock-native --bins --examples",
+        "export REGISTRATION_CLOCK_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/examples/registration_clock\"",
+        "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-clock-native --test registration_clock_check --locked",
+        "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-clock-native --lib --bin check-registration-clock --test registration_clock_check --locked -- -D warnings",
+        "rust/target/debug/check-registration-clock \"$REGISTRATION_CLOCK_BINARY\" \"$RUNNER_TEMP/startup-runtime/registration-clock.json\"",
+    ]);
+    mandatory(
+        startup,
+        &[
+            "--test registration_clock_check",
+            "rust/target/debug/check-registration-clock",
+        ],
+    );
+    assert!(!read(".github/workflows/rust.yml").contains("check_registration_clock.py"));
 }

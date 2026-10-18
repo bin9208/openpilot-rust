@@ -545,6 +545,7 @@ tombstone-tools-native = ["version-tools-native", "dep:unicode-general-category"
 tombstone-live-native = ["tombstone-tools-native", "sdk-receiver-native"]
 managed-entry-native = ["tombstone-tools-native", "sdk-receiver-native", "openpilot-process-limits/qa-process-title"]
 managed-runtime-native = []
+registration-clock-native = []
 dbc-generator-native = []
 feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 qcom-assistance-tools-native = []
@@ -1362,3 +1363,12 @@ required-features = ["managed-entry-native"]
 name = "check-managed-entry"
 path = "src/bin/check_managed_entry.rs"
 required-features = ["managed-entry-native"]
+
+[[bin]]
+name = "check-registration-clock"
+path = "src/bin/check_registration_clock.rs"
+required-features = ["registration-clock-native"]
+
+[[test]]
+name = "registration_clock_check"
+required-features = ["registration-clock-native"]

@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, dbc-darwin]
+    needs: [workspace, model-llvm20, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, dbc-darwin]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -23,6 +23,7 @@ jobs:
       - name: Require runtime validation
         env:
           WORKSPACE: ${{ needs.workspace.result }}
+          LLVM20: ${{ needs.model-llvm20.result }}
           DBC_DARWIN: ${{ needs.dbc-darwin.result }}
           MEMORY: ${{ needs.model-memory.result }}
           PIPELINES: ${{ needs.model-pipelines.result }}
@@ -63,6 +64,7 @@ jobs:
           UI_RUNTIME: ${{ needs.ui-runtime.result }}
         run: |
           test "$WORKSPACE" = success
+          test "$LLVM20" = success
           test "$DBC_DARWIN" = success
           test "$MEMORY" = success
           test "$PIPELINES" = success
@@ -588,8 +590,8 @@ jobs:
   workspace:
     name: rust workspace checks
     runs-on: ubuntu-24.04
-    # Baseline exact-SHA validation took 101 minutes; the added SiLU-chain
-    # provider regression takes another 15 minutes before packaging/build work.
+    # LLVM20 replay has its own required budget; LLVM18 workspace tests,
+    # original-source comparisons and release packaging remain mandatory here.
     timeout-minutes: 150
     env:
       CARGO_BUILD_JOBS: '2'
@@ -677,24 +679,6 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo build -p openpilot-bootlog --example bootlog_snapshot -p openpilot-process-supervision --bin openpilot-process-child --locked
           cargo test --workspace --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3
-      - name: Stage independently captured LLVM20 provider
-        run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 256
-          curl --fail --location --retry 3 --max-time 180 --output "$RUNNER_TEMP/llvm20.deb" 'https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-20/libllvm20_20.1.2-0ubuntu1%7e24.04.3_amd64.deb'
-          printf 'f018e71c72c7a4742fb1aff9dc98b45586f42e6ea464d4918af7e3772b7f0658  %s/llvm20.deb\n' "$RUNNER_TEMP" | sha256sum --check --strict
-          dpkg-deb --extract "$RUNNER_TEMP/llvm20.deb" "$RUNNER_TEMP/llvm20-captured"
-          printf '4b93481bd1c9d42c0951275dd275d4a9d30db78c309ae2cc0405669bc6dbbf8a  %s/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1\n' "$RUNNER_TEMP" | sha256sum --check --strict
-          ldd "$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" > "$RUNNER_TEMP/llvm20-ldd.txt"
-          cat "$RUNNER_TEMP/llvm20-ldd.txt"
-          if grep -q 'not found' "$RUNNER_TEMP/llvm20-ldd.txt"; then exit 1; fi
-      - name: Require native LLVM20 graph and binding equivalence
-        run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" cargo +1.94.0 test --locked -p openpilot-model-runtime --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_batched_matmul --test compiler_batched_projection --test compiler_batched_bias --test compiler_batched_silu --test compiler_batched_silu_chain --test compiler_batched_silu_chain_bias --test compiler_matrix_alias --test compiler_gemm_pipeline --test compiler_gemm_chain --test compiler_gemm_chain_pipeline --test compiler_gemm_branch_head --test compiler_gemm_normalized_chain --test compiler_gemm_packed_normalized --test compiler_gemm_norm_indexed --test compiler_contraction_target --test compiler_parallel_conv_layout --test compiler_input_bindings --test compiler_concat_slice --test compiler_concat_slice_cpu -- --nocapture --test-threads=2
-      - name: Require native LLVM20 primitive and provider equivalence
-        run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
-          LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" cargo +1.94.0 test --locked -p openpilot-model-runtime --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_llvm --test compiler_conv_depthwise --test compiler_conv_pointwise --test compiler_normalization_row --test compiler_gelu_layout --test compiler_residual_scale --test compiler_residual_scale_rounding --test compiler_gemm_producer --test compiler_gemm_residual --test compiler_gemm_terminal -- --nocapture --test-threads=2
       - name: Check process-stat parser allocation regression
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
@@ -2354,7 +2338,7 @@ jobs:
           rustc --version
           cargo --version
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-entry-native,openpilot-dev-tools/managed-runtime-native --bins --examples --locked
+          CARGO_INCREMENTAL=0 cargo build --manifest-path rust/Cargo.toml -p openpilot-runtime-launcher -p openpilot-process-supervision -p openpilot-managed-entry -p openpilot-registration -p openpilot-manager-catalog -p openpilot-checkout-status -p openpilot-uploader -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-entry-native,openpilot-dev-tools/managed-runtime-native,openpilot-dev-tools/registration-clock-native --bins --examples --locked
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build original startup message and Params bindings
@@ -2410,7 +2394,12 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test registration_utf7_check --test registration_utf7_ci
           python rust/tools/check_registration.py rust/target/debug/examples/registration_trace \
             "$RUNNER_TEMP"/startup-params-binding/params_pyx*.so "$RUNNER_TEMP/startup-runtime/registration"
-          python rust/tools/check_registration_clock.py rust/target/debug/examples/registration_clock "$RUNNER_TEMP/startup-runtime/registration-clock.json"
+          export REGISTRATION_CLOCK_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/registration_clock"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-clock-native --test registration_clock_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features registration-clock-native --lib --bin check-registration-clock --test registration_clock_check --locked -- -D warnings
+          rust/target/debug/check-registration-clock "$REGISTRATION_CLOCK_BINARY" "$RUNNER_TEMP/startup-runtime/registration-clock.json"
           rust/target/debug/check-registration-utf7 rust/target/debug/examples/registration_utf7 "$RUNNER_TEMP/startup-runtime/registration-utf7.json"
       - name: Compare actual registration socket deadlines and progressing responses
         run: |
@@ -3375,6 +3364,59 @@ jobs:
             ${{ runner.temp }}/driver-daemon/
             ${{ runner.temp }}/driving-daemon/
             ${{ runner.temp }}/model-logging-faults/
+  model-llvm20:
+    name: rust model LLVM20 equivalence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '2'
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Reserve capacity and install native LLVM20 test prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          sudo apt-get update && sudo apt-get install -y g++ git-lfs libffi8 libedit2 libxml2 libzstd1
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          rustup toolchain install 1.94.0 --profile minimal
+      - name: Fetch the exact model for LLVM20 compiler corpus validation
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
+      - name: Stage independently captured LLVM20 provider
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 256
+          curl --fail --location --retry 3 --max-time 180 --output "$RUNNER_TEMP/llvm20.deb" 'https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-20/libllvm20_20.1.2-0ubuntu1%7e24.04.3_amd64.deb'
+          printf 'f018e71c72c7a4742fb1aff9dc98b45586f42e6ea464d4918af7e3772b7f0658  %s/llvm20.deb\n' "$RUNNER_TEMP" | sha256sum --check --strict
+          dpkg-deb --extract "$RUNNER_TEMP/llvm20.deb" "$RUNNER_TEMP/llvm20-captured"
+          printf '4b93481bd1c9d42c0951275dd275d4a9d30db78c309ae2cc0405669bc6dbbf8a  %s/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1\n' "$RUNNER_TEMP" | sha256sum --check --strict
+          ldd "$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" > "$RUNNER_TEMP/llvm20-ldd.txt"
+          cat "$RUNNER_TEMP/llvm20-ldd.txt"
+          if grep -q 'not found' "$RUNNER_TEMP/llvm20-ldd.txt"; then exit 1; fi
+      - name: Require native LLVM20 graph and binding equivalence
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" cargo +1.94.0 test --locked -p openpilot-model-runtime --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_batched_matmul --test compiler_batched_projection --test compiler_batched_bias --test compiler_batched_silu --test compiler_batched_silu_chain --test compiler_batched_silu_chain_bias --test compiler_matrix_alias --test compiler_gemm_pipeline --test compiler_gemm_chain --test compiler_gemm_chain_pipeline --test compiler_gemm_branch_head --test compiler_gemm_normalized_chain --test compiler_gemm_packed_normalized --test compiler_gemm_norm_indexed --test compiler_contraction_target --test compiler_parallel_conv_layout --test compiler_input_bindings --test compiler_concat_slice --test compiler_concat_slice_cpu -- --nocapture --test-threads=2
+      - name: Require native LLVM20 primitive and provider equivalence
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" cargo +1.94.0 test --locked -p openpilot-model-runtime --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_llvm --test compiler_conv_depthwise --test compiler_conv_pointwise --test compiler_normalization_row --test compiler_gelu_layout --test compiler_residual_scale --test compiler_residual_scale_rounding --test compiler_gemm_producer --test compiler_gemm_residual --test compiler_gemm_terminal -- --nocapture --test-threads=2
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: llvm20-provider-evidence
+          path: ${{ runner.temp }}/llvm20-ldd.txt
   model-memory:
     name: rust model memory
     runs-on: ubuntu-24.04

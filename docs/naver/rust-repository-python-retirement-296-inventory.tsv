@@ -2053,7 +2053,7 @@ rust/tools/check_radarcan_constructors.py	d8b7b77c0ac1a20fc139cbc982937a59c64938
 rust/tools/check_radarcan_policy.py	ec240376669b915f9c8bd4561290e14988d428c4	pending	-
 rust/tools/check_radarcan_runtime.py	15067032bfb54e5c7214b131178f90d241eac9c5	pending	-
 rust/tools/check_registration.py	cbb3b6ded74388583ef0ba05300bfed240814d52	pending	-
-rust/tools/check_registration_clock.py	932374bbe4383ee1e98ae4fab314c237861d201c	pending	-
+rust/tools/check_registration_clock.py	932374bbe4383ee1e98ae4fab314c237861d201c	replaced-local	Native check-registration-clock preserves13 real SystemTime comparisons, independent Gregorian policy, CLI/raw-path/error controls; source and executable drift, stale PASS and cancellation regressions; native CI caller
 rust/tools/check_registration_utf7.py	9bb1dd1f15e75efb58c78db603143cd17468be59	replaced-local	Native check-registration-utf7;107 independent CPython cases,22 process/JSON boundaries, actual CLI serialization limits and current native decoder.
 rust/tools/check_registration_vendor.py	dc7278a116a16e63654efbd2ee40706499d4064e	replaced-local	rust/crates/dev-tools/src/registration_vendor_check.rs
 rust/tools/check_runtime_diagnostics.py	e1b0a2f950d51b368582319c27f999cb7d3d2b35	replaced-local	rust/crates/dev-tools/src/diagnostic_check.rs

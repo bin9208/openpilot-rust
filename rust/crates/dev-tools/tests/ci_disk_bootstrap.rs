@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 294);
+    assert_eq!(text.matches(marker).count(), 299);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -212,7 +212,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         jobs.values()
             .filter(|job| scripts(job).iter().any(|s| s.contains("check-disk-space")))
             .count(),
-        34
+        35
     );
     assert_eq!(
         jobs.values()
@@ -225,9 +225,19 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 })
             }))
             .count(),
-        34
+        35
     );
     let lines = text.lines().collect::<Vec<_>>();
+    let llvm20_start = lines
+        .iter()
+        .position(|line| *line == "  model-llvm20:")
+        .unwrap();
+    let llvm20_end = lines
+        .iter()
+        .enumerate()
+        .skip(llvm20_start + 1)
+        .find(|(_, line)| line.starts_with("  ") && !line.starts_with("   ") && line.ends_with(':'))
+        .map_or(lines.len(), |(index, _)| index);
     let mut arguments = vec![];
     let mut original_msgq = vec![];
     let mut services_catalog = vec![];
@@ -278,8 +288,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut tombstone_controllers = vec![];
     let mut managed_controllers = vec![];
     let mut managed_runtime = vec![];
+    let mut registration_clock = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len() && lines[i + 1].contains("--features registration-clock-native")
+            {
+                registration_clock.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--features managed-runtime-native")
                     || lines[i + 1]
@@ -380,10 +396,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 timed_tools.push(tail.to_owned());
                 continue;
             }
-            if i + 1 < lines.len()
-                && (lines[i + 1].contains("--output \"$RUNNER_TEMP/llvm20.deb\"")
-                    || lines[i + 1].contains("LLVM_PATH=\"$RUNNER_TEMP/llvm20-captured/"))
-            {
+            if (llvm20_start..llvm20_end).contains(&i) {
                 llvm20_regression.push(tail.to_owned());
                 continue;
             }
@@ -515,6 +528,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     // guards. Native camera operations retain every required reserve.
     assert_eq!(arguments.len(), 177);
     assert_eq!(
+        registration_clock,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 2]
+    );
+    assert_eq!(
         managed_runtime,
         [
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
@@ -571,6 +588,9 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         llvm20_regression,
         vec![
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 2048",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 128",
             " --path \"$RUNNER_TEMP\" --growth-mib 256",
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",

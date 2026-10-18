@@ -352,6 +352,7 @@ pub fn process_alive_from(read: impl FnOnce() -> io::Result<String>) -> io::Resu
 // Independent expected mapping retained from the original CI isolation tests.
 const RUST_GATE_BINDINGS: &[(&str, &str)] = &[
     ("WORKSPACE", "workspace"),
+    ("LLVM20", "model-llvm20"),
     ("MEMORY", "model-memory"),
     ("PIPELINES", "model-pipelines"),
     ("LOGGER", "logger-runtime"),
