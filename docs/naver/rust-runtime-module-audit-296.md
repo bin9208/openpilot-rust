@@ -134,6 +134,18 @@ completed-task accumulation was found in those paths. Agent prompt timeout
 cleanup, pairing/reconnect behavior and actual D-Bus behavior still need their
 own focused review and validation.
 
+2026-10-18 source follow-up inspected Wi-Fi manager task ownership, Athena
+session/proxy ownership and Navd publisher ownership. Wi-Fi drains completed
+operation tasks in its select loop; shutdown signals and joins initialization,
+then aborts and joins operation and D-Bus tasks. Navd's publisher uses a bounded
+one-command channel; its owner closes the sender and joins the worker on drop.
+Athena reaps completed proxy threads on subsequent proxy starts and joins its
+registered session/proxy workers at session shutdown. Follow-up actual-thread
+regressions reproduced detached new workers when registry admission failed;
+the scoped correction and evidence are recorded under #360 below. The Wi-Fi and
+Navd observations remain source inspections only. These checks do not clear
+network protocol, general error recovery, hardware or timing behavior.
+
 Startup UI `network::start` installs one process-lifetime IP monitor behind a
 static mutex, avoiding a new monitor on repeated starts. Its input owner bounds
 the mouse-event queue to 140 entries and signals/joins its worker in Drop.
@@ -889,3 +901,24 @@ Scoped strict Clippy also passed for these consumers. Evidence is under
 `.analysis/scratch/2026-10-18-ui-lifecycle-pixel-357/impacted-eRtBSKAB`.
 Exact-commit CI remains pending. No device or full CI acceptance follows from
 these host checks.
+
+### Athena proxy workers remain owned on registration errors (#360)
+
+The proxy start path previously spawned its bridge thread before locking the
+registry and reaping previously finished workers. A poisoned registry or a
+previous worker panic returned an error and dropped the new JoinHandle, leaving
+that live worker outside session-owned shutdown joins. A mechanical extraction
+of the existing ordering enabled actual-thread controls; both error controls
+observed the rejected worker start and failed, while the healthy ownership
+control passed. Each failing control released and observed its worker's drop.
+
+Registry locking and completed-worker checks now precede spawning. The new
+handle is inserted while the same registry guard remains held. Already pending
+workers remain registered, completed workers are reaped, and admission failures
+drop the unstarted closure and its connection resources. Network setup order,
+bridge protocol, poll cadence, priorities and stop behavior remain unchanged.
+All seven Athena library tests and all-target tests pass, followed by strict
+all-target Clippy. Evidence: `.analysis/scratch/2026-10-18-athena-proxy-296/`.
+Independent source/test review found no blocker. Exact committed-SHA CI remains
+required; this is not a whole-module clearance, device result or measured
+performance improvement.
