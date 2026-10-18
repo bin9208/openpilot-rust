@@ -19,7 +19,11 @@ fn callers(workflow: &Value) -> Result<usize, String> {
             }
             let script = step["run"].as_str().unwrap_or("");
             for line in script.lines().filter(|line| {
-                line.contains("build_params_python.py ") || line.contains("check_encoder_ci.py ")
+                line.contains("build_params_python.py ")
+                    || line.contains("check_encoder_ci.py ")
+                    || line.split_whitespace().next().is_some_and(|command| {
+                        command == "check-encoder-ci" || command.ends_with("/check-encoder-ci")
+                    })
             }) {
                 if !ready || !line.contains("--json11-stager \"$JSON11_STAGER\"") {
                     return Err(format!("{name}: native stager not prepared/selected"));

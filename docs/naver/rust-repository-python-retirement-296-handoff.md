@@ -32,8 +32,11 @@ CLI/공유헬퍼/이전테스트4파일을 추가 제거했다.
 연속 카메라 런타임·cleanup·CI 오케스트레이터3파일도 Rust로 전환했다.
 원본60개 검증 계약과25개 제어 흐름 사례를 보존했고, 실제58단계 호스트 검사가
 통과했다. 삭제 후49개 테스트·Clippy와 새로 빌드한 카메라의8개 실행 사례도 통과했다.
-인벤토리는111 replaced-local /2 partially-replaced /3,467 pending이다.
-두 부분 전환 항목의 공용 원본 로더는 추가 파일 selfdrived_helpers_source.py에
+인벤토리는118 replaced-local /3 partially-replaced /3,459 pending이다.
+UI 수명주기와 인코더 호스트 검증 도구가 추가 전환되었다. 현재 커밋
+`0bdc822d3d8594bc2f74f191ec1738e64a4adac3`의 정확한 원격 검사는 진행 중이다.
+인코더 대상 아키텍처 검사기와 모델 컴파일러는 아직 검증·통합 중이다.
+부분 전환 항목의 공용 원본 로더는 추가 파일 selfdrived_helpers_source.py에
 남아 있으며 이동을 Rust 전환으로 세지 않는다. 전체 전환은 미완료다.
 최신 검증 결과는 evidence 및 runtime-module-audit 문서를 따른다.
 공유 primary/dev-md 캐시 대신 아래의 cargo-target-retirement-296을 사용한다.

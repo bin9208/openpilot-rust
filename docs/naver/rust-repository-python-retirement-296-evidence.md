@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. Ninety-two sources have locally verified replacements and migrated
-callers; three are partially replaced and3,485 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. 118 sources have locally verified replacements and migrated
+callers; three are partially replaced and3,459 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -2734,3 +2734,15 @@ native CI routing and source/corpus guards; no blocker remained.
 Baseline inventory:118replaced-local,3partially-replaced,3,459pending. The ARM
 artifact checker, model compiler and all remaining source families are pending;
 these host gates do not establish physical boot/recording/upload or CPU savings.
+
+### Encoder stager routing regression (2026-10-18)
+
+Exact head `0bdc822d3d8594bc2f74f191ec1738e64a4adac3` failed the native
+stager-routing test in [Fast checks](https://github.com/bin9208/openpilot-rust/actions/runs/39098902331).
+Its caller scanner still recognized the removed Python encoder command only,
+so it counted21of22callers. The scanner now recognizes the native executable
+as the command token, without mistaking Cargo's `--bin check-encoder-ci` build
+argument for an invocation. The required count remains22, and every missing
+stager action/argument mutation remains rejected. All three routing/action
+tests pass locally. No runtime behavior, CI gate or assertion count was removed;
+fresh exact-source remote checks remain required.
