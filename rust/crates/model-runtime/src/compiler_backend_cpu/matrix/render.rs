@@ -19,12 +19,17 @@ enum Epilogue {
     BiasedRelu,
     BiasedF32,
     BiasedSilu,
+    PackedSilu { row_stride: usize, elements: usize },
 }
 impl Epilogue {
     fn biased(self) -> bool {
         matches!(
             self,
-            Self::BiasedResidual { .. } | Self::BiasedRelu | Self::BiasedF32 | Self::BiasedSilu
+            Self::BiasedResidual { .. }
+                | Self::BiasedRelu
+                | Self::BiasedF32
+                | Self::BiasedSilu
+                | Self::PackedSilu { .. }
         )
     }
     fn relu_half(self) -> bool {
@@ -33,11 +38,17 @@ impl Epilogue {
             Self::BiasedResidual { relu_half: true } | Self::BiasedRelu
         )
     }
+    fn half_output(self) -> bool {
+        self.relu_half() || matches!(self, Self::PackedSilu { .. })
+    }
     fn separate_residual(self) -> bool {
         matches!(self, Self::BiasedResidual { .. })
     }
     fn bias_only(self) -> bool {
-        matches!(self, Self::BiasedRelu | Self::BiasedF32 | Self::BiasedSilu)
+        matches!(
+            self,
+            Self::BiasedRelu | Self::BiasedF32 | Self::BiasedSilu | Self::PackedSilu { .. }
+        )
     }
 }
 pub(super) fn identifier(s: &str) -> bool {
@@ -224,6 +235,32 @@ impl MatrixLayout {
         dense.output_elements = dense.batches * dense.rows * dense.output_channels;
         dense.render_artifact(function, entrypoint, max_workers, Epilogue::BiasedSilu)
     }
+    /// Internal matrix/bias/SiLU fused directly into the next matrix's half
+    /// input layout. Logical channels retain their source coordinates; row
+    /// padding is capacity and receives no producer stores.
+    pub fn packed_silu_artifact(
+        &self,
+        function: &str,
+        entrypoint: &str,
+        max_workers: usize,
+    ) -> Result<MatrixArtifact<4>, String> {
+        let packed = MatrixLayout::new(
+            &[self.batches, self.rows, self.output_channels],
+            &[self.output_channels, 4],
+        )?;
+        let mut logical = self.clone();
+        logical.output_pixel_stride = logical.output_channels;
+        logical.output_elements = logical.batches * logical.rows * logical.output_channels;
+        logical.render_artifact(
+            function,
+            entrypoint,
+            max_workers,
+            Epilogue::PackedSilu {
+                row_stride: packed.input_row_stride,
+                elements: packed.input_elements,
+            },
+        )
+    }
     fn render_artifact<const N: usize>(
         &self,
         function: &str,
@@ -236,7 +273,9 @@ impl MatrixLayout {
         }
         let biased = epilogue.biased();
         let residual = matches!(epilogue, Epilogue::InputResidual);
-        let schedule = if biased {
+        let schedule = if let Epilogue::PackedSilu { row_stride, .. } = epilogue {
+            super::schedule::MatrixSchedule::biased_packed(self, max_workers, row_stride)?
+        } else if biased {
             super::schedule::MatrixSchedule::biased(
                 self,
                 max_workers,
@@ -258,7 +297,11 @@ impl MatrixLayout {
             .filter(|a| a.kind == Kind::Reduce)
             .collect::<Vec<_>>();
         let mut ir = Ir::default();
-        let output_ty = if epilogue.relu_half() { "i16" } else { "float" };
+        let output_ty = if epilogue.half_output() {
+            "i16"
+        } else {
+            "float"
+        };
         if epilogue.bias_only() {
             ir.parameters(&[
                 ("%out", 6, 0),
@@ -399,12 +442,12 @@ impl MatrixLayout {
                 });
             }
         }
-        if matches!(epilogue, Epilogue::BiasedSilu) {
+        if matches!(epilogue, Epilogue::BiasedSilu | Epilogue::PackedSilu { .. }) {
             for value in &mut acc {
                 *value = Some(ir.matrix_silu(value.as_ref().unwrap()));
             }
         }
-        if epilogue.relu_half() {
+        if epilogue.half_output() {
             for (slot, output) in outputs.iter().enumerate() {
                 let mut values = base.clone();
                 values.extend(output.clone());
@@ -418,7 +461,11 @@ impl MatrixLayout {
                 let pointer = ir.op(format!(
                     "getelementptr inbounds i16, i16* %out, i32 {offset}"
                 ));
-                let value = ir.relu_half(acc[slot].as_ref().unwrap());
+                let value = if epilogue.relu_half() {
+                    ir.relu_half(acc[slot].as_ref().unwrap())
+                } else {
+                    ir.plain_half(acc[slot].as_ref().unwrap())
+                };
                 ir.store_i16(&pointer, &value);
             }
         } else {
@@ -493,7 +540,10 @@ impl MatrixLayout {
         ir.line("ret void");
         // Keep the independently compiled original terminal core boundary;
         // indirect-wrapper inlining can change LLVM NaN operand ownership.
-        let boundary = if matches!(epilogue, Epilogue::BiasedF32 | Epilogue::BiasedSilu) {
+        let boundary = if matches!(
+            epilogue,
+            Epilogue::BiasedF32 | Epilogue::BiasedSilu | Epilogue::PackedSilu { .. }
+        ) {
             "noinline"
         } else {
             "alwaysinline"
@@ -526,7 +576,14 @@ impl MatrixLayout {
             let skip = MatrixLayout::new(&[1, self.output_channels], &[self.output_channels, 4])?
                 .input_elements
                 * 2;
-            let mut sizes = vec![if half { skip } else { self.output_elements * 4 }];
+            let output_bytes = if let Epilogue::PackedSilu { elements, .. } = epilogue {
+                elements * 2
+            } else if half {
+                skip
+            } else {
+                self.output_elements * 4
+            };
+            let mut sizes = vec![output_bytes];
             if epilogue.separate_residual() {
                 sizes.push(skip);
             }

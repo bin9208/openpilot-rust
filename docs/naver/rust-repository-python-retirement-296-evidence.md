@@ -10,10 +10,44 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. 128 sources have locally verified replacements and migrated
-callers; three are partially replaced and 3,449 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. 161 sources have locally verified replacements and migrated
+callers; three are partially replaced and 3,416 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
+
+### Native compiler node278 follow-up (2026-10-19)
+
+The next driving prefix supports an unheld matrix/bias/ordered-SiLU result as
+the packed-half input of its sole terminal matrix reader. It preserves the
+physical half store and original arithmetic order, and keeps held, extra-reader
+and mismatched-expression rejection. Logical channel width and physical row
+capacity are distinct. No model selection or runtime validity policy changes.
+
+Both pinned LLVM18 and LLVM20 providers passed all 18 graph targets/82 tests
+and all ten primitive targets/16 tests. Independent original captures retain
+97 actual compilations/786 calls per prefix, 39 generic graph contexts, physical
+buffer ownership and exact output bytes. An initial fixture reconstruction
+failure exposed nonzero original allocation padding; the correction retained
+those captured bytes without changing defined lanes or expected output hashes.
+The original failed attempt remains recorded as failed.
+
+All-target model Clippy, scoped formatting and 54 current CI-policy/disk/lagd
+tests passed. A freshly built ARM helper under QEMU matched the original A630
+Add source and 2,144-byte binary; that bounded compiler case establishes neither
+GPU execution nor full-model equivalence. Before/after checks bound all 225
+model files and both model identities; only README evidence was amended after
+completion. Parent review found no further blocker in the three production files.
+
+Exact receipts: `.analysis/scratch/2026-10-18-batched-matmul/` contains
+`NODE278-FINAL-PROOF.json`, `NODE278-COMMIT-FILES.json`,
+`silu278-graph-gates-GNLNTN6B/proof{18,20}.json` and
+`silu278-final-checks-BigWcXOs/`. The checked-in compiler fixture README records
+input/output identities and limits. CI requires the new
+`compiler_batched_silu_chain` target and retains the preceding 17 graph targets;
+the workspace budget increases from 120 to 150 minutes based on the preceding
+101-minute full run plus the measured new roughly 15-minute test.
+Node279+, full driving/DM export and Python compiler retirement remain open.
+Exact committed-head CI and user device acceptance remain required.
 
 ### Native service catalog checker (2026-10-18)
 

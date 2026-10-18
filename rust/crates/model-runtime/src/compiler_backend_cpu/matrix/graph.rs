@@ -17,8 +17,10 @@ pub struct MatrixClosure {
     pub reduction: usize,
     pub residual: bool,
     pub bias: Option<usize>,
-    /// Biased value and Sigmoid are internal only in the final SiLU profile.
+    /// Biased value and Sigmoid are owned by the selected SiLU profile.
     pub silu: Option<(usize, usize)>,
+    /// Unheld SiLU is stored directly in the sole terminal matrix's half input.
+    pub packed_silu: bool,
 }
 impl MatrixClosure {
     pub(crate) fn owned(&self) -> BTreeSet<usize> {
@@ -71,6 +73,7 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             residual: false,
             bias: None,
             silu: None,
+            packed_silu: false,
         });
     }
     // A channel bias participates in the same original matrix DAG. Selecting
@@ -81,8 +84,8 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
         let Some(&linear) = graph.names.get(&add.outputs[0]) else {
             continue;
         };
-        let (output, silu) = if graph.outputs.values().any(|id| *id == linear) {
-            (linear, None)
+        let (output, silu, packed_silu) = if graph.outputs.values().any(|id| *id == linear) {
+            (linear, None, false)
         } else {
             let Some(sigmoid) = model.graph.nodes.iter().find(|n| {
                 n.op == "Sigmoid"
@@ -117,8 +120,40 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
                     .filter(|n| n.inputs.iter().any(|v| v == name))
                     .collect::<Vec<_>>()
             };
-            if !graph.outputs.values().any(|id| *id == output)
-                || graph.outputs.values().any(|id| *id == sigmoid_id)
+            let packed_silu = !graph.outputs.values().any(|id| *id == output);
+            if packed_silu {
+                // Only one exact terminal MatMul may consume this unheld value.
+                // Held values and additional source/scheduled readers retain
+                // their distinct original materialization, including dead
+                // source readers that could otherwise alter fusion choices.
+                let readers = users(&mul.outputs[0]);
+                if readers.len() != 1 {
+                    continue;
+                }
+                let consumer = readers[0];
+                if consumer.op != "MatMul"
+                    || consumer.inputs.len() != 2
+                    || consumer.inputs[0] != mul.outputs[0]
+                    || consumer.outputs.len() != 1
+                    || !consumer.attributes.is_empty()
+                    || !selected.iter().any(|c| {
+                        c.input == output
+                            && c.output == graph.names[&consumer.outputs[0]]
+                            && c.output == c.reduction
+                            && c.bias.is_none()
+                            && !c.residual
+                    })
+                    || schedule
+                        .calls
+                        .iter()
+                        .filter(|c| c.buffers[1..].contains(&output))
+                        .count()
+                        != 1
+                {
+                    continue;
+                }
+            }
+            if graph.outputs.values().any(|id| *id == sigmoid_id)
                 || users(&add.outputs[0]) != vec![sigmoid, mul]
                 || users(&sigmoid.outputs[0]) != vec![mul]
                 || graph.plans[linear].ty != graph.plans[output].ty
@@ -132,7 +167,7 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             {
                 continue;
             }
-            (output, Some((linear, sigmoid_id)))
+            (output, Some((linear, sigmoid_id)), packed_silu)
         };
         let Some(matrix) = super::gemm::producer(model, &add.inputs[0], "MatMul")
             .filter(|n| n.inputs.len() == 2 && n.outputs.len() == 1 && n.attributes.is_empty())
@@ -189,6 +224,7 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             residual: false,
             bias: Some(bias),
             silu,
+            packed_silu,
         });
     }
     // Independently proved final-only square matrix plus its own packed input.
@@ -257,6 +293,7 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             residual: true,
             bias: None,
             silu: None,
+            packed_silu: false,
         });
     }
     Ok(selected)
@@ -310,6 +347,20 @@ pub(crate) fn stage_with_chains(
     for closure in selected {
         let layout = &closure.layout;
         let direct = closure.residual || closure.bias.is_some();
+        if closure.packed_silu {
+            let consumer = selected
+                .iter()
+                .find(|c| c.input == closure.output)
+                .ok_or("packed SiLU lost its sole selected terminal matrix")?;
+            if schedule.buffers[closure.output].held {
+                return Err("packed SiLU cannot replace held logical storage".into());
+            }
+            schedule.buffers[closure.output].bytes = consumer.layout.input_elements * 2;
+            scratch.insert(closure.output);
+        }
+        let packed_input = selected
+            .iter()
+            .any(|c| c.packed_silu && c.output == closure.input);
         let ScalarExpr::Constant(raw) = &graph.plans[closure.weights].expression else {
             return Err("matrix weight storage changed after selection".into());
         };
@@ -340,7 +391,11 @@ pub(crate) fn stage_with_chains(
             });
             id
         };
-        let input = buffer(layout.input_elements * 2, false);
+        let input = if packed_input {
+            closure.input
+        } else {
+            buffer(layout.input_elements * 2, false)
+        };
         let output = if direct {
             closure.output
         } else {
@@ -348,7 +403,9 @@ pub(crate) fn stage_with_chains(
         };
         let weight = buffer(packed.len(), true);
         initialized.insert(weight, packed);
-        scratch.insert(input);
+        if !packed_input {
+            scratch.insert(input);
+        }
         if !direct {
             scratch.insert(output);
         }
@@ -386,16 +443,17 @@ pub(crate) fn stage_with_chains(
         if let Some(bias) = closure.bias {
             reduction_buffers.push(bias);
         }
-        let mut pipeline = vec![
-            Call {
+        let mut pipeline = Vec::new();
+        if !packed_input {
+            pipeline.push(Call {
                 copy: false,
                 buffers: pack_buffers,
-            },
-            Call {
-                copy: false,
-                buffers: reduction_buffers,
-            },
-        ];
+            });
+        }
+        pipeline.push(Call {
+            copy: false,
+            buffers: reduction_buffers,
+        });
         if !direct {
             pipeline.push(Call {
                 copy: false,
@@ -413,39 +471,48 @@ pub(crate) fn stage_with_chains(
                 continue;
             }
             let direct = closure.residual || closure.bias.is_some();
-            let boundaries = if direct { 1 } else { 2 };
+            let packed_input = selected
+                .iter()
+                .any(|c| c.packed_silu && c.output == closure.input);
+            let boundaries = usize::from(!direct) + usize::from(!packed_input);
             if index < boundaries {
                 return Err("matrix pipeline order missing".into());
             }
-            let pack_at = index - boundaries;
-            let reduce_at = pack_at + 1;
+            let reduce_at = index - usize::from(!direct);
+            let pack_at = (!packed_input).then(|| reduce_at - 1);
             let projection = chains.iter().find_map(|c| {
                 c.normalization
                     .as_ref()
                     .and_then(|n| n.projection.as_ref())
                     .filter(|p| p.input == closure.input)
             });
-            let pack = if let Some(p) = projection {
-                super::indexed::artifact(
-                    layout.input_channels,
-                    graph.plans[p.history].ty.shape[1],
-                    layout.batches * layout.rows,
-                    &format!("native_indexed_pack_{pack_at}"),
-                    &format!("op_kernel_{pack_at}"),
-                )?
+            let pack = if let Some(pack_at) = pack_at {
+                Some(if let Some(p) = projection {
+                    super::indexed::artifact(
+                        layout.input_channels,
+                        graph.plans[p.history].ty.shape[1],
+                        layout.batches * layout.rows,
+                        &format!("native_indexed_pack_{pack_at}"),
+                        &format!("op_kernel_{pack_at}"),
+                    )?
+                } else {
+                    let p = layout.input_artifact(&format!("op_kernel_{pack_at}"))?;
+                    PipelineCall {
+                        source: p.source,
+                        bytes: p.bytes.to_vec(),
+                        workers: p.workers,
+                        scalars: p.scalars,
+                    }
+                })
             } else {
-                let p = layout.input_artifact(&format!("op_kernel_{pack_at}"))?;
-                PipelineCall {
-                    source: p.source,
-                    bytes: p.bytes.to_vec(),
-                    workers: p.workers,
-                    scalars: p.scalars,
-                }
+                None
             };
             let function = format!("native_matrix_{reduce_at}");
             let entry = format!("op_kernel_{reduce_at}");
             let reduce = if closure.bias.is_some() {
-                let artifact = if closure.silu.is_some() {
+                let artifact = if closure.packed_silu {
+                    layout.packed_silu_artifact(&function, &entry, 16)?
+                } else if closure.silu.is_some() {
                     layout.broadcast_silu_artifact(&function, &entry, 16)?
                 } else {
                     layout.broadcast_bias_artifact(&function, &entry, 16)?
@@ -474,15 +541,17 @@ pub(crate) fn stage_with_chains(
                     scalars: artifact.scalars,
                 }
             };
-            calls.insert(
-                pack_at,
-                PipelineCall {
-                    source: pack.source,
-                    bytes: pack.bytes,
-                    workers: 1,
-                    scalars: 0,
-                },
-            );
+            if let (Some(pack_at), Some(pack)) = (pack_at, pack) {
+                calls.insert(
+                    pack_at,
+                    PipelineCall {
+                        source: pack.source,
+                        bytes: pack.bytes,
+                        workers: 1,
+                        scalars: 0,
+                    },
+                );
+            }
             calls.insert(
                 reduce_at,
                 PipelineCall {

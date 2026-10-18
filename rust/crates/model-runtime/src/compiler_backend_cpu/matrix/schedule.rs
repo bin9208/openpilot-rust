@@ -36,7 +36,7 @@ impl MatrixSchedule {
         max_workers: usize,
         residual: bool,
     ) -> Result<Self, String> {
-        Self::profile(layout, max_workers, residual, false, false)
+        Self::profile(layout, max_workers, residual, false, false, None)
     }
     pub(super) fn biased(
         layout: &MatrixLayout,
@@ -44,7 +44,14 @@ impl MatrixSchedule {
         residual: bool,
         relu: bool,
     ) -> Result<Self, String> {
-        Self::profile(layout, max_workers, residual, true, relu)
+        Self::profile(layout, max_workers, residual, true, relu, None)
+    }
+    pub(super) fn biased_packed(
+        layout: &MatrixLayout,
+        max_workers: usize,
+        row_stride: usize,
+    ) -> Result<Self, String> {
+        Self::profile(layout, max_workers, false, true, false, Some(row_stride))
     }
     fn profile(
         layout: &MatrixLayout,
@@ -52,6 +59,7 @@ impl MatrixSchedule {
         residual: bool,
         biased: bool,
         relu: bool,
+        packed_row_stride: Option<usize>,
     ) -> Result<Self, String> {
         if max_workers == 0 || max_workers > 32 {
             return Err("matrix worker maximum must be explicitly1..32".into());
@@ -73,10 +81,14 @@ impl MatrixSchedule {
         // affine merges retain the first range ID and leave the second ID
         // unused; those gaps still affect the source DAG's tuple ordering.
         let mut output_id = if layout.input_channels / 4 > 1 { 2 } else { 1 };
+        let row_id = output_id;
+        // A packed producer's row capacity is independent of logical width.
+        // It changes the output address, not the source channel/bias index.
+        let output_row_stride = packed_row_stride.unwrap_or(layout.output_pixel_stride);
         push(
             layout.batches * layout.rows,
             Kind::Loop,
-            [0, layout.input_row_stride, layout.output_pixel_stride],
+            [0, layout.input_row_stride, output_row_stride],
             output_id,
         );
         output_id += usize::from(layout.batches > 1) + usize::from(layout.rows > 1);
@@ -127,11 +139,15 @@ impl MatrixSchedule {
             for axis in &mut axes {
                 // Bias and skip are distinct affine access entries even when
                 // their index maps agree. They participate in invariance.
-                axis.strides.push(if axis.kind == Kind::Reduce {
-                    0
-                } else {
-                    axis.strides[2] % layout.output_channels
-                });
+                axis.strides.push(
+                    if axis.kind == Kind::Reduce
+                        || (layout.batches * layout.rows > 1 && axis.id == row_id)
+                    {
+                        0
+                    } else {
+                        axis.strides[2] % layout.output_channels
+                    },
+                );
             }
         }
         let mut result = Self {
