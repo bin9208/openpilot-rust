@@ -3,7 +3,7 @@
     "openpilot/selfdrive/selfdrived/events.py": "a2667e1a2ddcbc4e33d5457de8ca8909867ff651605845f3632ff2f598f0d05f",
     "openpilot/common/realtime.py": "6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e",
     "openpilot/cereal/log.capnp": "141888a2bf61c82e26b0bc9f8af0db5de9090d80df1a46f465c7278a72fce967",
-    "opendbc_repo/opendbc/car/car.capnp": "717ca33ead4f8c597f30a83e39df1d59e143c92fdb43e320a0dee85fd14e149b"
+    "opendbc_repo/opendbc/car/car.capnp": "47c621c6cfd558fc62b1f132d303a0d02c026ffe6dcd40a8c3c26756fa5dda5d"
   },
   "tici": [
     {

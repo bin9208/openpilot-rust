@@ -22,6 +22,11 @@ def main()->None:
         for tick,(_,result) in enumerate(zip(case["steps"],results,strict=True)):
             with structs.CarState.from_bytes((Path(case["source_dir"]) / f"{tick}.bin").read_bytes()) as source:
                 expected=source.to_dict();actual=result.to_dict()
+                # An absent Cap'n Proto struct pointer and an initialized empty
+                # struct have the same defaults. Preserve all GPS values in the
+                # comparison, including non-default values from GPS fixtures.
+                expected["vehicleGps"]=source.vehicleGps.to_dict()
+                actual["vehicleGps"]=result.vehicleGps.to_dict()
                 assert actual==expected,(case["candidate"],tick,{key:(expected.get(key),actual.get(key))
                     for key in expected.keys() | actual.keys() if expected.get(key)!=actual.get(key)})
             count+=1

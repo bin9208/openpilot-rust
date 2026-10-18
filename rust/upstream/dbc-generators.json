@@ -211,8 +211,8 @@
       "sha256": "8aeb0773dfb6f66d031525efe8bb57cb90902536adccf92c3c8314149e59af8f"
     },
     "generator/hyundai/hyundai_canfd.dbc": {
-      "git_blob": "6ec200533648e45aefff2d1e1a57eda5ddff2fcc",
-      "sha256": "76f5310cb61c8d33daa449d32d242312782bf5a0616185cb3d3e9a09e41a3f1c"
+      "git_blob": "8ea62c1271058458cdf4ce8d93f09011a9297fc9",
+      "sha256": "04910dba0f9c8874b2f3261d1a5043880eec0efa37d7ed826a9298a614e2712d"
     },
     "generator/hyundai/hyundai_canfd_corner_radar_180.dbc": {
       "git_blob": "a78803a8ce289b1679656c1229f5c0ddae85fa2f",
@@ -395,8 +395,8 @@
       "sha256": "6972dc4ded183feade99f5953bcff8bdcb2b59b04f3edccfa04a5a802ffb5c27"
     },
     "hyundai_canfd_generated.dbc": {
-      "git_blob": "741bb1ee9f9dd6fe258a44781a8301f15102bf59",
-      "sha256": "410c1e423c7b471638e191e2dd6c5c53065db9cd43815129bc54b5abafc2bffe"
+      "git_blob": "a84fa4a63e91e083c3b10bfb84fd4b99df6296ac",
+      "sha256": "65827ffc04316a0b274a94a3535d6ceeb468a277c37759c860dcc90953c3e2e2"
     },
     "hyundai_i30_2014.dbc": {
       "git_blob": "3524f9b21a893c751285ec14a5c024ff3787e6ec",
@@ -572,7 +572,7 @@
     "hyundai_canfd_corner_radar_180_generated.dbc": "5af5acf71dc94f332549b56ff30b0ee930552c5360ace1e0336eecf5f2f330aa",
     "hyundai_canfd_corner_radar_235_generated.dbc": "140fa0398e50c1d1a47899c4a71f4598861551993ba777ee36ac6ed3f3ded32b",
     "hyundai_canfd_corner_radar_430_generated.dbc": "6972dc4ded183feade99f5953bcff8bdcb2b59b04f3edccfa04a5a802ffb5c27",
-    "hyundai_canfd_generated.dbc": "410c1e423c7b471638e191e2dd6c5c53065db9cd43815129bc54b5abafc2bffe",
+    "hyundai_canfd_generated.dbc": "65827ffc04316a0b274a94a3535d6ceeb468a277c37759c860dcc90953c3e2e2",
     "hyundai_canfd_radar_generated.dbc": "fcf778d2b41aa98732cd79499bffd7d9dab8ebd957e720c6956fd7be0f821d8f",
     "hyundai_kia_denso_front_radar_generated.dbc": "9549626fdbb4eb10817c90ead6af499943e92ecac4490fdc9e27d35a951f0c7a",
     "hyundai_kia_mando_corner_radar_generated.dbc": "8f5e8788240b3f6a37dcf22987f76a78929fd9ea13dfe96a06f22a31a07fac6d",
@@ -592,5 +592,9 @@
     "toyota_nodsu_pt_generated.dbc": "693c5fee1d0aa69a99a54e6ebeacaec6ca6350d441094ff10cbdfa89b2f7e02f",
     "toyota_secoc_pt_generated.dbc": "c6dedfb0ac8aa2d2af9b3c84c2c97adaf14a05c1b2d1e15e7fcff99e2a64e609",
     "toyota_tnga_k_pt_generated.dbc": "5599d9e9e5acdfa273d2a3bb479d1728a86163e7e6a79b6aff81c7072f073689"
+  },
+  "source_overrides": {
+    "generator/hyundai/hyundai_canfd.dbc": "163c000e05641adea88e9221094d45c90c3e186d",
+    "hyundai_canfd_generated.dbc": "163c000e05641adea88e9221094d45c90c3e186d"
   }
 }

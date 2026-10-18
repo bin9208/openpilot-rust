@@ -28,6 +28,7 @@ from carrot_man_ingress_compare import envelope
 from carrot_man_compare import compare
 from carrot_man_fixture_ports import reserve_ports
 from carrot_man_fixture_inputs import InputPublisher
+from carrot_man_gps_clocks import normalize as normalize_gps_clocks
 from openpilot.cereal import log, messaging
 import zmq
 
@@ -342,6 +343,7 @@ def main():
     for result in normalized.values():
       for row in result["selected"]:
         if row["service"]=="carrotMan":
+          normalize_gps_clocks(row["data"])
           row["data"].pop("naviOwnerAgeMs",None)
           row["data"].pop("naviSafetyAgeMs",None)
     compare(normalized["native"], normalized["source"], "owned source/native boundary")
