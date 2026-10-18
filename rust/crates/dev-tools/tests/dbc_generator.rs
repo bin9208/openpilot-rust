@@ -126,9 +126,21 @@ fn original_directory_walk_cleanup_filters_and_collision_order() {
         for name in case["initial_directories"].as_array().unwrap() {
             fs::create_dir(output.join(name.as_str().unwrap())).unwrap();
         }
+        let expected = case["error"].clone();
+        #[cfg(target_os = "macos")]
+        let expected = if case["name"] == "remove-matching-directory-first" {
+            // Keep the Linux capture immutable. Darwin unlink(directory) uses
+            // EPERM; CPython maps its actual errno to PermissionError.
+            // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/unlink.2.html
+            // https://docs.python.org/3.12/library/exceptions.html#PermissionError
+            assert_eq!(expected, json!({"type":"IsADirectoryError","errno":21}));
+            json!({"type":"PermissionError","errno":1})
+        } else {
+            expected
+        };
         assert_eq!(
             error(native::create_all(&output, &source, &[])),
-            case["error"],
+            expected,
             "{}",
             case["name"]
         );

@@ -668,6 +668,8 @@ jobs:
       - name: Require native DBC and Version source contracts
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --locked -p openpilot-dev-tools --features dbc-generator-native --lib dbc_generator::tests::io_errno_permission_classes_and_raw_path_follow_python_without_rewriting_errno
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --locked -p openpilot-dev-tools --features dbc-generator-native,version-tools-native --test dbc_generator --test dbc_generator_cli --test dbc_assets --test dbc_assets_cli --test dbc_assets_raw_names --test dbc_bootstrap --test version_source
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --locked -p openpilot-dev-tools --features dbc-generator-native,version-tools-native --lib --bin dbc-generator --bin prepare-card-assets --bin prepare-radarcan-assets --bin stage-control-dbcs --test dbc_generator --test dbc_generator_cli --test dbc_assets --test dbc_assets_cli --test dbc_assets_raw_names --test dbc_bootstrap --test version_source -- -D warnings

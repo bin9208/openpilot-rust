@@ -87,6 +87,22 @@ omitted the new mandatory `dbc-darwin` job. The list now includes that job witho
 dropping any existing requirement. All39 retained Card CI/phase-fence/admission
 tests pass (`card-policy-green.log`); these Python tests remain pending retirement.
 
+At8d47fd30, Darwin compiled and passed nine generator API tests, but the directory
+cleanup case exposed a second portability defect: Darwin `unlink(directory)`
+returns EPERM, whereas the Linux capture contains EISDIR. The native mapper had
+omitted EPERM's Python `PermissionError` subclass. A real failing errno regression
+preceded the minimal mapping repair; raw errno and raw path bytes remain intact.
+Only that macOS expectation differs, following [Apple unlink documentation](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/unlink.2.html)
+and [CPython's error mapping](https://github.com/python/cpython/blob/v3.12.15/Objects/exceptions.c#L3532-L3536).
+The original Linux fixture and all filesystem-state assertions remain unchanged.
+The new regression,43 DBC integration tests and strict Clippy pass on Linux.
+Fresh native generation/package traces again match45/97/103 original assets with
+one exec each and Python unavailable on PATH. Those local receipts include the
+concurrent uncommitted Version Cargo registrations and do not establish an exact
+committed build. Evidence: `.analysis/scratch/2026-10-19-dbc-darwin/`:
+`errno-unit-{red,green}.log`, `dbc-green.log`, `dbc-clippy.log`, `generator-proof/`
+and `packages-proof/`. Actual Darwin success remains pending.
+
 ### Independent Version source foundation (2026-10-19)
 
 Commit65bdce63 ports the original Version/Git/cache/filesystem policies independently

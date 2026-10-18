@@ -78,7 +78,7 @@ impl Error {
             Some(17) => "FileExistsError",
             Some(20) => "NotADirectoryError",
             Some(21) => "IsADirectoryError",
-            Some(13) => "PermissionError",
+            Some(1) | Some(13) => "PermissionError",
             _ => "OSError",
         };
         Self::new(
@@ -529,4 +529,32 @@ pub fn stage(root: &Path, source: &Path) -> Result<StageReport> {
 pub fn generated_json(source: &Path) -> Result<String> {
     let pairs: BTreeMap<_, _> = generate_all(source)?.into_iter().collect();
     serde_json::to_string(&pairs).map_err(|e| Error::new("ValueError", None, &e.to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn io_errno_permission_classes_and_raw_path_follow_python_without_rewriting_errno() {
+        let path = Path::new(OsStr::from_bytes(b"directory-\xff"));
+        // Darwin unlink(directory) returns EPERM; Linux returns EISDIR. Python
+        // maps the actual errno, not the attempted operation, to its subclass.
+        for (errno, kind) in [
+            (1, "PermissionError"),
+            (13, "PermissionError"),
+            (21, "IsADirectoryError"),
+        ] {
+            let error = Error::io(io::Error::from_raw_os_error(errno), path);
+            assert_eq!(error.kind(), kind, "errno={errno}");
+            assert_eq!(error.raw_os_error(), Some(errno));
+            let machine: serde_json::Value = serde_json::from_str(&error.json_line()).unwrap();
+            assert_eq!(machine["kind"], kind);
+            assert_eq!(machine["errno"], errno);
+            assert_eq!(
+                machine["path_bytes"],
+                serde_json::json!(path.as_os_str().as_bytes())
+            );
+        }
+    }
 }
