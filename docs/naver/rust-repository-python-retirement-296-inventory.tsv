@@ -1934,7 +1934,7 @@ rust/tools/check_driving_daemon.py	046223c65c7e54fb3d3cba2e08ec86630506f3a7	pend
 rust/tools/check_encoder_ci.py	e412ae8e8d86c983fe7e957ea12e0f8ef1531881	replaced-local	rust/crates/dev-tools/src/encoder_ci_check.rs
 rust/tools/check_encoder_codecs.py	b5c58edf121dacabb6cb6bfaeee867cdfdfa74e2	replaced-local	rust/crates/dev-tools/src/encoder_codecs_check.rs
 rust/tools/check_encoder_runtime.py	378310c441ab51e189b9e14f44a7953bd3cda73e	replaced-local	rust/crates/dev-tools/src/encoder_runtime_native.rs
-rust/tools/check_encoder_target.py	2d50047cbd3cbc9a8e632b8ebe2bb8f09a8eb2ba	pending	-
+rust/tools/check_encoder_target.py	2d50047cbd3cbc9a8e632b8ebe2bb8f09a8eb2ba	replaced-local	rust/crates/dev-tools/src/encoder_target_check.rs
 rust/tools/check_encoder_v4l.py	3eddf8d4ebe3f414c6c1cf0712e081d9450258c4	replaced-local	rust/crates/dev-tools/src/encoder_v4l_check.rs
 rust/tools/check_feedbackd.py	6dbcef88b313b3d972116647f6b184cb741ad8ee	pending	-
 rust/tools/check_hardware_control.py	d3db234f72a367c9b692ed2fd53099a9c1d1c2c7	replaced-local	openpilot-dev-tools check-hardware-control-policy; original 35 fixed cases and exact artifact comparisons

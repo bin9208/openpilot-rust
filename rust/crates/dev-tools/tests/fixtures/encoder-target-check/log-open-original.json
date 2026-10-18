@@ -1,0 +1,112 @@
+{
+  "source": "rust/tools/check_encoder_target.py",
+  "source_sha256": "5f9a794f6797ee43618eaa7ad274187ea363609f8dab7c407ae74639b6eee2a8",
+  "capture_python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "controls": "Unchanged original command/no_core AST; real OS open errors; disk_guard creates the obstructing directory after recording growth. Only monotonic timestamps omitted. ROOT and temporary host paths normalized. No child runs.",
+  "cases": [
+    {
+      "name": "stdout.bin-directory",
+      "argv": [
+        "/bin/sh",
+        "-c",
+        "touch '$TEMP/stdout.bin/should-not-spawn'"
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "DEBUG_ENCODER": "0"
+      },
+      "disk": [
+        [
+          "$TEMP/stdout.bin/command",
+          268435456
+        ]
+      ],
+      "error": {
+        "type": "IsADirectoryError",
+        "errno": 21,
+        "message": "[Errno 21] Is a directory: '$TEMP/stdout.bin/command/stdout.bin'",
+        "filename": "$TEMP/stdout.bin/command/stdout.bin"
+      },
+      "artifacts": {
+        "command.json": {
+          "argv": [
+            "/bin/sh",
+            "-c",
+            "touch '$TEMP/stdout.bin/should-not-spawn'"
+          ],
+          "cwd": "$ROOT",
+          "returncode": null,
+          "timeout_seconds": 300,
+          "status": "EXEC_ERROR",
+          "environment_overrides": {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null
+          },
+          "error": "[Errno 21] Is a directory: '$TEMP/stdout.bin/command/stdout.bin'"
+        },
+        "stdout.bin": {
+          "kind": "directory",
+          "children": []
+        }
+      },
+      "child_marker_exists": false
+    },
+    {
+      "name": "stderr.bin-directory",
+      "argv": [
+        "/bin/sh",
+        "-c",
+        "touch '$TEMP/stderr.bin/should-not-spawn'"
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "DEBUG_ENCODER": "0"
+      },
+      "disk": [
+        [
+          "$TEMP/stderr.bin/command",
+          268435456
+        ]
+      ],
+      "error": {
+        "type": "IsADirectoryError",
+        "errno": 21,
+        "message": "[Errno 21] Is a directory: '$TEMP/stderr.bin/command/stderr.bin'",
+        "filename": "$TEMP/stderr.bin/command/stderr.bin"
+      },
+      "artifacts": {
+        "command.json": {
+          "argv": [
+            "/bin/sh",
+            "-c",
+            "touch '$TEMP/stderr.bin/should-not-spawn'"
+          ],
+          "cwd": "$ROOT",
+          "returncode": null,
+          "timeout_seconds": 300,
+          "status": "EXEC_ERROR",
+          "environment_overrides": {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null
+          },
+          "error": "[Errno 21] Is a directory: '$TEMP/stderr.bin/command/stderr.bin'"
+        },
+        "stderr.bin": {
+          "kind": "directory",
+          "children": []
+        },
+        "stdout.bin": {
+          "kind": "file",
+          "hex": ""
+        }
+      },
+      "child_marker_exists": false
+    }
+  ]
+}

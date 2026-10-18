@@ -10,8 +10,8 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. 118 sources have locally verified replacements and migrated
-callers; three are partially replaced and3,459 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. 119 sources have locally verified replacements and migrated
+callers; three are partially replaced and3,458 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
 
@@ -2786,3 +2786,48 @@ executable repeats in two parallel workers also passed:130active test executions
 zero failures. Evidence:
 `2026-10-18-ui-display-review/{diag-3-13.log,inherited-writer-proof.json,fixed-*.log}`
 and `2026-10-18-encoder-target/final-findings-{tests,clippy}.log`.
+
+### ARM encoder validator retired (2026-10-18)
+
+`check-encoder-target` replaces `rust/tools/check_encoder_target.py`. It retains
+all five source/Rust codec comparisons, exact packet counts16/16/68/6/6, archive
+and header pins, explicit AGNOS loader containment, version diagnostics, final
+artifact hashes, failure receipts and child deadlines. Native receipts also
+identify the executing checker ELF, covering its compiled helper dependencies.
+Original captures cover11 ELF/loader cases,23 full runs, five command phases,
+two log-open errors and two raw Unix hash arguments. Full-run failure contents
+are compared exactly; invalid UTF-8 hash arguments retain surrogateescape text
+and fail at the original recorded hash-validation phase.
+
+Separate stdout/stderr logs now go directly to files while the child runs.
+Real-child tests require17MB output to be visible before child exit, preserve
+timeout bytes, reap owned processes, and retain stdout-before-stderr open order.
+An output-open error reports the actual failed log path. Existing merged-output
+and inherited-stream behavior remain covered by the same process runner suite.
+
+The fresh frozen ARM probe and matched JPEG archive passed both original and
+native host-QEMU gates. Runtime ELFs were extracted independently from the pinned
+raw AGNOS image after verifying its hash, then checked against extraction receipts.
+All887 probe-source hashes and18 checker-policy/build-input hashes were unchanged.
+The new checker ELF SHA256 is
+`0d523a3cab8dcfcc0e52f11343cb4808bc43be0307456606b55ffd4c33a6c6c9`.
+
+After removing the Python tool and its synthetic test-root placeholder,
+103 native tests passed with zero failures and one existing private-display test
+ignored. Strict scoped Clippy passed before deletion; only that unused test-root
+placeholder was subsequently removed. The actual native ARM gate passed again
+after deletion:5 cases,112 packets and234 byte-identical trace/packet files
+against the original run. Its20 exec calls contain no Python/PyPy interpreter.
+Preparation scripts remain private evidence tooling, outside the native execution.
+The existing encoder CI step builds, tests and lints the new checker with all223
+disk guards and33 isolation tests retained. No physical device result is claimed.
+
+Evidence: `2026-10-18-encoder-target/{final-findings-summary.json,
+post-delete-tests.log,post-delete-arm.log,post-delete-arm/receipt.json}`.
+Inventory119replaced-local/3partial/3458pending; complete repository conversion,
+model compiler and final exact-source integration/release gates remain open.
+
+Independent final review found no concrete blocker in the target module/CLI,
+five immutable corpora, separate-file process API, Cargo/CI routing or deletion.
+No live caller selects the deleted Python tool; source, test and workflow diff
+checks pass. This review does not clear the pending model/compiler work.

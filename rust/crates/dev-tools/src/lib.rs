@@ -115,6 +115,7 @@ pub mod encoder_runtime_process;
 pub mod encoder_runtime_wire;
 pub mod encoder_source_build;
 pub mod encoder_stage;
+pub mod encoder_target_check;
 #[cfg(feature = "camera-sensor-native")]
 pub mod encoder_v4l_check;
 

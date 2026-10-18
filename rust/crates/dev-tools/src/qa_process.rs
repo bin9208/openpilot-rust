@@ -115,8 +115,68 @@ pub struct Captured {
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
 }
+/// A separate output file could not be opened before the command was spawned.
+#[derive(Debug)]
+pub struct OutputFileError {
+    pub path: PathBuf,
+    pub error: io::Error,
+}
+impl fmt::Display for OutputFileError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.path.display(), self.error)
+    }
+}
+impl std::error::Error for OutputFileError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.error)
+    }
+}
+fn output_file(path: &Path) -> Result<File> {
+    File::create(path).map_err(|error| {
+        OutputFileError {
+            path: path.into(),
+            error,
+        }
+        .into()
+    })
+}
 pub trait Runner {
     fn run(&mut self, command: &CommandSpec) -> Result<Captured>;
+    /// Stream separate raw outputs to owned files. Native execution returns
+    /// status with empty buffers; controlled peers retain their captured bytes.
+    /// Logs are created in stdout/stderr order before attempting child startup.
+    fn run_to_files(
+        &mut self,
+        command: &CommandSpec,
+        stdout: &Path,
+        stderr: &Path,
+    ) -> Result<Captured> {
+        let mut stdout = output_file(stdout)?;
+        let mut stderr = output_file(stderr)?;
+        let mut command = command.clone();
+        command.merge_output = false;
+        command.inherit_output = false;
+        command.inherit_stderr = false;
+        match self.run(&command) {
+            Ok(captured) => {
+                stdout.write_all(&captured.stdout)?;
+                stderr.write_all(&captured.stderr)?;
+                Ok(captured)
+            }
+            Err(error) => {
+                if let Some(CaptureError::Timeout {
+                    stdout: out,
+                    stderr: err,
+                    ..
+                }) = error.downcast_ref::<CaptureError>()
+                {
+                    stdout.write_all(out)?;
+                    stderr.write_all(err)?;
+                }
+                Err(error)
+            }
+        }
+    }
     /// Merge both streams into an owned file. Test peers can use captured bytes;
     /// NativeRunner redirects directly, avoiding an in-memory diagnostic limit.
     fn run_to_file(&mut self, command: &CommandSpec, log: &Path) -> Result<Captured> {
@@ -235,9 +295,25 @@ impl Pipe {
     }
 }
 pub struct NativeRunner;
+enum LogFiles<'a> {
+    Merged(&'a Path, &'a [u8]),
+    Separate(&'a Path, &'a Path),
+}
 impl Runner for NativeRunner {
     fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
         self.run_with_file(spec, None)
+    }
+    fn run_to_files(
+        &mut self,
+        spec: &CommandSpec,
+        stdout: &Path,
+        stderr: &Path,
+    ) -> Result<Captured> {
+        let mut spec = spec.clone();
+        spec.merge_output = false;
+        spec.inherit_output = false;
+        spec.inherit_stderr = false;
+        self.run_with_file(&spec, Some(LogFiles::Separate(stdout, stderr)))
     }
     fn run_to_file_with_prefix(
         &mut self,
@@ -249,15 +325,11 @@ impl Runner for NativeRunner {
         spec.merge_output = true;
         spec.inherit_output = false;
         spec.inherit_stderr = false;
-        self.run_with_file(&spec, Some((log, prefix)))
+        self.run_with_file(&spec, Some(LogFiles::Merged(log, prefix)))
     }
 }
 impl NativeRunner {
-    fn run_with_file(
-        &mut self,
-        spec: &CommandSpec,
-        log: Option<(&Path, &[u8])>,
-    ) -> Result<Captured> {
+    fn run_with_file(&mut self, spec: &CommandSpec, log: Option<LogFiles<'_>>) -> Result<Captured> {
         if spec.timeout.is_zero() {
             return Err("native command timeout must be positive".into());
         }
@@ -293,13 +365,21 @@ impl NativeRunner {
         } else if spec.inherit_stderr {
             command.stderr(Stdio::inherit());
         }
-        let merged = if let Some((log, prefix)) = log {
+        let file_backed = log.is_some();
+        let merged = if let Some(LogFiles::Merged(log, prefix)) = log {
             let mut file = File::create(log)?;
             file.write_all(prefix)?;
             file.flush()?;
             command
                 .stdout(Stdio::from(file.try_clone()?))
                 .stderr(Stdio::from(file));
+            None
+        } else if let Some(LogFiles::Separate(stdout, stderr)) = log {
+            let stdout = output_file(stdout)?;
+            let stderr = output_file(stderr)?;
+            command
+                .stdout(Stdio::from(stdout))
+                .stderr(Stdio::from(stderr));
             None
         } else if spec.merge_output {
             let (reader, writer) = UnixStream::pair()?;
@@ -331,7 +411,7 @@ impl NativeRunner {
         let mut input_written = 0;
         let stdout_fd = match merged {
             Some(fd) => fd,
-            None if spec.inherit_output || log.is_some() => File::open("/dev/null")?.into(),
+            None if spec.inherit_output || file_backed => File::open("/dev/null")?.into(),
             None => owned
                 .child
                 .stdout
@@ -339,16 +419,17 @@ impl NativeRunner {
                 .ok_or("missing native stdout")?
                 .into(),
         };
-        let stderr_fd = if spec.merge_output || spec.inherit_output || spec.inherit_stderr {
-            File::open("/dev/null")?.into()
-        } else {
-            owned
-                .child
-                .stderr
-                .take()
-                .ok_or("missing native stderr")?
-                .into()
-        };
+        let stderr_fd =
+            if spec.merge_output || spec.inherit_output || spec.inherit_stderr || file_backed {
+                File::open("/dev/null")?.into()
+            } else {
+                owned
+                    .child
+                    .stderr
+                    .take()
+                    .ok_or("missing native stderr")?
+                    .into()
+            };
         let mut stdout = Pipe::new(stdout_fd)?;
         let mut stderr = Pipe::new(stderr_fd)?;
         let started = Instant::now();

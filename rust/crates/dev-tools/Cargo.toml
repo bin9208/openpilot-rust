@@ -841,3 +841,10 @@ required-features = ["encoder-runtime-native"]
 name = "check-encoder-ci"
 path = "src/bin/check_encoder_ci.rs"
 required-features = ["encoder-runtime-native"]
+
+[[bin]]
+name = "check-encoder-target"
+path = "src/bin/check_encoder_target.rs"
+
+[[test]]
+name = "encoder_target_check"

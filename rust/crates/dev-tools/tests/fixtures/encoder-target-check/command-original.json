@@ -1,0 +1,210 @@
+{
+  "source_sha256": "5f9a794f6797ee43618eaa7ad274187ea363609f8dab7c407ae74639b6eee2a8",
+  "controls": "Success/nonzero/exec-error use actual shell processes; timeout raises TimeoutExpired at subprocess boundary instead of waiting300seconds; monotonic values omitted only.",
+  "cases": [
+    {
+      "name": "success",
+      "argv": [
+        "/bin/sh",
+        "-c",
+        "printf 'exact\\000bytes\\r\\n'; printf 'stderr\\r\\n' >&2; exit 0"
+      ],
+      "disk": [
+        [
+          "$ROOT/command",
+          268435456
+        ]
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "DEBUG_ENCODER": "0",
+        "LD_LIBRARY_PATH": "/owned/compiler-libs"
+      },
+      "result": "65786163740062797465730d0a",
+      "error": null,
+      "artifacts": {
+        "stdout.bin": "65786163740062797465730d0a",
+        "command.json": {
+          "argv": [
+            "/bin/sh",
+            "-c",
+            "printf 'exact\\000bytes\\r\\n'; printf 'stderr\\r\\n' >&2; exit 0"
+          ],
+          "cwd": "$ROOT",
+          "returncode": 0,
+          "timeout_seconds": 300,
+          "status": "PASS",
+          "environment_overrides": {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "/owned/compiler-libs",
+            "LD_PRELOAD": null
+          }
+        },
+        "stderr.bin": "7374646572720d0a"
+      }
+    },
+    {
+      "name": "exit9",
+      "argv": [
+        "/bin/sh",
+        "-c",
+        "printf 'exact\\000bytes\\r\\n'; printf 'stderr\\r\\n' >&2; exit 9"
+      ],
+      "disk": [
+        [
+          "$ROOT/command",
+          268435456
+        ]
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "DEBUG_ENCODER": "0",
+        "LD_LIBRARY_PATH": "/owned/compiler-libs"
+      },
+      "result": null,
+      "error": {
+        "type": "TargetFailure",
+        "message": "command failed: $ROOT/command/command.json"
+      },
+      "artifacts": {
+        "stdout.bin": "65786163740062797465730d0a",
+        "command.json": {
+          "argv": [
+            "/bin/sh",
+            "-c",
+            "printf 'exact\\000bytes\\r\\n'; printf 'stderr\\r\\n' >&2; exit 9"
+          ],
+          "cwd": "$ROOT",
+          "returncode": 9,
+          "timeout_seconds": 300,
+          "status": "FAIL",
+          "environment_overrides": {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "/owned/compiler-libs",
+            "LD_PRELOAD": null
+          }
+        },
+        "stderr.bin": "7374646572720d0a"
+      }
+    },
+    {
+      "name": "exec-error",
+      "argv": [
+        "/nonexistent/owned-target-check"
+      ],
+      "disk": [
+        [
+          "$ROOT/command",
+          268435456
+        ]
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "DEBUG_ENCODER": "0",
+        "LD_LIBRARY_PATH": "/owned/compiler-libs"
+      },
+      "result": null,
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "[Errno 2] No such file or directory: '/nonexistent/owned-target-check'"
+      },
+      "artifacts": {
+        "stdout.bin": "",
+        "command.json": {
+          "argv": [
+            "/nonexistent/owned-target-check"
+          ],
+          "cwd": "$ROOT",
+          "returncode": null,
+          "timeout_seconds": 300,
+          "status": "EXEC_ERROR",
+          "environment_overrides": {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "/owned/compiler-libs",
+            "LD_PRELOAD": null
+          },
+          "error": "[Errno 2] No such file or directory: '/nonexistent/owned-target-check'"
+        },
+        "stderr.bin": ""
+      }
+    },
+    {
+      "name": "timeout",
+      "argv": [
+        "/bin/sh",
+        "-c",
+        "printf 'exact\\000bytes\\r\\n'; printf 'stderr\\r\\n' >&2; exit 0"
+      ],
+      "disk": [
+        [
+          "$ROOT/command",
+          268435456
+        ]
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "DEBUG_ENCODER": "0",
+        "LD_LIBRARY_PATH": "/owned/compiler-libs"
+      },
+      "result": null,
+      "error": {
+        "type": "TimeoutExpired",
+        "message": "Command '['/bin/sh', '-c', \"printf 'exact\\\\000bytes\\\\r\\\\n'; printf 'stderr\\\\r\\\\n' >&2; exit 0\"]' timed out after 300 seconds"
+      },
+      "artifacts": {
+        "stdout.bin": "",
+        "command.json": {
+          "argv": [
+            "/bin/sh",
+            "-c",
+            "printf 'exact\\000bytes\\r\\n'; printf 'stderr\\r\\n' >&2; exit 0"
+          ],
+          "cwd": "$ROOT",
+          "returncode": null,
+          "timeout_seconds": 300,
+          "status": "TIMEOUT",
+          "environment_overrides": {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "/owned/compiler-libs",
+            "LD_PRELOAD": null
+          }
+        },
+        "stderr.bin": ""
+      }
+    },
+    {
+      "name": "disk",
+      "argv": [
+        "/bin/sh",
+        "-c",
+        "printf 'exact\\000bytes\\r\\n'; printf 'stderr\\r\\n' >&2; exit 0"
+      ],
+      "disk": [
+        [
+          "$ROOT/command",
+          268435456
+        ]
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "DEBUG_ENCODER": "0",
+        "LD_LIBRARY_PATH": "/owned/compiler-libs"
+      },
+      "result": null,
+      "error": {
+        "type": "TargetFailure",
+        "message": "fixture disk refusal"
+      },
+      "artifacts": {}
+    }
+  ]
+}

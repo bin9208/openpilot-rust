@@ -550,3 +550,152 @@ fn default_peer_prefix_survives_success_and_timeout() {
         .is_err());
     assert_eq!(fs::read(log).unwrap(), b"prefix\npartial\xff");
 }
+
+#[test]
+fn separate_files_are_visible_before_child_exit_without_capturing_large_output() {
+    let temp = tempfile::tempdir().unwrap();
+    let stdout = temp.path().join("stdout.bin");
+    let stderr = temp.path().join("stderr.bin");
+    let release = temp.path().join("release");
+    let mut spec = command(
+        &format!(
+            "printf 'first\\377'; head -c 17825792 /dev/zero; printf 'error\\r' >&2; while [ ! -f '{}' ]; do sleep 0.01; done; exit 7",
+            release.display()
+        ),
+        Duration::from_secs(5),
+    );
+    spec.stdout_limit = 1;
+    spec.stderr_limit = 1;
+    // File selection overrides the other output destinations.
+    spec.merge_output = true;
+    spec.inherit_output = true;
+    spec.inherit_stderr = true;
+    std::thread::scope(|scope| {
+        let worker = scope.spawn(|| {
+            NativeRunner
+                .run_to_files(&spec, &stdout, &stderr)
+                .map_err(|e| e.to_string())
+        });
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while fs::read(&stderr).ok().as_deref() != Some(b"error\r") {
+            assert!(
+                Instant::now() < deadline,
+                "separate logs were not streamed before exit"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(
+            !worker.is_finished(),
+            "child must still be waiting for release"
+        );
+        assert_eq!(fs::metadata(&stdout).unwrap().len(), 17_825_798);
+        fs::write(&release, b"done").unwrap();
+        let captured = worker.join().unwrap().unwrap();
+        assert_eq!(captured.code, 7);
+        assert!(captured.stdout.is_empty() && captured.stderr.is_empty());
+    });
+    let bytes = fs::read(stdout).unwrap();
+    assert_eq!(&bytes[..6], b"first\xff");
+    assert!(bytes[6..].iter().all(|byte| *byte == 0));
+    assert_eq!(fs::read(stderr).unwrap(), b"error\r");
+}
+
+#[test]
+fn separate_file_timeout_retains_raw_logs_and_reaps_owned_group() {
+    let temp = tempfile::tempdir().unwrap();
+    let stdout = temp.path().join("stdout.bin");
+    let stderr = temp.path().join("stderr.bin");
+    let leader = temp.path().join("leader.pid");
+    let descendant = temp.path().join("descendant.pid");
+    let spec = command(
+        &format!("printf 'partial\\377'; printf 'diagnostic\\r' >&2; echo $$ > '{}'; sleep 30 & echo $! > '{}'; wait", leader.display(), descendant.display()),
+        Duration::from_millis(300),
+    );
+    let error = NativeRunner
+        .run_to_files(&spec, &stdout, &stderr)
+        .unwrap_err();
+    assert!(matches!(
+        error.downcast_ref::<CaptureError>(),
+        Some(CaptureError::Timeout { .. })
+    ));
+    assert_eq!(fs::read(stdout).unwrap(), b"partial\xff");
+    assert_eq!(fs::read(stderr).unwrap(), b"diagnostic\r");
+    let pid: i32 = fs::read_to_string(leader).unwrap().trim().parse().unwrap();
+    assert!(!std::path::Path::new(&format!("/proc/{pid}")).exists());
+    assert_terminated(
+        fs::read_to_string(descendant)
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap(),
+    );
+}
+
+#[test]
+fn separate_file_open_and_spawn_failures_preserve_original_truncation_order() {
+    let temp = tempfile::tempdir().unwrap();
+    let stdout = temp.path().join("stdout.bin");
+    let stderr = temp.path().join("stderr.bin");
+    fs::write(&stdout, b"old stdout").unwrap();
+    fs::write(&stderr, b"old stderr").unwrap();
+    let mut spec = command("unused", Duration::from_secs(1));
+    spec.argv = vec!["/missing-owned-native-command".into()];
+    assert!(NativeRunner.run_to_files(&spec, &stdout, &stderr).is_err());
+    assert!(fs::read(&stdout).unwrap().is_empty());
+    assert!(fs::read(&stderr).unwrap().is_empty());
+    fs::write(&stdout, b"stale").unwrap();
+    let marker = temp.path().join("spawned");
+    let spec = command(
+        &format!("touch '{}'", marker.display()),
+        Duration::from_secs(1),
+    );
+    assert!(NativeRunner
+        .run_to_files(&spec, &stdout, temp.path())
+        .is_err());
+    assert!(fs::read(stdout).unwrap().is_empty());
+    assert!(!marker.exists());
+}
+
+#[test]
+fn separate_file_peer_preserves_success_and_timeout_bytes() {
+    use openpilot_dev_tools::{qa_process::Captured, seal::Result};
+    struct Peer(bool);
+    impl Runner for Peer {
+        fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
+            assert!(!spec.merge_output && !spec.inherit_output && !spec.inherit_stderr);
+            if self.0 {
+                Err(CaptureError::Timeout {
+                    timeout: spec.timeout,
+                    stdout: b"out\xff".to_vec(),
+                    stderr: b"err\r".to_vec(),
+                }
+                .into())
+            } else {
+                Ok(Captured {
+                    code: 7,
+                    stdout: b"out\xff".to_vec(),
+                    stderr: b"err\r".to_vec(),
+                })
+            }
+        }
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let stdout = temp.path().join("stdout.bin");
+    let stderr = temp.path().join("stderr.bin");
+    let mut spec = command("unused", Duration::from_secs(1));
+    spec.merge_output = true;
+    spec.inherit_output = true;
+    spec.inherit_stderr = true;
+    assert_eq!(
+        Peer(false)
+            .run_to_files(&spec, &stdout, &stderr)
+            .unwrap()
+            .code,
+        7
+    );
+    assert_eq!(fs::read(&stdout).unwrap(), b"out\xff");
+    assert_eq!(fs::read(&stderr).unwrap(), b"err\r");
+    assert!(Peer(true).run_to_files(&spec, &stdout, &stderr).is_err());
+    assert_eq!(fs::read(stdout).unwrap(), b"out\xff");
+    assert_eq!(fs::read(stderr).unwrap(), b"err\r");
+}
