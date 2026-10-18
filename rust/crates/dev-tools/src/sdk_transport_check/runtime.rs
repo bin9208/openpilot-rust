@@ -138,17 +138,26 @@ fn git_fixture(path: &Path, options: &Options, cancel: &Cancellation) -> Result<
     }
     Ok(())
 }
-fn seal(repository: &Path) -> Result<()> {
-    if format!(
-        "{:x}",
-        Sha256::digest(fs::read(
-            repository.join("rust/tools/check_crash_sdk_transport.py")
-        )?)
-    ) != "8bf1281bbc182ecaba9a29b9e49aa3d250ec8ee1f43eca5861596cee475ed806"
-    {
-        return Err("original SDK transport schedule changed".into());
+type SourceHashes = std::collections::BTreeMap<String, String>;
+fn seal(repository: &Path) -> Result<(SourceHashes, SourceHashes)> {
+    let mut live = crate::tombstone_reference_check::sources(repository)?;
+    let mut historical = crate::tombstone_source::historical_sources(repository)?;
+    let name = "rust/tools/check_crash_sdk_transport.py";
+    let expected = "8bf1281bbc182ecaba9a29b9e49aa3d250ec8ee1f43eca5861596cee475ed806";
+    match fs::symlink_metadata(repository.join(name)) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            historical.insert(name.into(), expected.into());
+        }
+        Err(error) => return Err(error.into()),
+        Ok(_) => {
+            let actual = format!("{:x}", Sha256::digest(fs::read(repository.join(name))?));
+            if actual != expected {
+                return Err("original SDK transport schedule changed".into());
+            }
+            live.insert(name.into(), actual);
+        }
     }
-    Ok(())
+    Ok((live, historical))
 }
 pub fn run(repository: &Path, options: &Options) -> Result<J> {
     fs::create_dir_all(&options.output)?;
@@ -159,14 +168,21 @@ pub fn run(repository: &Path, options: &Options) -> Result<J> {
     }
     let cancel = Cancellation::new()?;
     let result = run_inner(repository, options, &cancel);
-    if let Some(signal) = cancel.signal() {
+    let signal = cancel.signal();
+    if result.is_err() || signal.is_some() {
+        match fs::remove_file(options.output.join("manifest.json")) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+    }
+    if let Some(signal) = signal {
         return Err(version_reference_check::Interrupted(signal).into());
     }
     result
 }
 fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Result<J> {
-    seal(repository)?;
-    let source_pins = crate::tombstone_reference_check::sources(repository)?;
+    let (source_pins, historical_pins) = seal(repository)?;
     let mut receiver =
         Receiver::bind(Duration::from_secs(5)).map_err(|e| e as Box<dyn std::error::Error>)?;
     let mut pair = Pair::new(repository, options, &options.output.join("policy"), cancel)?;
@@ -320,8 +336,7 @@ fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Res
         Ok(_) => return Err("unexpected SDK envelope during teardown".into()),
     }
     cancel.check()?;
-    seal(repository)?;
-    if crate::tombstone_reference_check::sources(repository)? != source_pins {
+    if seal(repository)? != (source_pins.clone(), historical_pins.clone()) {
         return Err("SDK source policy changed during comparison".into());
     }
     fs::write(
@@ -343,7 +358,7 @@ fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Res
             .map(|(name, hash)| (name.as_str(), J::text(hash)))
             .collect::<Vec<_>>(),
     )?;
-    let report=object(&[("result",J::text("PASS")),("events",J::parse("14")?),("native_io_exception_events",J::parse("1")?),("binary_sha256",J::text(&format!("{:x}",Sha256::digest(fs::read(&options.binary)?)))),("source_hashes",source_hashes),("transport",J::text("native sentry-rust0.49.3 HTTP to loopback; independent native source policy and pinned original sentry-sdk2.55.0 captured fields")),("preserved",J::parse(r#"["tag JSON types","original user/release/environment","extra values","max_value_length byte/codepoint fallback","_meta len/rem annotations"]"#)?),("excluded_sdk_internals",J::parse(r#"["SDK identity/platform","thread integration","native exception representation","retry/rate-limit/grouping internals"]"#)?),("command",array(&command)?)])?;
+    let report=object(&[("result",J::text("PASS")),("events",J::parse("14")?),("native_io_exception_events",J::parse("1")?),("binary_sha256",J::text(&format!("{:x}",Sha256::digest(fs::read(&options.binary)?)))),("source_hashes",source_hashes),("historical_source_sha256",J::parse(&serde_json::to_string(&historical_pins)?)?),("transport",J::text("native sentry-rust0.49.3 HTTP to loopback; independent native source policy and pinned original sentry-sdk2.55.0 captured fields")),("preserved",J::parse(r#"["tag JSON types","original user/release/environment","extra values","max_value_length byte/codepoint fallback","_meta len/rem annotations"]"#)?),("excluded_sdk_internals",J::parse(r#"["SDK identity/platform","thread integration","native exception representation","retry/rate-limit/grouping internals"]"#)?),("command",array(&command)?)])?;
     fs::write(
         options.output.join("manifest.json"),
         format!("{}\n", version_reference_check::format_report(&report)?),

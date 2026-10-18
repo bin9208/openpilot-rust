@@ -4035,3 +4035,48 @@ source/package stages were not run. The run is a failure overall, also retaining
 the earlier telemetry#382 and UI#384 failures. ARM and other completed component
 jobs passed. [Exact old run](https://github.com/bin9208/openpilot-rust/actions/runs/39159654100).
 The new LLVM20 job separation in `c7ea57e0` still requires its own remote run.
+
+### Four shared-helper retirements: Version, tombstone and SDK (2026-10-19)
+
+The last executable consumers of `check_version_reference.py`,
+`check_tombstoned_reference.py`, `tombstoned_reference.py` and
+`check_crash_sdk_transport.py` now use the independent native source/collector
+implementations. Their exact original identities are kept as historical hashes
+only when the files are actually absent. Changed, dangling, directory and missing
+mandatory runtime-source controls remain failures. Native Version, tombstone,
+SDK, managed-entry and readiness reports distinguish live inputs from retired
+historical inputs; admission and final checks detect persistent roster drift.
+
+The SDK final-manifest cancellation case reproduced a false success receipt before
+the repair. It now latches the result/cancellation decision and invalidates that
+receipt on either failure or interruption, continuing #380's bounded cleanup work.
+109 affected tests, strict scoped Clippy and formatting passed before removal.
+
+A fresh build supplied15 frozen ELF files with17,513 recorded project dependency
+paths (including logging build-provenance inputs). Snapshot
+`fc37723acad19f78c98b16ef0b4f6a4f1d10e620b890043b835f3d3d110ddf16`
+was verified before and after deleting exactly the four sealed helpers. Both
+runs passed all nine tools: Version171 comparisons, live Version collector,
+tombstone242 comparisons, SDK14 events plus1 native IO exception, tombstone
+runtime/shutdown/safety, managed44 scenarios and subscriber-before-publisher
+readiness. Each phase made1,444 traced execve/execveat attempts and zero Python
+attempts. Only Version/SDK had an explicit Git-only search path; other tools used
+an unavailable PATH. Private proof orchestration is outside these traced process
+trees. The Params binding identity remains evidence data, not an executed Python
+extension in these native checks.
+
+The before/after bundles preserve the same executable hashes; this establishes
+removal independence, not a post-removal rebuild. Fresh post-removal validation
+and exact committed-head CI are recorded separately when complete. Current
+inventory:192 replaced-local,3 partially-replaced and3,385 pending baseline
+sources. Repository-wide conversion and user device acceptance remain open.
+
+Fresh post-removal validation completed: rebuilt native artifacts,86 affected
+unit/integration tests, two actual managed-entry comparisons, strict scoped
+Clippy and formatting pass. The complete44 managed scenarios were already run
+with the identical frozen executables on both sides of deletion; they were not
+repeated a third time. A post-removal Version test setup initially failed because
+its copied fixture no longer created the retired helper directory; creating that
+directory fixed the setup without changing assertions. All11 production source
+hashes still match the frozen before/after proof. Exact committed-head CI remains
+pending. Receipt: `2026-10-19-partial-helper-closure/postdelete-final-proof.json`.

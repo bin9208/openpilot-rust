@@ -23,6 +23,33 @@ fn repository() -> PathBuf {
 fn fixtures() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/tombstone-tools")
 }
+fn complete_sources(root: &Path) -> BTreeMap<String, String> {
+    let mut live = source::sources(root).unwrap();
+    for (name, hash) in source::historical_sources(root).unwrap() {
+        assert!(
+            live.insert(name, hash).is_none(),
+            "historical source labelled live"
+        );
+    }
+    live
+}
+fn captured_source_identity(root: &Path, name: &str) -> String {
+    complete_sources(root)
+        .get(name)
+        .cloned()
+        .unwrap_or_else(|| {
+            // Additional original build/schema inputs remain mandatory live files.
+            digest(&fs::read(root.join(name)).unwrap())
+        })
+}
+fn retired_helper(name: &str) -> bool {
+    matches!(
+        name,
+        "rust/tools/check_version_reference.py"
+            | "rust/tools/tombstoned_reference.py"
+            | "rust/tools/check_tombstoned_reference.py"
+    )
+}
 fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
@@ -159,11 +186,11 @@ fn seven_original_main_transports_preserve_eof_newlines_and_caught_error_recover
 }
 
 #[test]
-fn all_nine_source_pins_are_required_changed_absent_and_dangling_are_not_retirement() {
+fn all_nine_original_pins_remain_sealed_and_live_policy_is_required() {
     let manifest = manifest();
     let expected = manifest["source_sha256"].as_object().unwrap();
     assert_eq!(expected.len(), 9);
-    let actual = source::sources(&repository()).unwrap();
+    let actual = complete_sources(&repository());
     assert_eq!(
         serde_json::to_value(&actual).unwrap(),
         manifest["source_sha256"]
@@ -172,20 +199,28 @@ fn all_nine_source_pins_are_required_changed_absent_and_dangling_are_not_retirem
     for name in expected.keys() {
         let path = temp.path().join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(path, fs::read(repository().join(name)).unwrap()).unwrap();
+        if let Ok(bytes) = fs::read(repository().join(name)) {
+            fs::write(path, bytes).unwrap();
+        }
     }
     source::sources(temp.path()).unwrap();
     for name in expected.keys() {
         let path = temp.path().join(name);
-        let original = fs::read(&path).unwrap();
+        let original = fs::read(&path).ok();
         fs::write(&path, b"changed original policy must be rejected\n").unwrap();
         assert!(source::sources(temp.path()).is_err(), "changed {name}");
         fs::remove_file(&path).unwrap();
-        assert!(source::sources(temp.path()).is_err(), "absent {name}");
+        if retired_helper(name) {
+            assert!(!source::sources(temp.path()).unwrap().contains_key(name));
+        } else {
+            assert!(source::sources(temp.path()).is_err(), "absent {name}");
+        }
         symlink("absent-original", &path).unwrap();
         assert!(source::sources(temp.path()).is_err(), "dangling {name}");
         fs::remove_file(&path).unwrap();
-        fs::write(path, original).unwrap();
+        if let Some(original) = original {
+            fs::write(path, original).unwrap();
+        }
     }
     source::sources(temp.path()).unwrap();
 }
@@ -204,7 +239,7 @@ fn stateful_fixture(name: &str, count: usize) -> Value {
     assert_eq!(provenance["original_fixture_replay"]["cases"], 72);
     for (path, expected) in provenance["source_sha256"].as_object().unwrap() {
         assert_eq!(
-            digest(&fs::read(repository().join(path)).unwrap()),
+            captured_source_identity(&repository(), path),
             expected.as_str().unwrap(),
             "original capture source {path}"
         );
@@ -460,7 +495,7 @@ fn original_file_fixture(name: &str, count: usize) -> Value {
     }
     for (name, expected) in provenance["source_sha256"].as_object().unwrap() {
         assert_eq!(
-            digest(&fs::read(repository().join(name)).unwrap()),
+            captured_source_identity(&repository(), name),
             expected.as_str().unwrap(),
             "original file policy {name}"
         );
@@ -785,7 +820,7 @@ fn remaining_fixture(name: &str, count: usize) -> Value {
     assert_eq!(provenance["counts"]["disabled-loop"], 7);
     for (path, expected) in provenance["source_sha256"].as_object().unwrap() {
         assert_eq!(
-            digest(&fs::read(repository().join(path)).unwrap()),
+            captured_source_identity(&repository(), path),
             expected.as_str().unwrap(),
             "original remaining capture source {path}"
         );
@@ -1044,4 +1079,70 @@ fn original_seven_reporting_loop_calls_preserve_sleep_boundaries_raw_files_and_s
 #[cfg(target_os = "linux")]
 fn original_seven_disabled_loop_calls_clear_new_crashes_without_sdk_or_report_calls() {
     replay_remaining("stateful-disabled-loop-original.json", 7);
+}
+
+#[test]
+fn retired_worker_loader_and_checker_are_historical_without_weakening_runtime_pins() {
+    let captured = manifest();
+    let expected: BTreeMap<String, String> =
+        serde_json::from_value(captured["source_sha256"].clone()).unwrap();
+    let retired = [
+        "rust/tools/check_version_reference.py",
+        "rust/tools/tombstoned_reference.py",
+        "rust/tools/check_tombstoned_reference.py",
+    ];
+    let copied = tempfile::tempdir().unwrap();
+    for name in expected
+        .keys()
+        .filter(|name| !retired.contains(&name.as_str()))
+    {
+        let target = copied.path().join(name);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::copy(repository().join(name), target).unwrap();
+    }
+    let live = source::sources(copied.path()).unwrap();
+    let historical = source::historical_sources(copied.path()).unwrap();
+    assert_eq!(live.len(), 6);
+    assert_eq!(historical.len(), 3);
+    let mut complete = live.clone();
+    for (name, hash) in &historical {
+        assert!(complete.insert(name.clone(), hash.clone()).is_none());
+    }
+    assert_eq!(complete, expected);
+    for name in retired {
+        let path = copied.path().join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, b"changed retired original\n").unwrap();
+        assert!(source::sources(copied.path()).is_err());
+        assert!(source::historical_sources(copied.path()).is_err());
+        fs::remove_file(&path).unwrap();
+        symlink("missing-retired-original", &path).unwrap();
+        assert!(source::sources(copied.path()).is_err());
+        fs::remove_file(&path).unwrap();
+        fs::create_dir(&path).unwrap();
+        assert!(source::sources(copied.path()).is_err());
+        fs::remove_dir(&path).unwrap();
+        if let Ok(original) = fs::read(repository().join(name)) {
+            fs::write(&path, original).unwrap();
+            assert_eq!(
+                source::sources(copied.path()).unwrap()[name],
+                expected[name]
+            );
+            assert!(!source::historical_sources(copied.path())
+                .unwrap()
+                .contains_key(name));
+            fs::remove_file(&path).unwrap();
+        }
+    }
+    for name in live.keys() {
+        let path = copied.path().join(name);
+        let original = fs::read(&path).unwrap();
+        fs::remove_file(&path).unwrap();
+        assert!(
+            source::sources(copied.path()).is_err(),
+            "missing live {name}"
+        );
+        assert!(source::historical_sources(copied.path()).is_err());
+        fs::write(path, original).unwrap();
+    }
 }

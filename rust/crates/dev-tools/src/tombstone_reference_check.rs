@@ -569,6 +569,12 @@ fn run_inner(
         ),
         ("source_sha256", source_hashes),
         (
+            "historical_source_sha256",
+            J::parse(&serde_json::to_string(
+                &crate::tombstone_source::historical_sources(repository)?,
+            )?)?,
+        ),
+        (
             "command",
             array(
                 &command

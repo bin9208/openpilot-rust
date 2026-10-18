@@ -80,18 +80,20 @@ const SOURCES: &[(&str, &str)] = &[
         "4daebbf121dceef9aec57b0ba35ac7aea2b827ec85bc2cb49760b6ce0e2f9a22",
     ),
 ];
-/// Retained inputs are mandatory. Only the retired collector's exact path may
-/// be absent; its compiled historical identity remains in the complete roster.
+fn retired_helper(name: &str) -> bool {
+    matches!(
+        name,
+        "rust/tools/check_version_reference.py" | "rust/tools/check_version_collector.py"
+    )
+}
+/// Runtime policy inputs remain mandatory. Only actual absence of the two
+/// retired helpers is allowed; changed or dangling paths still fail.
 pub fn sources(root: &Path) -> Result<BTreeMap<String, String>> {
     let mut actual = BTreeMap::new();
     for &(name, expected) in SOURCES {
         let path = root.join(name);
         match fs::symlink_metadata(&path) {
-            Err(error)
-                if name == "rust/tools/check_version_collector.py"
-                    && error.kind() == io::ErrorKind::NotFound =>
-            {
-                actual.insert(name.into(), expected.into());
+            Err(error) if retired_helper(name) && error.kind() == io::ErrorKind::NotFound => {
                 continue;
             }
             Err(error) => return Err(Error::io(&error)),
@@ -108,6 +110,17 @@ pub fn sources(root: &Path) -> Result<BTreeMap<String, String>> {
         actual.insert(name.into(), hash);
     }
     Ok(actual)
+}
+
+/// Compiled identities of actually absent retired helpers, never live inputs.
+/// Validate the full roster first, including every present helper.
+pub fn historical_sources(root: &Path) -> Result<BTreeMap<String, String>> {
+    let live = sources(root)?;
+    Ok(SOURCES
+        .iter()
+        .filter(|(name, _)| retired_helper(name) && !live.contains_key(*name))
+        .map(|(name, hash)| ((*name).into(), (*hash).into()))
+        .collect())
 }
 
 pub struct Session {

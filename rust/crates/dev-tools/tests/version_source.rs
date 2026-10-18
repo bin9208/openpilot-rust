@@ -22,6 +22,31 @@ fn repository() -> PathBuf {
         .canonicalize()
         .unwrap()
 }
+fn complete_sources(root: &Path) -> BTreeMap<String, String> {
+    let mut live = openpilot_dev_tools::version_source::sources(root).unwrap();
+    for (name, hash) in openpilot_dev_tools::version_source::historical_sources(root).unwrap() {
+        assert!(
+            live.insert(name, hash).is_none(),
+            "historical source labelled live"
+        );
+    }
+    live
+}
+fn captured_source_identity(root: &Path, name: &str) -> String {
+    complete_sources(root)
+        .get(name)
+        .cloned()
+        .unwrap_or_else(|| {
+            // Additional original build/schema inputs remain mandatory live files.
+            digest(&fs::read(root.join(name)).unwrap())
+        })
+}
+fn retired_helper(name: &str) -> bool {
+    matches!(
+        name,
+        "rust/tools/check_version_reference.py" | "rust/tools/check_version_collector.py"
+    )
+}
 fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
@@ -184,10 +209,10 @@ fn all_live_source_pins_are_required_and_changed_present_files_are_rejected() {
     let expected: BTreeMap<String, String> =
         serde_json::from_value(pins["source_sha256"].clone()).unwrap();
     assert_eq!(expected.len(), 5);
-    assert_eq!(sources(&root).unwrap(), expected);
+    assert_eq!(complete_sources(&root), expected);
     let temp = tempfile::tempdir().unwrap();
     for name in expected.keys() {
-        if name == "rust/tools/check_version_collector.py" && !root.join(name).exists() {
+        if retired_helper(name) && !root.join(name).exists() {
             continue;
         }
         let file = temp.path().join(name);
@@ -195,7 +220,7 @@ fn all_live_source_pins_are_required_and_changed_present_files_are_rejected() {
         fs::copy(root.join(name), file).unwrap();
     }
     for name in expected.keys() {
-        if name == "rust/tools/check_version_collector.py" {
+        if retired_helper(name) {
             continue;
         }
         let file = temp.path().join(name);
@@ -206,7 +231,7 @@ fn all_live_source_pins_are_required_and_changed_present_files_are_rejected() {
         assert!(sources(temp.path()).is_err(), "missing {name}");
         fs::write(file, original).unwrap();
     }
-    assert_eq!(sources(temp.path()).unwrap(), expected);
+    assert_eq!(complete_sources(temp.path()), expected);
 }
 
 #[test]
@@ -216,15 +241,19 @@ fn retired_collector_absence_is_explicit_and_present_or_dangling_changes_fail() 
     let root = repository();
     let temp = tempfile::tempdir().unwrap();
     let retired = "rust/tools/check_version_collector.py";
-    for name in expected.keys().filter(|name| name.as_str() != retired) {
+    for name in expected
+        .keys()
+        .filter(|name| name.as_str() != retired && root.join(name).exists())
+    {
         let file = temp.path().join(name);
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::copy(root.join(name), file).unwrap();
     }
-    // Only the exact retired file may be absent. The historical hash/key remains
-    // fixed in native policy, while retained originals must still be read.
-    assert_eq!(sources(temp.path()).unwrap(), expected);
+    // Retired identities remain separately labelled; retained runtime inputs must
+    // still be read. The new helper test covers both exact absent paths.
+    assert_eq!(complete_sources(temp.path()), expected);
     let file = temp.path().join(retired);
+    fs::create_dir_all(file.parent().unwrap()).unwrap();
     fs::write(&file, b"changed retired collector\n").unwrap();
     assert!(sources(temp.path()).is_err());
     fs::remove_file(&file).unwrap();
@@ -240,7 +269,7 @@ fn retired_collector_absence_is_explicit_and_present_or_dangling_changes_fail() 
         "directory is not retired absence"
     );
     fs::remove_dir(&file).unwrap();
-    assert_eq!(sources(temp.path()).unwrap(), expected);
+    assert_eq!(complete_sources(temp.path()), expected);
 }
 
 #[test]
@@ -283,7 +312,7 @@ fn admission() -> Value {
     let value: Value = serde_json::from_slice(raw).unwrap();
     for (name, hash) in value["source_sha256"].as_object().unwrap() {
         assert_eq!(
-            digest(&fs::read(repository().join(name)).unwrap()),
+            captured_source_identity(&repository(), name),
             hash.as_str().unwrap()
         );
     }
@@ -775,4 +804,66 @@ fn source_git_stderr_streams_raw_bytes_before_cancel_and_survives_cleanup() {
         fs::read_to_string(fixture.state.join("count")).unwrap(),
         "1\n"
     );
+}
+
+#[test]
+fn retired_version_helpers_are_historical_only_and_never_optional_runtime_policy() {
+    let expected: BTreeMap<String, String> =
+        serde_json::from_value(manifest()["source_sha256"].clone()).unwrap();
+    let retired = [
+        "rust/tools/check_version_reference.py",
+        "rust/tools/check_version_collector.py",
+    ];
+    let copied = tempfile::tempdir().unwrap();
+    for name in expected
+        .keys()
+        .filter(|name| !retired.contains(&name.as_str()))
+    {
+        let target = copied.path().join(name);
+        fs::create_dir_all(target.parent().unwrap()).unwrap();
+        fs::copy(repository().join(name), target).unwrap();
+    }
+    let live = sources(copied.path()).unwrap();
+    let historical =
+        openpilot_dev_tools::version_source::historical_sources(copied.path()).unwrap();
+    assert!(live.keys().all(|name| !retired.contains(&name.as_str())));
+    assert_eq!(historical.len(), retired.len());
+    let mut complete = live.clone();
+    for (name, hash) in &historical {
+        assert!(complete.insert(name.clone(), hash.clone()).is_none());
+    }
+    assert_eq!(complete, expected);
+    for name in retired {
+        assert_eq!(historical[name], expected[name]);
+        let path = copied.path().join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, b"changed reintroduced helper\n").unwrap();
+        assert!(sources(copied.path()).is_err());
+        assert!(openpilot_dev_tools::version_source::historical_sources(copied.path()).is_err());
+        fs::remove_file(&path).unwrap();
+        std::os::unix::fs::symlink("missing-retired-helper", &path).unwrap();
+        assert!(sources(copied.path()).is_err());
+        fs::remove_file(&path).unwrap();
+        fs::create_dir(&path).unwrap();
+        assert!(sources(copied.path()).is_err());
+        fs::remove_dir(&path).unwrap();
+        if let Ok(original) = fs::read(repository().join(name)) {
+            fs::write(&path, original).unwrap();
+            assert_eq!(sources(copied.path()).unwrap()[name], expected[name]);
+            assert!(
+                !openpilot_dev_tools::version_source::historical_sources(copied.path())
+                    .unwrap()
+                    .contains_key(name)
+            );
+            fs::remove_file(&path).unwrap();
+        }
+    }
+    for name in live.keys() {
+        let path = copied.path().join(name);
+        let original = fs::read(&path).unwrap();
+        fs::remove_file(&path).unwrap();
+        assert!(sources(copied.path()).is_err(), "missing live {name}");
+        assert!(openpilot_dev_tools::version_source::historical_sources(copied.path()).is_err());
+        fs::write(path, original).unwrap();
+    }
 }

@@ -123,11 +123,14 @@ pub fn sources(repository: &Path) -> Result<BTreeMap<String, String>> {
 /// the complete live roster first, so this is never an absence/dangling escape.
 pub fn historical_sources(repository: &Path) -> Result<BTreeMap<String, String>> {
     let live = sources(repository)?;
-    Ok(SOURCES
-        .iter()
-        .filter(|(path, _)| retired_helper(path) && !live.contains_key(*path))
-        .map(|(path, hash)| ((*path).into(), (*hash).into()))
-        .collect())
+    let mut historical = crate::tombstone_source::historical_sources(repository)?;
+    historical.extend(
+        SOURCES
+            .iter()
+            .filter(|(path, _)| retired_helper(path) && !live.contains_key(*path))
+            .map(|(path, hash)| ((*path).to_owned(), (*hash).to_owned())),
+    );
+    Ok(historical)
 }
 
 fn field<'a>(request: &'a Value, key: &str) -> Result<&'a str> {

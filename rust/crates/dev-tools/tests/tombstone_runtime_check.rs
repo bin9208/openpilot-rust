@@ -122,7 +122,14 @@ fn retired_live_checkers_are_historical_but_changed_dangling_and_missing_policy_
             .as_object()
             .unwrap()
             .len(),
-        2
+        original["historical_source_sha256"]
+            .as_object()
+            .unwrap()
+            .len()
+            + retired
+                .iter()
+                .filter(|name| original["source_sha256"].get(**name).is_some())
+                .count()
     );
     for name in retired {
         assert!(report["source_sha256"].get(name).is_none());
@@ -623,4 +630,65 @@ fn foreign_endpoint_after_live_collector_ack_survives_cancellation() {
         &artifact("TOMBSTONE_COLLECTOR_BINARY"),
         Some(&artifact("TOMBSTONE_PARAMS_BINDING")),
     );
+}
+
+#[test]
+fn four_partial_helpers_join_retired_runtime_history_without_optional_policy_inputs() {
+    let current: serde_json::Value = serde_json::from_str(
+        &runtime::source_provenance(&root())
+            .unwrap()
+            .to_json()
+            .unwrap(),
+    )
+    .unwrap();
+    let copied = tempfile::tempdir().unwrap();
+    let retired = [
+        "rust/tools/check_crash_sdk_transport.py",
+        "rust/tools/check_tombstoned_reference.py",
+        "rust/tools/tombstoned_reference.py",
+        "rust/tools/check_version_reference.py",
+    ];
+    for name in current["source_sha256"].as_object().unwrap().keys() {
+        if retired.contains(&name.as_str()) {
+            continue;
+        }
+        let path = copied.path().join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::copy(root().join(name), path).unwrap();
+    }
+    let absent: serde_json::Value = serde_json::from_str(
+        &runtime::source_provenance(copied.path())
+            .unwrap()
+            .to_json()
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        absent["historical_source_sha256"]
+            .as_object()
+            .unwrap()
+            .len(),
+        6
+    );
+    for name in retired {
+        assert!(absent["source_sha256"].get(name).is_none());
+        assert_eq!(
+            absent["historical_source_sha256"][name],
+            current["source_sha256"]
+                .get(name)
+                .or_else(|| current["historical_source_sha256"].get(name))
+                .unwrap()
+                .clone()
+        );
+        let path = copied.path().join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, b"changed retired source\n").unwrap();
+        assert!(runtime::source_provenance(copied.path()).is_err());
+        fs::remove_file(&path).unwrap();
+        std::os::unix::fs::symlink("missing-retired", &path).unwrap();
+        assert!(runtime::source_provenance(copied.path()).is_err());
+        fs::remove_file(&path).unwrap();
+    }
+    fs::remove_file(copied.path().join("openpilot/system/sentry.py")).unwrap();
+    assert!(runtime::source_provenance(copied.path()).is_err());
 }

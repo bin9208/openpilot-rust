@@ -192,11 +192,10 @@ fn run_inner(
         ("binary_sha256", J::text(binary_hash)),
         ("command", array(&command.iter().map(|value| crate::python_fs::json_value(value)).collect::<Vec<_>>())?),
     ])?;
-    let historical = if pinned.contains_key(SAFETY_SOURCE) {
-        BTreeMap::new()
-    } else {
-        BTreeMap::from([(SAFETY_SOURCE, SAFETY_SOURCE_SHA256)])
-    };
+    let mut historical = crate::tombstone_source::historical_sources(repository)?;
+    if !pinned.contains_key(SAFETY_SOURCE) {
+        historical.insert(SAFETY_SOURCE.into(), SAFETY_SOURCE_SHA256.into());
+    }
     let provenance = serde_json::json!({"source_sha256": pinned, "historical_source_sha256": historical, "binary_sha256": binary_hash, "params_binding_sha256": binding_hash});
     fs::write(
         options.output.join("source-provenance.json"),

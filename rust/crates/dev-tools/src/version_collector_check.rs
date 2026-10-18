@@ -74,6 +74,7 @@ struct Request {
     worker_sha256: String,
     controller_sha256: String,
     sources: BTreeMap<String, String>,
+    historical_sources: BTreeMap<String, String>,
 }
 fn path(bytes: Vec<u8>) -> PathBuf {
     OsString::from_vec(bytes).into()
@@ -178,6 +179,7 @@ fn run_controlled(
         worker_sha256: worker_hash,
         controller_sha256: digest(&std::env::current_exe()?)?,
         sources: source_hashes,
+        historical_sources: version_source::historical_sources(repository)?,
     };
     let request_path = request_directory.path().join("request.json");
     fs::write(&request_path, serde_json::to_vec(&request)?)?;
@@ -234,6 +236,11 @@ fn run_controlled(
         .get("report")
         .ok_or("missing live Version collector report")?
         .clone();
+    require(
+        sources(repository)? == request.sources
+            && version_source::historical_sources(repository)? == request.historical_sources,
+        "Version source changed during collector comparison",
+    )?;
     require(
         report["result"] == "PASS",
         "Version collector worker did not pass",
@@ -292,7 +299,8 @@ pub fn worker_main() -> Result<()> {
     )?;
     let repository = path(request.repository.clone());
     require(
-        sources(&repository)? == request.sources,
+        sources(&repository)? == request.sources
+            && version_source::historical_sources(&repository)? == request.historical_sources,
         "Version source changed between controller and worker",
     )?;
     require(

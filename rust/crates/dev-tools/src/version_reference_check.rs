@@ -375,6 +375,7 @@ pub fn format_report(report: &J) -> Result<String> {
 }
 fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Result<J> {
     let hashes = crate::version_source::sources(repository)?;
+    let historical = crate::version_source::historical_sources(repository)?;
     fs::create_dir_all(&options.output)?;
     let mut evidence = File::create(options.output.join("comparisons.jsonl"))?;
     let root = FixtureRoot(tempfile::Builder::new().prefix("rust-version-").tempdir()?);
@@ -410,7 +411,7 @@ fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Res
         .collect::<Vec<_>>();
     let binary = crate::python_fs::json_value(options.binary.as_os_str());
     let sources = hashes
-        .into_iter()
+        .iter()
         .filter(|(name, _)| {
             [
                 "openpilot/system/version.py",
@@ -433,6 +434,10 @@ fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Res
         ),
         ("counts", J::parse(&serde_json::to_string(&counts)?)?),
         ("comparisons", J::parse(&comparisons.to_string())?),
+        (
+            "historical_source_sha256",
+            J::parse(&serde_json::to_string(&historical)?)?,
+        ),
         ("binary", binary),
         (
             "binary_sha256",
@@ -463,7 +468,11 @@ fn run_inner(repository: &Path, options: &Options, cancel: &Cancellation) -> Res
         ),
     ])?;
     // Detect source drift during a run, not merely at admission.
-    crate::version_source::sources(repository)?;
+    if crate::version_source::sources(repository)? != hashes
+        || crate::version_source::historical_sources(repository)? != historical
+    {
+        return Err("Version source changed during comparison".into());
+    }
     cancel.check()?;
     fs::write(
         options.output.join("manifest.json"),

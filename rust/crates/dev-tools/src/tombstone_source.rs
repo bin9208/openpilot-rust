@@ -93,10 +93,26 @@ const SOURCES: &[(&str, &str)] = &[
         "6271ece66356f377357ffc2b37bf3d98fcdb4c8231c8c07f556ed0294c261cd4",
     ),
 ];
-/// All current original inputs remain live; no retirement exception is implicit.
+fn retired_helper(name: &str) -> bool {
+    matches!(
+        name,
+        "rust/tools/check_version_reference.py"
+            | "rust/tools/tombstoned_reference.py"
+            | "rust/tools/check_tombstoned_reference.py"
+    )
+}
+/// Runtime policy stays mandatory; only actual absence of the three retired
+/// helpers is accepted. Present changed, dangling or unreadable paths fail.
 pub fn sources(root: &Path) -> Result<BTreeMap<String, String>> {
     let mut hashes = BTreeMap::new();
     for &(name, expected) in SOURCES {
+        if retired_helper(name) {
+            match fs::symlink_metadata(root.join(name)) {
+                Ok(_) => {}
+                Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(Error::io(error)),
+            }
+        }
         let bytes = fs::read(root.join(name)).map_err(Error::io)?;
         let hash = format!("{:x}", Sha256::digest(bytes));
         if hash != expected {
@@ -108,6 +124,16 @@ pub fn sources(root: &Path) -> Result<BTreeMap<String, String>> {
         hashes.insert(name.into(), hash);
     }
     Ok(hashes)
+}
+/// Historical identities are disjoint from live hashes and require the same
+/// complete admission checks, including present retired helpers.
+pub fn historical_sources(root: &Path) -> Result<BTreeMap<String, String>> {
+    let live = sources(root)?;
+    Ok(SOURCES
+        .iter()
+        .filter(|(name, _)| retired_helper(name) && !live.contains_key(*name))
+        .map(|(name, hash)| ((*name).into(), (*hash).into()))
+        .collect())
 }
 pub struct Session {
     worker: state::Worker,

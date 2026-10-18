@@ -111,7 +111,7 @@ fn readiness_source_preflight_failure_invalidates_previous_success() {
 }
 
 #[test]
-fn exactly_three_retired_sources_allow_absence_with_separate_historical_evidence() {
+fn exactly_six_retired_sources_allow_absence_with_separate_historical_evidence() {
     use std::os::unix::fs::symlink;
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let expected: Value = serde_json::from_str(include_str!(
@@ -120,6 +120,9 @@ fn exactly_three_retired_sources_allow_absence_with_separate_historical_evidence
     .unwrap();
     let pins = expected["sha256"].as_object().unwrap();
     let retired = [
+        "rust/tools/check_version_reference.py",
+        "rust/tools/tombstoned_reference.py",
+        "rust/tools/check_tombstoned_reference.py",
         "rust/tools/check_managed_entry.py",
         "rust/tools/check_managed_entry_readiness.py",
         "rust/tools/managed_entry_reference.py",
@@ -179,7 +182,7 @@ fn exactly_three_retired_sources_allow_absence_with_separate_historical_evidence
         }
     };
     let missing =
-        invoke().expect("literal absence of only the three retired tools must remain executable");
+        invoke().expect("literal absence of only the six retired tools must remain executable");
     for (name, hash) in pins {
         let (correct, other) = if retired.contains(&name.as_str()) {
             ("historical_source_sha256", "source_sha256")
@@ -194,11 +197,11 @@ fn exactly_three_retired_sources_allow_absence_with_separate_historical_evidence
             .as_object()
             .unwrap()
             .len(),
-        3
+        6
     );
     assert_eq!(
         missing["source_sha256"].as_object().unwrap().len(),
-        pins.len() - 3
+        pins.len() - 6
     );
     for name in retired {
         let file = root.path().join(name);

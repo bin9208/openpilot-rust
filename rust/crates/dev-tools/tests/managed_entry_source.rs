@@ -193,7 +193,11 @@ fn all22_original_source_cases_execute_policy_files_signals_context_and_body_ipc
         fs::remove_file(&guarded).unwrap();
         if matches!(
             name.as_str(),
-            "rust/tools/check_managed_entry.py" | "rust/tools/managed_entry_reference.py"
+            "rust/tools/check_managed_entry.py"
+                | "rust/tools/managed_entry_reference.py"
+                | "rust/tools/check_version_reference.py"
+                | "rust/tools/tombstoned_reference.py"
+                | "rust/tools/check_tombstoned_reference.py"
         ) {
             let mut without = pinned.clone();
             without.remove(name);
@@ -219,6 +223,18 @@ fn all22_original_source_cases_execute_policy_files_signals_context_and_body_ipc
     assert_eq!(source::sources(source_guard.path()).unwrap(), pinned);
     let retired = [
         (
+            "rust/tools/check_version_reference.py",
+            "d0ad5fbec23e1ba4a2507ae6dbc68856141d03eda07dadebab3280d5731525d5",
+        ),
+        (
+            "rust/tools/tombstoned_reference.py",
+            "7b647dba322d93e5d2bd9c5692356b10d3f85f2a2e0f9da8b982e05206c8e781",
+        ),
+        (
+            "rust/tools/check_tombstoned_reference.py",
+            "6271ece66356f377357ffc2b37bf3d98fcdb4c8231c8c07f556ed0294c261cd4",
+        ),
+        (
             "rust/tools/check_managed_entry.py",
             "89d2ce945fe94955d9b764f6a71434ac02298713a8983513bb9990318e6acc44",
         ),
@@ -229,7 +245,8 @@ fn all22_original_source_cases_execute_policy_files_signals_context_and_body_ipc
     ];
     let mut saved = Vec::new();
     let mut remaining = pinned.clone();
-    let mut historical = BTreeMap::new();
+    let mut historical =
+        openpilot_dev_tools::tombstone_source::historical_sources(source_guard.path()).unwrap();
     for (name, expected) in retired {
         let path = source_guard.path().join(name);
         let bytes = if pinned.contains_key(name) {
@@ -511,5 +528,47 @@ fn all22_original_source_cases_execute_policy_files_signals_context_and_body_ipc
     match previous_prefix {
         Some(value) => std::env::set_var("OPENPILOT_PREFIX", value),
         None => std::env::remove_var("OPENPILOT_PREFIX"),
+    }
+}
+
+#[test]
+fn managed_source_merges_inherited_retired_helper_history_without_claiming_live_inputs() {
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../..")
+        .canonicalize()
+        .unwrap();
+    let copied = tempfile::tempdir().unwrap();
+    let pins = source::sources(&repository).unwrap();
+    let inherited = [
+        (
+            "rust/tools/check_version_reference.py",
+            "d0ad5fbec23e1ba4a2507ae6dbc68856141d03eda07dadebab3280d5731525d5",
+        ),
+        (
+            "rust/tools/tombstoned_reference.py",
+            "7b647dba322d93e5d2bd9c5692356b10d3f85f2a2e0f9da8b982e05206c8e781",
+        ),
+        (
+            "rust/tools/check_tombstoned_reference.py",
+            "6271ece66356f377357ffc2b37bf3d98fcdb4c8231c8c07f556ed0294c261cd4",
+        ),
+    ];
+    for name in pins.keys() {
+        if inherited.iter().any(|(retired, _)| *retired == name) {
+            continue;
+        }
+        let path = copied.path().join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::copy(repository.join(name), path).unwrap();
+    }
+    let live = source::sources(copied.path()).unwrap();
+    let history = source::historical_sources(copied.path()).unwrap();
+    assert_eq!(history.len(), 5);
+    for (name, hash) in inherited {
+        assert!(!live.contains_key(name));
+        assert_eq!(history[name], hash);
+    }
+    for name in live.keys() {
+        assert!(!history.contains_key(name));
     }
 }

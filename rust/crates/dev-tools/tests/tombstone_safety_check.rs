@@ -165,6 +165,9 @@ fn only_retired_safety_checker_may_be_absent_changed_and_dangling_files_still_re
     ] {
         let target = copied.path().join(name);
         fs::create_dir_all(target.parent().unwrap()).unwrap();
+        if name.starts_with("rust/tools/") && !original.join(name).try_exists().unwrap() {
+            continue;
+        }
         symlink(original.join(name), target).unwrap();
     }
     let options = Options {

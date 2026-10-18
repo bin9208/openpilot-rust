@@ -64,11 +64,13 @@ pub(crate) fn sources(repository: &Path) -> Result<BTreeMap<String, String>> {
 }
 pub fn source_provenance(repository: &Path) -> Result<J> {
     let live = sources(repository)?;
-    let historical = LIVE_SOURCES
-        .iter()
-        .filter(|(name, _)| RETIRED_CHECKERS.contains(name) && !live.contains_key(*name))
-        .copied()
-        .collect::<BTreeMap<_, _>>();
+    let mut historical = crate::tombstone_source::historical_sources(repository)?;
+    historical.extend(
+        LIVE_SOURCES
+            .iter()
+            .filter(|(name, _)| RETIRED_CHECKERS.contains(name) && !live.contains_key(*name))
+            .map(|(name, hash)| ((*name).to_owned(), (*hash).to_owned())),
+    );
     Ok(J::parse(
         &serde_json::json!({"source_sha256":live,"historical_source_sha256":historical})
             .to_string(),
@@ -237,6 +239,9 @@ const LIVE_SOURCES: &[(&str, &str)] = &[
     ),
 ];
 const RETIRED_CHECKERS: &[&str] = &[
+    "rust/tools/tombstoned_reference.py",
+    "rust/tools/check_tombstoned_reference.py",
+    "rust/tools/check_crash_sdk_transport.py",
     "rust/tools/check_tombstoned_runtime.py",
     "rust/tools/check_tombstoned_shutdown.py",
 ];

@@ -388,6 +388,7 @@ pub(super) fn run(request: &Request, stop: &AtomicBool) -> Result<Value> {
         "probe_sha256":digest(&probe)?,"collector_sha256":digest(&binary)?,
         "implementation":"rust", "worker_sha256":request.worker_sha256,
         "controller_sha256":request.controller_sha256,"source_sha256":request.sources,
+        "historical_source_sha256":request.historical_sources,
         "native_source_sha256":native_sources});
     Ok(report)
 }

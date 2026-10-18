@@ -121,12 +121,18 @@ pub(super) fn sources(root: &Path) -> Result<BTreeMap<String, String>> {
     }
     Ok(pins)
 }
-fn historical_sources(live: &BTreeMap<String, String>) -> BTreeMap<&'static str, &'static str> {
-    RETIRED_SOURCES
-        .iter()
-        .filter(|(name, _)| !live.contains_key(*name))
-        .copied()
-        .collect()
+fn historical_sources(
+    root: &Path,
+    live: &BTreeMap<String, String>,
+) -> Result<BTreeMap<String, String>> {
+    let mut historical = crate::tombstone_source::historical_sources(root)?;
+    historical.extend(
+        RETIRED_SOURCES
+            .iter()
+            .filter(|(name, _)| !live.contains_key(*name))
+            .map(|(name, hash)| ((*name).into(), (*hash).into())),
+    );
+    Ok(historical)
 }
 pub(super) fn artifacts(
     binary: &Path,
@@ -400,7 +406,7 @@ pub fn run(
             "managed-entry final artifact changed",
         )?;
         cancel.check()?;
-        let historical = historical_sources(&pinned);
+        let historical = historical_sources(repository, &pinned)?;
         let report = json!({"result":"PASS","comparisons":results.len(),"results":results,"source_sha256":pinned,"historical_source_sha256":historical,"artifact_sha256":binaries});
         let mut encoded = report.to_string();
         encoded.pop();
@@ -488,7 +494,7 @@ pub fn run_readiness(
             "readiness artifact changed during check",
         )?;
         cancel.check()?;
-        let historical = historical_sources(&pinned);
+        let historical = historical_sources(repository, &pinned)?;
         let report = json!({"result":"PASS","scenario":"reset-error","schedule":"subscriber-before-publisher","error_messages":errors.len(),"source_sha256":pinned,"historical_source_sha256":historical,"artifact_sha256":binaries});
         pretty(&options.output.join("manifest.json"), &report)?;
         Ok(openpilot_log_format::JsonValue::parse(&report.to_string())?)
