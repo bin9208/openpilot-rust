@@ -948,3 +948,35 @@ passed. Evidence is under `.analysis/scratch/2026-10-18-ui-application-window/`;
 independent review found no blocker. This fixes the observed build-pin failure
 and separate application diagnostic crash; the earlier intermittent display-open
 cause and user device startup remain unverified.
+
+### Uploader cache follows observed file deletion (#361)
+
+Both the original Python xattr helper and native uploader retained historical
+path entries after log deletion. An unchanged-original probe read and removed
+512 actual temporary files and still found 512 cached entries. The native
+regressions likewise failed after deleting whole segments and individual files.
+This is an inherited retention problem, not evidence of a new port regression.
+
+The uploader now reuses its completed directory inventories to remove cache keys
+whose absence is established. Live files keep their existing cached values,
+including external attribute changes; locked or unenumerated directories,
+incomplete root scans, uncertain entries and other roots remain conservative.
+There are no additional per-cache-entry filesystem calls. Substantially oversized
+map storage is released after contraction. A file observed absent and later
+recreated is read afresh: this is an intentional stale-cache correction, recorded
+separately from unchanged source behavior.
+
+All sixteen uploader tests passed, including three new real-filesystem regressions
+covering three generations of 256 entries, capacity contraction, deletion/recreation,
+locked/uncertain roots and preservation of other-root/live entries. Strict all-target
+Clippy passed. A freshly built, frozen native trace binary also passed the original
+212 filesystem scenarios, 10,000 backoff decisions and 32 loopback HTTP cases;
+compressed payloads remain byte-identical and RSA/EC signing checks passed.
+Independent source review found no blocker. Real enumeration errors were not
+injected by the new tests; source inspection verifies failed inventories do not
+prune. Evidence is under `.analysis/scratch/2026-10-18-uploader-cache-review/`.
+
+These checks establish cache entry/capacity reclamation on observed deletion,
+not measured heap bytes, CPU savings, a hard bound during indefinitely unreadable
+directories or device upload acceptance. Exact-SHA CI and user device checks remain
+separate delivery evidence.
