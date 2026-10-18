@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 299);
+    assert_eq!(text.matches(marker).count(), 302);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -244,6 +244,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut manager_catalog = vec![];
     let mut qcom_assistance = vec![];
     let mut feedback = vec![];
+    let mut bluetooth_input = vec![];
     let mut updated_ownership = vec![];
     let mut metadata_transport = vec![];
     let mut metadata_capture = vec![];
@@ -319,6 +320,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             }
             if i + 1 < lines.len() && lines[i + 1].contains("--features sdk-receiver-native") {
                 sdk_receiver.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len() && lines[i + 1].contains("--features bluetooth-input-native") {
+                bluetooth_input.push(tail.to_owned());
                 continue;
             }
             if i + 1 < lines.len() && lines[i + 1].contains("--features version-tools-native") {
@@ -527,6 +532,11 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     // The removed camera pip install and Cython build had 512/1024 MiB
     // guards. Native camera operations retain every required reserve.
     assert_eq!(arguments.len(), 177);
+    assert_eq!(
+        bluetooth_input,
+        [1024, 512, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
     assert_eq!(
         registration_clock,
         [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 2]

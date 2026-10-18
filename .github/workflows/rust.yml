@@ -2928,6 +2928,14 @@ jobs:
           cargo build --manifest-path rust/Cargo.toml -p openpilot-ui-framework -p openpilot-startup-ui -p openpilot-wifi -p openpilot-cweb-push -p openpilot-process-supervision -p openpilot-bluetooth --bins --examples --locked
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/ui-params-binding"
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/connectivity-msgq-python"
+      - name: Check native Bluetooth input decoder against original records
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --bin check-bluetooth-input-decode --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          BLUETOOTH_INPUT_FIXTURE="$PWD/rust/target/debug/examples/input_fixture" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --test bluetooth_input_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --lib --test bluetooth_input_check --bin check-bluetooth-input-decode --locked -- -D warnings
       - name: Compare shared UI state, pixels, real input and native lifecycle
         env:
           UI_FORMS_FAILURE_OUTPUT: ${{ runner.temp }}/ui-connectivity/forms-failures

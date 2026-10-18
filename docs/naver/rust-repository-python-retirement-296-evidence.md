@@ -4111,3 +4111,47 @@ not collect; the corrected source-native setup produced the actual RED/GREEN.
 Private evidence: `2026-10-19-llvm-ci-split/card-aggregate-*` and
 `2026-10-19-publish-batch/card-failure.log`. Other jobs remain separate pending
 checks, and the published run is not an overall success.
+
+### Native Bluetooth input decoder checker (2026-10-19)
+
+Only `rust/tools/check_bluetooth_input_decode.py` is retired. The native
+`check-bluetooth-input-decode` independently reproduces the unchanged source's
+25 extrema,10,000 seeded records and24 incomplete buffers, preserving signed
+fields and exact timestamp binary64 bits. The sealed synthetic source fixture
+and14 original child/error/artifact boundaries remain permanent tests. Actual
+REDs exposed Boolean timestamp coercion and executable-argument retargeting;
+the repairs retain numeric equality and reject mixed executable/source identity.
+Leader-only cancellation after acknowledging child/descendant pidfds proves
+owned cleanup within two seconds. The original30-second child deadline remains.
+The source ABI is explicitly Linux little-endian LP64 input_event(size24).
+
+The unchanged original checker and fresh actual `input_fixture` passed all10,049
+records. All five input/native/source/result artifacts are byte-identical to the
+native run. Fresh frozen bundle `frozen-a0v56j_9` then passed before and after
+parent deletion using the same two ELFs: checker SHA256
+`65871219fc614fb48d7e9f37717461b84c65680df1bd1287cfa80a6a72e90cc3`,
+fixture SHA256
+`36cd76ce199ea08ccc1fd7f2caa113fdf9ff813b0f4a1205fbb7c57d3a12792d`.
+The17,443-input source receipt SHA256 is
+`06557fc06d99c1e05d5164328ca87e8926848954b7652f7a4b4183e3cac64e9b`.
+Each phase passed six CLI controls and empty-PATH execution traces with zero
+Python child execution. An after-proof harness correction recognizes only the
+resolved alias of the one removed helper, requires its original SHA256
+`2396e77d952213074555f47413934d090500d7d1ec8a338f06c38adefda6cc5a`
+and actual absence; source/ELF seals were unchanged. Failed harness receipts
+remain private; they are not reported as successful proofs.
+
+Fresh post-deletion builds, eight permanent Bluetooth tests,43 CI-policy plus13
+disk tests, scoped strict Clippy and formatting pass. The freshly built checker
+again passes the10,049 actual cases, all five artifact bytes and empty-PATH
+zero-Python tracing. Mandatory UI/connectivity CI explicitly builds this feature,
+tests its target with a fresh fixture and runs strict Clippy. The caller's
+explicit/default native path preserves the full14-case roster; the other13
+Bluetooth Python cases remain pending. Three new growth guards bring the Rust
+workflow count to302 while retaining the inherited177-guard hash.
+
+Private evidence: `2026-10-19-bluetooth-decode-tools/` source captures,
+`frozen-a0v56j_9/{before,after}/proof.json`, `postdelete-gate.log` and
+`postdelete-actual-proof.json`. Inventory recount:193 replaced-local,3 partial,
+3,384 pending out of3,580. This is one local tool retirement; exact committed-head
+CI, full repository conversion and user-owned device validation remain open.

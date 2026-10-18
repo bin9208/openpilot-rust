@@ -13,8 +13,10 @@ def main():
   parser.add_argument('--bin-dir', required=True, type=Path)
   parser.add_argument('--msgq-python', required=True, type=Path)
   parser.add_argument('--output', required=True, type=Path)
+  parser.add_argument('--input-decode-checker', type=Path)
   args = parser.parse_args()
   binary, output = args.bin_dir.resolve(), args.output.resolve()
+  input_checker = args.input_decode_checker.resolve() if args.input_decode_checker is not None else binary / 'check-bluetooth-input-decode'
   output.mkdir(parents=True, exist_ok=False)
   environment = dict(os.environ, PYTHONPATH=f'{args.msgq_python.resolve()}:{ROOT}:{ROOT / "rust/tools"}')
   shim = output / 'input-fixture.so'
@@ -40,8 +42,12 @@ def main():
   ]
   receipts = []
   for name, example, extra in cases:
-    command = [sys.executable, str(ROOT / f'rust/tools/check_bluetooth_{name}.py'),
-               '--binary', str((binary / 'examples' / example).resolve()), '--output', str(output / name), *extra]
+    if name == 'input_decode':
+      command = [str(input_checker), '--binary', str((binary / 'examples' / example).resolve()),
+                 '--output', str(output / name), *extra]
+    else:
+      command = [sys.executable, str(ROOT / f'rust/tools/check_bluetooth_{name}.py'),
+                 '--binary', str((binary / 'examples' / example).resolve()), '--output', str(output / name), *extra]
     with (output / f'{name}.log').open('w') as log:
       process = subprocess.run(command, env=environment, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, timeout=240)
     receipts.append({'case': name, 'command': command, 'returncode': process.returncode})

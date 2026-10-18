@@ -10,6 +10,8 @@ pub mod beep_clock_check;
 pub mod beep_integer_check;
 pub mod beep_sleep_check;
 pub mod bluetooth_digits_generate;
+#[cfg(feature = "bluetooth-input-native")]
+pub mod bluetooth_input_check;
 #[cfg(feature = "bootlog-artifact-native")]
 pub mod bootlog_artifact_check;
 #[cfg(target_os = "linux")]

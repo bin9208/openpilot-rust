@@ -596,6 +596,17 @@ fn athena_requires_complete_native_runtime_and_codec_checks() {
 }
 #[test]
 fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
+    let caller = read("rust/tools/check_bluetooth_runtime.py");
+    required(
+        &caller,
+        &[
+            "--input-decode-checker",
+            "if name == 'input_decode':",
+            "command = [str(input_checker), '--binary'",
+            "binary / 'check-bluetooth-input-decode'",
+        ],
+    );
+    assert!(!caller.contains("check_bluetooth_input_decode.py"));
     let config = workflow();
     let environment = &config["jobs"]["ui-connectivity"]["env"];
     for key in ["CARGO_PROFILE_DEV_DEBUG", "CARGO_PROFILE_TEST_DEBUG"] {
@@ -617,6 +628,9 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_cweb_http.py",
             "check_cweb_daemon.py",
             "check_cweb_address.py",
+            "cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --bin check-bluetooth-input-decode --locked",
+            "BLUETOOTH_INPUT_FIXTURE=\"$PWD/rust/target/debug/examples/input_fixture\" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --test bluetooth_input_check --locked",
+            "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-input-native --lib --test bluetooth_input_check --bin check-bluetooth-input-decode --locked -- -D warnings",
             "build_params_python.py",
         ],
         &[

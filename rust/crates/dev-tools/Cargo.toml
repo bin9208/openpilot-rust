@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+bluetooth-input-native = []
 sdk-receiver-native = ["dep:brotli-decompressor", "rustix/net"]
 sdk-transport-native = ["sdk-receiver-native"]
 version-tools-native = ["dep:zmq", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
@@ -1372,3 +1373,12 @@ required-features = ["registration-clock-native"]
 [[test]]
 name = "registration_clock_check"
 required-features = ["registration-clock-native"]
+
+[[bin]]
+name = "check-bluetooth-input-decode"
+path = "src/bin/check_bluetooth_input_decode.rs"
+required-features = ["bluetooth-input-native"]
+
+[[test]]
+name = "bluetooth_input_check"
+required-features = ["bluetooth-input-native"]
