@@ -242,11 +242,14 @@ struct Owned {
     child: Child,
     pid: Pid,
     reaped: bool,
+    own_group: bool,
 }
 impl Drop for Owned {
     fn drop(&mut self) {
         if !self.reaped {
-            let _ = kill_process_group(self.pid, Signal::KILL);
+            if self.own_group {
+                let _ = kill_process_group(self.pid, Signal::KILL);
+            }
             let _ = self.child.kill();
             let _ = self.child.wait();
         }
@@ -301,7 +304,7 @@ enum LogFiles<'a> {
 }
 impl Runner for NativeRunner {
     fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
-        self.run_with_file(spec, None)
+        self.run_with_file(spec, None, true)
     }
     fn run_to_files(
         &mut self,
@@ -313,7 +316,7 @@ impl Runner for NativeRunner {
         spec.merge_output = false;
         spec.inherit_output = false;
         spec.inherit_stderr = false;
-        self.run_with_file(&spec, Some(LogFiles::Separate(stdout, stderr)))
+        self.run_with_file(&spec, Some(LogFiles::Separate(stdout, stderr)), true)
     }
     fn run_to_file_with_prefix(
         &mut self,
@@ -325,11 +328,23 @@ impl Runner for NativeRunner {
         spec.merge_output = true;
         spec.inherit_output = false;
         spec.inherit_stderr = false;
-        self.run_with_file(&spec, Some(LogFiles::Merged(log, prefix)))
+        self.run_with_file(&spec, Some(LogFiles::Merged(log, prefix)), true)
     }
 }
 impl NativeRunner {
-    fn run_with_file(&mut self, spec: &CommandSpec, log: Option<LogFiles<'_>>) -> Result<Captured> {
+    /// Capture inside an already-owned worker group. The outer runner alone
+    /// owns descendants; this inner owner only kills/reaps its direct child.
+    /// Never use this entrypoint outside that process-group ownership scope.
+    #[cfg(feature = "timed-live-native")]
+    pub(crate) fn run_in_current_group(&mut self, spec: &CommandSpec) -> Result<Captured> {
+        self.run_with_file(spec, None, false)
+    }
+    fn run_with_file(
+        &mut self,
+        spec: &CommandSpec,
+        log: Option<LogFiles<'_>>,
+        own_group: bool,
+    ) -> Result<Captured> {
         if spec.timeout.is_zero() {
             return Err("native command timeout must be positive".into());
         }
@@ -347,8 +362,10 @@ impl NativeRunner {
             .envs(spec.effective_env())
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .process_group(0);
+            .stderr(Stdio::piped());
+        if own_group {
+            command.process_group(0);
+        }
         for key in &spec.env_remove {
             command.env_remove(key);
         }
@@ -402,6 +419,7 @@ impl NativeRunner {
             child,
             pid,
             reaped: false,
+            own_group,
         };
         let mut input = owned.child.stdin.take();
         if let Some(pipe) = &input {
@@ -481,9 +499,11 @@ impl NativeRunner {
                 ) {
                     Ok(Some(_)) => {
                         exited = true;
-                        match kill_process_group(pid, Signal::KILL) {
-                            Ok(()) | Err(rustix::io::Errno::SRCH) => {}
-                            Err(e) => return Err(e.into()),
+                        if own_group {
+                            match kill_process_group(pid, Signal::KILL) {
+                                Ok(()) | Err(rustix::io::Errno::SRCH) => {}
+                                Err(e) => return Err(e.into()),
+                            }
                         }
                     }
                     Ok(None) | Err(rustix::io::Errno::INTR) => {}

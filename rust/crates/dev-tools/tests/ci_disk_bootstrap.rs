@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 232);
+    assert_eq!(text.matches(marker).count(), 235);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -250,6 +250,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut image_codecs = vec![];
     let mut llvm_provider = vec![];
     let mut llvm20_regression = vec![];
+    let mut timed_tools = vec![];
     let mut ratekeeper = vec![];
     let mut cutin = vec![];
     let mut selfdrive_state = vec![];
@@ -264,6 +265,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut journal_bootlog_checks = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len() && lines[i + 1].contains("--features timed-live-native") {
+                timed_tools.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--output \"$RUNNER_TEMP/llvm20.deb\"")
                     || lines[i + 1].contains("LLVM_PATH=\"$RUNNER_TEMP/llvm20-captured/"))
@@ -398,6 +403,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     // The removed camera pip install and Cython build had 512/1024 MiB
     // guards. Native camera operations retain every required reserve.
     assert_eq!(arguments.len(), 177);
+    assert_eq!(
+        timed_tools,
+        vec![
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 2048",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+        ]
+    );
     assert_eq!(
         llvm20_regression,
         vec![

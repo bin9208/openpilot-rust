@@ -256,6 +256,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "ui_scroll_check",
         "diagnostic_check",
         "message_state_ci",
+        "timed_ci",
         "ci_artifact_list",
         "miri_provenance",
         "image_array_math",

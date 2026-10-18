@@ -1987,7 +1987,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
+      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5 strace
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pyserial==3.5
       - name: Configure original support IPC imports
         run: printf 'PYTHONPATH=%s/support-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -2041,18 +2041,28 @@ jobs:
           rustup component add clippy --toolchain 1.94.0
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features journal-runtime-native --lib --bin check-journald --bin journalctl-fixture --test journald_check --test journald_fixture --test journald_runtime_check --locked -- -D warnings
           rust/target/debug/check-journald --binary rust/target/debug/journald-rs --fixture rust/target/debug/journalctl-fixture --output "$RUNNER_TEMP/support-runtime/journald"
+      - name: Build and test native timed QA tools
+        env:
+          TIMED_NATIVE_ENTRY: ${{ github.workspace }}/rust/target/debug/openpilot-timed
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features timed-live-native --bin timed-source-reference --bin timed-command-fixture --bin timed-runtime-worker --bin check-timed-reference --bin check-timed-dates --bin check-timed-http --bin check-timed-logging --bin check-timed-daemon --bin check-timed-date-daemon --bin check-timed-lifecycle --bin check-timed-shutdown --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features timed-live-native --bin timed-source-reference --bin timed-command-fixture --bin timed-runtime-worker --bin check-timed-reference --bin check-timed-dates --bin check-timed-http --bin check-timed-logging --bin check-timed-daemon --bin check-timed-date-daemon --bin check-timed-lifecycle --bin check-timed-shutdown --test timed_fixtures --test timed_shutdown_phase --test timed_reference --test timed_reference_actions --test timed_http_reference --test timed_http_report --test timed_proxy_reference --test timed_native_capture --test timed_native_logging --test timed_check --test timed_check_cli --test timed_check_prefix --test timed_command_publication --test timed_live_child --test timed_live --test timed_live_cli --test timed_live_cleanup --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features timed-live-native --bin timed-source-reference --bin timed-command-fixture --bin timed-runtime-worker --bin check-timed-reference --bin check-timed-dates --bin check-timed-http --bin check-timed-logging --bin check-timed-daemon --bin check-timed-date-daemon --bin check-timed-lifecycle --bin check-timed-shutdown --test timed_fixtures --test timed_shutdown_phase --test timed_reference --test timed_reference_actions --test timed_http_reference --test timed_http_report --test timed_proxy_reference --test timed_native_capture --test timed_native_logging --test timed_check --test timed_check_cli --test timed_check_prefix --test timed_command_publication --test timed_live_child --test timed_live --test timed_live_cli --test timed_live_cleanup --locked -- -D warnings
       - name: Compare timed policy, HTTP and logging with original source
         run: |
-          python rust/tools/check_timed_reference.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-reference"
-          python rust/tools/check_timed_dates.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-dates"
-          python rust/tools/check_timed_http.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-http"
-          python rust/tools/check_timed_logging.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-logging"
+          rust/target/debug/check-timed-reference --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-reference"
+          rust/target/debug/check-timed-dates --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-dates"
+          rust/target/debug/check-timed-http --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-http"
+          rust/target/debug/check-timed-logging --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-logging"
       - name: Compare timed actual IPC and production process shutdown
         run: |
-          python rust/tools/check_timed_daemon.py --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-daemon"
-          python rust/tools/check_timed_date_daemon.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-date-daemon"
-          python rust/tools/check_timed_lifecycle.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-lifecycle"
-          python rust/tools/check_timed_shutdown.py --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-shutdown"
+          rust/target/debug/check-timed-daemon --binary rust/target/debug/examples/timed_fixture --output "$RUNNER_TEMP/support-runtime/timed-daemon"
+          rust/target/debug/check-timed-date-daemon --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-date-daemon"
+          rust/target/debug/check-timed-lifecycle --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-lifecycle"
+          rust/target/debug/check-timed-shutdown --binary rust/target/debug/openpilot-timed --output "$RUNNER_TEMP/support-runtime/timed-shutdown"
       - name: Compare interrupted diagnostic sends and actual upload completion
         run: |
           fault_root="$RUNNER_TEMP/support-runtime/interrupted-send"

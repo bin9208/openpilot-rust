@@ -3016,3 +3016,37 @@ reserve raises the explicit guard count from 225 to 226 while preserving all old
 guard arguments. The unchanged full source suite and downstream steps require
 fresh exact-commit CI. The shared Python binding remains a tracked #296 migration
 item; this repair does not claim its retirement.
+
+### Timed QA retirement and worker cleanup (#296, #358)
+
+Thirteen Python entrypoints/helpers were replaced by eight native checkers,
+three native helper binaries and independent dynamic source references. Original
+captures cover policy54, datetime360, HTTP44, logging2, daemon4, date-daemon16,
+lifecycle7 and shutdown6. All493 cases pass before and after deletion using the
+same frozen eleven QA ELFs and exact original candidate pair. Stable output
+ordering, hostname and build metadata remain compared; timing fields are
+projected only after their original bounds pass. Each run inspects1,025 execve
+attempts with zero Python and audits27 worker receipts and removed IPC objects.
+
+The final post-deletion gate passes118tests across22integration targets plus
+11binary targets, followed by strict Clippy. CI preserves all unrelated support
+commands and makes the17timed regression targets and all eight native checker
+invocations mandatory. The13retired paths alone may be absent: changed present
+sources and missing/changed live dependencies still reject. Source provenance
+uses existing Git blobs; retired Python is never restored or executed.
+
+Three independently reproduced cleanup failures are tracked in
+[#358](https://github.com/bin9208/openpilot-rust/issues/358): preflight and CLI
+children escaping the worker group, and a failed launch consuming a stale
+ownership receipt. Inner capture now inherits the owned outer group, and cleanup
+requires an invocation-bound atomic receipt. All three regressions fail before
+and pass after the repair; the existing30default process-runner tests still pass.
+The IPC-creation-to-first-ownership-flag crash window remains explicit. This is
+QA-tool equivalence, not a new runtime release, device acceptance or CPU result.
+
+Local evidence: `.analysis/scratch/2026-10-18-timed-tools/`. Frozen bundle snapshot
+SHA256 `0514a06641b8f2deedcebf888c67ad4ec927902f9318fa8eaedba20a2849b054`;
+original archive `a4f95aa7d519766cd444d61f303837884661ab2fd92c04ddf35df31aace8e6fc`;
+before proof `e61b38ff33e34a16db4184903d7e7dc0d59d9c4bd7d29cf2f6ab26f246b2d6ef`;
+after proof `9c5050e649794e40032577ec06f32d77d5964fa594bfc3608ce88fe5959b528d`.
+Exact committed-SHA CI remains required; #296 stays open.

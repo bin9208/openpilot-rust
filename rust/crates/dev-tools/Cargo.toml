@@ -18,6 +18,91 @@ name = "services_catalog_check"
 required-features = ["services-catalog-native"]
 
 [[bin]]
+name = "timed-command-fixture"
+path = "src/bin/timed_command_fixture.rs"
+
+[[bin]]
+name = "timed-source-reference"
+path = "src/bin/timed_source_reference.rs"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_reference"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_reference_actions"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_http_reference"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_http_report"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_native_capture"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_native_logging"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_proxy_reference"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_check"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_check_cli"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_check_prefix"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_command_publication"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_live_child"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_live"
+required-features = ["timed-live-native"]
+
+[[test]]
+name = "timed_live_cleanup"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-reference"
+path = "src/bin/check_timed_reference.rs"
+required-features = ["timed-tools-native"]
+
+[[bin]]
+name = "check-timed-dates"
+path = "src/bin/check_timed_dates.rs"
+required-features = ["timed-tools-native"]
+
+[[bin]]
+name = "check-timed-http"
+path = "src/bin/check_timed_http.rs"
+required-features = ["timed-tools-native"]
+
+[[bin]]
+name = "check-timed-logging"
+path = "src/bin/check_timed_logging.rs"
+required-features = ["timed-tools-native"]
+
+[[bin]]
 name = "check-bootlog-artifacts"
 path = "src/bin/check_bootlog_artifacts.rs"
 required-features = ["bootlog-artifact-native"]
@@ -284,8 +369,39 @@ path = "src/bin/check_params_reference.rs"
 name = "list-cargo-tests"
 path = "src/bin/list_cargo_tests.rs"
 
+[[test]]
+name = "timed_live_cli"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "timed-runtime-worker"
+path = "src/bin/timed_runtime_worker.rs"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-daemon"
+path = "src/bin/check_timed_daemon.rs"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-date-daemon"
+path = "src/bin/check_timed_date_daemon.rs"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-lifecycle"
+path = "src/bin/check_timed_lifecycle.rs"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-shutdown"
+path = "src/bin/check_timed_shutdown.rs"
+required-features = ["timed-live-native"]
+
 [features]
 services-catalog-native = ["dep:capnp", "dep:openpilot-cereal"]
+timed-tools-native = ["dep:chrono", "dep:zmq"]
+timed-live-native = ["timed-tools-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
 bootlog-artifact-native = ["dep:capnp", "dep:openpilot-cereal", "dep:zstd"]
 journal-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
@@ -435,7 +551,7 @@ flate2 = "1"
 bzip2 = "=0.6.1"
 command-fds = "=0.3.3"
 tar = { version = "0.4", default-features = false }
-rustix = { version = "1", features = ["fs", "process", "event", "time", "thread", "stdio"] }
+rustix = { version = "1", features = ["fs", "process", "event", "time", "thread", "stdio", "system"] }
 regex = "1"
 num-bigint = "=0.4.8"
 yaml-rust2 = { version = "=0.13.0", default-features = false }

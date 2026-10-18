@@ -1,0 +1,50 @@
+{
+  "provenance": {
+    "python": "3.12.15",
+    "implementation": "CPython",
+    "capture": "Original scenario enumeration with unchanged timed_reference.Source and real filesystem/sudo fixture. Only native comparison arm omitted. No candidate timed code or output used.",
+    "sources": {
+      "rust/tools/check_timed_daemon.py": "1bc662ab16c099f87311791e6eac6ff03cd469ac4f1f1937d448b745ad72cf5c",
+      "rust/tools/check_timed_date_daemon.py": "0351cba6545d8fb3f74dd7601f8d873b8048a4078d9ceb6ff2e8e4b7d1d936b0",
+      "rust/tools/check_timed_dates.py": "12e54b4ddcdfa3afa2518e6f9a577ea47300d1cf60ba19717f1bfa02fa7a3c08",
+      "rust/tools/check_timed_http.py": "835e25276d732e705724826c78bff3319638e98fe28a74491224cc422ba88364",
+      "rust/tools/check_timed_lifecycle.py": "0acc44b19abd5fc64c2444bbb8b7e3f4594d9f7d8eef26c24aa55154747e4ae4",
+      "rust/tools/check_timed_logging.py": "daafbce164022c793e3c0f21852cd1bc696bdf156d109c73c6d1a90cd74db2d6",
+      "rust/tools/check_timed_reference.py": "0a08ff3d4369de09c73ce781cfc80aed5fa7d612d89504a931beeb6fac26f91a",
+      "rust/tools/check_timed_shutdown.py": "307b0bbc6246d94c1e33ac148e6fa462fcce9cdf03cf5770f920709969f266a6",
+      "rust/tools/timed_fixtures.py": "09a04bd1bcbac39731ed8377bf509113f9c36b224d22a0dccc1a8c196eb7b826",
+      "rust/tools/timed_reference.py": "9bedb8a148b2d6c4d7d211cd89e5a85c976710698db69a5a339e181ed6c76316",
+      "rust/tools/timed_shutdown_phase.py": "ddc10bf08d69be7d48de231ab228b59516d38925d20a0472ce75aae28cfe1c4d",
+      "rust/tools/timed_source_live.py": "297f19e2912245aaeb19407549bf70581b86e9fd9494b988c8557e8fd06b7368",
+      "rust/tools/tests/test_timed_shutdown_phase.py": "5025e456e079a5c32141fa2595759b5c6b75aaa4af91f3ef9c78891b1c488906",
+      "rust/tools/logging_producer_reference.py": "ac89bd78f4a2eed348317e374c4f21a9d2e28500abbeab10b50313ef3677a536",
+      "openpilot/common/time_helpers.py": "7e846c4963dc4950c2b2fc96307e21628add9552d19c91dbbca51140cf8caf81",
+      "openpilot/common/gps.py": "2d7ab534e3fbb966d616979966534ec1fe572d19e00731d7d89173e6aa6aead6",
+      "openpilot/system/timezone_helper.py": "c11fec4702333c55081945cdc0c3fe8b7efdbae56801b3ccd02b7fb143da0898",
+      "openpilot/system/timed.py": "cee7a338decfce92269e915920488e526f3ca22beea7b578a7bc744e4407cbfe",
+      "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3",
+      "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616"
+    }
+  },
+  "capture_scope": "Original dates main, actual original Source/files/ZMQ, controlled first accepted-error result then second process failure. Exact published comparison bytes before failure retained.",
+  "completions": [
+    {
+      "code": 0,
+      "stdout": "{\"result\":{\"error\":\"controlled date boundary\"},\"sleeps\":[]}\n",
+      "stderr": ""
+    },
+    {
+      "code": 7,
+      "stdout": "partial next child\n",
+      "stderr": "controlled diagnostic\n"
+    }
+  ],
+  "files_hex": {
+    "UTC--62135683200000/native.jsonl": "7061727469616c206e657874206368696c640a",
+    "UTC--62135683200000/native.stderr": "636f6e74726f6c6c656420646961676e6f737469630a",
+    "UTC--62135683200001/comparison.json": "7b0a2020227a6f6e65223a2022555443222c0a202022756e69785f74696d657374616d705f6d696c6c6973223a202d36323133353638333230303030312c0a202022706173736564223a20747275652c0a202022726573756c7473223a205b0a202020207b0a202020202020226572726f72223a2022796561722030206973206f7574206f662072616e6765222c0a20202020202022736c65657073223a205b5d2c0a202020202020227374617465223a207b0a202020202020202022706172616d73223a207b0a202020202020202020202254696d657a6f6e654e616d65223a206e756c6c2c0a202020202020202020202254696d657a6f6e65536f75726365223a2022617070220a20202020202020207d2c0a202020202020202022746172676574223a206e756c6c2c0a202020202020202022636f6d6d616e6473223a205b5d2c0a2020202020202020227265636f726473223a205b5d0a2020202020207d0a202020207d2c0a202020207b0a202020202020226572726f72223a2022636f6e74726f6c6c6564206461746520626f756e64617279222c0a20202020202022736c65657073223a205b5d2c0a202020202020227374617465223a207b0a202020202020202022706172616d73223a207b0a202020202020202020202254696d657a6f6e654e616d65223a206e756c6c2c0a202020202020202020202254696d657a6f6e65536f75726365223a2022617070220a20202020202020207d2c0a202020202020202022746172676574223a206e756c6c2c0a202020202020202022636f6d6d616e6473223a205b5d2c0a2020202020202020227265636f726473223a205b5d0a2020202020207d0a202020207d0a20205d0a7d0a",
+    "UTC--62135683200001/native.jsonl": "7b22726573756c74223a7b226572726f72223a22636f6e74726f6c6c6564206461746520626f756e64617279227d2c22736c65657073223a5b5d7d0a",
+    "UTC--62135683200001/native.logs.json": "5b5d0a",
+    "UTC--62135683200001/native.stderr": ""
+  }
+}

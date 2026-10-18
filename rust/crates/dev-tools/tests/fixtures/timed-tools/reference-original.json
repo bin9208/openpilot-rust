@@ -1,0 +1,3756 @@
+{
+  "provenance": {
+    "python": "3.12.15",
+    "implementation": "CPython",
+    "capture": "Original scenario enumeration with unchanged timed_reference.Source and real filesystem/sudo fixture. Only native comparison arm omitted. No candidate timed code or output used.",
+    "sources": {
+      "rust/tools/check_timed_daemon.py": "1bc662ab16c099f87311791e6eac6ff03cd469ac4f1f1937d448b745ad72cf5c",
+      "rust/tools/check_timed_date_daemon.py": "0351cba6545d8fb3f74dd7601f8d873b8048a4078d9ceb6ff2e8e4b7d1d936b0",
+      "rust/tools/check_timed_dates.py": "12e54b4ddcdfa3afa2518e6f9a577ea47300d1cf60ba19717f1bfa02fa7a3c08",
+      "rust/tools/check_timed_http.py": "835e25276d732e705724826c78bff3319638e98fe28a74491224cc422ba88364",
+      "rust/tools/check_timed_lifecycle.py": "0acc44b19abd5fc64c2444bbb8b7e3f4594d9f7d8eef26c24aa55154747e4ae4",
+      "rust/tools/check_timed_logging.py": "daafbce164022c793e3c0f21852cd1bc696bdf156d109c73c6d1a90cd74db2d6",
+      "rust/tools/check_timed_reference.py": "0a08ff3d4369de09c73ce781cfc80aed5fa7d612d89504a931beeb6fac26f91a",
+      "rust/tools/check_timed_shutdown.py": "307b0bbc6246d94c1e33ac148e6fa462fcce9cdf03cf5770f920709969f266a6",
+      "rust/tools/timed_fixtures.py": "09a04bd1bcbac39731ed8377bf509113f9c36b224d22a0dccc1a8c196eb7b826",
+      "rust/tools/timed_reference.py": "9bedb8a148b2d6c4d7d211cd89e5a85c976710698db69a5a339e181ed6c76316",
+      "rust/tools/timed_shutdown_phase.py": "ddc10bf08d69be7d48de231ab228b59516d38925d20a0472ce75aae28cfe1c4d",
+      "rust/tools/timed_source_live.py": "297f19e2912245aaeb19407549bf70581b86e9fd9494b988c8557e8fd06b7368",
+      "rust/tools/tests/test_timed_shutdown_phase.py": "5025e456e079a5c32141fa2595759b5c6b75aaa4af91f3ef9c78891b1c488906",
+      "rust/tools/logging_producer_reference.py": "ac89bd78f4a2eed348317e374c4f21a9d2e28500abbeab10b50313ef3677a536",
+      "openpilot/common/time_helpers.py": "7e846c4963dc4950c2b2fc96307e21628add9552d19c91dbbca51140cf8caf81",
+      "openpilot/common/gps.py": "2d7ab534e3fbb966d616979966534ec1fe572d19e00731d7d89173e6aa6aead6",
+      "openpilot/system/timezone_helper.py": "c11fec4702333c55081945cdc0c3fe8b7efdbae56801b3ccd02b7fb143da0898",
+      "openpilot/system/timed.py": "cee7a338decfce92269e915920488e526f3ca22beea7b578a7bc744e4407cbfe",
+      "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3",
+      "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616"
+    }
+  },
+  "stdout": "PASS: 54 original-source/native scenarios\n",
+  "summary": {
+    "passed": true,
+    "source_native_scenarios": 54
+  },
+  "cases": [
+    {
+      "name": "gps-banker-rounding",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "gps",
+            "longitude": -1000
+          },
+          {
+            "kind": "gps",
+            "longitude": -187.5
+          },
+          {
+            "kind": "gps",
+            "longitude": -180
+          },
+          {
+            "kind": "gps",
+            "longitude": -172.5
+          },
+          {
+            "kind": "gps",
+            "longitude": -37.5
+          },
+          {
+            "kind": "gps",
+            "longitude": -22.5
+          },
+          {
+            "kind": "gps",
+            "longitude": -7.500001
+          },
+          {
+            "kind": "gps",
+            "longitude": -7.5
+          },
+          {
+            "kind": "gps",
+            "longitude": 0
+          },
+          {
+            "kind": "gps",
+            "longitude": 7.5
+          },
+          {
+            "kind": "gps",
+            "longitude": 7.500001
+          },
+          {
+            "kind": "gps",
+            "longitude": 22.5
+          },
+          {
+            "kind": "gps",
+            "longitude": 37.5
+          },
+          {
+            "kind": "gps",
+            "longitude": 127
+          },
+          {
+            "kind": "gps",
+            "longitude": 202.5
+          },
+          {
+            "kind": "gps",
+            "longitude": 210
+          },
+          {
+            "kind": "gps",
+            "longitude": 1000
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": "Etc/GMT+12"
+        },
+        {
+          "ok": "Etc/GMT+12"
+        },
+        {
+          "ok": "Etc/GMT+12"
+        },
+        {
+          "ok": "Etc/GMT+12"
+        },
+        {
+          "ok": "Etc/GMT+2"
+        },
+        {
+          "ok": "Etc/GMT+2"
+        },
+        {
+          "ok": "Etc/GMT+1"
+        },
+        {
+          "ok": "Etc/GMT"
+        },
+        {
+          "ok": "Etc/GMT"
+        },
+        {
+          "ok": "Etc/GMT"
+        },
+        {
+          "ok": "Etc/GMT-1"
+        },
+        {
+          "ok": "Etc/GMT-2"
+        },
+        {
+          "ok": "Etc/GMT-2"
+        },
+        {
+          "ok": "Etc/GMT-8"
+        },
+        {
+          "ok": "Etc/GMT-14"
+        },
+        {
+          "ok": "Etc/GMT-14"
+        },
+        {
+          "ok": "Etc/GMT-14"
+        }
+      ],
+      "errors": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "precedence",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "apply",
+            "zone": "bad",
+            "source": "app"
+          },
+          {
+            "kind": "apply",
+            "zone": "Etc/GMT-9",
+            "source": "gps"
+          },
+          {
+            "kind": "apply",
+            "zone": "Asia/Seoul",
+            "source": "wifi"
+          },
+          {
+            "kind": "apply",
+            "zone": "Etc/GMT",
+            "source": "gps"
+          },
+          {
+            "kind": "apply",
+            "zone": "America/New_York",
+            "source": "app"
+          },
+          {
+            "kind": "apply",
+            "zone": "Asia/Seoul",
+            "source": "wifi"
+          },
+          {
+            "kind": "apply",
+            "zone": "America/New_York",
+            "source": "app"
+          },
+          {
+            "kind": "apply",
+            "zone": "bad",
+            "source": "unknown"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": true
+        },
+        {
+          "ok": true
+        },
+        {
+          "ok": false
+        },
+        {
+          "ok": true
+        },
+        {
+          "ok": false
+        },
+        {
+          "ok": true
+        },
+        {
+          "ok": false
+        }
+      ],
+      "errors": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": "America/New_York",
+          "TimezoneSource": "app"
+        },
+        "target": "<root>/zoneinfo/America/New_York",
+        "commands": [
+          [
+            "rm",
+            "-f",
+            "<root>/etc/localtime"
+          ],
+          [
+            "ln",
+            "-s",
+            "<root>/zoneinfo/Etc/GMT-9",
+            "<root>/etc/localtime"
+          ],
+          [
+            "rm",
+            "-f",
+            "<root>/etc/localtime"
+          ],
+          [
+            "ln",
+            "-s",
+            "<root>/zoneinfo/Asia/Seoul",
+            "<root>/etc/localtime"
+          ],
+          [
+            "rm",
+            "-f",
+            "<root>/etc/localtime"
+          ],
+          [
+            "ln",
+            "-s",
+            "<root>/zoneinfo/America/New_York",
+            "<root>/etc/localtime"
+          ]
+        ],
+        "records": [
+          {
+            "level": 40,
+            "msg": "timezone: invalid zone 'bad' (source=app)",
+            "exception": false
+          },
+          {
+            "level": 20,
+            "msg": "timezone: set to Etc/GMT-9 (source=gps)",
+            "exception": false
+          },
+          {
+            "level": 20,
+            "msg": "timezone: set to Asia/Seoul (source=wifi)",
+            "exception": false
+          },
+          {
+            "level": 20,
+            "msg": "timezone: set to America/New_York (source=app)",
+            "exception": false
+          },
+          {
+            "level": 20,
+            "msg": "timezone: set to America/New_York (source=app)",
+            "exception": false
+          },
+          {
+            "level": 40,
+            "msg": "timezone: invalid zone 'bad' (source=unknown)",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "same-zone-promote",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "apply",
+            "zone": "Asia/Seoul",
+            "source": "gps"
+          },
+          {
+            "kind": "apply",
+            "zone": "Asia/Seoul",
+            "source": "wifi"
+          },
+          {
+            "kind": "apply",
+            "zone": "Asia/Seoul",
+            "source": "app"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        },
+        {
+          "ok": true
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": "Asia/Seoul",
+          "TimezoneSource": "app"
+        },
+        "target": "<root>/zoneinfo/Asia/Seoul",
+        "commands": [
+          [
+            "rm",
+            "-f",
+            "<root>/etc/localtime"
+          ],
+          [
+            "ln",
+            "-s",
+            "<root>/zoneinfo/Asia/Seoul",
+            "<root>/etc/localtime"
+          ]
+        ],
+        "records": [
+          {
+            "level": 20,
+            "msg": "timezone: set to Asia/Seoul (source=gps)",
+            "exception": false
+          },
+          {
+            "level": 20,
+            "msg": "timezone: set to Asia/Seoul (source=wifi)",
+            "exception": false
+          },
+          {
+            "level": 20,
+            "msg": "timezone: set to Asia/Seoul (source=app)",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "dangling-link",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "apply",
+            "zone": "Asia/Seoul",
+            "source": "wifi"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": "<root>/etc/absent",
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": "Asia/Seoul",
+          "TimezoneSource": "wifi"
+        },
+        "target": "<root>/zoneinfo/Asia/Seoul",
+        "commands": [
+          [
+            "rm",
+            "-f",
+            "<root>/etc/localtime"
+          ],
+          [
+            "ln",
+            "-s",
+            "<root>/zoneinfo/Asia/Seoul",
+            "<root>/etc/localtime"
+          ]
+        ],
+        "records": [
+          {
+            "level": 20,
+            "msg": "timezone: set to Asia/Seoul (source=wifi)",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "command-failure-rm",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "apply",
+            "zone": "Asia/Seoul",
+            "source": "wifi"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": "rm",
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        }
+      ],
+      "errors": [
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [
+          [
+            "rm",
+            "-f",
+            "<root>/etc/localtime"
+          ]
+        ],
+        "records": [
+          {
+            "level": 40,
+            "msg": "timezone: failed to set /data/etc/localtime",
+            "exception": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "command-failure-ln",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "apply",
+            "zone": "Asia/Seoul",
+            "source": "wifi"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": "ln",
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        }
+      ],
+      "errors": [
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [
+          [
+            "rm",
+            "-f",
+            "<root>/etc/localtime"
+          ],
+          [
+            "ln",
+            "-s",
+            "<root>/zoneinfo/Asia/Seoul",
+            "<root>/etc/localtime"
+          ]
+        ],
+        "records": [
+          {
+            "level": 40,
+            "msg": "timezone: failed to set /data/etc/localtime",
+            "exception": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "command-failure-date",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "set_time",
+            "epoch": 1790000030.9
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": "date",
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": null
+        }
+      ],
+      "errors": [
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [
+          [
+            "date",
+            "-s",
+            "@1790000030"
+          ]
+        ],
+        "records": [
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 30.9s)",
+            "exception": false
+          },
+          {
+            "level": 40,
+            "msg": "timed.failed_setting_time",
+            "exception": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-sudo",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "set_time",
+            "epoch": 1790000030.9
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": false,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "error": "FileNotFoundError"
+        }
+      ],
+      "errors": [
+        {
+          "type": "FileNotFoundError",
+          "message": "[Errno 2] No such file or directory: 'sudo'"
+        }
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": [
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 30.9s)",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "clock-diff-boundaries",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "set_time",
+            "epoch": 1789999989.9999
+          },
+          {
+            "kind": "set_time",
+            "epoch": 1789999990
+          },
+          {
+            "kind": "set_time",
+            "epoch": 1789999990.001
+          },
+          {
+            "kind": "set_time",
+            "epoch": 1790000000
+          },
+          {
+            "kind": "set_time",
+            "epoch": 1790000009.999
+          },
+          {
+            "kind": "set_time",
+            "epoch": 1790000010
+          },
+          {
+            "kind": "set_time",
+            "epoch": 1790000010.999
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        },
+        {
+          "ok": null
+        }
+      ],
+      "errors": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [
+          [
+            "date",
+            "-s",
+            "@1789999989"
+          ],
+          [
+            "date",
+            "-s",
+            "@1789999990"
+          ],
+          [
+            "date",
+            "-s",
+            "@1790000010"
+          ],
+          [
+            "date",
+            "-s",
+            "@1790000010"
+          ]
+        ],
+        "records": [
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 10.0s)",
+            "exception": false
+          },
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 10.0s)",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 10.0s",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 10.0s",
+            "exception": false
+          },
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 10.0s)",
+            "exception": false
+          },
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 11.0s)",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "wall-UTC-1740095999",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1740095999000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-UTC-1740096000",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1740096000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-UTC-1740096001",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1740096001000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-UTC-2051222399",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 2051222399000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-UTC-2051222400",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 2051222400000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-UTC-2051222401",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 2051222401000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-UTC-0",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 0
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-UTC-1740096000",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 1740096000000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2025-02-22 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-UTC-1772951400",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 1772951400000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2026-03-09 06:30:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-UTC-1793500200",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 1793500200000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2026-11-02 02:30:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": false
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-UTC-2051222400",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 2051222400000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2035-01-02 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": false
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-Asia-Seoul-1740095999",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1740095999000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-Asia-Seoul-1740096000",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1740096000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-Asia-Seoul-1740096001",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1740096001000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-Asia-Seoul-2051222399",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 2051222399000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-Asia-Seoul-2051222400",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 2051222400000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-Asia-Seoul-2051222401",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 2051222401000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-Asia-Seoul-0",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 0
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-Asia-Seoul-1740096000",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 1740096000000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2025-02-22 09:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-Asia-Seoul-1772951400",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 1772951400000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2026-03-09 15:30:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-Asia-Seoul-1793500200",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 1793500200000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2026-11-02 11:30:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": false
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-Asia-Seoul-2051222400",
+      "timezone": "Asia/Seoul",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 2051222400000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2035-01-02 09:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": false
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-America-New_York-1740095999",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1740095999000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-America-New_York-1740096000",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1740096000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-America-New_York-1740096001",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1740096001000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": false
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-America-New_York-2051222399",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 2051222399000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-America-New_York-2051222400",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 2051222400000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "wall-America-New_York-2051222401",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 2051222401000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "valid"
+          },
+          {
+            "kind": "bounds"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": true
+        },
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-America-New_York-0",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 0
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2025-02-21 00:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-America-New_York-1740096000",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 1740096000000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2025-02-21 19:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-America-New_York-1772951400",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 1772951400000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2026-03-09 01:30:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": true
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-America-New_York-1793500200",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 1793500200000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2026-11-01 22:30:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": false
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "systemd-America-New_York-2051222400",
+      "timezone": "America/New_York",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "bounds"
+          },
+          {
+            "kind": "valid"
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": 2051222400000000000
+      },
+      "loop": false,
+      "values": [
+        {
+          "ok": [
+            "2035-01-01 19:00:00",
+            "2035-01-01 00:00:00"
+          ]
+        },
+        {
+          "ok": false
+        }
+      ],
+      "errors": [
+        null,
+        null
+      ],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "loop-retries-freshness",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 30000000000,
+            "gps": {
+              "updated": false,
+              "has_fix": true,
+              "log_mono_time": 30000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 30000000001,
+            "gps": {
+              "updated": true,
+              "has_fix": false,
+              "log_mono_time": 30000000001,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 60000000001,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 58000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 60000000002,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 58000000002,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 360000000002,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 360000000002,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 0
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 360000000003,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 400000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 400000000000,
+            "gps": {
+              "updated": false,
+              "has_fix": true,
+              "log_mono_time": 400000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 401000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": false,
+              "log_mono_time": 401000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [
+          10,
+          10
+        ],
+        "last_attempt": 400000000000
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": [
+          {
+            "level": 40,
+            "msg": "timezone: invalid zone 'Etc/GMT-8' (source=gps)",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          },
+          {
+            "level": 40,
+            "msg": "timezone: invalid zone 'Etc/GMT-8' (source=gps)",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "loop-source-app",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 301000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 301000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 302000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 302000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {
+          "TimezoneSource": "617070"
+        },
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [
+          10,
+          10
+        ],
+        "last_attempt": 0
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": "app"
+        },
+        "target": null,
+        "commands": [],
+        "records": [
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "loop-source-wifi",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 301000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 301000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 302000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 302000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {
+          "TimezoneSource": "77696669"
+        },
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [
+          10,
+          10
+        ],
+        "last_attempt": 0
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": "wifi"
+        },
+        "target": null,
+        "commands": [],
+        "records": [
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "loop-source-gps",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 301000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 301000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 302000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 302000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {
+          "TimezoneSource": "677073"
+        },
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [
+          10,
+          10
+        ],
+        "last_attempt": 301000000000
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": "gps"
+        },
+        "target": null,
+        "commands": [],
+        "records": [
+          {
+            "level": 40,
+            "msg": "timezone: invalid zone 'Etc/GMT-8' (source=gps)",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "loop-source-unknown",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 301000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 301000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          },
+          {
+            "kind": "step",
+            "monotonic": 302000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 302000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {
+          "TimezoneSource": "756e6b6e6f776e"
+        },
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          },
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [
+          10,
+          10
+        ],
+        "last_attempt": 301000000000
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": "unknown"
+        },
+        "target": null,
+        "commands": [],
+        "records": [
+          {
+            "level": 40,
+            "msg": "timezone: invalid zone 'Etc/GMT-8' (source=gps)",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          },
+          {
+            "level": 10,
+            "msg": "Time diff too small: 0.0s",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "gps-date-1740095999999",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 10000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 10000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1740095999999
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [],
+        "last_attempt": 0
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "gps-date-1740096000000",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 10000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 10000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1740096000000
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [
+          10
+        ],
+        "last_attempt": 0
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [
+          [
+            "date",
+            "-s",
+            "@1740096000"
+          ]
+        ],
+        "records": [
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 49904000.0s)",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "gps-date-1740096000001",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 10000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 10000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1740096000001
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [
+          10
+        ],
+        "last_attempt": 0
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [
+          [
+            "date",
+            "-s",
+            "@1740096000"
+          ]
+        ],
+        "records": [
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 49904000.0s)",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "gps-date-2051222399999",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 10000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 10000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 2051222399999
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [
+          10
+        ],
+        "last_attempt": 0
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [
+          [
+            "date",
+            "-s",
+            "@2051222399"
+          ]
+        ],
+        "records": [
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 261222400.0s)",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "gps-date-2051222400000",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 10000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 10000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 2051222400000
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [
+          10
+        ],
+        "last_attempt": 0
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [
+          [
+            "date",
+            "-s",
+            "@2051222400"
+          ]
+        ],
+        "records": [
+          {
+            "level": 20,
+            "msg": "Setting system time from GPS (diff 261222400.0s)",
+            "exception": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "gps-date-2051222400001",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 10000000000,
+            "gps": {
+              "updated": true,
+              "has_fix": true,
+              "log_mono_time": 10000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 2051222400001
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {},
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocation",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [],
+        "last_attempt": 0
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    },
+    {
+      "name": "loop-ublox-selection",
+      "timezone": "UTC",
+      "config": {
+        "params_root": "<root>",
+        "paths": {
+          "zoneinfo": "<root>/zoneinfo",
+          "localtime": "<root>/etc/localtime",
+          "systemd": "<root>/systemd"
+        },
+        "endpoint": "http://127.0.0.1:1/unused",
+        "wall": 1790000000000000000,
+        "monotonic": 0,
+        "actions": [
+          {
+            "kind": "step",
+            "monotonic": 10000000000,
+            "gps": {
+              "updated": false,
+              "has_fix": true,
+              "log_mono_time": 10000000000,
+              "longitude": 127.0,
+              "unix_timestamp_millis": 1790000000000
+            }
+          }
+        ]
+      },
+      "initial": {
+        "params_hex": {
+          "UbloxAvailable": "31"
+        },
+        "command_fail": null,
+        "sudo_exists": true,
+        "localtime": null,
+        "systemd_mtime_ns": null
+      },
+      "loop": true,
+      "values": {
+        "service": "gpsLocationExternal",
+        "publications": [
+          {
+            "valid": true,
+            "wall": 1790000000000000000
+          }
+        ],
+        "sleeps": [],
+        "last_attempt": 0
+      },
+      "errors": [],
+      "state": {
+        "params": {
+          "TimezoneName": null,
+          "TimezoneSource": null
+        },
+        "target": null,
+        "commands": [],
+        "records": []
+      }
+    }
+  ]
+}

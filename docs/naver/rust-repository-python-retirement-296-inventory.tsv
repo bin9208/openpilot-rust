@@ -2084,14 +2084,14 @@ rust/tools/check_stats_log_fault.py	ff238b53e34afb709af764e44b8b301d67a753aa	pen
 rust/tools/check_stats_numbers.py	f7d7404586d04d2be2d8b6cb65e23d80e61b88aa	replaced-local	openpilot-dev-tools check-stats-numbers
 rust/tools/check_stats_producer.py	5c5c285242a90bbb08e62a6359fe52f927ec6323	pending	-
 rust/tools/check_stats_runtime.py	04bdc4bfc995cf358ed9abd8205f70c0199cb4d1	pending	-
-rust/tools/check_timed_daemon.py	ef291bfa1ed16f99411fee2150e06cff548cd03c	pending	-
-rust/tools/check_timed_date_daemon.py	dc0caebdfd36d39c5fe7d59fca69f23465844bc5	pending	-
-rust/tools/check_timed_dates.py	3085edf3bccdc4847475413c8cbe98eac6e4db9e	pending	-
-rust/tools/check_timed_http.py	a5b7a7853a25036edfd900ca355232b2e8684166	pending	-
-rust/tools/check_timed_lifecycle.py	59ab7fa70396e155faff3072ed86475e5e528c36	pending	-
-rust/tools/check_timed_logging.py	534cb1d18fd50ecd2357949bcd2a2aa5f6b8c83e	pending	-
-rust/tools/check_timed_reference.py	4be124331c95f66bfb0cdc6177e0bfbf716172a5	pending	-
-rust/tools/check_timed_shutdown.py	a9e6c5eb84de4832da8b487e699bab180f142b3d	pending	-
+rust/tools/check_timed_daemon.py	ef291bfa1ed16f99411fee2150e06cff548cd03c	replaced-local	rust/crates/dev-tools/src/bin/check_timed_daemon.rs
+rust/tools/check_timed_date_daemon.py	dc0caebdfd36d39c5fe7d59fca69f23465844bc5	replaced-local	rust/crates/dev-tools/src/bin/check_timed_date_daemon.rs
+rust/tools/check_timed_dates.py	3085edf3bccdc4847475413c8cbe98eac6e4db9e	replaced-local	rust/crates/dev-tools/src/bin/check_timed_dates.rs
+rust/tools/check_timed_http.py	a5b7a7853a25036edfd900ca355232b2e8684166	replaced-local	rust/crates/dev-tools/src/bin/check_timed_http.rs
+rust/tools/check_timed_lifecycle.py	59ab7fa70396e155faff3072ed86475e5e528c36	replaced-local	rust/crates/dev-tools/src/bin/check_timed_lifecycle.rs
+rust/tools/check_timed_logging.py	534cb1d18fd50ecd2357949bcd2a2aa5f6b8c83e	replaced-local	rust/crates/dev-tools/src/bin/check_timed_logging.rs
+rust/tools/check_timed_reference.py	4be124331c95f66bfb0cdc6177e0bfbf716172a5	replaced-local	rust/crates/dev-tools/src/bin/check_timed_reference.rs
+rust/tools/check_timed_shutdown.py	a9e6c5eb84de4832da8b487e699bab180f142b3d	replaced-local	rust/crates/dev-tools/src/bin/check_timed_shutdown.rs
 rust/tools/check_tombstoned_reference.py	3c0a3bf1a218fac520b68ac86e89c2079e393766	pending	-
 rust/tools/check_tombstoned_runtime.py	fdc3695dc9291a01e82b470d98c9a06eef26f5b0	pending	-
 rust/tools/check_tombstoned_safety.py	4295af01282a70011d563ab0fecfb08276152691	pending	-
@@ -2556,17 +2556,17 @@ rust/tools/tests/test_radarcan_ci.py	97797977e8469a0515b828940d26d4a486723665	pe
 rust/tools/tests/test_radarcan_exact.py	2afc53904c6fc229f7fa65f41ec9b49d499617ab	pending	-
 rust/tools/tests/test_radard_ipc_preconditioning.py	b4512f41bb5215916e417413cf50dec7d681ce9f	pending	-
 rust/tools/tests/test_selfdrived_stderr.py	8cff7420f0a29fecf1b729c2976321f05e41c65a	pending	-
-rust/tools/tests/test_timed_shutdown_phase.py	f8d76511e3db11ed960676d4be50bc1cee03488c	pending	-
+rust/tools/tests/test_timed_shutdown_phase.py	f8d76511e3db11ed960676d4be50bc1cee03488c	replaced-local	rust/crates/dev-tools/tests/timed_shutdown_phase.rs
 rust/tools/tests/test_ublox_framing_delta.py	1a45b6a248a32facdb008ef729f05a66f11bc16b	pending	-
 rust/tools/tests/test_ui_ci.py	126960e651c62f1901b9c7aa22929960d4948549	pending	-
 rust/tools/tests/test_updated_comparison.py	7c9353d2c0f3df4c24889c7f356f5c5776231293	pending	-
 rust/tools/tests/test_usbgpu_catalog_package.py	5227b4d6e0957c11a200600331fbb432fca28f50	pending	-
 rust/tools/tests/test_web_upload_eintr_peer.py	3c383f4498109606d154390a341efa55b14ff6b0	pending	-
 rust/tools/tests/test_xiaoge_ci.py	eaf18fcf51d5811476f691da8367ea4f12d78df3	pending	-
-rust/tools/timed_fixtures.py	f51fbb51a62d45375938916c4d03ee42ceaee951	pending	-
-rust/tools/timed_reference.py	37b70b4bda0d50c2691ec7e3b51c625e69e75e44	pending	-
-rust/tools/timed_shutdown_phase.py	b14b67cfd2ebc422c71851ad58d56e60ae2ac4de	pending	-
-rust/tools/timed_source_live.py	f625b88cc01bbe30e801456b63748bb297d2657b	pending	-
+rust/tools/timed_fixtures.py	f51fbb51a62d45375938916c4d03ee42ceaee951	replaced-local	rust/crates/dev-tools/src/timed_fixtures.rs
+rust/tools/timed_reference.py	37b70b4bda0d50c2691ec7e3b51c625e69e75e44	replaced-local	rust/crates/dev-tools/src/timed_reference.rs
+rust/tools/timed_shutdown_phase.py	b14b67cfd2ebc422c71851ad58d56e60ae2ac4de	replaced-local	rust/crates/dev-tools/src/timed_shutdown_phase.rs
+rust/tools/timed_source_live.py	f625b88cc01bbe30e801456b63748bb297d2657b	replaced-local	rust/crates/dev-tools/src/timed_live_source.rs; rust/crates/dev-tools/src/timed_live_process.rs; rust/crates/dev-tools/src/timed_live_proxy.rs
 rust/tools/tombstoned_reference.py	04939723f3b770a1dcc12434cb43bc8a3a95d0db	pending	-
 rust/tools/torque_capacity_child.py	55cb9168e9196e21df09a86871f9132ce32f7b1e	pending	-
 rust/tools/torque_cases.py	12fb1ef4a83ffd4b039b5037f21f3ccdd1a96ae4	pending	-
