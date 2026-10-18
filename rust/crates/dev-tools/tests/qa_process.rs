@@ -6,6 +6,40 @@ use std::{
 fn command(script: &str, timeout: Duration) -> CommandSpec {
     CommandSpec::new(vec!["/bin/sh".into(), "-c".into(), script.into()], timeout)
 }
+#[test]
+fn child_environment_removal_overrides_overlay_without_mutating_parent() {
+    const MARKER: &str = "OPENPILOT_QA_ENV_REMOVAL_CHILD";
+    const KEY: &str = "OPENPILOT_QA_REMOVE_ME";
+    if std::env::var_os(MARKER).is_some() {
+        assert_eq!(std::env::var(KEY).unwrap(), "ambient");
+        let mut spec = command(
+            "printf '%s' \"${OPENPILOT_QA_REMOVE_ME-unset}\"",
+            Duration::from_secs(2),
+        );
+        spec.env.insert(KEY.into(), "overlay".into());
+        spec.env_remove.push(KEY.into());
+        assert_eq!(NativeRunner.run(&spec).unwrap().stdout, b"unset");
+        assert_eq!(std::env::var(KEY).unwrap(), "ambient");
+        spec.env.clear();
+        spec.env_remove.clear();
+        assert_eq!(NativeRunner.run(&spec).unwrap().stdout, b"ambient");
+        return;
+    }
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "child_environment_removal_overrides_overlay_without_mutating_parent",
+        ])
+        .env(MARKER, "1")
+        .env(KEY, "ambient")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+}
 fn gone_or_zombie(pid: i32) -> bool {
     fs::read_to_string(format!("/proc/{pid}/stat")).map_or(true, |v| {
         v.rsplit_once(')')

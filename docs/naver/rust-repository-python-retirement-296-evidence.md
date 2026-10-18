@@ -2320,3 +2320,14 @@ candidates). The original screenshot/CPU-dependent Confirm CI failure remains a
 separate unresolved gate, covered by the temporary diagnostic described above.
 Inventory including ISP's partial CLI retirement: 98 replaced, six partial,
 3,476 pending. Full repository conversion and physical device checks are not done.
+
+### Child environment removal for native camera validation (2026-10-18)
+
+The original camera lifecycle runner removes three ambient test-control variables
+before launching each lane. `CommandSpec::env_remove` now preserves that behavior:
+removal follows the environment overlay and changes only the child. The default
+empty list preserves all existing callers. The missing-field regression failed
+before implementation; all 26 process tests and scoped strict Clippy pass after it.
+The regression verifies overlay removal, unchanged parent state and inheritance
+by a subsequent unrelated child. This is a shared QA process capability, not a
+change to camera process settings or runtime selection.

@@ -35,6 +35,9 @@ pub struct CommandSpec {
     /// Authoritative environment overlay, preserving native OS bytes. The
     /// caller's environment is still inherited; Some(empty) adds no variables.
     pub os_env: Option<BTreeMap<OsString, OsString>>,
+    /// Remove these inherited or overlaid variables from the child environment.
+    /// Applied after both environment overlays; the parent is unchanged.
+    pub env_remove: Vec<OsString>,
     pub timeout: Duration,
     pub stdout_limit: usize,
     pub stderr_limit: usize,
@@ -61,6 +64,7 @@ impl CommandSpec {
             cwd: None,
             env: BTreeMap::new(),
             os_env: None,
+            env_remove: Vec::new(),
             timeout,
             stdout_limit: 16 * 1024 * 1024,
             stderr_limit: 16 * 1024 * 1024,
@@ -273,6 +277,9 @@ impl NativeRunner {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .process_group(0);
+        for key in &spec.env_remove {
+            command.env_remove(key);
+        }
         if let Some(cwd) = &spec.cwd {
             command.current_dir(cwd);
         }
