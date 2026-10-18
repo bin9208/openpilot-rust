@@ -2693,7 +2693,7 @@ jobs:
           UI_FORMS_FAILURE_OUTPUT: ${{ runner.temp }}/ui-connectivity/forms-failures
         run: |
           mkdir -p "$RUNNER_TEMP/ui-connectivity"
-          xvfb-run -a -e "$RUNNER_TEMP/ui-connectivity/xvfb.stderr.log" -s '-screen 0 2160x1080x24' bash -euc '
+          xvfb-run -a -e "$RUNNER_TEMP/ui-connectivity/xvfb.stderr.log" -s '-screen 0 2160x1080x24 -noreset' bash -euc '
             test -x "$UI_FORMS_RAW_HELPER"
             test -x "$UI_RENDER_RAW_HELPER"
             test -x "$UI_APPLICATION_RAW_HELPER"

@@ -3107,3 +3107,29 @@ Evidence: `.analysis/scratch/2026-10-18-checkout-tools/postdelete-final-proofs.j
 Source fixture expectations remain unchanged. Inventory is 148 replaced-local,
 three partially replaced and 3,429 pending. Exact committed-SHA CI remains
 required; this does not establish complete conversion or device acceptance.
+
+### UI raw-window failure handling and Xvfb lifetime (#354)
+
+The real graphics helper previously reported success after InitWindow failed;
+subsequent font work and cleanup could then cause SIGSEGV. An absent-display
+reproducer fails with the old frozen helper and passes after IsWindowReady is
+checked before marking the window owned. The real-provider regression checks
+exact window/font/quit error replies and clean process exit. Existing successful
+drawing commands remain unchanged. Strict Clippy and independent review pass.
+With the new frozen helper, all eight network and fifteen Forms tests pass,
+including exact original/native state, pixel, error and recording comparisons.
+Frozen tool/provider hashes match before and after both suites.
+
+A separate authenticated Xvfb experiment compares default reset behavior with
+-noreset: 175/180 short GL clients and 35/36 exact network-list replays. All 71
+images are byte-identical; keymap initializations fall from 176 to one. The main
+UI CI comparison now keeps that server alive across clients, preserving all
+mandatory gates and failure diagnostics. The exact CI display-open failure was
+not reproduced; this is a verified lifecycle improvement and secondary-crash
+fix, not proof that the underlying CI connection cause is resolved.
+
+Evidence: `.analysis/scratch/2026-10-18-ui-raw-window/` (RED/GREEN, actual-provider
+regression, strict Clippy, independent review and success-render-mPVmEiUm) and
+`.analysis/scratch/2026-10-18-ui-display-connection/lifecycle-control-190718/`.
+The 49 workflow/disk-policy tests and scoped Clippy also pass. Exact committed-SHA
+CI remains required; no device result is claimed.

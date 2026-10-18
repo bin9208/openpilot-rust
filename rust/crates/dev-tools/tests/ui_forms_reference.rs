@@ -707,3 +707,52 @@ fn immutable_reference_draw_corpus_covers_every_raster_and_rejects_mutation() {
     let modified_capture = reference_draw::corpus().unwrap().to_owned() + " ";
     assert!(reference_draw::verify_text(&modified_capture).is_err());
 }
+
+#[test]
+fn raw_window_failure_rejects_font_work_and_quits_without_crashing_when_available() {
+    use std::{
+        io::Write,
+        process::{Command, Stdio},
+    };
+    let Some(helper) = std::env::var_os("UI_FORMS_RAW_HELPER") else {
+        return;
+    };
+    let library = std::env::var_os("STARTUP_UI_RAYLIB_LIBRARY")
+        .expect("raw window regression requires the real raylib provider");
+    assert!(!Path::new("/tmp/.X11-unix/X65534").exists());
+    let mut child = Command::new(helper)
+        .arg(library)
+        .env("DISPLAY", ":65534")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"window 64 64 7161\nfont 2f6465762f6e756c6c 10 0\nquit\n")
+        .unwrap();
+    let result = child.wait_with_output().unwrap();
+    assert_eq!(
+        result.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let error = |message: &[u8]| {
+        message
+            .iter()
+            .map(|v| format!("{v:02x}"))
+            .collect::<String>()
+    };
+    assert_eq!(
+        String::from_utf8(result.stdout).unwrap(),
+        format!(
+            "OK\nERR {}\nERR {}\nOK\n",
+            error(b"forms window initialization failed"),
+            error(b"forms window missing")
+        )
+    );
+}

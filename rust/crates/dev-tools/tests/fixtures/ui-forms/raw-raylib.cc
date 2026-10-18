@@ -171,6 +171,8 @@ int main(int argc, char **argv) {
           throw std::runtime_error("duplicate forms window");
         a->get<void (*)(int, int, const char *)>("InitWindow")(
             w, h, unhex(title).c_str());
+        if (!a->get<bool (*)()>("IsWindowReady")())
+          throw std::runtime_error("forms window initialization failed");
         a->window = true;
         a->get<void (*)(int)>("SetTargetFPS")(0);
       } else if (op == "font" || op == "font-load" || op == "font-atlas" ||

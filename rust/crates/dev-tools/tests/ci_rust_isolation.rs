@@ -269,6 +269,7 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
         "ui-connectivity",
         &[
             "xvfb-run",
+            "-s '-screen 0 2160x1080x24 -noreset'",
             "rust/target/debug/check-ui-framework --python python --target",
             "check_startup_ui.py",
             "rust/target/debug/check-ui-emoji --binary",
