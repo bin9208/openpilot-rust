@@ -1261,3 +1261,17 @@ and unchanged pending actual operation reproduction.
 Independent source review found no blocker in facade ownership, the two actual
 callers, regression cleanup or required CI registration; review source pins are
 in `sol-model-facade-review.md` beside that evidence.
+
+### Pinned zlib SDK download endpoint (#372, 2026-10-18)
+
+The3bc673dd UI/connectivity job117692433833 rejected an11,974-byte response from
+the zlib fossils endpoint against the existing pinned source SHA256. The failed
+body was not retained, so its contents and cause are unproved. Fresh host downloads
+from that URL and the official madler/zlib GitHub v1.3 release were byte-identical
+1,495,873-byte archives with the unchanged required digest
+ff0ba4c292013dbc27530b3a81e1f9a813cd39de01ca5e0f8bf355702efa593e.
+Only the manifest URL changes to that official release asset. Version, archive,
+source bytes, receipts and both checksum validations remain unchanged. Exact new
+SHA remote SDK staging/UI checks remain required; a successful local download is
+not a successful UI build. Evidence: `.analysis/scratch/2026-10-18-zlib-source/` and
+`2026-10-18-ad450-ci/3bc-ui-connectivity.log`.
