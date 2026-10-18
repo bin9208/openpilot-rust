@@ -260,6 +260,8 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
         "--test camera_state_check",
         "--bin check-camerad-state",
         "--test camera_stress_check",
+        "--test camera_generic_stress_check",
+        "--bin check-camerad-stress",
         "--bin check-camerad-runtime-stress",
         "--bin check-camerad-sensors",
         "--features camera-sensor-native",

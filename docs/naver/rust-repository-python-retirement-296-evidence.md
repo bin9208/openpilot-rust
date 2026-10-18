@@ -2420,3 +2420,26 @@ checker and continuous camera runtime/cleanup checker remain pending, with their
 different contracts retained. UI application lifecycle and model compiler work
 remain uncommitted and incomplete. No complete repository conversion, device
 boot/recording/upload or CPU improvement is claimed.
+
+### Standalone camera stress command (2026-10-18)
+
+The older `check-camerad-stress` is now native, retaining its arbitrary runner and
+profile, strict policy stderr equality, inherited real-clock child environment,
+and original report order. It shares transport/comparison mechanics with the
+continuous checker while keeping those differences explicit. Independent captures
+cover23 process contracts,19 actual CLI cases and three raw-byte runner cases.
+Additional original comparisons exposed Unicode-digit/newline negative-runner
+classification and a raw-byte argument containing a space; regression tests failed
+before the focused fixes. Default runtime checker regressions remain unchanged.
+
+All four standalone and five runtime stress tests pass; four source/routing tests
+and scoped strict Clippy pass. The original current fixture's stricter stderr
+failure is reproduced exactly, including95 partial artifacts. A separate positive
+checker test uses mechanical shell adapters to the original C++ policy/parser and
+the native real clock: both original and native checker pass54cases/151observations
+and431 artifacts match, with each clock independently bounded. This proves checker
+behavior, not an additional source/native camera policy equivalence claim.
+
+The single Python entrypoint is removed after confirming no remaining source
+callers. CI requires the native binary and tests. Inventory:105 replaced, four
+partial,3,471 pending; continuous camera runtime/cleanup remains next work.

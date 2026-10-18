@@ -729,6 +729,15 @@ required-features = ["camera-sensor-native"]
 name = "camera_stress_check"
 required-features = ["camera-sensor-native"]
 
+[[test]]
+name = "camera_generic_stress_check"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-stress"
+path = "src/bin/check_camerad_stress.rs"
+required-features = ["camera-sensor-native"]
+
 [[bin]]
 name = "check-camerad-runtime-stress"
 path = "src/bin/check_camerad_runtime_stress.rs"

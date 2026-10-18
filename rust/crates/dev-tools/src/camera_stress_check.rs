@@ -29,6 +29,11 @@ pub struct Options {
     pub qemu: Option<PathBuf>,
     pub sysroot: Option<PathBuf>,
 }
+#[derive(Clone, Copy)]
+pub(crate) struct Generic<'a> {
+    pub runner: &'a [OsString],
+    pub profile: &'a std::ffi::OsStr,
+}
 fn object(fields: &[(&str, String)]) -> Result<JsonValue> {
     Ok(JsonValue::parse(&format!(
         "{{{}}}",
@@ -59,8 +64,14 @@ fn text(bytes: Vec<u8>) -> Result<String> {
         .replace("\r\n", "\n")
         .replace('\r', "\n"))
 }
-fn command(opt: &Options, exe: &Path, extra: &[&str], preload: bool) -> Result<Vec<OsString>> {
-    let mut argv = vec![];
+fn command(
+    opt: &Options,
+    exe: &Path,
+    extra: &[&str],
+    preload: bool,
+    generic: Option<Generic<'_>>,
+) -> Result<Vec<OsString>> {
+    let mut argv = generic.map_or_else(Vec::new, |g| g.runner.to_vec());
     if let Some(qemu) = &opt.qemu {
         argv.extend([
             qemu.as_os_str().to_owned(),
@@ -81,14 +92,14 @@ fn command(opt: &Options, exe: &Path, extra: &[&str], preload: bool) -> Result<V
     argv.extend(extra.iter().map(OsString::from));
     Ok(argv)
 }
-fn environment() -> Vec<OsString> {
+fn environment(generic: bool) -> Vec<OsString> {
     std::env::vars_os()
         .map(|(k, _)| k)
         .filter(|key| {
             let b = key.as_encoded_bytes();
-            [b"SPECTRA_ERROR_".as_slice(), b"STRESS_", b"LD_PRELOAD"]
-                .iter()
-                .any(|p| b.starts_with(p))
+            b.starts_with(b"SPECTRA_ERROR_")
+                || b.starts_with(b"STRESS_")
+                || (!generic && b.starts_with(b"LD_PRELOAD"))
         })
         .collect()
 }
@@ -115,11 +126,12 @@ fn run(
     actions: &str,
     extra: &[&str],
     remove: &[OsString],
+    generic: Option<Generic<'_>>,
     runner: &mut dyn Runner,
 ) -> Result<Observation> {
     let prefix = opt.output.join(format!("{name}-{side}"));
     let trace = prefix.with_extension("jsonl");
-    let argv = command(opt, exe, extra, true)?;
+    let argv = command(opt, exe, extra, true, generic)?;
     let mut spec = spec(argv.clone(), remove);
     let overlay = spec.os_env.as_mut().unwrap();
     for (k, v) in env {
@@ -227,11 +239,20 @@ pub fn check(
     clock: &mut dyn FnMut() -> Result<u128>,
     printed: &mut dyn Write,
 ) -> Result<()> {
+    check_profile(opt, runner, clock, printed, None)
+}
+pub(crate) fn check_profile(
+    opt: &Options,
+    runner: &mut dyn Runner,
+    clock: &mut dyn FnMut() -> Result<u128>,
+    printed: &mut dyn Write,
+    generic: Option<Generic<'_>>,
+) -> Result<()> {
     if opt.output.exists() {
         return Err("output already exists".into());
     }
     fs::create_dir_all(&opt.output)?;
-    let remove = environment();
+    let remove = environment(generic.is_some());
     let mut reports = vec![];
     for case in scenarios() {
         let source = run(
@@ -243,6 +264,7 @@ pub fn check(
             &case.actions,
             &[],
             &remove,
+            generic,
             runner,
         )?;
         let native = run(
@@ -254,13 +276,18 @@ pub fn check(
             &case.actions,
             &[],
             &remove,
+            generic,
             runner,
         )?;
         let expected = serde_json::json!({"results":case.expected.iter().map(|v|if v.is_boolean(){serde_json::json!({"triggered":v})}else{v.clone()}).collect::<Vec<_>>(),"error":case.error,"error_step":case.error.as_ref().map(|_|case.expected.len())});
         equal(&source.result, &JsonValue::parse(&expected.to_string())?)?;
         equal(&source.result, &native.result)?;
         equal(&source.trace, &native.trace)?;
-        if !native.stderr.is_empty() {
+        if if generic.is_some() {
+            source.stderr != native.stderr
+        } else {
+            !native.stderr.is_empty()
+        } {
             return Err("native policy stderr must be empty".into());
         }
         reports.push(object(&[
@@ -280,6 +307,7 @@ pub fn check(
             "",
             &["parse", value],
             &remove,
+            generic,
             runner,
         )?;
         let native = run(
@@ -291,6 +319,7 @@ pub fn check(
             "",
             &[value],
             &remove,
+            generic,
             runner,
         )?;
         equal(
@@ -315,7 +344,10 @@ pub fn check(
         ])?);
     }
     let before = clock()?;
-    let mut spec = spec(command(opt, &opt.native, &["real"], false)?, &remove);
+    let mut spec = spec(
+        command(opt, &opt.native, &["real"], false, generic)?,
+        if generic.is_some() { &[] } else { &remove },
+    );
     spec.inherit_stdin = true;
     let real = runner.run(&spec)?;
     let stdout = text(real.stdout)?;
@@ -347,11 +379,14 @@ pub fn check(
             shared::string(&shared::sha(&fs::read(path)?))?
         ));
     }
-    let report = object(&[
+    let mut report_fields = vec![
         ("status", "\"PASS\"".into()),
         (
             "profile",
-            shared::string(if opt.qemu.is_some() { "arm" } else { "host" })?,
+            python_fs::json_string(generic.map_or(
+                std::ffi::OsStr::new(if opt.qemu.is_some() { "arm" } else { "host" }),
+                |g| g.profile,
+            ))?,
         ),
         ("cases", array(&reports)?.to_json()?),
         (
@@ -368,7 +403,12 @@ pub fn check(
             .to_json()?,
         ),
         ("executables", format!("{{{}}}", executables.join(", "))),
-    ])?;
+    ];
+    if generic.is_some() {
+        report_fields.swap(0, 1);
+        report_fields.retain(|(name, _)| *name != "native_log_sink");
+    }
+    let report = object(&report_fields)?;
     fs::write(
         opt.output.join("report.json"),
         json::pretty(&report, 0)? + "\n",
@@ -384,6 +424,10 @@ pub fn check(
                 .unwrap()
         })
         .sum::<usize>();
+    if let Some(g) = generic {
+        writeln!(printed, "{{\"profile\": {}, \"status\": \"PASS\", \"cases\": {}, \"observations\": {observations}}}", python_fs::json_string(g.profile)?, reports.len())?;
+        return Ok(());
+    }
     writeln!(
         printed,
         "{{\"status\": \"PASS\", \"cases\": {}, \"observations\": {observations}}}",
