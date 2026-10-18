@@ -711,7 +711,13 @@ jobs:
             ${{ runner.temp }}/jetlink-raw/
       - name: Compare message state and service catalog with original source
         run: |
-          python tools/check_services.py
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build -p openpilot-dev-tools --features services-catalog-native --bin check-services --locked
+          target/debug/check-services
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test -p openpilot-dev-tools --features services-catalog-native --test services_catalog_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy -p openpilot-dev-tools --features services-catalog-native --bin check-services --test services_catalog_check --locked -- -D warnings
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo build -p openpilot-dev-tools --bin check-message-state --locked
           target/debug/check-message-state --binary target/debug/examples/state_probe --output "$RUNNER_TEMP/message-state"

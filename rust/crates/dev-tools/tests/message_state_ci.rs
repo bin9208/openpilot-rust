@@ -17,13 +17,20 @@ fn message_state_gate_builds_native_checker_and_preserves_service_check_and_evid
             }
             matches += 1;
             let run = step["run"].as_str().unwrap();
-            let services = run.find("python tools/check_services.py").unwrap();
-            let guard = run.find("--growth-mib 512").unwrap();
+            let service_guard = run.find("--growth-mib 512").unwrap();
+            let service_build = run.find("cargo build -p openpilot-dev-tools --features services-catalog-native --bin check-services --locked").unwrap();
+            let services = run.find("target/debug/check-services").unwrap();
+            let guard = services + run[services..].find("--growth-mib 512").unwrap();
             let build = run
                 .find("cargo build -p openpilot-dev-tools --bin check-message-state --locked")
                 .unwrap();
             let check = run.find("target/debug/check-message-state --binary target/debug/examples/state_probe --output \"$RUNNER_TEMP/message-state\"").unwrap();
             assert!(services < guard && guard < build && build < check);
+            assert!(service_guard < service_build && service_build < services);
+            assert!(!run.contains("python tools/check_services.py"));
+            assert!(run.contains("cargo test -p openpilot-dev-tools --features services-catalog-native --test services_catalog_check --locked"));
+            assert!(run.contains("cargo clippy -p openpilot-dev-tools --features services-catalog-native --bin check-services --test services_catalog_check --locked -- -D warnings"));
+            assert_ne!(step["continue-on-error"], true);
             assert!(!run.contains("python tools/check_message_state.py"));
             assert!(steps.iter().any(|step| {
                 step["uses"] == "actions/upload-artifact@v6"

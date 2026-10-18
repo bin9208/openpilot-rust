@@ -70,6 +70,8 @@ pub mod selfdrive_helpers_check;
 #[cfg(feature = "selfdrive-params-native")]
 pub mod selfdrive_params_check;
 pub mod selfdrive_state_check;
+#[cfg(feature = "services-catalog-native")]
+pub mod services_catalog_check;
 pub mod stats_clock_check;
 pub mod stats_numbers_check;
 #[cfg(feature = "image-array-native")]

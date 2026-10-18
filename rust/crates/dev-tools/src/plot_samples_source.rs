@@ -48,7 +48,7 @@ fn field(value: &JsonValue, key: &str) -> Result<JsonValue> {
         .get(key)
         .ok_or_else(|| error("KeyError", format!("'{key}'")))
 }
-fn text_repr(points: &[u32]) -> String {
+pub(crate) fn text_repr(points: &[u32]) -> String {
     static RANGES: std::sync::OnceLock<Vec<[u32; 2]>> = std::sync::OnceLock::new();
     let ranges = RANGES.get_or_init(|| {
         serde_json::from_str(include_str!(

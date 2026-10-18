@@ -9,6 +9,15 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-services"
+path = "src/bin/check_services.rs"
+required-features = ["services-catalog-native"]
+
+[[test]]
+name = "services_catalog_check"
+required-features = ["services-catalog-native"]
+
+[[bin]]
 name = "check-bootlog-artifacts"
 path = "src/bin/check_bootlog_artifacts.rs"
 required-features = ["bootlog-artifact-native"]
@@ -276,6 +285,7 @@ name = "list-cargo-tests"
 path = "src/bin/list_cargo_tests.rs"
 
 [features]
+services-catalog-native = ["dep:capnp", "dep:openpilot-cereal"]
 bootlog-artifact-native = ["dep:capnp", "dep:openpilot-cereal", "dep:zstd"]
 journal-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
