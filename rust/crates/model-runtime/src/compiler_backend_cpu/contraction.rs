@@ -1,4 +1,6 @@
 //! CPU late multiply/add contraction before schedule and memory planning.
+pub(super) mod parallel;
+pub(super) mod target;
 use crate::compiler_onnx::{
     lower::{LoweredGraph, ScalarExpr},
     scalar::Binary,
@@ -108,6 +110,7 @@ fn supported_binding(
 pub(super) fn apply(
     graph: &mut LoweredGraph,
     model: &crate::compiler_onnx::Model,
+    kernel_owned: &std::collections::BTreeSet<usize>,
 ) -> Result<(), String> {
     let schedule = schedule::schedule_plans(graph, "CPU", true)?;
     let mut uses = vec![0usize; graph.plans.len()];
@@ -141,8 +144,13 @@ pub(super) fn apply(
             _ => {}
         }
     }
+    // A selected LLVM closure owns its complete arithmetic/DAG schedule.
+    // Serial C contraction must neither rewrite nor reject those owned plans.
     for id in 0..graph.plans.len() {
-        if !schedule.live.contains(&id) || graph.plans[id].ty.dtype != 1 {
+        if !schedule.live.contains(&id)
+            || graph.plans[id].ty.dtype != 1
+            || kernel_owned.contains(&id)
+        {
             continue;
         }
         let ScalarExpr::Binary {

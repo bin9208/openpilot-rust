@@ -622,6 +622,21 @@ impl LoweredGraph {
             "Softmax" => self.lower_softmax(node, a, &input)?,
             _ => unreachable!(),
         };
+        // Selecting one whole Concat input is an exact movement identity,
+        // including its materialization boundary. Keeping the Concat load
+        // would falsely retain every unselected prediction head as live.
+        if node.op == "Slice" {
+            if let ScalarExpr::Load {
+                plan,
+                index: IndexExpr::Index,
+            } = &expression
+            {
+                if self.plans[*plan].ty == ty {
+                    self.names.insert(node.outputs[0].clone(), *plan);
+                    return Ok(());
+                }
+            }
+        }
         self.push(&node.outputs[0], ty, expression)?;
         Ok(())
     }
@@ -728,6 +743,39 @@ impl LoweredGraph {
                     ranges[dim] = (start, step, count as usize);
                 }
                 ty.shape = ranges.iter().map(|v| v.2).collect();
+                // Normalize Slice bounds first, then cancel only a complete
+                // same-typed input segment. Other Concat uses remain intact;
+                // partial, strided and promoted slices retain their expressions.
+                if let Some(concat) = model.graph.nodes.iter().find(|n| {
+                    n.op == "Concat" && n.outputs.len() == 1 && n.outputs[0] == node.inputs[0]
+                }) {
+                    if let Some(Attribute::Integer(value)) = concat.attributes.get("axis") {
+                        let dim = axis(*value, input.shape.len())?;
+                        let mut offset = 0usize;
+                        for name in &concat.inputs {
+                            let id = self.names[name];
+                            let source = &self.plans[id].ty;
+                            let full =
+                                ranges.iter().enumerate().all(|(i, &(start, step, count))| {
+                                    start == if i == dim { offset as i128 } else { 0 }
+                                        && step == 1
+                                        && count == source.shape[i]
+                                });
+                            if full && source == &ty {
+                                return Ok((
+                                    ty,
+                                    ScalarExpr::Load {
+                                        plan: id,
+                                        index: IndexExpr::Index,
+                                    },
+                                ));
+                            }
+                            offset = offset
+                                .checked_add(source.shape[dim])
+                                .ok_or("Concat slice offset overflow")?;
+                        }
+                    }
+                }
                 let index = index_from_coordinates(
                     &input.shape,
                     ranges.iter().enumerate().map(|(axis, (start, step, _))| {

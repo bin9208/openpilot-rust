@@ -72,6 +72,16 @@ fn view_parent(graph: &LoweredGraph, id: usize) -> Option<usize> {
 /// Existing explicit StorageRound staging remains intact and inputs/constants
 /// never acquire a different externally visible storage identity.
 pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Result<(), String> {
+    apply_cpu_image_aliases_with_matrices(graph, model, &BTreeSet::new())
+}
+/// Explicit packed matrix pipelines own their input materialization and output
+/// inverse map. The selected set contains only kernel-owned reductions and
+/// final outputs; all other matrix/shared-view admission fences remain active.
+pub(crate) fn apply_cpu_image_aliases_with_matrices(
+    graph: &mut LoweredGraph,
+    model: &Model,
+    matrices: &BTreeSet<usize>,
+) -> Result<(), String> {
     let mut aliases = BTreeSet::new();
     let mut unsupported_views = BTreeSet::new();
     let live = super::schedule::schedule_plans(graph, "CPU", true)?.live;
@@ -181,6 +191,12 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
         {
             continue;
         }
+        let packed_matrix = node.outputs.iter().any(|name| {
+            graph
+                .names
+                .get(name)
+                .is_some_and(|id| matrices.contains(id))
+        });
         for key in ["alpha", "beta"] {
             if let Some(attribute) = node.attributes.get(key) {
                 if !matches!(attribute,Attribute::Float(value) if *value==1.0)
@@ -205,7 +221,7 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
             .ok_or("matrix input has no storage plan")?;
         for id in [*input, *weight] {
             let ty = &graph.plans[id].ty;
-            if ty.shape.len() != 2 || !matches!(ty.dtype, 1 | 10) {
+            if !packed_matrix && (ty.shape.len() != 2 || !matches!(ty.dtype, 1 | 10)) {
                 return Err("CPU IMAGE matrix requires f32/half rank-two operands".into());
             }
         }
@@ -255,13 +271,22 @@ pub fn apply_cpu_image_aliases(graph: &mut LoweredGraph, model: &Model) -> Resul
         }
     }
     for (id, plan) in graph.plans.iter().enumerate() {
-        if live.contains(&id) && views[id].is_none() && !concat_barriers.contains(&id) {
+        if live.contains(&id)
+            && views[id].is_none()
+            && !concat_barriers.contains(&id)
+            && !matrices.contains(&id)
+        {
             let mut probe = plan.expression.clone();
             rewrite(&mut probe, &unsupported_views, false);
             if probe != plan.expression {
-                return Err(
-                    "CPU IMAGE shared view storage requires an inverse movement alias map".into(),
-                );
+                let name = graph
+                    .names
+                    .iter()
+                    .find_map(|(name, &value)| (value == id).then_some(name.as_str()))
+                    .unwrap_or("<temporary>");
+                return Err(format!(
+                    "CPU IMAGE shared view storage requires an inverse movement alias map: {name} (plan {id})"
+                ));
             }
         }
     }

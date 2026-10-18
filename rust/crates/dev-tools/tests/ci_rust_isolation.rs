@@ -46,6 +46,98 @@ fn workspace_source_tests_use_the_real_msgq_binding_before_importing_oracles() {
     absent(builders[0].1, &["if", "continue-on-error"]);
     absent(step, &["if", "continue-on-error"]);
 }
+#[test]
+fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
+    let data = workflow();
+    let job = &data["jobs"]["workspace"];
+    let steps = job["steps"].as_array().unwrap();
+    let find = |name: &str| {
+        steps
+            .iter()
+            .enumerate()
+            .find(|(_, step)| step["name"] == name)
+            .unwrap_or_else(|| panic!("missing required {name}"))
+    };
+    let (stage_index, stage) = find("Stage independently captured LLVM20 provider");
+    absent(stage, &["if", "continue-on-error"]);
+    let stage_run = stage["run"].as_str().unwrap();
+    required(
+        stage_run,
+        &[
+            "--growth-mib 256",
+            "libllvm20_20.1.2-0ubuntu1%7e24.04.3_amd64.deb",
+            "f018e71c72c7a4742fb1aff9dc98b45586f42e6ea464d4918af7e3772b7f0658",
+            "4b93481bd1c9d42c0951275dd275d4a9d30db78c309ae2cc0405669bc6dbbf8a",
+            "sha256sum --check --strict",
+            "dpkg-deb --extract",
+            "ldd",
+        ],
+    );
+    assert!(
+        !stage_run.contains("GITHUB_ENV"),
+        "retain LLVM18 for original source comparisons"
+    );
+    for (name, targets) in [
+        (
+            "Require native LLVM20 graph and binding equivalence",
+            &[
+                "compiler_batched_matmul",
+                "compiler_batched_projection",
+                "compiler_matrix_alias",
+                "compiler_gemm_pipeline",
+                "compiler_gemm_chain",
+                "compiler_gemm_chain_pipeline",
+                "compiler_gemm_branch_head",
+                "compiler_gemm_normalized_chain",
+                "compiler_gemm_packed_normalized",
+                "compiler_gemm_norm_indexed",
+                "compiler_contraction_target",
+                "compiler_parallel_conv_layout",
+                "compiler_input_bindings",
+                "compiler_concat_slice",
+                "compiler_concat_slice_cpu",
+            ][..],
+        ),
+        (
+            "Require native LLVM20 primitive and provider equivalence",
+            &[
+                "compiler_llvm",
+                "compiler_conv_depthwise",
+                "compiler_conv_pointwise",
+                "compiler_normalization_row",
+                "compiler_gelu_layout",
+                "compiler_residual_scale",
+                "compiler_residual_scale_rounding",
+                "compiler_gemm_producer",
+                "compiler_gemm_residual",
+                "compiler_gemm_terminal",
+            ][..],
+        ),
+    ] {
+        let (index, step) = find(name);
+        assert!(stage_index < index);
+        absent(step, &["if", "continue-on-error"]);
+        let run = step["run"].as_str().unwrap();
+        required(run, &[
+            "LLVM_PATH=\"$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1\"",
+            "cargo +1.94.0 test --locked -p openpilot-model-runtime",
+            "profile.test.package.sha2.opt-level=3",
+            "profile.dev.package.sha2.opt-level=3",
+            "--test-threads=2",
+            "check-disk-space",
+        ]);
+        for target in targets {
+            assert!(
+                run.contains(&format!("--test {target} ")),
+                "missing {target}"
+            );
+        }
+    }
+    required(&commands(job), &[
+        "cargo test --workspace --locked --config profile.test.package.sha2.opt-level=3",
+        "cargo clippy --workspace --all-targets --locked --config profile.test.package.sha2.opt-level=3",
+    ]);
+}
 fn commands(job: &Value) -> String {
     job["steps"]
         .as_array()

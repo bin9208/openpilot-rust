@@ -518,13 +518,90 @@ Remaining compiler work is separate from this bounded residual unit:
   currently rejects before publication with `CPU IMAGE matrix requires f32/half
   rank-two operands`. The first offending matrix is node274,
   `policy/node_MatMul_13`: f32 `policy/index` `[1,9,512]` times f16
-  `policy/val_12` `[512,512]`, producing `policy/val_13`. The next RED unit
-  should capture that original dependency closure and its packed/intermediate
-  bytes on each pinned provider, including held outputs and equivalent
-  flattened/noncontiguous controls. Port batched matrix packing and inverse
-  alias maps before widening admission; removing the rank check alone is not
-  an implementation. Re-run the full-model admission probe after that unit to
-  identify the next barrier rather than assuming this is the last one.
+  `policy/val_12` `[512,512]`, producing `policy/val_13`. The new
+  `original-batched-matmul.json` records independently executed final-output-only
+  prefix274 receipts on both pinned LLVM providers: full model/prefix hashes,
+  six physical input hashes and recipe, initializer and materialized weight
+  hashes, packed-buffer identities, original target IR and exact output hash.
+  Those recorded outputs agree, but their cross-provider cold-cache audit is
+  pending: the original compiler cache key omits the LLVM library identity.
+  Do not treat those receipts as independent provider parity until recaptured
+  with the guarded local imports and compiler cache disabled. The original target IR also matches the independent
+  shape-equivalent matrix capture. Native packing, output-view extraction and
+  44 source scheduling controls pass. The typed reduction kernel matches all
+  physical bytes for six original controls on LLVM18 and LLVM20.1, including
+  signaling/quiet NaN payloads, signed zero and padded outputs. Separate input
+  and output modules have typed ABI, offset and sentinel proofs. The real
+  node274 initializer exposed 132 half subnormals that original materialization
+  flushes to signed zero; an independent original producer replay tests this
+  alongside signed zeros, infinities and signaling/quiet NaNs. The real-weight
+  reduction matches its original prefix output.
+
+  A candidate three-call ONNX integration passed six matrix cases and five
+  independent computed/held/transpose/flatten controls under both memory modes
+  on LLVM18. `original-batched-matmul-controls.json` records exact jointly
+  scheduled outputs, input bytes, source/model hashes and both provider
+  identities. Tests reconstruct each ONNX losslessly and verify its hash.
+  Actual prefix274 rejects before publication at the earlier shared-view
+  residual `vision/add_12` (plan477). Rank-three matrix proof does not bypass
+  that dependency. `original-matrix-alias.json` adds24 independent direct
+  computed matrix-plus-input residual controls (K4/8/32/512, finite, exact NaN
+  payloads, signed zero, held/unheld raw inputs). Independent cache-disabled
+  provider runs verify the isolated source root/pins and count20 real compiler
+  calls each. LLVM20 K4 NaN payloads differ from LLVM18; both exact originals
+  are preserved in `provider_cases`, with the LLVM18 base assertions unchanged. The fused physical LLVM primitive passes all24 on LLVM18;
+  its two-call graph integration passes all24 under both memory policies on
+  LLVM18 (32 distinct full-artifact compilations,332.63s) and LLVM20
+  (385.60s). LLVM20 also passes all24 physical kernels plus staging ABI/default-C
+  fences. Broader regressions and the actual dependency prefix remain pending. No standalone C post-add
+  or general shared-view admission is justified by that primitive.
+  Actual dependency-prefix integration, latest-source provider checks, strict Clippy and
+  prior module regressions remain required before committing this extension.
+  Only selected kernel-owned plans bypass the corresponding admission checks;
+  unproved shared ALU consumers, views and computed weights stay fenced.
+
+  Controls for a distinct-input Gemm/bias/reversed residual produce
+  a final kernel exactly identical to pinned actual prefix124 (SHA256
+  `904c7d7ab16251c89cd2119fdd455cf865a0b52698809c37dac11b8667fbcdf4`).
+  `original-gemm-residual.json` and `original-gemm-internal.json` preserve96
+  guarded, cache-disabled original executions:24 final-f32 and24 internal
+  Add/Relu packed-half controls on each pinned provider. The latter target IR
+  exactly matches the actual internal residual kernel, SHA256
+  `be53600741cc0aff27b73ce390dfb3a84f7e4a8cc70d846e332e837fc957fb92`.
+  Receipts include source pins, real compiler call counts, deterministic
+  synthetic input/initializer recipes, exact valid intermediate bytes and
+  typed buffer capacities. Private model/weight blobs and unread padding are
+  excluded. The generic five-buffer emitter passed all48 LLVM18 physical
+  comparisons across eight kernels in45.99s, including exact typed capacities
+  and worker counts. The first four-buffer Gemm/bias/Relu producer then had a
+  missing-method RED, then passed24 LLVM18 original packed-hidden comparisons
+  in24.30s; the48-case residual regression passed44.92s. The typed graph
+  candidate checks exact lowered-plan ownership, held/shared intermediates and
+  root readers, then schedules explicit pack/producer/residual/decode calls.
+  Initial whole-artifact comparisons were interrupted, and a subsequent
+  twelve-comparison gate timed out; neither run counts as a full pass. The
+  completed validation splits the same48 original cases into24 mode gates,
+  each retaining held/unheld outputs and both memory policies. All96 exact
+  graph comparisons pass on LLVM18 and all96 pass on LLVM20.1, with every
+  gate exiting0 and no failed or timed-out gates in the completed matrix.
+  LLVM20.1 also passes24 physical producer and48 physical residual comparisons.
+  A command-line-only sha2 dependency opt-level3 setting reduces repeated
+  provider-hashing overhead while retaining every full library rehash,
+  provider receipt and exact original assertion; the same four-comparison
+  LLVM18 gate passes in8.03s versus148.74s before the setting. No workspace
+  profile or production source change was needed for this validation.
+  Prior complete-package regressions, guarded actual-prefix proof, strict
+  Clippy, fresh A630 proof and independent review remain pending before
+  committing this extension. The default C path is unchanged.
+
+  Source-only receipts for actual prefixes275 and277 record the next Add and
+  Sigmoid/Mul fusion boundary, with numerical validation explicitly pending.
+  Bias changes the generic output expansion order because its stride/invariance
+  participates in scheduling. A standalone three-buffer matrix followed by a
+  C epilogue is not proved equivalent. Complete that source-derived lowering
+  and original numerical evidence before admitting the full driving closure.
+  Final-output matrix selection alone does not close the full compiler or
+  authorize deleting model Python sources.
 - The LLVM closure currently covers computed-input, equal-channel1x1 residuals
   with batch1/height1. Direct external-f32 residuals and separately retained
   convolution outputs need their original signatures/staging proofs before
@@ -539,3 +616,272 @@ Remaining compiler work is separate from this bounded residual unit:
   Preserve the passing whole-driver and real-prefix CPU comparisons while
   extending the compiler. Migrate actual exporter callers and verify the
   complete supported graph paths before retiring their Python sources.
+
+`original-contraction-target18.json` preserves 48 independent source-target
+controls using pinned LLVM 18 and explicit baseline `x86-64`: 24 raw f32
+Mul/Add cases (scalar/vector/tails, reversed multiplicands, finite values, signed
+zeros and NaN payloads), and 24 computed depthwise Conv scale/residual cases
+with broadcast half constants and held/unheld producers. Every source program
+was captured from the selected original compiler with its cache disabled;
+program source and object hashes are retained. The fixture contains public
+synthetic tensors only. Its first native comparison was RED: 14 exact, ten
+admitted numerical mismatches and 24 existing admission rejections. These
+controls do not establish whole-model parity or authorize removing those fences.
+
+`original-residual-scale18.json` adds 24 independent original chain-profile
+controls: a computed skip feeds a second depthwise Conv, whose output is scaled
+by broadcast half gamma and added as `skip + product`. Finite, signed-zero and
+payload inputs cross four shapes and held/unheld Conv outputs. All 24 currently
+match the native path. Their simple dyadic constants do not reproduce the actual
+model's finite residual rounding failure, so this result does not justify new
+admission or prove the missing target-aware residual implementation.
+
+`original-residual-scale-rounding18.json` preserves a separate 24-case
+independent LLVM18 capture with nontrivial half mantissas and exponents. It
+retains the computed skip dependency, source `skip + product` order, and all
+finite/zero/payload and held controls from the simpler chain profile. Its first
+native comparison was RED: 16/24 exact; eight finite cases differed at
+3/6/18/20 f32 values in both held policies. The simpler profile's 24/24 result
+is unchanged. The target-aware residual implementation now matches all 24 of
+these stronger controls and all 24 simpler chain controls on LLVM18. The
+separate direct suite matches its 24 admitted cases while its 24 disconnected
+Conv profiles retain their existing admission rejections. Fresh actual-model,
+LLVM20, full-module and target validation remain pending.
+
+`original-gelu-layout18.json` and `original-gelu-layout20.json` preserve 72
+independent original controls per provider: 36 direct GELU layouts and 36
+computed Conv/GELU layouts with finite, signed-zero and NaN payload inputs,
+including held and unheld Conv outputs. Four original depthwise payload cases
+differ between LLVM versions; each test selects its own provider receipt and
+expected bytes. The configured LLVM DAG and packed Conv bridge now match all
+72 graph controls and all 36 standalone GELU primitive controls on both
+providers. The standalone masked depthwise primitive also matches nine held
+Conv outputs, and the dense pointwise primitive matches six, on each provider.
+The constructor rejects reduction axes that lack the retained heuristic's full
+unroll proof. No NaN normalization or numerical tolerance is used.
+
+Fresh current-source prefix124 executions also match the independent cold
+original's complete 512-f32 output hash on both LLVM providers and with memory
+planning disabled and enabled. This validates the final `vision/add_12`
+boundary. It does not prove that boundary's internal packed-half storage when
+its following Relu feeds the next Gemm and paired residual Add. That shared
+reader closure was first proved for its captured held-terminal profile. The
+later sections record the subsequent unheld closure, exact native actual274 and
+all 48 contraction controls on both providers. Broader package regressions,
+fresh A630 evidence and review are recorded in the final local gate below.
+Exact-commit CI remains required. Model Python sources remain retained.
+
+
+### Frozen compiler unit and current completion limits (2026-10-18)
+
+This checkpoint adds configured LLVM kernels and closed scheduling only for the
+independently captured source profiles below. It is not full compiler parity,
+Python tool retirement, a device test, or a performance claim. Earlier pending
+notes describe their original development stages; the current status is:
+
+- `original-gemm-chain.json` and `original-gemm-chain20.json` contain 12 public
+  two-residual-block models per provider, with finite, signed-zero and NaN payload
+  inputs and optional held raw roots. Every original program genuinely compiled
+  under the pinned provider with its cache disabled; immediate per-call snapshots
+  retain defined stores and physical argument capacities. Unwritten padding is
+  capacity only. Full held-terminal caller outputs match exactly for all 12
+  models with both memory policies on LLVM18 and LLVM20.1: 24 comparisons each.
+  The selector also preserves all 120 held-intermediate and 48 outside-reader
+  rejection controls. Exact owned lowered plans, separate packed root/hidden/next
+  buffers and final schedule indices govern staging; no inter-block decode/repack
+  or generic shared-view whitelist is introduced.
+- The four-buffer terminal Gemm+bias emitter matches 12 independent physical
+  controls on each provider. Its source bias-aware schedule and dense f32 stores
+  are distinct from a standalone matrix with an unproved C bias epilogue. The
+  previous 24 producer and 48 residual physical controls remain unchanged.
+- `original-normalization-row18.json` and `original-normalization-row20.json`
+  retain the previous 12 Gemm-derived norm/clamp controls and 36 additional
+  independently compiled direct-runtime-row controls each. All 48 physical
+  outputs match exactly on both providers, across rows of 2/3/4/7/8/12/20/32/33/
+  64/128/512 elements. Full unroll through 32, float4 reduction loops for aligned
+  larger rows, scalar loops otherwise, float4/float2/scalar loads, the original
+  software log2/exp2 sqrt and zero clamp preserve source ordering and flags.
+  A separate initial 39-case source capture fused its input scale into the norm;
+  it remains recorded but is not mislabeled as the unscaled primitive oracle.
+  The three one-element original controls fuse norm and Div into one kernel and
+  remain an explicit separate profile. No special input values or NaN payload
+  normalization are used to obtain these results.
+- An explicit local replay also preserves the mandatory 48 public cases and
+  appends both immediate actual 512-element normalization boundaries: all 50
+  outputs match on LLVM20.1. Actual intermediate tensor bytes remain outside
+  Git; the test verifies the cold receipt's model, provider, source-program,
+  object, input and output hashes before replay.
+- Fresh independent cold prefix274 receipts now exist for both providers:
+  pinned model `f73a9e535523d5e9acb9e642c64e33d631825dc8ba74123757d107cedd047bb5`,
+  96 genuinely compiled programs and 251 calls, with immediate snapshots before
+  arena reuse. Both complete original outputs have SHA256
+  `ab8ec2368b047a59f166197be451274052a8db4205fa167e0318a86c56f71d0a`.
+  The later indexed-window and input-signature sections record native exact
+  whole-prefix execution on both providers and both memory policies.
+
+The typed normalized terminal, packed downstream readers, indexed window and
+independent parallel Conv residuals now have the bounded proofs recorded below.
+General normalization/fusion, remaining unsupported matrix views and complete
+CPU/GPU model export remain unfinished. Default C admission and all earlier unsupported-profile assertions
+are preserved.
+
+The final local gate below now accounts for the existing positive/rejection
+suite, required provider regressions, all-target strict Clippy, scoped formatting
+and fresh bounded ARM/A630 proof. Independent review's bound-Slice defect was
+reproduced and repaired. Mandatory workspace CI stages the captured providers;
+inspect the pushed SHA's required results before integration. None of these host checks authorizes deleting model Python sources or
+claims device boot, recording, upload or driving validation.
+
+
+The earlier freeze audit identified two deliberately strict tests that blocked
+a green complete-WIP commit: `configured_original_target_contractions_preserve_all_bits`
+requires all 48 controls to execute exactly (24 disconnected Conv profiles
+were then rejected); `actual_driving_node274_true_prefix_matches_original`
+requires successful whole-prefix compilation and exact original outputs (the
+unheld shared-reader closure was then unimplemented). The later sections record
+their subsequent repairs and focused verification. They are not
+expected-rejection tests. Retain their assertions and report the full-package
+run as RED if they fail. A bounded partial checkpoint must be explicitly scoped
+by the integrator and leave the pending source/tests intact; it cannot be called
+a complete compiler conversion or used to remove model Python.
+
+### Indexed normalized feature window (2026-10-18, current WIP)
+
+`original-gemm-norm-indexed18.json` and `original-gemm-norm-indexed20.json`
+each add 12 independent public models: two
+residual blocks, terminal Gemm, ReduceL2/zero-clamp/Div, a whole-input
+Concat/Slice, external feature history, Transpose/GatherND/Transpose and final
+rank-three MatMul. Each provider receipt records 39 genuine compiler objects,
+13 source pins, model/initializer/input hashes and immediate call snapshots.
+Finite, signed-zero and NaN payload cases each have held-root variants.
+
+The original fuses scalar division, masked Concat addition and half packing.
+Materializing a separate f32 Div or replacing masked addition with Select
+changes observable zero and NaN bits. The native typed five-buffer packer now
+matches all 12 original physical boundaries. The complete callers match all 24
+outputs across both memory policies, with structural held/outside-reader guards
+and a separate immediate terminal/norm/packed/final-output regression.
+
+That regression also isolated a matrix-rendering difference: statically false
+padding lanes must store literal zero, as the original late symbolic pass does.
+Keeping their zero-multiply reductions changed valid-lane NaN payload ownership
+in LLVM. The native fold uses only constant schedule padding coordinates;
+dynamic padding remains unchanged. The N4 indexed callers exercise dynamic
+eight-wide padding. Fresh biased-terminal 12, producer 24 and residual 48
+physical regressions also pass after this shared renderer change.
+
+The input-signature regression exposed by actual274 is tracked in
+[issue #355](https://github.com/bin9208/openpilot-rust/issues/355). Native export
+now retains every declared input independently of executable liveness, matching
+the original exporters. Its focused tests preserve exact typed capacities,
+unknown-name and wrong-size errors, and rejection of an undeclared live source
+input. Unused inputs remain absent from executable calls. After this repair,
+strict actual274 passes on both providers under both memory policies, including all
+original input hashes, defined packed-half input lanes and the complete output
+hash `ab8ec2368b047a59f166197be451274052a8db4205fa167e0318a86c56f71d0a`.
+All 24 callers and 12 physical pack boundaries also pass against the independent
+LLVM20 expectations. No model Python source is retired here.
+
+### Independent parallel Conv residual (2026-10-18, current WIP)
+
+The unchanged `configured_original_target_contractions_preserve_all_bits` test
+now passes all 48 independent original cases on each pinned LLVM provider:
+21.02 seconds on LLVM18 and 25.60 seconds on LLVM20. This includes the 24
+previously rejected independent depthwise1x1 Conv pairs, finite values,
+signed-zero and NaN payloads, and both held/unheld first-producer variants.
+The selector also passes 24 captured ownership positives and 144 controls for
+held intermediates, outside readers, reversed arithmetic, different biases and
+dependent producers. Existing exact assertions and fixtures were retained.
+
+The native closed-pair stage packs the shared input once, initializes separate
+packed weights, and preserves the original three-product/three-add fused DAG.
+A held first producer uses its original f32 boundary and distinct final ABI.
+Channel-block and spatial ranges follow packed strides, affine merging and
+source upcast choices; this stage explicitly excludes threaded source domains.
+Related larger affine/upcast controls now have 18 independent cases per provider,
+with 14 genuine source objects and 13 source pins each. The first native run
+exposed a factor-three store assertion: original LLVM emits three scalar stores,
+while the new stage incorrectly called the two/four-lane vector helper. A minimal
+repair preserves those scalar stores without changing the shared helper. All 18
+new cases now pass exact-byte comparisons on each provider (10.18/12.26 seconds),
+including contiguous spatial merging and factor-three/factor-four upcasts.
+The old 48 cases also pass again on each provider, followed by scoped strict
+Clippy. The original failing run and unchanged assertions remain recorded. Fresh input-binding tests, 12 terminal, 24 producer and
+48 residual physical comparisons and scoped strict Clippy also pass.
+
+The broader old positive/rejection suite, required branch/provider coverage,
+all-target strict Clippy and fresh bounded A630 ARM/QEMU proof are accounted for
+in the final local gate below. Independent review's concrete defect was repaired;
+exact-commit CI remains required. These host results do not establish complete
+model/compiler parity, Python retirement, device execution or measured vehicle
+CPU savings.
+
+
+### Reviewed bound Slice output regression
+
+Independent review found that whole-Concat/Slice cancellation could leave a
+published output aliased directly to an input or constant, while the CPU builder
+still requires a rendered expression. The same two-frame regression passes
+against the prior committed compiler and fails before this repair. Four
+independent original models confirm exact raw copies, including signed zero,
+quiet/signaling NaN payloads, held/unheld Concat and initialized/bound sources.
+The CPU builder now retains a deliberate output-copy plan for that specific
+bound Slice case. Computed producer aliases, dead-branch pruning and the empty
+artifact rejection remain unchanged. All 16 option/model combinations, the
+existing movement/pruning controls, input ABI tests and scoped strict Clippy
+pass. The broader local suite was intentionally stopped after a completed target
+for this repair, then completed as the explicitly cumulative LLVM18 gate and
+required LLVM20 gates below. Exact-commit CI remains required.
+
+
+### Cumulative LLVM18 package gate
+
+The initial all-target run was intentionally stopped at a completed target to
+repair the reviewed bound-Slice regression, with its partial result retained.
+It had passed the library/binary targets and earlier integration targets,
+including actual124/274 under both memory policies and all 24 branch callers.
+The continuation reran affected CPU/alias/binding targets and completed all 34
+selected targets with 179 tests passing, zero failures, ignores or filtered
+tests. Both receipts together account for all 47 integration targets plus the
+library and four binaries; the interrupted command itself is not a whole-suite
+pass. The existing 26 Gemm pipeline tests preserve all 96 numerical comparisons.
+The required LLVM20 graph/primitive gates, all-target strict Clippy and fresh
+ARM/A630 proof subsequently passed as recorded below. Exact-commit CI remains
+required.
+
+
+### Final verified local compiler slice
+
+Local LLVM18 coverage accounts for 260 unique tests across all 47 current
+integration targets, the library and four binaries. The initial command remains
+explicitly marked interrupted at a completed target for the review repair;
+completed unaffected results and the successful 34-target continuation are
+recorded separately. No tests were deleted, ignored, reclassified as rejections
+or given weaker numerical assertions.
+
+The pinned LLVM20 gate passed all 15 required graph/ABI targets (70 tests,
+743.37 seconds of target time), followed by all ten primitive/provider targets
+(16 tests, 80.85 seconds). The newly independent LLVM20 branch-head and packed
+normalization fixtures preserve source/provider/object pins and immediate call
+snapshots. All-target strict Clippy and scoped/package formatting passed. One
+test-only `err().expect()` assertion was changed equivalently to `expect_err()`
+and its rejection check rerun; production arithmetic was unchanged.
+
+A freshly built current ARM helper under QEMU reproduced the exact Add source
+and 2,144-byte genuine A630 binary: source SHA256
+`b9281330e4b68fe2f95aecc044d633466bb821547f5099cccaa2ac67d82ee0ff`,
+binary SHA256
+`fe72d39f60f599c761e5f40697380f1426c7d6ca963ae80f0232336175f12512`.
+That proves the bounded compiler fixture, without GPU execution or a device test.
+The LLVM20 CI package was independently downloaded and its extracted library
+matched the captured provider identity; mandatory pinned-provider commands are
+required in addition to the existing full workspace/source-model gates.
+
+This commit candidate contains bounded CPU compiler/scheduling correctness and
+provenance improvements. Complete driving-model CPU/GPU export and general
+unsupported layouts/operators/fusion remain unfinished. The project-owned
+`rust/tools/model_export/` compiler/capture/schedule/device/publication modules,
+`build_model_pipelines.py`, `build_offline_model_pipelines.py` and their original
+model checker/test harnesses remain present. This slice authorizes no model
+Python deletion or full compiler conversion claim. Exact-commit CI and any
+separate user device acceptance must be reported independently.

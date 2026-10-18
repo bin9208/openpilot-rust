@@ -573,7 +573,7 @@ jobs:
           python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          cargo clippy --workspace --all-targets --locked -- -D warnings
+          cargo clippy --workspace --all-targets --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 -- -D warnings
       - name: Stage pinned numerical dependency before required workspace tests
         run: |
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
@@ -590,7 +590,25 @@ jobs:
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo build -p openpilot-bootlog --example bootlog_snapshot -p openpilot-process-supervision --bin openpilot-process-child --locked
-          cargo test --workspace --locked
+          cargo test --workspace --locked --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3
+      - name: Stage independently captured LLVM20 provider
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 256
+          curl --fail --location --retry 3 --max-time 180 --output "$RUNNER_TEMP/llvm20.deb" 'https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-20/libllvm20_20.1.2-0ubuntu1%7e24.04.3_amd64.deb'
+          printf 'f018e71c72c7a4742fb1aff9dc98b45586f42e6ea464d4918af7e3772b7f0658  %s/llvm20.deb\n' "$RUNNER_TEMP" | sha256sum --check --strict
+          dpkg-deb --extract "$RUNNER_TEMP/llvm20.deb" "$RUNNER_TEMP/llvm20-captured"
+          printf '4b93481bd1c9d42c0951275dd275d4a9d30db78c309ae2cc0405669bc6dbbf8a  %s/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1\n' "$RUNNER_TEMP" | sha256sum --check --strict
+          ldd "$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" > "$RUNNER_TEMP/llvm20-ldd.txt"
+          cat "$RUNNER_TEMP/llvm20-ldd.txt"
+          if grep -q 'not found' "$RUNNER_TEMP/llvm20-ldd.txt"; then exit 1; fi
+      - name: Require native LLVM20 graph and binding equivalence
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" cargo +1.94.0 test --locked -p openpilot-model-runtime --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_batched_matmul --test compiler_batched_projection --test compiler_matrix_alias --test compiler_gemm_pipeline --test compiler_gemm_chain --test compiler_gemm_chain_pipeline --test compiler_gemm_branch_head --test compiler_gemm_normalized_chain --test compiler_gemm_packed_normalized --test compiler_gemm_norm_indexed --test compiler_contraction_target --test compiler_parallel_conv_layout --test compiler_input_bindings --test compiler_concat_slice --test compiler_concat_slice_cpu -- --nocapture --test-threads=2
+      - name: Require native LLVM20 primitive and provider equivalence
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          LLVM_PATH="$RUNNER_TEMP/llvm20-captured/usr/lib/x86_64-linux-gnu/libLLVM.so.20.1" cargo +1.94.0 test --locked -p openpilot-model-runtime --config profile.test.package.sha2.opt-level=3 --config profile.dev.package.sha2.opt-level=3 --test compiler_llvm --test compiler_conv_depthwise --test compiler_conv_pointwise --test compiler_normalization_row --test compiler_gelu_layout --test compiler_residual_scale --test compiler_residual_scale_rounding --test compiler_gemm_producer --test compiler_gemm_residual --test compiler_gemm_terminal -- --nocapture --test-threads=2
       - name: Check process-stat parser allocation regression
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64

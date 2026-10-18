@@ -1,11 +1,15 @@
 //! Bounded native ONNX-to-CPU artifact backend. Source admission precedes
 //! contraction and physical scheduling; explicitly configured LLVM providers
-//! can compile selected packed IMAGE residuals. Unsupported graphs fail without
+//! can compile selected packed IMAGE residuals and final-output matrices. Unsupported graphs fail without
 //! publishing a destination. This does not replace the full model compiler or
 //! any Python consumer yet.
+pub mod activation;
 mod contraction;
+pub mod convolution;
 pub mod image;
 pub mod llvm;
+pub mod matrix;
+pub mod normalization;
 use crate::{
     compiler_onnx::{
         self,
@@ -371,6 +375,32 @@ pub fn compile_onnx(
     } else {
         LoweredGraph::lower(&model)
     }?;
+    // Whole-input Slice cancellation may leave a published output bound directly
+    // to input/constant storage. Retain its deliberate movement kernel while
+    // keeping the unselected Concat branches dead. Computed-source aliases keep
+    // their existing materialized producer; arbitrary empty artifacts stay invalid.
+    for node in model.graph.nodes.iter().filter(|node| node.op == "Slice") {
+        for name in &node.outputs {
+            let Some(&source) = lowered.outputs.get(name) else {
+                continue;
+            };
+            if !matches!(
+                lowered.plans[source].expression,
+                ScalarExpr::Input(_) | ScalarExpr::Constant(_)
+            ) {
+                continue;
+            }
+            let output = lowered.plans.len();
+            lowered.plans.push(compiler_onnx::lower::Plan {
+                ty: lowered.plans[source].ty.clone(),
+                expression: ScalarExpr::Load {
+                    plan: source,
+                    index: compiler_onnx::lower::IndexExpr::Index,
+                },
+            });
+            lowered.outputs.insert(name.clone(), output);
+        }
+    }
     let live = schedule::schedule_plans(&lowered, "CPU", true)?.live;
     for node in model
         .graph
@@ -405,17 +435,65 @@ pub fn compile_onnx(
             );
         }
     }
+    let matrices = if options.llvm.is_some() && options.offline_bindings {
+        matrix::graph::closures(&lowered, &model)?
+    } else {
+        Vec::new()
+    };
+    let gemms = if options.llvm.is_some() && options.offline_bindings {
+        matrix::gemm::closures(&lowered, &model)?
+    } else {
+        Vec::new()
+    };
+    let chains = if options.llvm.is_some() && options.offline_bindings {
+        matrix::chain::closures(&lowered, &model)?
+    } else {
+        Vec::new()
+    };
+    let parallel = if options.llvm.is_some() && options.offline_bindings {
+        contraction::parallel::closures(&lowered, &model)?
+    } else {
+        Vec::new()
+    };
+    for chain in &chains {
+        if gemms.iter().any(|g| !g.owned.is_disjoint(&chain.owned))
+            || matrices
+                .iter()
+                .any(|m| chain.owned.contains(&m.output) || chain.owned.contains(&m.reduction))
+        {
+            return Err("overlapping configured LLVM matrix chain ownership".into());
+        }
+    }
+    let mut kernel_plans = matrices
+        .iter()
+        .flat_map(|m| [m.output, m.reduction])
+        .chain(gemms.iter().flat_map(|g| g.owned.iter().copied()))
+        .chain(chains.iter().flat_map(|g| g.owned.iter().copied()))
+        .collect::<BTreeSet<_>>();
+    for closure in &parallel {
+        if !kernel_plans.is_disjoint(&closure.owned) {
+            return Err("overlapping configured LLVM parallel Conv ownership".into());
+        }
+        kernel_plans.extend(&closure.owned);
+    }
     if options.offline_bindings {
-        compiler_onnx::storage::apply_cpu_image_aliases(&mut lowered, &model)?;
+        compiler_onnx::storage::apply_cpu_image_aliases_with_matrices(
+            &mut lowered,
+            &model,
+            &kernel_plans,
+        )?;
     }
     let mut physical = compiler_onnx::storage_half::physical_graph(&lowered)?;
     // Source admission precedes optimization: contracting a computed divisor
     // must not obscure its original unsupported arithmetic ancestry.
     let source_schedule = schedule::schedule_plans(&physical, "CPU", true)?;
     for (index, call) in source_schedule.calls.iter().enumerate() {
+        if kernel_plans.contains(&call.buffers[0]) {
+            continue;
+        }
         render::render_cpu_elementwise(&physical, call.buffers[0], &format!("admit_{index}"))?;
     }
-    contraction::apply(&mut physical, &model)?;
+    contraction::apply(&mut physical, &model, &kernel_plans)?;
     compiler_onnx::storage::admit_cpu_observable_fusion(&physical, &model)?;
     let mut schedule = schedule::schedule_plans(&physical, "CPU", true)?;
     let mut image_calls = BTreeMap::new();
@@ -464,10 +542,60 @@ pub fn compile_onnx(
             image_calls.insert(closure.output, closure.image);
         }
     }
+    let parallel_staged =
+        contraction::parallel::insert(&parallel, &lowered, &mut schedule, &mut extra_initial)?;
+    let depthwise = if options.llvm.is_some() && options.offline_bindings {
+        convolution::stage(&physical, &model, &mut schedule, &mut extra_initial)?
+    } else {
+        Vec::new()
+    };
+    // Matrix scratch has separate scheduled producers. Unlike the bundled
+    // IMAGE trampoline's private scratch, it must be accounted as produced
+    // output before any later read; never pre-mark these buffers written.
+    let mut llvm_calls = matrix::graph::stage_with_chains(
+        &matrices,
+        &gemms,
+        &chains,
+        &lowered,
+        &mut schedule,
+        &mut extra_initial,
+        &mut BTreeSet::new(),
+    )?;
+    if options.llvm.is_some() {
+        for (index, call) in contraction::parallel::scheduled(&parallel_staged, &schedule)? {
+            if llvm_calls.insert(index, call).is_some() {
+                return Err("overlapping configured LLVM parallel Conv schedule".into());
+            }
+        }
+        for (index, call) in convolution::scheduled(&depthwise, &schedule)? {
+            if llvm_calls.insert(index, call).is_some() {
+                return Err("overlapping configured LLVM depthwise ownership".into());
+            }
+        }
+        for (index, call) in contraction::target::scheduled(&physical, &model, &schedule)? {
+            if llvm_calls.insert(index, call).is_some() {
+                return Err("overlapping configured LLVM contraction ownership".into());
+            }
+        }
+        for (index, call) in activation::scheduled(&physical, &model, &schedule)? {
+            if llvm_calls.insert(index, call).is_some() {
+                return Err("overlapping configured LLVM kernel ownership".into());
+            }
+        }
+    }
     let memory =
         memory::plan_memory_enabled(&schedule.buffers, &schedule.calls, options.memory_planning)?;
     let mut kernels = Vec::new();
     for (index, call) in schedule.calls.iter().enumerate() {
+        if let Some(matrix) = llvm_calls.get(&index) {
+            kernels.push(render::Kernel {
+                function: format!("op_kernel_{index}"),
+                source: matrix.source.clone(),
+                inputs: call.buffers[1..].to_vec(),
+                global: [1, 1, 1],
+            });
+            continue;
+        }
         if let Some(image) = image_calls.get(&call.buffers[0]) {
             let kernel = image.logical_artifact(
                 &format!("native_image_{index}"),
@@ -517,8 +645,10 @@ pub fn compile_onnx(
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
 
-    for &id in &schedule.live {
-        if let ScalarExpr::Input(name) = &lowered.plans[id].expression {
+    // Original exporters retain every declared input binding independently of
+    // executable call liveness. Pruning a branch must not change the caller ABI.
+    for (id, plan) in lowered.plans.iter().enumerate() {
+        if let ScalarExpr::Input(name) = &plan.expression {
             let view = table.view(descriptors[id])?;
             table.write(descriptors[id])?;
             inputs.push(graph::Binding {
@@ -537,19 +667,26 @@ pub fn compile_onnx(
     let mut calls = Vec::new();
     for (index, (call, kernel)) in schedule.calls.iter().zip(&kernels).enumerate() {
         let output = call.buffers[0];
-        if image_calls.contains_key(&output) {
+        if image_calls.contains_key(&output) || llvm_calls.contains_key(&index) {
             // LLVM's original IMAGE arguments promise noalias and 32-byte
             // alignment. Verify the actual planned views, including scratch,
             // before allowing those promises into a loadable artifact.
-            let abi = image_calls[&output].logical_artifact(
-                &format!("native_image_{index}"),
-                &format!("op_kernel_{index}"),
-            )?;
-            if call.buffers.len() != abi.bytes.len()
+            let bytes = if let Some(matrix) = llvm_calls.get(&index) {
+                matrix.bytes.clone()
+            } else {
+                image_calls[&output]
+                    .logical_artifact(
+                        &format!("native_image_{index}"),
+                        &format!("op_kernel_{index}"),
+                    )?
+                    .bytes
+                    .to_vec()
+            };
+            if call.buffers.len() != bytes.len()
                 || call
                     .buffers
                     .iter()
-                    .zip(abi.bytes)
+                    .zip(bytes)
                     .any(|(&id, bytes)| descriptors[id].bytes != bytes)
             {
                 return Err("IMAGE LLVM argument storage differs from typed ABI".into());
@@ -588,9 +725,12 @@ pub fn compile_onnx(
         calls.push(graph::Call {
             kernel: index,
             views: args,
-            scalars: Vec::new(),
-            workers: 1,
-            core_id: None,
+            scalars: vec![0; llvm_calls.get(&index).map_or(0, |c| c.scalars)],
+            workers: u16::try_from(llvm_calls.get(&index).map_or(1, |c| c.workers))
+                .map_err(|_| "matrix worker count exceeds artifact ABI")?,
+            core_id: llvm_calls
+                .get(&index)
+                .and_then(|c| (c.scalars == 1).then_some(0)),
         });
     }
     for &id in lowered.outputs.values() {
@@ -599,7 +739,7 @@ pub fn compile_onnx(
     let (allocations, weights) = table.weights();
     let graph = Graph {
         version: 1,
-        backend: if image_calls.is_empty() {
+        backend: if image_calls.is_empty() && llvm_calls.is_empty() {
             "cpu-clang"
         } else {
             "cpu-llvm"
@@ -628,9 +768,10 @@ pub fn compile_onnx(
         outputs,
         kernels: kernels
             .iter()
-            .map(|k| graph::Kernel {
+            .enumerate()
+            .map(|(index, k)| graph::Kernel {
                 buffers: k.inputs.len() + 1,
-                scalars: 0,
+                scalars: llvm_calls.get(&index).map_or(0, |c| c.scalars),
             })
             .collect(),
         calls,
@@ -645,6 +786,29 @@ pub fn compile_onnx(
     let mut object_paths = Vec::new();
     let mut source_bytes = 0usize;
     for (index, kernel) in kernels.iter().enumerate() {
+        if llvm_calls.contains_key(&index) {
+            let (config, worker) = options
+                .llvm
+                .as_ref()
+                .ok_or("configured LLVM provider missing")?;
+            source_bytes = source_bytes
+                .checked_add(kernel.source.len())
+                .filter(|n| *n <= 64 * 1024 * 1024)
+                .ok_or("native CPU compiler sources exceed64MiB")?;
+            let compiled = llvm::compile_isolated(worker, config, &kernel.source, options.timeout)?;
+            elf_header(&compiled.object, 1)?;
+            let object = temporary.path().join(format!("matrix-{index}.o"));
+            require_space(temporary.path(), compiled.object.len() as u64 + (64 << 20))?;
+            fs::write(&object, &compiled.object).map_err(|e| e.to_string())?;
+            wrappers.push(format!(
+                "/* configured LLVM receipt: {} */",
+                serde_json::to_string(&compiled.receipt).map_err(|e| e.to_string())?
+            ));
+            sources.push(kernel.source.clone());
+            objects.push(compiled.object);
+            object_paths.push(object);
+            continue;
+        }
         if let Some(image) = image_calls.get(&schedule.calls[index].buffers[0]) {
             let (config, worker) = options.llvm.as_ref().ok_or("IMAGE LLVM provider missing")?;
             let generated = image.logical_artifact(

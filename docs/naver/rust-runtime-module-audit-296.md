@@ -789,3 +789,57 @@ and ten unchanged original/native process/filesystem comparisons pass locally.
 No launcher, detached-worker, cleanup or ignored-errno policy changes. This
 proves focused storage reuse and host behavior; device performance/boot remain
 unvalidated, and the remaining bootlog internals are not cleared by this change.
+
+## Declared CPU model inputs after graph pruning (#355)
+
+The #296 strict driving prefix274 check now reaches a separate CPU artifact
+signature defect: compilation completes, but the unchanged caller cannot write
+`desire_pulse` because the native exporter registers only live input plans.
+Original offline export retains all declared ONNX input bindings independently
+of scheduled calls. This failure occurs before numerical execution, so it does
+not establish prefix equivalence or a device failure. The focused repair must
+preserve unused input names and physical capacities while retaining rejection of
+unknown names, wrong byte lengths and undeclared live inputs.
+
+The focused regression reproduced the missing binding before repair. Registering
+all lowered input plans independently of scheduled liveness now passes both
+offline-binding policies and both memory-planning policies, including F16
+capacity and unchanged output after changing unused bytes. The missing live
+declaration still fails without publishing a bundle. The unchanged actual
+prefix274 comparison passes under LLVM18 and LLVM20 with both memory policies, including
+declared input hashes, defined packed-half input lanes and exact full output.
+Fresh12 terminal,24 producer and48 residual physical-oracle cases also pass
+after the shared padding repair, as does scoped strict Clippy. Independent
+provider-specific indexed captures also pass all24 complete caller comparisons
+and12 physical programs on each provider. The final host gates below extend this focused coverage. Exact-commit CI is
+still pending; issue #355 remains open. This is host evidence only.
+
+The formerly rejected parallel depthwise producer contraction cases now pass
+the unchanged48-case original comparison under both LLVM18 and LLVM20. The
+implementation admits only complete, independently owned producer graphs;
+24 captured ownership cases and144 rejection controls preserve intermediate
+outputs and external-reader boundaries. These focused results do not establish
+whole-model equivalence, A630 behavior, or measured device speedup.
+
+Independent review also found a regression in the uncommitted Concat/Slice
+optimization: a published whole-input slice could eliminate every CPU kernel,
+so compilation rejected an otherwise valid graph. The same independent fixture
+passes on committed `1dbc4860` and failed on the proposed optimization. The CPU
+builder now retains a direct copy only for a published Slice alias of an Input
+or Constant. Computed aliases and the empty-kernel rejection remain unchanged.
+Sixteen input/constant, held/unheld and binding/memory combinations pass over two
+frames, including original signed-zero and NaN payload bytes. Existing alias and
+input-binding regressions and scoped Clippy pass; independent review found no
+remaining blocker in that repair. The final host validation accounts for all 47 model-runtime integration targets,
+the library and four binaries under LLVM18. The first broad run was deliberately
+stopped at a completed target to repair the review finding; the remaining/affected
+34 targets then passed 179 tests. This is cumulative coverage, not a successful
+single uninterrupted command. LLVM20 separately passed all 15 required graph
+targets (70 tests) and ten primitive/provider targets (16 tests). Strict all-target
+Clippy and scoped formatting passed. A freshly built ARM helper produced the
+original Add source and identical genuine A630 binary under QEMU. That one-kernel
+proof does not establish GPU execution or whole-model compilation. Independent
+review accepted the bound-output repair and mandatory LLVM20 CI routing. The
+workflow retains full workspace/original-source checks and requires the pinned
+LLVM20 package and library, with three additional disk guards; all 49 routing
+and disk tests passed. Exact-commit CI and user device acceptance remain open.

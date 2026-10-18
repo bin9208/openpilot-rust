@@ -462,7 +462,7 @@ impl Image1x1 {
     }
 }
 
-fn half_storage(mut bits: u32) -> u16 {
+pub(super) fn half_storage(mut bits: u32) -> u16 {
     let magnitude = bits & 0x7fff_ffff;
     if magnitude > 1199562752 && magnitude <= 0x7f80_0000 {
         bits = bits & 0x8000_0000 | 0x7f80_0000;
@@ -504,13 +504,15 @@ pub enum BufferKind {
 }
 
 #[derive(Default)]
-struct Ir {
-    text: String,
+pub(super) struct Ir {
+    pub(super) text: String,
     next: usize,
     nodes: BTreeMap<String, Rc<Key>>,
     available: BTreeMap<Rc<Key>, String>,
     pending: Vec<Instruction>,
     scopes: Vec<Scope>,
+    parameters: BTreeMap<String, (u8, i64)>,
+    numeric_constants: bool,
 }
 struct Scope {
     available: BTreeMap<Rc<Key>, String>,
@@ -534,11 +536,20 @@ struct Instruction {
 }
 
 impl Ir {
-    fn line(&mut self, line: impl AsRef<str>) {
+    /// Original parameter slots are semantic DAG keys, independent of names.
+    /// Existing IMAGE profiles keep their established default keys.
+    pub(super) fn parameters(&mut self, values: &[(&str, u8, i64)]) {
+        self.parameters = values
+            .iter()
+            .map(|(name, op, slot)| (name.to_string(), (*op, *slot)))
+            .collect();
+        self.numeric_constants = true;
+    }
+    pub(super) fn line(&mut self, line: impl AsRef<str>) {
         self.flush();
         writeln!(self.text, "  {}", line.as_ref()).unwrap();
     }
-    fn op(&mut self, expression: impl AsRef<str>) -> String {
+    pub(super) fn op(&mut self, expression: impl AsRef<str>) -> String {
         let expression = expression.as_ref();
         let tokens = expression
             .split(|c: char| c.is_whitespace() || c == ',')
@@ -569,11 +580,22 @@ impl Ir {
             "bitcast" => 28,
             "add" | "fadd" => 34,
             "mul" | "fmul" => 35,
+            "fdiv" => 49,
             "shl" => 36,
-            "lshr" => 37,
+            "lshr" | "ashr" => 37,
+            "srem" => 40,
             "icmp" => {
                 if tokens[1] == "eq" {
                     43
+                } else if self.numeric_constants && tokens[1] == "ne" {
+                    42
+                } else {
+                    41
+                }
+            }
+            "fcmp" => {
+                if tokens.contains(&"une") {
+                    42
                 } else {
                     41
                 }
@@ -584,8 +606,12 @@ impl Ir {
             "phi" => 56,
             _ => panic!("unsupported bounded IMAGE instruction: {expression}"),
         };
-        let dtype = if tokens[0] == "icmp" {
+        let dtype = if matches!(tokens[0], "icmp" | "fcmp") {
             0
+        } else if tokens[0] == "trunc" && tokens.last() == Some(&"i32") {
+            5
+        } else if expression.contains("i64") {
+            7
         } else if tokens[0] == "bitcast" && tokens.last() == Some(&"i32") {
             6
         } else if tokens[0] == "bitcast" || expression.contains("float") {
@@ -609,7 +635,14 @@ impl Ir {
                 if let Some(key) = self.nodes.get(*token) {
                     deps.push((*token).into());
                     src.push(key.clone());
-                } else if let Some(slot) = ["%out", "%input", "%weights", "%acc"]
+                } else if let Some(&(op, slot)) = self.parameters.get(*token) {
+                    src.push(Rc::new(Key {
+                        op,
+                        arg: vec![slot],
+                        dtype,
+                        src: vec![],
+                    }));
+                } else if let Some(slot) = ["%out", "%input", "%weights", "%acc", "%core"]
                     .iter()
                     .position(|v| v == token)
                 {
@@ -620,6 +653,43 @@ impl Ir {
                         src: vec![],
                     }));
                 }
+            } else if self.numeric_constants
+                && (token.parse::<f64>().is_ok() || token.starts_with("0x"))
+            {
+                let number = if let Some(hex) = token.strip_prefix("0x") {
+                    f64::from_bits(u64::from_str_radix(hex, 16).expect("LLVM float constant"))
+                } else {
+                    token.parse::<f64>().unwrap()
+                };
+                assert!(!number.is_nan(), "NaN payloads must remain buffer loads");
+                // Order finite/infinite numeric arguments like original Python
+                // tuples. Both zero signs compare equal there.
+                let bits = if number == 0.0 { 0 } else { number.to_bits() };
+                let ordered = if bits >> 63 == 0 {
+                    bits as i64
+                } else {
+                    (!bits ^ (1 << 63)) as i64
+                };
+                src.push(Rc::new(Key {
+                    op: 61,
+                    arg: vec![ordered],
+                    dtype: if tokens[0] == "getelementptr" {
+                        // Pointer element type and index type are distinct.
+                        5
+                    } else if expression.contains("float") {
+                        13
+                    } else if tokens[0] == "icmp" {
+                        // The comparison returns bool, but its constants have
+                        // the operand's integer type in the original DAG.
+                        tokens
+                            .iter()
+                            .find_map(|s| self.nodes.get(*s))
+                            .map_or(5, |key| key.dtype)
+                    } else {
+                        dtype
+                    },
+                    src: vec![],
+                }));
             } else if let Ok(n) = token.parse::<i64>() {
                 src.push(Rc::new(Key {
                     op: 61,
@@ -680,7 +750,11 @@ impl Ir {
         }
         let mut ideal = (0..pending.len()).collect::<Vec<_>>();
         ideal.sort_by(|&a, &b| {
-            let priority = |i: usize| if pending[i].key.op == 23 { -1 } else { 0 };
+            let priority = |i: usize| match pending[i].key.op {
+                23 => -1,
+                24 => 1,
+                _ => 0,
+            };
             (priority(a), &pending[a].key).cmp(&(priority(b), &pending[b].key))
         });
         let mut ranks = vec![0; pending.len()];
@@ -710,7 +784,104 @@ impl Ir {
             writeln!(self.text, "  {}", pending[i].text).unwrap();
         }
     }
+    pub(super) fn store_float(&mut self, pointer: &str, value: &str) {
+        self.pending_store(
+            format!("store float {value}, float* {pointer}"),
+            pointer,
+            value,
+        );
+    }
+    pub(super) fn store_i16(&mut self, pointer: &str, value: &str) {
+        self.pending_store(format!("store i16 {value}, i16* {pointer}"), pointer, value);
+    }
+    fn pending_store(&mut self, text: String, pointer: &str, value: &str) {
+        let deps = [pointer, value]
+            .into_iter()
+            .filter(|s| self.nodes.contains_key(*s))
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        let mut sources = deps
+            .iter()
+            .map(|d| self.nodes[d].clone())
+            .collect::<Vec<_>>();
+        if self.numeric_constants && value == "0.0" {
+            sources.push(Rc::new(Key {
+                op: 61,
+                arg: vec![0],
+                dtype: 13,
+                src: vec![],
+            }));
+        }
+        let key = Rc::new(Key {
+            op: 24,
+            arg: vec![],
+            dtype: 0,
+            src: sources,
+        });
+        let name = format!("store{}", self.next);
+        self.next += 1;
+        self.pending.push(Instruction {
+            name,
+            text,
+            key,
+            deps,
+        });
+    }
+    pub(super) fn store_float4(&mut self, pointer: &str, values: &[String]) {
+        self.store_float_vector(pointer, values);
+    }
+    pub(super) fn store_float_vector(&mut self, pointer: &str, values: &[String]) {
+        let lanes = values.len();
+        assert!(matches!(lanes, 2 | 4));
+        let key = Rc::new(Key {
+            op: 17,
+            arg: vec![],
+            dtype: 13,
+            src: values.iter().map(|v| self.nodes[v].clone()).collect(),
+        });
+        let name = format!("%v{}", self.next);
+        self.next += 1;
+        let mut text = String::new();
+        let mut previous = "poison".to_owned();
+        for (lane, value) in values.iter().enumerate() {
+            let dest = if lane + 1 == lanes {
+                name.clone()
+            } else {
+                format!("{name}_{lane}")
+            };
+            writeln!(
+                text,
+                "{dest} = insertelement <{lanes} x float> {previous}, float {value}, i32 {lane}"
+            )
+            .unwrap();
+            previous = dest;
+        }
+        self.pending.push(Instruction {
+            name: name.clone(),
+            text,
+            key: key.clone(),
+            deps: values.to_vec(),
+        });
+        self.nodes.insert(name.clone(), key);
+        self.pending_store(
+            format!("store <{lanes} x float> {name}, <{lanes} x float>* {pointer}"),
+            pointer,
+            &name,
+        );
+    }
     fn begin_loop(&mut self, name: &str, count: usize) -> String {
+        let arg = match name {
+            "out_block" => vec![2, 0, 0],
+            "out_lane" => vec![2, 1, 0],
+            "pixel" => vec![3, 0],
+            "reduce" => vec![0, 1],
+            "channel" => vec![0, 0],
+            "stage_pixel" => vec![1, 0],
+            _ => unreachable!(),
+        };
+        self.begin_indexed_loop(name, count, arg)
+    }
+    pub(super) fn begin_indexed_loop(&mut self, name: &str, count: usize, arg: Vec<i64>) -> String {
         self.scopes.push(Scope {
             available: self.available.clone(),
             nodes: self.nodes.clone(),
@@ -721,15 +892,6 @@ impl Ir {
         let value = self.op(format!(
             "phi i32 [0, %{name}_entry], [%{name}_next, %{name}_footer]"
         ));
-        let arg = match name {
-            "out_block" => vec![2, 0, 0],
-            "out_lane" => vec![2, 1, 0],
-            "pixel" => vec![3, 0],
-            "reduce" => vec![0, 1],
-            "channel" => vec![0, 0],
-            "stage_pixel" => vec![1, 0],
-            _ => unreachable!(),
-        };
         self.nodes.insert(
             value.clone(),
             Rc::new(Key {
@@ -746,7 +908,7 @@ impl Ir {
         ));
         value
     }
-    fn end_loop(&mut self, name: &str) {
+    pub(super) fn end_loop(&mut self, name: &str) {
         self.line(format!(
             "br label %{name}_footer\n{name}_footer:\n  br label %{name}_latch\n{name}_exit:"
         ));
@@ -754,7 +916,7 @@ impl Ir {
         self.available = scope.available;
         self.nodes = scope.nodes;
     }
-    fn half_values(
+    pub(super) fn half_values(
         &mut self,
         buffer: &str,
         base: &str,
@@ -810,11 +972,89 @@ impl Ir {
         }
         values
     }
-    fn load_half(&mut self, buffer: &str, index: &str) -> String {
+    /// Original masked LOAD: the address is never dereferenced in its false
+    /// branch. Retain the validity as part of INDEX's semantic key, and model
+    /// the resulting phi as LOAD rather than as unrelated arithmetic.
+    fn guarded_float_group(
+        &mut self,
+        buffer: &str,
+        index: &str,
+        valid: &str,
+        lanes: usize,
+    ) -> Vec<String> {
+        let pointer = self.op(format!(
+            "getelementptr inbounds float, float* {buffer}, i32 {index}"
+        ));
+        let mut key = (*self.nodes[&pointer]).clone();
+        key.src.push(self.nodes[valid].clone());
+        self.nodes.insert(pointer.clone(), Rc::new(key));
+        let ty = if lanes == 1 {
+            "float".to_owned()
+        } else {
+            format!("<{lanes} x float>")
+        };
+        let value = self.op(format!("load {ty}, {ty}* {pointer}"));
+        if self.pending.last().is_some_and(|p| p.name == value) {
+            self.pending.pop();
+            self.flush();
+            let label = value.trim_start_matches('%');
+            let zero = if lanes == 1 { "0.0" } else { "zeroinitializer" };
+            writeln!(self.text,"  br label %{label}_entry\n{label}_entry:\n  br i1 {valid}, label %{label}_load, label %{label}_exit\n{label}_load:\n  {value}_yes = load {ty}, {ty}* {pointer}\n  br label %{label}_exit\n{label}_exit:\n  {value} = phi {ty} [{value}_yes, %{label}_load], [{zero}, %{label}_entry]").unwrap();
+        }
+        if lanes == 1 {
+            vec![value]
+        } else {
+            (0..lanes)
+                .map(|i| self.op(format!("extractelement <{lanes} x float> {value}, i32 {i}")))
+                .collect()
+        }
+    }
+    pub(super) fn float_values(
+        &mut self,
+        buffer: &str,
+        base: &str,
+        count: usize,
+        valid: Option<&str>,
+    ) -> Vec<String> {
+        let mut result = Vec::new();
+        let mut lane = 0;
+        while lane < count {
+            let group = if count - lane >= 4 { 4 } else { 1 };
+            let index = self.op(format!("add nsw i32 {base}, {lane}"));
+            if let Some(valid) = valid {
+                result.extend(self.guarded_float_group(buffer, &index, valid, group));
+            } else {
+                let p = self.op(format!(
+                    "getelementptr inbounds float, float* {buffer}, i32 {index}"
+                ));
+                let ty = if group == 1 {
+                    "float".to_owned()
+                } else {
+                    format!("<{group} x float>")
+                };
+                let value = self.op(format!("load {ty}, {ty}* {p}"));
+                if group == 1 {
+                    result.push(value);
+                } else {
+                    for i in 0..group {
+                        result.push(
+                            self.op(format!("extractelement <{group} x float> {value}, i32 {i}")),
+                        );
+                    }
+                }
+            }
+            lane += group;
+        }
+        result
+    }
+    pub(super) fn load_half(&mut self, buffer: &str, index: &str) -> String {
         let ptr = self.op(format!(
             "getelementptr inbounds i16, i16* {buffer}, i32 {index}"
         ));
         let raw = self.op(format!("load i16, i16* {ptr}"));
+        self.decode_half(&raw)
+    }
+    pub(super) fn decode_half(&mut self, raw: &str) -> String {
         // Original non-native half decomposition: subnormals flush to signed
         // zero; infinity and NaN retain sign and the complete ten payload bits.
         let magnitude = self.op(format!("and i16 {raw}, 32767"));
@@ -833,7 +1073,7 @@ impl Ir {
         let bits = self.op(format!("or i32 {sign}, {bits}"));
         self.op(format!("bitcast i32 {bits} to float"))
     }
-    fn store_half(&mut self, value: &str) -> String {
+    pub(super) fn store_half(&mut self, value: &str) -> String {
         let raw = self.op(format!("bitcast float {value} to i32"));
         let mag = self.op(format!("and i32 {raw}, 2147483647"));
         let overflow = self.op(format!("icmp ult i32 1199562752, {mag}"));
@@ -866,5 +1106,86 @@ impl Ir {
         let sign = self.op(format!("and i32 {sign}, 32768"));
         let bits = self.op(format!("or i32 {result}, {sign}"));
         self.op(format!("trunc i32 {bits} to i16"))
+    }
+    fn half_range(&mut self, value: &str) -> String {
+        let below = self.op(format!(
+            "fcmp nsz arcp contract afn olt float {value}, -65504.0"
+        ));
+        let above = self.op(format!(
+            "fcmp nsz arcp contract afn olt float 65504.0, {value}"
+        ));
+        let nan = self.op(format!(
+            "fcmp nsz arcp contract afn une float {value}, {value}"
+        ));
+        let upper = self.op(format!(
+            "select i1 {above}, float 0x7FF0000000000000, float {value}"
+        ));
+        let lower = self.op(format!(
+            "select i1 {below}, float 0xFFF0000000000000, float {upper}"
+        ));
+        self.op(format!("select i1 {nan}, float {value}, float {lower}"))
+    }
+    /// Original logical-half clamp, ordered Relu, then physical emulated half.
+    /// Keep the FP predicates and integer rounding DAG rather than replacing
+    /// the fused profile by a mathematically similar C/bitwise epilogue.
+    pub(super) fn relu_half(&mut self, value: &str) -> String {
+        self.logical_half(value, true, None)
+    }
+    pub(super) fn plain_half(&mut self, value: &str) -> String {
+        self.logical_half(value, false, None)
+    }
+    pub(super) fn masked_plain_half(&mut self, value: &str, valid: &str) -> String {
+        self.logical_half(value, false, Some(valid))
+    }
+    fn logical_half(&mut self, value: &str, relu: bool, valid: Option<&str>) -> String {
+        let positive = if relu {
+            Some(self.op(format!("fcmp nsz arcp contract afn olt float 0.0, {value}")))
+        } else {
+            None
+        };
+        let ranged = self.half_range(value);
+        let relu = if let Some(positive) = positive {
+            self.op(format!("select i1 {positive}, float {ranged}, float 0.0"))
+        } else {
+            ranged
+        };
+        let relu = if let Some(valid) = valid {
+            self.op(format!("select i1 {valid}, float {relu}, float 0.0"))
+        } else {
+            relu
+        };
+        let bits = self.op(format!("bitcast float {relu} to i32"));
+        let back = self.op(format!("bitcast i32 {bits} to float"));
+        let ranged = self.half_range(&back);
+        let raw = self.op(format!("bitcast float {ranged} to i32"));
+        let mag = self.op(format!("and i32 {raw}, 2147483647"));
+        let low = self.op(format!("and i32 {mag}, 4095"));
+        let nonzero = self.op(format!("icmp ne i32 {low}, 0"));
+        let nonzero = self.op(format!("zext i1 {nonzero} to i32"));
+        let shift12 = self.op(format!("lshr i32 {mag}, 12"));
+        let high = self.op(format!("lshr i32 {mag}, 13"));
+        let odd = self.op(format!("and i32 {high}, 1"));
+        let lower = self.op(format!("or i32 {nonzero}, {odd}"));
+        let round = self.op(format!("and i32 {shift12}, 1"));
+        let round = self.op(format!("and i32 {round}, {lower}"));
+        let rounded = self.op(format!("add i32 {high}, {round}"));
+        let normal = self.op(format!("add i32 {rounded}, -114688"));
+        let normal = self.op(format!("trunc i32 {normal} to i16"));
+        let sign = self.op(format!("lshr i32 {raw}, 16"));
+        let sign = self.op(format!("and i32 {sign}, 32768"));
+        let payload = self.op(format!("and i32 {high}, 1023"));
+        let special = self.op(format!("or i32 {sign}, {payload}"));
+        let special = self.op(format!("or i32 {special}, 31744"));
+        let special = self.op(format!("trunc i32 {special} to i16"));
+        let sign = self.op(format!("trunc i32 {sign} to i16"));
+        let exponent = self.op(format!("lshr i32 {raw}, 23"));
+        let exponent = self.op(format!("and i32 {exponent}, 255"));
+        let small = self.op(format!("icmp ult i32 {exponent}, 113"));
+        let normal = self.op(format!("select i1 {small}, i16 0, i16 {normal}"));
+        let normal = self.op(format!("or i16 {sign}, {normal}"));
+        let is_special = self.op(format!("icmp eq i32 {exponent}, 255"));
+        self.op(format!(
+            "select i1 {is_special}, i16 {special}, i16 {normal}"
+        ))
     }
 }

@@ -124,6 +124,52 @@ impl LoweredGraph {
         let mut shape = input.shape[..batch].to_vec();
         shape.extend(extra);
         shape.extend(&input.shape[batch + k..]);
+        // A constant consecutive row window is an affine movement, not an
+        // indirect runtime load. Normalize signed indices before proving this;
+        // arbitrary tuples, reordered rows and runtime indices keep GatherLoad.
+        if batch == 0 && rank == 2 && k == 1 && indices.shape[0] > 0 {
+            if let Some(tensor) = constant {
+                let width = super::super::parse::width(tensor.dtype)?;
+                if tensor.data.len() / width == indices.shape[0]
+                    && tensor.data.len().is_multiple_of(width)
+                {
+                    let normalized = tensor
+                        .data
+                        .chunks_exact(width)
+                        .map(|raw| {
+                            let value = Scalar::read(tensor.dtype, raw)?.integer()?;
+                            Ok(if value < 0 {
+                                value + input.shape[0] as i128
+                            } else {
+                                value
+                            })
+                        })
+                        .collect::<Result<Vec<_>, String>>()?;
+                    let start = normalized[0];
+                    if start >= 0
+                        && normalized
+                            .iter()
+                            .enumerate()
+                            .all(|(i, &v)| v == start + i as i128 && v < input.shape[0] as i128)
+                    {
+                        let stride = input.shape[1..].iter().product::<usize>();
+                        return Ok((
+                            TensorType {
+                                dtype: input.dtype,
+                                shape,
+                            },
+                            ScalarExpr::Load {
+                                plan: a,
+                                index: add(
+                                    IndexExpr::Index,
+                                    IndexExpr::Constant(start * stride as i128),
+                                ),
+                            },
+                        ));
+                    }
+                }
+            }
+        }
         let base = index_from_coordinates(
             &input.shape,
             (0..input.shape.len()).map(|i| {
