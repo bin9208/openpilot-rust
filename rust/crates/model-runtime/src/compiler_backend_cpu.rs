@@ -459,14 +459,14 @@ pub fn compile_onnx(
         if gemms.iter().any(|g| !g.owned.is_disjoint(&chain.owned))
             || matrices
                 .iter()
-                .any(|m| chain.owned.contains(&m.output) || chain.owned.contains(&m.reduction))
+                .any(|m| !chain.owned.is_disjoint(&m.owned()))
         {
             return Err("overlapping configured LLVM matrix chain ownership".into());
         }
     }
     let mut kernel_plans = matrices
         .iter()
-        .flat_map(|m| [m.output, m.reduction])
+        .flat_map(|m| m.owned())
         .chain(gemms.iter().flat_map(|g| g.owned.iter().copied()))
         .chain(chains.iter().flat_map(|g| g.owned.iter().copied()))
         .collect::<BTreeSet<_>>();

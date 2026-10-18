@@ -18,12 +18,13 @@ enum Epilogue {
     BiasedResidual { relu_half: bool },
     BiasedRelu,
     BiasedF32,
+    BiasedSilu,
 }
 impl Epilogue {
     fn biased(self) -> bool {
         matches!(
             self,
-            Self::BiasedResidual { .. } | Self::BiasedRelu | Self::BiasedF32
+            Self::BiasedResidual { .. } | Self::BiasedRelu | Self::BiasedF32 | Self::BiasedSilu
         )
     }
     fn relu_half(self) -> bool {
@@ -36,7 +37,7 @@ impl Epilogue {
         matches!(self, Self::BiasedResidual { .. })
     }
     fn bias_only(self) -> bool {
-        matches!(self, Self::BiasedRelu | Self::BiasedF32)
+        matches!(self, Self::BiasedRelu | Self::BiasedF32 | Self::BiasedSilu)
     }
 }
 pub(super) fn identifier(s: &str) -> bool {
@@ -208,6 +209,20 @@ impl MatrixLayout {
         dense.output_pixel_stride = dense.output_channels;
         dense.output_elements = dense.batches * dense.rows * dense.output_channels;
         dense.render_artifact(function, entrypoint, max_workers, Epilogue::BiasedF32)
+    }
+    /// Final-only MatMul/bias/SiLU without an intermediate storage barrier.
+    /// The affine accesses equal the bias profile; only the arithmetic DAG
+    /// changes, retaining original xexp2 decomposition and contract flags.
+    pub fn broadcast_silu_artifact(
+        &self,
+        function: &str,
+        entrypoint: &str,
+        max_workers: usize,
+    ) -> Result<MatrixArtifact<4>, String> {
+        let mut dense = self.clone();
+        dense.output_pixel_stride = dense.output_channels;
+        dense.output_elements = dense.batches * dense.rows * dense.output_channels;
+        dense.render_artifact(function, entrypoint, max_workers, Epilogue::BiasedSilu)
     }
     fn render_artifact<const N: usize>(
         &self,
@@ -384,6 +399,11 @@ impl MatrixLayout {
                 });
             }
         }
+        if matches!(epilogue, Epilogue::BiasedSilu) {
+            for value in &mut acc {
+                *value = Some(ir.matrix_silu(value.as_ref().unwrap()));
+            }
+        }
         if epilogue.relu_half() {
             for (slot, output) in outputs.iter().enumerate() {
                 let mut values = base.clone();
@@ -473,7 +493,7 @@ impl MatrixLayout {
         ir.line("ret void");
         // Keep the independently compiled original terminal core boundary;
         // indirect-wrapper inlining can change LLVM NaN operand ownership.
-        let boundary = if matches!(epilogue, Epilogue::BiasedF32) {
+        let boundary = if matches!(epilogue, Epilogue::BiasedF32 | Epilogue::BiasedSilu) {
             "noinline"
         } else {
             "alwaysinline"

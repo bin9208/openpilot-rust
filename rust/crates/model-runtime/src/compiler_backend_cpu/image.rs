@@ -550,7 +550,14 @@ impl Ir {
         writeln!(self.text, "  {}", line.as_ref()).unwrap();
     }
     pub(super) fn op(&mut self, expression: impl AsRef<str>) -> String {
-        let expression = expression.as_ref();
+        self.op_typed(expression.as_ref(), None)
+    }
+    /// Signed integer intermediates in the original transcendental DAG must
+    /// not inherit the uint32 keys used by emulated half bit operations.
+    pub(super) fn signed_op(&mut self, expression: impl AsRef<str>) -> String {
+        self.op_typed(expression.as_ref(), Some(5))
+    }
+    fn op_typed(&mut self, expression: &str, forced_dtype: Option<u8>) -> String {
         let tokens = expression
             .split(|c: char| c.is_whitespace() || c == ',')
             .filter(|s| !s.is_empty())
@@ -559,24 +566,28 @@ impl Ir {
             return tokens[tokens.len() - 2].into();
         }
         if tokens[0] == "mul" {
-            let rhs = tokens.last().unwrap().parse::<usize>().unwrap();
+            let rhs = tokens.last().unwrap().parse::<usize>();
             let lhs = tokens[tokens.len() - 2];
-            if rhs == 0 || lhs == "0" {
-                return "0".into();
-            }
-            if rhs == 1 {
-                return lhs.into();
-            }
-            if rhs.is_power_of_two() {
-                return self.op(format!("shl i32 {lhs}, {}", rhs.trailing_zeros()));
+            if let Ok(rhs) = rhs {
+                if rhs == 0 || lhs == "0" {
+                    return "0".into();
+                }
+                if rhs == 1 {
+                    return lhs.into();
+                }
+                if rhs.is_power_of_two() {
+                    return self.op_typed(
+                        &format!("shl i32 {lhs}, {}", rhs.trailing_zeros()),
+                        forced_dtype,
+                    );
+                }
             }
         }
         let op = match tokens[0] {
             "extractelement" => 16,
             "getelementptr" => 21,
             "load" => 23,
-            "zext" => 27,
-            "trunc" => 27,
+            "zext" | "trunc" | "fptosi" | "sitofp" => 27,
             "bitcast" => 28,
             "add" | "fadd" => 34,
             "mul" | "fmul" => 35,
@@ -606,28 +617,30 @@ impl Ir {
             "phi" => 56,
             _ => panic!("unsupported bounded IMAGE instruction: {expression}"),
         };
-        let dtype = if matches!(tokens[0], "icmp" | "fcmp") {
-            0
-        } else if tokens[0] == "trunc" && tokens.last() == Some(&"i32") {
-            5
-        } else if expression.contains("i64") {
-            7
-        } else if tokens[0] == "bitcast" && tokens.last() == Some(&"i32") {
-            6
-        } else if tokens[0] == "bitcast" || expression.contains("float") {
-            13
-        } else if expression.contains("i16") && tokens[0] != "zext" {
-            4
-        } else if matches!(tokens[0], "zext" | "lshr" | "or" | "and" | "select")
-            || tokens
-                .iter()
-                .find_map(|s| self.nodes.get(*s))
-                .is_some_and(|k| k.dtype == 6)
-        {
-            6
-        } else {
-            5
-        };
+        let dtype = forced_dtype.unwrap_or_else(|| {
+            if matches!(tokens[0], "icmp" | "fcmp") {
+                0
+            } else if matches!(tokens[0], "trunc" | "fptosi") && tokens.last() == Some(&"i32") {
+                5
+            } else if expression.contains("i64") {
+                7
+            } else if tokens[0] == "bitcast" && tokens.last() == Some(&"i32") {
+                6
+            } else if tokens[0] == "bitcast" || expression.contains("float") {
+                13
+            } else if expression.contains("i16") && tokens[0] != "zext" {
+                4
+            } else if matches!(tokens[0], "zext" | "lshr" | "or" | "and" | "select")
+                || tokens
+                    .iter()
+                    .find_map(|s| self.nodes.get(*s))
+                    .is_some_and(|k| k.dtype == 6)
+            {
+                6
+            } else {
+                5
+            }
+        });
         let mut deps = Vec::new();
         let mut src = Vec::new();
         for token in &tokens[1..] {
@@ -661,7 +674,12 @@ impl Ir {
                 } else {
                     token.parse::<f64>().unwrap()
                 };
-                assert!(!number.is_nan(), "NaN payloads must remain buffer loads");
+                // The original xexp2 exceptional branch contains this one
+                // canonical constant. Model payloads still remain buffer loads.
+                assert!(
+                    !number.is_nan() || *token == "0x7FF8000000000000",
+                    "NaN payloads must remain buffer loads"
+                );
                 // Order finite/infinite numeric arguments like original Python
                 // tuples. Both zero signs compare equal there.
                 let bits = if number == 0.0 { 0 } else { number.to_bits() };

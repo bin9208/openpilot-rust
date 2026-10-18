@@ -17,6 +17,17 @@ pub struct MatrixClosure {
     pub reduction: usize,
     pub residual: bool,
     pub bias: Option<usize>,
+    /// Biased value and Sigmoid are internal only in the final SiLU profile.
+    pub silu: Option<(usize, usize)>,
+}
+impl MatrixClosure {
+    pub(crate) fn owned(&self) -> BTreeSet<usize> {
+        let mut owned = BTreeSet::from([self.reduction, self.output]);
+        if let Some((linear, sigmoid)) = self.silu {
+            owned.extend([linear, sigmoid]);
+        }
+        owned
+    }
 }
 /// Discover final-output matrices and the independently captured direct
 /// matrix-plus-packed-input residual. Other epilogues retain their fences.
@@ -59,6 +70,7 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             reduction: output,
             residual: false,
             bias: None,
+            silu: None,
         });
     }
     // A channel bias participates in the same original matrix DAG. Selecting
@@ -66,12 +78,62 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
     for add in model.graph.nodes.iter().filter(|n| {
         n.op == "Add" && n.inputs.len() == 2 && n.outputs.len() == 1 && n.attributes.is_empty()
     }) {
-        let Some(&output) = graph.names.get(&add.outputs[0]) else {
+        let Some(&linear) = graph.names.get(&add.outputs[0]) else {
             continue;
         };
-        if !graph.outputs.values().any(|id| *id == output) {
-            continue;
-        }
+        let (output, silu) = if graph.outputs.values().any(|id| *id == linear) {
+            (linear, None)
+        } else {
+            let Some(sigmoid) = model.graph.nodes.iter().find(|n| {
+                n.op == "Sigmoid"
+                    && n.inputs == add.outputs
+                    && n.outputs.len() == 1
+                    && n.attributes.is_empty()
+            }) else {
+                continue;
+            };
+            let Some(mul) = model.graph.nodes.iter().find(|n| {
+                n.op == "Mul"
+                    && n.inputs == [add.outputs[0].clone(), sigmoid.outputs[0].clone()]
+                    && n.outputs.len() == 1
+                    && n.attributes.is_empty()
+            }) else {
+                continue;
+            };
+            let (Some(&sigmoid_id), Some(&output)) = (
+                graph.names.get(&sigmoid.outputs[0]),
+                graph.names.get(&mul.outputs[0]),
+            ) else {
+                continue;
+            };
+            // The biased value has exactly two intentional source readers.
+            // Identity, order and held visibility matter; equal shapes do not
+            // permit replacing another Sigmoid or extra alias/view consumer.
+            let users = |name: &str| {
+                model
+                    .graph
+                    .nodes
+                    .iter()
+                    .filter(|n| n.inputs.iter().any(|v| v == name))
+                    .collect::<Vec<_>>()
+            };
+            if !graph.outputs.values().any(|id| *id == output)
+                || graph.outputs.values().any(|id| *id == sigmoid_id)
+                || users(&add.outputs[0]) != vec![sigmoid, mul]
+                || users(&sigmoid.outputs[0]) != vec![mul]
+                || graph.plans[linear].ty != graph.plans[output].ty
+                || graph.plans[sigmoid_id].ty != graph.plans[output].ty
+                || schedule.calls.iter().any(|c| {
+                    ![linear, sigmoid_id, output].contains(&c.buffers[0])
+                        && c.buffers[1..]
+                            .iter()
+                            .any(|id| [linear, sigmoid_id].contains(id))
+                })
+            {
+                continue;
+            }
+            (output, Some((linear, sigmoid_id)))
+        };
         let Some(matrix) = super::gemm::producer(model, &add.inputs[0], "MatMul")
             .filter(|n| n.inputs.len() == 2 && n.outputs.len() == 1 && n.attributes.is_empty())
         else {
@@ -90,6 +152,14 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             || matches!(x.expression, ScalarExpr::Constant(_))
             || !matches!(w.expression, ScalarExpr::Constant(_))
             || graph.outputs.values().any(|id| *id == reduction)
+            || (silu.is_some()
+                && model
+                    .graph
+                    .nodes
+                    .iter()
+                    .filter(|n| n.inputs.iter().any(|v| v == &matrix.outputs[0]))
+                    .count()
+                    != 1)
             || schedule
                 .calls
                 .iter()
@@ -118,6 +188,7 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             reduction,
             residual: false,
             bias: Some(bias),
+            silu,
         });
     }
     // Independently proved final-only square matrix plus its own packed input.
@@ -185,6 +256,7 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             output,
             residual: true,
             bias: None,
+            silu: None,
         });
     }
     Ok(selected)
@@ -281,7 +353,10 @@ pub(crate) fn stage_with_chains(
             scratch.insert(output);
         }
         if direct {
-            schedule.calls.retain(|c| c.buffers[0] != closure.reduction);
+            let owned = closure.owned();
+            schedule
+                .calls
+                .retain(|c| c.buffers[0] == closure.output || !owned.contains(&c.buffers[0]));
         }
         let at = schedule
             .calls
@@ -370,7 +445,11 @@ pub(crate) fn stage_with_chains(
             let function = format!("native_matrix_{reduce_at}");
             let entry = format!("op_kernel_{reduce_at}");
             let reduce = if closure.bias.is_some() {
-                let artifact = layout.broadcast_bias_artifact(&function, &entry, 16)?;
+                let artifact = if closure.silu.is_some() {
+                    layout.broadcast_silu_artifact(&function, &entry, 16)?
+                } else {
+                    layout.broadcast_bias_artifact(&function, &entry, 16)?
+                };
                 PipelineCall {
                     source: artifact.source,
                     bytes: artifact.bytes.to_vec(),

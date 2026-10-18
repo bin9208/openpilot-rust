@@ -12,6 +12,7 @@ pub use boundary::MatrixBoundary;
 pub use branch::artifact as concat_biased_artifact;
 pub use indexed::artifact as indexed_normalization_artifact;
 mod schedule;
+mod silu;
 pub use render::MatrixArtifact;
 pub use schedule::MatrixSchedule;
 #[derive(Clone, Debug)]

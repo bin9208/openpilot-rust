@@ -935,3 +935,65 @@ numerical source, fixtures and test code remain unchanged from those gates.
 Exact-commit mandatory CI is still required before integration. Nodes276/277 (SiLU),
 the remaining full driving/DM graph, CPU/GPU export and Python compiler retirement
 remain unfinished. Earlier a75b694c evidence is preserved separately.
+### Actual driving node277 fused SiLU (locally verified after 20a79187)
+
+The new `original-batched-silu.json` preserves independent cold original
+metadata for final-output-only `policy/silu`, prefix
+`9bb53bcf01486b497900ebd3aae35294df24234d20f44d5183d63d8240a2715a`.
+LLVM18 compiled 96 distinct original programs and executed 251 calls. The
+18,432-byte output hash is
+`656d9d47f90cbf3c05ea54e2c1ff244d4326da4183ca3c35b4a7f4e345534d91`.
+All 15 source pins include the Sigmoid and transcendental decomposition sources;
+model, initializer, input, source, object and immediate-boundary hashes remain.
+Private intermediate tensors and object bytes are omitted.
+
+The earlier source-only script rendered node275 and then node277 in one
+process. Tinygrad's `Scheduler.kernel_cnt` therefore appended `n1` to the latter
+symbol. Cold node277 alone omits that suffix. Changing only that one symbol
+in retained original IR changes source hash `f08d5069...` to `df6cea43...`;
+full byte equality was checked before original execution. The first cold
+wrapper failed after execution because its reused driver overwrote a path
+variable. Its raw JSON and IR were preserved, then independently revalidated
+without recompilation; the fixture retains both raw and validation identities.
+
+A genuine native run first rejected node277 with the rank-two matrix fence.
+The bounded implementation owns MatMul, channel-bias Add, Sigmoid and final
+Mul together, preserving two intentional readers of the biased value. Held
+intermediates, additional readers, a different Sigmoid input or commuted Mul
+cannot acquire this final-only profile. The original exp2 polynomial, signed
+casts, exceptional guards and arithmetic DAG share the matrix reduction; no
+intermediate C or half store is introduced. The prior bias-only path is retained.
+
+Before immutable fixture rewiring, LLVM18 passed actual277 under both memory
+policies (36.76 seconds), all 19 independently captured final-only control cases
+under both policies (38 exact whole-output comparisons), 16 ownership/order
+controls, the prior three bias tests, and scoped strict Clippy. The control
+fixture also records the distinct original outputs of the held/extra-reader
+contexts; the ownership tests do not claim native numerical support for those
+contexts.
+
+LLVM20.1 independently compiled all 96 actual-prefix programs and executed the
+251 calls in 24.62 seconds, reproducing the same whole-output hash. Its separate
+35-case control capture compiled 29 original source programs with the cache
+disabled. Both original source/provider sets were checked before and after
+capture. The immutable fixtures now contain both providers. The dedicated
+`compiler_batched_silu` target passed all three tests on LLVM20.1 in 60.62
+seconds: actual277 under both memory policies, 38 exact final-only control
+comparisons, and 16 ownership/order guards, with no ignored or filtered tests.
+No original LLVM18 recompilation was needed after the wrapper path repair.
+
+The immutable test reconstructs the prefix from the hash-pinned full model and
+checks both fixture byte hashes; no private capture environment or optional
+provider fallback remains. Both complete 17-target/77-test graph gates passed
+with no failures, ignored tests or filtering (802.29/863.91 summed target seconds
+on LLVM18/LLVM20). Actual prefixes274/275/277 under both memory policies remain
+covered. Before/after checks retain all220 model source/fixture files, both
+actual model identities and each provider hash. Receipts are retained under
+`silu277-graph-gates-IUOQt39I/` and `NODE277-FINAL-GRAPH-PROOF.json` in the
+2026-10-18 batched-matmul scratch evidence directory. Final scoped strict Clippy
+also passed after immutable fixture wiring. This paragraph was reconciled after
+the frozen gates; numerical source, test code and fixture bytes are unchanged.
+The new target is mandatory alongside all16 existing graph targets. Parent
+source review found no blocker; exact committed-SHA CI remains required.
+No prefix after277, full driving/DM export, device speedup or Python compiler
+retirement is established by this bounded change.

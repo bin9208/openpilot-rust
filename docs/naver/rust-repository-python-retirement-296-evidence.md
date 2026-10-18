@@ -3204,3 +3204,36 @@ Evidence: `.analysis/scratch/2026-10-18-manager-catalog-tools/`, notably
 `generic-edges-native-2q3ncogm/` and `parent-review.md`. Inventory is now 150
 replaced-local, three partially replaced and 3,427 pending baseline files.
 Exact committed-SHA CI/integration and the user's device verification remain open.
+
+### Native batch matrix, channel bias and final SiLU (#296, 2026-10-18)
+
+The driving-model prefix ending at node277 previously failed the native CPU IMAGE
+rank-two matrix admission fence. The compiler now owns its MatMul, channel-bias
+Add, Sigmoid and final Mul as one four-buffer call. The original exp2 polynomial,
+signed conversions, exception handling and arithmetic ordering remain in the
+reduction DAG without an intermediate half store. Held intermediates, extra
+readers, changed Sigmoid input and commuted Mul remain rejected by this bounded
+final-only profile; the previous bias-only path remains intact.
+
+Independent cold LLVM18/LLVM20 originals each compiled96 distinct programs and
+executed251 calls, producing the same18,432-byte output SHA256
+656d9d47f90cbf3c05ea54e2c1ff244d4326da4183ca3c35b4a7f4e345534d91.
+Native final outputs match under both memory policies. Independent controls
+supply38 whole-output comparisons and16 ownership/order guards per provider.
+The actual native rank-two rejection was observed before implementation; no
+expected answers were generated from the replacement compiler.
+
+Both complete17-target/77-test affected graph gates pass with no failed, ignored
+or filtered tests, retaining prior274/275 prefix coverage. Before/after hashes
+match for all220 model source/fixture files, both actual models and both LLVM
+providers. Final strict Clippy on the library, binaries and affected SiLU/bias
+tests passes after immutable fixture wiring. Parent review found no blocker.
+The workflow and its policy regression require the added target on LLVM20.
+
+Evidence: `.analysis/scratch/2026-10-18-batched-matmul/`, specifically
+`NODE277-FINAL-GRAPH-PROOF.json`, `silu277-graph-gates-IUOQt39I/proof18.json`,
+`proof20.json`, `silu277-final-clippy.log` and `node277-parent-review.md`.
+Only the README was reconciled after the frozen graph gates. Exact committed-SHA
+CI remains required. Later graph prefixes, full CPU/GPU export, repository-wide
+Python retirement and user device verification remain open; no CPU saving is
+claimed from these correctness checks.
