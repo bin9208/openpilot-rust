@@ -2806,6 +2806,7 @@ dependencies = [
  "base64 0.22.1",
  "bzip2",
  "capnp",
+ "chrono",
  "command-fds",
  "flate2",
  "gif",

@@ -2594,7 +2594,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang cmake make jq curl ghostscript libclang-dev capnproto libcapnp-dev libzmq3-dev libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 xvfb xauth ffmpeg dbus-daemon
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang cmake make jq curl ghostscript libclang-dev capnproto libcapnp-dev libzmq3-dev libgl-dev libx11-dev libxrandr2 libxinerama1 libxcursor1 libxi6 libxtst6 xvfb xauth ffmpeg dbus-daemon
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 cffi==2.1.1 pillow==12.3.0 python-xlib==0.33 jeepney==0.9.0 comma-deps-raylib==6.0.0.1.post103 setproctitle==1.3.7 psutil==7.2.2 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 pytest==9.0.2 anyio==4.12.1
       - name: Stage source-pinned native renderer
         run: |
@@ -2608,7 +2608,7 @@ jobs:
       - name: Build native UI validation checkers
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference,polygon-reference --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --bin check-ui-diagnostics --bin ui-diagnostic-reference --bin build-ui-diagnostic-reference --bin check-ui-emoji --bin check-ui-forms --bin ui-forms-reference --bin check-ui-render --bin ui-render-reference --bin check-ui-network --bin ui-network-reference --bin check-ui-framework --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-ui-translations --bin check-ui-fps --bin check-ui-stack --bin check-ui-widgets --bin check-ui-navigation --bin check-ui-scroll --bin check-ui-scroller --features egl-reference,polygon-reference,ui-application-lifecycle-native --bin check-ui-egl --bin ui-egl-reference --bin check-ui-polygon --bin ui-polygon-reference --bin check-ui-diagnostics --bin ui-diagnostic-reference --bin build-ui-diagnostic-reference --bin check-ui-emoji --bin check-ui-forms --bin ui-forms-reference --bin check-ui-render --bin ui-render-reference --bin check-ui-network --bin ui-network-reference --bin check-ui-framework --bin check-ui-application --bin ui-application-reference --bin build-ui-application-reference --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features egl-reference --test ui_egl_reference --test ui_egl_check --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -2620,6 +2620,11 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 16
           rust/target/debug/build-ui-diagnostic-reference --output "$RUNNER_TEMP/ui-diagnostic-raw" --raylib-root "$STARTUP_UI_RAYLIB_ROOT"
           printf 'UI_DIAGNOSTIC_RAW_HELPER=%s/ui-diagnostic-raw/ui-diagnostic-raw\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Build independent application lifecycle and XTest boundary
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 16
+          rust/target/debug/build-ui-application-reference --output "$RUNNER_TEMP/ui-application-raw" --raylib-root "$STARTUP_UI_RAYLIB_ROOT"
+          printf 'UI_APPLICATION_RAW_HELPER=%s/ui-application-raw/ui-application-raw\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build independent Forms drawing boundary
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 16
@@ -2641,9 +2646,14 @@ jobs:
           xvfb-run -a -s '-screen 0 2160x1080x24' bash -euc '
             test -x "$UI_FORMS_RAW_HELPER"
             test -x "$UI_RENDER_RAW_HELPER"
+            test -x "$UI_APPLICATION_RAW_HELPER"
             test -f "$STARTUP_UI_RAYLIB_LIBRARY"
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
             cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features image-array-native --test ui_forms_check --test ui_forms_reference --test ui_forms_admission --test ui_forms_family_text --test ui_forms_snapshot_order --test ui_render_check --test ui_render_reference --test ui_network_check --test ui_network_reference --test ui_framework_check --locked
+            "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+            cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features ui-application-lifecycle-native --test ui_application_lifecycle_loop --test ui_application_lifecycle_recording --test ui_application_lifecycle_reference --test ui_application_lifecycle_raw --test ui_application_lifecycle_check --test ui_application_lifecycle_native --locked
+            "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+            cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features ui-application-lifecycle-native --lib --test ui_application_lifecycle_loop --test ui_application_lifecycle_recording --test ui_application_lifecycle_reference --test ui_application_lifecycle_raw --test ui_application_lifecycle_check --test ui_application_lifecycle_native --bin check-ui-application --bin ui-application-reference --bin build-ui-application-reference --locked -- -D warnings
             rust/target/debug/check-ui-framework --python python --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/framework" --display "$DISPLAY"
             python rust/tools/check_startup_ui.py --target "$PWD/rust/target/debug" --output "$RUNNER_TEMP/ui-connectivity/startup" --display "$DISPLAY" --raylib-root "$STARTUP_UI_RAYLIB_ROOT" --raylib-library "$STARTUP_UI_RAYLIB_LIBRARY"
           '

@@ -2647,3 +2647,34 @@ the twelve changed source hashes and all five final test-log hashes/results.
 Evidence:2026-10-18-ui-network/raster-final-results.json and portability handoff.
 Fresh exact-commit cloud verification is still required; previous UI failure runs
 are not passing evidence. Python retirement count is unchanged by this repair.
+
+### Native application lifecycle tools retired (2026-10-18)
+
+`check_ui_application.py` and `ui_qa/application_source.py` are removed after
+independent native reference/controller/recording/XTest implementations and real
+six-mode comparisons. The framework selects check-ui-application, with original
+argument tails, stage order, failure propagation, logs and ledgers preserved.
+The UI job builds the reference/raw/native checkers and runs required lifecycle
+suites under its existing display. Fast checks require lifecycle routing mutations.
+All220existing disk guards remain; three new guards reserve16/512/512MiB.
+
+Post-removal native policy, loop, owned child, raw input, recording, source guards,
+framework and workflow tests pass. The source-guard fixture initially failed while
+reintroducing a removed tool into a missing parent directory; creating that test
+directory repairs it while retaining changed-source rejection and requiring all
+other pinned sources. Strict scoped Clippy and all three checker builds pass.
+The six real modes pass again with no Python executable on PATH: original
+five-mode pixels/state, three-frame global/dynamic videos, real keyboard text
+native and first-click shutdown,37frames/ticks, and native process/log identity.
+These are host UI checks, not comma boot/record/upload acceptance.
+
+Evidence:2026-10-18-ui-application-lifecycle/post-retirement-{tests,drift-green,
+remaining-green,clippy,build,six-mode-proof}.log. The baseline inventory now has
+114replaced-local,2partial and3,464pending sources. Full conversion, remaining
+model/compiler/tools and exact-source final remote validation remain open.
+
+Parent final verification reran all13current native test executables:86tests
+passed with zero failures/ignored cases, including all6reference tests together,
+workflow policy and fast routing. Independent staged-source review found no
+encoder dependency in this UI commit; staged Rust formatting and diff checks pass.
+Evidence:2026-10-18-ui-application-lifecycle/parent-final-tests.log.

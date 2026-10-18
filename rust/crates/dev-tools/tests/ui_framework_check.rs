@@ -54,17 +54,21 @@ impl Runner for Peer<'_> {
 fn normalize(text: &str, output: &Path) -> String {
     text.replace(output.to_str().unwrap(), "@OUTPUT@")
 }
-// Only the retired network executable prefix changes. Keep the independently
+// Only the retired network/application executable prefixes change. Keep the independently
 // captured argument tail, ordering, return codes, diagnostics and artifacts.
 fn native_network_case(original: &Value, target: &str) -> Value {
     let mut case = original.clone();
     if let Some(calls) = case["calls"].as_array_mut() {
         for call in calls {
-            if call["name"] == "network" {
+            let kind = call["name"]
+                .as_str()
+                .filter(|kind| matches!(*kind, "network" | "application"))
+                .map(str::to_owned);
+            if let Some(kind) = kind {
                 let argv = call["command"].as_array_mut().unwrap();
                 assert_eq!(argv[0], "@PYTHON@");
-                assert_eq!(argv[1], "@ROOT@/rust/tools/check_ui_network.py");
-                argv.splice(0..2, [Value::String(format!("{target}/check-ui-network"))]);
+                assert_eq!(argv[1], format!("@ROOT@/rust/tools/check_ui_{kind}.py"));
+                argv.splice(0..2, [Value::String(format!("{target}/check-ui-{kind}"))]);
             }
         }
     }
@@ -78,6 +82,19 @@ fn native_network_case(original: &Value, target: &str) -> Value {
             .replace(
                 "\"@PYTHON@\",\n      \"@ROOT@/rust/tools/check_ui_network.py\"",
                 &format!("\"{target}/check-ui-network\""),
+            ),
+        );
+    }
+    for value in case["files"].as_object_mut().unwrap().values_mut() {
+        let text = value.as_str().unwrap();
+        *value = Value::String(
+            text.replace(
+                "\"@PYTHON@\", \"@ROOT@/rust/tools/check_ui_application.py\"",
+                &format!("\"{target}/check-ui-application\""),
+            )
+            .replace(
+                "\"@PYTHON@\",\n      \"@ROOT@/rust/tools/check_ui_application.py\"",
+                &format!("\"{target}/check-ui-application\""),
             ),
         );
     }
@@ -244,11 +261,7 @@ fn real_process_order_merged_diagnostics_ledgers_and_signal_exit_match_original(
             "fps",
             "egl",
         ] {
-            let path = if name == "application" {
-                tools.join(format!("check_ui_{name}.py"))
-            } else {
-                target.join(format!("check-ui-{name}"))
-            };
+            let path = target.join(format!("check-ui-{name}"));
             fs::write(
                 &path,
                 format!(

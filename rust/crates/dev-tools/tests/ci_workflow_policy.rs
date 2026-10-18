@@ -272,6 +272,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "beep_integer_check",
         "beep_integer_ci",
         "ui_polygon_ci",
+        "ui_application_lifecycle_ci",
         "ratekeeper_check",
         "ratekeeper_ci",
         "cutin_alert_check",

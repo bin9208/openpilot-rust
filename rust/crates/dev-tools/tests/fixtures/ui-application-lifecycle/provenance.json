@@ -1,0 +1,23 @@
+{
+  "capture": "Independent unchanged originals; actual render/encoder runs and injected external process/transport boundaries as noted per fixture. No candidate widgets imported.",
+  "sources": {
+    "rust/tools/check_ui_application.py": "f7abc422d53756f59d9f04309e6d2da7776dd35472edfb88fdba39ea72705b3f",
+    "rust/tools/ui_qa/application_source.py": "1b457b164f000e8efc06ff3cd28e00ad05b3fa6f6c9890881567cda50f08679b",
+    "openpilot/system/ui/lib/application.py": "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00",
+    "openpilot/system/ui/widgets/inputbox.py": "a2266ea4060dda6cedf34a5279c8fd3fea51184e37a6beb1982d651c04097617",
+    "openpilot/system/ui/widgets/button.py": "be996f6c929906f1cda719103cb8b2f554003e89b05126d81e022341b75db4e1"
+  },
+  "fixtures": {
+    "argv-original.json": "0658a87db0f195462a377d76a49b32234d4becc6da92563cc941866fa3499a0a",
+    "checker-original.json": "4385b718af1394a9122a7b9bb938577f059a750169a7210550bedf2c6262dc26",
+    "environment-original.json": "129ec8976c44c747e82c384310ce0078b61890b6d1a3712f3f3b2c3f2ca9b054",
+    "global-recording-original.json": "05a329ee2078b8c71fc02b832c46428c8fa28b454ee8ad17badbcc63078ebc29",
+    "mouse-original.json": "a84b807b06b9ff2fb4dba6d295b0a070e154052ed8027df40f61113d946c131b",
+    "recording-policy-original.json": "75d52c8df5a083932b807be7bfda08026d6a62eea177ebae4e8b49d452192503",
+    "render-loop-original.json": "2535a0e53fc8588daa144896a79b02da765c355a9c009e0d067b418c30127458",
+    "source-original.json": "0db8a2dabb0942776afaa73c0a18de2cc84069e2507fd7c8078707cdf3ab0285",
+    "writer-original.json": "3874eabd4fbe12400ab774a225a80a33bce2ef2c8fdcce6db2436a6da2022568",
+    "dynamic-recording-original.json": "d34c575d882566097160bda5ea4060cb98c899e304401b357320c57fcd99c40e",
+    "writer-queue-original.json": "b2336047fe4fe05a61a832b44c727fda7b5d3dee388aaaefa62e2e07c65546d0"
+  }
+}

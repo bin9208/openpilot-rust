@@ -1,5 +1,5 @@
-//! Shared UI orchestration. One original subchecker remains an explicit dependency;
-//! this module replaces only their caller, never their validation behavior.
+//! Shared UI orchestration through native source/runtime validation tools.
+//! Retains the original stage order, failure behavior, logs and invocation ledger.
 use crate::{
     argparse_scan::{scan_os, OptionSpec},
     control_tools_policy_check::json,
@@ -30,12 +30,7 @@ const CHECKS: [(&str, Option<&str>, &str, bool); 13] = [
     ("network", None, "network_render", true),
     ("polygon", None, "polygon_render", true),
     ("diagnostics", None, "diagnostic_render", true),
-    (
-        "application",
-        Some("check_ui_application.py"),
-        "application_run",
-        true,
-    ),
+    ("application", None, "application_run", true),
     ("fps", None, "fps_trace", false),
     ("egl", None, "egl_trace", false),
 ];

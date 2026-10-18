@@ -1,0 +1,310 @@
+{
+  "source_sha256": "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00",
+  "capture": "Unchanged _ffmpeg_writer_thread with injected queue/process endpoints; writes and queue.Empty exception scopes are observed independently.",
+  "cases": [
+    {
+      "name": "frames-then-sentinel",
+      "items": [
+        "61626364",
+        "6566",
+        null
+      ],
+      "stop": false,
+      "error": null,
+      "calls": [
+        [
+          "get",
+          1.0
+        ],
+        [
+          "write",
+          "61626364"
+        ],
+        [
+          "get",
+          1.0
+        ],
+        [
+          "write",
+          "6566"
+        ],
+        [
+          "get",
+          1.0
+        ]
+      ],
+      "exception": null,
+      "remaining": []
+    },
+    {
+      "name": "empty-continues",
+      "items": [
+        "empty",
+        "78",
+        null
+      ],
+      "stop": false,
+      "error": null,
+      "calls": [
+        [
+          "get",
+          1.0
+        ],
+        [
+          "is-set"
+        ],
+        [
+          "get",
+          1.0
+        ],
+        [
+          "write",
+          "78"
+        ],
+        [
+          "get",
+          1.0
+        ]
+      ],
+      "exception": null,
+      "remaining": []
+    },
+    {
+      "name": "empty-stop",
+      "items": [
+        "empty",
+        "756e72656164"
+      ],
+      "stop": true,
+      "error": null,
+      "calls": [
+        [
+          "get",
+          1.0
+        ],
+        [
+          "is-set"
+        ]
+      ],
+      "exception": null,
+      "remaining": [
+        "756e72656164"
+      ]
+    },
+    {
+      "name": "stopped-still-drains",
+      "items": [
+        "78",
+        "79",
+        null
+      ],
+      "stop": true,
+      "error": null,
+      "calls": [
+        [
+          "get",
+          1.0
+        ],
+        [
+          "write",
+          "78"
+        ],
+        [
+          "get",
+          1.0
+        ],
+        [
+          "write",
+          "79"
+        ],
+        [
+          "get",
+          1.0
+        ]
+      ],
+      "exception": null,
+      "remaining": []
+    },
+    {
+      "name": "broken-pipe",
+      "items": [
+        "78",
+        "756e72656164"
+      ],
+      "stop": false,
+      "error": "broken",
+      "calls": [
+        [
+          "get",
+          1.0
+        ],
+        [
+          "write",
+          "78"
+        ]
+      ],
+      "exception": null,
+      "remaining": [
+        "756e72656164"
+      ]
+    },
+    {
+      "name": "write-error",
+      "items": [
+        "78",
+        "756e72656164"
+      ],
+      "stop": false,
+      "error": "write",
+      "calls": [
+        [
+          "get",
+          1.0
+        ],
+        [
+          "write",
+          "78"
+        ]
+      ],
+      "exception": null,
+      "remaining": [
+        "756e72656164"
+      ]
+    },
+    {
+      "name": "queue-error",
+      "items": [
+        "error",
+        "756e72656164"
+      ],
+      "stop": false,
+      "error": null,
+      "calls": [
+        [
+          "get",
+          1.0
+        ]
+      ],
+      "exception": null,
+      "remaining": [
+        "756e72656164"
+      ]
+    },
+    {
+      "name": "missing-queue",
+      "items": [],
+      "stop": false,
+      "error": null,
+      "calls": [],
+      "exception": null,
+      "remaining": []
+    },
+    {
+      "name": "missing-process",
+      "items": [
+        "78",
+        "756e72656164"
+      ],
+      "stop": false,
+      "error": "process",
+      "calls": [
+        [
+          "get",
+          1.0
+        ]
+      ],
+      "exception": null,
+      "remaining": [
+        "756e72656164"
+      ]
+    },
+    {
+      "name": "missing-stdin",
+      "items": [
+        "78",
+        "756e72656164"
+      ],
+      "stop": false,
+      "error": "stdin",
+      "calls": [
+        [
+          "get",
+          1.0
+        ]
+      ],
+      "exception": null,
+      "remaining": [
+        "756e72656164"
+      ]
+    },
+    {
+      "name": "partial-write",
+      "items": [
+        "616263646566",
+        null
+      ],
+      "stop": false,
+      "error": "partial",
+      "calls": [
+        [
+          "get",
+          1.0
+        ],
+        [
+          "write",
+          "616263646566"
+        ],
+        [
+          "get",
+          1.0
+        ]
+      ],
+      "exception": null,
+      "remaining": []
+    },
+    {
+      "name": "empty-data",
+      "items": [
+        "",
+        null
+      ],
+      "stop": false,
+      "error": null,
+      "calls": [
+        [
+          "get",
+          1.0
+        ],
+        [
+          "write",
+          ""
+        ],
+        [
+          "get",
+          1.0
+        ]
+      ],
+      "exception": null,
+      "remaining": []
+    },
+    {
+      "name": "missing-event",
+      "items": [
+        "empty"
+      ],
+      "stop": false,
+      "error": "event",
+      "calls": [
+        [
+          "get",
+          1.0
+        ]
+      ],
+      "exception": {
+        "type": "AttributeError",
+        "message": "'NoneType' object has no attribute 'is_set'"
+      },
+      "remaining": []
+    }
+  ]
+}

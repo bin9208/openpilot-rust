@@ -67,6 +67,14 @@ pub mod selfdrive_state_check;
 pub mod stats_clock_check;
 pub mod stats_numbers_check;
 #[cfg(feature = "image-array-native")]
+pub mod ui_application_lifecycle_loop;
+#[cfg(feature = "image-array-native")]
+pub mod ui_application_lifecycle_raw;
+#[cfg(feature = "image-array-native")]
+pub mod ui_application_lifecycle_recording;
+#[cfg(feature = "image-array-native")]
+pub mod ui_application_lifecycle_reference;
+#[cfg(feature = "image-array-native")]
 pub mod ui_diagnostic_check;
 pub mod ui_diagnostic_reference;
 #[cfg(feature = "egl-reference")]
@@ -152,3 +160,6 @@ pub mod ui_updater_handshake;
 pub mod updated_process_check;
 pub mod updated_process_fixture;
 pub mod upstream_sync;
+
+#[cfg(feature = "image-array-native")]
+pub mod ui_application_lifecycle_check;

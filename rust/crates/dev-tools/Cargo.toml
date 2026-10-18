@@ -243,7 +243,8 @@ camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"
 selfdrive-params-native = ["dep:zmq"]
 egl-reference = ["dep:openpilot-startup-ui"]
 image-array = ["dep:png", "dep:gif", "dep:tiff", "dep:image", "dep:openpilot-jpeg"]
-image-array-native = ["image-array", "dep:openpilot-image-codecs", "dep:rustybuzz"]
+ui-application-lifecycle-native = ["image-array-native", "dep:zmq"]
+image-array-native = ["image-array", "dep:openpilot-image-codecs", "dep:rustybuzz", "dep:chrono"]
 polygon-reference = ["dep:openpilot-startup-ui", "image-array-native"]
 
 [[test]]
@@ -354,6 +355,7 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"], optional = true }
 capnp = { version = "=0.27.2", optional = true }
 openpilot-process-limits = { path = "../process-limits" }
 rustybuzz = { version = "=0.20.1", optional = true }
@@ -718,6 +720,18 @@ required-features = ["camera-sensor-native"]
 name = "camera_lifecycle_check"
 required-features = ["camera-sensor-native"]
 
+[[test]]
+name = "ui_application_lifecycle_recording"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_application_lifecycle_loop"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_application_lifecycle_raw"
+required-features = ["image-array-native"]
+
 [[bin]]
 name = "check-camerad-state"
 path = "src/bin/check_camerad_state.rs"
@@ -776,7 +790,34 @@ name = "check-encoder-codecs"
 path = "src/bin/check_encoder_codecs.rs"
 required-features = ["camera-sensor-native"]
 
+[[test]]
+name = "ui_application_lifecycle_reference"
+required-features = ["image-array-native"]
+
 [[bin]]
 name = "check-encoder-v4l"
 path = "src/bin/check_encoder_v4l.rs"
 required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "ui-application-reference"
+path = "src/bin/ui_application_reference.rs"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "build-ui-application-reference"
+path = "src/bin/build_ui_application_reference.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_application_lifecycle_check"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_application_lifecycle_native"
+required-features = ["ui-application-lifecycle-native"]
+
+[[bin]]
+name = "check-ui-application"
+path = "src/bin/check_ui_application.rs"
+required-features = ["ui-application-lifecycle-native"]

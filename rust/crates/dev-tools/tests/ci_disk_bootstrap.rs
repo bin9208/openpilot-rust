@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 220);
+    assert_eq!(text.matches(marker).count(), 223);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -257,8 +257,18 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut camera_generators = vec![];
     let mut ui_connectivity_build = vec![];
     let mut registration_utf7 = vec![];
+    let mut application_lifecycle = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && (lines[i + 1]
+                    .contains("rust/target/debug/build-ui-application-reference --output")
+                    || lines[i + 1].contains("--features ui-application-lifecycle-native --test")
+                    || lines[i + 1].contains("--features ui-application-lifecycle-native --lib"))
+            {
+                application_lifecycle.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len() && lines[i + 1].contains("--test encoder_codecs_check") {
                 encoder_checks.push(tail.to_owned());
                 continue;
@@ -356,6 +366,14 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     // The removed camera pip install and Cython build had 512/1024 MiB
     // guards. Native camera operations retain every required reserve.
     assert_eq!(arguments.len(), 177);
+    assert_eq!(
+        application_lifecycle,
+        vec![
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 16",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+        ]
+    );
     assert_eq!(
         encoder_checks,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048"; 2]

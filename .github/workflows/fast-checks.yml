@@ -49,7 +49,7 @@ jobs:
             --test ui_state_scheduler_check --test ui_translation_check --test ui_application_logic_check --test ui_headless_check \
             --test ui_scroll_check --test diagnostic_check --test message_state_ci --test ci_artifact_list \
             --test miri_provenance --test image_array_math --test ui_egl_ci --test command_reference_check \
-            --test params_reference_check --test beep_integer_ci --test ui_polygon_ci --test ratekeeper_ci --test cutin_alert_ci \
+            --test params_reference_check --test beep_integer_ci --test ui_polygon_ci --test ui_application_lifecycle_ci --test ratekeeper_ci --test cutin_alert_ci \
             --test bluetooth_digits_generate
           cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked
   native-corpus:
