@@ -2383,3 +2383,7 @@ binaries, preserving its mandatory invocation check. The same SHA's workspace
 job failed a module-order rustfmt check, corrected by ordering sensor generation
 before lifecycle. Local format/diff checks pass. Fresh remote validation remains
 required; the temporary immutable-original CI diagnostic is retained until then.
+
+### Additional mandatory UI test routing repair (2026-10-18)
+
+The exact `54ea739c` Fast run failed `forms_native_reference_runs_real_pixels_with_owned_display_and_raw_helper` because its complete test-command assertion still omitted the migrated `ui_network_check` and `ui_network_reference` targets. The workflow already required both. The assertion now includes them and retains all ordering, display and raw-helper checks. Fresh local tests pass: four UI routing tests and all33 CI isolation tests; `git diff --check` passes. Remote UI admission now passes the portable Confirm comparison but fails the `cursor-bool` fixed PNG comparison. This separate raster investigation remains open; no tolerance or assertion was removed.
