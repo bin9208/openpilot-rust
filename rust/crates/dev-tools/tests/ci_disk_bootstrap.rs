@@ -276,9 +276,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut version_controllers = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
-            if i + 1 < lines.len()
-                && lines[i + 1].contains("--features version-tools-native")
-            {
+            if i + 1 < lines.len() && lines[i + 1].contains("--features version-tools-native") {
                 version_controllers.push(tail.to_owned());
                 continue;
             }
