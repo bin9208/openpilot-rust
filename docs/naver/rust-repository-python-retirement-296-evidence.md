@@ -73,12 +73,15 @@ setup, then failed to compile the Linux snapshot checker: rustix intentionally
 does not expose `mkfifoat` on Apple targets. That checker also requires Linux
 `/proc` descriptor/process inspection. Its module, child/checker entrypoints and
 integration tests are now explicitly Linux-only; other hosts get an unsupported
-platform error from those entrypoints. The independent snapshot reference remains
-portable and unchanged. Fresh Linux snapshot/launcher builds and all seven snapshot
+platform error from those entrypoints. Review additionally found that the independent
+reference imported neutral source-pin/root helpers from the checker. Those helpers
+now live in a shared module, preserving their policy and the reference's portability.
+Fresh Linux snapshot/launcher builds and all seven snapshot
 tests pass, including the complete filesystem/child/detached matrix. Evidence:
 `.analysis/scratch/2026-10-19-dbc-darwin/bootlog-{build,test}.log` and
 the [failed macOS job](https://github.com/bin9208/openpilot-rust/actions/runs/39148174411/job/117736576999).
-The repaired macOS job still requires exact-commit verification.
+All seven tests also pass after the shared-helper move (`bootlog-shared-test.log`).
+The repaired macOS job still requires exact-commit verification; tracked in #378.
 
 ### Independent Version source foundation (2026-10-19)
 

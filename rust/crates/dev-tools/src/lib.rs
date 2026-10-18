@@ -15,6 +15,7 @@ pub mod bootlog_artifact_check;
 #[cfg(target_os = "linux")]
 pub mod bootlog_snapshot_check;
 pub mod bootlog_snapshot_reference;
+mod bootlog_snapshot_sources;
 pub mod brotli_stage;
 pub mod camera_ci_check;
 pub mod camera_data_generate;

@@ -2,7 +2,7 @@
 //! Uses unchanged C++ Params, CPython copy2/copytree semantics, and raw process
 //! syscalls in params_path.cc. Does not depend on openpilot-bootlog.
 use crate::{
-    bootlog_snapshot_check::{sha, sources},
+    bootlog_snapshot_sources::{sha, sources},
     params_reference_check::{build_native, ParamsRunner},
     qa_process::{Captured, CommandSpec, NativeRunner, Runner},
     seal::Result,
@@ -274,7 +274,7 @@ pub fn build_cli() -> Result<()> {
         println!("build-bootlog-snapshot-reference --output DIRECTORY [--prefix PREFIX]");
         return Ok(());
     }
-    let root = crate::bootlog_snapshot_check::root()?;
+    let root = crate::bootlog_snapshot_sources::root()?;
     build(
         &root,
         Path::new(&args.values["--output"]),
