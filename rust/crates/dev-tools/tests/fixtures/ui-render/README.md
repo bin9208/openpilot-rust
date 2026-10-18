@@ -50,3 +50,16 @@ After both Python tools were removed, all seven checker/reference tests passed
 again (178.44s reference gate), including live drawing and environment checks.
 The native-only six-scene/112-frame CLI matched every pixel and full state with
 PATH=/nonexistent. Scoped strict Clippy passed against the final registered source.
+
+For issue #384, `strict-fps-original.json` independently captures the unchanged
+application's strict branch with external FPS samples of 9 and 10 at target 20.
+The 9 sample exits unsuccessfully after recorder closure; 10 returns. The QA
+raylib helper accepts an explicit `UI_RENDER_QA_FPS` sample for this contract
+test and acknowledges the selected value. Without that input it still queries
+real `GetFPS`; the strict threshold is unchanged. This removes host timing from
+the historical strict-success assertion while retaining all 14 original
+environment cases, actual drawing/state checks and recorder bytes. A new actual
+CLI failure check requires exit 1, no PNG/state and recorder EOF at 9 FPS.
+The unchanged full original renderer also confirmed both boundaries with real
+pyray drawing. The focused environment test and strict Clippy passed; these
+controlled samples do not measure host or device rendering performance.

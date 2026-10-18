@@ -290,6 +290,50 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let fixture = include_str!("fixtures/ui-render/environment-original.json");
     let captures: Vec<Value> = serde_json::from_str(fixture).unwrap();
+    // The historical strict success sampled a host-dependent GetFPS. Bind the
+    // FPS branch to independently captured original 9/10 boundary behavior,
+    // while retaining the same actual drawing, PNG/state and recorder checks.
+    let boundaries = include_bytes!("fixtures/ui-render/strict-fps-original.json");
+    use sha2::{Digest, Sha256};
+    assert_eq!(
+        format!("{:x}", Sha256::digest(boundaries)),
+        "14eebee1353887704862ef7e4d117f36441999adb1061318cd7e4c9303aa2a14"
+    );
+    let boundaries: Value = serde_json::from_slice(boundaries).unwrap();
+    assert_eq!(boundaries["candidate_executed"], false);
+    let source_pins: Value =
+        serde_json::from_str(include_str!("fixtures/ui-render/provenance.json")).unwrap();
+    assert_eq!(
+        boundaries["source_sha256"],
+        source_pins["sources"]["openpilot/system/ui/lib/application.py"]
+    );
+    let library = std::env::var_os("STARTUP_UI_RAYLIB_LIBRARY").unwrap_or_else(|| {
+        PathBuf::from(std::env::var_os("STARTUP_UI_RAYLIB_ROOT").expect("raylib required"))
+            .join("lib/libopenpilot-raylib.so")
+            .into_os_string()
+    });
+    use openpilot_dev_tools::qa_process::{CommandSpec, NativeRunner, Runner};
+    for boundary in boundaries["cases"].as_array().unwrap() {
+        let fps = boundary["fps"].as_i64().unwrap();
+        let mut spec = CommandSpec::new_os(
+            vec![helper.clone(), library.clone()],
+            std::time::Duration::from_secs(10),
+        );
+        spec.env.insert("UI_RENDER_QA_FPS".into(), fps.to_string());
+        spec.input = Some(b"qa-fps-sample\nquit\n".to_vec());
+        let observed = NativeRunner.run(&spec).unwrap();
+        assert_eq!(
+            observed.code,
+            0,
+            "{}",
+            String::from_utf8_lossy(&observed.stderr)
+        );
+        assert_eq!(
+            observed.stdout,
+            format!("OK\nOK {fps}\nOK\n").as_bytes(),
+            "QA helper must acknowledge the actual controlled FPS sample"
+        );
+    }
     for case in &captures {
         let temp = tempfile::tempdir().unwrap();
         let script = temp.path().join("ffmpeg");
@@ -331,6 +375,12 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
         }
         for (key, value) in case["environment"].as_object().into_iter().flatten() {
             command.env(key, value.as_str().unwrap());
+        }
+        command.env_remove("UI_RENDER_QA_FPS");
+        if case["name"] == "strict" {
+            assert_eq!(boundaries["cases"][1]["fps"], 10);
+            assert_eq!(boundaries["cases"][1]["exit"], case["exit"]);
+            command.env("UI_RENDER_QA_FPS", "10");
         }
         let observed = command.output().unwrap();
         assert_eq!(
@@ -432,4 +482,69 @@ fn actual_cli_preserves_original_environment_artifacts_and_recorder_when_availab
             assert!(!arguments.exists(), "{} unexpected recorder", case["name"]);
         }
     }
+    let original_low = &boundaries["cases"][0];
+    assert_eq!(original_low["fps"], 9);
+    assert_eq!(original_low["exit"], 1);
+    assert_eq!(
+        original_low["events"].as_array().unwrap().last().unwrap()["op"],
+        "close_ffmpeg"
+    );
+    let strict = captures
+        .iter()
+        .find(|case| case["name"] == "strict")
+        .unwrap();
+    let temp = tempfile::tempdir().unwrap();
+    let scene = temp.path().join("strict-scene.json");
+    std::fs::write(
+        &scene,
+        reference_draw::scene_bytes(fixture, strict).unwrap(),
+    )
+    .unwrap();
+    let output = temp.path().join("critical.png");
+    // This owned recorder peer proves EOF/cleanup before the failed CLI exits.
+    let script = temp.path().join("ffmpeg");
+    let closed = temp.path().join("recorder-closed");
+    std::fs::write(
+        &script,
+        "#!/bin/sh\n/bin/cat > /dev/null\nprintf closed > \"$RENDER_FFMPEG_CLOSED\"\n",
+    )
+    .unwrap();
+    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let mut command = Command::new(env!("CARGO_BIN_EXE_ui-render-reference"));
+    command
+        .args([&scene, &output])
+        .env("OPENPILOT_RUST_ROOT", &root)
+        .env("UI_RENDER_RAW_HELPER", &helper)
+        .env("UI_RENDER_QA_FPS", "9")
+        .env("STRICT_MODE", "1")
+        .env("RECORD", "1")
+        .env("RECORD_OUTPUT", temp.path().join("critical.mp4"))
+        .env("PATH", temp.path())
+        .env("RENDER_FFMPEG_CLOSED", &closed);
+    for key in [
+        "BURN_IN",
+        "PROFILE_STARTUP",
+        "PROFILE_RENDER",
+        "PROFILE_STATS",
+        "GRID",
+        "SHOW_FPS",
+        "SHOW_TOUCHES",
+        "ENABLE_VSYNC",
+        "RECORD_QUALITY",
+        "RECORD_SPEED",
+        "RECORD_BITRATE",
+    ] {
+        command.env_remove(key);
+    }
+    let observed = command.output().unwrap();
+    assert_eq!(
+        observed.status.code(),
+        Some(1),
+        "{}",
+        String::from_utf8_lossy(&observed.stderr)
+    );
+    assert!(String::from_utf8_lossy(&observed.stderr).contains("Render FPS dropped critically"));
+    assert!(!output.exists());
+    assert!(!output.with_extension("json").exists());
+    assert_eq!(std::fs::read(&closed).unwrap(), b"closed");
 }

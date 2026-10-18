@@ -1,0 +1,46 @@
+{
+  "source_path": "openpilot/system/ui/lib/application.py",
+  "source_sha256": "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00",
+  "candidate_executed": false,
+  "compile_install_build": false,
+  "boundary": "Unchanged original _monitor_fps AST, only external rl.get_fps controlled, actual os._exit and close observer. No raylib/GUI/performance claim.",
+  "cases": [
+    {
+      "fps": 9,
+      "target_fps": 20,
+      "exit": 1,
+      "events": [
+        {
+          "op": "log",
+          "level": "warning",
+          "message": "FPS dropped below 20: 9"
+        },
+        {
+          "op": "log",
+          "level": "error",
+          "message": "FPS dropped critically below 9. Shutting down UI."
+        },
+        {
+          "op": "close_ffmpeg"
+        }
+      ],
+      "sha256": "9fc10fd1d9885b53b983de8a7e04dc7ea42edb049ef98833c0d8a08f874b7caf"
+    },
+    {
+      "fps": 10,
+      "target_fps": 20,
+      "exit": 0,
+      "events": [
+        {
+          "op": "log",
+          "level": "warning",
+          "message": "FPS dropped below 20: 10"
+        },
+        {
+          "op": "returned"
+        }
+      ],
+      "sha256": "6a647147fe6a3c83a8b5d796b19b97eb81012f78a3f4cf930fbafce941711623"
+    }
+  ]
+}

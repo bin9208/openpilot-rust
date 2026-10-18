@@ -41,6 +41,21 @@ struct Api {
       throw std::runtime_error(std::string("missing render ABI ") + name);
     return reinterpret_cast<T>(p);
   }
+  int fps_sample() {
+    // QA external-measurement seam only. With no explicit test input, keep the
+    // original real GetFPS query and strict threshold unchanged.
+    const char *sample = std::getenv("UI_RENDER_QA_FPS");
+    if (!sample)
+      return get<int (*)()>("GetFPS")();
+    std::istringstream input(sample);
+    int value = 0;
+    if (!(input >> value))
+      throw std::runtime_error("invalid QA FPS sample");
+    input >> std::ws;
+    if (!input.eof())
+      throw std::runtime_error("invalid QA FPS sample");
+    return value;
+  }
   ~Api() {
     if (!library)
       return;
@@ -401,10 +416,13 @@ int main(int argc, char **argv) {
         done();
         ready();
         a->get<void (*)(int, int)>("DrawFPS")(10, 10);
+      } else if (op == "qa-fps-sample") {
+        done();
+        result = " " + std::to_string(a->fps_sample());
       } else if (op == "strict-fps") {
         done();
         ready();
-        if (a->get<int (*)()>("GetFPS")() < 10)
+        if (a->fps_sample() < 10)
           throw std::runtime_error("Render FPS dropped critically");
       } else if (op == "target-rgba") {
         std::string path;
