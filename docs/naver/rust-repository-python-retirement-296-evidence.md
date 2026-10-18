@@ -3050,3 +3050,34 @@ original archive `a4f95aa7d519766cd444d61f303837884661ab2fd92c04ddf35df31aace8e6
 before proof `e61b38ff33e34a16db4184903d7e7dc0d59d9c4bd7d29cf2f6ab26f246b2d6ef`;
 after proof `9c5050e649794e40032577ec06f32d77d5964fa594bfc3608ce88fe5959b528d`.
 Exact committed-SHA CI remains required; #296 stays open.
+
+### Native batch matrix plus channel bias (2026-10-18, #296)
+
+The actual driving-model node275 prefix previously failed CPU IMAGE admission
+when its MatMul result fed a final channel-bias Add. The native compiler now
+keeps that owned reduction and bias in one four-buffer LLVM call, with bias
+strides broadcast across rows/batches and a dense f32 output. The original
+operand order, half input/weight/bias storage and reduction flags remain intact.
+Published/shared intermediate reductions and the older single-row API retain
+their admission fences. The indexed input ownership check identifies the raw
+reduction, preserving its existing single-reader exception.
+
+Independent cold original captures for pinned LLVM18 and LLVM20 each compiled
+96 distinct programs and executed251 program calls. The actual275 output hash
+is8fd83b71ca2930d27637d0f48da6c703c8c332f476e06921a69e35e8ca4c3a5e;
+both native memory policies match. Each provider also passes36 final-output
+comparisons covering finite/negative-zero/NaN payload patterns across six shapes,
+six shared/published-reduction admission negatives and the older API fence.
+The affected strict Clippy gate passed. Independent source review found no
+blocking defect in this bounded change. Full16-target/74-test graph regression
+passed under both LLVM18 and LLVM20 with zero skipped/filtered cases.
+Source and provider identities are checked before/after each full gate.
+
+Evidence: .analysis/scratch/2026-10-18-batched-matmul/
+{batched-bias275-final-proof.json,bias275-graph-gates-YyYyhUNW/proof18.json,
+bias275-graph-gates-YyYyhUNW/proof20.json};
+independent review .analysis/scratch/2026-10-18-model-review-image/
+batched-bias275-review.md. Exact committed-SHA CI remains required.
+This bounded prefix does not complete either model compiler, node277, Python
+retirement, target execution or device acceptance. The LLVM20 CI command and
+policy test explicitly include compiler_batched_bias.

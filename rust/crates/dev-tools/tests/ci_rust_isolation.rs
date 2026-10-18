@@ -83,6 +83,7 @@ fn workspace_requires_pinned_llvm20_graph_and_primitive_regressions() {
             &[
                 "compiler_batched_matmul",
                 "compiler_batched_projection",
+                "compiler_batched_bias",
                 "compiler_matrix_alias",
                 "compiler_gemm_pipeline",
                 "compiler_gemm_chain",

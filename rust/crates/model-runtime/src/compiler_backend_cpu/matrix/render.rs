@@ -194,9 +194,19 @@ impl MatrixLayout {
         if self.batches != 1 || self.rows != 1 {
             return Err("biased matrix terminal requires single-row profile".into());
         }
+        self.broadcast_bias_artifact(function, entrypoint, max_workers)
+    }
+    /// Final-f32 MatMul plus a channel bias broadcast across every batch/row.
+    /// The bias is an affine source operand, never a separately rounded result.
+    pub fn broadcast_bias_artifact(
+        &self,
+        function: &str,
+        entrypoint: &str,
+        max_workers: usize,
+    ) -> Result<MatrixArtifact<4>, String> {
         let mut dense = self.clone();
         dense.output_pixel_stride = dense.output_channels;
-        dense.output_elements = dense.output_channels;
+        dense.output_elements = dense.batches * dense.rows * dense.output_channels;
         dense.render_artifact(function, entrypoint, max_workers, Epilogue::BiasedF32)
     }
     fn render_artifact<const N: usize>(

@@ -885,3 +885,53 @@ unsupported layouts/operators/fusion remain unfinished. The project-owned
 model checker/test harnesses remain present. This slice authorizes no model
 Python deletion or full compiler conversion claim. Exact-commit CI and any
 separate user device acceptance must be reported independently.
+
+### Actual driving node275 matrix bias (next unit after a75b694c)
+
+`original-batched-bias.json` contains metadata-only independent cold receipts
+for the actual driving prefix ending at node275, `policy/linear`. The pinned
+full model is unchanged (`f73a9e535523d5e9acb9e642c64e33d631825dc8ba74123757d107cedd047bb5`),
+and this prefix is `373ca9303e74301fd992294bfbca72cb1f47868a43612b0fb6bc4fef23df76eb`.
+Each provider independently compiled96 distinct original programs and executed
+251 calls with the original cache disabled. Immediate matrix boundary snapshots
+precede arena reuse and retain the four argument byte counts18432/9792/589824/1024.
+The fused original matrix/bias source is `8a2dfc480b61eada9fd7930c29439e54f636175550203255f60c1372389b6e98`.
+Both original whole-output hashes are
+`8fd83b71ca2930d27637d0f48da6c703c8c332f476e06921a69e35e8ca4c3a5e`.
+The fixture records all13 original source pins, all initializer/input hashes,
+provider/object identities and call metadata; private tensors and objects remain
+outside Git. Native outputs never supply the expected hashes.
+
+The genuine first native run rejected this original-valid prefix with
+`CPU IMAGE matrix requires f32/half rank-two operands`. The new configured LLVM
+selection owns the closed MatMul/Add pair, retaining the source bias operand
+order and typed four-argument ABI. Channel-bias affine strides wrap across rows;
+the indexed normalization producer still owns its existing physical pack.
+`biased_artifact` retains its prior single-row fence. The distinct
+`broadcast_bias_artifact` implements this final-f32 materialization; there is no
+separate C post-add. Held or additionally consumed raw matrices cannot acquire
+this final-only bias selection.
+
+The immutable actual-prefix test now passes both memory policies on LLVM18
+(37.66seconds) and LLVM20.1 (39.05seconds). Actual274 was refreshed on LLVM18
+under both policies (37.86seconds), together with the existing three matrix
+fence tests and all12 terminal-Gemm physical comparisons.
+`original-batched-bias-controls.json` separately binds24 independently captured
+synthetic cases per provider: six affine shapes times finite, signed-zero and
+NaN/Inf inputs, plus six published/shared-matrix contexts. Eighteen final-only
+cases pass36 exact whole-output comparisons per provider across both memory
+policies. The other six cases verify that distinct source materializations do
+not acquire this fusion; they do not claim native numerical support for those
+alias contexts. The prior single-row API fence is tested explicitly. The new
+`compiler_batched_bias` target passes all3 tests on both providers (15.05/16.55
+seconds). Affected library/two-target strict Clippy and scoped formatting pass.
+
+The complete affected graph gate now passes all16 targets and74 tests on each
+provider, with no failures, ignored tests or filtering (730.58/785.00 summed
+target seconds). Before/after checks retain the same215 model source/fixture
+files, both actual model identities and provider hashes. Independent review of
+the nine-file unit found no blocker. This paragraph was reconciled afterward;
+numerical source, fixtures and test code remain unchanged from those gates.
+Exact-commit mandatory CI is still required before integration. Nodes276/277 (SiLU),
+the remaining full driving/DM graph, CPU/GPU export and Python compiler retirement
+remain unfinished. Earlier a75b694c evidence is preserved separately.

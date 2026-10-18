@@ -130,7 +130,7 @@ impl MatrixSchedule {
                 axis.strides.push(if axis.kind == Kind::Reduce {
                     0
                 } else {
-                    axis.strides[2]
+                    axis.strides[2] % layout.output_channels
                 });
             }
         }

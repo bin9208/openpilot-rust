@@ -853,6 +853,109 @@ fn actual_driving_node274_true_prefix_matches_original() {
     }
 }
 
+// Immutable, independently executed original receipts. Missing provider evidence
+// or unsupported native admission must fail this positive test.
+#[test]
+fn actual_driving_batched_epilogue_prefix_matches_cold_original() {
+    let bytes = include_bytes!("fixtures/compiler/original-batched-bias.json");
+    assert_eq!(
+        format!("{:x}", Sha256::digest(bytes)),
+        "ebccb0809bcbc837d6914432b6f90cd130da5bf90112b31d2610c1f0f1e33f3c"
+    );
+    let captures: Value = serde_json::from_slice(bytes).unwrap();
+    let config = provider();
+    let receipt = captures["captures"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|case| case["library_sha256"] == config.library_sha256)
+        .expect("independently capture the actual biased prefix on this provider");
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    for (name, expected) in receipt["source_sha256"].as_object().unwrap() {
+        assert_eq!(
+            format!("{:x}", Sha256::digest(fs::read(root.join(name)).unwrap())),
+            expected.as_str().unwrap(),
+            "original source pin {name}"
+        );
+    }
+    assert_eq!(receipt["library_sha256"], config.library_sha256);
+    assert_eq!(receipt["cache_disabled"], true);
+    assert_eq!(receipt["graph_only"], false);
+    assert!(receipt["compile_to_obj_calls"].as_u64().unwrap() > 0);
+    assert_eq!(
+        receipt["source_model_sha256"],
+        "f73a9e535523d5e9acb9e642c64e33d631825dc8ba74123757d107cedd047bb5"
+    );
+    let (output, prefix_sha) = match receipt["last_node"].as_u64().unwrap() {
+        275 => (
+            "policy/linear",
+            "373ca9303e74301fd992294bfbca72cb1f47868a43612b0fb6bc4fef23df76eb",
+        ),
+        277 => (
+            "policy/silu",
+            "9bb53bcf01486b497900ebd3aae35294df24234d20f44d5183d63d8240a2715a",
+        ),
+        _ => panic!("only the independently captured next actual prefixes belong here"),
+    };
+    assert_eq!(receipt["prefix_sha256"], prefix_sha);
+    assert_eq!(receipt["output_name"], output);
+    let source = actual_prefix_source(receipt);
+    let inputs = [
+        ("img", (0u8..=255).collect::<Vec<_>>().repeat(1536)),
+        (
+            "big_img",
+            (0u8..=255).rev().collect::<Vec<_>>().repeat(1536),
+        ),
+        ("desire_pulse", vec![0; 25 * 8 * 4]),
+        ("traffic_convention", vec![0; 8]),
+        ("features_buffer", vec![0; 24 * 512 * 4]),
+        ("action_t", vec![0; 8]),
+    ];
+    for (name, raw) in &inputs {
+        assert_eq!(
+            format!("{:x}", Sha256::digest(raw)),
+            receipt["input_sha256"][name]
+        );
+    }
+    for memory_planning in [false, true] {
+        eprintln!("actual prefix epilogue {output} memory={memory_planning}");
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("prefix.onnx");
+        fs::write(&path, &source).unwrap();
+        let destination = temp.path().join("bundle");
+        compile_onnx(
+            &path,
+            prefix_sha,
+            &CompileOptions {
+                offline_bindings: true,
+                memory_planning,
+                llvm: Some((
+                    config.clone(),
+                    PathBuf::from(env!("CARGO_BIN_EXE_offline-llvm-compile")),
+                )),
+                ..CompileOptions::default()
+            },
+            &destination,
+        )
+        .expect("actual next-prefix fused matrix epilogue must compile");
+        // SAFETY: exact inputs and output sizes of a locally compiled immutable
+        // bundle; execution is synchronous, as in the prior actual274 gate.
+        let mut model = unsafe { CpuModel::load(&destination) }.unwrap();
+        for (name, raw) in &inputs {
+            model.write_input(name, raw).unwrap();
+        }
+        model.run();
+        let mut actual = vec![0; model.output_size(output).unwrap()];
+        model.read_output(output, &mut actual).unwrap();
+        assert_eq!(actual.len(), 9 * 512 * 4);
+        assert_eq!(
+            format!("{:x}", Sha256::digest(&actual)),
+            receipt["output_sha256"],
+            "actual next-prefix {output} memory={memory_planning}"
+        );
+    }
+}
+
 fn control_source(case: &Value) -> Vec<u8> {
     let dims = |key: &str| {
         case[key]

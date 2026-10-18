@@ -186,7 +186,7 @@ fn indexed_projection_tail(
     if matrix.op != "MatMul"
         || !super::graph::closures(graph, model).is_ok_and(|c| {
             c.iter()
-                .any(|c| c.input == input && c.output == graph.names[&matrix.outputs[0]])
+                .any(|c| c.input == input && c.reduction == graph.names[&matrix.outputs[0]])
         })
     {
         return None;

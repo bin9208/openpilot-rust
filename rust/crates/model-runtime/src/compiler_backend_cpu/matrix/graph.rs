@@ -16,6 +16,7 @@ pub struct MatrixClosure {
     pub output: usize,
     pub reduction: usize,
     pub residual: bool,
+    pub bias: Option<usize>,
 }
 /// Discover final-output matrices and the independently captured direct
 /// matrix-plus-packed-input residual. Other epilogues retain their fences.
@@ -57,6 +58,66 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             output,
             reduction: output,
             residual: false,
+            bias: None,
+        });
+    }
+    // A channel bias participates in the same original matrix DAG. Selecting
+    // the raw matrix separately would change its materialization and schedule.
+    for add in model.graph.nodes.iter().filter(|n| {
+        n.op == "Add" && n.inputs.len() == 2 && n.outputs.len() == 1 && n.attributes.is_empty()
+    }) {
+        let Some(&output) = graph.names.get(&add.outputs[0]) else {
+            continue;
+        };
+        if !graph.outputs.values().any(|id| *id == output) {
+            continue;
+        }
+        let Some(matrix) = super::gemm::producer(model, &add.inputs[0], "MatMul")
+            .filter(|n| n.inputs.len() == 2 && n.outputs.len() == 1 && n.attributes.is_empty())
+        else {
+            continue;
+        };
+        let (input, weights, reduction, bias) = (
+            graph.names[&matrix.inputs[0]],
+            graph.names[&matrix.inputs[1]],
+            graph.names[&matrix.outputs[0]],
+            graph.names[&add.inputs[1]],
+        );
+        let (x, w) = (&graph.plans[input], &graph.plans[weights]);
+        if x.ty.dtype != 1
+            || w.ty.dtype != 10
+            || !(2..=3).contains(&x.ty.shape.len())
+            || matches!(x.expression, ScalarExpr::Constant(_))
+            || !matches!(w.expression, ScalarExpr::Constant(_))
+            || graph.outputs.values().any(|id| *id == reduction)
+            || schedule
+                .calls
+                .iter()
+                .filter(|c| c.buffers[1..].contains(&reduction))
+                .count()
+                != 1
+        {
+            continue;
+        }
+        let Ok(layout) = MatrixLayout::new(&x.ty.shape, &w.ty.shape) else {
+            continue;
+        };
+        let mut shape = x.ty.shape.clone();
+        *shape.last_mut().unwrap() = layout.output_channels;
+        if graph.plans[output].ty.dtype != 1
+            || graph.plans[output].ty.shape != shape
+            || !super::gemm::constant(graph, bias, &[layout.output_channels])
+        {
+            continue;
+        }
+        selected.push(MatrixClosure {
+            layout,
+            input,
+            weights,
+            output,
+            reduction,
+            residual: false,
+            bias: Some(bias),
         });
     }
     // Independently proved final-only square matrix plus its own packed input.
@@ -123,6 +184,7 @@ pub fn closures(graph: &LoweredGraph, model: &Model) -> Result<Vec<MatrixClosure
             reduction,
             output,
             residual: true,
+            bias: None,
         });
     }
     Ok(selected)
@@ -175,6 +237,7 @@ pub(crate) fn stage_with_chains(
     )?);
     for closure in selected {
         let layout = &closure.layout;
+        let direct = closure.residual || closure.bias.is_some();
         let ScalarExpr::Constant(raw) = &graph.plans[closure.weights].expression else {
             return Err("matrix weight storage changed after selection".into());
         };
@@ -206,7 +269,7 @@ pub(crate) fn stage_with_chains(
             id
         };
         let input = buffer(layout.input_elements * 2, false);
-        let output = if closure.residual {
+        let output = if direct {
             closure.output
         } else {
             buffer(layout.output_elements * 4, false)
@@ -214,10 +277,10 @@ pub(crate) fn stage_with_chains(
         let weight = buffer(packed.len(), true);
         initialized.insert(weight, packed);
         scratch.insert(input);
-        if !closure.residual {
+        if !direct {
             scratch.insert(output);
         }
-        if closure.residual {
+        if direct {
             schedule.calls.retain(|c| c.buffers[0] != closure.reduction);
         }
         let at = schedule
@@ -244,6 +307,10 @@ pub(crate) fn stage_with_chains(
         } else {
             vec![input, closure.input]
         };
+        let mut reduction_buffers = vec![output, input, weight];
+        if let Some(bias) = closure.bias {
+            reduction_buffers.push(bias);
+        }
         let mut pipeline = vec![
             Call {
                 copy: false,
@@ -251,10 +318,10 @@ pub(crate) fn stage_with_chains(
             },
             Call {
                 copy: false,
-                buffers: vec![output, input, weight],
+                buffers: reduction_buffers,
             },
         ];
-        if !closure.residual {
+        if !direct {
             pipeline.push(Call {
                 copy: false,
                 buffers: vec![closure.output, output],
@@ -270,7 +337,8 @@ pub(crate) fn stage_with_chains(
             if call.buffers[0] != closure.output {
                 continue;
             }
-            let boundaries = if closure.residual { 1 } else { 2 };
+            let direct = closure.residual || closure.bias.is_some();
+            let boundaries = if direct { 1 } else { 2 };
             if index < boundaries {
                 return Err("matrix pipeline order missing".into());
             }
@@ -301,15 +369,31 @@ pub(crate) fn stage_with_chains(
             };
             let function = format!("native_matrix_{reduce_at}");
             let entry = format!("op_kernel_{reduce_at}");
-            let reduce = if closure.residual {
-                layout.residual_artifact(&function, &entry, 16)?
+            let reduce = if closure.bias.is_some() {
+                let artifact = layout.broadcast_bias_artifact(&function, &entry, 16)?;
+                PipelineCall {
+                    source: artifact.source,
+                    bytes: artifact.bytes.to_vec(),
+                    workers: artifact.workers,
+                    scalars: artifact.scalars,
+                }
             } else {
-                layout.artifact(
-                    &function, &entry,
-                    // Offline CPU profile: the original receipts explicitly pin
-                    // CPU_COUNT=16. Never derive partitioning from this host.
-                    16,
-                )?
+                let artifact = if closure.residual {
+                    layout.residual_artifact(&function, &entry, 16)?
+                } else {
+                    layout.artifact(
+                        &function, &entry,
+                        // Offline CPU profile: the original receipts explicitly pin
+                        // CPU_COUNT=16. Never derive partitioning from this host.
+                        16,
+                    )?
+                };
+                PipelineCall {
+                    source: artifact.source,
+                    bytes: artifact.bytes.to_vec(),
+                    workers: artifact.workers,
+                    scalars: artifact.scalars,
+                }
             };
             calls.insert(
                 pack_at,
@@ -324,12 +408,12 @@ pub(crate) fn stage_with_chains(
                 reduce_at,
                 PipelineCall {
                     source: reduce.source,
-                    bytes: reduce.bytes.to_vec(),
+                    bytes: reduce.bytes,
                     workers: reduce.workers,
                     scalars: reduce.scalars,
                 },
             );
-            if !closure.residual {
+            if !direct {
                 let undo = layout.output_artifact(&format!("op_kernel_{index}"))?;
                 calls.insert(
                     index,
