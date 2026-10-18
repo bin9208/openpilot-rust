@@ -22,3 +22,7 @@ zmq = "=0.10.0"
 [dev-dependencies]
 libc = "0.2"
 tempfile = "3"
+
+[[test]]
+name = "runtime_producer"
+harness = false

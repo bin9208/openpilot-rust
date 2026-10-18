@@ -1,4 +1,5 @@
-//! Per-thread source-compatible nonblocking PUSH transport and console routing.
+//! Source-compatible nonblocking PUSH transport and console routing.
+//! Ordinary loggers own per-thread connections; runtime emission is process-retained.
 use crate::{
     context::{ContextGuard, GlobalContext, LocalContext},
     record::{format_record, Level, Record},
@@ -10,6 +11,8 @@ use std::{
     io::{self, Write},
     sync::Arc,
 };
+mod runtime;
+pub use runtime::{close_runtime, emit_runtime, RuntimeLogScope};
 
 #[derive(Clone)]
 pub struct Factory {
@@ -147,8 +150,17 @@ impl Logger {
         self.local.snapshot()
     }
     pub fn emit(&mut self, site: Site, record: Record) -> Result<Delivery, Error> {
-        if record.level < Level::Debug {
+        let Some(packet) = self.prepare(site, record)? else {
             return Ok(Delivery::Filtered);
+        };
+        self.state.send(&self.factory.endpoint, &packet)
+    }
+    /// Format on the calling thread, before transport. Runtime emission uses a
+    /// temporary logger only for its empty local/inherited global context; the
+    /// Rc-backed local context never enters the shared process state.
+    fn prepare(&self, site: Site, record: Record) -> Result<Option<Vec<u8>>, Error> {
+        if record.level < Level::Debug {
+            return Ok(None);
         }
         let metadata = site.metadata(&self.factory.host)?;
         if record.level >= self.factory.console {
@@ -162,15 +174,29 @@ impl Logger {
             record.exception.as_deref(),
             &metadata,
         )?;
-        self.send(&packet)
+        Ok(Some(packet))
     }
-    fn send(&mut self, packet: &[u8]) -> Result<Delivery, Error> {
+    pub fn close(&mut self) {
+        self.state.close();
+    }
+}
+impl Drop for Logger {
+    fn drop(&mut self) {
+        self.state.release();
+    }
+}
+
+// Only the mechanical socket lifetime is shared. Both producer entrypoints use
+// identical connect/send/release/close behavior, including the inherited-PID
+// guard, EINTR retry, DONTWAIT, EAGAIN delivery result and ten-millisecond linger.
+impl Connection {
+    fn send(&mut self, endpoint: &str, packet: &[u8]) -> Result<Delivery, Error> {
         let pid = std::process::id();
-        let reconnect = match &self.state {
-            Connection::Disconnected => true,
-            Connection::Connected(transport) => transport.pid != pid,
-            Connection::Closed(owner) if *owner == pid => return Err(zmq::Error::ENOTSOCK.into()),
-            Connection::Closed(_) => true,
+        let reconnect = match self {
+            Self::Disconnected => true,
+            Self::Connected(transport) => transport.pid != pid,
+            Self::Closed(owner) if *owner == pid => return Err(zmq::Error::ENOTSOCK.into()),
+            Self::Closed(_) => true,
         };
         if reconnect {
             self.release();
@@ -178,16 +204,16 @@ impl Logger {
             let socket = context.socket(zmq::PUSH)?;
             socket.set_linger(10)?;
             loop {
-                match socket.connect(&self.factory.endpoint) {
+                match socket.connect(endpoint) {
                     Ok(()) => break,
                     Err(zmq::Error::EINTR) => continue,
                     Err(error) => return Err(error.into()),
                 }
             }
-            // zmq::Socket retains a Context clone, so its last drop closes the socket before ctx_term.
-            self.state = Connection::Connected(Transport { socket, pid });
+            // Socket retains Context: socket close precedes context termination.
+            *self = Self::Connected(Transport { socket, pid });
         }
-        let Connection::Connected(transport) = &self.state else {
+        let Self::Connected(transport) = self else {
             return Err(Error::Contract("logger connection missing"));
         };
         loop {
@@ -200,30 +226,25 @@ impl Logger {
         }
     }
     fn release(&mut self) -> Option<u32> {
-        match std::mem::replace(&mut self.state, Connection::Disconnected) {
-            Connection::Disconnected => None,
-            Connection::Closed(pid) => Some(pid),
-            Connection::Connected(transport) => {
+        match std::mem::replace(self, Self::Disconnected) {
+            Self::Disconnected => None,
+            Self::Closed(pid) => Some(pid),
+            Self::Connected(transport) => {
                 let pid = transport.pid;
                 if pid != std::process::id() {
-                    // After fork, the inherited libzmq I/O threads and locks are unusable. Like
-                    // pyzmq _term/close's PID guard, skip both socket close and context termination.
-                    // The child forgets only its copied handles; the parent's ownership is unchanged.
+                    // Inherited libzmq I/O threads/locks are unusable after fork.
+                    // Like pyzmq's PID guard, skip close and context termination
+                    // only for the child's copied handles, never the parent.
                     std::mem::forget(transport);
                 }
                 Some(pid)
             }
         }
     }
-    pub fn close(&mut self) {
+    fn close(&mut self) {
         if let Some(pid) = self.release() {
-            self.state = Connection::Closed(pid);
+            *self = Self::Closed(pid);
         }
-    }
-}
-impl Drop for Logger {
-    fn drop(&mut self) {
-        self.release();
     }
 }
 

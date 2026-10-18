@@ -1109,3 +1109,50 @@ Evidence: `.analysis/scratch/2026-10-18-startup-ci-space/contract-red.log` and
 `contract-final-green.log`. Parent independently reviewed #364 source, its actual
 syscall evidence and native baseline receipt; a separate source review found no
 blocker in #365. Device startup/recording/upload remain user-owned.
+
+### Missing metadata diagnostic transport lifetime (#366, 2026-10-18)
+
+Exact518f1657 telemetry CI lost the missing-build-metadata log although the native
+console emitted its original message. The metadata helper created and dropped a
+new PUSH socket on each error. An independent unchanged Python SocketHandler
+control retained its queued record after emit returned and delivered it when the
+collector bound later. Both native regressions failed before repair: one main
+caller and three short-lived emitting threads, with the original2-second receive
+deadline. This establishes transport lifetime loss, not missing error generation.
+
+The helper now uses a process-retained Python-compatible producer. Only Factory
+and socket connection state enter its mutex; ordinary Rc-backed Logger remains
+neither Send nor Sync. Formatting stays on the caller's thread. The shared
+connection implementation preserves nonblocking send, EINTR/EAGAIN behavior,
+10ms linger, inherited-PID reconnect and closed-socket errors. No sender thread,
+format replacement, production unsafe block or receive-timeout increase was added.
+An outermost-only RuntimeLogScope closes the connection after final diagnostics;
+unused guards initialize nothing. Managed entry, manager, launcher, Athena and
+relevant stream fixtures retain that guard. This is not a guarantee of delivery
+when no collector becomes available before process shutdown, nor arbitrary
+multithreaded-fork safety.
+
+Validation passed:17 existing logging tests, six isolated runtime modes, two
+compile-fail thread-contract docs and both actual metadata lifetime regressions;
+strict all-target logging/version Clippy; affected executable/example boundary
+checks; and all50 workflow routing/space tests. The active scope-drop case proves
+Drop closes the socket before any explicit close. Original comparison with fresh,
+frozen executables passed all171 metadata/Git cases with zero divergences,2472
+exact record packets,20 event packets and four source errors, ordinary/native
+thread contexts, backpressure, console failure, fork and original/native collector
+paths. Actual metadata collection produced one logMessage, one errorLogMessage
+and one disk record with unchanged error content. Causal connect interruption and
+invalid-endpoint controls also passed for both original and native producers.
+
+The telemetry CI job now runs both lifetime tests mandatorily. Its and the startup
+service job's new native checks use bounded incremental/debug profiles;253 guards
+cover31 jobs and the original guard-argument hash is unchanged. Exact committed-SHA
+CI remains required. Device startup, recording and upload are still user-owned.
+Evidence: `.analysis/scratch/2026-10-18-version-log-ci/`, including
+`native-red.log`, `original-control/receipt.json`,
+`producer-gate-9KcbHRBA/FINAL-EVIDENCE.md`, `boundaries-check.log`,
+`ci-contracts-green.log`, `reference-green/manifest.json`,
+`producer-original-green/report.json`, `collector-green/manifest.json` and
+`connect-original-green/result.json`. Separate read-only boundary review found no
+blocker. Other short-lived helper logger sites are explicitly inventoried in
+`boundary-and-ephemeral-review.md`; packet loss there is not inferred as tested.

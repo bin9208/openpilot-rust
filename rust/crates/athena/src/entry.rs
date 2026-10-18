@@ -8,6 +8,7 @@ use openpilot_managed_entry::StepError;
 use std::{process::ExitCode, sync::Arc};
 
 pub fn main(supervise: bool) -> ExitCode {
+    let _runtime_logs = openpilot_logging::producer::RuntimeLogScope;
     match run(supervise) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {

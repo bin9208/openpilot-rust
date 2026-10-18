@@ -311,6 +311,7 @@ fn run(request: Request) -> Result<bool, Box<dyn std::error::Error>> {
     Ok(success)
 }
 fn main() -> ExitCode {
+    let _runtime_logs = openpilot_logging::producer::RuntimeLogScope;
     let result = (|| {
         let path = std::env::args_os()
             .nth(1)

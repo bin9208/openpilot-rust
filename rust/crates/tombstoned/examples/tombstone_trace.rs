@@ -411,6 +411,7 @@ fn run(
     }
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _runtime_logs = openpilot_logging::producer::RuntimeLogScope;
     let mut reporter = None;
     let mut state = None;
     let mut barrier = Factory::for_runtime()?.logger();

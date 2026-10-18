@@ -26,6 +26,7 @@ impl Clock for PipeClock {
     }
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _runtime_logs = openpilot_logging::producer::RuntimeLogScope;
     let mut args = std::env::args().skip(1);
     let configuration = Configuration {
         endpoint: args.next().ok_or("endpoint")?,

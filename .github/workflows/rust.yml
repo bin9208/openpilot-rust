@@ -2096,6 +2096,9 @@ jobs:
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2114,6 +2117,12 @@ jobs:
           rustc --version
           cargo --version
           cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-runtime-version -p openpilot-beepd -p openpilot-statsd -p openpilot-tombstoned -p openpilot-logmessaged --bins --examples --locked
+      - name: Verify metadata error transport ownership across calls and threads
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-logging --test runtime_producer --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-runtime-version --test error_log_lifetime --locked
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build original telemetry message and Params bindings
@@ -2294,6 +2303,9 @@ jobs:
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7

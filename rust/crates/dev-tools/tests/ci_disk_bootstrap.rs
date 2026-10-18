@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 251);
+    assert_eq!(text.matches(marker).count(), 253);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -212,7 +212,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         jobs.values()
             .filter(|job| scripts(job).iter().any(|s| s.contains("check-disk-space")))
             .count(),
-        30
+        31
     );
     assert_eq!(
         jobs.values()
@@ -225,7 +225,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 })
             }))
             .count(),
-        30
+        31
     );
     let lines = text.lines().collect::<Vec<_>>();
     let mut arguments = vec![];
@@ -235,6 +235,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut qcom_assistance = vec![];
     let mut feedback = vec![];
     let mut updated_ownership = vec![];
+    let mut metadata_transport = vec![];
     let mut raylib = vec![];
     let mut logging_builder = vec![];
     let mut native_architecture = vec![];
@@ -270,6 +271,13 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut journal_bootlog_checks = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--test runtime_producer")
+                    || lines[i + 1].contains("--test error_log_lifetime"))
+            {
+                metadata_transport.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("--features command-owner-tests")
                     || lines[i + 1].contains("--lib updated_process_check::ownership_tests")
@@ -643,6 +651,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 256",
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 256",
         ]
+    );
+    assert_eq!(
+        metadata_transport,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 2]
     );
     assert_eq!(
         updated_ownership,

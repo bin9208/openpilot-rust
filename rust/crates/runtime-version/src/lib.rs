@@ -36,6 +36,8 @@ pub use metadata::{
     build_metadata_from_dict, BuildMetadata, OpenpilotMetadata, BUILD_METADATA_FILENAME,
     RELEASE_BRANCHES, TERMS_VERSION, TESTED_BRANCHES, TRAINING_VERSION,
 };
+/// Retain at the outermost executable boundary to drain runtime error logs on exit.
+pub use openpilot_logging::producer::RuntimeLogScope;
 pub use openpilot_logmessaged::JsonValue;
 use std::{
     collections::HashMap,
@@ -156,8 +158,7 @@ pub fn get_build_metadata(path: &Path) -> Result<BuildMetadata, Error> {
     if metadata_path_exists(&path.join(".git"))? {
         return metadata::from_source(path);
     }
-    let mut logger = openpilot_logging::producer::Factory::for_runtime()?.logger();
-    logger.emit(
+    openpilot_logging::producer::emit_runtime(
         openpilot_logging::log_site!(),
         openpilot_logging::record::Record::text(
             openpilot_logging::record::Level::Error,

@@ -1237,3 +1237,35 @@ fn model_publication_comparison_reads_generation_through_verified_native_catalog
     assert!(run.contains("--driver-pipeline \"$RUNNER_TEMP/native-catalog/$generation/driver-${1}x${2}/pipeline.json\""));
     assert!(!run.contains("python -c"));
 }
+
+#[test]
+fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
+    job_check(
+        "telemetry-runtime",
+        &[
+            "--test runtime_producer --locked",
+            "--test error_log_lifetime --locked",
+            "check_version_reference.py",
+            "check_version_collector.py",
+        ],
+        &[
+            "cargo test",
+            "check_version_reference.py",
+            "check_version_collector.py",
+        ],
+        false,
+    );
+    let data = workflow();
+    for job in ["telemetry-runtime", "startup-services"] {
+        for key in [
+            "CARGO_INCREMENTAL",
+            "CARGO_PROFILE_DEV_DEBUG",
+            "CARGO_PROFILE_TEST_DEBUG",
+        ] {
+            assert_eq!(
+                data["jobs"][job]["env"][key], "0",
+                "bounded native ownership test artifacts: {job}/{key}"
+            );
+        }
+    }
+}
