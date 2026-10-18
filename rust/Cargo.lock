@@ -2593,6 +2593,7 @@ dependencies = [
  "url",
  "uuid",
  "zlib-rs",
+ "zmq",
  "zstd",
 ]
 

@@ -72,6 +72,14 @@ futures-util = { version = "=0.3.34", features = ["sink"] }
 nix = { version = "=0.31.3", features = ["sched", "process", "hostname"], default-features = false }
 tempfile = "3"
 
+[dev-dependencies]
+zmq = "=0.10.0"
+
+[[test]]
+name = "metadata_log_lifetime"
+path = "tests/metadata_log_lifetime/main.rs"
+harness = false
+
 [[bin]]
 name = "openpilot-carrot-server"
 path = "src/main.rs"

@@ -56,9 +56,8 @@ impl UploadHealth {
         let mut result = openpilot_web_upload::health(&base, &token);
         let ok = result.get("ok").and_then(serde_json::Value::as_bool) == Some(true);
         if ok && token.is_empty() {
-            let mut logger = openpilot_logging::producer::Factory::for_runtime()
-                .map_err(source)?
-                .logger();
+            let mut logger =
+                openpilot_logging::producer::Logger::for_runtime_retained().map_err(source)?;
             let environment = ["CARROT_DEVICE_SERIAL", "DEVICE_SERIAL", "SERIAL"]
                 .into_iter()
                 .map(|key| optional(key).map(|value| (key.to_owned(), value)))

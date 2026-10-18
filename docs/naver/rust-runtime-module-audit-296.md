@@ -1275,3 +1275,31 @@ source bytes, receipts and both checksum validations remain unchanged. Exact new
 SHA remote SDK staging/UI checks remain required; a successful local download is
 not a successful UI build. Evidence: `.analysis/scratch/2026-10-18-zlib-source/` and
 `2026-10-18-ad450-ci/3bc-ui-connectivity.log`.
+
+### Carrot Server request-local diagnostic loss (#368, 2026-10-18)
+
+Actual public upload-health and vision-diagnostic HTTP requests reproduced the
+remaining helper lifetime fault in all four success/upstream-failure modes. Each
+request returned its expected response and emitted the invalid CarName warning
+to stderr, but the collector connecting after request/application/Tokio-worker
+completion received nothing within the unchanged2s deadline. Independent original
+HTTP controls delivered the warnings in all four cases. These controls use owned
+loopback endpoints and private Params; the original vision snapshot is explicitly
+a fixture, so this does not claim whole-snapshot or remote-service equivalence.
+
+Only diagnostic_metadata and dashcam/upload_health now construct the existing
+retained Logger facade. The process-root managed-entry scope already owns shutdown;
+no request-local shutdown, worker thread or socket was added. All four real native
+HTTP cases now deliver exactly one warning with the original message, native helper
+callsite and correct process identity after request completion. Payload/fallback,
+health500, vision502 and successful200 responses remain asserted. No unreachable
+webhook Params keys were registered or changed to manufacture another warning.
+
+All24 Carrot Server library tests, five policy tests and strict all-target Clippy
+pass. The new custom integration target is registered without feature/environment
+skips and runs through the required workspace test gate. Independent source review
+found no blocker in the constructors, owner boundaries or regression. Evidence:
+`.analysis/scratch/2026-10-18-carrot-log-lifetime/` contains native-red-1.log,
+native-green-1.log, affected-tests.log, affected-clippy.log and source-review.md;
+original-http-ip_nnes3/receipt.json preserves the unchanged original controls.
+Exact committed-SHA cloud validation remains required; the user owns device tests.
