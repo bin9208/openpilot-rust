@@ -5,11 +5,201 @@ use openpilot_dev_tools::{
     ui_application_lifecycle_reference::{run, Options},
 };
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, ffi::OsString, fs, path::Path, process::Command};
+#[path = "support/ui_application_draw.rs"]
+mod application_draw;
+#[allow(dead_code)]
+#[path = "support/ui_forms_confirm_draw.rs"]
+mod confirm_draw;
 const CASE_ENV: &str = "UI_APPLICATION_REFERENCE_TEST_CASE";
+
+#[test]
+fn original_draw_case_environment_commands_order_fonts_and_measurements_are_immutable() {
+    let text = application_draw::corpus().unwrap();
+    let corpus: Value = serde_json::from_str(text).unwrap();
+    let rows = corpus["captures"].as_array().unwrap();
+    assert_eq!(rows.len(), 25);
+    assert_eq!(rows.iter().filter(|v| v["case"]["png"] == true).count(), 17);
+    for trace in rows {
+        application_draw::validate(text, trace["fixture"].as_str().unwrap(), &trace["case"])
+            .unwrap();
+    }
+    let first = &rows[0];
+    let mut changed = first["case"].clone();
+    changed["environment"]["PROFILE_RENDER"] = Value::String("7".into());
+    assert!(application_draw::validate(text, "source-original.json", &changed).is_err());
+    changed = first["case"].clone();
+    changed["state_text"] =
+        Value::String("{\"frames\":7,\"ticks\":7,\"skipped\":0,\"text\":\"\"}".into());
+    assert!(application_draw::validate(text, "source-original.json", &changed).is_err());
+    let font = first["commands"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|v| v.get("font").is_some())
+        .unwrap();
+    let font_hash = format!("\"sha256\":\"{}\"", font["sha256"].as_str().unwrap());
+    let measurement = format!("\"x\":{}", first["measurements"][0]["x"]);
+    for (from, to) in [
+        ("\"begin\"", "\"end\""),
+        (
+            "\"begin\",\"clear 4278190080\"",
+            "\"clear 4278190080\",\"begin\"",
+        ),
+        (font_hash.as_str(), "\"sha256\":\"changed-font-bytes\""),
+        (measurement.as_str(), "\"x\":-12345"),
+    ] {
+        assert!(
+            text.contains(from),
+            "mutation must address real captured bytes: {from}"
+        );
+        let changed = text.replacen(from, to, 1);
+        assert_ne!(text, changed);
+        assert!(
+            application_draw::validate(&changed, "source-original.json", &first["case"]).is_err()
+        );
+    }
+}
+
+#[test]
+fn changing_or_removing_any_shared_mechanical_mapping_is_rejected() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    application_draw::validate_boundary(&root).unwrap();
+    let data: Value = serde_json::from_str(application_draw::corpus().unwrap()).unwrap();
+    let pins = data["mechanical_source_sha256"].as_object().unwrap();
+    assert_eq!(pins.len(), 4);
+    let temp = tempfile::tempdir().unwrap();
+    for name in pins.keys() {
+        let path = temp.path().join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::copy(root.join(name), path).unwrap();
+    }
+    application_draw::validate_boundary(temp.path()).unwrap();
+    for name in pins.keys() {
+        let path = temp.path().join(name);
+        let bytes = fs::read(&path).unwrap();
+        fs::write(&path, b"changed mechanical mapping").unwrap();
+        assert!(
+            application_draw::validate_boundary(temp.path()).is_err(),
+            "{name}"
+        );
+        fs::remove_file(&path).unwrap();
+        assert!(
+            application_draw::validate_boundary(temp.path()).is_err(),
+            "missing {name}"
+        );
+        fs::write(&path, bytes).unwrap();
+    }
+}
+
+#[test]
+fn actual_failed_child_preserves_error_and_case_artifacts_before_temp_cleanup() {
+    let temp = tempfile::tempdir().unwrap();
+    let retained = tempfile::tempdir().unwrap();
+    fs::write(temp.path().join("out.png"), b"controlled actual image").unwrap();
+    fs::write(temp.path().join("out.json"), b"{\"frames\":6}").unwrap();
+    let case = serde_json::json!({"name":"controlled-child-failure","exact":17});
+    let mut command = Command::new("/bin/sh");
+    command.args([
+        "-c",
+        "printf 'actual stdout'; printf 'actual stderr' >&2; exit 7",
+    ]);
+    let result = command.output().unwrap();
+    assert_eq!(result.status.code(), Some(7));
+    let failure: std::thread::Result<()> =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _keep = application_draw::FailureEvidence {
+                destination: Some(retained.path().into()),
+                case: &case,
+                directory: temp.path(),
+                command: &command,
+                result: &result,
+                replay: None,
+            };
+            panic!("original controlled assertion");
+        }));
+    assert_eq!(
+        failure.unwrap_err().downcast_ref::<&str>(),
+        Some(&"original controlled assertion")
+    );
+    drop(temp);
+    let output = retained
+        .path()
+        .join("application-lifecycle-controlled-child-failure");
+    assert_eq!(
+        fs::read(output.join("native.stdout.log")).unwrap(),
+        b"actual stdout"
+    );
+    assert_eq!(
+        fs::read(output.join("native.stderr.log")).unwrap(),
+        b"actual stderr"
+    );
+    assert_eq!(
+        fs::read(output.join("actual.png")).unwrap(),
+        b"controlled actual image"
+    );
+    assert_eq!(
+        serde_json::from_slice::<Value>(&fs::read(output.join("case.json")).unwrap()).unwrap(),
+        case
+    );
+    let context: Value =
+        serde_json::from_slice(&fs::read(output.join("context.json")).unwrap()).unwrap();
+    assert_eq!(context["exit"], 7);
+}
+
 fn fixtures() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/ui-application-lifecycle")
+}
+#[test]
+fn intermediate_target_exports_preserve_scope_and_duplicate_begins_still_fail() {
+    let Some(raylib) = std::env::var_os("STARTUP_UI_RAYLIB_ROOT") else {
+        return;
+    };
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    application_draw::validate_boundary(&root).unwrap();
+    let work = tempfile::tempdir().unwrap();
+    let helper = ui_application_lifecycle_raw::build(work.path(), Path::new(&raylib)).unwrap();
+    let command = Command::new("unused-native-reference");
+    let trace = serde_json::json!({
+        "name": "mechanical-intermediate-recording-exports",
+        "commands": ["flags 32", "window 32 32 73636f7065", "target 32 32",
+            "target-begin", "clear 4278190080", "@EXPORT-TARGET@", "target-end",
+            "begin", "target-draw", "end",
+            "target-begin", "clear 4278190080", "@EXPORT-TARGET@", "target-end",
+            "begin", "target-draw", "end"],
+        "measurements": []
+    });
+    let expected = confirm_draw::replay_trace(
+        trace,
+        "synthetic mechanical scope control; not an original policy oracle",
+        &root,
+        &helper,
+        &command,
+        work.path(),
+    )
+    .unwrap();
+    assert!(expected
+        .stdout
+        .split(|v| *v == b'\n')
+        .all(|line| line.is_empty() || line == b"OK"));
+    let image = openpilot_dev_tools::image_array::read(&expected.path).unwrap();
+    assert_eq!(image.shape[..2], [32, 32]);
+    let error = confirm_draw::replay_trace(
+        serde_json::json!({"name":"mechanical-invalid-duplicate-begin",
+            "commands":["flags 32", "window 32 32 73636f7065", "begin", "begin", "end"],
+            "measurements":[]}),
+        "synthetic invalid scope control",
+        &root,
+        &helper,
+        &command,
+        work.path(),
+    )
+    .err()
+    .expect("helper exit zero must not hide an ERR reply");
+    assert!(error.to_string().contains("raw replay protocol failure"));
+    assert!(error
+        .to_string()
+        .contains("6475706c696361746520666f726d73206672616d65"));
 }
 fn execute_cases(filename: &str) {
     let Some(raylib) = std::env::var_os("STARTUP_UI_RAYLIB_ROOT") else {
@@ -18,6 +208,8 @@ fn execute_cases(filename: &str) {
     let library = std::env::var_os("STARTUP_UI_RAYLIB_LIBRARY").expect("actual raylib library");
     let probe = std::env::var_os("UI_APPLICATION_FFPROBE").unwrap_or_else(|| "ffprobe".into());
     let work = tempfile::tempdir().unwrap();
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    application_draw::validate_boundary(&root).unwrap();
     let helper = ui_application_lifecycle_raw::build(work.path(), Path::new(&raylib)).unwrap();
     let captures: Value =
         serde_json::from_slice(&fs::read(fixtures().join(filename)).unwrap()).unwrap();
@@ -66,6 +258,14 @@ fn execute_cases(filename: &str) {
             );
         }
         let result = command.output().unwrap();
+        let mut diagnostics = application_draw::FailureEvidence {
+            destination: std::env::var_os("UI_FORMS_FAILURE_OUTPUT").map(Into::into),
+            case: capture,
+            directory: &directory,
+            command: &command,
+            result: &result,
+            replay: None,
+        };
         assert_eq!(
             result.status.code(),
             Some(capture["exit"].as_i64().unwrap() as i32),
@@ -101,16 +301,21 @@ fn execute_cases(filename: &str) {
                 serde_json::to_value(&image.shape).unwrap(),
                 capture["shape"]
             );
-            let mut digest = Sha256::new();
-            for value in image.values {
-                digest.update(value.to_le_bytes());
+            let expected =
+                application_draw::replay(filename, capture, &root, &helper, &command, &directory)
+                    .unwrap();
+            diagnostics.replay = Some((expected.stdout.clone(), expected.stderr.clone()));
+            let expected = openpilot_dev_tools::image_array::read(&expected.path).unwrap();
+            application_draw::exact_pixels(&image, &expected)
+                .unwrap_or_else(|error| panic!("{} all pixels: {error}", capture["name"]));
+            if filename == "source-original.json" && capture["name"] == "profile" {
+                let mut changed = openpilot_dev_tools::image_array::read(&output).unwrap();
+                changed.values[0] = (changed.values[0] + 1) % 256;
+                assert!(
+                    application_draw::exact_pixels(&changed, &expected).is_err(),
+                    "a single RGB sample must still fail"
+                );
             }
-            assert_eq!(
-                format!("{:x}", digest.finalize()),
-                capture["i64_sha256"].as_str().unwrap(),
-                "{} all pixels",
-                capture["name"]
-            );
         }
         let printed = String::from_utf8_lossy(&result.stdout);
         assert_eq!(

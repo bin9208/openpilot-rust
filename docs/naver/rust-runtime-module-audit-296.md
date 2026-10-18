@@ -843,3 +843,49 @@ review accepted the bound-output repair and mandatory LLVM20 CI routing. The
 workflow retains full workspace/original-source checks and requires the pinned
 LLVM20 package and library, with three additional disk guards; all 49 routing
 and disk tests passed. Exact-commit CI and user device acceptance remain open.
+
+## UI lifecycle pixel comparison on CI (#357)
+
+At `1dbc48609d83aac36c42b154a48afd80f2650a86`, the
+[UI/connectivity job](https://github.com/bin9208/openpilot-rust/actions/runs/39108803932/job/117620299293)
+passes the Forms replay checks but fails two lifecycle reference comparisons:
+`unknown-mode` and `profile`. Both rendered images have i64 pixel SHA
+`adcf4f00ab1d7da275c23c2e8e001d0aea44feb44b2af4e3a102f1e752efd229`, while the
+independent original capture requires
+`cad51e8e6a7c57ca8b20faab3140d95be545ca5907cee031175a18aa7f481f31`.
+Four other tests in that target pass. The failure differs from #354's original
+GLFW connection failure. The job's renderer reports Mesa 25.2.8 with llvmpipe
+LLVM20.1.2; this identifies the environment, not the cause. Failed test images
+were held in a temporary directory and are absent from the uploaded artifact.
+[#357](https://github.com/bin9208/openpilot-rust/issues/357) tracks diagnosis,
+evidence retention and correction. Running the unchanged original and native
+reference in the same local graphics context produces identical pixels. Changing
+that context with Mesa's `nosse` setting changes the original raster too, while
+both implementations still agree exactly. This demonstrates that the fixed
+capture hash is not portable; it does not reproduce the exact CI hash or prove
+the CI difference's cause.
+
+The lifecycle regression now replays immutable original drawing commands through
+the same pinned mechanical provider and compares every pixel exactly. All25
+original cases,17PNG traces, source/helper/font hashes, measurement float bits,
+state/exit/file/environment and recording checks remain bound to the independent
+capture. Existing original fixture files are unchanged. Mutation controls reject
+changed calls, order, fonts, measurements, cases, mechanical sources and pixels.
+Failures retain both images, state, command context and process output before
+temporary-directory cleanup.
+
+The first real replay gate exposed an adapter error: exporting while a texture
+target was active incorrectly opened an idle window frame. Both recording cases
+failed the raw protocol's duplicate-frame guard. Tracking texture scope fixes
+that adapter; deliberate duplicate `begin` still rejects, including when the
+helper exits zero. All17 original traces then passed strict protocol and exact
+pixel replay. The full lifecycle target passed14tests, the five-mode test passed
+again under `nosse`, and scoped strict Clippy passed. Independent review found no
+remaining blocker. The five affected shared-adapter suites then passed all 52
+host tests: network 8, render 9, Forms 14, family text 11 and admission 10. All
+providers and test/tool ELFs were frozen and hash-checked before and after the
+real graphics runs; required providers were present, with no optional early exit.
+Scoped strict Clippy also passed for these consumers. Evidence is under
+`.analysis/scratch/2026-10-18-ui-lifecycle-pixel-357/impacted-eRtBSKAB`.
+Exact-commit CI remains pending. No device or full CI acceptance follows from
+these host checks.

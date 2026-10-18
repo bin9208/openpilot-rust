@@ -182,6 +182,7 @@ pub fn replay_trace(
     let mut measurements = Vec::new();
     let mut measured = false;
     let mut drawing = false;
+    let mut texture_drawing = false;
     let mut frames = Vec::new();
     for captured in trace["commands"]
         .as_array()
@@ -228,7 +229,10 @@ pub fn replay_trace(
                     frames.push(frame);
                 }
                 "@EXPORT@" | "@EXPORT-TARGET@" => {
-                    if !drawing {
+                    // A recording capture can export an active texture before
+                    // the next window frame. It already has a valid raw scope;
+                    // opening an idle window frame would leave it unbalanced.
+                    if !drawing && !texture_drawing {
                         commands.push("export-idle".into());
                     }
                     commands.push(format!(
@@ -246,6 +250,8 @@ pub fn replay_trace(
             match item {
                 "begin" => drawing = true,
                 "end" => drawing = false,
+                "target-begin" => texture_drawing = true,
+                "target-end" => texture_drawing = false,
                 _ => {}
             }
         } else {
