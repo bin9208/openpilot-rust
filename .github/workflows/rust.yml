@@ -2659,6 +2659,68 @@ jobs:
           '
           rust/target/debug/check-ui-emoji --binary "$PWD/rust/target/debug/examples/emoji_raster" --output "$RUNNER_TEMP/ui-connectivity/emoji"
           rust/target/debug/check-ui-translations --binary "$PWD/rust/target/debug/examples/translation_trace" --output "$RUNNER_TEMP/ui-connectivity/translations"
+      - name: Diagnose failed Confirm against immutable original on one display
+        if: failure()
+        env:
+          UI_FORMS_FAILURE_OUTPUT: ${{ runner.temp }}/ui-connectivity/forms-failures
+        run: |
+          #!/usr/bin/env bash
+          # TEMPORARY, failure-only CI investigation. Never a maintained source fallback.
+          set -euo pipefail
+          root="${GITHUB_WORKSPACE:-$PWD}"
+          evidence="${UI_FORMS_FAILURE_OUTPUT:?}/irrelevant-input-prop"
+          [ -f "$evidence/scene.json" ] || exit 0
+          output="${RUNNER_TEMP:?}/ui-connectivity/confirm-original-diagnostic"
+          mkdir -p "$output"
+          revision=3669ec8c6f391275316db31bfd715ab23f0da5da
+          # Exact parent of f0197806; fetch only immutable commit if checkout is shallow.
+          if ! git -C "$root" cat-file -e "$revision:rust/tools/ui_forms_source.py"; then
+            git -C "$root" fetch --no-tags --depth=1 origin "$revision"
+          fi
+          git -C "$root" show "$revision:rust/tools/ui_forms_source.py" > "$output/original.py"
+          printf '%s  %s\n' 2220f3192136ead8d283cf8276ca2120a85198978bbca79c0f1286b8690dc365 "$output/original.py" | sha256sum -c -
+          cp "$evidence/scene.json" "$output/scene.json"
+          printf '%s\n' "$revision" > "$output/original-commit.txt"
+          lscpu > "$output/lscpu.txt"
+          export OPENPILOT_RUST_ROOT="$root" PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}" GALLIUM_DUMP_CPU=1
+          # One Xvfb server and inherited renderer environment for BOTH independent lanes.
+          # Capture failures as data; still run the other lane and retain exact files.
+          cat > "$output/run-lanes.sh" <<'LANES'
+          set -u
+          output="$1"; reference="$2"; interpreter="$3"
+          printf "%s\n" "$DISPLAY" > "$output/display.txt"
+          "$interpreter" "$output/original.py" "$output/scene.json" "$output/original.png" > "$output/original.stdout.log" 2> "$output/original.stderr.log"
+          printf "%s\n" "$?" > "$output/original.exit"
+          "$reference" "$output/scene.json" "$output/native.png" > "$output/native.stdout.log" 2> "$output/native.stderr.log"
+          printf "%s\n" "$?" > "$output/native.exit"
+          LANES
+          reference="${UI_CONFIRM_REFERENCE:-$root/rust/target/debug/ui-forms-reference}"
+          interpreter="${UI_CONFIRM_PYTHON:-python}"
+          if [ -n "${UI_CONFIRM_DIAGNOSTIC_DISPLAY:-}" ]; then
+            DISPLAY="$UI_CONFIRM_DIAGNOSTIC_DISPLAY" bash "$output/run-lanes.sh" "$output" "$reference" "$interpreter"
+          else
+            xvfb-run -a -s '-screen 0 2160x1080x24 -nolisten tcp' bash "$output/run-lanes.sh" "$output" "$reference" "$interpreter"
+          fi
+          "$interpreter" - "$output" <<'PY'
+          import hashlib,json,os,sys
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image
+          p=Path(sys.argv[1]); result={"environment":{key:os.environ.get(key)for key in ["LIBGL_ALWAYS_SOFTWARE","GALLIUM_DRIVER","GALLIUM_OVERRIDE_CPU_CAPS","LP_NATIVE_VECTOR_WIDTH","LP_NUM_THREADS","GALLIUM_DUMP_CPU","LANG","LC_ALL","LC_NUMERIC"]},"lanes":{}}
+          arrays={}
+          for lane in ("original","native"):
+           image=p/(lane+".png");state=p/(lane+".json");row={"exit":int((p/(lane+".exit")).read_text()),"png":image.exists(),"state":state.exists()}
+           if image.exists():
+            im=Image.open(image);a=np.asarray(im).astype("<i8");arrays[lane]=a;row.update(png_sha256=hashlib.sha256(image.read_bytes()).hexdigest(),mode=im.mode,shape=list(a.shape),i64_sha256=hashlib.sha256(a.tobytes()).hexdigest())
+           if state.exists():row["state_sha256"]=hashlib.sha256(state.read_bytes()).hexdigest()
+           result["lanes"][lane]=row
+          if len(arrays)==2:
+           a,b=arrays["original"],arrays["native"]; result["same_shape"]=a.shape==b.shape
+           if a.shape==b.shape:result.update(different_pixels=int(np.any(a!=b,axis=-1).sum()),max_channel_difference=int(np.abs(a-b).max()))
+           if all((p/(lane+".json")).exists()for lane in ("original","native")):result["state_equal"]=json.loads((p/"original.json").read_text())==json.loads((p/"native.json").read_text())
+          (p/"comparison.json").write_text(json.dumps(result,indent=2)+"\n");print(json.dumps(result,indent=2))
+          PY
+
       - name: Compare Wi-Fi policy and original/native private NetworkManager protocol
         run: |
           python rust/tools/check_wifi_policy.py --binary "$PWD/rust/target/debug/examples/wifi_trace" --output "$RUNNER_TEMP/ui-connectivity/wifi-policy.json"

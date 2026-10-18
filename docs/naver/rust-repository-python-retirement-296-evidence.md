@@ -2243,3 +2243,20 @@ retains only `digest` and `disable_core`, whose ASTs are unchanged, for the thre
 remaining lifecycle callers. Inventory: 95 fully replaced, five partial and
 3,480 pending. This is host verification; the user will perform physical boot,
 recording and upload verification after code delivery.
+
+### Temporary CI-only Confirm raster investigation (2026-10-18)
+
+The exact `0b6c4e02` CI failure retained PNG/state, rendering and source receipts.
+Native output differs from the local independent original by 171 pixels; PNG
+encoding alone is ruled out. The raylib library hash and reported Mesa/LLVM
+versions match locally. CPU capability probes change raster output but have not
+reproduced the exact CI hash, so CPU/JIT causality remains unproved.
+
+A temporary failure-only diagnostic restores the hash-verified original Forms
+oracle from immutable commit `3669ec8c6f391275316db31bfd715ab23f0da5da` into runner
+scratch and runs it alongside the native reference on the same display. It
+captures exact images, state and CPU/GL metadata, without replacing or relaxing
+the failing test. Locally both independent lanes match the original expected hash
+and have zero differing pixels. This temporary Python diagnostic is not a native
+replacement or permanent source fallback. Remove it after the failure is repaired;
+repository-wide Python retirement remains incomplete while it exists.
