@@ -400,6 +400,11 @@ fn startup_services_require_source_and_live_native_protocols() {
         "startup-services",
         &[
             "check_lpa.py",
+            "iproute2 strace",
+            "--features command-owner-tests --test command_owner --locked",
+            "--lib updated_process_check::ownership_tests --locked",
+            "--features command-owner-tests --lib --test command_owner",
+            "--lib --test updated_process_check --bin check-updated-process",
             "check_bridge.py",
             "check_agnos.py",
             "rust/target/debug/build-bridge-source",
@@ -407,6 +412,18 @@ fn startup_services_require_source_and_live_native_protocols() {
         ],
         &["python rust/tools/check_", "check_bridge.py"],
         false,
+    );
+    let workflow = workflow();
+    let steps = workflow["jobs"]["startup-services"]["steps"]
+        .as_array()
+        .unwrap();
+    let ownership = steps
+        .iter()
+        .find(|step| step["name"] == "Verify updater command and checker process ownership")
+        .unwrap();
+    assert_eq!(
+        ownership["env"]["UPDATED_OWNER_LAUNCHER"],
+        "${{ github.workspace }}/rust/target/debug/openpilot-process-child"
     );
 }
 #[test]
@@ -525,6 +542,16 @@ fn startup_prerequisites_run_actual_children_and_collectors() {
     assert!(!run.contains("python rust/tools/check_checkout_status.py"));
     assert!(!run.contains("python rust/tools/check_manager_catalog.py"));
     let data = workflow();
+    for key in [
+        "CARGO_INCREMENTAL",
+        "CARGO_PROFILE_DEV_DEBUG",
+        "CARGO_PROFILE_TEST_DEBUG",
+    ] {
+        assert_eq!(
+            data["jobs"]["startup-runtime"]["env"][key], "0",
+            "all startup build and test steps must retain the disk budget: {key}"
+        );
+    }
     let checkout = data["jobs"]["startup-runtime"]["steps"]
         .as_array()
         .unwrap()

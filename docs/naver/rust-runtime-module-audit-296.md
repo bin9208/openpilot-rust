@@ -1034,3 +1034,78 @@ and `affected-original/receipt.json`. Parent reviewed the exact source diff,
 real pre/post syscall traces and source-bound validation receipts. #364 updater
 ownership work is separate and remains pending. Exact committed-SHA CI and user
 device acceptance remain open.
+
+### Updater process ownership repair evidence (#364, 2026-10-18)
+
+Actual runtime success, nonzero and invalid-UTF8 regressions reproduced the
+pre-fix reap-before-group-signal ordering. The native checker independently
+reproduced three Probe cases and a late signal using a previously reported
+worker group. No PID reuse or unrelated-process impact was observed.
+
+The runtime and checker now observe exit with WNOWAIT, perform final group
+cleanup while the leader remains waitable, reap once and disable subsequent
+Drop signals. The source-pinned fixture's single child worker is verified against
+its still-owned probe's parent/group/session/start identities before acquiring a
+pidfd. Worker cleanup uses that pidfd, never a stale numeric group. A malformed
+report is rejected without signalling its named process; the owned probe receives
+its normal interrupt and four-second cleanup budget.
+
+All20 updater package test entries, nine actual checker ownership entries and six
+existing checker tests pass, with strict Clippy for both packages. The added active
+worker regression proves pidfd termination while the worker is still running;
+normal completion alone would not prove that path. Wrong-parent/wrong-group
+fixtures remain alive after rejection. A freshly built/frozen native checker and
+updater example pass all five unchanged original baseline cases (seven report
+rows), with23 native execs and no Python execution. Merged output/newline behavior,
+nonzero status, Git maintenance environment and both SIGINT leader states remain
+unchanged. The mandatory CI gate supplies the freshly built process-child launcher
+and installs strace; no absence-based skip is permitted. Exact-SHA CI is pending.
+
+Evidence: `.analysis/scratch/2026-10-18-updated-owner-review/FINAL-EVIDENCE.md`,
+`native-gate-mp9BcUdL/{runtime-red,checker-red,runtime-green,checker-final-green}.log`,
+`actual-current/receipt.json` and `final-sources.sha256`. The original baseline hash
+remains `b7a2ed108a17d2010516112b20e491493aace5c26d43bf4d84a135bacc2be752`.
+
+### Git-status command ownership repair evidence (#365, 2026-10-18)
+
+Actual cancellation and eight-second timeout cases reproduced Git-status leader
+reaping before final TERM/KILL signals when a child retained stdout. Cancellation
+waits for the owner's real exit-observation syscall, so an early signal cannot
+produce a false pass. WNOWAIT now retains the leader through pipe draining and
+cancellation cleanup; the final wait disables further group signals. The original
+TERM/grace/KILL policy and output/status handling remain unchanged.
+
+Both actual syscall regressions pass, checking final-signal-before-single-reap,
+no active owned descendant and repository lock release. All24 library entries,
+five actual staged-update scenarios and strict all-target Clippy pass. Freshly
+built/frozen Git-status and process-child executables also pass all27 unchanged
+original scenarios, including Git/fetch timeouts and exited-leader-held-output,
+and both optional queued/active polling cancellation scenarios. Existing0.6-second
+source/native cleanup tolerance is unchanged. This verifies29 differential
+scenarios, not CPU savings or device acceptance. Exact-SHA CI remains pending.
+
+Evidence: `.analysis/scratch/2026-10-18-git-status-owner-review/owner-red.log`,
+`owner-green.log`, `clippy-green.log`, `green.sha256`,
+`full-original-green/result.json` and `poll-original-green/result.json`.
+
+### Startup CI retained-space repair (#367, 2026-10-18)
+
+At `518f1657`, startup prerequisites passed its checkout-tool tests but the next
+disk guard correctly stopped work: free space was24,111,370,240 bytes versus the
+required27,111,981,056 bytes. The initial build disabled incremental compilation,
+but subsequent test steps used default incremental/debug profiles. The job now
+sets incremental=0 and development/test debug=0 for every Cargo invocation,
+matching existing bounded jobs. The25 GiB reserve and all original growth guards
+remain unchanged. No disk exhaustion was observed and no test was removed.
+
+The new native workflow assertion failed on the missing job environment before
+repair. All49 routing/space tests now pass, including the #364 mandatory ownership
+checks. There are251 explicit space guards across30 jobs; all30 now include a
+non-renderer guard. The original177 guard argument hash is unchanged. Full new-SHA
+cloud execution is still required to establish available runner space; a host
+contract check is not a measured cloud disk result. Exact failing job:
+https://github.com/bin9208/openpilot-rust/actions/runs/39127259281/job/117674947599.
+Evidence: `.analysis/scratch/2026-10-18-startup-ci-space/contract-red.log` and
+`contract-final-green.log`. Parent independently reviewed #364 source, its actual
+syscall evidence and native baseline receipt; a separate source review found no
+blocker in #365. Device startup/recording/upload remain user-owned.

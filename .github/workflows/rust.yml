@@ -2182,6 +2182,9 @@ jobs:
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2300,7 +2303,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal
-      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev openssl iproute2
+      - run: sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev capnproto libcapnp-dev openssl iproute2 strace
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0 requests==2.34.2 pyserial==3.5 PyJWT==2.14.0 cryptography==50.0.1 pytest==9.0.2
       - name: Configure original startup service IPC imports
         run: printf 'PYTHONPATH=%s/services-msgq-python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
@@ -2314,6 +2317,18 @@ jobs:
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-host\nSTARTUP_UI_RAYLIB_LIBRARY=%s/startup-raylib-host/lib/libopenpilot-raylib.so\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build native startup service boundaries
         run: cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-lpa -p openpilot-bridge -p openpilot-agnos -p openpilot-updated -p openpilot-startup-ui -p openpilot-process-supervision --bins --examples --locked
+      - name: Verify updater command and checker process ownership
+        env:
+          UPDATED_OWNER_LAUNCHER: ${{ github.workspace }}/rust/target/debug/openpilot-process-child
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-updated --features command-owner-tests --test command_owner --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --lib updated_process_check::ownership_tests --locked -- --test-threads=1
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-updated --features command-owner-tests --lib --test command_owner --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --lib --test updated_process_check --bin check-updated-process --bin updated-process-fixture --locked -- -D warnings
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build original IPC binding and messaging bridge

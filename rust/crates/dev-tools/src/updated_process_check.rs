@@ -9,7 +9,7 @@ use crate::{
 };
 use rustix::{
     fs::{fcntl_getfl, fcntl_setfl, OFlags},
-    process::{kill_process, kill_process_group, Pid, Signal},
+    process::{kill_process, kill_process_group, waitid, Pid, Signal, WaitId, WaitIdOptions},
 };
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -53,12 +53,24 @@ fn require(condition: bool, message: impl Into<String>) -> Result<()> {
 struct OwnedChild {
     child: Child,
     pid: Pid,
+    reaped: bool,
+}
+impl OwnedChild {
+    fn finish(&mut self) -> Result<std::process::ExitStatus> {
+        match kill_process_group(self.pid, Signal::KILL) {
+            Ok(()) | Err(rustix::io::Errno::SRCH) => {}
+            Err(error) => return Err(error.into()),
+        }
+        let status = self.child.wait()?;
+        self.reaped = true;
+        Ok(status)
+    }
 }
 impl Drop for OwnedChild {
     fn drop(&mut self) {
-        let _ = kill_process_group(self.pid, Signal::KILL);
-        let _ = self.child.kill();
-        let _ = self.child.wait();
+        if !self.reaped {
+            let _ = self.finish();
+        }
     }
 }
 struct Stream {
@@ -129,7 +141,11 @@ impl Probe {
             .process_group(0)
             .spawn()?;
         let pid = Pid::from_raw(i32::try_from(child.id())?).ok_or("invalid updater probe pid")?;
-        let mut owned = OwnedChild { child, pid };
+        let mut owned = OwnedChild {
+            child,
+            pid,
+            reaped: false,
+        };
         let stdout = Stream::new(
             owned
                 .child
@@ -157,14 +173,22 @@ impl Probe {
     }
     fn capture(mut self, timeout: Duration) -> Result<Output> {
         let deadline = Instant::now() + timeout;
-        let mut status = None;
+        let mut exited = false;
         loop {
             self.stdout.read()?;
             self.stderr.read()?;
-            if status.is_none() {
-                status = self.owned.child.try_wait()?;
+            if !exited {
+                match waitid(
+                    WaitId::Pid(self.owned.pid),
+                    WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+                ) {
+                    Ok(Some(_)) => exited = true,
+                    Ok(None) | Err(rustix::io::Errno::INTR) => {}
+                    Err(error) => return Err(error.into()),
+                }
             }
-            if let (Some(status), true, true) = (status, self.stdout.eof, self.stderr.eof) {
+            if exited && self.stdout.eof && self.stderr.eof {
+                let status = self.owned.finish()?;
                 return Ok(Output {
                     code: status
                         .code()
@@ -182,13 +206,94 @@ impl Probe {
         Ok(())
     }
 }
-struct WorkerGroup(Pid);
-impl Drop for WorkerGroup {
-    fn drop(&mut self) {
-        let _ = kill_process_group(self.0, Signal::KILL);
+#[derive(Debug, PartialEq, Eq)]
+struct ProcessIdentity {
+    parent: i32,
+    group: i32,
+    session: i32,
+    started: u64,
+}
+fn process_identity(pid: i32) -> Result<ProcessIdentity> {
+    let stat = fs::read_to_string(format!("/proc/{pid}/stat"))?;
+    let fields = stat
+        .rsplit_once(") ")
+        .ok_or("invalid fixture process stat")?
+        .1
+        .split_whitespace()
+        .collect::<Vec<_>>();
+    require(fields.len() >= 20, "truncated fixture process stat")?;
+    Ok(ProcessIdentity {
+        parent: fields[1].parse()?,
+        group: fields[2].parse()?,
+        session: fields[3].parse()?,
+        started: fields[19].parse()?,
+    })
+}
+/// The source-pinned fixture has one worker and no children. Its pidfd remains
+/// a safe cleanup identity even after the runtime reaps the separate group
+/// leader. An old numeric group report grants no later signal permission.
+struct WorkerGuard {
+    fd: OwnedFd,
+}
+impl WorkerGuard {
+    fn stopped(&self, timeout: Duration) -> Result<bool> {
+        use rustix::event::{poll, PollFd, PollFlags, Timespec};
+        let began = Instant::now();
+        loop {
+            let remaining = timeout.saturating_sub(began.elapsed());
+            let timespec = Timespec {
+                tv_sec: i64::try_from(remaining.as_secs())?,
+                tv_nsec: i64::from(remaining.subsec_nanos()),
+            };
+            match poll(&mut [PollFd::new(&self.fd, PollFlags::IN)], Some(&timespec)) {
+                Ok(count) => return Ok(count > 0),
+                Err(rustix::io::Errno::INTR) if began.elapsed() < timeout => {}
+                Err(rustix::io::Errno::INTR) => return Ok(false),
+                Err(error) => return Err(error.into()),
+            }
+        }
+    }
+    fn stop(&self) -> Result<()> {
+        if self.stopped(Duration::ZERO)? {
+            return Ok(());
+        }
+        match rustix::process::pidfd_send_signal(&self.fd, Signal::KILL) {
+            Ok(()) | Err(rustix::io::Errno::SRCH) => {}
+            Err(error) => return Err(error.into()),
+        }
+        require(
+            self.stopped(Duration::from_secs(1))?,
+            "owned fixture worker survived cleanup",
+        )
     }
 }
-fn worker_ready(path: &Path) -> Result<(i32, WorkerGroup)> {
+impl Drop for WorkerGuard {
+    fn drop(&mut self) {
+        let _ = self.stop();
+    }
+}
+fn pin_worker(worker: i32, group: Pid, owner: Pid) -> Result<WorkerGuard> {
+    let group = group.as_raw_nonzero().get();
+    let leader_before = process_identity(group)?;
+    require(
+        leader_before.parent == owner.as_raw_nonzero().get() && leader_before.group == group,
+        "reported fixture group is not a direct child of the owned probe",
+    )?;
+    let worker_before = process_identity(worker)?;
+    require(
+        worker_before.group == group && worker_before.session == leader_before.session,
+        "reported fixture worker does not belong to the owned group",
+    )?;
+    require(alive(worker)?, "reported fixture worker already exited")?;
+    let pid = Pid::from_raw(worker).ok_or("invalid fixture worker pid")?;
+    let fd = rustix::process::pidfd_open(pid, rustix::process::PidfdFlags::empty())?;
+    require(
+        process_identity(worker)? == worker_before && process_identity(group)? == leader_before,
+        "fixture process identity changed while acquiring pidfd",
+    )?;
+    Ok(WorkerGuard { fd })
+}
+fn worker_ready(path: &Path, owner: Pid) -> Result<(i32, WorkerGuard)> {
     let deadline = Instant::now() + Duration::from_secs(5);
     loop {
         match fs::read_to_string(path) {
@@ -201,14 +306,12 @@ fn worker_ready(path: &Path) -> Result<(i32, WorkerGroup)> {
                     group != rustix::process::getpgrp(),
                     "fixture must not share checker process group",
                 )?;
-                return Ok((worker, WorkerGroup(group)));
+                return Ok((worker, pin_worker(worker, group, owner)?));
             }
             Ok(_) => {}
             Err(e) if matches!(e.kind(), io::ErrorKind::NotFound) => {}
             Err(e) => return Err(e.into()),
         }
-        // The leader may already have exited while a worker still owns the
-        // pipe. Keep waiting for its readiness record, as the original did.
         require(
             Instant::now() < deadline,
             "updated command worker readiness timed out",
@@ -216,14 +319,10 @@ fn worker_ready(path: &Path) -> Result<(i32, WorkerGroup)> {
         std::thread::sleep(Duration::from_millis(10));
     }
 }
-fn require_stopped(pid: i32) -> Result<()> {
-    let deadline = Instant::now() + Duration::from_secs(1);
-    while alive(pid)? && Instant::now() < deadline {
-        std::thread::sleep(Duration::from_millis(10));
-    }
+fn require_stopped(worker: &WorkerGuard) -> Result<()> {
     require(
-        !alive(pid)?,
-        format!("orphan survived updater interrupt: {pid}"),
+        worker.stopped(Duration::from_secs(1))?,
+        "orphan survived updater interrupt",
     )
 }
 fn log(path: &Path, text: &str) -> Result<()> {
@@ -399,7 +498,18 @@ pub fn run(arguments: &[String]) -> Result<Value> {
             root,
         );
         let probe = Probe::spawn(&binary, &value, &environment)?;
-        let (worker, _worker_group) = worker_ready(&pidfile)?;
+        let (worker, worker_guard) = match worker_ready(&pidfile, probe.owned.pid) {
+            Ok(ready) => ready,
+            Err(error) => {
+                // The report may be invalid, so do not signal anything named in
+                // it. Ask only our still-owned probe to close its nested command
+                // through the existing interrupt/capture path, preserving the
+                // primary report error and the established four-second budget.
+                let _ = probe.interrupt();
+                let _ = probe.capture(Duration::from_secs(4));
+                return Err(error);
+            }
+        };
         require(alive(worker)?, "fixture worker stopped before interrupt")?;
         let started = Instant::now();
         probe.interrupt()?;
@@ -413,7 +523,7 @@ pub fn run(arguments: &[String]) -> Result<Value> {
             serde_json::from_str::<Value>(&output.stdout)? == case["result"],
             "updated interrupt did not report interruption",
         )?;
-        require_stopped(worker)?;
+        require_stopped(&worker_guard)?;
         let prefix = format!("group-native-{label}");
         log(
             &options.output.join(format!("{prefix}.stdout")),
@@ -439,3 +549,6 @@ pub fn cli() -> Result<()> {
     run(&args)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod ownership_tests;

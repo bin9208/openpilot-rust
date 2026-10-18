@@ -104,3 +104,8 @@ path = "examples/popular_values.rs"
 name = "staged_updates"
 path = "tests/staged_updates.rs"
 harness = false
+
+[[test]]
+name = "git_command_owner"
+path = "tests/git_command_owner.rs"
+harness = false

@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 247);
+    assert_eq!(text.matches(marker).count(), 251);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -225,7 +225,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 })
             }))
             .count(),
-        29
+        30
     );
     let lines = text.lines().collect::<Vec<_>>();
     let mut arguments = vec![];
@@ -234,6 +234,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut manager_catalog = vec![];
     let mut qcom_assistance = vec![];
     let mut feedback = vec![];
+    let mut updated_ownership = vec![];
     let mut raylib = vec![];
     let mut logging_builder = vec![];
     let mut native_architecture = vec![];
@@ -269,6 +270,15 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut journal_bootlog_checks = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features command-owner-tests")
+                    || lines[i + 1].contains("--lib updated_process_check::ownership_tests")
+                    || lines[i + 1]
+                        .contains("--lib --test updated_process_check --bin check-updated-process"))
+            {
+                updated_ownership.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len() && lines[i + 1].contains("--features feedback-runtime-native") {
                 feedback.push(tail.to_owned());
                 continue;
@@ -633,6 +643,10 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 256",
             " --path \"$GITHUB_WORKSPACE\" --growth-mib 256",
         ]
+    );
+    assert_eq!(
+        updated_ownership,
+        [" --path \"$GITHUB_WORKSPACE\" --growth-mib 512"; 4]
     );
     assert_eq!(
         qcom_assistance,

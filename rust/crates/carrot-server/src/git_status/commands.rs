@@ -27,14 +27,40 @@ impl Group {
         }
     }
 
-    async fn wait(&mut self, changed: &mut Signal) -> Result<ExitStatus, Failure> {
+    async fn wait(&mut self, changed: &mut Signal) -> Result<(), Failure> {
         loop {
-            if let Some(status) = self.child.process.try_wait()? {
-                self.leader_observed = true;
-                return Ok(status);
+            // Pipe draining and cancellation can still require group signals.
+            // Keep the exited leader waitable until that work is complete.
+            match rustix::process::waitid(
+                rustix::process::WaitId::Pid(self.pid),
+                rustix::process::WaitIdOptions::EXITED
+                    | rustix::process::WaitIdOptions::NOHANG
+                    | rustix::process::WaitIdOptions::NOWAIT,
+            ) {
+                Ok(Some(_)) => {
+                    self.leader_observed = true;
+                    return Ok(());
+                }
+                Ok(None) => {}
+                Err(rustix::io::Errno::INTR) => continue,
+                Err(error) => return Err(std::io::Error::from(error).into()),
             }
             changed.recv().await;
         }
+    }
+
+    fn reap(&mut self) -> Result<ExitStatus, Failure> {
+        let result = self.child.process.wait();
+        if result.is_ok()
+            || result
+                .as_ref()
+                .err()
+                .is_some_and(|error| error.raw_os_error() == Some(libc::ECHILD))
+        {
+            // Once child ownership is gone, Drop must never signal this ID.
+            self.completed = true;
+        }
+        Ok(result?)
     }
 
     async fn stop(
@@ -58,7 +84,7 @@ impl Group {
         }
         self.send(rustix::process::Signal::KILL)?;
         self.wait(changed).await?;
-        self.completed = true;
+        self.reap()?;
         Ok(())
     }
 }
@@ -161,8 +187,8 @@ async fn run_program(
     let mut bytes = Vec::new();
     let completed = tokio::select! {
         result = tokio::time::timeout(timeout, async {
-            let ((), status) = tokio::try_join!(read(&pipe, &mut bytes), group.wait(&mut changed))?;
-            Ok::<_, Failure>(status)
+            tokio::try_join!(read(&pipe, &mut bytes), group.wait(&mut changed))?;
+            Ok::<_, Failure>(())
         }) => Some(result),
         _ = stopped.changed() => None,
     };
@@ -178,8 +204,8 @@ async fn run_program(
             Ok((124, "timeout".into()))
         }
         Some(Ok(result)) => {
-            let status = result?;
-            group.completed = true;
+            result?;
+            let status = group.reap()?;
             let code = status
                 .code()
                 .unwrap_or_else(|| -status.signal().unwrap_or(1));
