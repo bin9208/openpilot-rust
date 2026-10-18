@@ -50,6 +50,8 @@ pub struct CommandSpec {
     pub input: Option<Vec<u8>>,
     /// Pass the caller's stdin through unchanged; incompatible with explicit input.
     pub inherit_stdin: bool,
+    /// Disable core files in this child only, matching source oracle pre-exec policy.
+    pub disable_core_dump: bool,
 }
 impl CommandSpec {
     pub fn new(argv: Vec<String>, timeout: Duration) -> Self {
@@ -67,6 +69,7 @@ impl CommandSpec {
             inherit_stderr: false,
             input: None,
             inherit_stdin: false,
+            disable_core_dump: false,
         }
     }
     pub fn new_os(argv: Vec<OsString>, timeout: Duration) -> Self {
@@ -300,6 +303,9 @@ impl NativeRunner {
         } else {
             None
         };
+        if spec.disable_core_dump {
+            openpilot_process_limits::disable_core_dump(&mut command);
+        }
         let child = command.spawn()?;
         // Command retains supplied Stdio handles for reuse. Keeping either
         // merged writer here would prevent EOF after the child exits.

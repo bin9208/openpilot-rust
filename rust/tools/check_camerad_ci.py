@@ -128,8 +128,7 @@ class CameraCheck:
   def check(self) -> None:
     examples = self.binaries / 'examples'
     for reference, checker, binary in POLICIES:
-      command = ([str(self.binaries / f'check-camerad-{checker}')] if checker in ('sensors', 'requests', 'exposure', 'misc')
-                 else [sys.executable, str(TOOLS / f'check_camerad_{checker}.py')])
+      command = [str(self.binaries / f'check-camerad-{checker}')]
       self.command(f'check-{reference}', [*command,
         '--reference', str(self.output / f'{reference}-source'), '--binary', str(examples / binary),
         '--output', str(self.output / f'result-{reference}')], 512)
@@ -166,7 +165,7 @@ def main() -> None:
   sources += [ROOT / 'rust/Cargo.lock', ROOT / 'rust/crates/dev-tools/Cargo.toml']
   sources += list((ROOT / 'rust/crates/dev-tools/src').glob('camera*.rs'))
   sources += list((ROOT / 'rust/crates/dev-tools/src/bin').glob('generate_camerad_*.rs'))
-  sources += [ROOT / f'rust/crates/dev-tools/src/bin/check_camerad_{name}.rs' for name in ('sensors', 'requests', 'exposure', 'misc')]
+  sources += [ROOT / f'rust/crates/dev-tools/src/bin/check_camerad_{name}.rs' for _, name, _ in POLICIES]
   for directory in ('rust/crates/camerad', 'rust/crates/camera-kernel', 'rust/crates/camerad-runtime', 'rust/crates/msgq',
                     'openpilot/system/camerad', 'msgq_repo/msgq'):
     sources += [path for path in (ROOT / directory).rglob('*') if path.is_file() and path.suffix in ('.rs', '.cc', '.h', '.toml')]
@@ -174,7 +173,7 @@ def main() -> None:
   executables = [binaries / 'openpilot-camerad'] + [binaries / 'examples' / name for name in (
     *[item[2] for item in POLICIES], 'kernel_operations', *LIFECYCLES[1:], 'frame_state', 'stress_trace', 'stress_parse_trace')]
   executables += [binaries / ('generate-camerad-' + name) for name in GENERATORS]
-  executables += [binaries / f'check-camerad-{name}' for name in ('sensors', 'requests', 'exposure', 'misc')]
+  executables += [binaries / f'check-camerad-{name}' for _, name, _ in POLICIES]
   receipt = {'argv': sys.argv, 'source_sha256': hashes([path for path in sources if path.is_file()]),
     'binary_sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in executables}}
   (output / 'invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')

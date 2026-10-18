@@ -241,6 +241,8 @@ fn camera_ci_builds_and_uses_native_generators_before_original_comparisons() {
         "--test camera_misc_check",
         "--bin check-camerad-exposure",
         "--bin check-camerad-misc",
+        "--test camera_packet_check",
+        "--bin check-camerad-packets",
         "--bin check-camerad-sensors",
         "--features camera-sensor-native",
         "--test camera_lifecycle_generate",

@@ -34,6 +34,23 @@ fn raw_separate_streams_and_nonzero_status_are_preserved() {
     assert_eq!(r.stdout, b"\xffowned\r\n");
     assert_eq!(r.stderr, b"error\r");
 }
+
+#[test]
+fn core_dump_limit_is_applied_only_to_the_requested_child() {
+    let before = rustix::process::getrlimit(rustix::process::Resource::Core);
+    let mut spec = command("ulimit -Sc; ulimit -Hc", Duration::from_secs(2));
+    let inherited = NativeRunner.run(&spec).unwrap();
+    assert_eq!(inherited.code, 0);
+    spec.disable_core_dump = true;
+    let limited = NativeRunner.run(&spec).unwrap();
+    assert_eq!(limited.code, 0);
+    assert_eq!(limited.stdout, b"0\n0\n");
+    let after = rustix::process::getrlimit(rustix::process::Resource::Core);
+    assert_eq!(before.current, after.current);
+    assert_eq!(before.maximum, after.maximum);
+    spec.disable_core_dump = false;
+    assert_eq!(NativeRunner.run(&spec).unwrap().stdout, inherited.stdout);
+}
 #[test]
 fn merged_streams_keep_write_order_raw_bytes_and_exit_status() {
     let mut spec = command(

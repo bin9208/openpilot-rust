@@ -1854,7 +1854,7 @@ rust/tools/check_camerad_exposure.py	2df105103bf6ad8de4d2002069ecc18d9bf13cff	pa
 rust/tools/check_camerad_isp_lifecycle.py	8a48e4c06473cf69747eb2f070c9db7417039430	pending	-
 rust/tools/check_camerad_kernel.py	bb0f85dfc7c29a5fd89f459e44cfecd3c1a7333b	pending	-
 rust/tools/check_camerad_misc.py	ac15209bae87755d89eedca3f57055926ed6dc5f	replaced-local	rust/crates/dev-tools/src/camera_misc_check.rs
-rust/tools/check_camerad_packets.py	2af3b62a415370d5f0fc19362fdcb523b9631440	pending	-
+rust/tools/check_camerad_packets.py	2af3b62a415370d5f0fc19362fdcb523b9631440	replaced-local	rust/crates/dev-tools/src/camera_packet_check.rs
 rust/tools/check_camerad_requests.py	0599be0f520278d2ef62068859fb9ea730e87322	replaced-local	rust/crates/dev-tools/src/camera_request_check.rs
 rust/tools/check_camerad_sensor_lifecycle.py	88d7a60198e0fdcb42e9493830e33ebc0d4fab27	pending	-
 rust/tools/check_camerad_sensors.py	8f74ef99f92a64879dffeec76225de13f2d485fa	partially-replaced	rust/crates/dev-tools/src/camera_sensor_check.rs; f32/equal retained for state

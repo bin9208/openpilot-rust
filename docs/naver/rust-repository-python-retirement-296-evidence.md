@@ -2195,3 +2195,25 @@ only the exact unchanged `quoted` helper imported by the remaining state checker
 its AST was checked against the original. The misc Python entry point is removed.
 Inventory is 94 replaced, four partial and 3,482 pending. Camera hardware, actual
 device boot/recording/upload and full repository conversion remain unverified.
+
+### Native camera packet comparator (2026-10-18)
+
+`check-camerad-packets` replaces the Python packet comparator, preserving dynamic
+seeded generation, 50-case batches, both-child-before-artifact ordering, lane
+exit handling, JSON/depth failure receipts and original byte-count semantics.
+Five focused tests pass against independent original captures: all 3,281 cases,
+66 input batches, 35 process/error cases, CLI admission, recursive JSON and raw
+Unix paths. Strict scoped Clippy passes. After removal of the Python entry point,
+the PATH-disabled actual comparison passes all 5,869,496 bytes; its full report
+and inputs.jsonl are byte-identical to the original. All five policy checks now
+use native commands; the 20-command camera dispatcher remains intact. Inventory:
+95 replaced, four partial, 3,481 pending. Lifecycle/state/runtime/CI orchestrator
+families remain explicit pending work; this is not a whole-repository milestone.
+
+The next kernel-comparison port needs the original child-only core-dump policy.
+The native command spec now supports an opt-in child core limit through the small
+`openpilot-process-limits` syscall boundary, preserving dev-tools' unsafe-code
+forbid policy. The new regression first failed for the absent option, then passed
+with all 25 process-runner tests: child soft/hard limits are zero, parent limits
+and later unrelated child inheritance are unchanged. Strict Clippy passes. No
+existing command opts in implicitly and no device scheduling policy changes.

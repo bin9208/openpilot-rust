@@ -18,6 +18,8 @@ pub mod camera_lifecycle_generate;
 #[cfg(feature = "camera-sensor-native")]
 pub mod camera_misc_check;
 #[cfg(feature = "camera-sensor-native")]
+pub mod camera_packet_check;
+#[cfg(feature = "camera-sensor-native")]
 pub mod camera_request_check;
 #[cfg(feature = "camera-sensor-native")]
 pub mod camera_sensor_check;

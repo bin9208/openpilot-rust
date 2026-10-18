@@ -2814,6 +2814,7 @@ dependencies = [
  "openpilot-image-codecs",
  "openpilot-jpeg",
  "openpilot-log-format",
+ "openpilot-process-limits",
  "openpilot-runtime-version",
  "openpilot-startup-ui",
  "openpilot-usbgpu",
@@ -3520,6 +3521,13 @@ version = "0.1.0"
 dependencies = [
  "libloading",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "openpilot-process-limits"
+version = "0.1.0"
+dependencies = [
+ "rustix",
 ]
 
 [[package]]
