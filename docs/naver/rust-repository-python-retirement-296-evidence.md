@@ -2443,3 +2443,19 @@ behavior, not an additional source/native camera policy equivalence claim.
 The single Python entrypoint is removed after confirming no remaining source
 callers. CI requires the native binary and tests. Inventory:105 replaced, four
 partial,3,471 pending; continuous camera runtime/cleanup remains next work.
+
+### Portable exact admission raster comparison (2026-10-18)
+
+The cursor failure in `497c011e` Rust CI is a fixed-raster environment mismatch:
+the original drawing calls and complete state remain stable across timing probes.
+The independent immutable corpus now covers all44 successful admission images,
+retaining original source/input/font bindings and exact font measurements. Each
+native image is compared byte-for-byte with original calls rendered in the same
+environment. The remaining21 success/error cases retain their prior assertions.
+Mutation tests reject changed inputs, captures and a single changed RGB sample.
+
+All six admission tests pass in normal rendering and with SIMD disabled; the
+parent's fresh full rerun passes in199.82seconds. Independent original capture and
+replay comparisons pass44/44, with12 timing/renderer controls. Strict scoped
+Clippy passes. Remote verification remains required; no production widget policy
+changed and the temporary original diagnostic remains until that gate passes.

@@ -41,11 +41,57 @@ pub fn validate(text: &str, case: &Value) -> Result<Value> {
     }
     Ok(trace)
 }
+const ADMISSION_CAPTURE: &str = include_str!("../fixtures/ui-forms/admission-original-draw.json");
+pub fn validate_admission(text: &str, case: &Value) -> Result<Value> {
+    if hash(text.as_bytes()) != "ade66cf5a559c9b0d8c55a65e6cf532a7a093a71429cb47d26c1f64c037dc03d" {
+        return Err("immutable original admission draw capture changed".into());
+    }
+    let corpus: Value = serde_json::from_str(text)?;
+    if corpus["original_sha256"]
+        != "2220f3192136ead8d283cf8276ca2120a85198978bbca79c0f1286b8690dc365"
+        || corpus["provenance_sha256"]
+            != hash(include_bytes!("../fixtures/ui-forms/input-provenance.json"))
+    {
+        return Err("admission capture source or provenance binding changed".into());
+    }
+    let trace = corpus["captures"]
+        .as_array()
+        .ok_or("admission captures missing")?
+        .iter()
+        .find(|trace| trace["name"].as_str().is_some() && trace["name"] == case["name"])
+        .ok_or("successful original admission capture missing")?;
+    if case["exit"] != 0
+        || case["png"] != true
+        || trace.get("scene") != Some(case.get("scene").unwrap_or(&Value::Null))
+        || trace.get("fixture_scene_text") != Some(case.get("scene_text").unwrap_or(&Value::Null))
+        || trace["state"] != case["states"]
+        || trace["png_sha256"] != case["png_sha256"]
+        || trace["env"]
+            != case
+                .get("env")
+                .cloned()
+                .unwrap_or_else(|| serde_json::json!({}))
+        || hash(
+            trace["scene_text"]
+                .as_str()
+                .ok_or("original scene bytes missing")?
+                .as_bytes(),
+        ) != trace["scene_sha256"]
+            .as_str()
+            .ok_or("original scene digest missing")?
+    {
+        return Err(
+            "admission capture scene, environment, state or raster provenance changed".into(),
+        );
+    }
+    Ok(trace.clone())
+}
 pub struct Expected {
     pub path: PathBuf,
     pub hash: String,
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
+    pub capture: &'static str,
 }
 pub fn replay(
     case: &Value,
@@ -54,7 +100,39 @@ pub fn replay(
     command: &Command,
     directory: &Path,
 ) -> Result<Expected> {
-    let trace = validate(CAPTURE, case)?;
+    replay_trace(
+        validate(CAPTURE, case)?,
+        CAPTURE,
+        root,
+        helper,
+        command,
+        directory,
+    )
+}
+pub fn replay_admission(
+    case: &Value,
+    root: &Path,
+    helper: &Path,
+    command: &Command,
+    directory: &Path,
+) -> Result<Expected> {
+    replay_trace(
+        validate_admission(ADMISSION_CAPTURE, case)?,
+        ADMISSION_CAPTURE,
+        root,
+        helper,
+        command,
+        directory,
+    )
+}
+fn replay_trace(
+    trace: Value,
+    capture: &'static str,
+    root: &Path,
+    helper: &Path,
+    command: &Command,
+    directory: &Path,
+) -> Result<Expected> {
     let library = std::env::var_os("STARTUP_UI_RAYLIB_LIBRARY")
         .or_else(|| {
             std::env::var_os("STARTUP_UI_RAYLIB_ROOT").map(|p| {
@@ -67,12 +145,15 @@ pub fn replay(
     let path = directory.join("original-draw-replay.png");
     let mut commands = Vec::new();
     let mut measurements = Vec::new();
+    let mut measured = false;
+    let mut drawing = false;
     for captured in trace["commands"]
         .as_array()
         .ok_or("Confirm commands missing")?
     {
         if let Some(item) = captured.as_str() {
-            if item == "begin" {
+            if matches!(item, "begin" | "@EXPORT@") && !measured {
+                measured = true;
                 for measurement in trace["measurements"]
                     .as_array()
                     .ok_or("Confirm measurements missing")?
@@ -81,9 +162,16 @@ pub fn replay(
                     let text = measurement["text"]
                         .as_str()
                         .ok_or("Confirm measured text missing")?;
+                    if measurement
+                        .get("spacing")
+                        .is_some_and(|v| v.as_f64() != Some(0.0))
+                    {
+                        return Err("original measurement uses unsupported nonzero spacing".into());
+                    }
+                    let encoded = hex(OsStr::new(text));
                     commands.push(format!(
                         "measure {} {}",
-                        hex(OsStr::new(text)),
+                        if encoded.is_empty() { "-" } else { &encoded },
                         measurement["size"]
                     ));
                     measurements.push((commands.len(), measurement));
@@ -91,8 +179,18 @@ pub fn replay(
             }
             match item {
                 "flush" => {} // Export executes this same raw batch flush.
-                "@EXPORT@" => commands.push(format!("export {}", hex(path.as_os_str()))),
+                "@EXPORT@" => {
+                    if !drawing {
+                        commands.push("export-idle".into());
+                    }
+                    commands.push(format!("export {}", hex(path.as_os_str())));
+                }
                 _ => commands.push(item.into()),
+            }
+            match item {
+                "begin" => drawing = true,
+                "end" => drawing = false,
+                _ => {}
             }
         } else {
             let name = captured["path"]
@@ -200,5 +298,6 @@ pub fn replay(
         path,
         stdout: result.stdout,
         stderr: result.stderr,
+        capture,
     })
 }

@@ -114,11 +114,40 @@ mechanical helper, library and environment as the native reference, then keeps
 an exact PNG byte comparison and the original full-state comparison. All eleven
 font measurements must retain their exact binary32 values. Original hashes
 remain provenance; no alternate-hash list, pixel tolerance, interpreter fallback
-or captured-scene lookup was added to production code. Other fixture cases retain
-their existing exact assertions.
+or captured-scene lookup was added to production code.
 
 Local mechanical replay reproduced the corresponding unchanged-original image
 under llvmpipe's normal and SIMD-disabled paths and under softpipe. The test
 rejects altered capture/source/scene/state bindings. A rendered-image regression
 changes exactly one RGB sample and requires rejection. The temporary CI original
 probe remains diagnostic only until the next remote run verifies this repair.
+
+The follow-up `admission-original-draw.json` extends this same independent oracle
+to **all 44 successful PNG cases** in both admission fixtures. The other 21 cases
+retain their original success/error, state-file and PNG-existence assertions.
+The corpus includes Input cursor, password and touch paths, Confirm variants,
+HTML, and zero/negative-frame exports. It binds the original helper and input
+provenance hashes, complete original state, environment, semantic scene or exact
+raw scene bytes, original PNG digest, six original font byte hashes and lossless
+font point ranges. Raw JSON strings are retained without parsing or reducing
+their original depth/surrogate coverage. No candidate drawing policy generated
+the expected calls.
+
+CI job `117550472152` exposed the next fixed-image assumption:
+`cursor-bool` differed in exactly 206 pixels, a one-column horizontal shift of
+the 103-pixel cursor line. Both captured states were unchanged. The original
+Input blink advances once per rendered frame, independent of wall-clock time.
+Immediate and deliberately delayed original runs preserve the same calls and
+state. The corpus replay compares exact native PNG bytes against original calls
+rendered by the same current mechanical helper/library/environment; all original
+font extents still require bit-exact binary32 agreement. Each successful raster
+must have a bound capture, and altered inputs, state, environment, commands,
+measurements, source or provenance are rejected. Failure evidence retains the
+complete original capture and current-context expected PNG alongside the actual
+PNG. Cross-runner verification of this extension remains pending.
+
+The expanded local admission suite passed all six tests (201.97 seconds),
+including every original admission case and all 44 exact raster replays. The
+SIMD-disabled full suite also passed all six tests (427.41 seconds), followed by
+an independent parent rerun (199.82 seconds). Remote CI remains the next
+verification gate.

@@ -54,7 +54,7 @@ impl PngEvidence<'_> {
             fs::write(output.join("expected-replay.stderr.log"), &replay.stderr)?;
             fs::write(
                 output.join("original-draw-capture.json"),
-                include_bytes!("fixtures/ui-forms/confirm-original-draw.json"),
+                replay.capture.as_bytes(),
             )?;
         }
         fs::copy(self.scene, output.join("scene.json"))?;
@@ -303,13 +303,19 @@ fn actual_cli_preserves_original_admission_state_pixels_and_failure_artifacts_wh
         }
         if png.exists() {
             let failure_output = std::env::var_os("UI_FORMS_FAILURE_OUTPUT");
-            // Original commands are immutable test data; current native widget
-            // policy never supplies this oracle. Other cases keep their original
-            // fixed raster assertion until independently captured.
-            let replay = (name == "irrelevant-input-prop").then(|| {
-                confirm_draw::replay(case, &root, Path::new(&helper), &command, temp.path())
-                    .unwrap()
-            });
+            // Every successful original raster has an immutable independently
+            // captured command stream. Replay uses this process's renderer while
+            // the original full state and all font measurements remain exact.
+            let replay = Some(
+                confirm_draw::replay_admission(
+                    case,
+                    &root,
+                    Path::new(&helper),
+                    &command,
+                    temp.path(),
+                )
+                .unwrap(),
+            );
             let expected = replay
                 .as_ref()
                 .map_or_else(|| case["png_sha256"].as_str().unwrap(), |v| v.hash.as_str());
@@ -532,4 +538,64 @@ fn captured_confirm_replays_exactly_and_a_single_rgb_sample_mutation_is_rejected
         replay.hash,
         "exact comparison must reject even one changed sample"
     );
+}
+
+#[test]
+fn immutable_admission_draws_cover_every_successful_raster_and_bind_all_original_inputs() {
+    use std::collections::BTreeSet;
+    let text = include_str!("fixtures/ui-forms/admission-original-draw.json");
+    let captured: Value = serde_json::from_str(text).unwrap();
+    let mut names = BTreeSet::new();
+    let mut successful = 0;
+    for source in [
+        include_str!("fixtures/ui-forms/admission-original.json"),
+        include_str!("fixtures/ui-forms/scene-admission-original.json"),
+    ] {
+        let original: Value = serde_json::from_str(source).unwrap();
+        for case in original["cases"].as_array().unwrap() {
+            if case["exit"] == 0 && case["png"] == true {
+                successful += 1;
+                let trace = confirm_draw::validate_admission(text, case).unwrap();
+                assert!(names.insert(case["name"].as_str().unwrap().to_owned()));
+                for field in ["scene", "scene_text", "states", "env", "png_sha256", "name"] {
+                    let mut changed = case.clone();
+                    changed[field] = "changed original input".into();
+                    assert!(
+                        confirm_draw::validate_admission(text, &changed).is_err(),
+                        "{}: {field}",
+                        case["name"]
+                    );
+                }
+                assert!(trace["commands"].as_array().unwrap().len() >= 10);
+            } else {
+                assert!(confirm_draw::validate_admission(text, case).is_err());
+            }
+        }
+    }
+    assert_eq!(successful, 44);
+    assert_eq!(captured["captures"].as_array().unwrap().len(), successful);
+    for field in ["captures", "original_sha256", "provenance_sha256"] {
+        let mut changed = captured.clone();
+        changed[field] = Value::Null;
+        assert!(
+            confirm_draw::validate_admission(
+                &serde_json::to_string(&changed).unwrap(),
+                &serde_json::json!({})
+            )
+            .is_err(),
+            "{field}"
+        );
+    }
+    for field in ["commands", "measurements", "scene_sha256", "state"] {
+        let mut changed = captured.clone();
+        changed["captures"][0][field] = Value::Null;
+        assert!(
+            confirm_draw::validate_admission(
+                &serde_json::to_string(&changed).unwrap(),
+                &serde_json::json!({})
+            )
+            .is_err(),
+            "{field}"
+        );
+    }
 }
