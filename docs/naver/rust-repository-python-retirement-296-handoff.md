@@ -27,7 +27,9 @@ CLI/공유헬퍼/이전테스트4파일을 추가 제거했다. 연속런타임 
 카메라 상태·연속 스트레스 검사도 Rust 호출 경로로 전환했다. 원본 스키마와
 프로세스 오류 처리·상대 경로·errno 회귀를 보존했다. 일반 stress 검사도 별도의
 엄격한 stderr 계약을 유지해 전환했다. 연속 런타임 검사는 아직 Python으로 남아 있다.
-인벤토리는105 replaced-local /4 partially-replaced /3,471 pending이다.
+상태 검사기의 마지막 Python 의존이던 센서 비교·노출 quoting 헬퍼도 제거했다.
+삭제 후19개 관련 테스트와 실제1,080프레임 비교를 다시 통과했다.
+인벤토리는107 replaced-local /2 partially-replaced /3,471 pending이다.
 두 부분 전환 항목의 공용 원본 로더는 추가 파일 selfdrived_helpers_source.py에
 남아 있으며 이동을 Rust 전환으로 세지 않는다. 전체 전환은 미완료다.
 최신 검증 결과는 evidence 및 runtime-module-audit 문서를 따른다.

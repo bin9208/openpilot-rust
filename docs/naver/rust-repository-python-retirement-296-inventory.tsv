@@ -1850,14 +1850,14 @@ rust/tools/check_calibration_loop.py	4a64bcf62f5e155b2da5be5fc4f6f62f84935906	pe
 rust/tools/check_calibration_reference.py	081106a094b16c35dbde0cce3769910f1b90512f	pending	-
 rust/tools/check_camerad_camera_lifecycle.py	1d1df7ff42c948731a0d5ea54be27f49a0520f06	replaced-local	rust/crates/dev-tools/src/camera_lifecycle_check.rs
 rust/tools/check_camerad_ci.py	fb43eceeabe3ce7cd8a4fa4c859b9f78988bcd83	pending	-
-rust/tools/check_camerad_exposure.py	2df105103bf6ad8de4d2002069ecc18d9bf13cff	partially-replaced	rust/crates/dev-tools/src/camera_exposure_check.rs; quoted retained for state
+rust/tools/check_camerad_exposure.py	2df105103bf6ad8de4d2002069ecc18d9bf13cff	replaced-local	rust/crates/dev-tools/src/camera_exposure_check.rs; final state quoting caller migrated and helper removed
 rust/tools/check_camerad_isp_lifecycle.py	8a48e4c06473cf69747eb2f070c9db7417039430	replaced-local	rust/crates/dev-tools/src/camera_isp_lifecycle_check.rs; normalization native
 rust/tools/check_camerad_kernel.py	bb0f85dfc7c29a5fd89f459e44cfecd3c1a7333b	replaced-local	rust/crates/dev-tools/src/camera_kernel_check.rs; lifecycle shared helpers native
 rust/tools/check_camerad_misc.py	ac15209bae87755d89eedca3f57055926ed6dc5f	replaced-local	rust/crates/dev-tools/src/camera_misc_check.rs
 rust/tools/check_camerad_packets.py	2af3b62a415370d5f0fc19362fdcb523b9631440	replaced-local	rust/crates/dev-tools/src/camera_packet_check.rs
 rust/tools/check_camerad_requests.py	0599be0f520278d2ef62068859fb9ea730e87322	replaced-local	rust/crates/dev-tools/src/camera_request_check.rs
 rust/tools/check_camerad_sensor_lifecycle.py	88d7a60198e0fdcb42e9493830e33ebc0d4fab27	replaced-local	rust/crates/dev-tools/src/camera_sensor_lifecycle_check.rs; original captures and live 62-case report exact
-rust/tools/check_camerad_sensors.py	8f74ef99f92a64879dffeec76225de13f2d485fa	partially-replaced	rust/crates/dev-tools/src/camera_sensor_check.rs; f32/equal retained for state
+rust/tools/check_camerad_sensors.py	8f74ef99f92a64879dffeec76225de13f2d485fa	replaced-local	rust/crates/dev-tools/src/camera_sensor_check.rs; final state f32/equality caller migrated and helpers removed
 rust/tools/check_camerad_state.py	bdf735fed1b8138a6e054f3937ea0163292d4309	replaced-local	rust/crates/dev-tools/src/camera_state_check.rs
 rust/tools/check_camerad_stress.py	b3e6d5f13f5f5e00e524726c678f6b42f1b6ed2e	replaced-local	rust/crates/dev-tools/src/camera_generic_stress_check.rs
 rust/tools/check_can.py	e3e71915b387d0896da36d19ca265b196a54bd91	pending	-

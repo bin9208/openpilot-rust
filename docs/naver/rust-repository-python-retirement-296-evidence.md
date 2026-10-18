@@ -2459,3 +2459,15 @@ parent's fresh full rerun passes in199.82seconds. Independent original capture a
 replay comparisons pass44/44, with12 timing/renderer controls. Strict scoped
 Clippy passes. Remote verification remains required; no production widget policy
 changed and the temporary original diagnostic remains until that gate passes.
+
+### Final sensor/exposure Python helper closure (2026-10-18)
+
+The migrated state checker was the final maintained caller of sensor f32/equality
+and exposure quoting helpers. Repository-wide caller search found no remaining
+imports or executions, so both residual Python files are removed. Their original
+structural comparison/error and quoted-input fixtures remain unchanged.
+After deletion, all19 sensor/exposure/state tests pass. A fresh PATH-disabled
+1,080-frame current C++/Rust state comparison passes and all eight original input,
+output, field and receipt files match exactly. Inventory is now107 replaced,
+two partial and3,471 pending. The remaining partial entries are the alert and
+selfdrive helper loaders; the continuous camera controller is separate pending work.
