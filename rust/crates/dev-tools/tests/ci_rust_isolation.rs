@@ -1520,6 +1520,7 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
     job_check(
         "telemetry-runtime",
         &[
+            "rustup toolchain install 1.94.0 --profile minimal --component clippy",
             "--test runtime_producer --locked",
             "--test retained_facade --locked",
             "--test error_log_lifetime --locked",

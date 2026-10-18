@@ -2208,7 +2208,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: rustup toolchain install 1.94.0 --profile minimal --component clippy
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq5
       - run: python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 sentry-sdk==2.55.0 zstandard==0.25.0
       - name: Configure original telemetry IPC imports
