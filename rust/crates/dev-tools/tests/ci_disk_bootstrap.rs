@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 267);
+    assert_eq!(text.matches(marker).count(), 274);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -212,7 +212,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
         jobs.values()
             .filter(|job| scripts(job).iter().any(|s| s.contains("check-disk-space")))
             .count(),
-        33
+        34
     );
     assert_eq!(
         jobs.values()
@@ -225,7 +225,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
                 })
             }))
             .count(),
-        33
+        34
     );
     let lines = text.lines().collect::<Vec<_>>();
     let mut arguments = vec![];
@@ -272,8 +272,13 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut registration_utf7 = vec![];
     let mut application_lifecycle = vec![];
     let mut journal_bootlog_checks = vec![];
+    let mut dbc_native = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len() && lines[i + 1].contains("--features dbc-generator-native") {
+                dbc_native.push(tail.to_owned());
+                continue;
+            }
             let step = lines[..i]
                 .iter()
                 .rev()
@@ -475,6 +480,18 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     // The removed camera pip install and Cython build had 512/1024 MiB
     // guards. Native camera operations retain every required reserve.
     assert_eq!(arguments.len(), 177);
+    assert_eq!(
+        dbc_native,
+        vec![
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 512",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+            " --path \"$GITHUB_WORKSPACE\" --growth-mib 1024",
+        ]
+    );
     assert_eq!(
         checkout_tools,
         [

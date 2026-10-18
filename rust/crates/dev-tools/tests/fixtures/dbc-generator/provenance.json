@@ -1,0 +1,85 @@
+{
+  "policy": {
+    "scope": "unchanged original compose/create_all generic no-script inputs and actual stage main with isolated generator-result seam; no native implementation",
+    "source_sha256": {
+      "opendbc_repo/opendbc/dbc/generator/generator.py": "cbba0de854469d42d096451d358153c3c4ffe86da59bcbf350a2c40364685aa5",
+      "rust/tools/stage_control_dbcs.py": "1f90eb512ac7358e1c42e81ccac0af8a8f4d4bb6740bb01860d50fb318574968"
+    },
+    "driver_sha256": "2e1f0e166dde2ceb6521fc6dec9abe007ab8912e3b084a864bbee33d2c247d77",
+    "fixture_sha256": {
+      "compose-original.json": "2ab05465e2ede2947379477b7b5a68058c4e9827d8c070ef3dfbebf1584459ed",
+      "create-all-original.json": "efedb2aea4d6422194da737e5c14c8e4ccb09787fbc11950d9caadb5812395b1",
+      "stage-original.json": "d66b8cf956f33e37f66f8475a2db576fbc6898b9b3bc20b5c0c2a089c10f3da7"
+    },
+    "cases": {
+      "compose": 15,
+      "create_all": 4,
+      "stage": 5
+    }
+  },
+  "procedural": {
+    "scope": "actual unchanged generic helper functions and copied unchanged Chrysler script with dynamic source/invalid inputs; no native oracle",
+    "source_sha256": {
+      "opendbc_repo/opendbc/dbc/generator/tesla/_radar_common.py": "abbd789fec23799e60555824decb76f8ff7643b2e8b4ead64ec1ba754efdf3f5",
+      "opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_corner_radar_180.py": "56dec23778712c851df80f4bc0284baa2beff4d5a5f974563dbae77187491dec",
+      "opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_corner_radar_235.py": "82317feab3c1df6070e24fc760b8cd18f2b10ebf9aecd082b3c6aadf2d222677",
+      "opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_corner_radar_430.py": "be8f8490b2d35fe372e5e648324788f4c4a8f51ffd59e9c386f22157fd5fe91b",
+      "opendbc_repo/opendbc/dbc/generator/chrysler/_stellantis_common_ram.py": "e01a57265224d0923bd405837d9387d1cf555aaf35131cfc42074a3e70b015cd",
+      "opendbc_repo/opendbc/dbc/generator/chrysler/_stellantis_common.dbc": "96573c311bfd988de02a493de644bae473715d190e5f2951b75bc76aaf7423ab"
+    },
+    "driver_sha256": "5b0c1490110803338f60f0496771d00e9f5daf5de627c8198b872851afdbab40",
+    "helper_cases": 15,
+    "chrysler_cases": 4,
+    "fixture_sha256": {
+      "helpers-original.json": "deb164687c6085e89b49c5f7f5605e47cd08b2052c99f640607aae1c0b4bff07",
+      "chrysler-original.json": "10cdd0eb5f2414ca439060fdf6c0c6f434a2f5bc9c446b9c3e4686c6589b6415"
+    }
+  },
+  "paths_cli": {
+    "scope": "unchanged original composition using surrogateescaped OS paths; actual generator.py subprocess (full source private copy)",
+    "source_sha256": {
+      "opendbc_repo/opendbc/dbc/generator/generator.py": "cbba0de854469d42d096451d358153c3c4ffe86da59bcbf350a2c40364685aa5"
+    },
+    "driver_sha256": "cf92edb3c19491dca2ce23705e3616c52f24337186c38cfb19dfad0a4d354fae",
+    "path_cases": 2,
+    "cli_cases": 3,
+    "fixture_sha256": {
+      "paths-original.json": "4ce26e31cc3c5e117d636151f0d98fa5dac2202a840d6dbe7b6294e7ec7be095",
+      "cli-original.json": "72fe892b13cf1a73ea722f44384eeb6f3788b94627f13a532564a9475004d81c"
+    }
+  },
+  "glob": {
+    "scope": "unchanged create_all with glob metacharacters in directory arguments; actual failure and sibling deletion effects",
+    "source_sha256": {
+      "opendbc_repo/opendbc/dbc/generator/generator.py": "cbba0de854469d42d096451d358153c3c4ffe86da59bcbf350a2c40364685aa5"
+    },
+    "driver_sha256": "1c81a976089e3d40e18e599eaacb6e175ae90c2b944dfd3e22f724d450638f92",
+    "cases": 4,
+    "fixture_sha256": {
+      "glob-original.json": "b1b19e31c6a0f2a167324f9d28d73cc843534640ca6d9799ec44082153313f99"
+    }
+  },
+  "literal_correction": {
+    "scope": "unchanged direct Chrysler script plus create_dbc literal operations, corrected orchestration control only",
+    "source_sha256": {
+      "opendbc_repo/opendbc/dbc/generator/generator.py": "cbba0de854469d42d096451d358153c3c4ffe86da59bcbf350a2c40364685aa5",
+      "opendbc_repo/opendbc/dbc/generator/chrysler/_stellantis_common_ram.py": "e01a57265224d0923bd405837d9387d1cf555aaf35131cfc42074a3e70b015cd",
+      "opendbc_repo/opendbc/dbc/generator/chrysler/_stellantis_common.dbc": "96573c311bfd988de02a493de644bae473715d190e5f2951b75bc76aaf7423ab"
+    },
+    "driver_sha256": "f77e64f62f738981ef4d18063bd6d4dd9bf79ac6d091885f85bdc9912eb12ae7",
+    "fixture_sha256": {
+      "literal-correction-original.json": "3fe3b8bd8e36ca28f8bbfcad79df75e82bb300335a0077542bf50f358b915200"
+    }
+  },
+  "errors": {
+    "scope": "unchanged original actual exception classes/raw objects/codepoint start/end/reason and partial outputs",
+    "source_sha256": {
+      "opendbc_repo/opendbc/dbc/generator/generator.py": "cbba0de854469d42d096451d358153c3c4ffe86da59bcbf350a2c40364685aa5"
+    },
+    "driver_sha256": "fe86e60a0a212a12b4822872133574fc1a378cd3bb6ba574952a08f8c7bfee5c",
+    "cases": 4,
+    "fixture_sha256": {
+      "errors-original.json": "73fcb10316fc5891f24114aa8e6356d72e39a64ccd79b850aa80021944eab2f1"
+    }
+  }
+}

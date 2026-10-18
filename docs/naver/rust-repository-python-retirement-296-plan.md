@@ -65,9 +65,9 @@ Interface: protocol (all five modes), USB, SPI, peripheral and runtime-fixture b
 
 Additional locally verified replacements and current failures are recorded in the
 [evidence ledger](rust-repository-python-retirement-296-evidence.md) and inventory.
-161 baseline sources are fully replaced locally, three baseline sources are
+178 baseline sources are fully replaced locally, three baseline sources are
 partially replaced because live-source helpers or unrelated Params tests remain Python,
-and 3,416 baseline sources remain pending. The added
+and 3,399 baseline sources remain pending. The added
 rust/tools/selfdrived_helpers_source.py retains those helpers; relocation is
 not retirement. Remaining families and final delivery gates stay open.
 
@@ -95,6 +95,64 @@ Files: complete tracked source/dependency inventory; per-family native replaceme
 - [ ] Pass independent branch review, exact PR and merged-dev gates and final source-bound runtime packaging. Deliver the verified code for the user's requested pull/test; record boot/record/upload results when the user supplies them. Report repository-wide conversion complete only when every source-retirement requirement is met.
 
 Remaining large units are decomposed from inspected contracts as their prerequisite families become available. Completing Tasks1–3 alone does not complete Task4 or this project.
+
+### Active DBC generation and packaging unit (2026-10-19 KST)
+
+The next dependency closure covers thirteen opendbc generator Python policies,
+`stage_control_dbcs.py`, the Card/RadarCAN asset packagers and their three
+existing packaging assertions. These seventeen baseline sources have been removed
+after native verification and caller migration; their parent Python facade,
+SCons and comparison controllers remain explicitly pending.
+
+Independent original captures establish 45 generated DBCs, Card's 97-file
+package and RadarCAN's 103-file package. Two shared Hyundai corner-radar files
+have different bytes between the packages: Card preserves the checked-in files,
+whereas RadarCAN regenerates them. Native packaging must preserve each policy.
+Four original path-pattern controls also reproduced sibling-file deletion and
+skipped generation when directory names contain glob metacharacters. Issue
+[#375](https://github.com/bin9208/openpilot-rust/issues/375) tracks the deliberate
+correction to literal directories; those destructive original effects are not
+parity requirements. Ordinary generated-file equality remains required.
+
+- [x] Capture the unchanged original generator, lazy facade, SCons callers and
+  both packaging commands, including CLI/API errors and raw-path behavior.
+- [x] Observe missing-generator API RED; prepare native generator implementation
+  and ten API/six CLI tests from independent captures. The optional machine-error
+  boundary retains raw filesystem/Unicode bytes for the still-pending facade.
+- [x] Pass the generator tests, strict Clippy and actual native output checks.
+  All ten API/six CLI tests pass. A frozen executable with unavailable PATH
+  matches 45 original files/992,535 bytes and traces only its own exec call.
+- [x] Observe missing-packaging API RED, implement both packagers, and preserve
+  failure ordering, source isolation, atomic Card publication and partial Radar
+  output. Nine API, seven CLI and three raw-basename tests pass. Lossless JSON
+  preserves U+DCFF keys. Original failure/sort captures exposed FIFO blocking
+  and whole-path ordering differences; failing native controls preceded the
+  nonblocking file admission and Python-compatible component-order repairs.
+- [x] Verify the migrated lazy/SCons/CAN/Card callers and mandatory CI paths locally.
+  Source edits add seven build/test disk guards while retaining the original
+  177 guard arguments; 54 current CI/disk/lagd tests pass. The newly guarded
+  controls job increases covered Rust jobs from 33 to 34.
+  Relative native-tool overrides now resolve against the repository consistently
+  across SCons and runner cwd changes; source-level path controls passed.
+  Actual lazy cache/error controls, three real private SCons builds and Jot
+  materialization callback pass. Seven bootstrap process-boundary tests pass,
+  as does real default SCons bootstrap across generation, newly discovered
+  dependencies and third-run no-op. This is not a full application build.
+  Independent review found two executed bridge source files missing from CAN
+  receipts; both now participate in their shared provenance calculation.
+- [x] Remove the proven seventeen-source closure, repeat output/caller checks
+  without a Python execution path, then update the retirement inventory.
+  After deletion, the actual native generator and both packages again match
+  45/97/103 original files; their unavailable-PATH traces contain only their own
+  executables. Actual facade/SCons/Jot callers and all eight Card fixture stages
+  pass. These retained Python callers are not counted as retired.
+- [ ] Complete exact committed-head CI, including supported-platform validation,
+  before integration. Linux-only pidfd process QA now has explicit platform
+  gating so the DBC host tool does not inherit its Linux compile requirement.
+
+Private original captures and source-only gate plans are in
+`.analysis/scratch/2026-10-18-dbc-generator/`. Builds use a single coordinated
+compiler lease; intermediate passes do not establish the complete retirement.
 
 Docs-Not-Needed: internal engineering plan; no user setting changes.
 

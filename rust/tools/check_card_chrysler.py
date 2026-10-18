@@ -13,7 +13,7 @@ import io
 import json
 from pathlib import Path
 import subprocess
-from can_source import ROOT, load
+from can_source import ROOT, load, dbc_generator_sources
 from check_card_mazda import compare, decoded as common_decoded
 from card_vehicle_source import normalize
 from card_qa.chrysler.source import trace
@@ -40,9 +40,8 @@ def main() -> None:
   (args.evidence / "result.json").unlink(missing_ok=True)
   (args.evidence / "failure.txt").unlink(missing_ok=True)
   load()
-  from opendbc.dbc.generator.generator import create_dbc
+  from opendbc import native_dbc_generator, run_dbc_generator
   import shutil
-  import sys
   import opendbc.can.dbc as source_dbc
 
   dbc_root = args.evidence / "dbc"
@@ -50,11 +49,11 @@ def main() -> None:
   generator = args.evidence / "dbc-source"
   generator.mkdir(exist_ok=True)
   original_generator = ROOT / "opendbc_repo/opendbc/dbc/generator/chrysler"
-  for filename in ("_stellantis_common.dbc", "_stellantis_common_ram.py", "chrysler_pacifica_2017_hybrid.dbc", "chrysler_ram_dt.dbc", "chrysler_ram_hd.dbc"):
+  for filename in ("_stellantis_common.dbc", "chrysler_pacifica_2017_hybrid.dbc", "chrysler_ram_dt.dbc", "chrysler_ram_hd.dbc"):
     shutil.copy2(original_generator / filename, generator / filename)
-  subprocess.run([sys.executable, str(generator / "_stellantis_common_ram.py")], check=True)
+  run_dbc_generator("render", "chrysler-ram", generator)
   for filename in ("chrysler_pacifica_2017_hybrid.dbc", "chrysler_ram_dt.dbc", "chrysler_ram_hd.dbc"):
-    create_dbc(str(generator), filename, str(dbc_root))
+    run_dbc_generator("compose", generator, filename, dbc_root)
   source_dbc.DBC_PATH = str(dbc_root.resolve())
   request = [c for c in cases() if args.op is None or c["op"] == args.op]
   assert request
@@ -106,9 +105,8 @@ def main() -> None:
       ROOT / "opendbc_repo/opendbc/car/interfaces.py",
       ROOT / "opendbc_repo/opendbc/car/__init__.py",
       ROOT / "opendbc_repo/opendbc/car/crc.py",
-      ROOT / "opendbc_repo/opendbc/dbc/generator/chrysler/_stellantis_common_ram.py",
-      ROOT / "opendbc_repo/opendbc/dbc/generator/generator.py",
     ]
+    + dbc_generator_sources()
   )
   report = {
     "status": "pass",
@@ -122,6 +120,7 @@ def main() -> None:
     "binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest(),
     "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in files},
     "generated_dbc_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in dbc_root.glob("*.dbc")},
+    "dbc_generator_binary_sha256": hashlib.sha256(native_dbc_generator().read_bytes()).hexdigest(),
   }
   (args.evidence / "result.json").write_text(json.dumps(report, indent=2) + "\n")
   print(json.dumps(report))

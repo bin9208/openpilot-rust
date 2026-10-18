@@ -48,6 +48,10 @@ pub mod camera_state_check;
 #[cfg(feature = "camera-sensor-native")]
 pub mod camera_stress_check;
 pub mod cutin_alert_check;
+#[cfg(feature = "dbc-generator-native")]
+pub mod dbc_assets;
+#[cfg(feature = "dbc-generator-native")]
+pub mod dbc_generator;
 pub mod filter_reference;
 pub mod journald_check;
 pub mod journald_fixture;
@@ -188,6 +192,7 @@ pub mod ui_scroll_check;
 pub mod ui_state_scheduler_check;
 pub mod ui_translation_check;
 pub mod ui_updater_handshake;
+#[cfg(target_os = "linux")]
 pub mod updated_process_check;
 pub mod updated_process_fixture;
 pub mod upstream_sync;

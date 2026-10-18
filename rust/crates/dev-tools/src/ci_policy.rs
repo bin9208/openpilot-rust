@@ -384,6 +384,7 @@ const RUST_GATE_BINDINGS: &[(&str, &str)] = &[
     ("CARROT_MAN", "carrot-man-runtime"),
     ("WEBRTC", "webrtc-runtime"),
     ("WEBCAM", "webcam-runtime"),
+    ("DBC_DARWIN", "dbc-darwin"),
     ("CAMERA", "camera-runtime"),
     ("ENCODER", "encoder-runtime"),
     ("XIAOGE", "xiaoge-runtime"),

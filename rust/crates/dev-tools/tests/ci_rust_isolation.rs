@@ -12,6 +12,269 @@ fn workflow() -> Value {
     parse(&read(".github/workflows/rust.yml")).unwrap()
 }
 #[test]
+fn dbc_native_tools_are_built_before_every_required_consumer() {
+    for (path, test) in [
+        (
+            "rust/crates/dev-tools/tests/dbc_generator.rs",
+            "original_raw_os_paths_and_filename_encoding_error_preserve_partial_bytes",
+        ),
+        (
+            "rust/crates/dev-tools/tests/dbc_generator_cli.rs",
+            "json_error_boundary_retains_original_io_and_unicode_raw_objects_and_partial_outputs",
+        ),
+    ] {
+        assert!(read(path).contains(&format!(
+            "#[cfg(target_os = \"linux\")]\n#[test]\nfn {test}"
+        )));
+    }
+    required(
+        &read("rust/crates/dev-tools/tests/dbc_generator_cli.rs"),
+        &[
+            "#[cfg(target_os = \"macos\")]\n    let source = temp.path().join(\"source-한\");",
+            "Some(\"invalid-main-utf8\" | \"invalid-include-utf8\")",
+        ],
+    );
+    let data = workflow();
+    let darwin = &data["jobs"]["dbc-darwin"];
+    absent(darwin, &["if", "continue-on-error"]);
+    assert_eq!(darwin["runs-on"], "macos-15");
+    for (key, expected) in [
+        ("RUSTUP_TOOLCHAIN", "1.94.0"),
+        ("CARGO_BUILD_JOBS", "2"),
+        ("CARGO_INCREMENTAL", "0"),
+        ("CARGO_PROFILE_DEV_DEBUG", "0"),
+        ("CARGO_PROFILE_TEST_DEBUG", "0"),
+    ] {
+        assert_eq!(darwin["env"][key], expected, "Darwin {key}");
+    }
+    let darwin_steps = darwin["steps"].as_array().unwrap();
+    let bootstrap_steps = darwin_steps
+        .iter()
+        .enumerate()
+        .filter(|(_, step)| {
+            step["run"]
+                .as_str()
+                .unwrap_or("")
+                .contains("rust/tools/build-dbc-generator")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(bootstrap_steps.len(), 2, "reserve before build and tests");
+    for (_, step) in &bootstrap_steps {
+        absent(step, &["if", "continue-on-error"]);
+    }
+    let build_run = bootstrap_steps[0].1["run"].as_str().unwrap();
+    required(
+        build_run,
+        &[
+            "lipo -archs",
+            "program-outputs",
+            "rustup run 1.94.0 rustc -vV",
+        ],
+    );
+    let test_run = bootstrap_steps[1].1["run"].as_str().unwrap();
+    required(
+        test_run,
+        &[
+            "rustup run 1.94.0 cargo test",
+            "--features dbc-generator-native --test dbc_generator --test dbc_generator_cli",
+            "--locked --target aarch64-apple-darwin",
+            "-j2",
+        ],
+    );
+    assert!(
+        test_run.find("rust/tools/build-dbc-generator").unwrap()
+            < test_run.find("cargo test").unwrap()
+    );
+    let reclaim = darwin_steps
+        .iter()
+        .position(|step| step["run"].as_str().unwrap_or("").contains("selected_app"))
+        .unwrap();
+    assert!(reclaim < bootstrap_steps[0].0);
+    required(
+        darwin_steps[reclaim]["run"].as_str().unwrap(),
+        &[
+            "test \"$(uname -s)\" = Darwin",
+            "test \"$(uname -m)\" = arm64",
+            "xcode-select -p",
+            "$application -ef $selected_app",
+            "35 * 1024 * 1024",
+            "xcrun --find clang",
+        ],
+    );
+    absent(&darwin_steps[reclaim], &["if", "continue-on-error"]);
+    assert!(data["jobs"]["fast"]["needs"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|job| job == "dbc-darwin"));
+    assert_eq!(
+        data["jobs"]["fast"]["steps"][0]["env"]["DBC_DARWIN"],
+        "${{ needs.dbc-darwin.result }}"
+    );
+    required(
+        data["jobs"]["fast"]["steps"][0]["run"].as_str().unwrap(),
+        &["test \"$DBC_DARWIN\" = success"],
+    );
+    let integration = parse(&read(".github/workflows/tests.yaml")).unwrap();
+    let build = &integration["jobs"]["build_release"];
+    absent(build, &["if", "continue-on-error"]);
+    let steps = build["steps"].as_array().unwrap();
+    let setup = steps
+        .iter()
+        .position(|step| step["run"] == "./tools/op.sh setup")
+        .unwrap();
+    let export = steps
+        .iter()
+        .position(|step| {
+            step["run"]
+                .as_str()
+                .unwrap_or("")
+                .contains("OPENPILOT_DBC_GENERATOR=")
+        })
+        .unwrap();
+    let reserve = steps
+        .iter()
+        .position(|step| {
+            step["run"]
+                .as_str()
+                .unwrap_or("")
+                .contains("check-disk-space")
+        })
+        .unwrap();
+    assert!(reserve < setup && setup < export);
+    for (index, step) in steps.iter().enumerate() {
+        if step["run"].as_str().unwrap_or("").starts_with("scons") {
+            assert!(
+                export < index,
+                "SCons evaluates the native registry immediately"
+            );
+        }
+    }
+    for index in [reserve, setup, export] {
+        absent(&steps[index], &["if", "continue-on-error"]);
+    }
+    required(
+        steps[export]["run"].as_str().unwrap(),
+        &[
+            "test -x \"$GITHUB_WORKSPACE/rust/target/debug/dbc-generator\"",
+            "OPENPILOT_DBC_GENERATOR=%s/rust/target/debug/dbc-generator",
+            "GITHUB_ENV",
+        ],
+    );
+    let setup_source = read("tools/op.sh");
+    required(
+        &setup_source,
+        &[r#""$OPENPILOT_ROOT/rust/tools/build-dbc-generator" >/dev/null"#],
+    );
+    let bootstrap = read("rust/tools/build-dbc-generator");
+    required(
+        &bootstrap,
+        &[
+            "rustup run 1.94.0 cargo build",
+            "--features dbc-generator-native --bin dbc-generator --locked",
+            "--target \"$native_host\"",
+            "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2",
+            "-u CARGO_BUILD_TARGET",
+            "reserve \"$target\" 2048",
+        ],
+    );
+    assert!(
+        bootstrap.find("reserve \"$target\" 2048").unwrap()
+            < bootstrap.find("cargo build").unwrap()
+    );
+    for (job_name, consumers) in [
+        ("workspace", &["python tools/stage_card_fixtures.py"][..]),
+        (
+            "card-runtime",
+            &["python rust/tools/stage_card_fixtures.py"][..],
+        ),
+        (
+            "radar-runtime",
+            &["rust/target/debug/prepare-radarcan-assets \""][..],
+        ),
+        (
+            "radar-arm",
+            &["rust/target/debug/prepare-radarcan-assets \""][..],
+        ),
+        (
+            "controls-runtime",
+            &["rust/target/debug/stage-control-dbcs"][..],
+        ),
+    ] {
+        let job = &data["jobs"][job_name];
+        absent(job, &["if", "continue-on-error"]);
+        let run = commands(job);
+        let build = run
+            .find("--features dbc-generator-native --bin dbc-generator")
+            .unwrap();
+        for consumer in consumers {
+            let call = run.find(consumer).unwrap();
+            assert!(build < call, "{job_name}: native build follows {consumer}");
+        }
+        required(&run, &["OPENPILOT_DBC_GENERATOR=", "GITHUB_ENV"]);
+        if ["workspace", "card-runtime"].contains(&job_name) {
+            required(
+                &run,
+                &[
+                    "export OPENPILOT_CARD_ASSET_PREPARER=",
+                    "--bin prepare-card-assets",
+                ],
+            );
+        }
+        mandatory(
+            job,
+            &[
+                "dbc-generator-native",
+                "stage_card_fixtures.py",
+                "prepare-radarcan-assets",
+                "stage-control-dbcs",
+            ],
+        );
+        for retired in [
+            "radarcan_prepare_assets.py",
+            "card_prepare_assets.py",
+            "stage_control_dbcs.py",
+        ] {
+            assert!(!run.contains(retired), "{job_name}: retired {retired}");
+        }
+    }
+    let steps = data["jobs"]["workspace"]["steps"].as_array().unwrap();
+    let checks = steps
+        .iter()
+        .find(|step| step["name"] == "Require native DBC and Version source contracts")
+        .unwrap();
+    absent(checks, &["if", "continue-on-error"]);
+    let run = checks["run"].as_str().unwrap();
+    required(
+        run,
+        &[
+            "cargo test --locked",
+            "cargo clippy --locked",
+            "--features dbc-generator-native,version-tools-native",
+            "-- -D warnings",
+        ],
+    );
+    let tokens = run.split_whitespace().collect::<Vec<_>>();
+    for target in [
+        "dbc_generator",
+        "dbc_generator_cli",
+        "dbc_assets",
+        "dbc_assets_cli",
+        "dbc_assets_raw_names",
+        "dbc_bootstrap",
+        "version_source",
+    ] {
+        assert_eq!(
+            tokens
+                .windows(2)
+                .filter(|pair| *pair == ["--test", target])
+                .count(),
+            2,
+            "{target}"
+        );
+    }
+}
+#[test]
 fn workspace_source_tests_use_the_real_msgq_binding_before_importing_oracles() {
     let config = workflow();
     let steps = config["jobs"]["workspace"]["steps"].as_array().unwrap();
@@ -683,7 +946,7 @@ fn radar_requires_fresh_source_runtime_arm_and_memory_checks() {
             "build_params_python.py",
             "build_msgq_python.py",
             "RADAR_PARAMS_BINDING",
-            "radarcan_prepare_assets.py",
+            "rust/target/debug/prepare-radarcan-assets",
             "--bin stage-torque-numerics",
             "test_radarcan_ci.py",
             "check_radarcan_ci.py --phase reference",
@@ -832,7 +1095,14 @@ fn rust_checks_cover_protected_pushes_and_prs() {
 #[test]
 fn gate_mutations_cannot_remove_required_suites_or_allow_skips() {
     let data = workflow();
-    for key in ["WORKSPACE", "MEMORY", "ENCODER", "XIAOGE", "UI_RUNTIME"] {
+    for key in [
+        "WORKSPACE",
+        "MEMORY",
+        "ENCODER",
+        "XIAOGE",
+        "UI_RUNTIME",
+        "DBC_DARWIN",
+    ] {
         let mut modified = data.clone();
         modified["jobs"]["fast"]["steps"][0]["env"]
             .as_object_mut()

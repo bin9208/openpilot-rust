@@ -14,7 +14,7 @@ import uuid
 from typing import TypedDict
 
 from card_runtime_source import load_binding
-from card_prepare_assets import prepare_assets
+from can_source import native_card_asset_preparer
 
 
 class FactoryInput(TypedDict):
@@ -69,7 +69,9 @@ def run(binary: Path, output: Path, binding: Path, numerics: Path, brand: str | 
     cases = [case for case in cases if interfaces[case["candidate"]].__module__.split(".")[-2] == brand]
     assert cases, f"no factory cases for {brand}"
   dbc_root = output / "dbc"
-  prepare_assets(Path(__file__).resolve().parents[2], dbc_root)
+  preparer = native_card_asset_preparer()
+  subprocess.run([str(preparer), str(Path(__file__).resolve().parents[2]), str(dbc_root)],
+                 stdout=subprocess.PIPE, check=True)
   import opendbc.can.dbc as dbc_module
   dbc_module.DBC_PATH = str(dbc_root.resolve())
   DBC.cache_clear()
@@ -93,6 +95,7 @@ def run(binary: Path, output: Path, binding: Path, numerics: Path, brand: str | 
   (output / "native.stdout").write_bytes(native.stdout)
   (output / "native.stderr").write_bytes(native.stderr)
   result = {"command": command, "cases": len(cases), "source_cache_cleared_before_first_constructor": True,
+            "asset_preparer_sha256": hashlib.sha256(preparer.read_bytes()).hexdigest(),
             "returncode": native.returncode, "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
             "equal": source.getvalue() == native.stdout.decode()}
   (output / "result.json").write_text(json.dumps(result, indent=2) + "\n")

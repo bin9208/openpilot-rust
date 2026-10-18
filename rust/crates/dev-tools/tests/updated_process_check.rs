@@ -1,3 +1,5 @@
+#![cfg(target_os = "linux")]
+
 use openpilot_dev_tools::updated_process_check;
 #[test]
 fn fixture_identity_binds_the_running_binary_to_the_recorded_source() {

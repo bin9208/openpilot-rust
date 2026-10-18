@@ -382,12 +382,15 @@ prepared assets in that owned gate.
 
 ### Build-time DBC packaging
 
-`python3 rust/tools/card_prepare_assets.py REPOSITORY NEW_DBC_DIRECTORY`
+`prepare-card-assets REPOSITORY NEW_DBC_DIRECTORY` from the native
+`openpilot-dev-tools` package (`dbc-generator-native` feature)
 prepares the DBC directory for a package at `opendbc_repo/opendbc/dbc`.
 The destination must not exist and its parent must exist. It publishes only
 after generation completes, rejects overwriting an existing package, and checks
-the disk-space floor with estimated growth before staging. Python runs on the
-build host only; card reads the resulting DBC files directly at runtime.
+the disk-space floor with estimated growth before staging. The #296 replacement
+generates and packages assets without a Python interpreter; card reads those
+DBC files directly at runtime. Remaining Python fixture controllers are tracked
+separately in the #296 inventory.
 
 The current builder copies 65 existing DBC assets and runs the original pinned
 generators in an isolated temporary directory for two Nissan, three Chrysler,

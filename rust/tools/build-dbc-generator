@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Build the host tool before SCons evaluates its generated-output registry.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+target=${CARGO_TARGET_DIR:-rust/target}
+[[ $target == /* ]] || target=$root/$target
+
+# This bootstrap also serves macOS SCons; the Linux-only CI guard is unsuitable.
+# Reserve before installing a toolchain or compiling. df -P keeps one data row.
+reserve() {
+  local path=$1 growth_mib=$2 ancestor=$1 free_kib required_kib
+  while [[ ! -e $ancestor ]]; do ancestor=$(dirname -- "$ancestor"); done
+  free_kib=$(LC_ALL=C df -Pk "$ancestor" | awk 'END {print $4}')
+  [[ $free_kib =~ ^[0-9]+$ ]] || { printf 'DBC bootstrap: invalid disk-space response\n' >&2; return 1; }
+  required_kib=$(( (25 * 1024 + growth_mib) * 1024 ))
+  if (( free_kib < required_kib )); then
+    printf 'DBC bootstrap: retain 25 GiB plus %s MiB; recover at least 35 GiB before resuming (%s)\n' "$growth_mib" "$path" >&2
+    return 1
+  fi
+}
+reserve "$target" 2048
+reserve "${CARGO_HOME:-$HOME/.cargo}" 1024
+reserve "${RUSTUP_HOME:-$HOME/.rustup}" 1024
+command -v rustup >/dev/null || {
+  printf 'DBC bootstrap: install rustup, then rerun the build; Rust 1.94.0 is required\n' >&2
+  exit 1
+}
+if ! rustup run 1.94.0 rustc -vV >/dev/null 2>&1; then
+  rustup toolchain install 1.94.0 --profile minimal >&2
+fi
+native_host=$(rustup run 1.94.0 rustc -vV | sed -n 's/^host: //p')
+[[ -n $native_host ]] || { printf 'DBC bootstrap: missing native host triple\n' >&2; exit 1; }
+reserve "$target" 2048
+env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
+  -u CC -u CXX -u CFLAGS -u CXXFLAGS -u CPPFLAGS -u LDFLAGS \
+  CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 \
+  rustup run 1.94.0 cargo build --manifest-path "$root/rust/Cargo.toml" \
+    -p openpilot-dev-tools --features dbc-generator-native --bin dbc-generator --locked \
+    --target "$native_host" --target-dir "$target" >&2
+binary=$target/$native_host/debug/dbc-generator
+[[ -x $binary ]] || { printf 'DBC bootstrap: expected host executable missing: %s\n' "$binary" >&2; exit 1; }
+# Keep the normal developer-tool lookup valid after this SCons process exits.
+# Atomic replacement also permits an older generator to finish using its inode.
+mkdir -p -- "$target/debug"
+temporary=$(mktemp "$target/debug/.dbc-generator.XXXXXXXX")
+trap 'rm -f -- "$temporary"' EXIT
+cp -- "$binary" "$temporary"
+cmp -s "$binary" "$temporary"
+chmod 755 "$temporary"
+mv -f -- "$temporary" "$target/debug/dbc-generator"
+trap - EXIT
+printf '%s\n' "$target/debug/dbc-generator"

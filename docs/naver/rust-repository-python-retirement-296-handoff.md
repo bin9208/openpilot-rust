@@ -24,10 +24,22 @@ workspace 포맷 검사에서 실패했다. lagd 모듈 선언 순서와 process
 통과했다. 원격 전체 성공으로 보고하지 않으며 후속 정확한 커밋 검사가 필요하다.
 모델 node278까지의 누적 LLVM18/20 검증과 ARM A630 오프라인 산출물 검증은
 `32cffd87`에 커밋했다. 전체 모델 컴파일러 전환을 뜻하지 않는다.
-DBC17 제거는 아직 하지 않았다. 원본45출력/Card97/Radar103 일치와93테스트,
-실제 bootstrap 및 Card8개 fixture 생성은 통과했지만 독립 리뷰가 FIFO 입력
-대기와 경로 정렬 차이를 재현하여 수정 중이다. 인벤토리는161local/3partial/
-3416pending이며 삭제 후 재검증 전까지 완료 수를 늘리지 않는다.
+DBC 생성/패키징 Python17개를 제거했다. 원본45출력/Card97/Radar103 일치,
+삭제 후111테스트와 엄격한 Clippy, 실제 기본 SCons bootstrap 및 Card8개
+fixture 생성이 통과했다. FIFO 입력 대기, Python 경로 구성요소 정렬,
+Chrysler4,301자리 주소 오류 차이를 각각 실제 실패 후 수정했다.
+인벤토리는178local/3partial/3399pending이다. 부모 Python facade/SCons 및
+Card 비교 컨트롤러는 그대로 남아 있으며 제거 수에 포함하지 않는다.
+macOS ARM64 호스트 빌드/해당 플랫폼15테스트도 필수 CI에 추가했으며,
+실제 원격 결과는 아직 미확인이다. Linux17개 생성기 테스트는 모두 유지한다.
+Version 원본 정책 기반 구현은65bdce63에 커밋했고8테스트/Clippy를 통과했다.
+이는 Python 제거가 아니다. 실제 Version 비교·collector 컨트롤러와 공유
+load_source 소비자인 tombstoned/managed-entry 도구 전환이 남아 있다.
+
+caa3082d의 Fast checks·Integration·문서 검사는 통과했다.
+[Rust run39144897864](https://github.com/bin9208/openpilot-rust/actions/runs/39144897864)은
+확인 시 실행 중이었으며 전체 성공으로 보고하지 않는다. 후속 변경은 다시
+정확한 SHA의 PR/merged-dev 검사와 source-matched AGNOS release가 필요하다.
 
 ## 2026-10-18 재개 상태 — 아래 과거 중단 기록보다 우선
 

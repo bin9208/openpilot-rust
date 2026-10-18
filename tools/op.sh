@@ -229,6 +229,8 @@ function op_setup() {
   et="$(date +%s)"
   echo -e " ↳ [${GREEN}✔${NC}] Files pulled successfully in $((et - st)) seconds."
 
+  "$OPENPILOT_ROOT/rust/tools/build-dbc-generator" >/dev/null
+
   op_check
 }
 

@@ -1,0 +1,122 @@
+[
+  {
+    "name": "walk-and-filter",
+    "inputs": [
+      [
+        "root.dbc",
+        "524f4f54"
+      ],
+      [
+        "brand/car.dbc",
+        "434152"
+      ],
+      [
+        "brand/_private.dbc",
+        "48494444454e"
+      ],
+      [
+        "brand/not.dbc.txt",
+        "4e4f"
+      ],
+      [
+        "brand/deep/second.dbc",
+        "5345434f4e44"
+      ],
+      [
+        ".hidden/car2.dbc",
+        "48494444454e2d4252414e44"
+      ]
+    ],
+    "initial_outputs": [
+      [
+        "stale_generated.dbc",
+        "4f4c44"
+      ],
+      [
+        ".hidden_generated.dbc",
+        "4b4545502d48494444454e"
+      ],
+      [
+        "manual.dbc",
+        "4d414e55414c"
+      ]
+    ],
+    "initial_directories": [],
+    "error": null,
+    "outputs": {
+      ".hidden_generated.dbc": "4b4545502d48494444454e",
+      "car2_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f2022636172322e646263207374617274732068657265223b0a48494444454e2d4252414e44",
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20226361722e646263207374617274732068657265223b0a434152",
+      "manual.dbc": "4d414e55414c",
+      "second_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20227365636f6e642e646263207374617274732068657265223b0a5345434f4e44"
+    },
+    "directories": []
+  },
+  {
+    "name": "collision-enumeration",
+    "inputs": [
+      [
+        "first/car.dbc",
+        "4649525354"
+      ],
+      [
+        "second/car.dbc",
+        "5345434f4e44"
+      ]
+    ],
+    "initial_outputs": [],
+    "initial_directories": [],
+    "error": null,
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20226361722e646263207374617274732068657265223b0a5345434f4e44"
+    },
+    "directories": []
+  },
+  {
+    "name": "remove-matching-directory-first",
+    "inputs": [
+      [
+        "brand/car.dbc",
+        "434152"
+      ]
+    ],
+    "initial_outputs": [
+      [
+        "manual.dbc",
+        "4d414e55414c"
+      ]
+    ],
+    "initial_directories": [
+      "old_generated.dbc"
+    ],
+    "error": {
+      "type": "IsADirectoryError",
+      "errno": 21
+    },
+    "outputs": {
+      "manual.dbc": "4d414e55414c"
+    },
+    "directories": [
+      "old_generated.dbc"
+    ]
+  },
+  {
+    "name": "underscore-only",
+    "inputs": [
+      [
+        "brand/_private.dbc",
+        "50524956415445"
+      ]
+    ],
+    "initial_outputs": [
+      [
+        "stale_generated.dbc",
+        "4f4c44"
+      ]
+    ],
+    "initial_directories": [],
+    "error": null,
+    "outputs": {},
+    "directories": []
+  }
+]

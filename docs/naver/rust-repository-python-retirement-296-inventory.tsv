@@ -247,19 +247,19 @@ opendbc_repo/opendbc/car/volkswagen/values.py	549a23123013a70915fa7e313d40b56bdc
 opendbc_repo/opendbc/car/xcp.py	046df7403c3d4300c47970a39518921ba7e6cd58	pending	-
 opendbc_repo/opendbc/dbc/SConscript	9a92912074ce49c3a037af4b903a88b9038960c2	pending	-
 opendbc_repo/opendbc/dbc/__init__.py	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	pending	-
-opendbc_repo/opendbc/dbc/generator/chrysler/_stellantis_common_ram.py	fa408f1315f34feffad23c4637c7df905b5f8d7c	pending	-
-opendbc_repo/opendbc/dbc/generator/generator.py	3251c5ec6377161ff3c881008e81bae4140622d4	pending	-
-opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_corner_radar_180.py	d7bf6505c425ac45a5475988a76c80d342cca715	pending	-
-opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_corner_radar_235.py	6092d0d446a73880965c84673aac865ee18a3313	pending	-
-opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_corner_radar_430.py	d663db7473a6c9a36ac1dcf65a42bfae9d16dd0d	pending	-
-opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_radar.py	788264f55fa01ae6d77c1fcbd57d48f3bb34b246	pending	-
-opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_kia_denso_front_radar.py	d00e5d355b083596c1a68cfb5996c4f8beee9a5d	pending	-
-opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_kia_mando_corner_radar.py	aad417e32ac51852c4a0784a17d45070b177b372	pending	-
-opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_kia_mando_front_radar.py	c2af639589eb7d2e94ca3946b8859a45da537c6f	pending	-
-opendbc_repo/opendbc/dbc/generator/rivian/rivian_mando_front_radar.py	cdddfd8f28167ed7d3157dd7fbc5b4e5762e904e	pending	-
-opendbc_repo/opendbc/dbc/generator/tesla/_radar_common.py	737c203b026dad34ca12eaa2744e628309fe4c45	pending	-
-opendbc_repo/opendbc/dbc/generator/tesla/tesla_radar_bosch.py	6586655ec0b9b1b8e5bdef775b2d7f48d74164cc	pending	-
-opendbc_repo/opendbc/dbc/generator/tesla/tesla_radar_continental.py	36355d4a03b8cc6a9b4dcad31d67f01021857509	pending	-
+opendbc_repo/opendbc/dbc/generator/chrysler/_stellantis_common_ram.py	fa408f1315f34feffad23c4637c7df905b5f8d7c	replaced-local	rust/crates/dev-tools/src/dbc_generator/chrysler.rs; dbc-generator render chrysler-ram
+opendbc_repo/opendbc/dbc/generator/generator.py	3251c5ec6377161ff3c881008e81bae4140622d4	replaced-local	rust/crates/dev-tools/src/dbc_generator.rs; openpilot-dev-tools dbc-generator
+opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_corner_radar_180.py	d7bf6505c425ac45a5475988a76c80d342cca715	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
+opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_corner_radar_235.py	6092d0d446a73880965c84673aac865ee18a3313	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
+opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_corner_radar_430.py	d663db7473a6c9a36ac1dcf65a42bfae9d16dd0d	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
+opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_canfd_radar.py	788264f55fa01ae6d77c1fcbd57d48f3bb34b246	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
+opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_kia_denso_front_radar.py	d00e5d355b083596c1a68cfb5996c4f8beee9a5d	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
+opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_kia_mando_corner_radar.py	aad417e32ac51852c4a0784a17d45070b177b372	replaced-local	rust/crates/dev-tools/src/dbc_generator/mando.rs; rust/crates/dev-tools/src/dbc_generator/mando_signals.rs; dbc-generator
+opendbc_repo/opendbc/dbc/generator/hyundai/hyundai_kia_mando_front_radar.py	c2af639589eb7d2e94ca3946b8859a45da537c6f	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
+opendbc_repo/opendbc/dbc/generator/rivian/rivian_mando_front_radar.py	cdddfd8f28167ed7d3157dd7fbc5b4e5762e904e	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
+opendbc_repo/opendbc/dbc/generator/tesla/_radar_common.py	737c203b026dad34ca12eaa2744e628309fe4c45	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
+opendbc_repo/opendbc/dbc/generator/tesla/tesla_radar_bosch.py	6586655ec0b9b1b8e5bdef775b2d7f48d74164cc	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
+opendbc_repo/opendbc/dbc/generator/tesla/tesla_radar_continental.py	36355d4a03b8cc6a9b4dcad31d67f01021857509	replaced-local	rust/crates/dev-tools/src/dbc_generator/procedural.rs; dbc-generator native Program registry
 opendbc_repo/opendbc/safety/__init__.py	ef90de3c5c84c017179ca9516e10c6d3a08dd9f3	pending	-
 opendbc_repo/opendbc/safety/tests/__init__.py	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	pending	-
 opendbc_repo/opendbc/safety/tests/common.py	9fded87af0c67681a56d8440e86363dbe72c1be9	pending	-
@@ -1510,7 +1510,7 @@ rust/tools/card_hyundai_wire_source.py	c71427d1f7894146e117cdec3c73dbb4bad530a3	
 rust/tools/card_identification_source.py	adabd4bb761ac50836fe85a3af8c4b80df0a9147	pending	-
 rust/tools/card_isotp_cases.py	7ab77f1181b12af70b52a9d12038ba9d6448773b	pending	-
 rust/tools/card_isotp_source.py	c308bd4a17b9d7684e3deb2bdc11f300b2f7e7aa	pending	-
-rust/tools/card_prepare_assets.py	78e85a6a03b054154b9f9f30d30f0f0a42f724ab	pending	-
+rust/tools/card_prepare_assets.py	78e85a6a03b054154b9f9f30d30f0f0a42f724ab	replaced-local	rust/crates/dev-tools/src/dbc_assets.rs card; openpilot-dev-tools prepare-card-assets
 rust/tools/card_qa/chrysler/scenarios.py	ea3dd5ddb0717f800f297f43ccc2172229378661	pending	-
 rust/tools/card_qa/chrysler/source.py	96d6c83bb09509ed3eafba93ff9fca957ecadfad	pending	-
 rust/tools/card_qa/ci.py	f992762edb47eb1951b00ba1ca514b9df266048b	pending	-
@@ -2477,7 +2477,7 @@ rust/tools/radarcan_hyundai_source.py	d3e9b8c72243f6da4dd542d21d0831ede8823acf	p
 rust/tools/radarcan_loop_cases.py	2cb255e295f5050927dda00f26ea2c3b9fc04ca7	pending	-
 rust/tools/radarcan_loop_source.py	8cffc3f0fe771d67ec3f8fa63e850f67869979a5	pending	-
 rust/tools/radarcan_parser_source.py	1a387578379876ab8e2fe61c422945366b236048	pending	-
-rust/tools/radarcan_prepare_assets.py	36c55bff3383acedcd1d75d4247cbdd3460c9e99	pending	-
+rust/tools/radarcan_prepare_assets.py	36c55bff3383acedcd1d75d4247cbdd3460c9e99	replaced-local	rust/crates/dev-tools/src/dbc_assets.rs radarcan; openpilot-dev-tools prepare-radarcan-assets
 rust/tools/radarcan_runtime_capture.py	f0cbcade60b93b773f66d2496b9c2dc336a17c1f	pending	-
 rust/tools/radarcan_runtime_cases.py	d94fd190745db2cc1f2981c6b9258cdc2dcc3240	pending	-
 rust/tools/radarcan_runtime_lifecycle.py	00f6d2e50c35537ae85adfd61112c046ef1185fd	pending	-
@@ -2510,7 +2510,7 @@ rust/tools/sensord_linux_source.py	a84c009d40f20fd2cf369d2e18a754af34bcec21	pend
 rust/tools/sensord_source.py	7e40adc4a54be2f6779fa093bd1dd43131e5b73f	pending	-
 rust/tools/stage_card_corpus.py	5c2fcfc5f58b2e3e915f924a46d475e01f0dd7c7	pending	-
 rust/tools/stage_card_fixtures.py	b4ce2d400a6bc8ad6b4935bb558ceb760a31e366	pending	-
-rust/tools/stage_control_dbcs.py	c8588f8138720b20e7467fb8eccd0ab05e73b9b3	pending	-
+rust/tools/stage_control_dbcs.py	c8588f8138720b20e7467fb8eccd0ab05e73b9b3	replaced-local	rust/crates/dev-tools/src/dbc_generator.rs stage/stage_with; openpilot-dev-tools stage-control-dbcs
 rust/tools/stage_radarcan_runtime.py	484462bbf342b4a4d8802ad9131c76efa198a3df	pending	-
 rust/tools/startup_ui_source_render.py	7533acbe9527f4f545cc8d12419f2e6c4ca9371f	pending	-
 rust/tools/stats_source.py	b1664a979ed824cabd5f2a87f5ddfed2bc017864	pending	-
@@ -2525,7 +2525,7 @@ rust/tools/test_carrot_man_fixture_inputs.py	f1e712f3e16d6bcb27101fe1112176114b1
 rust/tools/tests/test_beep_worker_report.py	9c90fb3eb8f93f83780431c060090ac214db53a5	pending	-
 rust/tools/tests/test_camerad_artifact_paths.py	2b11265f8623445adb86b50304b98f9f573dd11e	replaced-local	rust/crates/dev-tools/tests/camera_lifecycle_check.rs; three portable-path controls
 rust/tools/tests/test_card_admission.py	083047ba6082793f07152c821493e9f84993163a	pending	-
-rust/tools/tests/test_card_assets.py	ae98f2b81acbcd87b68aac1253dbb8c11ce065f1	pending	-
+rust/tools/tests/test_card_assets.py	ae98f2b81acbcd87b68aac1253dbb8c11ce065f1	replaced-local	rust/crates/dev-tools/tests/dbc_assets.rs; rust/crates/dev-tools/tests/dbc_assets_cli.rs
 rust/tools/tests/test_card_ci.py	23b74a07bf20587646331c7f4452f08b4a51fa97	pending	-
 rust/tools/tests/test_card_phase_fence.py	d644a65c82e631b05819abfe964867dd35b002ee	pending	-
 rust/tools/tests/test_carrot_man_fixture_ports.py	e2eade54223cbf3f458ff168355689227b9a7702	pending	-

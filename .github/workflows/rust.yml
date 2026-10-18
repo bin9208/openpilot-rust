@@ -15,7 +15,7 @@ concurrency:
 jobs:
   fast:
     name: rust checks
-    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
+    needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, dbc-darwin]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -23,6 +23,7 @@ jobs:
       - name: Require runtime validation
         env:
           WORKSPACE: ${{ needs.workspace.result }}
+          DBC_DARWIN: ${{ needs.dbc-darwin.result }}
           MEMORY: ${{ needs.model-memory.result }}
           PIPELINES: ${{ needs.model-pipelines.result }}
           LOGGER: ${{ needs.logger-runtime.result }}
@@ -62,6 +63,7 @@ jobs:
           UI_RUNTIME: ${{ needs.ui-runtime.result }}
         run: |
           test "$WORKSPACE" = success
+          test "$DBC_DARWIN" = success
           test "$MEMORY" = success
           test "$PIPELINES" = success
           test "$LOGGER" = success
@@ -99,6 +101,75 @@ jobs:
           test "$XIAOGE" = success
           test "$XIAOGE_MEMORY" = success
           test "$UI_RUNTIME" = success
+  dbc-darwin:
+    name: rust DBC generator on macOS ARM64
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Reclaim unused Xcode copies while retaining the selected macOS SDK
+        run: |
+          set -euo pipefail
+          test "$(uname -s)" = Darwin
+          test "$(uname -m)" = arm64
+          mkdir -p "$RUNNER_TEMP/dbc-darwin"
+          df -Pk "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/dbc-darwin/disk-before.txt"
+          selected=$(xcode-select -p)
+          selected_app=${selected%/Contents/Developer}
+          test -d "$selected_app"
+          # The standard runner promises only14GB. Recover35GiB before any
+          # installation/build; keep the active compiler/SDK and its aliases.
+          for application in /Applications/Xcode*.app; do
+            free_kib=$(LC_ALL=C df -Pk "$GITHUB_WORKSPACE" | awk 'END {print $4}')
+            [[ $free_kib =~ ^[0-9]+$ ]] || exit 1
+            (( free_kib >= 35 * 1024 * 1024 )) && break
+            [[ -d $application && ! -L $application ]] || continue
+            [[ $application -ef $selected_app ]] && continue
+            sudo rm -rf -- "$application"
+          done
+          df -Pk "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/dbc-darwin/disk-after.txt"
+          free_kib=$(LC_ALL=C df -Pk "$GITHUB_WORKSPACE" | awk 'END {print $4}')
+          [[ $free_kib =~ ^[0-9]+$ ]] && (( free_kib >= 35 * 1024 * 1024 ))
+          test -d "$selected_app"
+          xcrun --find clang
+      - name: Build and execute the pinned native host bootstrap
+        run: |
+          set -euo pipefail
+          generator=$("$GITHUB_WORKSPACE/rust/tools/build-dbc-generator")
+          test "$generator" = "$CARGO_TARGET_DIR/debug/dbc-generator"
+          test "$(lipo -archs "$generator")" = arm64
+          "$generator" program-outputs > "$RUNNER_TEMP/dbc-darwin/program-outputs.json"
+          rustup run 1.94.0 rustc -vV > "$RUNNER_TEMP/dbc-darwin/rustc.txt"
+          git rev-parse HEAD > "$RUNNER_TEMP/dbc-darwin/SOURCE_COMMIT"
+          shasum -a 256 "$generator" > "$RUNNER_TEMP/dbc-darwin/binary.sha256"
+      - name: Require 15 APFS-compatible DBC generator and actual CLI tests
+        run: |
+          set -euo pipefail
+          # Reuse the portable bootstrap's25GiB+growth checks immediately
+          # before tests; this second Cargo freshness check is normally a no-op.
+          "$GITHUB_WORKSPACE/rust/tools/build-dbc-generator" >/dev/null
+          env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
+            -u CC -u CXX -u CFLAGS -u CXXFLAGS -u CPPFLAGS -u LDFLAGS \
+            rustup run 1.94.0 cargo test --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" \
+              -p openpilot-dev-tools --features dbc-generator-native --test dbc_generator --test dbc_generator_cli \
+              --locked --target aarch64-apple-darwin --target-dir "$CARGO_TARGET_DIR" -j2 \
+              2>&1 | tee "$RUNNER_TEMP/dbc-darwin/tests.log"
+      - name: Preserve macOS host and disk evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-dbc-darwin-evidence
+          path: ${{ runner.temp }}/dbc-darwin/
+          if-no-files-found: warn
   webcam-runtime:
     name: rust webcam source runtime (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
@@ -587,8 +658,19 @@ jobs:
           git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Generate runner-local Hyundai source fixtures
         run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --locked -p openpilot-dev-tools --features dbc-generator-native --bin dbc-generator --bin prepare-card-assets --bin prepare-radarcan-assets --bin stage-control-dbcs
+          export OPENPILOT_DBC_GENERATOR="$GITHUB_WORKSPACE/rust/target/debug/dbc-generator"
+          export OPENPILOT_CARD_ASSET_PREPARER="$GITHUB_WORKSPACE/rust/target/debug/prepare-card-assets"
+          printf 'OPENPILOT_DBC_GENERATOR=%s\nOPENPILOT_CARD_ASSET_PREPARER=%s\n' "$OPENPILOT_DBC_GENERATOR" "$OPENPILOT_CARD_ASSET_PREPARER" >> "$GITHUB_ENV"
           python tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-workspace/fixtures" --dbc "$RUNNER_TEMP/card-workspace/dbc"
           printf 'HYUNDAI_FIXTURE_DIR=%s/card-workspace/fixtures\nHYUNDAI_DBC_DIR=%s/card-workspace/dbc\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Require native DBC and Version source contracts
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --locked -p openpilot-dev-tools --features dbc-generator-native,version-tools-native --test dbc_generator --test dbc_generator_cli --test dbc_assets --test dbc_assets_cli --test dbc_assets_raw_names --test dbc_bootstrap --test version_source
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --locked -p openpilot-dev-tools --features dbc-generator-native,version-tools-native --lib --bin dbc-generator --bin prepare-card-assets --bin prepare-radarcan-assets --bin stage-control-dbcs --test dbc_generator --test dbc_generator_cli --test dbc_assets --test dbc_assets_cli --test dbc_assets_raw_names --test dbc_bootstrap --test version_source -- -D warnings
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           cargo build -p openpilot-bootlog --example bootlog_snapshot -p openpilot-process-supervision --bin openpilot-process-child --locked
@@ -1334,6 +1416,11 @@ jobs:
           cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/card-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/card-native/numerics"
       - name: Generate all required Hyundai fixtures
         run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features dbc-generator-native --bin dbc-generator --bin prepare-card-assets
+          export OPENPILOT_DBC_GENERATOR="$GITHUB_WORKSPACE/rust/target/debug/dbc-generator"
+          export OPENPILOT_CARD_ASSET_PREPARER="$GITHUB_WORKSPACE/rust/target/debug/prepare-card-assets"
+          printf 'OPENPILOT_DBC_GENERATOR=%s\nOPENPILOT_CARD_ASSET_PREPARER=%s\n' "$OPENPILOT_DBC_GENERATOR" "$OPENPILOT_CARD_ASSET_PREPARER" >> "$GITHUB_ENV"
           python rust/tools/stage_card_fixtures.py --fixtures "$RUNNER_TEMP/card-native/fixtures" --dbc "$RUNNER_TEMP/card-native/dbc"
           printf 'HYUNDAI_FIXTURE_DIR=%s/card-native/fixtures\nHYUNDAI_DBC_DIR=%s/card-native/dbc\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build CAN and native Card executables and examples
@@ -1414,9 +1501,12 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
           python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
-      - name: Generate original DBC assets and stage pinned numerical libraries
+      - name: Generate native DBC assets and stage pinned numerical libraries
         run: |
-          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features dbc-generator-native --bin dbc-generator --bin prepare-radarcan-assets
+          printf 'OPENPILOT_DBC_GENERATOR=%s/rust/target/debug/dbc-generator\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          rust/target/debug/prepare-radarcan-assets "$RUNNER_TEMP/radar-native/dbc"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
           cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
@@ -1474,14 +1564,17 @@ jobs:
           rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
-      - name: Build unchanged native ARM bindings and generate original radar assets
+      - name: Build unchanged native ARM bindings and generate radar assets
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/radar-native/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
           python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
-          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features dbc-generator-native --bin dbc-generator --bin prepare-radarcan-assets
+          printf 'OPENPILOT_DBC_GENERATOR=%s/rust/target/debug/dbc-generator\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          rust/target/debug/prepare-radarcan-assets "$RUNNER_TEMP/radar-native/dbc"
       - name: Stage pinned generic ARM numerical dependency
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -2525,7 +2618,10 @@ jobs:
           printf 'CONTROLS_NUMERICS=%s/control-numerics\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Build native controller and policy probes
         run: |
-          python rust/tools/stage_control_dbcs.py
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features dbc-generator-native --bin dbc-generator --bin stage-control-dbcs
+          printf 'OPENPILOT_DBC_GENERATOR=%s/rust/target/debug/dbc-generator\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          rust/target/debug/stage-control-dbcs
           cargo build --manifest-path rust/Cargo.toml -p openpilot-controlsd -p openpilot-control-policy --bins --examples --locked
       - name: Compare every policy identity and neural asset with unchanged source
         run: |

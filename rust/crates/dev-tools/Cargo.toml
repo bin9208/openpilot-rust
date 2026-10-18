@@ -12,6 +12,46 @@ autobins = false
 name = "version_source"
 required-features = ["version-tools-native"]
 
+[[test]]
+name = "dbc_generator"
+required-features = ["dbc-generator-native"]
+
+[[test]]
+name = "dbc_generator_cli"
+required-features = ["dbc-generator-native"]
+
+[[test]]
+name = "dbc_assets"
+required-features = ["dbc-generator-native"]
+
+[[test]]
+name = "dbc_assets_cli"
+required-features = ["dbc-generator-native"]
+
+[[test]]
+name = "dbc_assets_raw_names"
+required-features = ["dbc-generator-native"]
+
+[[bin]]
+name = "dbc-generator"
+path = "src/bin/dbc_generator.rs"
+required-features = ["dbc-generator-native"]
+
+[[bin]]
+name = "stage-control-dbcs"
+path = "src/bin/stage_control_dbcs.rs"
+required-features = ["dbc-generator-native"]
+
+[[bin]]
+name = "prepare-card-assets"
+path = "src/bin/prepare_card_assets.rs"
+required-features = ["dbc-generator-native"]
+
+[[bin]]
+name = "prepare-radarcan-assets"
+path = "src/bin/prepare_radarcan_assets.rs"
+required-features = ["dbc-generator-native"]
+
 [[bin]]
 name = "check-services"
 path = "src/bin/check_services.rs"
@@ -472,6 +512,7 @@ required-features = ["manager-catalog-tools-native"]
 
 [features]
 version-tools-native = []
+dbc-generator-native = []
 feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 qcom-assistance-tools-native = []
 manager-catalog-tools-native = []
