@@ -10,10 +10,53 @@ part of this candidate. No device validation or release is claimed here.
 The [source inventory](rust-repository-python-retirement-296-inventory.tsv)
 records all 3,580 baseline Python/Cython/SCons source paths and their original
 Git blob identities. It includes 3,542 `.py` files, eight Cython files and 30
-SCons entrypoints. 126 sources have locally verified replacements and migrated
-callers; three are partially replaced and 3,451 remain pending. `replaced-local` does not mean merged,
+SCons entrypoints. 127 sources have locally verified replacements and migrated
+callers; three are partially replaced and 3,450 remain pending. `replaced-local` does not mean merged,
 published, or that its whole parent component is converted. Embedded and
 extensionless Python execution still needs a separate complete caller audit.
+
+### Native boot artifact checker (2026-10-18)
+
+`check-bootlog-artifacts` replaces `rust/tools/check_bootlog.py`. It runs the
+separately built unchanged C++ bootlog and current Rust executable, decodes zstd
+and the full cereal schema, validates timestamps/counters/current-log identity,
+and independently implements the original uploader filesystem selection. The
+shared Python uploader checker remains required by other consumers.
+
+Nine native tests retain20 scenario definitions,21 real filesystem/xattr
+selections, two complete wire projections, five child/failure boundaries,
+nine CLI admissions,13 shell exit cases, four raw command-output cases and all
+nine required source pins. The native helper is an immutable executable; it
+does not create executable scripts while concurrent tests can fork. Its exact
+shell exit syntax still uses the system shell, with no Python process.
+
+Independent review found a shared-input false positive: writing a journal tail
+without a newline and immediately replacing the process lost buffered bytes.
+Both comparison sides received that shortened input, so the initial20-case
+pair comparison passed. Comparing complete results to the separately captured
+unchanged checker exposed the missing `last` bytes. Four real raw-output
+controls reproduced the loss; explicit flush before exec repairs it without
+changing expected values. Generic signed/large/invalid exit syntax also retains
+the original shell status and diagnostics after13-case comparison.
+
+After removing the Python checker, the parent reran all20 actual artifact
+cases, including four output faults, under an empty tool PATH. All40 normalized
+result objects (both implementations) exactly match the unchanged checker
+baseline. The196 exec calls contain no Python/PyPy; all nine regression tests
+pass after deletion. Strict scoped Clippy passed. The existing47 CI isolation
+and disk-bootstrap tests passed; the hardware job now builds/tests/lints/runs
+this native checker with its complete comparison. The225 disk guards remain.
+
+Evidence: `2026-10-18-bootlog-artifacts/{repaired-proof-summary.json,
+frozen-repaired/receipt.json,parent-cross-oracle-red.txt,post-delete-repaired.log,
+post-delete-repaired.execve,post-delete-repaired-tests.log}`. This is host
+evidence, not physical boot/recording/upload acceptance.
+
+The preceding exact-SHA `da803825` Fast/Integration/docs checks passed, but
+[Rust run39103294926](https://github.com/bin9208/openpilot-rust/actions/runs/39103294926)
+has a UI original-replay X11 connection failure tracked in
+[#354](https://github.com/bin9208/openpilot-rust/issues/354). Other jobs were
+still running when recorded. No complete CI, merge or release is claimed.
 
 ### Native bootlog snapshot tools (2026-10-18)
 

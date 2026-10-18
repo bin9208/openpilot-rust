@@ -9,6 +9,15 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-bootlog-artifacts"
+path = "src/bin/check_bootlog_artifacts.rs"
+required-features = ["bootlog-artifact-native"]
+
+[[test]]
+name = "bootlog_artifact_check"
+required-features = ["bootlog-artifact-native"]
+
+[[bin]]
 name = "journalctl-fixture"
 path = "src/bin/journalctl_fixture.rs"
 
@@ -267,6 +276,7 @@ name = "list-cargo-tests"
 path = "src/bin/list_cargo_tests.rs"
 
 [features]
+bootlog-artifact-native = ["dep:capnp", "dep:openpilot-cereal", "dep:zstd"]
 journal-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
 camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
 camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"]
@@ -386,6 +396,7 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+zstd = { version = "=0.13.3", optional = true }
 openpilot-cereal = { path = "../cereal", optional = true }
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"], optional = true }
 capnp = { version = "=0.27.2", optional = true }

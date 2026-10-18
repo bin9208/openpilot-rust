@@ -1,0 +1,87 @@
+{
+  "cases": [
+    {
+      "args": [],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: check_bootlog.py [-h] [--fault-library FAULT_LIBRARY] [--case CASE]\n                        [--runner RUNNER]\n                        binary original output\ncheck_bootlog.py: error: the following arguments are required: binary, original, output\n"
+    },
+    {
+      "args": [
+        "--help"
+      ],
+      "exit": 0,
+      "stdout": "usage: check_bootlog.py [-h] [--fault-library FAULT_LIBRARY] [--case CASE]\n                        [--runner RUNNER]\n                        binary original output\n\npositional arguments:\n  binary\n  original\n  output\n\noptions:\n  -h, --help            show this help message and exit\n  --fault-library FAULT_LIBRARY\n  --case CASE\n  --runner RUNNER\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "--unknown"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: check_bootlog.py [-h] [--fault-library FAULT_LIBRARY] [--case CASE]\n                        [--runner RUNNER]\n                        binary original output\ncheck_bootlog.py: error: the following arguments are required: binary, original, output\n"
+    },
+    {
+      "args": [
+        "/a"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: check_bootlog.py [-h] [--fault-library FAULT_LIBRARY] [--case CASE]\n                        [--runner RUNNER]\n                        binary original output\ncheck_bootlog.py: error: the following arguments are required: original, output\n"
+    },
+    {
+      "args": [
+        "/a",
+        "/b"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: check_bootlog.py [-h] [--fault-library FAULT_LIBRARY] [--case CASE]\n                        [--runner RUNNER]\n                        binary original output\ncheck_bootlog.py: error: the following arguments are required: output\n"
+    },
+    {
+      "args": [
+        "/a",
+        "/b",
+        "/c",
+        "extra"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: check_bootlog.py [-h] [--fault-library FAULT_LIBRARY] [--case CASE]\n                        [--runner RUNNER]\n                        binary original output\ncheck_bootlog.py: error: unrecognized arguments: extra\n"
+    },
+    {
+      "args": [
+        "/a",
+        "/b",
+        "/c",
+        "--case"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: check_bootlog.py [-h] [--fault-library FAULT_LIBRARY] [--case CASE]\n                        [--runner RUNNER]\n                        binary original output\ncheck_bootlog.py: error: argument --case: expected one argument\n"
+    },
+    {
+      "args": [
+        "/a",
+        "/b",
+        "/c",
+        "--runner"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: check_bootlog.py [-h] [--fault-library FAULT_LIBRARY] [--case CASE]\n                        [--runner RUNNER]\n                        binary original output\ncheck_bootlog.py: error: argument --runner: expected one argument\n"
+    },
+    {
+      "args": [
+        "/a",
+        "/b",
+        "/c",
+        "--fault-library"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: check_bootlog.py [-h] [--fault-library FAULT_LIBRARY] [--case CASE]\n                        [--runner RUNNER]\n                        binary original output\ncheck_bootlog.py: error: argument --fault-library: expected one argument\n"
+    }
+  ]
+}

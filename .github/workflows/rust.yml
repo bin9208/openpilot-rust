@@ -2822,10 +2822,10 @@ jobs:
       - name: Build hardware libraries and boot executables
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-bootlog -p openpilot-hardware-info -p openpilot-hardware-control -p openpilot-amplifier -p openpilot-process-supervision --bins --examples --locked
-          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --test bootlog_snapshot_check --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools -p openpilot-bootlog -p openpilot-hardware-info -p openpilot-hardware-control -p openpilot-amplifier -p openpilot-process-supervision --features openpilot-dev-tools/bootlog-artifact-native --bins --examples --locked
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bootlog-artifact-native --test bootlog_snapshot_check --test bootlog_artifact_check --locked
           rustup component add clippy --toolchain 1.94.0
-          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --lib --bin check-bootlog-snapshot --bin bootlog-snapshot-reference --bin bootlog-snapshot-child --bin build-bootlog-snapshot-reference --test bootlog_snapshot_check --locked -- -D warnings
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bootlog-artifact-native --lib --bin check-bootlog-artifacts --bin check-bootlog-snapshot --bin bootlog-snapshot-reference --bin bootlog-snapshot-child --bin build-bootlog-snapshot-reference --test bootlog_snapshot_check --test bootlog_artifact_check --locked -- -D warnings
       - name: Build current native dependency stager
         uses: ./.github/actions/native-json11
       - name: Build original Params and boot log comparisons
@@ -2838,7 +2838,7 @@ jobs:
           gcc -shared -fPIC -O1 -Wall -Wextra -Werror rust/tools/amplifier_i2c_fixture.c -ldl -o "$RUNNER_TEMP/amplifier-i2c-fixture.so"
       - name: Compare boot artifacts, upload selection and counter I/O
         run: |
-          python rust/tools/check_bootlog.py rust/target/debug/openpilot-bootlog "$RUNNER_TEMP/hardware-runtime/original-bootlog/original-bootlog" \
+          rust/target/debug/check-bootlog-artifacts rust/target/debug/openpilot-bootlog "$RUNNER_TEMP/hardware-runtime/original-bootlog/original-bootlog" \
             "$RUNNER_TEMP/hardware-runtime/bootlog" --fault-library "$RUNNER_TEMP/bootlog-output-fault.so"
           rust/target/debug/check-logger-identifier rust/target/debug/examples/logger_identifier \
             "$RUNNER_TEMP/hardware-runtime/original-identifier/original-identifier" "$RUNNER_TEMP/hardware-runtime/identifiers"

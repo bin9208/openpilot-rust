@@ -10,6 +10,8 @@ pub mod beep_clock_check;
 pub mod beep_integer_check;
 pub mod beep_sleep_check;
 pub mod bluetooth_digits_generate;
+#[cfg(feature = "bootlog-artifact-native")]
+pub mod bootlog_artifact_check;
 pub mod bootlog_snapshot_check;
 pub mod bootlog_snapshot_reference;
 pub mod brotli_stage;

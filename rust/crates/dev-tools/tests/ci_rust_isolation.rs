@@ -337,7 +337,9 @@ fn hardware_runtime_requires_source_and_native_boundaries() {
     job_check(
         "hardware-runtime",
         &[
-            "check_bootlog.py",
+            "rust/target/debug/check-bootlog-artifacts rust/target/debug/openpilot-bootlog",
+            "--features openpilot-dev-tools/bootlog-artifact-native",
+            "--test bootlog_artifact_check",
             "rust/target/debug/check-bootlog-snapshot rust/target/debug/examples/bootlog_snapshot",
             "rust/target/debug/build-bootlog-snapshot-reference --output",
             "--params-reference \"$RUNNER_TEMP/hardware-runtime/snapshot-reference/bootlog-params-path\"",
@@ -351,7 +353,7 @@ fn hardware_runtime_requires_source_and_native_boundaries() {
             "rust/target/debug/check-hardware-command --evidence \"$RUNNER_TEMP/hardware-runtime\"",
             "bootlog_raw_file_probe.rs",
         ],
-        &["python rust/tools/check_", "check-hardware-command", "check-bootlog-snapshot", "--test bootlog_snapshot_check"],
+        &["python rust/tools/check_", "check-hardware-command", "check-bootlog-snapshot", "--test bootlog_snapshot_check", "check-bootlog-artifacts", "--test bootlog_artifact_check"],
         false,
     );
 }

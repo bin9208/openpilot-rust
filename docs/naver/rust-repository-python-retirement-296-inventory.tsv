@@ -1841,7 +1841,7 @@ rust/tools/check_bluetooth_input_decode.py	0feecb81c9459913e11fafc48dd58a25ad057
 rust/tools/check_bluetooth_journal.py	28b3448b08450ea78535c7f0fa58484daa807788	pending	-
 rust/tools/check_bluetooth_runtime.py	8e0b0823f13de931b828cd7869604b5921e40d63	pending	-
 rust/tools/check_bluetooth_shutdown.py	9e56edaab6a899753fbd535ca1b3895c92ab44e6	pending	-
-rust/tools/check_bootlog.py	821fae976671407cca3c239f0cb23b3f7ca1fa22	pending	-
+rust/tools/check_bootlog.py	821fae976671407cca3c239f0cb23b3f7ca1fa22	replaced-local	openpilot-dev-tools check-bootlog-artifacts; independent full-schema artifact and uploader selection checker
 rust/tools/check_bootlog_snapshot.py	9c5e4623e898a2dfea3647027b939f1fd2732c9a	replaced-local	rust/crates/dev-tools/src/bootlog_snapshot_check.rs
 rust/tools/check_bridge.py	837e2ab770658577c5f564a77a563aed814ceb59	pending	-
 rust/tools/check_calibration_daemon.py	59ff14326c59ac7fcf2e4f26a1af76456072041f	pending	-
