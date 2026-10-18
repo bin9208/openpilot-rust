@@ -1,0 +1,246 @@
+{
+  "original_sha256": "2220f3192136ead8d283cf8276ca2120a85198978bbca79c0f1286b8690dc365",
+  "scene_sha256": "f043bf37ed0d8d16d48887762a6838a6de50518d80e42cfc0dc4daf1e88a07a7",
+  "commands": [
+    "flags 32",
+    "window 2160 1080 536f7572636520666f726d73",
+    {
+      "font": 0,
+      "path": "openpilot/selfdrive/assets/fonts/Inter-Regular.ttf",
+      "size": 200,
+      "point_ranges": [
+        [
+          32,
+          127
+        ]
+      ],
+      "point_count": 95,
+      "sha256": "1041a8cf17dab7579acef0cc46b21f6497ec1ae01918ddc3495416efb81a4780"
+    },
+    {
+      "font": 1,
+      "path": "openpilot/selfdrive/assets/fonts/Inter-Medium.ttf",
+      "size": 200,
+      "point_ranges": [
+        [
+          32,
+          127
+        ]
+      ],
+      "point_count": 95,
+      "sha256": "5249ae5f8ddfded34c98c6e3cf09e08f178f234e1bfa28a68f98f6f957628418"
+    },
+    {
+      "font": 2,
+      "path": "openpilot/selfdrive/assets/fonts/Inter-Bold.ttf",
+      "size": 200,
+      "point_ranges": [
+        [
+          32,
+          127
+        ]
+      ],
+      "point_count": 95,
+      "sha256": "d597e753e78d8bf9db34c13343146545fb3be5a1c99a175bc381fe3f6f787f31"
+    },
+    {
+      "font": 3,
+      "path": "openpilot/selfdrive/assets/fonts/Inter-SemiBold.ttf",
+      "size": 200,
+      "point_ranges": [
+        [
+          32,
+          127
+        ]
+      ],
+      "point_count": 95,
+      "sha256": "98542636e6c900d04e987ca7a37e160a407df344be073fb041fd88f2cd90085a"
+    },
+    {
+      "font": 4,
+      "path": "openpilot/selfdrive/assets/fonts/unifont.otf",
+      "size": 16,
+      "point_ranges": [
+        [
+          32,
+          127
+        ],
+        [
+          13312,
+          19904
+        ],
+        [
+          19968,
+          40960
+        ],
+        [
+          44032,
+          55204
+        ]
+      ],
+      "point_count": 38851,
+      "sha256": "9712a9bc089af7ddc06e0826aa84f2ee23ed2f1a1dddaf2a89c2483e753a8475"
+    },
+    {
+      "font": 5,
+      "path": "openpilot/selfdrive/assets/fonts/KaiGenGothicKR-Bold.ttf",
+      "size": 48,
+      "point_ranges": [
+        [
+          32,
+          127
+        ],
+        [
+          13312,
+          19904
+        ],
+        [
+          19968,
+          40960
+        ],
+        [
+          44032,
+          55204
+        ]
+      ],
+      "point_count": 38851,
+      "sha256": "e1656b065f0249609b86139a30abba71f0a37edb2f0b325f6f7e9f5d35979de1"
+    },
+    "begin",
+    "clear 4278190080",
+    "rect 200.0 200.0 1760.0 680.0 4279966491",
+    "font-select 2",
+    "text 446f20796f752077616e7420746f20636f6e74696e75653f 636.0 391.0 86.94 4291414473",
+    "rounded 1105.0 670.0 805.0 160.0 0.125 10 4293548870",
+    "font-select 1",
+    "text 436f6e74696e7565 1374.0 712.0 74.52 4293190884",
+    "rounded 250.0 670.0 805.0 160.0 0.125 10 4281545523",
+    "font-select 1",
+    "text 43616e63656c 551.0 712.0 74.52 4293190884",
+    "flush",
+    "@EXPORT@"
+  ],
+  "measurements": [
+    {
+      "font": 2,
+      "text": "Do",
+      "size": 86.94,
+      "spacing": 0,
+      "x": 96.0687026977539,
+      "y": 86.94000244140625
+    },
+    {
+      "font": 2,
+      "text": "you",
+      "size": 86.94,
+      "spacing": 0,
+      "x": 129.97531127929688,
+      "y": 86.94000244140625
+    },
+    {
+      "font": 2,
+      "text": "Do you",
+      "size": 86.94,
+      "spacing": 0,
+      "x": 242.56260681152344,
+      "y": 86.94000244140625
+    },
+    {
+      "font": 2,
+      "text": "want",
+      "size": 86.94,
+      "spacing": 0,
+      "x": 174.314697265625,
+      "y": 86.94000244140625
+    },
+    {
+      "font": 2,
+      "text": "Do you want",
+      "size": 86.94,
+      "spacing": 0,
+      "x": 433.3959045410156,
+      "y": 86.94000244140625
+    },
+    {
+      "font": 2,
+      "text": "to",
+      "size": 86.94,
+      "spacing": 0,
+      "x": 71.72550201416016,
+      "y": 86.94000244140625
+    },
+    {
+      "font": 2,
+      "text": "Do you want to",
+      "size": 86.94,
+      "spacing": 0,
+      "x": 521.6400146484375,
+      "y": 86.94000244140625
+    },
+    {
+      "font": 2,
+      "text": "continue?",
+      "size": 86.94,
+      "spacing": 0,
+      "x": 348.62939453125,
+      "y": 86.94000244140625
+    },
+    {
+      "font": 2,
+      "text": "Do you want to continue?",
+      "size": 86.94,
+      "spacing": 0,
+      "x": 886.7880249023438,
+      "y": 86.94000244140625
+    },
+    {
+      "font": 1,
+      "text": "Continue",
+      "size": 74.52,
+      "spacing": 0,
+      "x": 265.6637878417969,
+      "y": 74.5199966430664
+    },
+    {
+      "font": 1,
+      "text": "Cancel",
+      "size": 74.52,
+      "spacing": 0,
+      "x": 202.69439697265625,
+      "y": 74.5199966430664
+    }
+  ],
+  "png_sha256": "35a7f1f0a31842478abcf2fc9bf4d18c82fc802aa587c152f44ffabf0c85bbb3",
+  "state": [
+    {
+      "state": null,
+      "pops": 0,
+      "confirmed": 0
+    }
+  ],
+  "scene": {
+    "actions": [],
+    "config": {
+      "big": true,
+      "large_viewport": true,
+      "pc": true,
+      "scale": 1.0
+    },
+    "frames": 1,
+    "kind": "confirm",
+    "language": "en",
+    "props": {
+      "max": "unused"
+    },
+    "rect": {
+      "height": 1080,
+      "width": 2160,
+      "x": 0,
+      "y": 0
+    },
+    "text": "Do you want to continue?"
+  },
+  "provenance_sha256": "e72c683f958ec93f1a780284f024d4a30dc0e6496f491f8f44d293efc870c540",
+  "capture": "Unchanged helper 3669ec8c6f391275316db31bfd715ab23f0da5da; wrappers only at pyray drawing/measurement calls; actual original PNG preserved. Immutable commands replayed as test data only.",
+  "expanded_capture_sha256": "9bd1fa357db82294ba26bd131a8d43702cfc6bdab09a82b5477a721c62b76546"
+}

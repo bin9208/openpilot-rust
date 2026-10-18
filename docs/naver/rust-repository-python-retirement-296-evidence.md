@@ -2365,3 +2365,21 @@ failed cross-environment fixed-raster assumption is not observed native drift.
 The precise renderer-environment cause and a portable exact regression remain
 under investigation. No alternate-hash allowlist or pixel tolerance was added;
 the CI failure and temporary diagnostic are still open work.
+
+### Portable exact Confirm regression and CI routing repair (2026-10-18)
+
+The admission test now replays immutable original drawing calls through the same
+mechanical renderer used by the native reference, for the one scene whose fixed
+PNG changed across environments. It binds original source, scene, complete state,
+all six fonts and eleven exact float32 measurements. PNG comparison stays exact;
+a valid image with one changed RGB sample is rejected. Production rendering and
+other fixtures are unchanged. Five admission tests and all 33 native CI routing
+tests pass. The focused replay/mutation case also passes with SIMD disabled,
+where the original raster differs; scoped strict Clippy passes.
+
+The f3112c2d Fast check failed because its full build-command assertion omitted
+both newly required native network tools. That assertion now includes the two
+binaries, preserving its mandatory invocation check. The same SHA's workspace
+job failed a module-order rustfmt check, corrected by ordering sensor generation
+before lifecycle. Local format/diff checks pass. Fresh remote validation remains
+required; the temporary immutable-original CI diagnostic is retained until then.

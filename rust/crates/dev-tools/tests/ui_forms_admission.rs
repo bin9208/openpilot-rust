@@ -16,12 +16,17 @@ struct PngEvidence<'a> {
     observed: &'a Output,
     helper: &'a Path,
     root: &'a Path,
+    replay: Option<&'a confirm_draw::Expected>,
 }
 impl PngEvidence<'_> {
     fn hash(&self, failure_output: Option<&Path>) -> String {
         let actual = format!("{:x}", Sha256::digest(fs::read(self.png).unwrap()));
         let saved = failure_output
-            .filter(|_| self.case["png_sha256"].as_str() != Some(actual.as_str()))
+            .filter(|_| {
+                self.replay
+                    .map_or(self.case["png_sha256"].as_str(), |v| Some(v.hash.as_str()))
+                    != Some(actual.as_str())
+            })
             .map(|output| self.persist(output, &actual));
         if let Some(Err(error)) = saved {
             eprintln!("could not retain Forms PNG mismatch evidence: {error}");
@@ -43,6 +48,15 @@ impl PngEvidence<'_> {
         let output = output.join(name);
         fs::create_dir_all(&output)?;
         fs::copy(self.png, output.join("actual.png"))?;
+        if let Some(replay) = self.replay {
+            fs::copy(&replay.path, output.join("expected-renderer.png"))?;
+            fs::write(output.join("expected-replay.stdout.log"), &replay.stdout)?;
+            fs::write(output.join("expected-replay.stderr.log"), &replay.stderr)?;
+            fs::write(
+                output.join("original-draw-capture.json"),
+                include_bytes!("fixtures/ui-forms/confirm-original-draw.json"),
+            )?;
+        }
         fs::copy(self.scene, output.join("scene.json"))?;
         let state = self.png.with_extension("json");
         if state.is_file() {
@@ -117,7 +131,7 @@ impl PngEvidence<'_> {
         };
         let raylib_hash = library.and_then(file_hash);
         let metadata = serde_json::json!({
-            "expected_png_sha256":self.case["png_sha256"],"actual_png_sha256":actual,
+            "expected_png_sha256":self.case["png_sha256"],"renderer_expected_png_sha256":self.replay.map(|v| &v.hash),"actual_png_sha256":actual,
             "png_bytes":fs::metadata(self.png)?.len(),"pixels":pixels,
             "environment":environment,"exit_status":self.observed.status.code(),
             "helper_path":self.helper.to_string_lossy(),"helper_sha256":file_hash(self.helper),
@@ -167,6 +181,7 @@ fn png_failure_evidence_is_retained_only_on_mismatch() {
             observed: &observed,
             helper: &scene,
             root: &root,
+            replay: None,
         }
         .hash(Some(&output))
     };
@@ -288,6 +303,16 @@ fn actual_cli_preserves_original_admission_state_pixels_and_failure_artifacts_wh
         }
         if png.exists() {
             let failure_output = std::env::var_os("UI_FORMS_FAILURE_OUTPUT");
+            // Original commands are immutable test data; current native widget
+            // policy never supplies this oracle. Other cases keep their original
+            // fixed raster assertion until independently captured.
+            let replay = (name == "irrelevant-input-prop").then(|| {
+                confirm_draw::replay(case, &root, Path::new(&helper), &command, temp.path())
+                    .unwrap()
+            });
+            let expected = replay
+                .as_ref()
+                .map_or_else(|| case["png_sha256"].as_str().unwrap(), |v| v.hash.as_str());
             let evidence = PngEvidence {
                 case,
                 scene: &scene,
@@ -296,10 +321,11 @@ fn actual_cli_preserves_original_admission_state_pixels_and_failure_artifacts_wh
                 observed: &observed,
                 helper: Path::new(&helper),
                 root: &root,
+                replay: replay.as_ref(),
             };
             assert_eq!(
                 evidence.hash(failure_output.as_deref().map(Path::new)),
-                case["png_sha256"].as_str().unwrap(),
+                expected,
                 "{name}"
             );
         }
@@ -364,4 +390,146 @@ fn actual_cli_resolves_output_symlink_before_choosing_original_state_path_when_a
     let states: Value =
         serde_json::from_slice(&fs::read(target.with_extension("json")).unwrap()).unwrap();
     assert_eq!(states[0]["state"]["text"], "after");
+}
+
+#[test]
+fn immutable_confirm_draw_capture_binds_scene_source_state_and_rejects_mutations() {
+    let text = include_str!("fixtures/ui-forms/confirm-original-draw.json");
+    let trace: Value = serde_json::from_str(text).unwrap();
+    let cases: Value =
+        serde_json::from_str(include_str!("fixtures/ui-forms/admission-original.json")).unwrap();
+    let case = cases["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|case| case["name"] == "irrelevant-input-prop")
+        .unwrap();
+    confirm_draw::validate(text, case).unwrap();
+    for field in [
+        "scene",
+        "state",
+        "measurements",
+        "commands",
+        "original_sha256",
+        "provenance_sha256",
+    ] {
+        let mut changed = trace.clone();
+        changed[field] = Value::Null;
+        assert!(
+            confirm_draw::validate(&serde_json::to_string(&changed).unwrap(), case).is_err(),
+            "{field}"
+        );
+    }
+    for field in ["scene", "states", "png_sha256"] {
+        let mut changed = case.clone();
+        changed[field] = Value::Null;
+        assert!(
+            confirm_draw::validate(text, &changed).is_err(),
+            "case {field}"
+        );
+    }
+}
+
+#[path = "support/ui_forms_confirm_draw.rs"]
+mod confirm_draw;
+
+#[test]
+fn captured_confirm_replays_exactly_and_a_single_rgb_sample_mutation_is_rejected_when_available() {
+    let Some(helper) = std::env::var_os("UI_FORMS_RAW_HELPER") else {
+        return;
+    };
+    let captured: Value =
+        serde_json::from_str(include_str!("fixtures/ui-forms/admission-original.json")).unwrap();
+    let case = captured["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|v| v["name"] == "irrelevant-input-prop")
+        .unwrap();
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let temp = tempfile::tempdir().unwrap();
+    let scene = temp.path().join("scene.json");
+    fs::write(&scene, serde_json::to_vec(&case["scene"]).unwrap()).unwrap();
+    let png = temp.path().join("actual.png");
+    let mut command = Command::new(env!("CARGO_BIN_EXE_ui-forms-reference"));
+    command
+        .args([scene.as_os_str(), png.as_os_str()])
+        .env("OPENPILOT_RUST_ROOT", &root)
+        .env("UI_FORMS_RAW_HELPER", &helper);
+    for key in [
+        "RECORD",
+        "BURN_IN",
+        "PROFILE_STARTUP",
+        "PROFILE_RENDER",
+        "GRID",
+        "SHOW_FPS",
+        "SHOW_TOUCHES",
+        "RECORD_OUTPUT",
+        "RECORD_QUALITY",
+        "RECORD_SPEED",
+        "PROFILE_STATS",
+        "STRICT_MODE",
+        "ENABLE_VSYNC",
+    ] {
+        command.env_remove(key);
+    }
+    let observed = command.output().unwrap();
+    assert!(
+        observed.status.success(),
+        "{}",
+        String::from_utf8_lossy(&observed.stderr)
+    );
+    let state: Value =
+        serde_json::from_slice(&fs::read(png.with_extension("json")).unwrap()).unwrap();
+    assert_eq!(state, case["states"]);
+    let replay =
+        confirm_draw::replay(case, &root, Path::new(&helper), &command, temp.path()).unwrap();
+    let evidence = || PngEvidence {
+        case,
+        scene: &scene,
+        png: &png,
+        command: &command,
+        observed: &observed,
+        helper: Path::new(&helper),
+        root: &root,
+        replay: Some(&replay),
+    };
+    assert_eq!(evidence().hash(None), replay.hash);
+    let original = openpilot_dev_tools::image_array::read(&png).unwrap();
+    let mut reader = png::Decoder::new(std::io::BufReader::new(fs::File::open(&png).unwrap()))
+        .read_info()
+        .unwrap();
+    let mut pixels = vec![0; reader.output_buffer_size()];
+    let info = reader.next_frame(&mut pixels).unwrap();
+    assert_eq!(
+        (info.color_type, info.bit_depth),
+        (png::ColorType::Rgba, png::BitDepth::Eight)
+    );
+    pixels.truncate(info.buffer_size());
+    pixels[0] ^= 1;
+    drop(reader);
+    let mut encoder = png::Encoder::new(fs::File::create(&png).unwrap(), info.width, info.height);
+    encoder.set_color(info.color_type);
+    encoder.set_depth(info.bit_depth);
+    encoder
+        .write_header()
+        .unwrap()
+        .write_image_data(&pixels)
+        .unwrap();
+    let mutated = openpilot_dev_tools::image_array::read(&png).unwrap();
+    assert_eq!(
+        original
+            .values
+            .iter()
+            .zip(&mutated.values)
+            .filter(|(a, b)| a != b)
+            .count(),
+        1,
+        "exactly one RGB sample changed"
+    );
+    assert_ne!(
+        evidence().hash(None),
+        replay.hash,
+        "exact comparison must reject even one changed sample"
+    );
 }

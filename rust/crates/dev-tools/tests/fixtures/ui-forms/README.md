@@ -95,3 +95,30 @@ cancel/mixed results. Before repair10 reference scenes and5 production Confirm
 scenes differed. All12 now match original PNGs and states; the18scene/388frame
 gate also passes. Exact source histories/hashes remain in
 `repeated-release-original.json` and `repeated-release-neighbors-original.json`.
+
+`confirm-original-draw.json` preserves the original drawing calls for the
+`irrelevant-input-prop` admission scene. The unchanged helper was recovered only
+for capture from commit `3669ec8c6f391275316db31bfd715ab23f0da5da`; its SHA-256 is
+`2220f3192136ead8d283cf8276ca2120a85198978bbca79c0f1286b8690dc365`.
+The trace contains 21 mechanical calls, 11 measured font extents, exact scene and
+full state, six font byte hashes, and the original PNG hash. Font point ranges
+losslessly encode the observed argument lists; counts and source provenance are
+bound to the immutable trace digest in the test helper.
+
+CI run `39082659846`, job `117542952197`, independently executed the original and
+native helpers on one display. Both produced the same `48ced25f…` image and
+identical state, with zero differing samples. The local original instead
+produced `35a7f1f0…`. This exposed a renderer-dependent fixture assumption.
+The admission test now renders the immutable original calls using the same
+mechanical helper, library and environment as the native reference, then keeps
+an exact PNG byte comparison and the original full-state comparison. All eleven
+font measurements must retain their exact binary32 values. Original hashes
+remain provenance; no alternate-hash list, pixel tolerance, interpreter fallback
+or captured-scene lookup was added to production code. Other fixture cases retain
+their existing exact assertions.
+
+Local mechanical replay reproduced the corresponding unchanged-original image
+under llvmpipe's normal and SIMD-disabled paths and under softpipe. The test
+rejects altered capture/source/scene/state bindings. A rendered-image regression
+changes exactly one RGB sample and requires rejection. The temporary CI original
+probe remains diagnostic only until the next remote run verifies this repair.
