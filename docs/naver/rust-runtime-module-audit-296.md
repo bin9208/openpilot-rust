@@ -46,6 +46,17 @@ Private logs are `2026-10-18-locationd-tools/sensor-green-final1-*` and
 `sensor-live-final1/proof.json`. These tests establish admission and continued
 host operation; full EKF numerical parity and device acceptance remain separate.
 
+The camera/calibration follow-up also preserves original early rejection before
+shape errors, NaN/bounds policy and late posenet history side effects. Its four
+initial regressions failed before repair. Independent original captures include
+34 admission cases and 29 edge cases; the complete locationd package now passes
+23 tests and strict all-target Clippy. The fresh daemon additionally passed seven
+real livePose publications through the private IPC probe, including rejected and
+valid camera/calibration batches. Exact fixture and executable hashes are in the
+same README; private evidence is `camera-calibration-green1-*` and
+`camera-calibration-live1/proof.json`. No missing measurement is fabricated and
+normal three-axis processing retains its existing numerical path.
+
 No blanket module clearance, complete Python retirement, device boot acceptance,
 loaded-driving acceptance or measured CPU improvement follows from this matrix.
 

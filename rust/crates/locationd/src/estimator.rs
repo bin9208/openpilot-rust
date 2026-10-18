@@ -2,7 +2,7 @@ use crate::{
     bridge::ffi::Estimate,
     kalman::PoseKalman,
     orientation::{self, Matrix},
-    types::{HandleResult, Input, Pose, Sensor, KINDS},
+    types::{CameraStd, HandleResult, Input, Pose, Sensor, KINDS},
     Error,
 };
 
@@ -127,6 +127,28 @@ impl Estimator {
                 return Err(Error::Contract("sensor vector prefix"));
             }
             Input::Speed(speed) => self.car_speed = speed.abs(),
+            Input::MalformedCalibration { out_of_bounds } => {
+                return if out_of_bounds {
+                    Ok(HandleResult::InputInvalid)
+                } else {
+                    Err(Error::Contract("calibration Euler dimensions"))
+                };
+            }
+            Input::IrregularCamera {
+                time,
+                rotation,
+                translation,
+                rotation_std,
+                translation_std,
+            } => {
+                return self.irregular_camera(
+                    time,
+                    rotation,
+                    translation,
+                    rotation_std,
+                    translation_std,
+                );
+            }
             Input::Calibration(Some(calibration)) => {
                 if orientation::minimum(calibration) < -0.5
                     || orientation::maximum(calibration) > 0.5
@@ -199,6 +221,79 @@ impl Estimator {
         }
         Ok(HandleResult::Success)
     }
+    fn irregular_camera(
+        &mut self,
+        time: f64,
+        rotation: Option<[f64; 3]>,
+        translation: Option<[f64; 3]>,
+        rotation_std: CameraStd,
+        translation_std: CameraStd,
+    ) -> Result<HandleResult, Error> {
+        // Normal wire input keeps its existing fixed-size, allocation-free path.
+        // Also honor callers explicitly constructing an all-three irregular tag.
+        if let (
+            Some(rotation),
+            Some(translation),
+            CameraStd::Three(rotation_std),
+            CameraStd::Three(translation_std),
+        ) = (rotation, translation, rotation_std, translation_std)
+        {
+            return self.handle(
+                time,
+                Input::Camera {
+                    time,
+                    rotation,
+                    translation,
+                    rotation_std,
+                    translation_std,
+                },
+            );
+        }
+        if !self.valid_timestamp(time)? {
+            return Ok(HandleResult::TimingInvalid);
+        }
+        let rotation = orientation::apply(
+            self.device_from_calib,
+            rotation.ok_or(Error::Contract("camera rotation dimensions"))?,
+        );
+        // Source transforms BOTH vectors before testing either norm.
+        let translation = orientation::apply(
+            self.device_from_calib,
+            translation.ok_or(Error::Contract("camera translation dimensions"))?,
+        );
+        if orientation::norm(rotation) > 10. || orientation::norm(translation) > 200. {
+            return Ok(HandleResult::InputInvalid);
+        }
+        fn minimum(values: CameraStd) -> Result<f64, Error> {
+            match values {
+                CameraStd::Empty => Err(Error::Contract("empty camera standard deviations")),
+                CameraStd::Three(values) => Ok(orientation::minimum(values)),
+                CameraStd::Other { minimum, .. } => Ok(minimum),
+            }
+        }
+        fn norm(values: CameraStd) -> Result<f64, Error> {
+            match values {
+                CameraStd::Empty => Err(Error::Contract("empty camera standard deviations")),
+                CameraStd::Three(values) => Ok(orientation::norm(values)),
+                CameraStd::Other { norm, .. } => Ok(norm),
+            }
+        }
+        if minimum(rotation_std)? <= 1e-5 || minimum(translation_std)? <= 1e-5 {
+            return Ok(HandleResult::InputInvalid);
+        }
+        if norm(rotation_std)? > 100. || norm(translation_std)? > 2000. {
+            return Ok(HandleResult::InputInvalid);
+        }
+        // This side effect occurs BEFORE rotate_std discovers an irregular
+        // dimension. Preserve it even though handle() then returns an error.
+        self.posenet_stds.rotate_left(1);
+        self.posenet_stds[39] = match translation_std {
+            CameraStd::Three(values) => values[0],
+            CameraStd::Other { first, .. } => first,
+            CameraStd::Empty => return Err(Error::Contract("empty camera standard deviations")),
+        };
+        Err(Error::Contract("camera standard deviation dimensions"))
+    }
     pub fn pose(
         &self,
         sensors_valid: bool,
@@ -228,5 +323,68 @@ impl Estimator {
             inputs_valid,
             posenet_valid: !spike || self.car_speed <= 5.,
         })
+    }
+}
+
+#[cfg(test)]
+mod admission_tests {
+    use super::Estimator;
+    use serde_json::Value;
+
+    #[test]
+    fn original_late_camera_shape_error_retains_posenet_history_side_effects(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let original: Value = serde_json::from_slice(include_bytes!(
+            "../tests/data/admission-373/camera-calibration-edges-original.json"
+        ))?;
+        let rows = original["cases"].as_array().unwrap();
+        assert_eq!(rows.len(), 29);
+        let mut mutations = 0;
+        for row in rows {
+            let name = row["name"].as_str().unwrap();
+            let packet: Vec<u8> = serde_json::from_value(row["packet"].clone())?;
+            let mut estimator = Estimator::new(true)?;
+            estimator.kf.reset_default(Some(100.))?;
+            let before = estimator.kf.snapshot()?;
+            let actual = crate::wire::decode(&packet)
+                .and_then(|event| estimator.handle(event.log_time_ns as f64 * 1e-9, event.input));
+            if row["outcome"]["returned"].as_bool().unwrap() {
+                assert_eq!(
+                    actual? as i64,
+                    row["outcome"]["result"].as_i64().unwrap(),
+                    "{name}"
+                );
+            } else {
+                assert!(
+                    actual.is_err(),
+                    "{name}: original late shape failure must survive"
+                );
+            }
+            let history = row["posenet_stds"].as_array().unwrap();
+            assert_eq!(history.len(), 40);
+            for (actual, expected) in estimator.posenet_stds.iter().zip(history) {
+                if expected == "<NaN>" {
+                    assert!(actual.is_nan(), "{name}: original NaN history entry");
+                } else {
+                    assert_eq!(
+                        *actual,
+                        expected.as_f64().unwrap(),
+                        "{name}: exact history side effect"
+                    );
+                }
+            }
+            if estimator.posenet_stds.iter().any(|value| *value != 10.) {
+                mutations += 1;
+            }
+            let after = estimator.kf.snapshot()?;
+            assert_eq!(before.time, after.time, "{name}: no numerical observation");
+            assert_eq!(before.x, after.x, "{name}: no numerical observation");
+            assert_eq!(
+                before.covariance, after.covariance,
+                "{name}: no numerical observation"
+            );
+        }
+        assert_eq!(mutations, 9);
+        Ok(())
     }
 }
