@@ -1269,3 +1269,13 @@ fn telemetry_retains_metadata_error_transport_across_calls_and_threads() {
         }
     }
 }
+
+#[test]
+fn support_metadata_capture_preserves_total_deadline_and_drains_both_pipes() {
+    job_check(
+        "support-runtime",
+        &["--test git_capture --locked", "check_dashcam_metadata.py"],
+        &["--test git_capture", "check_dashcam_metadata.py"],
+        false,
+    );
+}

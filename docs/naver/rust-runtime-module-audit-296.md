@@ -1156,3 +1156,33 @@ Evidence: `.analysis/scratch/2026-10-18-version-log-ci/`, including
 `connect-original-green/result.json`. Separate read-only boundary review found no
 blocker. Other short-lived helper logger sites are explicitly inventoried in
 `boundary-and-ephemeral-review.md`; packet loss there is not inferred as tested.
+
+### Dashcam metadata Git pipe capture (#369, 2026-10-18)
+
+Actual public `metadata::git_text` calls reproduced three failures: a successful
+262144-byte stdout or stderr producer returned the fallback after filling its
+pipe, and a leader that exited while a private descendant held its pipes escaped
+the original four-second deadline. The old loop waited for exit before reading
+either pipe and then used unbounded `wait_with_output`. Four controls (invalid
+stdout/stderr UTF-8, nonzero exit and empty output) already passed.
+
+The helper now reuses process-supervision's bounded concurrent capture, preserving
+the four-second total deadline, status/UTF-8 validation, whitespace handling and
+fallback. It terminates/reaps its direct child on capture failure; it does not
+introduce process-group signaling or claim ownership of arbitrary descendants.
+The regression's outer group owner cleans up its private fixtures while retaining
+its own direct leader until final cleanup.
+
+All seven native cases pass after repair. The unchanged original `git_text`
+function, AST-extracted with its actual subprocess call, independently passes the
+same seven executable fixtures; its held-pipe case returns fallback at4.004s.
+The existing full original metadata comparison passes3184 cases with zero
+mismatches. Dashcam-upload and process-supervision all-target tests, dashcam strict
+all-target Clippy and51 workflow routing/space checks pass. Mandatory support CI
+now runs the new regression;254 guards retain the original177 argument hash.
+Exact committed-SHA CI remains required, and physical upload acceptance belongs
+to the user. Evidence: `.analysis/scratch/2026-10-18-dashcam-git-capture/`, including
+`native-red.log`, `native-green.log`, `original-control.json`, `affected-tests.log`,
+`clippy-final.log`, `ci-contracts.log` and `original-metadata-green/report.json`.
+An independent source review found no blocker; its bounded direct-child scope and
+test-only group ownership are recorded in `sol-image-review.md` there.

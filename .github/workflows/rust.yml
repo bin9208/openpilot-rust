@@ -2032,6 +2032,10 @@ jobs:
           python rust/tools/check_dashcam_metadata.py --binary rust/target/debug/examples/dashcam_metadata_trace --output "$RUNNER_TEMP/support-runtime/dashcam-metadata"
           python rust/tools/check_dashcam_params.py --binary rust/target/debug/examples/dashcam_params_trace \
             --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so --output "$RUNNER_TEMP/support-runtime/dashcam-params"
+      - name: Bound metadata Git capture across full pipes and exited leaders
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dashcam-upload --test git_capture --locked
       - name: Compare dashcam uploads and child connection ownership
         run: |
           python rust/tools/check_dashcam_runtime.py --binary rust/target/debug/openpilot-dashcam-upload --output "$RUNNER_TEMP/support-runtime/dashcam-runtime"

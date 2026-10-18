@@ -2764,6 +2764,7 @@ dependencies = [
  "openpilot-logging",
  "openpilot-params",
  "openpilot-params-typed",
+ "openpilot-process-supervision",
  "openpilot-web-upload",
  "percent-encoding",
  "regex",

@@ -14,6 +14,7 @@ openpilot-web-upload = { path = "../web-upload" }
 openpilot-params = { path = "../params" }
 openpilot-params-typed = { path = "../params-typed" }
 openpilot-logging = { path = "../logging" }
+openpilot-process-supervision = { path = "../process-supervision" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 thiserror = "2"
@@ -26,3 +27,8 @@ rustix = { version = "1", features = ["time","process"] }
 
 [dev-dependencies]
 tempfile = "3"
+
+[[test]]
+name = "git_capture"
+path = "tests/git_capture/main.rs"
+harness = false
