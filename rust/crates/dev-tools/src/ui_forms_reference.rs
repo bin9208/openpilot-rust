@@ -12,9 +12,9 @@ use std::{
     process::{Child, ChildStdin, ChildStdout, Command, Stdio},
 };
 #[path = "ui_forms_assets.rs"]
-mod assets;
+pub(crate) mod assets;
 #[path = "ui_forms_controls.rs"]
-mod controls;
+pub(crate) mod controls;
 #[path = "ui_forms_emoji.rs"]
 mod emoji;
 #[path = "ui_forms_environment.rs"]
@@ -22,7 +22,7 @@ mod environment;
 pub use emoji::raster as emoji_raster;
 pub(crate) use environment::Environment as ReferenceEnvironment;
 #[path = "ui_forms_html.rs"]
-mod html;
+pub(crate) mod html;
 #[path = "ui_forms_keyboard.rs"]
 mod keyboard;
 #[path = "ui_forms_list.rs"]

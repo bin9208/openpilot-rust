@@ -54,6 +54,35 @@ impl Runner for Peer<'_> {
 fn normalize(text: &str, output: &Path) -> String {
     text.replace(output.to_str().unwrap(), "@OUTPUT@")
 }
+// Only the retired network executable prefix changes. Keep the independently
+// captured argument tail, ordering, return codes, diagnostics and artifacts.
+fn native_network_case(original: &Value, target: &str) -> Value {
+    let mut case = original.clone();
+    if let Some(calls) = case["calls"].as_array_mut() {
+        for call in calls {
+            if call["name"] == "network" {
+                let argv = call["command"].as_array_mut().unwrap();
+                assert_eq!(argv[0], "@PYTHON@");
+                assert_eq!(argv[1], "@ROOT@/rust/tools/check_ui_network.py");
+                argv.splice(0..2, [Value::String(format!("{target}/check-ui-network"))]);
+            }
+        }
+    }
+    for value in case["files"].as_object_mut().unwrap().values_mut() {
+        let text = value.as_str().unwrap();
+        *value = Value::String(
+            text.replace(
+                "\"@PYTHON@\", \"@ROOT@/rust/tools/check_ui_network.py\"",
+                &format!("\"{target}/check-ui-network\""),
+            )
+            .replace(
+                "\"@PYTHON@\",\n      \"@ROOT@/rust/tools/check_ui_network.py\"",
+                &format!("\"{target}/check-ui-network\""),
+            ),
+        );
+    }
+    case
+}
 #[test]
 fn all_original_stages_calls_ledgers_logs_exit_and_failure_prefixes() {
     let corpus: Value =
@@ -80,7 +109,7 @@ fn all_original_stages_calls_ledgers_logs_exit_and_failure_prefixes() {
         }
         let mut printed = vec![];
         let mut disk_calls = 0;
-        let mut case = captured.clone();
+        let mut case = native_network_case(captured, "relative target");
         for call in case["calls"].as_array_mut().unwrap() {
             for arg in call["command"].as_array_mut().unwrap() {
                 *arg = Value::String(
@@ -192,6 +221,7 @@ fn real_process_order_merged_diagnostics_ledgers_and_signal_exit_match_original(
         .trim()
         .to_owned();
     for row in captured["cases"].as_array().unwrap() {
+        let row = native_network_case(row, "@TARGET@");
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("repo");
         let tools = root.join("rust/tools");
@@ -214,7 +244,7 @@ fn real_process_order_merged_diagnostics_ledgers_and_signal_exit_match_original(
             "fps",
             "egl",
         ] {
-            let path = if ["network", "application"].contains(&name) {
+            let path = if name == "application" {
                 tools.join(format!("check_ui_{name}.py"))
             } else {
                 target.join(format!("check-ui-{name}"))

@@ -1,4 +1,4 @@
-//! Shared UI orchestration. Two original subcheckers remain explicit dependencies;
+//! Shared UI orchestration. One original subchecker remains an explicit dependency;
 //! this module replaces only their caller, never their validation behavior.
 use crate::{
     argparse_scan::{scan_os, OptionSpec},
@@ -27,12 +27,7 @@ const CHECKS: [(&str, Option<&str>, &str, bool); 13] = [
     ("scroller", None, "scroller_trace", false),
     ("render", None, "ui_render", true),
     ("forms", None, "form_render", true),
-    (
-        "network",
-        Some("check_ui_network.py"),
-        "network_render",
-        true,
-    ),
+    ("network", None, "network_render", true),
     ("polygon", None, "polygon_render", true),
     ("diagnostics", None, "diagnostic_render", true),
     (

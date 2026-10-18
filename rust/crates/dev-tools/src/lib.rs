@@ -72,6 +72,10 @@ pub mod ui_forms_input;
 pub mod ui_forms_reference;
 pub mod ui_framework_check;
 #[cfg(feature = "image-array-native")]
+pub mod ui_network_check;
+#[cfg(feature = "image-array-native")]
+pub mod ui_network_reference;
+#[cfg(feature = "image-array-native")]
 pub mod ui_render_check;
 #[cfg(feature = "image-array-native")]
 pub mod ui_render_reference;

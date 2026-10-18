@@ -1,0 +1,177 @@
+[
+  {
+    "name": "auth-retry-before-modal",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"events\": [{\"NetworksUpdated\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}]}]}, {\"events\": [{\"NeedAuth\": \"Phone\\u2019s hotspot\"}]}, {}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "72598c5e760d5c932bef7e05324519ad96361000c6ed4e7e8c03b908c3612e37",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "f522eac91411f0d8aa60f1eadfa82face8cc42f552ce39ac5a1a78c7e7b99cf1",
+    "state_text": "[\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"NeedsAuth\",\n      \"network\": \"Phone\\u2019s hotspot\",\n      \"retry\": true,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 2,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"NeedsAuth\",\n      \"network\": \"Phone\\u2019s hotspot\",\n      \"retry\": true,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 2,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  }\n]"
+  },
+  {
+    "name": "activated-disconnected-order",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"events\": [{\"NetworksUpdated\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}]}]}, {\"operation\": \"choose\", \"ssid\": \"Open access\"}, {\"events\": [\"Activated\", \"Disconnected\"]}, {}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "381f9904af240f0a6600a5f002b7183c9762be196b1b5990823c0af314160f4d",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "d10e52591d9caae5a3ee1a6793aa61f1bca4408f3edb3c7165a195c19ebb2778",
+    "state_text": "[\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"Connecting\",\n      \"network\": \"Open access\",\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      },\n      {\n        \"Connect\": {\n          \"ssid\": \"Open access\",\n          \"password\": \"\",\n          \"hidden\": false\n        }\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": \"Open access\",\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      },\n      {\n        \"Connect\": {\n          \"ssid\": \"Open access\",\n          \"password\": \"\",\n          \"hidden\": false\n        }\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": \"Open access\",\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      },\n      {\n        \"Connect\": {\n          \"ssid\": \"Open access\",\n          \"password\": \"\",\n          \"hidden\": false\n        }\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  }\n]"
+  },
+  {
+    "name": "duplicate-selected-order",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"events\": [{\"NetworksUpdated\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}]}]}, {\"operation\": \"choose\", \"ssid\": \"Open access\"}, {}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "f4d73c31d7fc93049a6253cf95e7dcb52c225d13a9258366cacc6390855821cc",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "874bcf5bfaf8a79ad98b3d680c6f6b38744bb9ef73bfcec862335d911f507852",
+    "state_text": "[\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"NeedsAuth\",\n      \"network\": \"Open access\",\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 2,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"NeedsAuth\",\n      \"network\": \"Open access\",\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 2,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  }\n]"
+  },
+  {
+    "name": "unknown-operation-ignored",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"events\": [{\"NetworksUpdated\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}]}]}, {\"operation\": \"unused\", \"text\": [\"\\ud800\"]}, {}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "381f9904af240f0a6600a5f002b7183c9762be196b1b5990823c0af314160f4d",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "d10e52591d9caae5a3ee1a6793aa61f1bca4408f3edb3c7165a195c19ebb2778",
+    "state_text": "[\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  }\n]"
+  },
+  {
+    "name": "malformed-callback-empty",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"events\": [{}]}]}",
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "malformed-callback-multiple",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"events\": [{\"NetworksUpdated\": [], \"Unknown\": null}]}, {}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "9c6bae91ba78d51e08a06f728b45eaec7285be6fee8dacb6330703183c023b8b",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "5b341388629ca7a3d7884e60a9773216d8a9f7860c2166434a2459e3c5318f44",
+    "state_text": "[\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  }\n]"
+  },
+  {
+    "name": "malformed-frame-null",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [null]}",
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "unused-deep-frame",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"unused\": [[[[\"\\ud800\"]]]]}, {}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "9c6bae91ba78d51e08a06f728b45eaec7285be6fee8dacb6330703183c023b8b",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "5b341388629ca7a3d7884e60a9773216d8a9f7860c2166434a2459e3c5318f44",
+    "state_text": "[\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  }\n]"
+  },
+  {
+    "name": "numeric-ssid",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"events\": [{\"NetworksUpdated\": [{\"ssid\": 42, \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}]}]}]}",
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "surrogate-ssid",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"events\": [{\"NetworksUpdated\": [{\"ssid\": \"\\ud800\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}]}]}]}",
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "snapshot-falsy-ignored",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"snapshot\": {}}, {}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "9c6bae91ba78d51e08a06f728b45eaec7285be6fee8dacb6330703183c023b8b",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "5b341388629ca7a3d7884e60a9773216d8a9f7860c2166434a2459e3c5318f44",
+    "state_text": "[\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  },\n  {\n    \"state\": {\n      \"phase\": \"Idle\",\n      \"network\": null,\n      \"retry\": false,\n      \"ip\": \"192.0.2.4\",\n      \"keyboard\": \"\"\n    },\n    \"stack\": 1,\n    \"commands\": [\n      {\n        \"SetActive\": true\n      }\n    ],\n    \"apn\": null,\n    \"roaming\": false,\n    \"metered\": false\n  }\n]"
+  },
+  {
+    "name": "missing-snapshot-field",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"invalid\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{}]}",
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "wifi-password-no-state",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"operation\": \"password\", \"text\": \"abcdefgh\"}]}",
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "wifi-forgot-no-state",
+    "scene_text": "{\"kind\": \"wifi\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"operation\": \"forgot\"}]}",
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "advanced-wifi-operation",
+    "scene_text": "{\"kind\": \"advanced\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"operation\": \"choose\", \"ssid\": \"Open access\"}]}",
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "network-choose-operation",
+    "scene_text": "{\"kind\": \"network\", \"snapshot\": {\"networks\": [{\"ssid\": \"Open access\", \"strength\": 98, \"security_type\": \"Open\", \"is_tethering\": false}, {\"ssid\": \"Saved network\", \"strength\": 67, \"security_type\": \"Wpa\", \"is_tethering\": false}, {\"ssid\": \"Phone\\u2019s hotspot\", \"strength\": 45, \"security_type\": \"Wpa2\", \"is_tethering\": false}, {\"ssid\": \"Unsupported\", \"strength\": 20, \"security_type\": \"Unsupported\", \"is_tethering\": false}], \"wifi_state\": {\"ssid\": \"Saved network\", \"status\": \"Connected\"}, \"ipv4_address\": \"192.0.2.4\", \"current_network_metered\": \"Yes\", \"connecting_to_ssid\": null, \"connected_ssid\": \"Saved network\", \"tethering_password\": \"fixture-password\", \"tethering_active\": false, \"saved_ssids\": [\"Saved network\"]}, \"frames\": [{\"operation\": \"choose\", \"ssid\": \"Open access\"}]}",
+    "exit": 1,
+    "png": false,
+    "state": false
+  }
+]

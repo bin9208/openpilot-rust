@@ -2296,3 +2296,27 @@ CLI is removed while the `normalize` helper remains AST-identical for camera
 lifecycle. Its generic invalid-input and ownership behavior remains part of the
 Rust tests. Inventory: 96 replaced, six partial, 3,478 pending. These host results
 do not establish hardware operation or whole-repository conversion completion.
+
+### Native network screen reference and checker (2026-10-18)
+
+The source-independent network reference preserves 66 non-environment and seven
+manual-loop environment contracts, with exact original PNG bytes, decoded pixels,
+state histories and admission failures. Nineteen checker process contracts pass.
+The drift guard verifies 57 original source/asset pins, dependency identity, font
+namespace and helper cleanup. Missing retired oracle files alone are accepted;
+changed reintroduced originals and missing or changed live dependencies fail.
+
+Initial differential failures exposed incorrect divider intensity/checkmark
+placement, omitted direct-font scaling, substring membership for saved SSIDs and
+missing C-float rounding of expanded description height before scroll physics.
+The independently captured expectations were retained throughout the fixes;
+all 73 reference cases pass. No production Wi-Fi/network policy changed.
+
+Both Python entrypoints are removed, and shared framework orchestration invokes
+`check-ui-network`. On the rebuilt current candidate, all ten scenes/67 frames
+match exactly after removal, with PATH disabled. Execution tracing records only
+31 native executions (checker, ten references, ten raw drawing helpers, ten
+candidates). The original screenshot/CPU-dependent Confirm CI failure remains a
+separate unresolved gate, covered by the temporary diagnostic described above.
+Inventory including ISP's partial CLI retirement: 98 replaced, six partial,
+3,476 pending. Full repository conversion and physical device checks are not done.

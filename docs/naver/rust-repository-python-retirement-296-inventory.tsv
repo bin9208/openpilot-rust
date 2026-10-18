@@ -2141,7 +2141,7 @@ rust/tools/check_ui_model_render.py	945ac4b797722c858744d866e9eeee6aabaed80f	pen
 rust/tools/check_ui_native_resources.py	28a96b6c76051a055609a0d9c436bc0e1cb6f28d	replaced-local	rust/crates/dev-tools/src/startup_adapter_sanitizers.rs;check-ui-native-resources
 rust/tools/check_ui_native_safety.py	7026cc048cf5e7cc7119cd72494368aa4c5cc407	replaced-local	rust/crates/dev-tools/src/startup_adapter_sanitizers.rs;check-ui-native-safety
 rust/tools/check_ui_navigation.py	d1f15851260ed84c58d360e76b70d9df5024b099	replaced-local	rust/crates/dev-tools/src/ui_headless_check.rs
-rust/tools/check_ui_network.py	fffbc51ffe8cc096159e07c873dfaf99d3a75594	pending	-
+rust/tools/check_ui_network.py	fffbc51ffe8cc096159e07c873dfaf99d3a75594	replaced-local	rust/crates/dev-tools/src/ui_network_check.rs; independent captures and native-only post-removal proof
 rust/tools/check_ui_onboarding_cards.py	91f99692279cd91099e723a26baa0e3933d3a0b9	pending	-
 rust/tools/check_ui_plot_samples.py	fd0f328e12cab3a3de3c7d6d64883b48b291dc0b	replaced-local	rust/crates/dev-tools/src/plot_samples_check.rs
 rust/tools/check_ui_polygon.py	9d89f845b4479a1b5ec29258f126efde0fad159b	replaced-local	openpilot-dev-tools check-ui-polygon; original image-array modes and pinned native codecs, independent comparison corpus
@@ -2620,7 +2620,7 @@ rust/tools/ui_model_qa/parameters.py	065df912df642099e20b9a4ba2afb79eb9567b4c	pe
 rust/tools/ui_model_qa/scenes.py	2e666f8e3ad9cfb5d74b1acb91674db57271c2ef	pending	-
 rust/tools/ui_model_qa/snapshot.py	d534a69b75009c4021e4916e1b231cab49d7bc34	pending	-
 rust/tools/ui_model_qa/source.py	0e747ba2c357696b776c5ce7e263187bdfdf78e2	pending	-
-rust/tools/ui_network_source.py	40050895abbb4f87cc10ce6ebfaf92f9cba66333	pending	-
+rust/tools/ui_network_source.py	40050895abbb4f87cc10ce6ebfaf92f9cba66333	replaced-local	rust/crates/dev-tools/src/ui_network_reference.rs; independent captures and native-only post-removal proof
 rust/tools/ui_qa/application_source.py	54680daa0751838dc9cbafe1492a11fa933e3f0b	pending	-
 rust/tools/ui_qa/diagnostic_source.py	78f6b3a75b9087d890618da80bda755891e3138f	replaced-local	openpilot-dev-tools ui-diagnostic-reference; independently ported scene policy and owned raw raylib ABI
 rust/tools/ui_qa/egl_source.py	aac7607d8abb62ab53a753fb048aa7d364375cff	replaced-local	openpilot-dev-tools ui-egl-reference; Rust policy with separate checked raw startup-ui ABI adapter

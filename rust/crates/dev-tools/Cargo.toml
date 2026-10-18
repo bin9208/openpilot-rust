@@ -653,6 +653,24 @@ name = "camera_misc_check"
 required-features = ["camera-sensor-native"]
 
 [[bin]]
+name = "check-ui-network"
+path = "src/bin/check_ui_network.rs"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "ui-network-reference"
+path = "src/bin/ui_network_reference.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_network_check"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_network_reference"
+required-features = ["image-array-native"]
+
+[[bin]]
 name = "check-camerad-packets"
 path = "src/bin/check_camerad_packets.rs"
 required-features = ["camera-sensor-native"]
