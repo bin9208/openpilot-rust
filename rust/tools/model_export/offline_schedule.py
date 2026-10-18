@@ -76,8 +76,8 @@ def plan_linear(linear: UOp, held: set[UOp]) -> UOp:
         return memory.memory_plan_rewrite(linear, held)
 
 
-def schedule_outputs(outputs: tuple[Tensor, ...]) -> UOp:
-    with static_movement_capability(), Context(NO_MEMORY_PLANNER=1, IMAGE=1, FLOAT16=1, NOLOCALS=1, BEAM=0, OPENPILOT_HACKS=1):
+def schedule_outputs(outputs: tuple[Tensor, ...], *, float16: int = 1) -> UOp:
+    with static_movement_capability(), Context(NO_MEMORY_PLANNER=1, IMAGE=1, FLOAT16=float16, NOLOCALS=1, BEAM=0, OPENPILOT_HACKS=1):
         linear, variables = outputs[0].linear_with_vars(*outputs[1:])
     if variables:
         raise ExportError("offline model requires static dimensions")
@@ -113,7 +113,7 @@ def launch_dimensions(info: ProgramInfo, source: str, binary: bytes) -> tuple[tu
     return tuple(size // group for size, group in zip(info.global_size, local, strict=True)), tuple(local)
 
 
-def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination: Path) -> OfflineCompilation:
+def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination: Path, *, float16: int = 1) -> OfflineCompilation:
     model = schedule.model
     outputs = tuple(model.bindings.outputs.values())
     if not outputs:
@@ -153,7 +153,7 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
             continue
         if call.src[0].op is not Ops.SINK:
             raise ExportError("unsupported offline scheduled call")
-        with Context(IMAGE=1, FLOAT16=1, NOLOCALS=1, BEAM=0, OPENPILOT_HACKS=1):
+        with Context(IMAGE=1, FLOAT16=float16, NOLOCALS=1, BEAM=0, OPENPILOT_HACKS=1):
             program = to_program(call.src[0], renderer)
         info = program.arg
         if info.vars or len(info.aux) != 1:
@@ -207,11 +207,11 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
 
 
 @host_build
-def export_model(model: OfflineModel, compiler: OfflineQcomCompiler, destination: Path) -> OfflineCompilation:
+def export_model(model: OfflineModel, compiler: OfflineQcomCompiler, destination: Path, *, float16: int = 1) -> OfflineCompilation:
     if not model.bindings.outputs:
         raise ExportError("offline model needs outputs")
-    prepared = prepare_constants(model, schedule_outputs(tuple(model.bindings.outputs.values())))
-    return emit_schedule(Emission(OfflineModel(model.bindings, prepared.initialized), prepared.linear), compiler, destination)
+    prepared = prepare_constants(model, schedule_outputs(tuple(model.bindings.outputs.values()), float16=float16))
+    return emit_schedule(Emission(OfflineModel(model.bindings, prepared.initialized), prepared.linear), compiler, destination, float16=float16)
 
 
 @host_build

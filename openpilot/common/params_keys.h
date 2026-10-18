@@ -421,6 +421,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"VehicleNaviDecelCancelEarlyWarning", {PERSISTENT, BOOL, "0"}},
     {"VehicleNaviSectionAvgControl", {PERSISTENT, BOOL, "0"}},
     {"SignalAssistMode", {PERSISTENT, INT, "0"}},
+    {"LeadBrakeLights", {PERSISTENT, BOOL, "0"}},
     {"HyundaiCanfdClusterDirectTx", {PERSISTENT, BOOL, "0"}},
     {"BlinkerLatchedTurn", {PERSISTENT, INT, "0"}},
     {"LaneChangeLeverWait", {PERSISTENT, BOOL, "0"}},

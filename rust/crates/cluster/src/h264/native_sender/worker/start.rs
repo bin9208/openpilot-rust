@@ -35,6 +35,9 @@ impl Sender {
             .name("cluster-usb-h264-native-send".into())
             .spawn(move || {
                 if let Some((mut output, ())) = worker.open(factory()) {
+                    if let Ok(mut state) = super::lock(&worker_shared) {
+                        state.preserve_references = output.preserve_reference_frames();
+                    }
                     match output.start(requested.max(0)) {
                         Err(error) => {
                             let _ = initialized.send(Err(error));
@@ -47,6 +50,7 @@ impl Sender {
                                 if let Ok(mut state) = super::lock(&worker_shared) {
                                     if !state.closing {
                                         state.snapshot.error = Some(error.to_string());
+                                        worker_shared.ready.notify_all();
                                     }
                                 }
                             }

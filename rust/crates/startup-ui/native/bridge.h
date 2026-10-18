@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 namespace startup_ui {
+void hud_graphics_cleanup(rust::Str path, bool owns_fd);
+void hud_trim_heap();
 bool try_process_locale(rust::Str candidate);
 struct Point;
 struct Rect;

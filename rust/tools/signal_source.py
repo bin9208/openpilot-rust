@@ -11,7 +11,7 @@ FIXTURE = Path(__file__).resolve().parents[1] / 'upstream/signal-source.json'
 
 def source(path):
   fixture = json.loads(FIXTURE.read_text())
-  assert fixture['source_commit'] == '8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8'
+  assert fixture['source_commit'] == '163c000e05641adea88e9221094d45c90c3e186d'
   entry = fixture['files'][path]
   data = entry['content'].encode()
   assert hashlib.sha256(data).hexdigest() == entry['sha256']

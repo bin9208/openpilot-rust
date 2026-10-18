@@ -8,12 +8,14 @@ use std::{io, time::Duration};
 pub(super) struct Wifi<C: Channel = Connection<TcpSocket>> {
     registration: Registration,
     queue: Queue<C>,
+    pub h264_active: bool,
 }
 impl<C: Channel> Wifi<C> {
     pub fn new(registration: Registration) -> Self {
         Self {
             registration,
             queue: Queue::new(None),
+            h264_active: false,
         }
     }
     pub fn open_with(
@@ -63,6 +65,17 @@ impl<C: Channel> Wifi<C> {
     }
     pub fn close(&mut self, runtime: &mut impl Runtime) {
         runtime.connected(false);
+        if self.h264_active && self.queue.connected() && !self.queue.disconnected() {
+            self.h264_active = false;
+            for id in [123, 122, 122] {
+                if let Ok(payload) = runtime
+                    .milliseconds()
+                    .and_then(|t| packet::command(id, t, &[]))
+                {
+                    let _ = self.transaction(&payload, false, false, runtime);
+                }
+            }
+        }
         if self.queue.connected() && !self.queue.disconnected() {
             if let Ok(timestamp) = runtime.milliseconds() {
                 if let Ok(payload) = packet::command(10, timestamp, &[]) {
@@ -78,6 +91,7 @@ impl<C: Channel> Wifi<C> {
             }
         }
         self.queue.close();
+        self.h264_active = false;
     }
 }
 

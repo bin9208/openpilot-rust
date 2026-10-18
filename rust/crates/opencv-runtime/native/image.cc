@@ -32,6 +32,22 @@ rust::Vec<std::uint8_t> nv12_rgb(rust::Slice<const std::uint8_t> data, Dimension
   cv::cvtColor(input, result, cv::COLOR_YUV2RGB_NV12);
   return owned_bytes(result);
 }
+rust::Vec<std::uint8_t> nv12_planes_rgb(rust::Slice<const std::uint8_t> data, Dimensions size, std::size_t stride, std::size_t uv_offset) {
+  checked_size(size, 1);
+  const auto maximum = std::numeric_limits<std::size_t>::max();
+  if (size.width % 2 || size.height % 2 || stride < size.width || stride % 2
+      || stride > maximum / size.height || uv_offset < stride * size.height
+      || stride * (size.height / 2) > maximum - uv_offset
+      || data.size() < uv_offset + stride * (size.height / 2))
+    throw std::invalid_argument("padded NV12 dimensions or slice mismatch");
+  const cv::Mat y(static_cast<int>(size.height), static_cast<int>(size.width), CV_8UC1,
+    const_cast<std::uint8_t*>(data.data()), stride);
+  const cv::Mat uv(static_cast<int>(size.height / 2), static_cast<int>(size.width / 2), CV_8UC2,
+    const_cast<std::uint8_t*>(data.data()) + uv_offset, stride);
+  cv::Mat result;
+  cv::cvtColorTwoPlane(y, uv, result, cv::COLOR_YUV2RGB_NV12);
+  return owned_bytes(result);
+}
 rust::Vec<std::uint8_t> mask_polygon(rust::Slice<const Point> points, Dimensions size) {
   checked_size(size, 1);
   if (points.size() < 3) throw std::invalid_argument("polygon mask needs three points");

@@ -4,7 +4,10 @@ use std::sync::OnceLock;
 mod image;
 mod net;
 mod primitives;
-pub use image::{apply_mask, bgr_to_gray, bounding_rect, nv12_to_rgb, polygon_mask, resize_linear};
+pub use image::{
+    apply_mask, bgr_to_gray, bounding_rect, nv12_planes_to_rgb, nv12_to_rgb, polygon_mask,
+    resize_linear,
+};
 pub use net::DnnNet;
 pub use primitives::{
     connected_components, distance_transform, external_contours, match_template,

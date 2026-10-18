@@ -116,6 +116,9 @@ impl CarrotServ {
             self.sequences[3] = projected.sequences[3];
             if !control.position_present {
                 self.gps.last_navi = 0.;
+                self.gps
+                    .sources
+                    .remove(super::gps_sources::Source::ExternalNavi);
                 self.nav.road_name.clear();
             } else {
                 self.gps.navi_latitude = control.position_latitude;
@@ -127,6 +130,16 @@ impl CarrotServ {
                     .position_received_mono_s
                     .unwrap_or(snapshot.received_mono_s);
                 self.gps.last_calculate = self.gps.last_navi;
+                self.gps.sources.put(
+                    super::gps_sources::Source::ExternalNavi,
+                    super::gps_sources::Fix {
+                        latitude: self.gps.navi_latitude,
+                        longitude: self.gps.navi_longitude,
+                        heading: Some(self.gps.angle),
+                        speed: self.gps.speed / 3.6,
+                        stamp: self.gps.last_navi,
+                    },
+                );
             }
         }
         if new_session || projected.sequences[5] != self.sequences[5] {
@@ -264,6 +277,9 @@ impl CarrotServ {
         self.session_id.clear();
         self.sequences = [0; 6];
         self.gps.last_navi = 0.;
+        self.gps
+            .sources
+            .remove(super::gps_sources::Source::ExternalNavi);
         if self.traffic_active {
             self.traffic_active = false;
             Some(TrafficAction::Remove)

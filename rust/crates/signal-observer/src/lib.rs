@@ -51,3 +51,6 @@ pub mod qcom;
 
 #[cfg(feature = "neural-qcom")]
 pub mod qcom_provider;
+
+#[cfg(feature = "native-skip-miri")]
+pub mod lead_brake;

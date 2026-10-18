@@ -56,9 +56,9 @@ pub fn discover_with<D: Datagram>(
     }
     Err(Error::NotFound)
 }
-struct Udp(UdpSocket);
+pub(crate) struct Udp(UdpSocket);
 impl Udp {
-    fn new() -> io::Result<Self> {
+    pub(crate) fn new() -> io::Result<Self> {
         use rustix::net::{ipproto, socket_with, AddressFamily, SocketFlags, SocketType};
         let fd = socket_with(
             AddressFamily::INET,

@@ -16,7 +16,7 @@ from .schema import Bindings, ExportError
 STATIC_OPERATORS: Final = frozenset({
     "Identity", "Cast", "Concat", "Sub", "Div", "Conv", "Gelu", "Mul", "Add", "ReduceMean", "Relu", "Sigmoid",
     "Reshape", "Gemm", "ReduceL2", "Clip", "Expand", "Slice", "Unsqueeze", "Transpose", "GatherND", "MatMul",
-    "LayerNormalization", "Squeeze", "Where", "Softmax", "Gather",
+    "LayerNormalization", "Squeeze", "Where", "Softmax", "Gather", "MaxPool", "Resize", "GlobalAveragePool", "Flatten", "Constant",
 })
 
 
@@ -27,10 +27,12 @@ class OfflineOnnx:
 
 
 @host_build
-def load_runner(path: Path, expected_sha256: str) -> OfflineOnnx:
+def load_runner(path: Path, expected_sha256: str, *, float16: int = 1) -> OfflineOnnx:
+    if float16 not in (0, 1):
+        raise ExportError("float16 must be 0 or 1")
     if hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha256:
         raise ExportError("ONNX model identity differs from the pinned object")
-    with Context(DEV="CPU:LLVM", IMAGE=1, FLOAT16=1, OPENPILOT_HACKS=1):
+    with Context(DEV="CPU:LLVM", IMAGE=1, FLOAT16=float16, OPENPILOT_HACKS=1):
         runner = OnnxRunner(path)
         if runner.is_training:
             raise ExportError("offline ONNX training graph is unsupported")
@@ -65,8 +67,8 @@ def load_runner(path: Path, expected_sha256: str) -> OfflineOnnx:
 
 
 @host_build
-def load_model(path: Path, expected_sha256: str) -> OfflineModel:
-    loaded = load_runner(path, expected_sha256)
+def load_model(path: Path, expected_sha256: str, *, float16: int = 1) -> OfflineModel:
+    loaded = load_runner(path, expected_sha256, float16=float16)
     inputs = {}
     for name, spec in loaded.runner.graph_inputs.items():
         if spec.is_optional or spec.is_sequence:
@@ -74,11 +76,11 @@ def load_model(path: Path, expected_sha256: str) -> OfflineModel:
         shape = tuple(size if isinstance(size, int) else 1 for size in spec.shape)
         dtype = dtypes.float32 if spec.dtype is dtypes.float16 else spec.dtype
         inputs[name] = Tensor.empty(*shape, dtype=dtype, device="QCOM")
-    with Context(DEV="QCOM", IMAGE=1, FLOAT16=1, NOLOCALS=1, OPENPILOT_HACKS=1):
+    with Context(DEV="QCOM", IMAGE=1, FLOAT16=float16, NOLOCALS=1, OPENPILOT_HACKS=1):
         outputs = loaded.runner(inputs)
     converted = {}
     for name, output in outputs.items():
         if not isinstance(output, Tensor):
             raise ExportError("offline ONNX output requires a single Tensor")
-        converted[name] = output.cast(dtypes.float32)
+        converted[name] = output.cast(dtypes.float32).contiguous() if not float16 else output.cast(dtypes.float32)
     return OfflineModel(Bindings(inputs, converted), loaded.initialized)

@@ -1,5 +1,5 @@
 {
-  "source_commit": "e8e152dbcfd9574a1791ed12026d1880e87689b3",
+  "source_commit": "163c000e05641adea88e9221094d45c90c3e186d",
   "scope": "exact native ESP-IDF firmware; no flashing or device execution",
   "files": {
     "tools/esp32s3_display/firmware/.gitignore": {
@@ -8,14 +8,14 @@
       "git_blob": "a90ab6f1e57d5a9fe3aaea9fd04d8ffa937b11c3"
     },
     "tools/esp32s3_display/firmware/CMakeLists.txt": {
-      "bytes": 114,
-      "sha256": "d6a8b556288d26ccb2cc1257960d14cb854bc75811f1f3230312acb696c47dd6",
-      "git_blob": "8578306454171f04acb4b5d609245f4252aff639"
+      "bytes": 139,
+      "sha256": "d1cc77c402af835a06cddbfc1474af5adcb2b58423fe8ed396f471bed62fa0d6",
+      "git_blob": "c63584d87436a193c97c556a8ad4414afc317047"
     },
     "tools/esp32s3_display/firmware/main/CMakeLists.txt": {
-      "bytes": 248,
-      "sha256": "38899dee40dc9488f8cb2aedafb94a89b944740033b9e29ce28227dc743cf0e8",
-      "git_blob": "58c0bfa675dd9bd98f0c7bca3e5e11aa8c6b2697"
+      "bytes": 278,
+      "sha256": "c49ef558ad033779c11ea9e7a2c2ed7bafbb6b1fd392c2e559dea30b5c39cba7",
+      "git_blob": "8b3fffd392b5c6bef6b7e10dc5d2009df578b536"
     },
     "tools/esp32s3_display/firmware/main/display_status.c": {
       "bytes": 4804,
@@ -28,9 +28,9 @@
       "git_blob": "aa8b2227a12a57014b3ac09a4262aa322531d7ab"
     },
     "tools/esp32s3_display/firmware/main/network.c": {
-      "bytes": 7665,
-      "sha256": "8dded316ea8a7f28cdf523814c52b42a152e770f9e20c770908b3a3b327d693f",
-      "git_blob": "f79ab15e51f1efa96437f25c7ecf75100ade9968"
+      "bytes": 8056,
+      "sha256": "74b4f247a44ffbe6f45295ea99bfd05bee80a7093e98dc7acf9338dd08b53add",
+      "git_blob": "6df89d7bc1704d6c5caf4f6b52184ff736bb4191"
     },
     "tools/esp32s3_display/firmware/main/network.h": {
       "bytes": 770,
@@ -38,9 +38,9 @@
       "git_blob": "aeb084c704a466c0f540069f08282bbb2354e25d"
     },
     "tools/esp32s3_display/firmware/main/provision.c": {
-      "bytes": 15602,
-      "sha256": "fa3831d41ef3dc8b379f85ddf212b701f1c6c4f9bb4b0111c4d36a7c30c79f4b",
-      "git_blob": "6e1e87101e110cc3795a2a94a6a1d435cdc37b25"
+      "bytes": 17875,
+      "sha256": "00f29c46ee5e207bca01ef554a910aa5cb2482bdebc1c49933c6ced54bb2806a",
+      "git_blob": "02a106fec4c843ef3a09c96ba52dd476eaaa0e09"
     },
     "tools/esp32s3_display/firmware/main/provision.h": {
       "bytes": 206,
@@ -48,9 +48,9 @@
       "git_blob": "7c84800d5e8c07e0982c06a902e0f6745201cfe7"
     },
     "tools/esp32s3_display/firmware/main/usb_bridge.c": {
-      "bytes": 11682,
-      "sha256": "d558e0842d980043a194333ef468435629686d209b9aa6f7d25b81bf8020c11f",
-      "git_blob": "9d4919dd67ca7f51381e38b2f679b12575b6d5c2"
+      "bytes": 12966,
+      "sha256": "c3dc1cf98e44c2b7d00fd536249a78a06bec4f8f1638ef2c14ff2fd1b7cde567",
+      "git_blob": "f68e67fa7ae4cffc354aee613c1326f375976103"
     },
     "tools/esp32s3_display/firmware/partitions.csv": {
       "bytes": 144,
@@ -61,9 +61,29 @@
       "bytes": 1006,
       "sha256": "acab6b3f9ddca0b2a64a5a1a7f513388360b79701a5a5931858bf5af1b8dbbcf",
       "git_blob": "d3234d4f22a03f69e2e7c1e49b4dba2f0ba3c3e3"
+    },
+    "tools/esp32s3_display/firmware/main/Kconfig.projbuild": {
+      "bytes": 167,
+      "sha256": "83b8c37dc860f5d0078537d22f897c7fcb49379331da4a92d7e1e23d16f95cc6",
+      "git_blob": "ecd45efba0d766623ad06d0024d646c85395f8b1"
+    },
+    "tools/esp32s3_display/firmware/main/status_led.c": {
+      "bytes": 3195,
+      "sha256": "0e144bea56a00338e5cd3458e79b8678417b1e169a3f6e413e499cb002807f3c",
+      "git_blob": "51db41977ca6e68406e9b5eb7c07b59d90d38309"
+    },
+    "tools/esp32s3_display/firmware/main/status_led.h": {
+      "bytes": 249,
+      "sha256": "898f4cf7bff95fc149064e0df884023fe1621f4bddef4a7fc49658c5dcbe792a",
+      "git_blob": "23b80ace6e68407ed6b992aa02ff6975210a8bd5"
+    },
+    "tools/esp32s3_display/firmware/main/status_led_policy.h": {
+      "bytes": 778,
+      "sha256": "ca919a16c18d71f676c341e4fe98fbd5d5d29ff9c86d7190beef03b447dc4755",
+      "git_blob": "dbbd56494092214fe92200c1fec3b9092ae857bc"
     }
   },
-  "local_build": {
+  "prior_build": {
     "sdk_version": "ESP-IDF v5.4 (5.4.0)",
     "sdk_commit": "67c1de1eebe095d554d281952fde63c16ee2dca0",
     "sdk_tools_manifest_sha256": "1ecd91545c6be1c75e5d328c419ee43f912b235622968141878b889bcde12a87",
@@ -85,6 +105,35 @@
       "bootloader/bootloader.bin": {
         "bytes": 21008,
         "sha256": "1562c46c4950bb14febb65acbe89bac4cec55faebf68e1f4250e0668a497f5fd"
+      },
+      "partition_table/partition-table.bin": {
+        "bytes": 3072,
+        "sha256": "73c0b5c3e5fcba3a151cc70c453c93dd5f4798899e7f2f8cca76da1f32ffc501"
+      }
+    }
+  },
+  "local_build": {
+    "sdk_version": "ESP-IDF v5.4 (5.4.0)",
+    "sdk_commit": "67c1de1eebe095d554d281952fde63c16ee2dca0",
+    "sdk_tools_manifest_sha256": "1ecd91545c6be1c75e5d328c419ee43f912b235622968141878b889bcde12a87",
+    "compiler": "xtensa-esp-elf-gcc (crosstool-NG esp-14.2.0_20241119) 14.2.0",
+    "compiler_sha256": "d968578945d9f62c2769e03a786d8853eb0ba226cfff1e8ee6588550927941a3",
+    "parallel_jobs": 2,
+    "configure_passed": true,
+    "link_passed": true,
+    "target_execution": false,
+    "artifacts": {
+      "carrot_s3_display.elf": {
+        "bytes": 9506136,
+        "sha256": "92c83ee8480cb8e16f877c9015c8ddd8dfab81de82adfde483f0c12083c65e7c"
+      },
+      "carrot_s3_display.bin": {
+        "bytes": 893760,
+        "sha256": "c41429c542ead0cf2cbe20609b16d31aab3ea007a8114dd126a02d19f628855b"
+      },
+      "bootloader/bootloader.bin": {
+        "bytes": 21008,
+        "sha256": "1cec52d3fb26c6af79cc2b4587974894f8b5174ab1c52561e6cd095fa62f4d13"
       },
       "partition_table/partition-table.bin": {
         "bytes": 3072,

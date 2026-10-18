@@ -16,6 +16,7 @@ pub(super) struct CameraResources {
     pub(super) live: Option<LiveRoadCamera>,
     failed: bool,
     pub(super) signal: openpilot_ui_application::signal_display::Reader,
+    pub(super) brake: openpilot_ui_application::lead_brake::Reader,
 }
 impl ClusterUiRenderer {
     pub(super) fn close_live_road_camera(&mut self) -> Result<()> {

@@ -31,13 +31,13 @@ impl CapturePolicy {
     }
 }
 pub fn next_delay(wall: f64, cpu: f64) -> f64 {
-    0_f64.max(0.05 - wall).max(cpu)
+    0_f64.max(0.05 - wall).max(2. * cpu - wall)
 }
 pub fn result_fresh(eof_ns: u64, now_ns: u64) -> bool {
     now_ns >= eof_ns && now_ns - eof_ns <= 200_000_000
 }
-/// Own both active planes before conversion. Caller rechecks the shared frame ID
-/// after this returns; conversion time belongs to the source reuse window.
+/// Borrow padded planes for conversion and return owned RGB. Caller rechecks
+/// the shared frame ID afterwards, retaining the source reuse window.
 pub fn copy_nv12_rgb(
     raw: &[u8],
     width: u32,
@@ -65,19 +65,12 @@ pub fn copy_nv12_rgb(
     if raw.len() < end {
         return Err(cv::Error::Contract("truncated tracking camera buffer"));
     }
-    let mut packed = Vec::with_capacity(width as usize * height as usize * 3 / 2);
-    for row in 0..height as usize {
-        packed.extend_from_slice(&raw[row * stride..row * stride + width as usize]);
-    }
-    for row in 0..height as usize / 2 {
-        let base = uv_offset + row * stride;
-        packed.extend_from_slice(&raw[base..base + width as usize]);
-    }
-    let image = cv::nv12_to_rgb(&packed, cv::Dimensions::new(width, height)?)?;
+    let image =
+        cv::nv12_planes_to_rgb(raw, cv::Dimensions::new(width, height)?, stride, uv_offset)?;
     Ok(Rgb {
         width,
         height,
-        data: image.view().data().to_vec(),
+        data: image.into_data(),
     })
 }
 #[cfg(test)]
@@ -104,6 +97,19 @@ mod tests {
         );
         assert!(!result_fresh(10, 9));
         assert!(result_fresh(10, 200_000_010));
-        assert_eq!(next_delay(0.01, 0.07), 0.07);
+        assert_eq!(next_delay(0.01, 0.07), 0.13);
+    }
+    #[test]
+    fn cadence_counts_time_already_spent_preempted_and_never_catches_up() {
+        for (wall, cpu, expected) in [
+            (0.080, 0.030, 0.0),
+            (0.050, 0.040, 0.030),
+            (0.010, 0.005, 0.040),
+            (0.200, 0.200, 0.200),
+        ] {
+            assert!((next_delay(wall, cpu) - expected).abs() < 1e-12);
+            assert!(wall + next_delay(wall, cpu) + 1e-12 >= 0.05);
+            assert!(wall + next_delay(wall, cpu) + 1e-12 >= 2. * cpu);
+        }
     }
 }

@@ -10,6 +10,9 @@ pub enum Control {
 
 /// Created and retained exclusively on the encoder-output worker.
 pub trait Output {
+    fn preserve_reference_frames(&self) -> bool {
+        false
+    }
     fn dimensions(&self) -> Option<[u32; 2]> {
         None
     }
@@ -29,6 +32,9 @@ pub trait Output {
 }
 
 impl<R: Runtime> Output for Display<R> {
+    fn preserve_reference_frames(&self) -> bool {
+        self.preserves_h264_references()
+    }
     fn dimensions(&self) -> Option<[u32; 2]> {
         Some(Display::dimensions(self))
     }

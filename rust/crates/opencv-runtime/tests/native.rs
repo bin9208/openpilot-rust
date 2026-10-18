@@ -5,6 +5,32 @@ use openpilot_opencv_runtime::{
 use std::{env, path::Path};
 
 #[test]
+fn padded_nv12_planes_match_packed_pixels_without_touching_padding() {
+    cv::initialize(2).unwrap();
+    let dimensions = Dimensions::new(4, 4).unwrap();
+    let packed: Vec<u8> = (0..24).map(|i| (i * 19) as u8).collect();
+    let expected = cv::nv12_to_rgb(&packed, dimensions).unwrap().into_data();
+    for stride in [4, 6, 16] {
+        let offset = stride * 4 + 8;
+        let mut raw = vec![0xff; offset + stride * 2];
+        for row in 0..4 {
+            raw[row * stride..row * stride + 4].copy_from_slice(&packed[row * 4..row * 4 + 4]);
+        }
+        for row in 0..2 {
+            raw[offset + row * stride..offset + row * stride + 4]
+                .copy_from_slice(&packed[16 + row * 4..20 + row * 4]);
+        }
+        let before = raw.clone();
+        let actual = cv::nv12_planes_to_rgb(&raw, dimensions, stride, offset).unwrap();
+        assert_eq!(actual.view().data(), expected);
+        assert_eq!(raw, before);
+        assert!(cv::nv12_planes_to_rgb(&raw[..raw.len() - 1], dimensions, stride, offset).is_err());
+        assert!(cv::nv12_planes_to_rgb(&raw, dimensions, 3, offset).is_err());
+        assert!(cv::nv12_planes_to_rgb(&raw, dimensions, stride, stride * 4 - 1).is_err());
+    }
+}
+
+#[test]
 fn once_only_threads_and_external_errors_are_observable_without_unwinding() {
     assert!(cv::initialize(0).is_err());
     cv::initialize(2).unwrap();

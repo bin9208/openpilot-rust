@@ -14,11 +14,17 @@ pub struct H264Chunk<'a> {
 }
 
 impl<R: Runtime> Display<R> {
+    pub fn preserves_h264_references(&self) -> bool {
+        self.wifi.is_some()
+    }
     /// # Errors
     /// Returns absence of a connection or failure to upload the transparent source overlay.
     pub fn start_h264_stream(&mut self, requested: i64) -> Result<u32, Error> {
-        if self.connection.is_none() {
+        if !self.is_open() {
             return Err(Error::Contract("USB display is not open"));
+        }
+        if let Some(wifi) = &mut self.wifi {
+            wifi.h264_active = true;
         }
         let brightness = self.brightness_raw();
         for (id, fields, gap) in [
@@ -41,7 +47,9 @@ impl<R: Runtime> Display<R> {
         }
         let mut size = self.chunk_size(requested);
         self.chunk_gap = Duration::ZERO;
-        if self.runtime.gpu_active() {
+        if self.wifi.is_some() {
+            size = self.chunk_size(requested);
+        } else if self.runtime.gpu_active() {
             size = size.min(32 * 1024);
             self.chunk_gap = Duration::from_millis(2);
         }
@@ -49,8 +57,11 @@ impl<R: Runtime> Display<R> {
     }
 
     pub fn stop_h264_stream(&mut self) {
-        if self.connection.is_none() {
+        if !self.is_open() {
             return;
+        }
+        if let Some(wifi) = &mut self.wifi {
+            wifi.h264_active = false;
         }
         for id in [123, 122, 122] {
             self.optional_command(id, &[], NoAck::STATUS);
@@ -60,11 +71,23 @@ impl<R: Runtime> Display<R> {
     /// # Errors
     /// Returns chunk write, required acknowledgement or disconnect failures.
     pub fn send_h264_chunk(&mut self, chunk: H264Chunk<'_>) -> Result<(), Error> {
-        if self.connection.is_none() {
+        if !self.is_open() {
             return Err(Error::Contract("USB display is not open"));
         }
         if chunk.bytes.is_empty() {
             return Ok(());
+        }
+        if let Some(wifi) = &mut self.wifi {
+            let payload = FrameKind::H264 { last: chunk.last }
+                .packet(self.runtime.milliseconds()?, chunk.bytes)?;
+            return wifi
+                .transaction(
+                    &payload,
+                    !chunk.wait_for_ack,
+                    chunk.wait_for_ack && chunk.require_ack,
+                    &mut self.runtime,
+                )
+                .map(|_| ());
         }
         let response = self.frame_payload(
             FrameKind::H264 { last: chunk.last },
@@ -99,6 +122,13 @@ impl<R: Runtime> Display<R> {
     }
 
     fn chunk_size(&mut self, requested: i64) -> u32 {
+        if self.wifi.is_some() {
+            return if requested == 0 {
+                65536
+            } else {
+                u32::try_from(requested.clamp(512, 65536)).unwrap_or(65536)
+            };
+        }
         if requested > 0 {
             return u32::try_from(requested.min(1024 * 1024)).unwrap_or(1024 * 1024);
         }

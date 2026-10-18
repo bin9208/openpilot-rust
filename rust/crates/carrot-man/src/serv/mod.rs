@@ -49,7 +49,10 @@ impl CarrotServ {
         Self {
             nav: NavigationState::default(),
             speed: SpeedState::default(),
-            gps: GpsState::default(),
+            gps: GpsState {
+                position_source: "none",
+                ..GpsState::default()
+            },
             command: CommandState::default(),
             settings,
             projected: None,
@@ -91,3 +94,5 @@ impl CarrotServ {
             })
     }
 }
+
+pub mod gps_sources;

@@ -77,14 +77,14 @@ impl CarrotPlanner {
             if matches!(previous_traffic, TrafficState::Off | TrafficState::Red)
                 && self.traffic_state == TrafficState::Green
             {
-                self.add_event(EventName::TrafficSignChanged, clock);
+                self.add_signal_event(EventName::TrafficSignChanged, clock);
             }
         } else {
             match self.x_state {
                 XState::E2eStopped => {
                     if car.gas_pressed {
                         self.x_state = XState::E2eCruise;
-                    } else if lead.status && lead.d_rel - stop_raw < 2. {
+                    } else if super::signal::lead_in_stop_range(lead.status, lead.d_rel, stop_raw) {
                         self.x_state = XState::Lead;
                     } else if self.stopping_count == 0
                         && self.traffic_state == TrafficState::Green
@@ -93,7 +93,7 @@ impl CarrotPlanner {
                         && self.config.traffic_light_mode != 1
                     {
                         self.x_state = XState::E2eCruise;
-                        self.add_event(EventName::TrafficSignGreen, clock);
+                        self.add_signal_event(EventName::TrafficSignGreen, clock);
                     }
                     self.stopping_count = self.stopping_count.saturating_sub(1);
                     *cruise = 0.;
@@ -103,10 +103,10 @@ impl CarrotPlanner {
                     if car.gas_pressed {
                         self.x_state = XState::E2eCruise;
                         self.traffic_starting_count = 200;
-                    } else if lead.status && lead.d_rel - stop_raw < 2. {
+                    } else if super::signal::lead_in_stop_range(lead.status, lead.d_rel, stop_raw) {
                         self.x_state = XState::Lead;
                     } else if self.traffic_state == TrafficState::Green {
-                        self.add_event(EventName::TrafficSignGreen, clock);
+                        self.add_signal_event(EventName::TrafficSignGreen, clock);
                         self.x_state = XState::E2eCruise;
                     } else {
                         self.comfort_brake = minimum(self.comfort_brake, 2.4 * 0.9);
@@ -152,7 +152,7 @@ impl CarrotPlanner {
                         && entry_allowed(car.steering_angle_deg)
                         && self.traffic_starting_count == 0
                     {
-                        self.add_event(EventName::TrafficStopping, clock);
+                        self.add_signal_event(EventName::TrafficStopping, clock);
                         self.x_state = XState::E2eStop;
                         self.actual_stop_distance = stop_rl;
                     } else {

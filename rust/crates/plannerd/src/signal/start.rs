@@ -105,6 +105,11 @@ fn separate(red: [f64; 4], a: [f64; 4], b: [f64; 4]) -> bool {
         && red[1] >= a[3].max(b[3]) + 2. * (a[3] - a[1]).max(b[3] - b[1])
 }
 impl Guard {
+    /// The lead-follow exception did not emit a refusal; retain red memory so
+    /// a disappearing lead can restore the veto and its one-shot warning.
+    pub(crate) fn clear_unemitted_warning(&mut self) {
+        self.warned = false;
+    }
     fn reset(&mut self) {
         let (last_now, cooldown) = (self.last_now, self.cooldown);
         *self = Self::default();

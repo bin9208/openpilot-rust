@@ -30,7 +30,7 @@ fn shape(value: &Value) -> Result<Vec<i64>, Error> {
 fn admit(package: &VerifiedManifest, name: &str) -> Result<Admitted, Error> {
     let pin: Value = serde_json::from_str(include_str!("../../../upstream/signal-runtime.json"))?;
     let expected = &pin["models"][name];
-    let directory = std::path::PathBuf::from(format!("rust/assets/signal-qcom/{name}"));
+    let directory = std::path::PathBuf::from(format!("rust/bin/signal-qcom/{name}"));
     let receipt: Value = serde_json::from_slice(
         &package.read_artifact(&directory.join("signal-qcom.json"), 4 << 20)?,
     )?;
@@ -44,6 +44,7 @@ fn admit(package: &VerifiedManifest, name: &str) -> Result<Admitted, Error> {
         || identity["input_shape"] != expected["shape"]
         || identity["output"] != expected["output"]
         || identity["output_shape"] != expected["output_shape"]
+        || identity["float16"] != 0
     {
         return Err("signal QCOM bundle disagrees with pinned model/runtime contract".into());
     }
@@ -77,6 +78,14 @@ fn admit(package: &VerifiedManifest, name: &str) -> Result<Admitted, Error> {
         input,
         output,
     })
+}
+/// Validate both sealed real-model graphs without opening a GPU driver.
+pub fn validate(root: &Path, manifest_digest: &str) -> Result<[usize; 2], Error> {
+    let package = VerifiedManifest::read_expected(root, manifest_digest)?;
+    Ok([
+        admit(&package, "detector")?.bundle.kernel_count(),
+        admit(&package, "classifier")?.bundle.kernel_count(),
+    ])
 }
 /// A factory boundary allows admission and RAII cleanup to be checked without
 /// constructing a GPU driver. Production uses the actual QCOM model below.
@@ -163,7 +172,7 @@ mod tests {
         let binary = include_bytes!("../../model-runtime/tests/fixtures/qcom/buffer_add.bin");
         for name in ["detector", "classifier"] {
             let pin = &pins["models"][name];
-            let directory = std::path::PathBuf::from(format!("rust/assets/signal-qcom/{name}"));
+            let directory = std::path::PathBuf::from(format!("rust/bin/signal-qcom/{name}"));
             let input = Binding {
                 name: pin["input"].as_str().unwrap().into(),
                 shape: shape(&pin["shape"]).unwrap(),
@@ -186,7 +195,7 @@ mod tests {
             save(directory.join("kernel-0.bin"), binary.to_vec());
             let identity = serde_json::json!({"schema":1,"source_commit":pins["source_commit"],"tinygrad_tree":TREE,"model":name,"model_sha256":pin["sha256"],
                 "input":pin["input"],"input_shape":pin["shape"],"output":pin["output"],"output_shape":pin["output_shape"],
-                "fixture_scope":"inert admission/lifecycle only; buffer_add is NOT either real signal model"});
+                "float16":0,"fixture_scope":"inert admission/lifecycle only; buffer_add is NOT either real signal model"});
             save(
                 directory.join("signal-qcom.json"),
                 serde_json::to_vec(&serde_json::json!({"identity":identity})).unwrap(),
@@ -298,7 +307,7 @@ mod tests {
         }
         fs::write(
             root.path()
-                .join("rust/assets/signal-qcom/classifier/graph.json"),
+                .join("rust/bin/signal-qcom/classifier/graph.json"),
             b"changed",
         )
         .unwrap();

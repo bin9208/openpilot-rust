@@ -86,6 +86,12 @@ pub(crate) mod ffi {
             mask: &[u8],
         ) -> Result<Vec<f32>>;
         fn nv12_rgb(data: &[u8], size: Dimensions) -> Result<Vec<u8>>;
+        fn nv12_planes_rgb(
+            data: &[u8],
+            size: Dimensions,
+            stride: usize,
+            uv_offset: usize,
+        ) -> Result<Vec<u8>>;
         fn mask_polygon(points: &[Point], size: Dimensions) -> Result<Vec<u8>>;
         fn bounds(points: &[Point]) -> Result<Rect>;
         fn mask_image(data: &[u8], mask: &[u8], layout: Layout) -> Result<Vec<u8>>;

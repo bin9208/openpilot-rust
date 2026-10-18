@@ -159,7 +159,7 @@ impl ClusterUiRenderer {
     /// Resource cleanup currently completes synchronously on the render thread.
     pub fn close(&mut self) -> Result<()> {
         self.stats.close();
-        self.close_live_road_camera()?;
+        let camera_result = self.close_live_road_camera();
         self.scene_cache.clear();
         self.output_resources.clear();
         self.world.close_resources();
@@ -185,7 +185,7 @@ impl ClusterUiRenderer {
         self.gfx.native = None;
         self.font = 0;
         self.korean_font = None;
-        Ok(())
+        camera_result
     }
     pub fn set_stats_provider(&mut self, provider: Box<dyn StatsProvider>) {
         self.stats.close();

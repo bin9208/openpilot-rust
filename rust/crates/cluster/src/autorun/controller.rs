@@ -31,6 +31,16 @@ pub trait Platform {
     /// Returns an unrecovered source startup-wait failure.
     fn startup(&mut self, params: &Reader) -> Result<(), Error>;
     /// # Errors
+    /// Returns model startup failure before opening the selected transport.
+    fn startup_transport(&mut self, params: &Reader, _shared_usb: bool) -> Result<(), Error> {
+        self.startup(params)
+    }
+    /// # Errors
+    /// Returns bounded discovery failure before allocating graphics/encoder resources.
+    fn discover_wifi(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    /// # Errors
     /// Preserves invalid/unreadable registration failures from the source loader.
     fn wifi_registered(&mut self) -> Result<bool, Error> {
         Ok(false)
@@ -38,6 +48,16 @@ pub trait Platform {
     fn find(&mut self, product: u16) -> Option<u16>;
     fn dim(&mut self, product: u16, reason: &str) -> bool;
     fn events(&mut self) -> Events;
+}
+
+fn wifi_ready(platform: &mut impl Platform) -> Result<bool, Error> {
+    println!("[cluster_autorun] discovering registered S3 Wi-Fi HUD");
+    if let Err(error) = platform.discover_wifi() {
+        eprintln!("[cluster_autorun] S3 Wi-Fi discovery unavailable ({error}); retrying in 5s");
+        platform.sleep(Duration::from_secs(5))?;
+        return Ok(false);
+    }
+    Ok(true)
 }
 
 /// # Errors
@@ -71,11 +91,12 @@ pub fn run(
             }
             continue;
         }
-        platform.startup(params)?;
         let wifi = platform.wifi_registered()?;
-        if wifi {
-            println!("[cluster_autorun] discovering registered S3 Wi-Fi HUD");
-        } else if platform.find(expected).is_none() {
+        if wifi && !wifi_ready(platform)? {
+            continue;
+        }
+        platform.startup_transport(params, !wifi)?;
+        if !wifi && platform.find(expected).is_none() {
             if !platform.board() {
                 println!(
                     "[cluster_autorun] {} not found on PC; starting window-only HUD",

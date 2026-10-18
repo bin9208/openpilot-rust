@@ -110,6 +110,7 @@ fn run_classical_selected(
     let comparison_selection = flag(config, "daytime_comparison_enabled")?;
     let mut last_file = 0.;
     let mut tracker = Process::default();
+    let mut brake_observer = crate::lead_brake::runtime::Runtime::default();
     let mut identity = session();
     let mut client = VisionClient::new("camerad", VisionStream::Road, true)?;
     let mut capture = CapturePolicy::default();
@@ -199,6 +200,17 @@ fn run_classical_selected(
             fs::rename(temp, config.directory.join("tracking_latest.json"))?;
             last_file = now();
         }
+        brake_observer.update(
+            crate::lead_brake::runtime::Frame {
+                mode_enabled: mode().enabled(),
+                rgb: &rgb,
+                frame_id: meta.frame_id,
+                stamp: meta.timestamp_eof as f64 / 1e9,
+                session: &identity,
+                work_start,
+            },
+            event,
+        );
         count += 1;
         thread::sleep(Duration::from_secs_f64(worker::next_delay(
             now() - work_start,

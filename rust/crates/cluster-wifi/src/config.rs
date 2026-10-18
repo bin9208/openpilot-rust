@@ -9,6 +9,7 @@ pub struct Registration {
     pub key: [u8; 32],
     pub fps: u32,
     pub quality: u32,
+    pub codec: crate::Codec,
 }
 impl fmt::Debug for Registration {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -81,12 +82,23 @@ impl Registration {
         };
         let fps = integer("fps", 15, 1, 20)?;
         let quality = integer("quality", 50, 20, 90)?;
+        let codec = match object.get("codec") {
+            None => crate::Codec::Auto,
+            Some(Value::String(s)) => match s.as_str() {
+                "auto" => crate::Codec::Auto,
+                "jpeg" => crate::Codec::Jpeg,
+                "h264" => crate::Codec::H264,
+                _ => return Err(Error::InvalidRegistration),
+            },
+            _ => return Err(Error::InvalidRegistration),
+        };
         Ok(Self {
             raw: data,
             device,
             key,
             fps,
             quality,
+            codec,
         })
     }
     pub fn raw(&self) -> &Value {
@@ -144,7 +156,7 @@ pub fn save_config(data: &Value, path: &std::path::Path) -> Result<(), Error> {
     for name in ["version", "device", "key"] {
         fields.push((name, data.get(name).ok_or(Error::MissingConfigField(name))?));
     }
-    for name in ["fps", "quality"] {
+    for name in ["fps", "quality", "codec"] {
         if let Some(value) = data.get(name) {
             fields.push((name, value));
         }

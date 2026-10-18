@@ -38,7 +38,7 @@ impl CarrotPlanner {
         self.traffic_state_carrot = traffic;
         if trigger {
             if self.soft_hold_active > 0 {
-                self.add_event(EventName::TrafficSignChanged, clock);
+                self.add_signal_event(EventName::TrafficSignChanged, clock);
             } else if matches!(self.x_state, XState::E2eStop | XState::E2eStopped) {
                 self.x_state = XState::E2eCruise;
                 self.traffic_starting_count = 200;

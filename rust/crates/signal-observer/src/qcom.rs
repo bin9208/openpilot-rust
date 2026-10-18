@@ -253,6 +253,6 @@ pub fn require_native_cached(root: &std::path::Path) -> Result<(), Error> {
         } else {
             "signal-qcom.json"
         };
-        cached_file(&root.join("rust/assets/signal-qcom").join(model).join(file))
+        cached_file(&root.join("rust/bin/signal-qcom").join(model).join(file))
     })
 }

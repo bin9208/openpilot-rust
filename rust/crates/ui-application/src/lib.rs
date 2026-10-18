@@ -59,3 +59,5 @@ impl From<Error> for openpilot_startup_ui::Error {
         }
     }
 }
+
+pub mod lead_brake;

@@ -129,6 +129,13 @@ fn actual_sender_retains_latest_units_preserves_ack_flags_and_closes_its_output(
     assert_eq!((snapshot.dropped_units, snapshot.dropped_chunks), (1, 2));
     release.send(()).unwrap();
     sender.control(Control::Brightness(19)).unwrap();
+    // Closing now cancels queued work. Finish this delivery assertion before
+    // exercising close, rather than depending on its former implicit drain.
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    while sender.snapshot().unwrap().chunks_sent < 8 {
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(1));
+    }
     sender.close().unwrap();
     sender.close().unwrap();
     let snapshot = sender.snapshot().unwrap();
@@ -188,4 +195,39 @@ fn actual_sender_transfer_failure_is_observable_before_repeated_close() {
         "owned native sender failure: {:?}",
         sender.snapshot().unwrap()
     );
+}
+
+#[test]
+fn closing_cancels_pending_frames_and_remaining_chunks_before_output_stop() {
+    let records = Arc::new(Mutex::new(Vec::new()));
+    let output_records = Arc::clone(&records);
+    let (entered, waiting) = mpsc::sync_channel(1);
+    let (release, permit) = mpsc::channel();
+    let mut sender = Sender::start(0, false, false, move || {
+        Ok(OwnedOutput {
+            records: output_records,
+            entered: Some(entered),
+            permit,
+            fail: false,
+        })
+    })
+    .unwrap();
+    sender.enqueue(unit(1, false, true)).unwrap();
+    waiting.recv_timeout(Duration::from_secs(2)).unwrap();
+    sender.enqueue(unit(2, false, false)).unwrap();
+    let release = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(20));
+        release.send(()).unwrap();
+    });
+    sender.close().unwrap();
+    release.join().unwrap();
+    let records = records.lock().unwrap();
+    assert_eq!(
+        records
+            .iter()
+            .filter(|line| line.starts_with("send:"))
+            .count(),
+        1
+    );
+    assert_eq!(records.last().unwrap(), "stop");
 }

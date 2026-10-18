@@ -49,8 +49,18 @@ pub fn wait_for_usbgpu_startup(
 /// Preserves the source startup deadlines and returns cooperative outer managed interruption.
 pub fn wait_for_usbgpu_startup_until(
     params: &Reader,
+    probe: impl FnMut() -> Result<bool, crate::Error>,
+    interrupted: impl Fn() -> bool,
+) -> Result<(), Error> {
+    wait_for_usbgpu_startup_transport_until(params, probe, interrupted, true)
+}
+/// # Errors
+/// Preserves startup failure and interruption; Wi-Fi skips the shared USB settling delay.
+pub fn wait_for_usbgpu_startup_transport_until(
+    params: &Reader,
     mut probe: impl FnMut() -> Result<bool, crate::Error>,
     interrupted: impl Fn() -> bool,
+    shared_usb: bool,
 ) -> Result<(), Error> {
     let remembered = params.boolean("UsbGpuHardwareSeen")?;
     let mut expected = expected(&mut probe);
@@ -82,6 +92,9 @@ pub fn wait_for_usbgpu_startup_until(
         let active = params.boolean("UsbGpuActive")?;
         let failed = params.boolean("UsbGpuStartupFailed")?;
         if !loading && active {
+            if !shared_usb {
+                return Ok(());
+            }
             println!("[cluster_autorun] eGPU startup complete; keeping USB display idle for 10s");
             let stabilize_deadline = Instant::now() + STABILIZE;
             while Instant::now() < stabilize_deadline {

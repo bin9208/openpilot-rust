@@ -116,6 +116,8 @@ pub mod ffi {
             -> Result<()>;
         fn framebuffer_status(self: &GlesApi, target: u32) -> Result<u32>;
         fn try_process_locale(candidate: &str) -> Result<bool>;
+        fn hud_graphics_cleanup(path: &str, owns_fd: bool) -> Result<()>;
+        fn hud_trim_heap();
         type EglApi;
         fn egl_api(egl_path: &str, gles_path: &str) -> Result<UniquePtr<EglApi>>;
         fn egl_image_api(egl_path: &str, gles_path: &str) -> Result<UniquePtr<EglApi>>;

@@ -121,6 +121,7 @@ pub struct CarrotPlanner {
     pub signal_detection_suspended: bool,
     pub signal_observation_color: u8,
     pub signal_green_active: bool,
+    pub signal_lead_present: bool,
     pub start_decision: Option<crate::signal::start::Decision>,
     pub prepare_decision: Option<crate::signal::prepare::Decision>,
     pub prepare_control_active: bool,
@@ -186,6 +187,7 @@ impl CarrotPlanner {
             signal_detection_suspended: false,
             signal_observation_color: 0,
             signal_green_active: false,
+            signal_lead_present: false,
             start_decision: None,
             prepare_decision: None,
             prepare_control_active: false,
@@ -208,6 +210,16 @@ impl CarrotPlanner {
             .partition_point(|value| u16::from(*value) <= u16::from(event));
         self.events.insert(index, event);
     }
+    fn add_signal_event(&mut self, event: EventName, clock: &mut impl FnMut() -> f64) {
+        if !self.signal_lead_present {
+            self.add_event(event, clock);
+        }
+    }
+    fn insert_signal_event(&mut self, event: EventName) {
+        if !self.signal_lead_present {
+            self.insert_event(event);
+        }
+    }
 }
 
 impl<'a> Input<'a> {
@@ -220,5 +232,117 @@ impl<'a> Input<'a> {
             }
         }
         (0. < navigation.desired_speed && navigation.desired_speed <= 250.).then_some(navigation)
+    }
+}
+
+#[cfg(test)]
+mod signal_refresh_tests {
+    use super::*;
+    struct Settings;
+    impl Parameters for Settings {
+        fn integer(&mut self, key: &'static str) -> Result<i32, Error> {
+            Ok(if key == "MyDrivingMode" { 3 } else { 0 })
+        }
+        fn float(&mut self, _: &'static str) -> Result<f64, Error> {
+            Ok(0.)
+        }
+    }
+    #[test]
+    fn lead_mutes_only_signal_notices_without_consuming_cooldown() {
+        let mut planner = CarrotPlanner::new(&mut Settings).unwrap();
+        planner.signal_lead_present = true;
+        let mut calls = 0;
+        planner.add_signal_event(EventName::TrafficSignGreen, &mut || {
+            calls += 1;
+            10.
+        });
+        planner.insert_signal_event(EventName::AudioRefuse);
+        assert!(planner.events.is_empty());
+        assert_eq!(calls, 0);
+        planner.signal_lead_present = false;
+        planner.add_signal_event(EventName::TrafficSignGreen, &mut || 10.);
+        planner.insert_signal_event(EventName::AudioRefuse);
+        assert!(planner.events.contains(&EventName::TrafficSignGreen));
+        assert!(planner.events.contains(&EventName::AudioRefuse));
+    }
+    #[test]
+    fn lead_handover_requires_positive_finite_range_and_strict_stop_boundary() {
+        for (present, distance, stop, expected) in [
+            (true, 11.999, 10., true),
+            (true, 12., 10., false),
+            (true, 0., 10., false),
+            (true, -1., 10., false),
+            (false, 5., 10., false),
+            (true, f64::NAN, 10., false),
+            (true, 5., f64::INFINITY, false),
+            (true, f64::INFINITY, 10., false),
+        ] {
+            assert_eq!(
+                super::signal::lead_in_stop_range(present, distance, stop),
+                expected
+            );
+        }
+    }
+    #[test]
+    fn following_lead_temporarily_removes_veto_without_erasing_red_memory() {
+        use crate::signal::transport::Context;
+        let mut planner = CarrotPlanner::new(&mut Settings).unwrap();
+        planner.x_state = XState::E2eStopped;
+        let car = CarState::default();
+        let model = Model::default();
+        let radar = Radar::default();
+        let input = Input {
+            car: &car,
+            model: &model,
+            radar: &radar,
+            personality: Personality::Standard,
+            navigation: None,
+            navigation_receive_time: None,
+            mode_checks: false,
+            lane_valid: false,
+            model_ns: 0,
+            radar_ns: 0,
+            pose_ns: 0,
+            pose_valid: false,
+            yaw_rate: 0.,
+        };
+        for i in 0..=4 {
+            let t = f64::from(i) * 0.2;
+            let read = StartRead {
+                context: Context {
+                    now: t,
+                    enabled: true,
+                    valid: true,
+                    drive: true,
+                },
+                observation: Some(
+                    serde_json::json!({"timestamp":t,"frame_id":i,"session":"camera","tracks":[{"box":[640,250,680,270],"raw":"red"}]}),
+                ),
+            };
+            planner.signal_start(&input, Some(&read), false);
+        }
+        assert!(planner.start_decision.as_ref().unwrap().hold);
+        for (t, following) in [(1., true), (1.2, true), (1.4, false)] {
+            let read = StartRead {
+                context: Context {
+                    now: t,
+                    enabled: true,
+                    valid: true,
+                    drive: true,
+                },
+                observation: Some(
+                    serde_json::json!({"timestamp":t,"frame_id":t*1000.,"session":"camera","tracks":[{"box":[640,250,680,270],"raw":"unknown"}]}),
+                ),
+            };
+            planner.signal_start(&input, Some(&read), following);
+            let decision = planner.start_decision.as_ref().unwrap();
+            assert_eq!(decision.hold, !following);
+            assert!(!decision.released && !decision.green_confirmed);
+            assert_eq!(planner.start_guard.snapshot()["hold"], true);
+            if following {
+                assert!(!decision.warn);
+                assert_eq!(planner.start_guard.snapshot()["warned"], false);
+            }
+        }
     }
 }

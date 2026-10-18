@@ -5,6 +5,45 @@ use super::{
 use openpilot_ui_application::signal_display::project_box;
 
 impl ClusterUiRenderer {
+    fn draw_brake_observation(
+        &mut self,
+        projection: &CameraOverlayProjection,
+        brake: Option<&openpilot_ui_application::lead_brake::Observation>,
+    ) -> Result<()> {
+        if let Some(observation) = brake {
+            if let Some(bounds) = observation.bounds {
+                let video = projection.video_dest;
+                let [x, y, w, h] =
+                    project_box(bounds, [video.x, video.y, video.width, video.height]);
+                let color = if observation.candidate {
+                    [255, 100, 40, 255]
+                } else {
+                    [180, 180, 180, 255]
+                };
+                self.gfx.rectangle_lines_ex(
+                    Rect::new(x - 2., y - 2., w + 4., h + 4.),
+                    2.,
+                    color,
+                )?;
+                self.draw_text_with_stroke(
+                    if observation.candidate {
+                        "BRAKE?"
+                    } else {
+                        "BRK?"
+                    },
+                    x,
+                    (projection.dest.y + 20.).max(y - 15.),
+                    (self.height / 480. * 17.).max(14.),
+                    color,
+                    StrokeStyle {
+                        width: 2,
+                        ..StrokeStyle::default()
+                    },
+                )?;
+            }
+        }
+        Ok(())
+    }
     pub(super) fn draw_signal_detections(
         &mut self,
         projection: &CameraOverlayProjection,
@@ -15,6 +54,14 @@ impl ClusterUiRenderer {
             .live
             .as_ref()
             .and_then(|camera| camera.input.display_frame());
+        let brake = self.camera_resources.brake.read(now, camera, || {
+            signal_assist_enabled()
+                && openpilot_params::Params::for_runtime()
+                    .ok()
+                    .and_then(|p| p.get_bool("LeadBrakeLights").ok())
+                    .unwrap_or(false)
+        });
+        self.draw_brake_observation(projection, brake.as_ref())?;
         let tracks = self
             .camera_resources
             .signal
@@ -71,33 +118,16 @@ impl ClusterUiRenderer {
                 stroke,
             )?;
         }
-        let korean = self.language == "ko";
-        let mut caption = if korean {
-            format!("신호 후보 {visible}")
-        } else {
-            format!("SIGNAL CANDIDATES {visible}")
-        };
-        if tracks.iter().any(|track| track.held) {
-            caption.push_str(if korean {
-                " · ~ 이전 판독"
-            } else {
-                " · ~ PREVIOUS"
-            });
-        }
-        if self
-            .camera_resources
-            .live
-            .as_ref()
-            .is_some_and(|camera| camera.input.is_wide())
-        {
-            caption = if korean {
-                "신호 관찰: 일반 카메라에서 표시"
-            } else {
-                "SIGNAL VIEW: ROAD CAMERA ONLY"
-            }
-            .into();
-        }
-        caption.push_str(&summary_caption(korean));
+        let caption = signal_caption(
+            self.language == "ko",
+            visible,
+            tracks.iter().any(|t| t.held),
+            self.camera_resources
+                .live
+                .as_ref()
+                .is_some_and(|c| c.input.is_wide()),
+            brake.as_ref().map(|b| b.candidate),
+        );
         self.draw_text_with_stroke(
             &caption,
             dest.x + 12.,
@@ -111,6 +141,40 @@ impl ClusterUiRenderer {
             .record_draw(now, camera, visible);
         Ok(())
     }
+}
+
+fn signal_caption(
+    korean: bool,
+    visible: usize,
+    held: bool,
+    wide: bool,
+    brake: Option<bool>,
+) -> String {
+    let mut caption = if korean {
+        format!("신호 후보 {visible}")
+    } else {
+        format!("SIGNAL CANDIDATES {visible}")
+    };
+    if held {
+        caption.push_str(if korean {
+            " · ~ 이전 판독"
+        } else {
+            " · ~ PREVIOUS"
+        });
+    }
+    if wide {
+        caption = if korean {
+            "신호 관찰: 일반 카메라에서 표시"
+        } else {
+            "SIGNAL VIEW: ROAD CAMERA ONLY"
+        }
+        .into();
+    }
+    caption.push_str(&summary_caption(korean));
+    if let Some(candidate) = brake {
+        caption.push_str(if candidate { " | BRAKE?" } else { " | BRK ?" });
+    }
+    caption
 }
 
 fn signal_assist_enabled() -> bool {

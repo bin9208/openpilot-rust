@@ -11,6 +11,7 @@ default = ["native"]
 native = ["dep:cxx", "dep:openpilot-carrot-recovery", "dep:openpilot-startup-recovery"]
 
 [dependencies]
+sha2 = "0.10"
 openpilot-carrot-recovery = { path = "../carrot-recovery", optional = true }
 openpilot-startup-recovery = { path = "../startup-recovery", optional = true }
 cxx = { version = "1", optional = true }
@@ -32,7 +33,6 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 cxx-build = "1"
 
 [dev-dependencies]
-sha2 = "0.10"
 tempfile = "3"
 
 [lints.rust]

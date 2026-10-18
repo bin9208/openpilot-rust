@@ -116,6 +116,14 @@ impl<R: Runtime> Display<R> {
         ack: bool,
         fast_drain: bool,
     ) -> Result<Vec<u8>, Error> {
+        if self.wifi.is_some() {
+            let payload = self.build_payload(kind, bytes)?;
+            return self
+                .wifi
+                .as_mut()
+                .expect("selected Wi-Fi transport")
+                .transaction(&payload, false, false, &mut self.runtime);
+        }
         let names = stages(kind, ack, self.options.fast_write);
         let prepare = match kind {
             FrameKind::Jpeg | FrameKind::Png => ack,

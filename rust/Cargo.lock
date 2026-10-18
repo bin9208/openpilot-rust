@@ -3748,9 +3748,12 @@ version = "0.1.0"
 dependencies = [
  "libc",
  "openpilot-beepd",
+ "openpilot-calibrationd",
+ "openpilot-cereal",
  "openpilot-control-policy",
  "openpilot-logging",
  "openpilot-managed-entry",
+ "openpilot-messaging",
  "openpilot-model-runtime",
  "openpilot-msgq",
  "openpilot-onnx-runtime",

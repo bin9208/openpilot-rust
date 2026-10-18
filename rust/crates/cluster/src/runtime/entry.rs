@@ -120,7 +120,12 @@ fn demo(
     select_output(root, &mut args);
     let mut encoder_source = Reader::for_runtime().apply_encoder(&mut args);
     if let Some(config) = wifi {
-        encoder_source = args.apply_wifi(&config);
+        let jpeg_fallback = args.codec_from_cli()
+            && args.usb_codec == crate::runtime_args::Codec::Jpeg
+            && args.cluster_hud_encoder == Some(0);
+        let codec = openpilot_cluster_wifi::select_codec(&config, jpeg_fallback)
+            .map_err(|e| Error::Io(std::io::Error::other(e)))?;
+        encoder_source = args.apply_wifi_codec(&config, codec);
     }
     if args.transport.usb_async && args.usb_codec != crate::runtime_args::Codec::Jpeg {
         return Err(Error::Invalid(
@@ -159,12 +164,14 @@ impl autorun::entry::Entrypoint for Entrypoint {
         &mut self,
         request: autorun::RunRequest,
     ) -> std::result::Result<(), autorun::entry::Failure> {
-        match demo(
+        let result = demo(
             &self.root,
             &request.args(),
             &self.helpers,
             self.interrupt.as_deref(),
-        ) {
+        );
+        openpilot_startup_ui::graphics_cleanup::trim_unused_heap();
+        match result {
             Ok(()) => Ok(()),
             Err(Error::H264Initialization(error)) => Err(
                 autorun::entry::Failure::H264Initialization(crate::Error::Io(error)),
@@ -188,6 +195,20 @@ pub enum CommandError {
 /// Preserves helper, managed-entry, argument and full-runtime failures.
 pub fn command_line(autorun_mode: bool) -> std::result::Result<(), CommandError> {
     crate::runtime_locale::configure()?;
+    if Path::new("/TICI").is_file() {
+        let lib = env::current_exe()?
+            .parent()
+            .ok_or_else(|| std::io::Error::other("HUD executable directory absent"))?
+            .join("lib");
+        let provider = env::var_os("STARTUP_UI_RAYLIB_LIBRARY")
+            .map_or_else(|| lib.join("libopenpilot-raylib.so"), PathBuf::from);
+        openpilot_startup_ui::graphics_cleanup::install(
+            &provider,
+            &lib.join("libopenpilot-hud-gbm.so"),
+            env::var_os("DRM_FD").is_none(),
+        )
+        .map_err(std::io::Error::other)?;
+    }
     let (root, args) = root_arguments()?;
     if dispatch_helper(&args)? {
         return Ok(());

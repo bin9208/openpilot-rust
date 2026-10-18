@@ -9,9 +9,21 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#if defined(__GLIBC__)
+#include <malloc.h>
+#endif
 bool openpilot_raylib_symbol_available(const char *name);
 uint32_t openpilot_active_framebuffer();
+void openpilot_install_hud_gbm_cleanup(const char *,int);
 namespace startup_ui {
+void hud_trim_heap() {
+#if defined(__GLIBC__)
+  malloc_trim(0);
+#endif
+}
+void hud_graphics_cleanup(rust::Str path, bool owns_fd) {
+  ::openpilot_install_hud_gbm_cleanup(std::string(path).c_str(),owns_fd ? 1 : 0);
+}
 bool try_process_locale(rust::Str candidate) {
   const std::string name(candidate);
   if(name.find('\0')!=std::string::npos)throw std::runtime_error("locale contains NUL");

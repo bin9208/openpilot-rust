@@ -216,6 +216,7 @@ pub fn run(root: &Path, args: &RuntimeArgs, helpers: &HelperConfig) -> Result<Ru
         Err(error) => return Err(error),
     };
     let mut state = Loop::new(args, resources.started, profile_started);
+    openpilot_startup_ui::graphics_cleanup::trim_unused_heap();
     state
         .reporter
         .samples(resources.input.drain_profile_samples());
@@ -241,10 +242,12 @@ pub fn run(root: &Path, args: &RuntimeArgs, helpers: &HelperConfig) -> Result<Ru
         println!("Received signal 15; shutting down cluster HUD");
     }
     let placement = placement.update(false, true, output.encoder_pid(), crate::live::monotonic()?);
-    let output_close = output.close();
+    let encoder_close = output.close_encoder();
     let resources_close = resources.close();
+    let output_close = output.close();
     result
         .and(placement.map_err(Error::from))
+        .and(encoder_close)
         .and(output_close)
         .and(resources_close)?;
     if interrupt.requested() {

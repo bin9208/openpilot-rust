@@ -197,6 +197,7 @@ fn run_loaded<N: crate::neural_sequence::Network>(
     let assets: Value =
         serde_json::from_str(include_str!("../../../upstream/signal-runtime.json"))?;
     let mut sequence = Sequence::default();
+    let mut brake_observer = crate::lead_brake::runtime::Runtime::default();
     let mut identity = session();
     // Model construction and all three warmups finish before this subscription.
     let mut client = VisionClient::new("camerad", VisionStream::Road, true)?;
@@ -287,6 +288,17 @@ fn run_loaded<N: crate::neural_sequence::Network>(
             latest(config, &record)?;
             last_file = now();
         }
+        brake_observer.update(
+            crate::lead_brake::runtime::Frame {
+                mode_enabled: mode().enabled(),
+                rgb: &rgb,
+                frame_id: meta.frame_id,
+                stamp: meta.timestamp_eof as f64 / 1e9,
+                session: &identity,
+                work_start: begin,
+            },
+            event,
+        );
         count += 1;
         thread::sleep(Duration::from_secs_f64(worker::next_delay(
             now() - begin,

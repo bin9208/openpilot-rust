@@ -7,8 +7,10 @@
 #include <string>
 
 namespace {
+bool library_started = false;
 void *library() {
   static void *handle = [] {
+    library_started = true;
     const char *path = std::getenv("STARTUP_UI_RAYLIB_LIBRARY");
     void *loaded =
         dlopen(path ? path : "libopenpilot-raylib.so", RTLD_NOW | RTLD_LOCAL);
@@ -92,6 +94,18 @@ template <typename Function> Function resolve(const char *name) {
   return reinterpret_cast<Function>(dlsym(library(), name));
 }
 } // namespace
+void openpilot_install_hud_gbm_cleanup(const char *path, int owns_fd) {
+  static void *cleanup = nullptr;
+  if (cleanup) return;
+  if (library_started) throw std::runtime_error("HUD GBM cleanup must load before raylib");
+  void *loaded = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
+  if (!loaded) throw std::runtime_error(std::string("HUD GBM cleanup: ") + dlerror());
+  using Enable = int (*)(int);
+  auto enable = reinterpret_cast<Enable>(dlsym(loaded,"openpilot_hud_gbm_cleanup_enable"));
+  if (!enable || !enable(owns_fd)) {dlclose(loaded);throw std::runtime_error("HUD GBM cleanup initialization failed");}
+  // Keep the interposed functions resident across every HUD retry.
+  cleanup = loaded;
+}
 bool openpilot_raylib_symbol_available(const char *name) {return dlsym(library(),name)!=nullptr;}
 // Raylib's ES2 rlGetActiveFramebuffer is a zero-returning stub. Resolve the
 // actual binding reader once, before accepting the window, and query the GL

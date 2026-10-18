@@ -29,6 +29,16 @@ pub struct CarState {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct GpsInput {
+    pub gps_alive: bool,
+    pub gps_valid: bool,
+    pub gps_received: f64,
+    pub gps_speed: f64,
+    pub car_valid: bool,
+    pub vehicle_valid: bool,
+    pub vehicle_latitude: f64,
+    pub vehicle_longitude: f64,
+    pub vehicle_stamp: f64,
+    pub vehicle_heading: Option<f64>,
     pub car_updated: bool,
     pub control_updated: bool,
     pub gps_updated: bool,
@@ -40,6 +50,10 @@ pub struct GpsInput {
 
 #[derive(Clone, Debug, Default, Serialize)]
 pub struct GpsState {
+    pub sources: super::gps_sources::Sources,
+    pub position_source: &'static str,
+    pub position_mono_time: f64,
+    pub position_heading_valid: bool,
     pub latitude: f64,
     pub longitude: f64,
     pub navi_latitude: f64,

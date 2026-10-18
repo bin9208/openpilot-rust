@@ -72,7 +72,7 @@ pub(super) fn open<C>(
         }
         match args.usb_codec {
             Codec::H264 => {
-                if args.usb_h264_backend == H264Backend::Auto {
+                if args.usb_h264_backend == H264Backend::Auto || spec.wifi() {
                     transport = Some(Transport::open(spec.clone()).map_err(factory::classify)?);
                 }
                 h264(

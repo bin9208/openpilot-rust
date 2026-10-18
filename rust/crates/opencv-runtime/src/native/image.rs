@@ -32,6 +32,36 @@ pub fn nv12_to_rgb(input: &[u8], dimensions: Dimensions) -> Result<Image, Error>
     Image::from_parts(ImageLayout::new(dimensions, Format::Rgb)?, data)
 }
 
+/// Convert padded borrowed planes directly; the result owns all RGB storage.
+pub fn nv12_planes_to_rgb(
+    input: &[u8],
+    dimensions: Dimensions,
+    stride: usize,
+    uv_offset: usize,
+) -> Result<Image, Error> {
+    dimensions.nv12_len()?;
+    let y_end = stride
+        .checked_mul(dimensions.height() as usize)
+        .ok_or(Error::Contract("NV12 plane extent overflow"))?;
+    let end = stride
+        .checked_mul(dimensions.height() as usize / 2)
+        .and_then(|n| uv_offset.checked_add(n))
+        .ok_or(Error::Contract("NV12 plane extent overflow"))?;
+    if stride < dimensions.width() as usize
+        || !stride.is_multiple_of(2)
+        || uv_offset < y_end
+        || input.len() < end
+    {
+        return Err(Error::Contract(
+            "NV12 padded planes differ from checked extent",
+        ));
+    }
+    ready()?;
+    let data = ffi::nv12_planes_rgb(input, size(dimensions), stride, uv_offset)
+        .map_err(|error| native_error("cvtColorTwoPlane NV12", error))?;
+    Image::from_parts(ImageLayout::new(dimensions, Format::Rgb)?, data)
+}
+
 fn points(input: &[Point]) -> Result<Vec<ffi::Point>, Error> {
     crate::image::validate_points(input)?;
     Ok(input

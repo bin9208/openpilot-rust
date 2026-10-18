@@ -30,6 +30,7 @@ struct Request {
 pub(super) struct Remote {
     requests: mpsc::Sender<Request>,
     dimensions: [u32; 2],
+    preserve_references: bool,
 }
 impl Remote {
     fn call(&self, operation: Operation) -> io::Result<usize> {
@@ -44,6 +45,9 @@ impl Remote {
     }
 }
 impl Output for Remote {
+    fn preserve_reference_frames(&self) -> bool {
+        self.preserve_references
+    }
     fn dimensions(&self) -> Option<[u32; 2]> {
         Some(self.dimensions)
     }
@@ -74,6 +78,12 @@ pub(super) enum Stream {
     Remote(Remote),
 }
 impl Output for Stream {
+    fn preserve_reference_frames(&self) -> bool {
+        match self {
+            Self::Local(display) => display.preserve_reference_frames(),
+            Self::Remote(remote) => remote.preserve_reference_frames(),
+        }
+    }
     fn dimensions(&self) -> Option<[u32; 2]> {
         match self {
             Self::Local(display) => Output::dimensions(display.as_ref()),
@@ -130,6 +140,7 @@ pub(super) struct Transport {
 }
 impl Transport {
     pub fn open(spec: Spec) -> io::Result<Self> {
+        let preserve_references = spec.wifi();
         let (requests, queue) = mpsc::channel();
         let (ready, received) = mpsc::sync_channel(1);
         let (done, finished) = mpsc::channel();
@@ -166,6 +177,7 @@ impl Transport {
             remote: Remote {
                 requests,
                 dimensions,
+                preserve_references,
             },
             thread: Some(thread),
             finished,
@@ -260,5 +272,26 @@ fn execute(
     }
     if started {
         Output::stop(display);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn reference_retention_survives_the_actual_stream_and_remote_adapters() {
+        for preserve_references in [false, true] {
+            let (requests, _queue) = mpsc::channel();
+            let remote = Remote {
+                requests,
+                dimensions: [1920, 462],
+                preserve_references,
+            };
+            assert_eq!(remote.preserve_reference_frames(), preserve_references);
+            assert_eq!(
+                Stream::Remote(remote).preserve_reference_frames(),
+                preserve_references
+            );
+        }
     }
 }

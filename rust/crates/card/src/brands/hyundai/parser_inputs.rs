@@ -28,6 +28,9 @@ impl Inputs {
             None
         };
         if fd {
+            if super::vehicle_gps::supported(&dbc) {
+                pt.add(super::vehicle_gps::MESSAGE, Some(f64::NAN), false, now)?;
+            }
             let names = if config.candidate == "KIA_PV5" {
                 &["CANFD_HDA_INFO_364", "CANFD_NAVI_PROFILE_093"][..]
             } else {

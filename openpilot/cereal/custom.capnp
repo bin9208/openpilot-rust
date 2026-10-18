@@ -56,6 +56,11 @@ struct CarrotMan @0x81c2f05a394cf4af {
 	naviSafetyRejection @40 : Text;
 	decelProvider @41 : Text;
 	decelReason @42 : Text;
+	# Upstream GPS additions append here to preserve existing fork wire ordinals.
+	positionFixMonoTime @43 :UInt64;
+	positionMonoTime @44 :UInt64;
+	positionSource @45 :Text;
+	positionHeadingValid @46 :Bool;
 }
 
 struct CarrotNaviState @0xaedffd8f31e7b55d {

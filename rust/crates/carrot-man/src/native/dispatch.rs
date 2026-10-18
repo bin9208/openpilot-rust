@@ -41,29 +41,31 @@ pub fn status(
         owner.navigation.accept_legacy(fields, session, now);
     }
     if let Some(phone) = status.phone {
-        owner.serv.gps.phone_angle = phone
-            .heading
-            .map_err(Error::Contract)?
-            .unwrap_or(owner.serv.gps.angle);
-        owner.serv.gps.phone_latitude = phone
-            .latitude
-            .map_err(Error::Contract)?
-            .unwrap_or(owner.serv.gps.navi_latitude);
+        use crate::serv::gps_sources::{Fix, Source};
+        owner.serv.gps.phone_angle = phone.heading.map_err(Error::Contract)?.unwrap_or(f64::NAN);
+        owner.serv.gps.phone_latitude =
+            phone.latitude.map_err(Error::Contract)?.unwrap_or(f64::NAN);
         owner.serv.gps.phone_longitude = phone
             .longitude
             .map_err(Error::Contract)?
-            .unwrap_or(owner.serv.gps.navi_longitude);
+            .unwrap_or(f64::NAN);
         owner.serv.gps.phone_accuracy = phone.accuracy.map_err(Error::Contract)?;
-        if owner.serv.gps.phone_accuracy < 15. {
-            owner.serv.gps.phone_frame += 1;
-        }
-        if now - owner.serv.gps.last_navi > 3. {
-            owner.serv.gps.navi_latitude = owner.serv.gps.phone_latitude;
-            owner.serv.gps.navi_longitude = owner.serv.gps.phone_longitude;
-            owner.serv.gps.angle = owner.serv.gps.phone_angle;
+        if owner.serv.gps.phone_accuracy.is_finite()
+            && (0. ..=30.).contains(&owner.serv.gps.phone_accuracy)
+        {
             owner.serv.gps.last_phone = now;
-            owner.serv.gps.last_calculate = now;
-            owner.serv.gps.speed = phone.speed.map_err(Error::Contract)?;
+            owner.serv.gps.sources.put(
+                Source::Phone,
+                Fix {
+                    latitude: owner.serv.gps.phone_latitude,
+                    longitude: owner.serv.gps.phone_longitude,
+                    heading: Some(owner.serv.gps.phone_angle),
+                    speed: phone.speed.map_err(Error::Contract)? / 3.6,
+                    stamp: now,
+                },
+            );
+        } else {
+            owner.serv.gps.sources.remove(Source::Phone);
         }
     }
     Ok(())

@@ -124,7 +124,21 @@ pub fn read(state: &State, gps_service: &str) -> Result<Inputs, Error> {
     } else {
         topic!(state, gps_service, GpsLocation)
     };
+    let gps_topic = state.topic(gps_service)?;
+    let vehicle = topic!(state, "carState", CarState).get_vehicle_gps()?;
     let gps = GpsInput {
+        gps_alive: gps_topic.alive,
+        gps_valid: gps_topic.valid,
+        gps_received: gps_topic.receive_time,
+        gps_speed: f64::from(gps.get_speed()),
+        car_valid: car_topic.alive && car_topic.valid,
+        vehicle_valid: vehicle.get_valid(),
+        vehicle_latitude: vehicle.get_latitude(),
+        vehicle_longitude: vehicle.get_longitude(),
+        vehicle_stamp: vehicle.get_sample_mono_time() as f64 / 1e9,
+        vehicle_heading: vehicle
+            .get_heading_valid()
+            .then(|| f64::from(vehicle.get_heading_deg())),
         car_updated: car_topic.updated,
         control_updated: state.topic("carControl")?.updated,
         gps_updated: state.topic(gps_service)?.updated,

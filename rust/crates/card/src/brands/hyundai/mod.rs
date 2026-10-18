@@ -104,3 +104,5 @@ mod diagnostics;
 mod fd_powertrain;
 mod parameter_diagnostics;
 mod python_set;
+
+pub mod vehicle_gps;

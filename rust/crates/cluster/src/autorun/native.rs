@@ -92,7 +92,14 @@ impl controller::Platform for Native {
     }
 
     fn startup(&mut self, params: &Reader) -> Result<(), controller::Error> {
-        gpu::wait_for_usbgpu_startup_until(
+        self.startup_transport(params, true)
+    }
+    fn startup_transport(
+        &mut self,
+        params: &Reader,
+        shared_usb: bool,
+    ) -> Result<(), controller::Error> {
+        gpu::wait_for_usbgpu_startup_transport_until(
             params,
             || {
                 gpu::startup_expected(
@@ -102,7 +109,22 @@ impl controller::Platform for Native {
                 )
             },
             || self.interrupted(),
+            shared_usb,
         )?;
+        Ok(())
+    }
+
+    fn discover_wifi(&mut self) -> Result<(), controller::Error> {
+        let config =
+            openpilot_cluster_wifi::Registration::load(&openpilot_cluster_wifi::config_path())
+                .map_err(std::io::Error::other)?
+                .ok_or_else(|| std::io::Error::other("S3 registration disappeared"))?;
+        openpilot_cluster_wifi::discover(
+            &config,
+            std::time::Duration::from_secs(2),
+            &["255.255.255.255"],
+        )
+        .map_err(std::io::Error::other)?;
         Ok(())
     }
 

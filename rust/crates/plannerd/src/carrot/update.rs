@@ -36,6 +36,7 @@ impl CarrotPlanner {
             None => false,
         };
         self.signal_policy(input, suspended);
+        self.signal_lead_present = input.radar.lead_one.status;
         self.parameters_update(parameters)?;
         self.detector.update(&TrafficSample {
             valid: input.mode_checks,
@@ -101,7 +102,9 @@ impl CarrotPlanner {
             Some(source) => Some(source.start()?),
             None => None,
         };
-        let start_hold = self.signal_start(input, start_read.as_ref());
+        let lead = input.radar.lead_one;
+        let lead_follow = super::signal::lead_in_stop_range(lead.status, lead.d_rel, stop_raw);
+        let start_hold = self.signal_start(input, start_read.as_ref(), lead_follow);
         if let (Some(source), Some(decision)) = (signals.as_deref_mut(), &self.start_decision) {
             source.record_start(decision, input.car.v_ego, stop_rl)?;
         }

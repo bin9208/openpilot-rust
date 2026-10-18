@@ -14,6 +14,8 @@ struct Host {
     late: bool,
     wifi_calls: usize,
     scans: usize,
+    discovery_failed: bool,
+    startup_shared_usb: Vec<bool>,
 }
 impl Platform for Host {
     fn interrupted(&self) -> bool {
@@ -30,6 +32,17 @@ impl Platform for Host {
     }
     fn startup(&mut self, _: &Reader) -> Result<(), controller::Error> {
         Ok(())
+    }
+    fn startup_transport(&mut self, _: &Reader, shared_usb: bool) -> Result<(), controller::Error> {
+        self.startup_shared_usb.push(shared_usb);
+        Ok(())
+    }
+    fn discover_wifi(&mut self) -> Result<(), controller::Error> {
+        if self.discovery_failed {
+            Err(std::io::Error::other("no authenticated S3").into())
+        } else {
+            Ok(())
+        }
     }
     fn wifi_registered(&mut self) -> Result<bool, controller::Error> {
         self.wifi_calls += 1;
@@ -96,6 +109,8 @@ fn registered_wifi_bypasses_desktop_usb_fallback_and_late_registration_rechecks_
             late,
             wifi_calls: 0,
             scans: 0,
+            discovery_failed: false,
+            startup_shared_usb: Vec::new(),
         };
         let mut entry = Entry {
             stop,
@@ -111,6 +126,10 @@ fn registered_wifi_bypasses_desktop_usb_fallback_and_late_registration_rechecks_
         assert!(entry.requests[0].output.usb());
         assert_eq!(platform.scans, usize::from(late));
         assert_eq!(platform.wifi_calls, if late { 3 } else { 1 });
+        assert_eq!(
+            platform.startup_shared_usb,
+            if late { vec![true, false] } else { vec![false] }
+        );
     }
 }
 #[test]
@@ -125,6 +144,8 @@ fn invalid_registration_remains_fatal_before_any_usb_probe_or_child() {
         late: false,
         wifi_calls: 0,
         scans: 0,
+        discovery_failed: false,
+        startup_shared_usb: Vec::new(),
     };
     let mut entry = Entry {
         stop,
@@ -140,4 +161,36 @@ fn invalid_registration_remains_fatal_before_any_usb_probe_or_child() {
     ));
     assert_eq!(platform.scans, 0);
     assert!(entry.requests.is_empty());
+}
+
+#[test]
+fn failed_wifi_discovery_retries_before_model_wait_or_graphics_entry() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("pairing.json");
+    pairing(&path);
+    let stop = Rc::new(Cell::new(false));
+    let mut platform = Host {
+        stop: stop.clone(),
+        path,
+        late: false,
+        wifi_calls: 0,
+        scans: 0,
+        discovery_failed: true,
+        startup_shared_usb: Vec::new(),
+    };
+    let mut entry = Entry {
+        stop,
+        requests: Vec::new(),
+    };
+    assert!(matches!(
+        controller::run(
+            &parameters(&dir.path().join("params")),
+            &mut platform,
+            &mut entry
+        ),
+        Err(controller::Error::Interrupted)
+    ));
+    assert!(platform.startup_shared_usb.is_empty());
+    assert!(entry.requests.is_empty());
+    assert_eq!(platform.scans, 0);
 }

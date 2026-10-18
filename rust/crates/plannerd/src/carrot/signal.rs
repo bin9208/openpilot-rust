@@ -8,6 +8,9 @@ use crate::signal::{
 };
 use openpilot_cereal::log_capnp::onroad_event::EventName;
 use serde_json::Value;
+pub(super) fn lead_in_stop_range(present: bool, distance: f64, stop: f64) -> bool {
+    present && distance.is_finite() && distance > 0. && stop.is_finite() && distance - stop < 2.
+}
 pub struct Signals<'a> {
     pub suspended: bool,
     pub start: Context,
@@ -102,7 +105,12 @@ impl CarrotPlanner {
             self.stopping_count = 0;
         }
     }
-    pub(super) fn signal_start(&mut self, input: &Input<'_>, signals: Option<&StartRead>) -> bool {
+    pub(super) fn signal_start(
+        &mut self,
+        input: &Input<'_>,
+        signals: Option<&StartRead>,
+        lead_follow: bool,
+    ) -> bool {
         self.signal_observation_color = 0;
         self.signal_green_active = false;
         let Some(s) = signals else {
@@ -123,7 +131,14 @@ impl CarrotPlanner {
                 || !self.stopping(),
         };
         self.signal_observation_color = start::observation_color(&request);
-        let decision = self.start_guard.update(&request);
+        let mut decision = self.start_guard.update(&request);
+        if lead_follow && decision.hold {
+            self.start_guard.clear_unemitted_warning();
+            decision = start::Decision {
+                reason: "lead_follow".into(),
+                ..start::Decision::default()
+            };
+        }
         if decision.green_confirmed
             && input.car.v_ego < 5. / 3.6
             && matches!(
@@ -151,7 +166,7 @@ impl CarrotPlanner {
             }
         }
         if decision.warn {
-            self.insert_event(EventName::AudioRefuse);
+            self.insert_signal_event(EventName::AudioRefuse);
         }
         let hold = decision.hold;
         self.start_decision = Some(decision);
@@ -198,7 +213,7 @@ impl CarrotPlanner {
             self.x_state = XState::E2eStopPrepare;
         }
         if decision.entered {
-            self.insert_event(EventName::TrafficSignChanged);
+            self.insert_signal_event(EventName::TrafficSignChanged);
         }
         self.prepare_decision = Some(decision);
     }

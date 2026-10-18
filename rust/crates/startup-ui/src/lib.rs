@@ -8,6 +8,8 @@ pub use digits::decimal as decimal_digit;
 pub use digits::is_digit;
 pub mod draw;
 pub mod geometry;
+#[cfg(feature = "native")]
+pub mod graphics_cleanup;
 pub mod network;
 pub mod scroll;
 pub mod spinner;

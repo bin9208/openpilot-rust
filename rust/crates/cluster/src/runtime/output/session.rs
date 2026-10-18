@@ -177,6 +177,16 @@ impl Output {
     }
     /// # Errors
     /// Preserves worker, encoder, GPU cleanup and timed JPEG join failures after cleanup attempts.
+    pub(crate) fn close_encoder(&mut self) -> Result<()> {
+        match &mut self.backend {
+            Backend::Software(output) => output.close().map_err(Error::from),
+            #[cfg(feature = "native-media")]
+            Backend::Hardware(output) => output.close().map_err(Error::from),
+            _ => Ok(()),
+        }
+    }
+    /// # Errors
+    /// Preserves backend and retained transport shutdown failures.
     pub fn close(&mut self) -> Result<()> {
         if self.closed {
             return Ok(());

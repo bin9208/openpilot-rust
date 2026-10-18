@@ -150,11 +150,36 @@ impl RuntimeArgs {
         &mut self,
         registration: &openpilot_cluster_wifi::Registration,
     ) -> &'static str {
+        self.apply_wifi_codec(registration, openpilot_cluster_wifi::Codec::Jpeg)
+    }
+
+    pub fn apply_wifi_codec(
+        &mut self,
+        registration: &openpilot_cluster_wifi::Registration,
+        codec: openpilot_cluster_wifi::Codec,
+    ) -> &'static str {
         self.wifi_fps = Some(registration.fps);
-        self.usb_codec = Codec::Jpeg;
+        self.usb_codec = if codec == openpilot_cluster_wifi::Codec::H264 {
+            Codec::H264
+        } else {
+            Codec::Jpeg
+        };
         self.usb_jpeg_quality = i64::from(registration.quality);
-        self.transport.usb_async = true;
-        "S3 Wi-Fi JPEG"
+        self.transport.usb_async = self.usb_codec == Codec::Jpeg;
+        if self.usb_codec == Codec::H264 {
+            if self.usb_h264_bitrate == "auto" {
+                self.usb_h264_bitrate = "1M".into();
+            }
+            self.usb_h264_gop = 10;
+            self.ack.usb_h264_wait_ack = false;
+            self.ack.usb_h264_soft_ack = false;
+            if self.usb_h264_diagnose_interval == 0. {
+                self.usb_h264_diagnose_interval = 10.;
+            }
+            "S3 Wi-Fi H264"
+        } else {
+            "S3 Wi-Fi JPEG"
+        }
     }
 
     /// Resolve the rate using the current `UsbGpuActive` state.

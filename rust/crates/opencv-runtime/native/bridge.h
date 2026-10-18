@@ -29,6 +29,7 @@ rust::Vec<Contour> external_contours(rust::Slice<const std::uint8_t>, Dimensions
 rust::Vec<float> match_template(rust::Slice<const std::uint8_t>, Dimensions, rust::Slice<const std::uint8_t>, Dimensions, rust::Slice<const std::uint8_t>);
 rust::Vec<float> match_template_ccorr(rust::Slice<const std::uint8_t>, Dimensions, rust::Slice<const std::uint8_t>, Dimensions, rust::Slice<const std::uint8_t>);
 rust::Vec<std::uint8_t> nv12_rgb(rust::Slice<const std::uint8_t>, Dimensions);
+rust::Vec<std::uint8_t> nv12_planes_rgb(rust::Slice<const std::uint8_t>, Dimensions, std::size_t, std::size_t);
 rust::Vec<std::uint8_t> mask_polygon(rust::Slice<const Point>, Dimensions);
 Rect bounds(rust::Slice<const Point>);
 rust::Vec<std::uint8_t> mask_image(rust::Slice<const std::uint8_t>, rust::Slice<const std::uint8_t>, Layout);

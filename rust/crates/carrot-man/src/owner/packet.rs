@@ -102,7 +102,7 @@ pub fn status(value: &Value, now: f64) -> Result<Status, Error> {
             latitude: optional("latitude"),
             longitude: optional("longitude"),
             heading: optional("heading"),
-            accuracy: optional("accuracy").map(|v| v.unwrap_or(0.)),
+            accuracy: optional("accuracy").map(|v| v.unwrap_or(f64::NAN)),
             speed: value
                 .get("gps_speed")
                 .map(float)

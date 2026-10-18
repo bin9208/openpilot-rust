@@ -41,6 +41,7 @@ pub struct State {
     pub inputs: Inputs,
     pub monitor: Monitor,
     pub navigation: Navigation,
+    pub vehicle_gps: super::vehicle_gps::VehicleGps,
     pub navigation_policy: super::navigation::policy::Policy,
     pub navigation_config: super::navigation::policy::Config,
     pub navigation_long_press: bool,
@@ -137,6 +138,7 @@ impl State {
             monitor,
             navigation_config,
             navigation,
+            vehicle_gps: super::vehicle_gps::VehicleGps::default(),
             navigation_policy: super::navigation::policy::Policy::default(),
             navigation_long_press: false,
             soft_hold: 0,
@@ -201,6 +203,34 @@ impl State {
         let [valid, timeout] = self.inputs.validity();
         ret.set_can_valid(valid);
         ret.set_can_timeout(timeout);
+        if super::vehicle_gps::supported(&self.inputs.pt.dbc) {
+            let stamp = self
+                .inputs
+                .pt
+                .states
+                .get(&0x374)
+                .and_then(|s| s.timestamps.back())
+                .copied()
+                .unwrap_or(0);
+            let raw = self
+                .inputs
+                .pt
+                .raw
+                .get(&0x374)
+                .map_or(&[][..], Vec::as_slice);
+            let speed = f64::from(ret.reborrow_as_reader().get_v_ego());
+            let reverse = ret.reborrow_as_reader().get_gear_shifter()? == GearShifter::Reverse;
+            self.vehicle_gps
+                .update(
+                    self.inputs.pt.last_update,
+                    stamp,
+                    self.inputs.pt.bus_timeout(),
+                    raw,
+                    speed,
+                    reverse,
+                )
+                .write(ret.reborrow().init_vehicle_gps());
+        }
         let mut cluster = ret.reborrow_as_reader().get_v_ego_cluster();
         if cluster == 0. && !self.cluster_seen {
             cluster = ret.reborrow_as_reader().get_v_ego();

@@ -11,7 +11,7 @@ unsafe_code = "deny"
 
 [features]
 default = []
-native-skip-miri = ["openpilot-opencv-runtime/native-skip-miri"]
+native-skip-miri = ["dep:openpilot-calibrationd", "openpilot-opencv-runtime/native-skip-miri"]
 
 neural-numerics = ["dep:openpilot-signal-numerics", "openpilot-signal-numerics/native-skip-miri"]
 
@@ -19,9 +19,12 @@ neural-qcom = ["neural-numerics", "native-skip-miri", "dep:openpilot-model-runti
 
 neural-ort = ["neural-numerics","native-skip-miri", "dep:openpilot-onnx-runtime", "openpilot-onnx-runtime/native-skip-miri"]
 
-daemon = ["native-skip-miri", "dep:openpilot-beepd", "dep:openpilot-msgq", "dep:openpilot-params", "dep:openpilot-logging", "dep:openpilot-managed-entry", "dep:signal-hook"]
+daemon = ["dep:openpilot-cereal", "dep:openpilot-messaging", "native-skip-miri", "dep:openpilot-beepd", "dep:openpilot-msgq", "dep:openpilot-params", "dep:openpilot-logging", "dep:openpilot-managed-entry", "dep:signal-hook"]
 
 [dependencies]
+openpilot-cereal = {path="../cereal",optional=true}
+openpilot-calibrationd = {path="../calibrationd",default-features=false,optional=true}
+openpilot-messaging = {path="../messaging",features=["native"],optional=true}
 openpilot-model-runtime = { path = "../model-runtime", optional = true }
 openpilot-runtime-package = { path = "../runtime-package", optional = true }
 openpilot-beepd = { path = "../beepd", optional = true }
@@ -45,6 +48,14 @@ rustix = { version = "1", features = ["time", "process", "thread", "fs"] }
 [[example]]
 name = "signal_pixels_trace"
 required-features = ["native-skip-miri"]
+
+[[example]]
+name = "lead_brake_trace"
+required-features = ["native-skip-miri"]
+
+[[example]]
+name = "signal_qcom_validate"
+required-features = ["neural-qcom"]
 
 [[example]]
 name = "signal_detector_trace"

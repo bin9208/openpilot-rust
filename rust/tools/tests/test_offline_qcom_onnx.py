@@ -59,3 +59,20 @@ def test_original_onnx_loader_rejects_runtime_content_when_used_as_static_shape(
     # When the offline producer needs a compile-time control value.
     with pytest.raises(ExportError, match="runtime content"):
         load_model(path, hashlib.sha256(path.read_bytes()).hexdigest())
+
+
+def test_signal_fp32_export_keeps_full_precision_and_materializes_transposed_output(tmp_path: Path) -> None:
+    path = tmp_path / "signal-shape.onnx"
+    weight = helper.make_tensor("weight", TensorProto.FLOAT, [2, 3], [1.000123] * 6)
+    graph = helper.make_graph([
+        helper.make_node("Add", ["input", "weight"], ["sum"]),
+        helper.make_node("Transpose", ["sum"], ["output"], perm=[1, 0]),
+    ], "signal_fp32", [helper.make_tensor_value_info("input", TensorProto.FLOAT, [2, 3])],
+       [helper.make_tensor_value_info("output", TensorProto.FLOAT, [3, 2])], [weight])
+    onnx.save(helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)]), path)
+    model = load_model(path, hashlib.sha256(path.read_bytes()).hexdigest(), float16=0)
+    assert struct.pack("<6f", *([1.000123] * 6)) in tuple(item.data for item in model.initialized)
+    from model_export.offline_schedule import schedule_outputs
+    from model_export.offline_buffers import descriptor
+    schedule_outputs(tuple(model.bindings.outputs.values()), float16=0)
+    assert descriptor(model.bindings.outputs["output"].uop).nbytes == 24

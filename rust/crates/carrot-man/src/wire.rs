@@ -96,6 +96,10 @@ pub fn carrot(
     carrot.set_x_pos_lat(float(state.gps.latitude)?);
     carrot.set_x_pos_lon(float(state.gps.longitude)?);
     carrot.set_x_pos_speed(float(decision.position_speed)?);
+    carrot.set_position_fix_mono_time((state.gps.last_calculate * 1e9).max(0.) as u64);
+    carrot.set_position_mono_time((state.gps.position_mono_time * 1e9).max(0.) as u64);
+    carrot.set_position_source(state.gps.position_source);
+    carrot.set_position_heading_valid(state.gps.position_heading_valid);
     carrot.set_n_go_pos_dist(integer(state.nav.goal_distance)?);
     carrot.set_n_go_pos_time(integer(state.nav.goal_time)?);
     carrot.set_sz_sdi_descr(state.sdi_description(decision).as_str());

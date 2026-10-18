@@ -9,6 +9,8 @@ import subprocess
 import sys
 import tempfile
 import time
+import hashlib
+import types
 from types import SimpleNamespace as NS
 from collections import deque
 
@@ -21,6 +23,14 @@ from openpilot.selfdrive.carrot.navigation_sources import NavigationSource, safe
 from openpilot.common.constants import CV
 from openpilot.cereal import log
 import numpy as np
+
+def refreshed_source(path):
+  fixture=json.loads((ROOT/'rust/upstream/refresh-source.json').read_text())
+  assert fixture['source_commit']=='163c000e05641adea88e9221094d45c90c3e186d'
+  record=fixture['files'][path];data=record['content'].encode()
+  assert hashlib.sha256(data).hexdigest()==record['sha256']
+  assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==record['git_blob']
+  return record['content']
 
 
 def message(service):
@@ -38,13 +48,40 @@ def source_owner(root, binding, clock):
   spec.loader.exec_module(module)
   memory = module.Params(str(root / "memory"))
   params = module.Params(str(root))
-  tree = ast.parse((ROOT / "openpilot/selfdrive/carrot/carrot_serv.py").read_text())
+  gps=types.ModuleType('verified_gps_sources');sys.modules[gps.__name__]=gps
+  exec(compile(refreshed_source('openpilot/selfdrive/carrot/gps_sources.py'),'163c000e:gps_sources','exec'),gps.__dict__)
+  control=types.ModuleType('verified_navi_control');sys.modules[control.__name__]=control
+  exec(compile(refreshed_source('openpilot/selfdrive/carrot/carrot_navi_control.py'),'163c000e:carrot_navi_control','exec'),control.__dict__)
+  # The unchanged source projector constructs this dataclass. Its appended
+  # receipt metadata defaults to zero for older senders, as upstream specifies.
+  import openpilot.selfdrive.carrot.navigation_runtime as navigation_runtime
+  navigation_runtime.NaviVehicleControl=control.NaviVehicleControl
+  # Retain this fork's navigation owner and execute upstream's changed methods.
+  tree = ast.parse((ROOT/'openpilot/selfdrive/carrot/carrot_serv.py').read_text())
+  final_tree=ast.parse(refreshed_source('openpilot/selfdrive/carrot/carrot_serv.py'))
+  final_class=next(n for n in final_tree.body if isinstance(n,ast.ClassDef) and n.name=='CarrotServ')
+  base_class=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='CarrotServ')
+  replacements={n.name:n for n in final_class.body if isinstance(n,ast.FunctionDef) and n.name in {'_gps_sources','_update_gps','_apply_carrot_navi_vehicle'}}
+  base_class.body=[replacements.pop(n.name,n) if isinstance(n,ast.FunctionDef) else n for n in base_class.body]
+  base_class.body.extend(replacements.values())
+  class PositionFields(ast.NodeTransformer):
+    def visit_Assign(self,node):
+      if ast.unparse(node.targets[0])=='msg.carrotMan.xPosLat':
+        fields=[n for m in final_class.body if isinstance(m,ast.FunctionDef) for n in ast.walk(m) if isinstance(n,ast.Assign) and ast.unparse(n.targets[0]).startswith('msg.carrotMan.position')]
+        assert len(fields)==4
+        return [node,*fields]
+      return node
+  PositionFields().visit(base_class)
+  init=next(n for n in base_class.body if isinstance(n,ast.FunctionDef) and n.name=='__init__')
+  init.body.extend(ast.parse('self.position_mono_time = 0').body)
+  clear=next(n for n in base_class.body if isinstance(n,ast.FunctionDef) and n.name=='_clear_carrot_navi_control')
+  clear.body.insert(0,ast.parse("self._gps_sources().remove('external_navi')").body[0])
   nodes = [node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "CarrotServ"]
   nodes += [node for node in tree.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id in {"nav_type_mapping", "COUNTDOWN_NEW_TARGET_MIN_JUMP_M", "SCHOOL_ZONE_GAS_OVERRIDE_TIMEOUT_S"} for target in node.targets)]
   scope = dict(NavigationRuntime=NavigationRuntime, NavigationSource=NavigationSource, Params=lambda path=None: memory if path else params,
     time=NS(monotonic=lambda: clock[0]), collections=NS(deque=deque), np=np, math=math, json=json, CV=CV, safety_rejection=safety_rejection,
     messaging=NS(new_message=lambda name, **kwargs: message(name)), get_gps_location_service=lambda p: "gpsLocationExternal", PC=True, TICI=False, CarrotNaviControl=object,
-    print=lambda *args, **kwargs: None)
+    GPSSources=gps.GPSSources, print=lambda *args, **kwargs: None)
   exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])), "carrot_serv.py", "exec"), scope)
   return scope["CarrotServ"](), params, memory
 
@@ -139,8 +176,9 @@ def main():
       class Frame(dict):
         pass
       sm = Frame(sm)
-      sm.alive = {"carState": i["car"] is not None, "selfdriveState": i["selfdrive_alive"], "navInstruction": False}
-      sm.valid = {"navInstruction": False}
+      sm.alive = {"carState": i["car"] is not None, "selfdriveState": i["selfdrive_alive"], "navInstruction": False, "gpsLocationExternal": False}
+      sm.valid = {"navInstruction": False, "carState": i["car"] is not None, "gpsLocationExternal": False}
+      sm.recv_time = {"gpsLocationExternal": 0.}
       sm.updated = {"carState": i["gps"]["car_updated"], "carControl": i["gps"]["control_updated"], "gpsLocationExternal": i["gps"]["gps_updated"]}
       owner.update_navi("127.0.0.1", sm, pub, i["vision_speed"], [], [], i["route_speed"], "gpsLocationExternal", navigation_prepared=True)
       source = dict(captured)

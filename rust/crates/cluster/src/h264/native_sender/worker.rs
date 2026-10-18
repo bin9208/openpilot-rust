@@ -13,6 +13,7 @@ use std::{
 };
 #[derive(Default)]
 struct State {
+    preserve_references: bool,
     pending: VecDeque<AccessUnit>,
     controls: VecDeque<(Control, mpsc::SyncSender<io::Result<()>>)>,
     closing: bool,
@@ -51,6 +52,35 @@ impl Sender {
         }
         let mut state = lock(&self.shared)?;
         if state.closing {
+            return Ok(());
+        }
+        if state.preserve_references {
+            let deadline = std::time::Instant::now() + Duration::from_secs(3);
+            loop {
+                if state.closing {
+                    return Ok(());
+                }
+                if let Some(error) = &state.snapshot.error {
+                    return Err(io::Error::other(error.clone()));
+                }
+                if state.pending.len() < 3 {
+                    break;
+                }
+                if std::time::Instant::now() >= deadline {
+                    return Err(io::Error::other("S3 display disconnected; H264 reference queue stalled for 3s; restart stream"));
+                }
+                state = self
+                    .shared
+                    .ready
+                    .wait_timeout(state, Duration::from_millis(50))
+                    .map_err(|_| io::Error::other("native H264 sender wake poisoned"))?
+                    .0;
+            }
+            state.pending.push_back(unit);
+            if let Some(monitor) = &state.monitor {
+                monitor.queued(state.pending.len(), 0, 0)?;
+            }
+            self.shared.ready.notify_one();
             return Ok(());
         }
         let selection = select_access_units(state.pending.drain(..).collect(), unit);
@@ -95,7 +125,7 @@ impl Sender {
             .map_or(Ok(()), |error| Err(io::Error::other(error)))
     }
     /// # Errors
-    /// Waits for the owned sender's source three-second drain before joining; timeout remains an error.
+    /// Cancels queued work and waits up to three seconds for the owned sender to exit.
     pub fn close(&mut self) -> io::Result<()> {
         if self.thread.is_none() {
             return Ok(());
@@ -137,6 +167,10 @@ fn run(
                     .wait(state)
                     .map_err(|_| io::Error::other("native H264 sender wake poisoned"))?;
             }
+            if state.closing {
+                return Ok(());
+            }
+            shared.ready.notify_all();
             if let Some((control, reply)) = state.controls.pop_front() {
                 Some(Work::Control(control, reply))
             } else {
@@ -151,6 +185,9 @@ fn run(
             Some(Work::Unit(unit)) => {
                 for bytes in unit.chunks {
                     let mut state = lock(shared)?;
+                    if state.closing {
+                        return Ok(());
+                    }
                     state.snapshot.bytes_sent += bytes.len();
                     state.snapshot.chunks_sent += 1;
                     let monitor = state.monitor.clone();
@@ -171,6 +208,101 @@ fn run(
                     }
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod wifi_reference_tests {
+    use super::*;
+    fn unit(byte: u8) -> AccessUnit {
+        AccessUnit {
+            chunks: vec![vec![byte]],
+            codec_config: false,
+            keyframe: false,
+        }
+    }
+    #[test]
+    fn wifi_queue_preserves_reference_order_and_sleeps_until_space() {
+        let shared = Arc::new(Shared::default());
+        {
+            let mut state = lock(&shared).unwrap();
+            state.preserve_references = true;
+            state.pending.extend([unit(1), unit(2), unit(3)]);
+        }
+        let (_, finished) = mpsc::channel();
+        let sender = Sender {
+            shared: shared.clone(),
+            thread: None,
+            finished,
+            chunk_size: 1,
+        };
+        let consumer = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(80));
+            let mut state = lock(&shared).unwrap();
+            assert_eq!(state.pending.pop_front().unwrap().chunks, vec![vec![1]]);
+            shared.ready.notify_all();
+        });
+        let start = std::time::Instant::now();
+        let cpu_start = rustix::time::clock_gettime(rustix::time::ClockId::ThreadCPUTime);
+        sender.enqueue(unit(4)).unwrap();
+        let cpu_end = rustix::time::clock_gettime(rustix::time::ClockId::ThreadCPUTime);
+        let cpu_ns = (cpu_end.tv_sec - cpu_start.tv_sec) * 1_000_000_000 + cpu_end.tv_nsec
+            - cpu_start.tv_nsec;
+        assert!(cpu_ns < 20_000_000, "queue wait consumed {cpu_ns} CPU ns");
+        assert!(start.elapsed() >= Duration::from_millis(50));
+        consumer.join().unwrap();
+        let state = lock(&sender.shared).unwrap();
+        assert_eq!(
+            state
+                .pending
+                .iter()
+                .map(|u| u.chunks[0][0])
+                .collect::<Vec<_>>(),
+            [2, 3, 4]
+        );
+        assert_eq!(state.snapshot.dropped_units, 0);
+    }
+
+    #[test]
+    fn full_wifi_queue_wakes_on_close_or_error_and_stalls_have_a_deadline() {
+        for outcome in ["close", "error", "timeout"] {
+            let shared = Arc::new(Shared::default());
+            {
+                let mut state = lock(&shared).unwrap();
+                state.preserve_references = true;
+                state.pending.extend([unit(1), unit(2), unit(3)]);
+            }
+            let (_, finished) = mpsc::channel();
+            let sender = Sender {
+                shared: shared.clone(),
+                thread: None,
+                finished,
+                chunk_size: 1,
+            };
+            let wake = std::thread::spawn(move || {
+                if outcome == "timeout" {
+                    return;
+                }
+                std::thread::sleep(Duration::from_millis(20));
+                let mut state = lock(&shared).unwrap();
+                if outcome == "close" {
+                    state.closing = true;
+                } else {
+                    state.snapshot.error = Some("network stopped".into());
+                }
+                shared.ready.notify_all();
+            });
+            let start = std::time::Instant::now();
+            let result = sender.enqueue(unit(4));
+            if outcome == "close" {
+                assert!(result.is_ok());
+            } else {
+                assert!(result.is_err());
+            }
+            assert!(start.elapsed() < Duration::from_secs(4));
+            wake.join().unwrap();
+            assert_eq!(lock(&sender.shared).unwrap().pending.len(), 3);
         }
     }
 }
