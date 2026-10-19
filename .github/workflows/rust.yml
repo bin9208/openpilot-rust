@@ -2298,12 +2298,21 @@ jobs:
           python rust/tools/check_stats_flood.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-flood"
       - name: Compare interrupted metric receives with the original daemon
         run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --bin check-stats-interrupted --locked
           fault_root="$RUNNER_TEMP/telemetry-runtime/stats-receive-boundary"
           mkdir -p "$fault_root"
           gcc -Wall -Wextra -Werror -O2 -fPIC -DZMQ_LINK_WRAP -c rust/tools/zmq_receive_boundary.c -o "$fault_root/receive-wrap.o"
           gcc -Wall -Wextra -Werror -O2 -fPIC -shared rust/tools/zmq_receive_boundary.c -ldl -o "$fault_root/receive-preload.so"
           cargo rustc --manifest-path rust/Cargo.toml -p openpilot-statsd --example stats_daemon --locked -- -C link-arg=-Wl,--wrap=zmq_msg_recv -C "link-arg=$fault_root/receive-wrap.o"
-          python rust/tools/check_stats_interrupted.py rust/target/debug/examples/stats_daemon \
+          stats_receive_bindings=("$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so)
+          test "${#stats_receive_bindings[@]}" -eq 1
+          export STATS_INTERRUPTED_BINARY="$PWD/rust/target/debug/examples/stats_daemon" STATS_INTERRUPTED_BINDING="${stats_receive_bindings[0]}" STATS_INTERRUPTED_PRELOAD="$fault_root/receive-preload.so" STATS_INTERRUPTED_CHECKER="$PWD/rust/target/debug/check-stats-interrupted"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --test stats_interrupted_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --lib --test stats_interrupted_check --bin check-stats-interrupted --locked -- -D warnings
+          rust/target/debug/check-stats-interrupted rust/target/debug/examples/stats_daemon \
             "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$fault_root/receive-preload.so" "$fault_root/comparison"
       - name: Compare crash-file policy, literal filenames and actual SDK transport
         run: |

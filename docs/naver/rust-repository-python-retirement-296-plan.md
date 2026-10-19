@@ -311,3 +311,26 @@ to replace arbitrary statsd behavior or a general-purpose source runtime.
 This unit consumes the already-verified independent collector transport; it does
 not change its policy or the deployed statistics daemon. Compiler use remains
 serialized with the registration, proclog and soundd units.
+
+### Completed interrupted statistics receive closure (2026-10-19)
+
+The former `check_stats_interrupted.py` consumed `stats_source.py`; both are now
+removed after the paired retirement gate. Fresh original-only runs with a freshly compiled
+C fault shim passed all five sequences: one/repeated EINTR, EINTR then EAGAIN,
+EINVAL and ENOTSOCK. Preserve the exact trace faults and DONTWAIT flags, retained
+metric flush, fatal exit/no-file effects,5-second clock/delivery/wait bounds and
+explicit historical `--before` behavior. The reference fixture is source-only;
+no candidate supplies expected output. The original collector/Params/msgq inputs
+remain source-pinned, with actual native process and filesystem checks.
+
+- [x] Capture five original scenarios and current C shim/source identities.
+- [x] Observe API tests fail before implementing the native controller.
+- [x] Run fresh native link-wrapped candidate, all five traces and ownership/failure controls.
+- [x] Route CI through the native checker without weakening its C wrapper or assertions.
+- [x] Prove same-ELF execution before/after removing both Python files, then rebuild/retest.
+
+The existing three native statistics controllers still pass after shared-helper
+retirement. The frozen eight artifacts passed 15 cases per phase, with 50 exec
+attempts and no Python in each phase. Fresh post-deletion verification passed
+72 tests (7 interrupted,8 predecessor,44 CI policy,13 disk) and strict Clippy.
+The separate real-clock and busy-producer runtime checkers remain pending.

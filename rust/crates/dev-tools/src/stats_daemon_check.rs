@@ -14,6 +14,7 @@ use std::{
     },
 };
 mod identity;
+pub mod interrupted;
 mod process;
 mod worker;
 use identity::Inputs;

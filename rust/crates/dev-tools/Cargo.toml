@@ -1462,3 +1462,12 @@ required-features = ["proclog-reference-native"]
 name = "check-aarch64"
 path = "src/bin/check_aarch64.rs"
 required-features = ["aarch64-check-native"]
+
+[[test]]
+name = "stats_interrupted_check"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-interrupted"
+path = "src/bin/check_stats_interrupted.rs"
+required-features = ["stats-daemon-native"]

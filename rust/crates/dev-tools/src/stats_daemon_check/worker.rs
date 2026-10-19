@@ -50,14 +50,14 @@ fn record(packet: &[u8], error: bool) -> Result<(Value, u64)> {
         event.get_log_mono_time(),
     ))
 }
-struct Collector<'a> {
+pub(super) struct Collector<'a> {
     process: Process<'a>,
     log: Subscriber,
     error: Subscriber,
     root: PathBuf,
 }
 impl<'a> Collector<'a> {
-    fn start(output: &Path, worker: &Path, cancel: &'a AtomicBool) -> Result<Self> {
+    pub(super) fn start(output: &Path, worker: &Path, cancel: &'a AtomicBool) -> Result<Self> {
         let prefix = std::env::var("OPENPILOT_PREFIX")?;
         let endpoint = format!("ipc:///tmp/logmessage{prefix}");
         let home = output.join("collector/home");
@@ -144,7 +144,7 @@ impl<'a> Collector<'a> {
         )?;
         Ok(result)
     }
-    fn stop(&mut self) -> Result<Vec<Value>> {
+    pub(super) fn stop(&mut self) -> Result<Vec<Value>> {
         self.process.signal(Signal::INT)?;
         require(
             self.process.wait(Some(Duration::from_secs(10)))? == -2,

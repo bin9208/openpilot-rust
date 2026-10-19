@@ -4338,3 +4338,45 @@ Evidence: `2026-10-19-aarch64-check-tools/{FINAL-HANDOFF.txt,`
 201 replaced-local,3 partial,3,376 pending of3,580. QEMU remains host validation;
 `device_validation` is `not_run`. Exact committed-head CI, complete conversion,
 integration and user-owned boot/recording/upload acceptance are not complete.
+
+
+### Interrupted statistics receive closure (2026-10-19)
+
+Retired exactly `check_stats_interrupted.py` and its last shared helper
+`stats_source.py`. Fresh original-only fault injection captured five cases:
+one/repeated EINTR, EINTR followed by EAGAIN, EINVAL and ENOTSOCK. The independent
+fixture SHA256 is30af65083d9293acd0791f11d2ce40cb8eb611d2a7b4211dc82601d91e69020a.
+Native comparison uses the real link-wrapped daemon, retained metric flush and
+fatal no-file effects, exact trace errors/DONTWAIT, original5-second bounds,
+actual Params/msgq collectors and owned process cleanup. The original preload
+and binding are provenance inputs; native execution does not invoke Python.
+Original `statsd.py` and other source dependencies remain mandatory.
+
+API RED preceded implementation. Independent review reproduced a late-SIGINT
+bug after all five workers completed while final stdout was blocked: the old
+controller returned success and retained a success receipt. The final write is
+now fallible and checked before atomic no-clobber receipt publication, with
+owned-inode cleanup on cancellation. A real pipe/PIDFD regression passes.
+Original argparse help exit0, invalid usage exit2 and all `--before` positions
+are preserved. The historical broken-daemon `--before` comparison contract is
+tested separately; no old broken executable was run in this gate.
+
+Frozen bundle `frozen-EwY6f6FE` passed all four statistics CLIs before and after
+removing both files:15 cases and50 exec attempts per phase,0 Python with empty
+PATH. The same8 artifacts were used;4 normalized reports are byte-identical.
+Eleven input maps changed only by removal of the two historical source keys.
+The interrupted checker SHA256 is
+32f9f970a74495894c0b81fcc85279f00eb62d006337faf78c93cc8827dd5c65.
+Fresh post-deletion build,72 tests (7 new,8 predecessor,44 CI,13 disk), scoped
+formatting and strict Clippy pass. The four freshly built checkers, producer and
+preload match the frozen bytes. Plain/wrapped daemon builds differ solely in
+embedded logging source commit0b5c20ca→18685227 and GNU build-id; normalizing
+those fields gives complete byte equality. Fresh actual daemon cases passed.
+
+CI preserves the original C boundary/wrapper and routes the full five-scenario
+comparison through the native CLI with mandatory tests/Clippy. Disk guards
+increase318→321, retaining the original177 baseline. Private proof is indexed by
+`.analysis/scratch/2026-10-19-stats-interrupted-tools/FINAL-HANDOFF.json` and
+`postdelete-proof.json`. Inventory:203 replaced-local,3 partial,3,374 pending
+of3,580. Device/drive validation was not run; real-clock and flood checkers are
+separate pending work.

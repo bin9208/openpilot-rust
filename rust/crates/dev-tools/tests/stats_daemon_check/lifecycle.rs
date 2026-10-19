@@ -29,6 +29,7 @@ fn copy_sources(destination: &Path) {
                         "rust/tools/check_stats_daemon.py"
                             | "rust/tools/check_stats_failures.py"
                             | "rust/tools/check_stats_log_fault.py"
+                            | "rust/tools/stats_source.py"
                     ) => {}
             Err(e) => panic!("{name}: {e}"),
         }

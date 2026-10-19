@@ -95,13 +95,22 @@ impl<'a> Process<'a> {
         }
     }
     pub(super) fn line(&mut self, first_byte_timeout: Option<Duration>) -> Result<String> {
+        self.line_or_eof(first_byte_timeout)?
+            .ok_or_else(|| "child clock/output closed".into())
+    }
+    pub(super) fn line_or_eof(
+        &mut self,
+        first_byte_timeout: Option<Duration>,
+    ) -> Result<Option<String>> {
         let start = Instant::now();
         loop {
             if let Some(index) = self.buffer.iter().position(|b| *b == b'\n') {
                 let line = self.buffer.drain(..=index).collect::<Vec<_>>();
-                return Ok(String::from_utf8(line)?
-                    .trim_matches(|c: char| c.is_whitespace() || matches!(c, '\x1c'..='\x1f'))
-                    .into());
+                return Ok(Some(
+                    String::from_utf8(line)?
+                        .trim_matches(|c: char| c.is_whitespace() || matches!(c, '\x1c'..='\x1f'))
+                        .into(),
+                ));
             }
             // Original select bounds readiness only; readline can then await the newline.
             if self.buffer.is_empty()
@@ -110,13 +119,15 @@ impl<'a> Process<'a> {
                 return Err("child clock readiness timeout".into());
             }
             match self.receive()? {
-                Some(false) if self.buffer.is_empty() => {
-                    return Err("child clock/output closed".into())
-                }
+                Some(false) if self.buffer.is_empty() => return Ok(None),
                 Some(false) => {
-                    return Ok(String::from_utf8(std::mem::take(&mut self.buffer))?
-                        .trim()
-                        .into())
+                    return Ok(Some(
+                        String::from_utf8(std::mem::take(&mut self.buffer))?
+                            .trim_matches(|c: char| {
+                                c.is_whitespace() || matches!(c, '\x1c'..='\x1f')
+                            })
+                            .into(),
+                    ))
                 }
                 Some(true) => (),
                 None => std::thread::sleep(Duration::from_millis(2)),

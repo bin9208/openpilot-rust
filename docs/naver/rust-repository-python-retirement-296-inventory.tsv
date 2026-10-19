@@ -2079,7 +2079,7 @@ rust/tools/check_stats_clock.py	d39c50ee332422bbbac65e2ed44284b8439ef20b	replace
 rust/tools/check_stats_daemon.py	ffcc3b899f807f3f96977ac2fa0b0fc690096d66	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs
 rust/tools/check_stats_failures.py	ce144ca88d88b034376666810d767e233554bbec	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs
 rust/tools/check_stats_flood.py	1b5ad8b2c9e66df9f6d5bfd69aedba1267cc4cd1	pending	-
-rust/tools/check_stats_interrupted.py	f0caa533e30c9ab353de7ffc1caa0353d30fe304	pending	-
+rust/tools/check_stats_interrupted.py	f0caa533e30c9ab353de7ffc1caa0353d30fe304	replaced-local	Native interrupted receive checker and shared statistics source closure: independent 5 fault cases, 15 same-ELF cases per deletion phase, no Python exec, post-delete 72 tests and strict Clippy; original statsd.py retained
 rust/tools/check_stats_log_fault.py	ff238b53e34afb709af764e44b8b301d67a753aa	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs
 rust/tools/check_stats_numbers.py	f7d7404586d04d2be2d8b6cb65e23d80e61b88aa	replaced-local	openpilot-dev-tools check-stats-numbers
 rust/tools/check_stats_producer.py	5c5c285242a90bbb08e62a6359fe52f927ec6323	replaced-local	openpilot-dev-tools check-stats-producer; independent original wire capture and actual fork/drop/pressure/typed checks
@@ -2513,7 +2513,7 @@ rust/tools/stage_card_fixtures.py	b4ce2d400a6bc8ad6b4935bb558ceb760a31e366	pendi
 rust/tools/stage_control_dbcs.py	c8588f8138720b20e7467fb8eccd0ab05e73b9b3	replaced-local	rust/crates/dev-tools/src/dbc_generator.rs stage/stage_with; openpilot-dev-tools stage-control-dbcs
 rust/tools/stage_radarcan_runtime.py	484462bbf342b4a4d8802ad9131c76efa198a3df	pending	-
 rust/tools/startup_ui_source_render.py	7533acbe9527f4f545cc8d12419f2e6c4ca9371f	pending	-
-rust/tools/stats_source.py	b1664a979ed824cabd5f2a87f5ddfed2bc017864	pending	-
+rust/tools/stats_source.py	b1664a979ed824cabd5f2a87f5ddfed2bc017864	replaced-local	Native interrupted receive checker and shared statistics source closure: independent 5 fault cases, 15 same-ELF cases per deletion phase, no Python exec, post-delete 72 tests and strict Clippy; original statsd.py retained
 rust/tools/stats_source_producer.py	9e359b1feccfae56b7812ec51768fd9e7f02162c	replaced-local	openpilot-dev-tools check-stats-producer; independent original wire capture and actual fork/drop/pressure/typed checks
 rust/tools/supervision_cases.py	e03a7016b78c8021b6a347e49dd63d9391c0096e	pending	-
 rust/tools/supervision_ensure_cases.py	4a706d5fa5ac322780d2206ba77bab976e135849	pending	-

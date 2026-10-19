@@ -21,6 +21,7 @@ ownership is acknowledged separately with a held filesystem inode, so cancelling
 the controller preserves a replacement socket owned by another process.
 
 The three controllers have passed same-ELF before/after removal checks (ten cases
-and34 execs each, no Python with an empty PATH). `stats_source.py` remains for
-`check_stats_interrupted.py`; original `statsd.py` also remains. Fresh post-removal
+and34 execs each, no Python with an empty PATH). The later interrupted-receive
+closure also retired `stats_source.py` and `check_stats_interrupted.py`; see
+`../stats-interrupted/README.md`. Original `statsd.py` remains. Fresh post-removal
 rebuild and committed-head CI are separate gates, recorded in the #296 evidence.
