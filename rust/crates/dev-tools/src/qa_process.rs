@@ -355,7 +355,12 @@ impl NativeRunner {
     /// Capture inside an already-owned worker group. The outer runner alone
     /// owns descendants; this inner owner only kills/reaps its direct child.
     /// Never use this entrypoint outside that process-group ownership scope.
-    #[cfg(any(feature = "timed-live-native", feature = "version-tools-native"))]
+    #[cfg(any(
+        feature = "timed-live-native",
+        feature = "version-tools-native",
+        feature = "soundd-daemon-native",
+        feature = "bridge-tools-native"
+    ))]
     pub(crate) fn run_in_current_group(&mut self, spec: &CommandSpec) -> Result<Captured> {
         self.run_with_file(spec, None, false)
     }

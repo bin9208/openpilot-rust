@@ -194,7 +194,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    assert_eq!(text.matches(marker).count(), 338);
+    assert_eq!(text.matches(marker).count(), 365);
     let workflow = parse(&text).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
@@ -300,8 +300,54 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let mut stats_runtime_receipts = vec![];
     let mut connectivity_ownership = vec![];
     let mut wifi_snapshot = vec![];
+    let mut bridge_controller = vec![];
+    let mut soundd_daemon_controller = vec![];
+    let mut bluetooth_files_controller = vec![];
+    let mut logmessaged_startup_controller = vec![];
+    let mut bluetooth_journal_controller = vec![];
     for (i, line) in lines.iter().enumerate() {
         if let Some((_, tail)) = line.split_once(marker) {
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features bluetooth-journal-native")
+                    || lines[i + 1].contains("rust/target/debug/check-bluetooth-journal --binary"))
+            {
+                bluetooth_journal_controller.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features logmessaged-startup-native")
+                    || lines[i + 1].contains(
+                        "python rust/tools/check_logmessaged_startup.py --collector \"$collector\"",
+                    )
+                    || lines[i + 1].contains("env PATH=\"$proof/native-path\" /usr/bin/timeout"))
+            {
+                logmessaged_startup_controller.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features bluetooth-files-native")
+                    || lines[i + 1].contains("rust/target/debug/check-bluetooth-files --binary"))
+            {
+                bluetooth_files_controller.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features soundd-daemon-native")
+                    || lines[i + 1].contains(
+                        "rust/tools/fixtures/soundd/portaudio.c -o \"$SOUNDD_PORTAUDIO_LIBRARY\"",
+                    )
+                    || lines[i + 1].contains("\"$PWD/rust/target/debug/check-soundd-daemon\""))
+            {
+                soundd_daemon_controller.push(tail.to_owned());
+                continue;
+            }
+            if i + 1 < lines.len()
+                && (lines[i + 1].contains("--features bridge-tools-native")
+                    || lines[i + 1].contains("sudo -E \"$PWD/rust/target/debug/check-bridge\""))
+            {
+                bridge_controller.push(tail.to_owned());
+                continue;
+            }
             if i + 1 < lines.len()
                 && (lines[i + 1].contains("-p openpilot-wifi --lib --locked")
                     || lines[i + 1].contains(
@@ -848,6 +894,31 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     assert_eq!(
         native_architecture,
         vec![" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024"]
+    );
+    assert_eq!(
+        logmessaged_startup_controller,
+        [512, 512, 512, 512, 128, 128, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        bluetooth_files_controller,
+        [512, 512, 512, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        soundd_daemon_controller,
+        [512, 64, 512, 512, 512, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        bridge_controller,
+        [1024, 512, 512, 512, 128, 512]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
+    );
+    assert_eq!(
+        bluetooth_journal_controller,
+        [512, 512, 512, 128]
+            .map(|growth| format!(" --path \"$GITHUB_WORKSPACE\" --growth-mib {growth}"))
     );
     // Retain the 177 still-used original guards/hash below, plus admission for
     // native builds. A new build must not replace an inherited reserve.

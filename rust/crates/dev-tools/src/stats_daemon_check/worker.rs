@@ -430,6 +430,10 @@ fn failures(
             let destination = first.with_file_name(format!("{}1", &name[..name.len() - 1]));
             if case == "collision" {
                 fs::write(&destination, "existing-destination")?;
+                // The independent source capture used a 0664 preexisting file.
+                // This is fixture input, not daemon output: do not let the CI
+                // runner's umask change it while retaining exact output modes.
+                fs::set_permissions(&destination, fs::Permissions::from_mode(0o664))?;
             } else {
                 symlink(stats.join("absent-target"), &destination)?;
             }

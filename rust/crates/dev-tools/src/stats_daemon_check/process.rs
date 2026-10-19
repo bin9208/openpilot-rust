@@ -11,7 +11,7 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
     time::{Duration, Instant},
 };
-pub(super) struct Process<'a> {
+pub(crate) struct Process<'a> {
     child: Child,
     pid: Pid,
     input: Option<ChildStdin>,
@@ -28,14 +28,14 @@ impl<'a> Process<'a> {
     ) -> Result<Self> {
         Self::spawn_inner(command, cancel, group, true)
     }
-    pub(super) fn spawn_logged(
+    pub(crate) fn spawn_logged(
         command: &mut Command,
         cancel: &'a AtomicBool,
         group: bool,
     ) -> Result<Self> {
         Self::spawn_inner(command, cancel, group, false)
     }
-    pub(super) fn pid(&self) -> Pid {
+    pub(crate) fn pid(&self) -> Pid {
         self.pid
     }
     fn spawn_inner(
@@ -171,7 +171,7 @@ impl<'a> Process<'a> {
     pub(super) fn close_input(&mut self) {
         self.input.take();
     }
-    pub(super) fn exited(&self) -> Result<Option<i32>> {
+    pub(crate) fn exited(&self) -> Result<Option<i32>> {
         match waitid(
             WaitId::Pid(self.pid),
             WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
@@ -185,7 +185,7 @@ impl<'a> Process<'a> {
             Err(e) => Err(e.into()),
         }
     }
-    pub(super) fn wait(&self, timeout: Option<Duration>) -> Result<i32> {
+    pub(crate) fn wait(&self, timeout: Option<Duration>) -> Result<i32> {
         let start = Instant::now();
         loop {
             check(self.cancel)?;
@@ -198,7 +198,7 @@ impl<'a> Process<'a> {
             std::thread::sleep(Duration::from_millis(2));
         }
     }
-    pub(super) fn signal(&self, signal: Signal) -> Result<()> {
+    pub(crate) fn signal(&self, signal: Signal) -> Result<()> {
         rustix::process::kill_process(self.pid, signal)?;
         Ok(())
     }

@@ -12,14 +12,20 @@ pub mod beep_clock_check;
 pub mod beep_integer_check;
 pub mod beep_sleep_check;
 pub mod bluetooth_digits_generate;
+#[cfg(feature = "bluetooth-files-native")]
+pub mod bluetooth_files_check;
 #[cfg(feature = "bluetooth-input-native")]
 pub mod bluetooth_input_check;
+#[cfg(feature = "bluetooth-journal-native")]
+pub mod bluetooth_journal_check;
 #[cfg(feature = "bootlog-artifact-native")]
 pub mod bootlog_artifact_check;
 #[cfg(target_os = "linux")]
 pub mod bootlog_snapshot_check;
 pub mod bootlog_snapshot_reference;
 mod bootlog_snapshot_sources;
+#[cfg(feature = "bridge-tools-native")]
+pub mod bridge_check;
 pub mod brotli_stage;
 pub mod camera_ci_check;
 pub mod camera_data_generate;
@@ -61,6 +67,8 @@ pub mod dbc_generator;
 pub mod filter_reference;
 pub mod journald_check;
 pub mod journald_fixture;
+#[cfg(feature = "logmessaged-startup-native")]
+pub mod logmessaged_startup_check;
 #[cfg(feature = "managed-entry-native")]
 pub mod managed_entry_check;
 #[cfg(any(
@@ -115,6 +123,8 @@ pub mod selfdrive_params_check;
 pub mod selfdrive_state_check;
 #[cfg(feature = "services-catalog-native")]
 pub mod services_catalog_check;
+#[cfg(feature = "soundd-daemon-native")]
+pub mod soundd_daemon_check;
 #[cfg(feature = "soundd-policy-native")]
 pub mod soundd_policy_check;
 #[cfg(feature = "soundd-policy-native")]

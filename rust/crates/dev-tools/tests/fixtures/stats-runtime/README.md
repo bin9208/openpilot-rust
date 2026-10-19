@@ -61,3 +61,9 @@ or executed after deletion. Fresh post-deletion tests, Clippy and builds are now
 `CAPTURE-HANDOFF.json`, original and RED logs, frozen raw observations, and
 source/ELF seals are in
 `.analysis/scratch/2026-10-19-stats-runtime-tools/`.
+
+A subsequent CI collision fixture repair explicitly sets the preexisting input
+file to the captured 0664 mode, avoiding runner-umask dependence. The completed
+24-test gate and frozen receipts above predate that fixture-only source delta;
+they are retained historical results, not fresh validation of the updated file.
+The updated snapshot and all remaining fresh validation are exact-SHA CI-owned.

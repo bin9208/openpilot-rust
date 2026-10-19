@@ -18,14 +18,14 @@ fn id(m: &Metadata) -> (u64, u64, u64, i64, i64, i64, i64) {
         m.ctime_nsec(),
     )
 }
-pub(super) struct Bound {
+pub(crate) struct Bound {
     path: PathBuf,
     file: File,
     metadata: Metadata,
-    pub(super) hash: String,
+    pub(crate) hash: String,
 }
 impl Bound {
-    pub(super) fn open(path: &Path) -> Result<Self> {
+    pub(crate) fn open(path: &Path) -> Result<Self> {
         let fd = rustix::fs::open(
             path,
             rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NONBLOCK | rustix::fs::OFlags::CLOEXEC,
@@ -55,7 +55,7 @@ impl Bound {
         result.verify()?;
         Ok(result)
     }
-    pub(super) fn verify(&self) -> Result<()> {
+    pub(crate) fn verify(&self) -> Result<()> {
         if id(&self.metadata) != id(&self.file.metadata()?)
             || id(&self.metadata) != id(&fs::metadata(&self.path)?)
         {

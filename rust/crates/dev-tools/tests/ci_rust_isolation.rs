@@ -634,6 +634,12 @@ fn ui_connectivity_requires_source_render_and_private_protocol_checks() {
             "check_wifi_policy.py",
             "check_wifi_runtime.py",
             "check_wifi_callback_ordering.py",
+            "--features bluetooth-files-native --bin check-bluetooth-files",
+            "--features bluetooth-files-native --test bluetooth_files_check --locked",
+            "rust/target/debug/check-bluetooth-files --binary",
+            "--features bluetooth-journal-native --bin check-bluetooth-journal",
+            "--features bluetooth-journal-native --test bluetooth_journal_check --locked",
+            "rust/target/debug/check-bluetooth-journal --binary",
             "cargo build --manifest-path rust/Cargo.toml -p openpilot-wifi --lib --locked",
             "rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs --extern",
             "\"$RUNNER_TEMP/wifi-snapshot-allocation-probe\" --require-improvement",
@@ -747,6 +753,10 @@ fn sensor_audio_requires_original_and_live_native_checks() {
             "--test soundd_policy_reference --test soundd_policy_check --test soundd_fixture_assets --test soundd_policy_retirement --test soundd_policy_ci --locked",
             "--fixture-assets-binary \"$PWD/rust/target/debug/create-soundd-fixture-assets\"",
             "check_soundd_daemon.py",
+            "--features soundd-daemon-native --bin check-soundd-daemon",
+            "--test soundd_daemon_check --test soundd_daemon_runtime --locked",
+            "--lib soundd_daemon_check::worker::tests --locked",
+            "\"$PWD/rust/target/debug/check-soundd-daemon\" --binary",
             "rust/target/debug/check-feedbackd --binary",
             "--features feedback-runtime-native --bin check-feedbackd",
             "--test feedbackd_check --test feedbackd_runtime_check --locked",
@@ -771,6 +781,13 @@ fn startup_services_require_source_and_live_native_protocols() {
             "--features command-owner-tests --lib --test command_owner",
             "--lib --test updated_process_check --bin check-updated-process",
             "check_bridge.py",
+            "--features bridge-tools-native --bin check-bridge",
+            "--features bridge-tools-native --test bridge_check --locked",
+            "--features bridge-tools-native --lib bridge_check:: --locked",
+            "--features bridge-tools-native --test bridge_controller_reference --locked",
+            "BRIDGE_ORIGINAL_CONTROLLER_REPORT=",
+            "BRIDGE_NATIVE_CONTROLLER_REPORT=",
+            "sudo -E \"$PWD/rust/target/debug/check-bridge\" --original",
             "check_agnos.py",
             "rust/target/debug/build-bridge-source",
             "build_msgq_python.py",
@@ -975,6 +992,27 @@ fn journald_requires_native_ipc_and_independent_fixture_contracts() {
         .contains("python rust/tools/check_journald.py"));
 }
 #[test]
+fn logmessaged_startup_requires_original_pair_and_native_exec_audit() {
+    job_check(
+        "support-runtime",
+        &[
+            "--features logmessaged-startup-native --bin check-logmessaged-startup",
+            "--features logmessaged-startup-native --test logmessaged_startup_check --locked",
+            "--lib logmessaged_startup_check::worker::tests --locked",
+            "--features logmessaged-startup-native --test logmessaged_startup_reference --locked",
+            "python rust/tools/check_logmessaged_startup.py --collector",
+            "LOGMESSAGED_STARTUP_PROOF=",
+            "env PATH=\"$proof/native-path\" /usr/bin/timeout",
+            "sha256sum -c \"$proof/artifacts.sha256\"",
+        ],
+        &[
+            "--features logmessaged-startup-native",
+            "check_logmessaged_startup.py",
+        ],
+        false,
+    );
+}
+#[test]
 fn interrupted_send_boundary_is_a_required_support_check() {
     let data = workflow();
     let steps = data["jobs"]["support-runtime"]["steps"].as_array().unwrap();
@@ -1171,6 +1209,9 @@ fn navigation_requires_original_transport_auth_and_timer_evidence() {
             "build_params_python.py",
             "build_msgq_python.py",
             "NAVD_PARAMS_BINDING",
+            "REGISTRATION_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/examples/registration_trace\"",
+            "REGISTRATION_WORKER_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/check-registration\"",
+            "--bin check-registration -p openpilot-registration --example registration_trace",
             "requests==2.34.2",
             "urllib3==2.7.0",
             "PyJWT==2.14.0",
@@ -1925,7 +1966,7 @@ fn registration_and_navd_require_native_full_policy_and_real_delayed_collector()
     required(&run, &[
         "NAVD_CONFIG_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/examples/navd_config\"",
         "NAVD_CONFIG_WORKER_BINARY=\"$GITHUB_WORKSPACE/rust/target/debug/check-navd-config\"",
-        "--features navd-config-tools-native --bin check-navd-config --locked",
+        "--features navd-config-tools-native --bin check-navd-config --bin check-registration -p openpilot-registration --example registration_trace --locked",
         "--features navd-config-tools-native --test navd_config_check --test navd_config_reference --test registration_navd_retirement --locked",
         "--features navd-config-tools-native --lib navd_config_check::publication::tests --locked",
         "--features navd-config-tools-native --lib --bin check-navd-config --test navd_config_check --test navd_config_reference --test registration_navd_retirement --locked -- -D warnings",

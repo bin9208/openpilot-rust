@@ -15,6 +15,9 @@ The native controllers replay these ten fixed scenarios against real processes,
 Params files, msgq/ZMQ and the existing independent collector. They compare exact
 statistics contents/modes, state/flush boundaries, failure outcomes and collector
 records with this capture. They do not implement a general Python statsd oracle.
+The collision scenario's preexisting input file is explicitly created with mode
+0664, matching the captured input; it must not inherit a runner-specific umask.
+Generated daemon files still require their exact original modes, including 0600.
 An actual DEBUG publication acknowledges collector readiness before the candidate
 starts; it is drained before the scenario and produces no disk record. Endpoint
 ownership is acknowledged separately with a held filesystem inode, so cancelling

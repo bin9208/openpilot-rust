@@ -1742,8 +1742,10 @@ jobs:
           export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
           export NAVD_CONFIG_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/navd_config"
           export NAVD_CONFIG_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-navd-config"
+          export REGISTRATION_BINARY="$GITHUB_WORKSPACE/rust/target/debug/examples/registration_trace"
+          export REGISTRATION_WORKER_BINARY="$GITHUB_WORKSPACE/rust/target/debug/check-registration"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --bin check-navd-config --locked
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --bin check-navd-config --bin check-registration -p openpilot-registration --example registration_trace --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features navd-config-tools-native --test navd_config_check --test navd_config_reference --test registration_navd_retirement --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -2144,9 +2146,37 @@ jobs:
             --native rust/target/debug/examples/params_string_probe --output "$RUNNER_TEMP/support-runtime/params-string"
           python rust/tools/check_params_string_uploader.py --binding "$RUNNER_TEMP"/support-params-binding/params_pyx*.so \
             --binary rust/target/debug/openpilot-uploader --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/params-uploader"
+      - name: Compare native log collector startup controller with unchanged original
+        run: |
+          set -euo pipefail
+          rustup component add clippy --toolchain 1.94.0
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          proof="$RUNNER_TEMP/support-runtime/logmessaged-startup-controller"
+          mkdir -p "$proof"
+          checker="$GITHUB_WORKSPACE/rust/target/debug/check-logmessaged-startup"
+          collector="$GITHUB_WORKSPACE/rust/target/debug/openpilot-logmessaged"
+          export LOGMESSAGED_COLLECTOR_BINARY="$collector"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --bin check-logmessaged-startup --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --test logmessaged_startup_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --lib logmessaged_startup_check::worker::tests --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --lib --bin check-logmessaged-startup --test logmessaged_startup_check --test logmessaged_startup_reference --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          python rust/tools/check_logmessaged_startup.py --collector "$collector" --output "$proof/original"
+          mkdir "$proof/native-path"
+          ln -s /usr/bin/git "$proof/native-path/git"
+          sha256sum "$checker" "$collector" "$proof/native-path/git" > "$proof/artifacts.sha256"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          env PATH="$proof/native-path" /usr/bin/timeout --kill-after=5s 180s /usr/bin/strace -f -qq -s 65535 -e trace=execve,execveat -o "$proof/native.exec" "$checker" --collector "$collector" --output "$proof/native" > "$proof/native.stdout" 2> "$proof/native.stderr"
+          sha256sum -c "$proof/artifacts.sha256"
+          export LOGMESSAGED_STARTUP_PROOF="$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features logmessaged-startup-native --test logmessaged_startup_reference --locked
       - name: Compare uploader logs and transport failures through both collectors
         run: |
-          python rust/tools/check_logmessaged_startup.py --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/logmessaged-startup"
           python rust/tools/check_uploader_logging.py --binary rust/target/debug/openpilot-uploader \
             --trace rust/target/debug/examples/uploader_trace --collector rust/target/debug/openpilot-logmessaged --output "$RUNNER_TEMP/support-runtime/uploader-logging"
           python rust/tools/check_uploader_log_fault.py --native rust/target/debug/examples/uploader_log_fault \
@@ -2585,6 +2615,22 @@ jobs:
         run: python rust/tools/check_lpa.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/lpa"
       - name: Compare source and native bridge packets and connection lifecycle
         run: sudo -E env "PYTHONPATH=$PYTHONPATH" "$(command -v python)" rust/tools/check_bridge.py --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge"
+      - name: Compare native bridge controller with the unchanged original controller
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --bin check-bridge --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --test bridge_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --lib bridge_check:: --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --lib --bin check-bridge --test bridge_check --test bridge_controller_reference --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          sudo -E "$PWD/rust/target/debug/check-bridge" --original "$RUNNER_TEMP/services-bridge-source/bridge-original" --binary "$PWD/rust/target/debug/bridge" --output "$RUNNER_TEMP/startup-services/bridge-native-controller"
+          export BRIDGE_ORIGINAL_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge/result.json"
+          export BRIDGE_NATIVE_CONTROLLER_REPORT="$RUNNER_TEMP/startup-services/bridge-native-controller/result.json"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bridge-tools-native --test bridge_controller_reference --locked
       - name: Compare AGNOS images, retry policy, casync and actual CLI
         run: python rust/tools/check_agnos.py --target "$PWD/rust/target" --evidence "$RUNNER_TEMP/startup-services/agnos"
       - name: Compare updater Git lifecycle, native signals and background AGNOS adapter
@@ -2648,10 +2694,29 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-policy-native --test soundd_policy_reference --test soundd_policy_check --test soundd_fixture_assets --test soundd_policy_retirement --test soundd_policy_ci --locked
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-policy-native --lib --test soundd_policy_reference --test soundd_policy_check --test soundd_fixture_assets --test soundd_policy_retirement --test soundd_policy_ci --bin check-soundd-policy --bin create-soundd-fixture-assets --locked -- -D warnings
+      - name: Build and validate native sound daemon controller
+        run: |
+          export SOUNDD_DAEMON_BINARY="$PWD/rust/target/debug/openpilot-soundd"
+          export SOUNDD_DAEMON_WORKER_BINARY="$PWD/rust/target/debug/check-soundd-daemon"
+          export SOUNDD_FIXTURE_ASSETS_BINARY="$PWD/rust/target/debug/create-soundd-fixture-assets"
+          export SOUNDD_PORTAUDIO_LIBRARY="$RUNNER_TEMP/owned-soundd-portaudio.so"
+          export SOUNDD_DAEMON_TEST_OUTPUT="$RUNNER_TEMP/sensor-audio/soundd-native-tests"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --bin check-soundd-daemon --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 64
+          cc -std=c11 -shared -fPIC -pthread -Wall -Wextra -Werror rust/tools/fixtures/soundd/portaudio.c -o "$SOUNDD_PORTAUDIO_LIBRARY"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --test soundd_daemon_check --test soundd_daemon_runtime --locked -- --test-threads=1
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --lib soundd_daemon_check::worker::tests --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features soundd-daemon-native --lib --bin check-soundd-daemon --test soundd_daemon_check --test soundd_daemon_runtime --locked -- -D warnings
       - name: Compare alert samples and continuous native playback
         run: |
           "$PWD/rust/target/debug/check-soundd-policy" --binary "$PWD/rust/target/debug/examples/sound_trace" --binding "$RUNNER_TEMP"/sensor-params-binding/params_pyx*.so --output "$RUNNER_TEMP/sensor-audio/soundd-source"
-          python rust/tools/check_soundd_daemon.py --binary "$PWD/rust/target/debug/openpilot-soundd" --output "$RUNNER_TEMP/sensor-audio/soundd-daemon" --fixture-assets-binary "$PWD/rust/target/debug/create-soundd-fixture-assets"
+          python rust/tools/check_soundd_daemon.py --binary "$PWD/rust/target/debug/openpilot-soundd" --output "$RUNNER_TEMP/sensor-audio/soundd-daemon" --fixture-assets-binary "$PWD/rust/target/debug/create-soundd-fixture-assets" --portaudio-library "$RUNNER_TEMP/owned-soundd-portaudio.so"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          "$PWD/rust/target/debug/check-soundd-daemon" --binary "$PWD/rust/target/debug/openpilot-soundd" --output "$RUNNER_TEMP/sensor-audio/soundd-native-controller" --fixture-assets-binary "$PWD/rust/target/debug/create-soundd-fixture-assets" --portaudio-library "$RUNNER_TEMP/owned-soundd-portaudio.so"
       - name: Check PortAudio callback ownership with Miri
         env:
           MIRIFLAGS: -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1
@@ -3031,6 +3096,34 @@ jobs:
           rustc --edition=2021 rust/tools/wifi_snapshot_allocation_probe.rs --extern "openpilot_wifi=$GITHUB_WORKSPACE/rust/target/debug/libopenpilot_wifi.rlib" -L "dependency=$GITHUB_WORKSPACE/rust/target/debug/deps" -o "$RUNNER_TEMP/wifi-snapshot-allocation-probe"
           mkdir -p "$RUNNER_TEMP/ui-connectivity"
           "$RUNNER_TEMP/wifi-snapshot-allocation-probe" --require-improvement | tee "$RUNNER_TEMP/ui-connectivity/wifi-snapshot-allocation.tsv"
+      - name: Compare native Bluetooth file controller with unchanged original
+        run: |
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export BLUETOOTH_FILE_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/file_fixture"
+          export BLUETOOTH_FILES_PYTHON=python
+          export BLUETOOTH_FILES_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-files-original"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --bin check-bluetooth-files --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --test bluetooth_files_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-files-native --lib --bin check-bluetooth-files --test bluetooth_files_check --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-bluetooth-files --binary "$BLUETOOTH_FILE_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-files-current"
+      - name: Compare native Bluetooth journal controller with unchanged original
+        run: |
+          export OPENPILOT_RUST_ROOT="$GITHUB_WORKSPACE"
+          export BLUETOOTH_JOURNAL_FIXTURE="$GITHUB_WORKSPACE/rust/target/debug/examples/journal_fixture"
+          export BLUETOOTH_JOURNAL_PYTHON=python
+          export BLUETOOTH_JOURNAL_EVIDENCE="$RUNNER_TEMP/ui-connectivity/bluetooth-journal-original"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --bin check-bluetooth-journal --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --test bluetooth_journal_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features bluetooth-journal-native --lib --test bluetooth_journal_check --bin check-bluetooth-journal --locked -- -D warnings
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+          rust/target/debug/check-bluetooth-journal --binary "$BLUETOOTH_JOURNAL_FIXTURE" --output "$RUNNER_TEMP/ui-connectivity/bluetooth-journal-current"
       - name: Check native Bluetooth input decoder against original records
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024

@@ -4459,3 +4459,51 @@ Shared logging helpers remain pending. Evidence:
 Inventory is 209 replaced-local, 3 partial and 3,368 pending baseline sources.
 Fresh post-deletion builds and validation are now CI-owned under the user's
 2026-10-19 instruction; no further local regression loop is required or claimed.
+
+### First grouped cloud validation and next controller batch (2026-10-19)
+
+Published `2176c4a518ea087d3f69cd10b598a872592bc2f2` in PR #343. Fast checks,
+integration and mapped user docs passed. The [Rust run](https://github.com/bin9208/openpilot-rust/actions/runs/39188181505)
+is not an accepted aggregate. Three failures were inspected from completed job
+logs while other jobs continued:
+
+- Workspace formatting required the statistics module declarations in rustfmt
+  order. The earlier local command sequence did not propagate this failed check;
+  subsequent formatting checks use an explicit successful exit before diff checks.
+- Telemetry's collision scenario differed from the original fixed capture. Its
+  preexisting file used implicit host umask while the capture records mode 0664.
+  The fixture now sets that input mode explicitly; all generated output modes
+  remain exact. The old failed run did not retain the temporary mismatching
+  payload, so the next run also prints expected and observed values on failure.
+  This repair is pending CI, not a demonstrated runtime defect.
+- Navigation's 26-case and dynamic-reference comparisons passed. The combined
+  retirement test then failed because the job omitted `REGISTRATION_BINARY`.
+  That job now builds both actual registration artifacts and exports both paths;
+  no test or comparison was removed.
+
+The next grouped batch introduces native controllers for `check_bridge.py`,
+`check_soundd_daemon.py`, `check_logmessaged_startup.py`,
+`check_bluetooth_files.py` and `check_bluetooth_journal.py`. All five originals remain required independent cloud
+controls. The bridge preserves both 160-packet directions, subscription changes,
+private network namespaces and original deadlines. Soundd retains all seven
+owned-PortAudio scenarios. Logging retains the legacy first-error loss and both
+ready observations; its Rust paired audit checks raw packets, disk records and
+the interpreter-free native execution trace. Bluetooth files compares all 15
+values against files produced by the unchanged original controller. Bluetooth
+journal checks all 721 operations, exact values and inode rewrite decisions,
+normalizing only session IDs as the original does.
+
+Only source review, formatting and syntax checks were performed locally for this
+new batch. Bridge review corrected an invalid signal constant, nested helper
+group ownership, blocking FIFO admission, non-UTF8 metadata and cancellation
+during receipt publication before compilation. Added CI requires their actual
+builds, units, process tests, original pairs and strict Clippy. No new Python
+comparison implementation was added. These five source-ready units do not
+increase the retirement count: it remains 209 replaced-local, 3 partial and
+3,368 pending. No device test or measured CPU saving is claimed.
+
+Soundd review also restored stdin inheritance through both worker levels,
+rechecks source/artifact identity after potentially blocking stdout, and retains
+the receipt descriptor through ownership-checked cleanup. Its source-ready test
+set now contains 19 checks, including blocked-output mutation and stdin forwarding;
+these are awaiting cloud execution, not reported as passed locally.

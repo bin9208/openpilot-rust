@@ -13,10 +13,10 @@ use std::{
         Arc,
     },
 };
-mod identity;
+pub(crate) mod identity;
 pub mod interrupted;
+pub(crate) mod process;
 pub mod runtime;
-mod process;
 mod worker;
 use identity::Inputs;
 use process::{check, Process};
@@ -135,7 +135,7 @@ fn run_controlled(
         }
         let actual: Value = serde_json::from_slice(&bytes)?;
         if actual != wanted {
-            return Err(format!("statistics {case} result differs from unchanged original").into());
+            return Err(format!("statistics {case} result differs from unchanged original: expected {wanted}; observed {actual}").into());
         }
         inputs.verify()?;
         check(cancel)?;

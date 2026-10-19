@@ -2835,6 +2835,7 @@ dependencies = [
  "openpilot-jpeg",
  "openpilot-log-format",
  "openpilot-logging",
+ "openpilot-messaging",
  "openpilot-msgq",
  "openpilot-params",
  "openpilot-pocketfft",

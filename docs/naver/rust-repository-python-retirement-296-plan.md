@@ -79,6 +79,13 @@ The statistics producer controller and its source helper are retired after
 independent wire captures, same-ELF removal proof, six regression tests and a
 fresh interpreter-free execution. Other statistics source consumers remain.
 
+Current next batch: bridge, soundd daemon, logmessaged startup, Bluetooth file and journal
+controllers are source-ready with required independent original CI comparisons.
+Keep their five Python controllers until successful cloud evidence is reviewed;
+none is counted retired yet. The `2176c4a5` cloud run exposed formatting,
+collision-fixture umask and missing combined-test prerequisites; repairs are
+included in this batch. Build/test execution remains exclusively in Actions.
+
 ### Task3: native model compiler operations, then the full compiler chain
 
 Files: initial `model-runtime/src/compiler_launch.rs`, `tests/compiler_launch.rs`; subsequent units cover the exact remaining `rust/tools/model_export/` and tinygrad dependency families.

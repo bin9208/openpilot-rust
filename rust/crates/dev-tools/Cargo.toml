@@ -538,6 +538,11 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+bluetooth-journal-native = []
+logmessaged-startup-native = ["stats-daemon-native"]
+bluetooth-files-native = []
+soundd-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
+bridge-tools-native = ["dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
 navd-config-tools-native = ["registration-tools-native"]
 stats-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
 proclog-reference-native = ["dep:capnp", "dep:openpilot-cereal", "rustix/param"]
@@ -683,6 +688,7 @@ path = "src/bin/check_hardware_command.rs"
 workspace = true
 
 [dependencies]
+openpilot-messaging = { path = "../messaging", default-features = false, optional = true }
 brotli = { version = "=8.0.2", optional = true }
 p256 = { version = "=0.13.2", features = ["ecdsa", "pem"], optional = true }
 url = { version = "=2.5.8", optional = true }
@@ -1524,3 +1530,60 @@ required-features = ["stats-daemon-native"]
 name = "check-stats-flood"
 path = "src/bin/check_stats_flood.rs"
 required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-bridge"
+path = "src/bin/check_bridge.rs"
+required-features = ["bridge-tools-native"]
+
+[[test]]
+name = "bridge_check"
+required-features = ["bridge-tools-native"]
+
+[[test]]
+name = "bridge_controller_reference"
+required-features = ["bridge-tools-native"]
+
+[[bin]]
+name = "check-soundd-daemon"
+path = "src/bin/check_soundd_daemon.rs"
+required-features = ["soundd-daemon-native"]
+
+[[test]]
+name = "soundd_daemon_check"
+required-features = ["soundd-daemon-native"]
+
+[[test]]
+name = "soundd_daemon_runtime"
+required-features = ["soundd-daemon-native"]
+
+[[bin]]
+name = "check-bluetooth-files"
+path = "src/bin/check_bluetooth_files.rs"
+required-features = ["bluetooth-files-native"]
+
+[[test]]
+name = "bluetooth_files_check"
+required-features = ["bluetooth-files-native"]
+
+[[bin]]
+name = "check-logmessaged-startup"
+path = "src/bin/check_logmessaged_startup.rs"
+required-features = ["logmessaged-startup-native"]
+
+[[test]]
+name = "logmessaged_startup_check"
+required-features = ["logmessaged-startup-native"]
+
+[[test]]
+name = "logmessaged_startup_reference"
+required-features = ["logmessaged-startup-native"]
+
+[[bin]]
+name = "check-bluetooth-journal"
+path = "src/bin/check_bluetooth_journal.rs"
+required-features = ["bluetooth-journal-native"]
+
+[[test]]
+name = "bluetooth_journal_check"
+required-features = ["bluetooth-journal-native"]
