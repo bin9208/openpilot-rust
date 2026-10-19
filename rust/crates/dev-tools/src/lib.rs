@@ -61,7 +61,7 @@ pub mod journald_check;
 pub mod journald_fixture;
 #[cfg(feature = "managed-entry-native")]
 pub mod managed_entry_check;
-#[cfg(feature = "managed-entry-native")]
+#[cfg(any(feature = "managed-entry-native", feature = "stats-daemon-native"))]
 pub mod managed_entry_collector_source;
 #[cfg(feature = "managed-entry-native")]
 pub mod managed_entry_source;
@@ -80,7 +80,8 @@ pub mod publish;
 #[cfg(any(
     feature = "managed-entry-native",
     feature = "version-tools-native",
-    feature = "tombstone-live-native"
+    feature = "tombstone-live-native",
+    feature = "stats-daemon-native"
 ))]
 pub(crate) mod qa_endpoint;
 pub mod qa_process;
@@ -103,6 +104,8 @@ pub mod selfdrive_state_check;
 #[cfg(feature = "services-catalog-native")]
 pub mod services_catalog_check;
 pub mod stats_clock_check;
+#[cfg(feature = "stats-daemon-native")]
+pub mod stats_daemon_check;
 pub mod stats_numbers_check;
 #[cfg(feature = "stats-producer-native")]
 pub mod stats_producer_check;

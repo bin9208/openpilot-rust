@@ -283,3 +283,31 @@ provider hash or assertion is removed. Native CI62 passes; exact remote validati
 and observed wall-clock improvement remain pending. Upload consistency defects
 #388/#389 have native REDs and are being repaired separately. Device checks remain
 user-owned, and repository-wide conversion/final integration remain open.
+
+### Active continuous statistics validation closure (2026-10-19)
+
+The next parent-owned unit covers `check_stats_daemon.py`,
+`check_stats_failures.py` and `check_stats_log_fault.py`. The latter two checkers
+import the daemon checker's line reader, so retirement requires all three
+callers together. `stats_source.py` remains because `check_stats_interrupted.py`
+still executes it. The independent original `statsd.py` and interrupted-receive
+consumer remain outside this removal unit.
+
+Unchanged original/native executions passed ten scenarios. Source-only captures
+preserve continuous flush/state transitions, all680 Unicode15.0 decimal inputs,
+10,000-file capacity/discard semantics, eight filesystem/Params/input failure
+boundaries and the first-log-error fallback. The native controller will run
+those exact scenarios against actual daemon/producer examples, the existing
+independent source collector, real Params files and msgq/ZMQ transports. Fixed
+captured results retain the controllers' fixed input domain; they do not claim
+to replace arbitrary statsd behavior or a general-purpose source runtime.
+
+- [x] Capture exact original results, full inputs and source provenance before implementation.
+- [x] Observe the new controller API tests fail, then implement the native real-process runner.
+- [x] Preserve deadlines, log ACK barriers, file permissions/content and original error outcomes; run cancellation, input identity and FIFO controls.
+- [x] Pass focused tests/Clippy and unchanged original versus native live comparisons.
+- [x] Wire all three CI callers, demonstrate same-ELF interpreter-free execution before/after removal, then rebuild and retest before recording retirement.
+
+This unit consumes the already-verified independent collector transport; it does
+not change its policy or the deployed statistics daemon. Compiler use remains
+serialized with the registration, proclog and soundd units.

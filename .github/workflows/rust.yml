@@ -2263,9 +2263,18 @@ jobs:
           rust/target/debug/check-stats-producer rust/target/debug/examples "$RUNNER_TEMP/telemetry-runtime/stats-producer"
       - name: Compare continuous statistics, real Params and collector failure paths
         run: |
-          python rust/tools/check_stats_daemon.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-daemon"
-          python rust/tools/check_stats_failures.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-failures"
-          python rust/tools/check_stats_log_fault.py rust/target/debug "$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so "$RUNNER_TEMP/telemetry-runtime/stats-log-fault"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --bin check-stats-daemon --bin check-stats-failures --bin check-stats-log-fault --locked
+          stats_bindings=("$RUNNER_TEMP"/telemetry-params-binding/params_pyx*.so)
+          test "${#stats_bindings[@]}" -eq 1
+          export STATS_DAEMON_BINDING="${stats_bindings[0]}" STATS_DAEMON_BINARIES="$PWD/rust/target/debug" STATS_DAEMON_CHECKER="$PWD/rust/target/debug/check-stats-daemon"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --test stats_daemon_check --locked
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features stats-daemon-native --lib --test stats_daemon_check --bin check-stats-daemon --bin check-stats-failures --bin check-stats-log-fault --locked -- -D warnings
+          rust/target/debug/check-stats-daemon rust/target/debug "$STATS_DAEMON_BINDING" "$RUNNER_TEMP/telemetry-runtime/stats-daemon"
+          rust/target/debug/check-stats-failures rust/target/debug "$STATS_DAEMON_BINDING" "$RUNNER_TEMP/telemetry-runtime/stats-failures"
+          rust/target/debug/check-stats-log-fault rust/target/debug "$STATS_DAEMON_BINDING" "$RUNNER_TEMP/telemetry-runtime/stats-log-fault"
       - name: Exercise statistics production startup and shutdown under sustained traffic
         run: |
           python rust/tools/check_stats_runtime.py rust/target/debug "$RUNNER_TEMP/telemetry-runtime/stats-runtime"

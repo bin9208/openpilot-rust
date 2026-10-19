@@ -2076,11 +2076,11 @@ rust/tools/check_soundd.py	1e3bb65620d9e3850d5e0929254f8de4a73be8d0	pending	-
 rust/tools/check_soundd_daemon.py	469e0a1748d7bae0138e6de4c591319380cab0c4	pending	-
 rust/tools/check_startup_ui.py	15466dc5f767059f06f1380850f666eaf6ca260e	pending	-
 rust/tools/check_stats_clock.py	d39c50ee332422bbbac65e2ed44284b8439ef20b	replaced-local	openpilot-dev-tools check-stats-clock
-rust/tools/check_stats_daemon.py	ffcc3b899f807f3f96977ac2fa0b0fc690096d66	pending	-
-rust/tools/check_stats_failures.py	ce144ca88d88b034376666810d767e233554bbec	pending	-
+rust/tools/check_stats_daemon.py	ffcc3b899f807f3f96977ac2fa0b0fc690096d66	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs
+rust/tools/check_stats_failures.py	ce144ca88d88b034376666810d767e233554bbec	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs
 rust/tools/check_stats_flood.py	1b5ad8b2c9e66df9f6d5bfd69aedba1267cc4cd1	pending	-
 rust/tools/check_stats_interrupted.py	f0caa533e30c9ab353de7ffc1caa0353d30fe304	pending	-
-rust/tools/check_stats_log_fault.py	ff238b53e34afb709af764e44b8b301d67a753aa	pending	-
+rust/tools/check_stats_log_fault.py	ff238b53e34afb709af764e44b8b301d67a753aa	replaced-local	rust/crates/dev-tools/src/stats_daemon_check.rs
 rust/tools/check_stats_numbers.py	f7d7404586d04d2be2d8b6cb65e23d80e61b88aa	replaced-local	openpilot-dev-tools check-stats-numbers
 rust/tools/check_stats_producer.py	5c5c285242a90bbb08e62a6359fe52f927ec6323	replaced-local	openpilot-dev-tools check-stats-producer; independent original wire capture and actual fork/drop/pressure/typed checks
 rust/tools/check_stats_runtime.py	04bdc4bfc995cf358ed9abd8205f70c0199cb4d1	pending	-

@@ -538,6 +538,7 @@ path = "src/bin/manager_catalog_reference.rs"
 required-features = ["manager-catalog-tools-native"]
 
 [features]
+stats-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
 stats-producer-native = ["dep:zmq"]
 bluetooth-input-native = []
 sdk-receiver-native = ["dep:brotli-decompressor", "rustix/net"]
@@ -1392,3 +1393,22 @@ required-features = ["stats-producer-native"]
 name = "check-stats-producer"
 path = "src/bin/check_stats_producer.rs"
 required-features = ["stats-producer-native"]
+
+[[test]]
+name = "stats_daemon_check"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-daemon"
+path = "src/bin/check_stats_daemon.rs"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-failures"
+path = "src/bin/check_stats_failures.rs"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-log-fault"
+path = "src/bin/check_stats_log_fault.rs"
+required-features = ["stats-daemon-native"]

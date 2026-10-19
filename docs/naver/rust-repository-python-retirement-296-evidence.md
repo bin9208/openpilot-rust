@@ -4198,3 +4198,55 @@ Evidence: `2026-10-19-stats-producer-tools/{api-red.log,native-first.log,`
 3 partial and3,382 pending out of3,580. Other statistics Python consumers and the
 original statsd source remain explicitly pending; exact committed-head CI and
 user-owned device startup/recording/upload verification are separate gates.
+
+### Native continuous statistics controllers (2026-10-19)
+
+Retired only `check_stats_daemon.py`, `check_stats_failures.py` and
+`check_stats_log_fault.py`. The shared `stats_source.py` remains: the mandatory
+`check_stats_interrupted.py` still consumes it. Original `statsd.py` remains too.
+The unchanged source/native controllers first passed all ten scenarios. Their
+source-only result capture SHA256 is
+`6376c0a5e990c4040ffa115cde2fd357810c760a32a85dc2ba9f49c4eb2a57c1`;
+all680 Unicode15.0 decimal inputs are separately sealed. The native controllers
+exercise real examples, Params files, msgq/ZMQ and the independent collector,
+then compare exact results with the captured fixed-input original scenarios.
+This is not a general replacement for the original statsd source.
+
+The API RED preceded implementation. Eight permanent checks cover the ten real
+scenarios, malformed clock output, missing candidates, foreign receipt retention,
+source/candidate/binding FIFOs, three live source identity changes, leader-only
+cancellation and a replacement collector endpoint. Independent review reproduced
+a cleanup bug: after a foreign listener replaced the live collector socket,
+cancellation deleted the foreign listener. Authenticated live endpoint identity,
+a held inode and parent ownership now preserve replacements while cleaning the
+owned endpoint. Candidate/collector processes retain one outer process group;
+private IPC directories survive worker death only until parent cleanup. The
+conservative pre-acknowledgement socket window remains an explicit limitation of
+the existing endpoint-owner helper; no endpoint observed only after teardown is
+adopted. A DEBUG transport ACK drains startup traffic before each scenario and
+does not create a disk log record.
+
+Frozen bundle `frozen-3YlUWrRh` passed all three CLIs before and after deletion:
+ten scenarios,34 traced execs and zero Python execution with an empty PATH per
+phase. All five ELFs stayed identical and normalized source/native comparison
+artifacts were byte-identical. Checker SHA256:
+`6f741f6b96a845165e61fb2285725bc20ca43367b1fbe4551dcb42f5366ad016`.
+Fresh post-deletion builds passed eight tests (including all ten live scenarios),
+44 CI-policy tests,13 disk-policy tests, strict Clippy and scoped formatting;
+all five rebuilt ELFs matched the frozen copies. The first post-deletion format
+check caught one test-only layout issue; the corrected check passed. Historical
+failure logs are retained separately.
+
+All three mandatory telemetry callers now build/test/run the native tools.
+Three additional512MiB guards preserve all inherited177 guards. At this unit's
+commit the total is308; the concurrently prepared but uncommitted procLog unit
+adds three more, explaining311 in the combined working-tree validation.
+Evidence: `2026-10-19-stats-daemon-tools/{capture.sh,api-red.log,`
+`independent-review.txt,review-endpoint-y480nbt7/,lifecycle-tests.log,`
+`frozen-3YlUWrRh/,postdelete-*.log,postdelete-status}`. The final test-only format
+change follows the historical scoped source seal and is covered by its fresh
+format check, not retroactively included in that seal.
+
+Inventory:198 replaced-local,3 partial,3,379 pending out of3,580. Exact committed
+head CI, complete repository conversion, dev integration and user-owned device
+startup/recording/upload acceptance remain separate and unfinished.
